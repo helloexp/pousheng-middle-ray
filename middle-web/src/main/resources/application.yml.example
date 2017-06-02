@@ -1,5 +1,5 @@
 logging:
-  file: logs/erp.log
+  file: logs/middle-web.log
 
 spring:
   datasource:
@@ -11,6 +11,7 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
-    com.pousheng.erp.model,
-    io.terminus.parana.(item|category|brand|spu).model,
-    io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
+      com.pousheng.erp.model,
+      io.terminus.parana.(item|category|brand|spu|shop).model,
+      io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
+

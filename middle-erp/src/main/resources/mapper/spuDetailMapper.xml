@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="SpuDetail">
+    <resultMap id="SpuDetailMap" type="SpuDetail">
+        <result column="spu_id" property="spuId"/>
+        <result column="images_json" property="imagesJson"/>
+        <result column="detail" property="detail"/>
+        <result column="packing_json" property="packingJson"/>
+        <result column="service" property="service"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="tb">
+        parana_spu_details
+    </sql>
+    
+
+    <sql id="cols">
+        spu_id, images_json,detail, packing_json, service,  created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{spuId}, #{imagesJson},#{detail}, #{packingJson}, #{service},  now(), now()
+    </sql>
+
+
+
+    <insert id="create" parameterType="SpuDetail" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+
+    <select id="findBySpuId" parameterType="long" resultMap="SpuDetailMap" >
+        SELECT <include refid="cols" />
+        FROM <include refid="tb" />
+        WHERE spu_id = #{spuId} LIMIT 1
+    </select>
+
+
+    <update id="update" parameterType="SpuDetail">
+        UPDATE <include refid="tb"/>
+        <set>
+            <if test="imagesJson != null"> images_json = #{imagesJson}, </if>
+            <if test="detail != null"> detail = #{detail}, </if>
+            <if test="packingJson != null"> packing_json = #{packingJson}, </if>
+            <if test="service != null"> service = #{service}, </if>
+            updated_at=now()
+        </set>
+        WHERE spu_id=#{spuId}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE spu_id = #{spuId}
+    </delete>
+
+</mapper>

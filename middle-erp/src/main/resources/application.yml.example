@@ -1,0 +1,13 @@
+logging:
+  file: logs/erp.log
+
+spring:
+  datasource:
+    driver-class-name: com.mysql.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/pousheng
+    username: root
+    password: anywhere
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: com.pousheng.erp.model, io.terminus.parana.(item|category|brand|spu).model

@@ -1,0 +1,19 @@
+logging:
+  file: ${user.home}/logs/pousheng/erp.log
+  level.*: INFO
+
+
+server:
+  context-path: /
+  port: 8082
+
+
+spring:
+  datasource:
+    url: jdbc:mysql://${POUSHENG_MYSQL_HOST}:${POUSHENG_MYSQL_PORT}/${POUSHENG_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8
+    username: ${POUSHENG_MYSQL_USERNAME}
+    password: ${POUSHENG_MYSQL_PASSWORD}
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: com.pousheng.erp.model, io.terminus.parana.(item|category|brand|spu).model

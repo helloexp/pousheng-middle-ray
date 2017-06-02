@@ -1,8 +1,13 @@
 package com.pousheng.erp.component;
 
+import com.pousheng.erp.model.PoushengMaterial;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.Date;
+import java.util.List;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -14,4 +19,13 @@ import org.springframework.context.annotation.Configuration;
         "com.pousheng.erp"
 })
 public class ServiceConfiguration {
+
+    @Bean
+    public SpuInfoFetcher<PoushengMaterial> spuInfoFetcher(){
+        return new SpuInfoFetcher<PoushengMaterial>() {
+            public List<PoushengMaterial> fetch(int pageNo, int pageSize, Date start, Date end) {
+                return null;
+            }
+        };
+    }
 }

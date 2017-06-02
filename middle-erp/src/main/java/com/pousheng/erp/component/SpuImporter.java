@@ -9,7 +9,6 @@ import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.SkuGroupRule;
 import com.pousheng.erp.rules.SkuGroupRuler;
-import io.terminus.common.model.Paging;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.category.impl.dao.BackCategoryDao;
 import io.terminus.parana.category.model.BackCategory;
@@ -39,16 +38,20 @@ public class SpuImporter {
 
     private final ErpSpuManager spuManager;
 
+    private final SpuInfoFetcher<PoushengMaterial> spuInfoFetcher;
+
 
     @Autowired
     public SpuImporter(ErpBrandCacher brandCacher,
                        SkuGroupRuleDao skuGroupRuleDao,
                        BackCategoryDao categoryDao,
-                       ErpSpuManager spuManager) {
+                       ErpSpuManager spuManager,
+                       SpuInfoFetcher<PoushengMaterial> spuInfoFetcher) {
         this.brandCacher = brandCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;
         this.spuManager = spuManager;
+        this.spuInfoFetcher = spuInfoFetcher;
     }
 
     public int process(Date start, Date end){
@@ -60,9 +63,8 @@ public class SpuImporter {
         int pageNo = 1;
         boolean hasNext = true;
         while (hasNext) {
-            Paging<PoushengMaterial> pMaterial = findMaterials(pageNo, start, end);
+            List<PoushengMaterial> materials = spuInfoFetcher.fetch(pageNo, PAGE_SIZE, start, end);
             pageNo = pageNo + 1;
-            List<PoushengMaterial> materials = pMaterial.getData();
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {
                 Brand brand = brandCacher.findByOuterId(material.getCardID());//做品牌映射
@@ -71,12 +73,6 @@ public class SpuImporter {
             handleCount+=materials.size();
         }
         return handleCount;
-    }
-
-    private Paging<PoushengMaterial> findMaterials(int pageNo, Date start, Date end) {
-        //return materialDao.paging(pageNo, PAGE_SIZE, start, end);
-        //todo: read data from erp endpoint
-        return Paging.empty();
     }
 
     /**

@@ -7,7 +7,7 @@
 
 <mapper namespace="Spu">
 
-    <select id="findByCategoryIdAndSpuCode" parameterType="map" resultMap="SpuMap">
+    <select id="findByCategoryIdAndCode" parameterType="map" resultMap="SpuMap">
         SELECT * FROM
         <include refid="tb"/>
         WHERE category_id=#{categoryId} AND spu_code=#{spuCode}

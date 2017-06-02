@@ -52,9 +52,9 @@
         SELECT COUNT(1)
         FROM
         <include refid="tb"/>
-        <where>
+<!--        <where>
             <include refid="criteria"/>
-        </where>
+        </where>-->
     </select>
 
     <select id="paging" parameterType="map" resultMap="SkuGroupRuleMap">
@@ -62,10 +62,11 @@
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        <where>
+<!--        <where>
             <include refid="criteria"/>
         </where>
         <include refid="custom_sort"/>
+-->
         LIMIT #{offset}, #{limit}
     </select>
 

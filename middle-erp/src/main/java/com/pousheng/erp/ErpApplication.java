@@ -2,8 +2,6 @@ package com.pousheng.erp;
 
 import io.terminus.parana.common.banner.ParanaBanner;
 import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Description: add something here
@@ -12,10 +10,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  */
 /*@SpringBootApplication
 @EnableScheduling*/
-public class PoushengErpApplication {
+public class ErpApplication {
 
     public static void main(String[] args) {
-        SpringApplication application = new SpringApplication(PoushengErpApplication.class);
+        SpringApplication application = new SpringApplication(ErpApplication.class);
         application.setBanner(new ParanaBanner());
         application.run(args);
     }

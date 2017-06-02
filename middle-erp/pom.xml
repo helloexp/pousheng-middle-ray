@@ -17,6 +17,12 @@
             <groupId>io.terminus.parana</groupId>
             <artifactId>parana-item</artifactId>
             <version>${parana.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.terminus.search</groupId>
+                    <artifactId>spring-boot-starter-search</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

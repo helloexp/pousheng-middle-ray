@@ -4,10 +4,7 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.pousheng.erp.dao.mysql.SkuTemplateDao;
-import com.pousheng.erp.dao.mysql.SpuAttributeDao;
-import com.pousheng.erp.dao.mysql.SpuDao;
-import com.pousheng.erp.dao.mysql.SpuDetailDao;
+import com.pousheng.erp.dao.mysql.ErpSpuDao;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.PoushengSku;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
@@ -15,6 +12,10 @@ import io.terminus.parana.attribute.dto.GroupedSkuAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.brand.model.Brand;
+import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
+import io.terminus.parana.spu.impl.dao.SpuAttributeDao;
+import io.terminus.parana.spu.impl.dao.SpuDao;
+import io.terminus.parana.spu.impl.dao.SpuDetailDao;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.model.SpuAttribute;
@@ -34,9 +35,11 @@ import java.util.Map;
  * Date: 2017-05-31
  */
 @Component
-public class SpuManager {
+public class ErpSpuManager {
 
     private final SpuDao spuDao;
+
+    private final ErpSpuDao erpSpuDao;
 
     private final SkuTemplateDao skuTemplateDao;
 
@@ -45,11 +48,13 @@ public class SpuManager {
     private final SpuAttributeDao spuAttributeDao;
 
     @Autowired
-    public SpuManager(SpuDao spuDao,
-                      SkuTemplateDao skuTemplateDao,
-                      SpuDetailDao spuDetailDao,
-                      SpuAttributeDao spuAttributeDao) {
+    public ErpSpuManager(SpuDao spuDao,
+                         ErpSpuDao erpSpuDao,
+                         SkuTemplateDao skuTemplateDao,
+                         SpuDetailDao spuDetailDao,
+                         SpuAttributeDao spuAttributeDao) {
         this.spuDao = spuDao;
+        this.erpSpuDao = erpSpuDao;
         this.skuTemplateDao = skuTemplateDao;
         this.spuDetailDao = spuDetailDao;
         this.spuAttributeDao = spuAttributeDao;
@@ -69,7 +74,7 @@ public class SpuManager {
     public Long createSpuRelatedIfNotExist(Long leafId, Brand brand,
                                             String spuCode, PoushengMaterial material) {
         //因为不同leafId下, 即使spuCode一样, 也视为不同的spu
-        Spu spu = spuDao.findByCategoryIdAndCode(leafId, spuCode);
+        Spu spu = erpSpuDao.findByCategoryIdAndCode(leafId, spuCode);
         Long spuId;
         if(spu!=null){ //已经存在对应的spu
             spuId =  spu.getId();

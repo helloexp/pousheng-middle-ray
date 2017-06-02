@@ -3,15 +3,15 @@ package com.pousheng.erp.component;
 import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.pousheng.erp.cache.BrandCacher;
-import com.pousheng.erp.dao.mysql.BackCategoryDao;
+import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
-import com.pousheng.erp.manager.SpuManager;
+import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.SkuGroupRule;
 import com.pousheng.erp.rules.SkuGroupRuler;
 import io.terminus.common.model.Paging;
 import io.terminus.parana.brand.model.Brand;
+import io.terminus.parana.category.impl.dao.BackCategoryDao;
 import io.terminus.parana.category.model.BackCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,20 +31,20 @@ public class SpuImporter {
 
     private static final int PAGE_SIZE = 300;
 
-    private final BrandCacher brandCacher;
+    private final ErpBrandCacher brandCacher;
 
     private final SkuGroupRuleDao skuGroupRuleDao;
 
     private final BackCategoryDao categoryDao;
 
-    private final SpuManager spuManager;
+    private final ErpSpuManager spuManager;
 
 
     @Autowired
-    public SpuImporter(BrandCacher brandCacher,
+    public SpuImporter(ErpBrandCacher brandCacher,
                        SkuGroupRuleDao skuGroupRuleDao,
                        BackCategoryDao categoryDao,
-                       SpuManager spuManager) {
+                       ErpSpuManager spuManager) {
         this.brandCacher = brandCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;

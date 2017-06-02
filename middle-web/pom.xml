@@ -23,6 +23,13 @@
             <version>${project.version}</version>
         </dependency>
 
+
+        <dependency>
+            <groupId>com.pousheng</groupId>
+            <artifactId>middle-erp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>com.pousheng</groupId>
             <artifactId>middle-trade</artifactId>

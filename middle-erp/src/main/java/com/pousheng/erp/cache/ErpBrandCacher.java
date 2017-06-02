@@ -3,8 +3,8 @@ package com.pousheng.erp.cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.pousheng.erp.dao.mysql.BrandDao;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.parana.brand.impl.dao.BrandDao;
 import io.terminus.parana.brand.model.Brand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,12 +19,12 @@ import java.util.concurrent.TimeUnit;
  */
 @Component
 @Slf4j
-public class BrandCacher {
+public class ErpBrandCacher {
 
     private final LoadingCache<String, Brand> brandCache;
 
     @Autowired
-    public BrandCacher(@Value("${cache.duration.in.minutes: 60}")
+    public ErpBrandCacher(@Value("${cache.duration.in.minutes: 60}")
                                Integer duration, final BrandDao brandDao) {
         this.brandCache = CacheBuilder.newBuilder()
                 .expireAfterWrite(duration, TimeUnit.HOURS)

@@ -15,7 +15,7 @@
 
         <dependency>
             <groupId>io.terminus.parana</groupId>
-            <artifactId>parana-item-api</artifactId>
+            <artifactId>parana-item</artifactId>
             <version>${parana.version}</version>
         </dependency>
 
@@ -40,7 +40,7 @@
             <scope>test</scope>
         </dependency>
 
-        <dependency>
+       <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
             <exclusions>
@@ -53,9 +53,9 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-jetty</artifactId>
-        </dependency>
+        </dependency>-->
     </dependencies>
-
+<!--
     <build>
         <plugins>
             <plugin>
@@ -82,5 +82,5 @@
                 </configuration>
             </plugin>
         </plugins>
-    </build>
+    </build>-->
 </project>

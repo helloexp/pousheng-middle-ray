@@ -10,8 +10,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * User: xiao
  * Date: 28/04/2017
  */
-@SpringBootApplication
-@EnableScheduling
+/*@SpringBootApplication
+@EnableScheduling*/
 public class PoushengErpApplication {
 
     public static void main(String[] args) {

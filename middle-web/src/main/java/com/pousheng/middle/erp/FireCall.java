@@ -1,4 +1,4 @@
-package com.pousheng.erp.web;
+package com.pousheng.middle.erp;
 
 import com.pousheng.erp.component.SpuImporter;
 import lombok.extern.slf4j.Slf4j;

@@ -1,0 +1,32 @@
+version: '2'
+services:
+  pousheng_db:
+    container_name: pousheng_db
+    image: mariadb:10
+    environment:
+      - MYSQL_ROOT_PASSWORD=anywhere
+      - MYSQL_DATABASE=pousheng
+    ports:
+      - "3306:3306"
+
+  pousheng_zk:
+    container_name: pusheng_zk
+    image: zookeeper:3.4.9
+    ports:
+      - "2181:2181"
+
+  pousheng_search:
+    container_name: pousheng_es
+    image: elasticsearch:5.2
+    ports:
+      - "9200:9200"
+
+  pousheng_redis:
+    container_name: pousheng_redis
+    image: redis:3.0.7
+    ports:
+       - "6379:6379"
+#
+#  pousheng_mq:
+#    container_name: pousheng_mq
+#    image: rabbitmq:3.6.6

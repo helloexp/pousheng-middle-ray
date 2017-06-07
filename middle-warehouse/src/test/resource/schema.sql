@@ -63,6 +63,7 @@ CREATE TABLE `pousheng_warehouse_skus` (
   `base_stock` bigint(20) NOT NULL COMMENT '同步基准库存',
   `avail_stock` bigint(20) NOT NULL COMMENT '当前可用库存',
   `locked_stock` bigint(20) NOT NULL COMMENT '当前锁定库存',
+  `sync_at` datetime NULL COMMENT '上次同步校准时间',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),

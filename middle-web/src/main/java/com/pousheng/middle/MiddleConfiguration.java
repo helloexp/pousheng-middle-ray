@@ -3,6 +3,8 @@ package com.pousheng.middle;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.erp.component.SpuInfoFetcher;
 import com.pousheng.erp.model.PoushengMaterial;
+import io.terminus.open.client.MappingConfiguration;
+import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.ItemAutoConfig;
 import io.terminus.parana.TradeApiConfig;
@@ -30,7 +32,9 @@ import java.util.Map;
         ErpConfiguration.class,
         ItemApiConfiguration.class,
         TradeApiConfig.class,
-        TradeAutoConfig.class})
+        TradeAutoConfig.class,
+        MappingConfiguration.class,
+        ParanaAutoConfiguration.class})
 @EnableScheduling
 public class MiddleConfiguration {
 

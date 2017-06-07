@@ -107,6 +107,7 @@ CREATE TABLE `parana_shop_categories` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
   `name` VARCHAR(20) NOT NULL COMMENT '类目名称',
+  `logo` varchar(128) NULL COMMENT '类目logo',
   `pid` bigint(20) NOT NULL COMMENT '父级id',
   `level` tinyint(1) NOT NULL COMMENT '级别',
   `has_children` tinyint(1)  NULL COMMENT '是否有孩子',

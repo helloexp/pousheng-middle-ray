@@ -5,6 +5,7 @@ CREATE TABLE `pousheng_warehouses` (
   `code` varchar(64) NULL COMMENT '仓库编码',
   `name` varchar(64) NOT NULL COMMENT '仓库名称',
   `owner_id` bigint(20)  NULL COMMENT '负责人id',
+  `is_default` tinyint(4) NULL COMMENT '是否默认发货仓',
   `extra_json` varchar(2048) NULL COMMENT '附加信息',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,

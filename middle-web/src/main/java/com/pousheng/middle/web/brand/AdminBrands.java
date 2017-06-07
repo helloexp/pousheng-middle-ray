@@ -2,7 +2,7 @@
  * Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
  */
 
-package com.pousheng.middle.brand;
+package com.pousheng.middle.web.brand;
 
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;

@@ -1,4 +1,4 @@
-package com.pousheng.middle;
+package com.pousheng.middle.web;
 
 import io.terminus.parana.common.banner.ParanaBanner;
 import org.springframework.boot.SpringApplication;

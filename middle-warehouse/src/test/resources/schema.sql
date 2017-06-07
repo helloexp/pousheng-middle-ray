@@ -18,12 +18,12 @@ drop table if exists `pousheng_warehouse_address_rules`;
 CREATE TABLE `pousheng_warehouse_address_rules`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
-  `address_type` tinyint(4) NOT NULL COMMENT '地址类型, 1: 省, 2: 市'
+  `address_type` tinyint(4) NOT NULL COMMENT '地址类型, 1: 省, 2: 市',
   `rule_id` bigint(20)  NULL COMMENT '规则id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_rules_wid` (`warehouse_id`),
+  KEY `idx_warehouse_rules_aid` (`address_id`),
   KEY `idx_warehouse_rules_rid` (`rule_id`)
 )COMMENT='地址和仓库规则的关联';
 

@@ -1,0 +1,19 @@
+logging:
+  file: logs/item.log
+
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test;MODE=MySQL
+
+search:
+  host: localhost
+  port: 9200
+
+
+mybatis:
+  mapper-locations: classpath*:mapper/*Mapper.xml
+  type-aliases-package: com.pousheng.middle.warehouse.model
+
+
+rpc.mode: false

@@ -5,7 +5,7 @@ services:
     image: mariadb:10
     environment:
       - MYSQL_ROOT_PASSWORD=anywhere
-      - MYSQL_DATABASE=pousheng
+      - MYSQL_DATABASE=pousheng-middle
     ports:
       - "3306:3306"
 

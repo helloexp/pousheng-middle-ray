@@ -12,7 +12,8 @@ import java.util.Date;
  */
 @Data
 public class WarehouseRule implements Serializable {
-    //TODO: Do not forget add "serialVersionUID" field AND change package path!
+
+    private static final long serialVersionUID = 2814989059726443700L;
 
     private Long id;
     

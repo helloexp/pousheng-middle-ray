@@ -14,6 +14,7 @@ import java.util.Date;
 public class WarehouseRuleItem implements Serializable {
 
     private static final long serialVersionUID = -5829358460555504227L;
+
     private Long id;
     
     /**

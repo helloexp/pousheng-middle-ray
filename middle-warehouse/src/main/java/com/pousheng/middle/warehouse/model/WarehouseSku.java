@@ -14,6 +14,7 @@ import java.util.Date;
 public class WarehouseSku implements Serializable {
 
     private static final long serialVersionUID = 7582078350954212292L;
+
     private Long id;
     
     /**

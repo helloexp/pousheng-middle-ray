@@ -8,6 +8,7 @@
     <resultMap id="WarehouseAddressRuleMap" type="WarehouseAddressRule">
         <id column="id" property="id"/>
         <result column="address_id" property="addressId"/>
+        <result column="address_name" property="addressName"/>
         <result column="address_type" property="addressType"/>
         <result column="rule_id" property="ruleId"/>
         <result column="created_at" property="createdAt"/>
@@ -24,11 +25,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        address_id, address_type, rule_id, created_at, updated_at
+        address_id, address_name, address_type, rule_id, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{addressId}, #{addressType}, #{ruleId}, now(), now()
+        #{addressId}, #{addressName}, #{addressType}, #{ruleId}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -38,13 +39,6 @@
         <if test="addressType != null">and `address_type` = #{addressType}</if>
         
         <if test="ruleId != null">and `rule_id` = #{ruleId}</if>
-        
-        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
-        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">
@@ -81,10 +75,9 @@
         <include refid="tb"/>
         <set>
             <if test="addressId != null">address_id = #{addressId},</if>
+            <if test="addressName != null">address_name = #{addressName},</if>
             <if test="addressType != null">address_type = #{addressType},</if>
             <if test="ruleId != null">rule_id = #{ruleId},</if>
-            
-            
             
             updated_at=now()
         </set>
@@ -94,6 +87,11 @@
     <delete id="delete" parameterType="long">
         DELETE FROM <include refid="tb"/>
         WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteByRuleId" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE rule_id = #{rule_id}
     </delete>
 
     <select id="paging" parameterType="list" resultMap="WarehouseAddressRuleMap">

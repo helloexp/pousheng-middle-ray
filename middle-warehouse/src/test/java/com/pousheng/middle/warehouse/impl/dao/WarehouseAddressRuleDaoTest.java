@@ -75,7 +75,7 @@ public class WarehouseAddressRuleDaoTest extends BaseDaoTest {
 
         
         warehouseAddressRule.setAddressId(1L);
-        
+        warehouseAddressRule.setAddressName("name");
         warehouseAddressRule.setAddressType(1);
         
         warehouseAddressRule.setRuleId(3L);

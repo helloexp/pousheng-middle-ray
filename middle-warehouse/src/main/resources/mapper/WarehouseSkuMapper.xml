@@ -45,15 +45,6 @@
         <if test="availStock != null">and `avail_stock` = #{availStock}</if>
         
         <if test="lockedStock != null">and `locked_stock` = #{lockedStock}</if>
-        
-        <if test="syncAt != null">and `sync_at` = #{syncAt}</if>
-        
-        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
-        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">
@@ -89,15 +80,12 @@
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
-            <if test="skuCode != null">sku_code = #{skuCode},</if>
+            <!--<if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="skuCode != null">sku_code = #{skuCode},</if>-->
             <if test="baseStock != null">base_stock = #{baseStock},</if>
             <if test="availStock != null">avail_stock = #{availStock},</if>
             <if test="lockedStock != null">locked_stock = #{lockedStock},</if>
             <if test="syncAt != null">sync_at = #{syncAt},</if>
-            
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}

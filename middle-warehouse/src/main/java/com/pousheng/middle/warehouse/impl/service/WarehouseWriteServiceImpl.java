@@ -8,6 +8,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 /**
  * Author: jlchen
@@ -28,6 +29,13 @@ public class WarehouseWriteServiceImpl implements WarehouseWriteService {
     @Override
     public Response<Long> create(Warehouse warehouse) {
         try {
+            if(StringUtils.hasText(warehouse.getCode())){
+                Warehouse exist = warehouseDao.findByCode(warehouse.getCode());
+                if(exist !=null){
+                    log.error("duplicated warehouse code({}) with existed(id={})",warehouse.getCode(), exist.getId());
+                    return Response.fail("warehouse.code.duplicate");
+                }
+            }
             warehouseDao.create(warehouse);
             return Response.ok(warehouse.getId());
         } catch (Exception e) {
@@ -39,6 +47,13 @@ public class WarehouseWriteServiceImpl implements WarehouseWriteService {
     @Override
     public Response<Boolean> update(Warehouse warehouse) {
         try {
+            if(StringUtils.hasText(warehouse.getCode())){
+                Warehouse exist = warehouseDao.findByCode(warehouse.getCode());
+                if(exist !=null){
+                    log.error("duplicated warehouse code({}) with existed(id={})",warehouse.getCode(), exist.getId());
+                    return Response.fail("warehouse.code.duplicate");
+                }
+            }
             return Response.ok(warehouseDao.update(warehouse));
         } catch (Exception e) {
             log.error("update warehouse failed, warehouse:{}, cause:{}", warehouse, Throwables.getStackTraceAsString(e));

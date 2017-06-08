@@ -41,13 +41,6 @@
         <if test="name != null">and `name` = #{name}</if>
         
         <if test="priority != null">and `priority` = #{priority}</if>
-        
-        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
-        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">
@@ -87,9 +80,6 @@
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="name != null">name = #{name},</if>
             <if test="priority != null">priority = #{priority},</if>
-            
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}

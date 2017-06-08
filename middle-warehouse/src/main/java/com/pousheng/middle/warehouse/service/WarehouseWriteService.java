@@ -13,21 +13,21 @@ public interface WarehouseWriteService {
 
     /**
      * 创建Warehouse
-     * @param warehouse
+     * @param warehouse 仓库
      * @return 主键id
      */
     Response<Long> create(Warehouse warehouse);
 
     /**
      * 更新Warehouse
-     * @param warehouse
+     * @param warehouse 仓库
      * @return 是否成功
      */
     Response<Boolean> update(Warehouse warehouse);
 
     /**
      * 根据主键id删除Warehouse
-     * @param warehouseId
+     * @param warehouseId 仓库id
      * @return 是否成功
      */
     Response<Boolean> deleteById(Long warehouseId);

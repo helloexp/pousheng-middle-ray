@@ -42,15 +42,6 @@
         <if test="ownerId != null">and `owner_id` = #{ownerId}</if>
         
         <if test="isDefault != null">and `is_default` = #{isDefault}</if>
-        
-        <if test="extraJson != null">and `extra_json` = #{extraJson}</if>
-        
-        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
-        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">
@@ -69,6 +60,12 @@
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
+    </select>
+
+    <select id="findByCode" parameterType="long" resultMap="WarehouseMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE code = #{code}
     </select>
 
    <select id="findByIds" parameterType="list" resultMap="WarehouseMap">
@@ -91,9 +88,6 @@
             <if test="ownerId != null">owner_id = #{ownerId},</if>
             <if test="isDefault != null">is_default = #{isDefault},</if>
             <if test="extraJson != null">extra_json = #{extraJson},</if>
-            
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}

@@ -9,7 +9,8 @@ CREATE TABLE `pousheng_warehouses` (
   `extra_json` varchar(2048) NULL COMMENT '附加信息',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouse_code` (`code`)
 ) COMMENT='仓库';
 
 
@@ -18,21 +19,24 @@ drop table if exists `pousheng_warehouse_address_rules`;
 CREATE TABLE `pousheng_warehouse_address_rules`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
+  `address_name` varchar(20) NOT NULL COMMENT '地址名称',
   `address_type` tinyint(4) NOT NULL COMMENT '地址类型, 1: 省, 2: 市',
-  `rule_id` bigint(20)  NULL COMMENT '规则id',
+  `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_rules_aid` (`address_id`),
-  KEY `idx_warehouse_rules_rid` (`rule_id`)
+  KEY `idx_warehouse_address_rules_rid` (`rule_id`)
 )COMMENT='地址和仓库规则的关联';
+
+CREATE UNIQUE INDEX idx_war_aid ON `pousheng_warehouse_address_rules` (`address_id`);
+
 
 
 drop table if exists `pousheng_warehouse_rules`;
 
 CREATE TABLE `pousheng_warehouse_rules` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `name` varchar(128) NOT NULL COMMENT '规则描述, 按照优先级将各仓名称拼接起来',
+  `name` varchar(128) NULL COMMENT '规则描述, 按照优先级将各仓名称拼接起来',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)

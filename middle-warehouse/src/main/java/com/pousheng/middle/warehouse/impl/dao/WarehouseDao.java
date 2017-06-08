@@ -12,4 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class WarehouseDao extends MyBatisDao<Warehouse> {
 
+    public Warehouse findByCode(String code) {
+        return getSqlSession().selectOne(sqlId("findByCode"), code);
+    }
 }

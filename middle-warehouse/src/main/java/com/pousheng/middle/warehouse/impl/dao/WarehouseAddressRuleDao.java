@@ -12,4 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
 
+    public void deleteByRuleId(Long ruleId) {
+        getSqlSession().delete(sqlId("deleteByRuleId"), ruleId);
+    }
 }

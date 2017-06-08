@@ -3,8 +3,6 @@ package com.pousheng.middle.warehouse.service;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.model.Response;
 
-import java.util.List;
-
 /**
  * Author: jlchen
  * Desc: 地址和仓库规则的关联读服务

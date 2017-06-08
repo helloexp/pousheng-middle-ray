@@ -3,8 +3,6 @@ package com.pousheng.middle.warehouse.service;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.model.Response;
 
-import java.util.List;
-
 /**
  * Author: jlchen
  * Desc: 仓库优先级规则概述读服务

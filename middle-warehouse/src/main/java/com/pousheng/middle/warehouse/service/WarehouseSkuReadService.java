@@ -3,8 +3,6 @@ package com.pousheng.middle.warehouse.service;
 import com.pousheng.middle.warehouse.model.WarehouseSku;
 import io.terminus.common.model.Response;
 
-import java.util.List;
-
 /**
  * Author: jlchen
  * Desc: sku在仓库的库存情况读服务

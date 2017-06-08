@@ -28,6 +28,7 @@ mybatis:
 redis:
   host: ${POUSHENG_REDIS_HOST}
   port: ${POUSHENG_REDIS_PORT}
+  auth: ${POUSHENG_REDIS_PASSWORD}
   max-total: 10
   max-idle: 2
   test-on-borrow: true

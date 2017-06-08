@@ -69,6 +69,34 @@ public class AdminBrands {
         return Boolean.TRUE;
     }
 
+
+    /**
+     * 更新品牌
+     * @param brandId 品牌id
+     * @param url logo url
+     * @param description 描述
+     * @param outerId 外部编码
+     * @return 是否成功
+     */
+    @RequestMapping(value = "/update/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean updateLogo(@PathVariable(name = "id") Long brandId,
+                              @RequestParam String url,
+                              @RequestParam String description,
+                              @RequestParam String outerId) {
+        Brand update = new Brand();
+        update.setId(brandId);
+        update.setLogo(url);
+        update.setDescription(description);
+        update.setOuterId(outerId);
+
+        Response<Boolean> tryUpdate = brandWriteService.update(update);
+        if (!tryUpdate.isSuccess()) {
+            log.error("failed to update {}, error code:{}", update, tryUpdate.getResult());
+            throw new JsonResponseException(tryUpdate.getError());
+        }
+        return Boolean.TRUE;
+    }
+
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<Brand>> pagination(@RequestParam(required = false) String namePrefix,
                                               @RequestParam(required = false) Integer pageNo,

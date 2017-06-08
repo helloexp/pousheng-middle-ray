@@ -58,7 +58,7 @@ public class SyncParanaSpus {
      * 批量同步spu
      * @return 任务ID
      */
-    @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynSpu(@PathVariable(name = "ids") String spuIds){
 
         if(Strings.isNullOrEmpty(spuIds)){

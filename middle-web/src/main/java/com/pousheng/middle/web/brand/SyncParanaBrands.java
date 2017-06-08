@@ -64,7 +64,7 @@ public class SyncParanaBrands {
      * 批量同步品牌
      * @return 任务ID
      */
-    @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynBrand(@PathVariable(name = "ids") String brandIds){
 
         if(Strings.isNullOrEmpty(brandIds)){

@@ -57,7 +57,7 @@ public class SyncParanaCategorys {
      * 全量同步类目
      * @return 任务ID
      */
-    @RequestMapping(value = "/batch-sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/batch-sync", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
 
         SyncTask task = new SyncTask();

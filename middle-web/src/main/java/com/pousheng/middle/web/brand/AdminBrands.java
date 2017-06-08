@@ -72,26 +72,13 @@ public class AdminBrands {
 
     /**
      * 更新品牌
-     * @param brandId 品牌id
-     * @param url logo url
-     * @param description 描述
-     * @param outerId 外部编码
      * @return 是否成功
      */
-    @RequestMapping(value = "/update/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean updateLogo(@PathVariable(name = "id") Long brandId,
-                              @RequestParam String url,
-                              @RequestParam String description,
-                              @RequestParam String outerId) {
-        Brand update = new Brand();
-        update.setId(brandId);
-        update.setLogo(url);
-        update.setDescription(description);
-        update.setOuterId(outerId);
-
-        Response<Boolean> tryUpdate = brandWriteService.update(update);
+    @RequestMapping(value = "/update", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean updateLogo(@RequestBody Brand brand) {
+        Response<Boolean> tryUpdate = brandWriteService.update(brand);
         if (!tryUpdate.isSuccess()) {
-            log.error("failed to update {}, error code:{}", update, tryUpdate.getResult());
+            log.error("failed to update {}, error code:{}", brand, tryUpdate.getResult());
             throw new JsonResponseException(tryUpdate.getError());
         }
         return Boolean.TRUE;

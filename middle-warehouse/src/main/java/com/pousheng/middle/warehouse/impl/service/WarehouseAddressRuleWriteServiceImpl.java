@@ -1,9 +1,8 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
-import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
+import com.pousheng.middle.warehouse.dto.WarehouseAddressDto;
+import com.pousheng.middle.warehouse.manager.WarehouseAddressRuleManager;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -21,52 +20,58 @@ import java.util.List;
 @Service
 public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRuleWriteService {
 
-    private final WarehouseAddressRuleDao warehouseAddressRuleDao;
+    private final WarehouseAddressRuleManager warehouseAddressRuleManager;
 
     @Autowired
-    public WarehouseAddressRuleWriteServiceImpl(WarehouseAddressRuleDao warehouseAddressRuleDao) {
-        this.warehouseAddressRuleDao = warehouseAddressRuleDao;
+    public WarehouseAddressRuleWriteServiceImpl(WarehouseAddressRuleManager warehouseAddressRuleManager) {
+        this.warehouseAddressRuleManager = warehouseAddressRuleManager;
     }
 
     /**
      * 创建WarehouseAddresses
      *
-     * @param warehouseAddresses 仓库地址规则 列表
+     * @param warehouseAddressDtos 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchCreate(List<WarehouseAddress> warehouseAddresses) {
-        return null;
+    public Response<Long> batchCreate(List<WarehouseAddressDto> warehouseAddressDtos) {
+        try {
+            Long ruleId = warehouseAddressRuleManager.batchCreate(warehouseAddressDtos);
+            return Response.ok(ruleId);
+        } catch (Exception e) {
+            log.error("failed to create warehouseAddressRule with address:{}, cause:{}",
+                    warehouseAddressDtos, Throwables.getStackTraceAsString(e));
+            return Response.fail("address.may.conflict");
+        }
     }
 
     /**
      * 更新规则对应的warehouseAddresses
      *
-     * @param ruleId
-     * @param warehouseAddresses 仓库地址规则 列表
+     * @param ruleId 规则id
+     * @param warehouseAddressDtos 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchUpdate(Long ruleId, List<WarehouseAddress> warehouseAddresses) {
-        return null;
-    }
-
-    @Override
-    public Response<Boolean> update(WarehouseAddressRule warehouseAddressRule) {
+    public Response<Long> batchUpdate(Long ruleId, List<WarehouseAddressDto> warehouseAddressDtos) {
         try {
-            return Response.ok(warehouseAddressRuleDao.update(warehouseAddressRule));
+            warehouseAddressRuleManager.batchCreate(warehouseAddressDtos);
+            return Response.ok(ruleId);
         } catch (Exception e) {
-            log.error("update warehouseAddressRule failed, warehouseAddressRule:{}, cause:{}", warehouseAddressRule, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.address.rule.update.fail");
+            log.error("failed to update warehouseAddressRule(ruleId={}) with address:{}, cause:{}",
+                    ruleId, warehouseAddressDtos, Throwables.getStackTraceAsString(e));
+            return Response.fail("address.may.conflict");
         }
     }
 
+
     @Override
-    public Response<Boolean> deleteById(Long warehouseAddressRuleId) {
+    public Response<Boolean> deleteByRuleId(Long ruleId) {
         try {
-            return Response.ok(warehouseAddressRuleDao.delete(warehouseAddressRuleId));
+            warehouseAddressRuleManager.deleteByRuleId(ruleId);
+            return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:{}, cause:{}", warehouseAddressRuleId, Throwables.getStackTraceAsString(e));
+            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:{}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.address.rule.delete.fail");
         }
     }

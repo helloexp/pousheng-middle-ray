@@ -1,13 +1,22 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.pousheng.middle.warehouse.dto.WarehouseAddressDto;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.BeanMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import java.util.List;
 
 /**
  * Author: jlchen
@@ -20,18 +29,53 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
 
     private final WarehouseAddressRuleDao warehouseAddressRuleDao;
 
+    private final WarehouseRuleDao warehouseRuleDao;
+
     @Autowired
-    public WarehouseAddressRuleReadServiceImpl(WarehouseAddressRuleDao warehouseAddressRuleDao) {
+    public WarehouseAddressRuleReadServiceImpl(WarehouseAddressRuleDao warehouseAddressRuleDao,
+                                               WarehouseRuleDao warehouseRuleDao) {
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
+        this.warehouseRuleDao = warehouseRuleDao;
     }
 
+
+    /**
+     * 根据规则id查询地址和仓库规则的关联
+     *
+     * @param ruleId 规则id
+     * @return 规则概述
+     */
     @Override
-    public Response<WarehouseAddressRule> findById(Long Id) {
+    public Response<RuleDto> findByRuleId(Long ruleId) {
         try {
-            return Response.ok(warehouseAddressRuleDao.findById(Id));
+            List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findByRuleId(ruleId);
+            if(CollectionUtils.isEmpty(addressRules)){
+                log.error("no WarehouseAddressRule found for ruleId({})", ruleId);
+                return Response.fail("address.rule.not.found");
+            }
+
+            WarehouseRule warehouseRule = warehouseRuleDao.findById(ruleId);
+            if(warehouseRule == null){
+                log.error("no WarehouseRule found by ruleId({})", ruleId);
+                return Response.fail("rule.not.found");
+            }
+
+            List<WarehouseAddressDto> addresses = Lists.newArrayListWithCapacity(addressRules.size());
+            for (WarehouseAddressRule addressRule : addressRules) {
+                WarehouseAddressDto warehouseAddressDto = new WarehouseAddressDto();
+                BeanMapper.copy(addressRule, warehouseAddressDto);
+                addresses.add(warehouseAddressDto);
+            }
+
+            RuleDto ruleDto = new RuleDto();
+            ruleDto.setRuleId(ruleId);
+            ruleDto.setRuleDesc(warehouseRule.getName());
+            ruleDto.setAddresses(addresses);
+            return Response.ok(ruleDto);
         } catch (Exception e) {
-            log.error("find warehouseAddressRule by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.address.rule.find.fail");
+            log.error("failed to find rule addresses information for ruleId({}), cause:{}",
+                    ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail("rule.address.find.fail");
         }
     }
 }

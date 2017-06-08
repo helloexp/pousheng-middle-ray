@@ -59,6 +59,12 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByRuleId" parameterType="long" resultMap="WarehouseAddressRuleMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE rule_id = #{ruleId}
+    </select>
+
    <select id="findByIds" parameterType="list" resultMap="WarehouseAddressRuleMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>

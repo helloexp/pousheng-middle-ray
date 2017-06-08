@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
+import com.pousheng.middle.warehouse.dto.RuleDto;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.model.Response;
 
@@ -12,9 +13,9 @@ import io.terminus.common.model.Response;
 public interface WarehouseAddressRuleReadService {
 
     /**
-     * 根据id查询地址和仓库规则的关联
-     * @param Id 主键id
-     * @return 地址和仓库规则的关联
+     * 根据规则id查询地址和仓库规则的关联
+     * @param ruleId 规则id
+     * @return 规则概述
      */
-    Response<WarehouseAddressRule> findById(Long Id);
+    Response<RuleDto> findByRuleId(Long ruleId);
 }

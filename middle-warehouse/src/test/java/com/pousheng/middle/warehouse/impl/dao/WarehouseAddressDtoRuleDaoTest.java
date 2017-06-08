@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * Desc: 地址和仓库规则的关联Dao 测试类
  * Date: 2017-06-07
  */
-public class WarehouseAddressRuleDaoTest extends BaseDaoTest {
+public class WarehouseAddressDtoRuleDaoTest extends BaseDaoTest {
 
 
 

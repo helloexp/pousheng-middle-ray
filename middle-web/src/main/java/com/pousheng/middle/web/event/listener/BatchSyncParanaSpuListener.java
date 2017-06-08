@@ -48,7 +48,7 @@ public class BatchSyncParanaSpuListener {
     }
 
     @Subscribe
-    public void onSyncCategory(BatchSyncParanaSpuEvent event){
+    public void onSyncSpu(BatchSyncParanaSpuEvent event){
 
         log.info("batch sync spu to parana start");
         String taskId = event.getTaskId();
@@ -63,6 +63,8 @@ public class BatchSyncParanaSpuListener {
             if(!syncRes.isSuccess()){
                 log.error("sync spu:(id:{}) to parana fail,error:{}",fullSpu.getSpu().getId(),syncRes.getError());
                 SyncErrorData errorData = new SyncErrorData();
+                errorData.setId(fullSpu.getSpu().getId());
+                errorData.setName(fullSpu.getSpu().getName());
                 errorData.setError(syncRes.getError());
                 errorDatas.add(errorData);
             }
@@ -94,7 +96,7 @@ public class BatchSyncParanaSpuListener {
 
 
         //return syncParanaSpuService.syncSpus(mapper.toJson(fullSpu));
-        return Response.ok(Boolean.TRUE);
+        return Response.fail("同步失败");
     }
 
 

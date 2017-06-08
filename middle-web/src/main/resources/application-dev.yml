@@ -19,4 +19,15 @@ mybatis:
   type-aliases-package: >
         com.pousheng.erp.model,
         io.terminus.parana.(item|category|brand|spu|shop).model,
-        io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
+        io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+        io.terminus.open.client.common.mappings.model,io.terminus.open.client.common.token.model
+
+
+
+
+redis:
+  host: ${POUSHENG_REDIS_HOST}
+  port: ${POUSHENG_REDIS_PORT}
+  max-total: 10
+  max-idle: 2
+  test-on-borrow: true

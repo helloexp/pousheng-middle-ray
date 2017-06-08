@@ -1,5 +1,9 @@
 package com.pousheng.middle.web.category;
 
+import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.web.event.BatchSyncParanaCategoryEvent;
+import com.pousheng.middle.web.task.SyncTask;
+import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -27,9 +31,12 @@ public class SyncParanaCategorys {
 
     @RpcConsumer
     private BackCategoryReadService backCategoryReadService;
-
     @Autowired
     private SyncParanaCategoryService syncParanaCategoryService;
+    @Autowired
+    private SyncParanaTaskRedisHandler syncParanaTaskRedisHandler;
+    @Autowired
+    private EventBus eventBus;
 
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> synCategory(@PathVariable(name = "id") Long categoryId){
@@ -43,5 +50,23 @@ public class SyncParanaCategorys {
         BackCategory backCategory = categoryRes.getResult();
         BeanMapper.copy(backCategory,openClientBackCategory);
         return syncParanaCategoryService.syncBackCategory(openClientBackCategory);
+    }
+
+
+    /**
+     * 全量同步类目
+     * @return 任务ID
+     */
+    @RequestMapping(value = "/batch-sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String batchSynCategory(){
+
+        SyncTask task = new SyncTask();
+        task.setStatus(1);
+        String taskId = syncParanaTaskRedisHandler.saveTask(task);
+        BatchSyncParanaCategoryEvent event = new BatchSyncParanaCategoryEvent();
+        event.setTaskId(taskId);
+        eventBus.post(event);
+        return taskId;
+
     }
 }

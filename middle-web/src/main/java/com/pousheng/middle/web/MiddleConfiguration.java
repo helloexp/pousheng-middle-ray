@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.erp.component.SpuInfoFetcher;
 import com.pousheng.erp.model.PoushengMaterial;
@@ -76,6 +77,11 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
                 return Collections.emptyMap();
             }
         };
+    }
+
+    @Bean
+    public EventBus eventBus(){
+        return new EventBus();
     }
 
 

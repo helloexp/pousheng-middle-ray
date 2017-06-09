@@ -1,8 +1,8 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuDao;
-import com.pousheng.middle.warehouse.model.WarehouseSku;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -18,30 +18,30 @@ import org.springframework.stereotype.Service;
 @Service
 public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
 
-    private final WarehouseSkuDao warehouseSkuDao;
+    private final WarehouseSkuStockDao warehouseSkuStockDao;
 
     @Autowired
-    public WarehouseSkuWriteServiceImpl(WarehouseSkuDao warehouseSkuDao) {
-        this.warehouseSkuDao = warehouseSkuDao;
+    public WarehouseSkuWriteServiceImpl(WarehouseSkuStockDao warehouseSkuStockDao) {
+        this.warehouseSkuStockDao = warehouseSkuStockDao;
     }
 
     @Override
-    public Response<Long> create(WarehouseSku warehouseSku) {
+    public Response<Long> create(WarehouseSkuStock warehouseSkuStock) {
         try {
-            warehouseSkuDao.create(warehouseSku);
-            return Response.ok(warehouseSku.getId());
+            warehouseSkuStockDao.create(warehouseSkuStock);
+            return Response.ok(warehouseSkuStock.getId());
         } catch (Exception e) {
-            log.error("create warehouseSku failed, warehouseSku:{}, cause:{}", warehouseSku, Throwables.getStackTraceAsString(e));
+            log.error("create warehouseSkuStock failed, warehouseSkuStock:{}, cause:{}", warehouseSkuStock, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.sku.create.fail");
         }
     }
 
     @Override
-    public Response<Boolean> update(WarehouseSku warehouseSku) {
+    public Response<Boolean> update(WarehouseSkuStock warehouseSkuStock) {
         try {
-            return Response.ok(warehouseSkuDao.update(warehouseSku));
+            return Response.ok(warehouseSkuStockDao.update(warehouseSkuStock));
         } catch (Exception e) {
-            log.error("update warehouseSku failed, warehouseSku:{}, cause:{}", warehouseSku, Throwables.getStackTraceAsString(e));
+            log.error("update warehouseSkuStock failed, warehouseSkuStock:{}, cause:{}", warehouseSkuStock, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.sku.update.fail");
         }
     }
@@ -49,7 +49,7 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
     @Override
     public Response<Boolean> deleteById(Long warehouseSkuId) {
         try {
-            return Response.ok(warehouseSkuDao.delete(warehouseSkuId));
+            return Response.ok(warehouseSkuStockDao.delete(warehouseSkuId));
         } catch (Exception e) {
             log.error("delete warehouseSku failed, warehouseSkuId:{}, cause:{}", warehouseSkuId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.sku.delete.fail");

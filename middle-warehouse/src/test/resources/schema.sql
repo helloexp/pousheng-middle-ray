@@ -73,9 +73,10 @@ CREATE TABLE `pousheng_warehouse_rule_items` (
 
 drop table if exists `pousheng_warehouse_skus`;
 
-CREATE TABLE `pousheng_warehouse_skus` (
+CREATE TABLE `pousheng_warehouse_sku_stocks` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
+  `shop_id` bigint(20)  NULL COMMENT '店铺id',
   `sku_code` varchar(64) NOT NULL COMMENT 'sku标识',
   `base_stock` bigint(20) NOT NULL COMMENT '同步基准库存',
   `avail_stock` bigint(20) NOT NULL COMMENT '当前可用库存',
@@ -84,7 +85,8 @@ CREATE TABLE `pousheng_warehouse_skus` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_pousheng_warehouse_skus_code` (`sku_code`)
+  KEY `idx_pousheng_warehouse_skus_code` (`sku_code`),
+  KEY `idx_pousheng_wss_shop_id` (`shop_id`)
 )COMMENT='sku在仓库的库存情况';
 
 

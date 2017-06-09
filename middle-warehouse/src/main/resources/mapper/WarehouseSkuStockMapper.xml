@@ -4,8 +4,8 @@
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 
-<mapper namespace="WarehouseSku">
-    <resultMap id="WarehouseSkuMap" type="WarehouseSku">
+<mapper namespace="WarehouseSkuStock">
+    <resultMap id="WarehouseSkuStockMap" type="WarehouseSkuStock">
         <id column="id" property="id"/>
         <result column="warehouse_id" property="warehouseId"/>
         <result column="sku_code" property="skuCode"/>
@@ -19,7 +19,7 @@
     </resultMap>
 
     <sql id="tb">
-        pousheng_warehouse_skus
+        pousheng_warehouse_sku_stocks
     </sql>
 
     <sql id="cols_all">
@@ -37,6 +37,8 @@
     <sql id="queryCondition">
         
         <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
+
+        <if test="shopId!=null"> and `shop_id`=#{shopId}</if>
         
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
         
@@ -51,7 +53,7 @@
         order by id desc
     </sql>
 
-    <insert id="create" parameterType="WarehouseSku" keyProperty="id" useGeneratedKeys="true">
+    <insert id="create" parameterType="WarehouseSkuStock" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO
         <include refid="tb" />
         (<include refid="cols_exclude_id" />)
@@ -59,13 +61,13 @@
         (<include refid="vals" />)
     </insert>
 
-    <select id="findById" parameterType="long" resultMap="WarehouseSkuMap" >
+    <select id="findById" parameterType="long" resultMap="WarehouseSkuStockMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
     </select>
 
-   <select id="findByIds" parameterType="list" resultMap="WarehouseSkuMap">
+   <select id="findByIds" parameterType="list" resultMap="WarehouseSkuStockMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
@@ -76,7 +78,7 @@
         <include refid="order" />
     </select>
 
-    <update id="update" parameterType="WarehouseSku">
+    <update id="update" parameterType="WarehouseSkuStock">
         UPDATE
         <include refid="tb"/>
         <set>
@@ -96,7 +98,7 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="WarehouseSkuMap">
+    <select id="paging" parameterType="list" resultMap="WarehouseSkuStockMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         <where>

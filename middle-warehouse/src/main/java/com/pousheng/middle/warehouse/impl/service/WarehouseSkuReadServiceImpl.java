@@ -1,8 +1,8 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuDao;
-import com.pousheng.middle.warehouse.model.WarehouseSku;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -18,17 +18,17 @@ import org.springframework.stereotype.Service;
 @Service
 public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
 
-    private final WarehouseSkuDao warehouseSkuDao;
+    private final WarehouseSkuStockDao warehouseSkuStockDao;
 
     @Autowired
-    public WarehouseSkuReadServiceImpl(WarehouseSkuDao warehouseSkuDao) {
-        this.warehouseSkuDao = warehouseSkuDao;
+    public WarehouseSkuReadServiceImpl(WarehouseSkuStockDao warehouseSkuStockDao) {
+        this.warehouseSkuStockDao = warehouseSkuStockDao;
     }
 
     @Override
-    public Response<WarehouseSku> findById(Long Id) {
+    public Response<WarehouseSkuStock> findById(Long Id) {
         try {
-            return Response.ok(warehouseSkuDao.findById(Id));
+            return Response.ok(warehouseSkuStockDao.findById(Id));
         } catch (Exception e) {
             log.error("find warehouseSku by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.sku.find.fail");

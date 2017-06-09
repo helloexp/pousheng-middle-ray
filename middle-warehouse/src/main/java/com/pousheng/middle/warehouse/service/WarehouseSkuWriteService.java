@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.WarehouseSku;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Response;
 
 /**
@@ -13,17 +13,17 @@ public interface WarehouseSkuWriteService {
 
     /**
      * 创建WarehouseSku
-     * @param warehouseSku
+     * @param warehouseSkuStock
      * @return 主键id
      */
-    Response<Long> create(WarehouseSku warehouseSku);
+    Response<Long> create(WarehouseSkuStock warehouseSkuStock);
 
     /**
      * 更新WarehouseSku
-     * @param warehouseSku
+     * @param warehouseSkuStock
      * @return 是否成功
      */
-    Response<Boolean> update(WarehouseSku warehouseSku);
+    Response<Boolean> update(WarehouseSkuStock warehouseSkuStock);
 
     /**
      * 根据主键id删除WarehouseSku

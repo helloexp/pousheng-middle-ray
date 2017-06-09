@@ -11,7 +11,7 @@ import java.util.Date;
  * Date: 2017-06-07
  */
 @Data
-public class WarehouseSku implements Serializable {
+public class WarehouseSkuStock implements Serializable {
 
     private static final long serialVersionUID = 7582078350954212292L;
 
@@ -21,6 +21,11 @@ public class WarehouseSku implements Serializable {
      * 仓库id
      */
     private Long warehouseId;
+
+    /**
+     * 店铺id
+     */
+    private Long shopId;
     
     /**
      * sku标识

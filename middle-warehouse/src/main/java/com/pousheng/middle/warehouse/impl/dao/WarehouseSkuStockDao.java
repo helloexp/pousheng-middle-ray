@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
-import com.pousheng.middle.warehouse.model.WarehouseSku;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
@@ -10,6 +10,6 @@ import org.springframework.stereotype.Repository;
  * Date: 2017-06-07
  */
 @Repository
-public class WarehouseSkuDao extends MyBatisDao<WarehouseSku> {
+public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
 
 }

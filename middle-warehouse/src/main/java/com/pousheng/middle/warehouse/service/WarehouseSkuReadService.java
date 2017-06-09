@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.WarehouseSku;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Response;
 
 /**
@@ -16,5 +16,5 @@ public interface WarehouseSkuReadService {
      * @param Id 主键id
      * @return sku在仓库的库存情况
      */
-    Response<WarehouseSku> findById(Long Id);
+    Response<WarehouseSkuStock> findById(Long Id);
 }

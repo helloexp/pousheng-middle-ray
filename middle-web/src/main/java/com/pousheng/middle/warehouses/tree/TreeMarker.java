@@ -36,7 +36,7 @@ public class TreeMarker {
             log.error("address(id={}) not found", nodeId);
             throw new JsonResponseException("addressId.not.exists");
         }
-        //查找最后一个不大于nodeId的节点
+        //查找最后一个不大于nodeId的节点, 因为数据库返回的节点都是按照id排序了的
         WarehouseAddressTree candidateNode = null;
         for (WarehouseAddressTree childrenTree : childrenTrees) {
             if (childrenTree.getCurrent().getId() <= nodeId) {
@@ -60,6 +60,11 @@ public class TreeMarker {
         candidateNode.setSelected(total / Iterables.size(childrenTrees));
     }
 
+    /**
+     * 标记整颗树都被选中
+     *
+     * @param root 子树的根
+     */
     private void markEntireTree(WarehouseAddressTree root) {
         root.setSelected(2);
         for (WarehouseAddressTree child : root.getChildren()) {

@@ -14,5 +14,5 @@ public class WarehouseAddressDto implements Serializable{
 
     private String addressName;
 
-    private Integer addressId;
+    private Long addressId;
 }

@@ -1,7 +1,7 @@
 package com.pousheng.middle.warehouse.service;
 
 import com.pousheng.middle.warehouse.dto.RuleDto;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
+import com.pousheng.middle.warehouse.dto.WarehouseAddressDto;
 import io.terminus.common.model.Response;
 
 import java.util.List;
@@ -22,9 +22,10 @@ public interface WarehouseAddressRuleReadService {
     Response<RuleDto> findByRuleId(Long ruleId);
 
     /**
+     * 根据仓库优先级规则id, 返回对应的仓库发货地址信息
      *
-     * @param ruleId
-     * @return
+     * @param ruleId 规则id
+     * @return 仓库发货地址信息
      */
-    Response<List<WarehouseAddress>> findAddressByRuleId(Long ruleId);
+    Response<List<WarehouseAddressDto>> findAddressByRuleId(Long ruleId);
 }

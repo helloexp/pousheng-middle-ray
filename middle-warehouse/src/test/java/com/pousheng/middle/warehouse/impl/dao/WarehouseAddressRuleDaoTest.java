@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
  * Desc: 地址和仓库规则的关联Dao 测试类
  * Date: 2017-06-07
  */
-public class WarehouseAddressDtoRuleDaoTest extends BaseDaoTest {
+public class WarehouseAddressRuleDaoTest extends BaseDaoTest {
 
 
 
@@ -76,8 +76,7 @@ public class WarehouseAddressDtoRuleDaoTest extends BaseDaoTest {
         
         warehouseAddressRule.setAddressId(1L);
         warehouseAddressRule.setAddressName("name");
-        warehouseAddressRule.setAddressType(1);
-        
+
         warehouseAddressRule.setRuleId(3L);
         
         warehouseAddressRule.setCreatedAt(new Date());

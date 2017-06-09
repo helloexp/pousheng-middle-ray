@@ -25,12 +25,7 @@ public class WarehouseAddressRule implements Serializable {
      * 地址名称
      */
     private String addressName;
-    
-    /**
-     * 地址类型, 1: 省, 2: 市
-     */
-    private Integer addressType;
-    
+
     /**
      * 规则id
      */

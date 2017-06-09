@@ -1,8 +1,4 @@
-/*
- * Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
- */
-
-package com.pousheng.middle.warehouse.impl.dao;
+package com.pousheng.middle.warehouse;
 
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -12,13 +8,13 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Author:cp
- * Created on 5/18/17
+ * Author:  <a href="mailto:i@terminus.io">jlchen</a>
+ * Date: 2017-06-09
  */
 @RunWith(SpringJUnit4ClassRunner.class)
-@SpringBootTest(classes = DaoConfiguration.class)
+@SpringBootTest(classes = ServiceConfiguration.class)
 @Transactional
 @Rollback
 @ActiveProfiles("test")
-public abstract class BaseDaoTest {
+public class BaseServiceTest {
 }

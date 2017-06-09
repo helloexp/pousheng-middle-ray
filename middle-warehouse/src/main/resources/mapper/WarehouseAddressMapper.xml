@@ -74,4 +74,20 @@
         WHERE level = #{level}
     </select>
 
+
+    <select id="count" parameterType="map" resultType="long">
+        SELECT COUNT(1)
+        FROM
+        <include refid="tb"/>
+    </select>
+
+    <select id="paging" parameterType="map" resultMap="WarehouseAddressMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        ORDER BY id
+        LIMIT #{offset}, #{limit}
+    </select>
+
 </mapper>

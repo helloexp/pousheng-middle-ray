@@ -33,7 +33,6 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
   `address_name` varchar(20) NOT NULL COMMENT '地址名称',
-  `address_type` tinyint(4) NOT NULL COMMENT '地址类型, 1: 省, 2: 市',
   `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,

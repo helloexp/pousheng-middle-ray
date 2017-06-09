@@ -12,6 +12,7 @@ mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
       com.pousheng.erp.model,
+      com.pousheng.middle.warehouse.model,
       io.terminus.parana.(item|category|brand|spu|shop).model,
       io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
 

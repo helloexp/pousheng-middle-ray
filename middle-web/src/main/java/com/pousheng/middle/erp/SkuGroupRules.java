@@ -62,6 +62,18 @@ public class SkuGroupRules {
         return Boolean.TRUE;
     }
 
+    @RequestMapping(value = "/{id}",method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean delete(@PathVariable Long id){
+
+        Response<Boolean> r = skuGroupRuleService.delete(id);
+        if(!r.isSuccess()){
+            log.error("failed to delete skuGroupRule(id={}), error code:{}", id, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return Boolean.TRUE;
+    }
+
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuGroupRule> findBy(@RequestParam(required = false) Integer pageNo,
                                        @RequestParam(required = false) Integer pageSize){

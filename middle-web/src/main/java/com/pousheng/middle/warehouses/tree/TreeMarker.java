@@ -57,7 +57,15 @@ public class TreeMarker {
         for (WarehouseAddressTree childrenTree : childrenTrees) {
             total = total + childrenTree.getSelected();
         }
-        candidateNode.setSelected(total / Iterables.size(childrenTrees));
+
+        int average = total / Iterables.size(childrenTrees);
+        if(average == 2){
+            root.setSelected(2);
+        }else if(total>0){
+            root.setSelected(1);
+        }else {
+            root.setSelected(0);
+        }
     }
 
     /**

@@ -61,7 +61,6 @@ public class SkuGroupRuleService {
     }
 
     public Response<SkuGroupRule> findById(Long id){
-
         SkuGroupRule skuGroupRule = skuGroupRuleDao.findById(id);
         if(skuGroupRule == null){
             log.error("skuGroupRule(id={}) not found", id);
@@ -70,4 +69,13 @@ public class SkuGroupRuleService {
         return Response.ok(skuGroupRule);
     }
 
+    public Response<Boolean> delete(Long id) {
+        try {
+            skuGroupRuleDao.delete(id);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("failed to delete SkuGroupRule(id={}), cause:{}", id, Throwables.getStackTraceAsString(e));
+            return Response.fail("skuGroupRule.delete.fail");
+        }
+    }
 }

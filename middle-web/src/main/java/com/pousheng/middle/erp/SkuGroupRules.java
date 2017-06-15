@@ -86,7 +86,7 @@ public class SkuGroupRules {
     }
 
     @RequestMapping(value = "/{id}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public SkuGroupRule findById(@RequestParam Long id){
+    public SkuGroupRule findById(@PathVariable Long id){
         Response<SkuGroupRule> r = skuGroupRuleService.findById(id);
         if(!r.isSuccess()){
             log.error("failed to find skuGroupRule(id={}), error code:{}",id,  r.getError());

@@ -37,7 +37,7 @@
         
         <if test="code != null">and `code` = #{code}</if>
         
-        <if test="name != null">and `name` = #{name}</if>
+        <if test="name != null">and `name` LIKE CONCAT(#{name}, '%')</if>
         
         <if test="ownerId != null">and `owner_id` = #{ownerId}</if>
         

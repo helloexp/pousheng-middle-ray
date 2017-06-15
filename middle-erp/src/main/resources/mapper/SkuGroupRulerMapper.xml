@@ -73,6 +73,7 @@
     <update id="update" parameterType="SkuGroupRule">
         UPDATE <include refid="tb"/>
         <set>
+            <if test="cardId != null">card_id = #{cardId},</if>
             <if test="kindId != null">kind_id = #{kindId},</if>
             <if test="ruleType != null">rule_type = #{ruleType},</if>
             <if test="splitChar != null">split_char = #{splitChar},</if>

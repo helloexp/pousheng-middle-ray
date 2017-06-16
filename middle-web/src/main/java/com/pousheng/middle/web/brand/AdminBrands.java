@@ -2,7 +2,7 @@
  * Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
  */
 
-package com.pousheng.middle.brand;
+package com.pousheng.middle.web.brand;
 
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -64,6 +64,21 @@ public class AdminBrands {
         Response<Boolean> tryUpdate = brandWriteService.update(update);
         if (!tryUpdate.isSuccess()) {
             log.error("failed to update {}, error code:{}", update, tryUpdate.getResult());
+            throw new JsonResponseException(tryUpdate.getError());
+        }
+        return Boolean.TRUE;
+    }
+
+
+    /**
+     * 更新品牌
+     * @return 是否成功
+     */
+    @RequestMapping(value = "/update", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean updateLogo(@RequestBody Brand brand) {
+        Response<Boolean> tryUpdate = brandWriteService.update(brand);
+        if (!tryUpdate.isSuccess()) {
+            log.error("failed to update {}, error code:{}", brand, tryUpdate.getResult());
             throw new JsonResponseException(tryUpdate.getError());
         }
         return Boolean.TRUE;

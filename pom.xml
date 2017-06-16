@@ -23,6 +23,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
         <parana.version>4.8.8.BUILD-SNAPSHOT</parana.version>
+        <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
         <guava.version>22.0</guava.version>
         <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
     </properties>
@@ -62,6 +63,12 @@
                 <groupId>io.terminus.boot</groupId>
                 <artifactId>spring-boot-starter-mybatis</artifactId>
                 <version>1.5.1.RELEASE</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>terminus-spring-boot-starter-redis</artifactId>
+                <version>${terminus-boot.version}</version>
             </dependency>
 
             <dependency>

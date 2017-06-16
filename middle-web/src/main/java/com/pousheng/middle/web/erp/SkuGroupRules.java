@@ -1,4 +1,4 @@
-package com.pousheng.middle.erp;
+package com.pousheng.middle.web.erp;
 
 import com.google.common.base.Throwables;
 import com.pousheng.erp.model.SkuGroupRule;

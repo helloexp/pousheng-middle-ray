@@ -1,4 +1,4 @@
-package com.pousheng.middle.erp;
+package com.pousheng.middle.web.erp;
 
 import com.pousheng.erp.component.SpuImporter;
 import lombok.extern.slf4j.Slf4j;
@@ -29,24 +29,25 @@ public class FireCall {
 
     private final DateTimeFormatter dft;
 
+
     @Autowired
     public FireCall(SpuImporter spuImporter) {
         this.spuImporter = spuImporter;
 
         DateTimeParser[] parsers = {
-                DateTimeFormat.forPattern( "yyyy-MM-dd HH:mm:ss" ).getParser(),
-                DateTimeFormat.forPattern( "yyyy-MM-dd" ).getParser() };
-       dft = new DateTimeFormatterBuilder().append( null, parsers ).toFormatter();
+                DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
+                DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
+        dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
     }
 
     @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpu(@RequestParam String start,
-                                 @RequestParam(name = "end", required = false)String end){
+                                 @RequestParam(name = "end", required = false) String end) {
 
         log.info("begin to synchronize spu modified from {} to {}", start, end);
         Date from = dft.parseDateTime(start).toDate();
         Date to = null;
-        if(StringUtils.hasText(end)){
+        if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }
         spuImporter.process(from, to);
@@ -54,4 +55,7 @@ public class FireCall {
 
         return "ok";
     }
+
 }
+
+

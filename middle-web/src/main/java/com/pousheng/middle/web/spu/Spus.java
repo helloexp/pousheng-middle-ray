@@ -2,7 +2,7 @@
  * Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
  */
 
-package com.pousheng.middle.spu;
+package com.pousheng.middle.web.spu;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;

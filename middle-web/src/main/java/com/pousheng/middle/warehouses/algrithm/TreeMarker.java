@@ -1,8 +1,8 @@
-package com.pousheng.middle.warehouses.tree;
+package com.pousheng.middle.warehouses.algrithm;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;
-import com.pousheng.middle.warehouse.dto.WarehouseAddressTree;
+import com.pousheng.middle.warehouse.dto.AddressTree;
 import io.terminus.common.exception.JsonResponseException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -23,22 +23,23 @@ public class TreeMarker {
      *
      * @param root   当前搜索节点
      * @param nodeId 节点id
+     * @param editable 是否可编辑
      */
-    public void markSelected(WarehouseAddressTree root, Long nodeId) {
+    public void markSelected(AddressTree root, Long nodeId, boolean editable) {
         //如果已经找到, 则将整颗子树标记为全选
         if (Objects.equal(root.getCurrent().getId(), nodeId)) {
-            markEntireTree(root);
+            markEntireTree(root, editable);
             return;
         }
         //继续搜索搜索孩子
-        List<WarehouseAddressTree> childrenTrees = root.getChildren();
+        List<AddressTree> childrenTrees = root.getChildren();
         if (CollectionUtils.isEmpty(childrenTrees)) {
             log.error("address(id={}) not found", nodeId);
             throw new JsonResponseException("addressId.not.exists");
         }
         //查找最后一个不大于nodeId的节点, 因为数据库返回的节点都是按照id排序了的
-        WarehouseAddressTree candidateNode = null;
-        for (WarehouseAddressTree childrenTree : childrenTrees) {
+        AddressTree candidateNode = null;
+        for (AddressTree childrenTree : childrenTrees) {
             if (childrenTree.getCurrent().getId() <= nodeId) {
                 candidateNode = childrenTree;
             } else {
@@ -50,17 +51,18 @@ public class TreeMarker {
             throw new JsonResponseException("addressId.not.exists");
         }
         //递归标记子树
-        markSelected(candidateNode, nodeId);
+        markSelected(candidateNode, nodeId, editable);
 
         //如果子树已经处理完, 再标记当前节点的选中状态
         int total = 0;
-        for (WarehouseAddressTree childrenTree : childrenTrees) {
+        for (AddressTree childrenTree : childrenTrees) {
             total = total + childrenTree.getSelected();
         }
 
         int average = total / Iterables.size(childrenTrees);
         if(average == 2){
             root.setSelected(2);
+            root.setDisable(editable);
         }else if(total>0){
             root.setSelected(1);
         }else {
@@ -72,11 +74,12 @@ public class TreeMarker {
      * 标记整颗树都被选中
      *
      * @param root 子树的根
+     * @param editable 是否可编辑
      */
-    private void markEntireTree(WarehouseAddressTree root) {
+    private void markEntireTree(AddressTree root, boolean editable) {
         root.setSelected(2);
-        for (WarehouseAddressTree child : root.getChildren()) {
-            markEntireTree(child);
+        for (AddressTree child : root.getChildren()) {
+            markEntireTree(child, editable);
         }
     }
 }

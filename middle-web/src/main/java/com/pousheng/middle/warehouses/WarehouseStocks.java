@@ -27,6 +27,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 库存管理部分
+ *
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-16
  */
@@ -45,6 +47,14 @@ public class WarehouseStocks {
     private SkuTemplateReadService skuTemplateReadService;
 
 
+    /**
+     * sku库存概览, 不分仓
+     *
+     * @param pageNo 起始页码
+     * @param pageSize  每页返回条数
+     * @param skuCode sku码查询
+     * @return 查询结果
+     */
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuStock> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                    @RequestParam(required = false, value = "pageSize") Integer pageSize,

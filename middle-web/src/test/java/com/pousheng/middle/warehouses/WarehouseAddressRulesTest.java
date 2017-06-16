@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouses;
 
-import com.pousheng.middle.warehouse.dto.WarehouseAddressTree;
+import com.pousheng.middle.warehouse.dto.AddressTree;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,7 +36,7 @@ public class WarehouseAddressRulesTest {
 
     @Test
     public void findAddressByRuleId() throws Exception {
-        WarehouseAddressTree actual = warehouseAddressRules.findAddressByRuleId(1L);
+        AddressTree actual = warehouseAddressRules.findAddressByRuleId(1L);
         //System.out.println(actual);
         assertThat(actual, notNullValue());
     }

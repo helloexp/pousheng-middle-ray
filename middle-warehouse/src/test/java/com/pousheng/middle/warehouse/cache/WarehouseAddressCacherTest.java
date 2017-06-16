@@ -1,7 +1,7 @@
 package com.pousheng.middle.warehouse.cache;
 
 import com.pousheng.middle.warehouse.BaseServiceTest;
-import com.pousheng.middle.warehouse.dto.WarehouseAddressTree;
+import com.pousheng.middle.warehouse.dto.AddressTree;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -18,7 +18,7 @@ public class WarehouseAddressCacherTest extends BaseServiceTest{
 
     @Test
     public void buildTree() throws Exception {
-        WarehouseAddressTree tree = warehouseAddressCacher.buildTree(2);
+        AddressTree tree = warehouseAddressCacher.buildTree(2);
         assertThat(tree, notNullValue());
     }
 

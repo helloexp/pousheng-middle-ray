@@ -37,11 +37,9 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_address_rules_rid` (`rule_id`)
+  KEY `idx_warehouse_address_rules_rid` (`rule_id`),
+  KEY `idx_warehouse_address_rules_aid` (`address_id`)
 )COMMENT='地址和仓库规则的关联';
-
-CREATE UNIQUE INDEX idx_war_aid ON `pousheng_warehouse_address_rules` (`address_id`);
-
 
 
 drop table if exists `pousheng_warehouse_rules`;

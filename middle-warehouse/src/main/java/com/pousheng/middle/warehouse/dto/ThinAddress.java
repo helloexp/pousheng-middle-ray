@@ -10,7 +10,7 @@ import java.io.Serializable;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-08
  */
-public class WarehouseAddressDto implements Serializable{
+public class ThinAddress implements Serializable{
     private static final long serialVersionUID = -8928998224540423389L;
 
     @Getter
@@ -25,7 +25,7 @@ public class WarehouseAddressDto implements Serializable{
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        WarehouseAddressDto that = (WarehouseAddressDto) o;
+        ThinAddress that = (ThinAddress) o;
         return Objects.equal(addressId, that.addressId);
     }
 
@@ -36,7 +36,7 @@ public class WarehouseAddressDto implements Serializable{
 
     @Override
     public String toString() {
-        return "WarehouseAddressDto{" +
+        return "ThinAddress{" +
                 "addressName='" + addressName + '\'' +
                 ", addressId=" + addressId +
                 '}';

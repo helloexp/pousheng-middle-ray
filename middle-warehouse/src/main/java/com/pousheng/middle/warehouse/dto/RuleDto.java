@@ -29,5 +29,5 @@ public class RuleDto implements Serializable {
     /**
      * 规则对应的区域
      */
-    private List<WarehouseAddressDto>  addresses;
+    private List<ThinAddress>  addresses;
 }

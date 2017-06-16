@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.dto.WarehouseAddressDto;
+import com.pousheng.middle.warehouse.dto.ThinAddress;
 import io.terminus.common.model.Response;
 
 import java.util.List;
@@ -16,18 +16,18 @@ public interface WarehouseAddressRuleWriteService {
 
     /**
      * 创建WarehouseAddresses
-     * @param warehouseAddressDtos 仓库地址规则 列表
+     * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
-    Response<Long> batchCreate(List<WarehouseAddressDto> warehouseAddressDtos);
+    Response<Long> batchCreate(List<ThinAddress> thinAddresses);
 
 
     /**
      * 更新规则对应的warehouseAddresses
-     * @param warehouseAddressDtos 仓库地址规则 列表
+     * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
-    Response<Long> batchUpdate(Long ruleId, List<WarehouseAddressDto> warehouseAddressDtos);
+    Response<Long> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses);
 
 
     /**

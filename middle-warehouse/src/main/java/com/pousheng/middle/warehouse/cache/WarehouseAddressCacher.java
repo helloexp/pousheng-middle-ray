@@ -5,7 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.pousheng.middle.warehouse.dto.AddressNode;
-import com.pousheng.middle.warehouse.dto.WarehouseAddressTree;
+import com.pousheng.middle.warehouse.dto.AddressTree;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.exception.ServiceException;
@@ -66,9 +66,9 @@ public class WarehouseAddressCacher {
      * @param maxDepth 构建树的最大深度, 如果深度<=0, 表示不限制深度
      * @return 构建完成的地址树
      */
-    public WarehouseAddressTree buildTree(int maxDepth) {
+    public AddressTree buildTree(int maxDepth) {
         AddressNode addressNode = new AddressNode(1L, "root", 0L, 0);
-        WarehouseAddressTree tree = new WarehouseAddressTree();
+        AddressTree tree = new AddressTree();
         tree.setCurrent(addressNode);
         buildTree(tree, maxDepth);
         return tree;
@@ -80,16 +80,16 @@ public class WarehouseAddressCacher {
      * @param tree 当前树
      * @param maxDepth 最大深度
      */
-    private void buildTree(WarehouseAddressTree tree, int maxDepth) {
+    private void buildTree(AddressTree tree, int maxDepth) {
         AddressNode current = tree.getCurrent();
         Long currentId = current.getId();
-        List<WarehouseAddressTree> childrenTree = Lists.newArrayList();
+        List<AddressTree> childrenTree = Lists.newArrayList();
 
         if (maxDepth>0 && current.getLevel() < maxDepth) { //当前树的深度尚未达到最大深度, 继续递归子树
             Iterable<WarehouseAddress> children = byPid.get(currentId);
             for (WarehouseAddress child : children) {
                 AddressNode addressNode = new AddressNode(child.getId(), child.getName(), child.getPid(), child.getLevel());
-                WarehouseAddressTree childTree = new WarehouseAddressTree();
+                AddressTree childTree = new AddressTree();
                 childTree.setCurrent(addressNode);
                 //递归构建子树
                 buildTree(childTree, maxDepth);

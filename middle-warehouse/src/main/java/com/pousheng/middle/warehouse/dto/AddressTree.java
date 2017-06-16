@@ -10,7 +10,7 @@ import java.util.List;
  * Date: 2017-06-08
  */
 @Data
-public class WarehouseAddressTree implements Serializable {
+public class AddressTree implements Serializable {
     private static final long serialVersionUID = -1080099775959648485L;
 
     /**
@@ -23,8 +23,14 @@ public class WarehouseAddressTree implements Serializable {
      */
     private int selected;
 
+
+    /**
+     * 是否可编辑
+     */
+    private boolean disable;
+
     /**
      * 对应的下级地址
      */
-    private List<WarehouseAddressTree> children;
+    private List<AddressTree> children;
 }

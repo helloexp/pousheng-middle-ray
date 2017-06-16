@@ -51,7 +51,7 @@ public class WarehouseReadServiceImpl implements WarehouseReadService {
     public Response<Paging<Warehouse>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> params) {
         try{
             PageInfo pageInfo = new PageInfo(pageNo, pageSize);
-            Paging<Warehouse> p = warehouseDao.paging(pageNo, pageSize, params);
+            Paging<Warehouse> p = warehouseDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), params);
             return Response.ok(p);
         }catch (Exception e){
             log.error("failed to pagination warehouse with params:{}, cause:{}",

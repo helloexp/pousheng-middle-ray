@@ -21,4 +21,23 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
     public List<WarehouseAddressRule> findByRuleId(Long ruleId) {
         return getSqlSession().selectList(sqlId("findByRuleId"), ruleId);
     }
+
+    /**
+     * 匹配能够发货到对应地址的规则
+     *
+     * @param addressId 地址id
+     * @return 符合条件的规则列表
+     */
+    public List<WarehouseAddressRule> findByAddressId(Long addressId){
+        return getSqlSession().selectList(sqlId("findByAddressId"), addressId);
+    }
+
+    /**
+     * 查找所有的规则
+     *
+     * @return  所有的规则
+     */
+    public List<WarehouseAddressRule> findAllButDefault() {
+        return getSqlSession().selectList(sqlId("findAllButDefault"));
+    }
 }

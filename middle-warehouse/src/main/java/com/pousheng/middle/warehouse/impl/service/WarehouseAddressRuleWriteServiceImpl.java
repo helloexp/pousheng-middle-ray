@@ -1,7 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.dto.WarehouseAddressDto;
+import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.manager.WarehouseAddressRuleManager;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
 import io.terminus.common.model.Response;
@@ -30,17 +30,17 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     /**
      * 创建WarehouseAddresses
      *
-     * @param warehouseAddressDtos 仓库地址规则 列表
+     * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchCreate(List<WarehouseAddressDto> warehouseAddressDtos) {
+    public Response<Long> batchCreate(List<ThinAddress> thinAddresses) {
         try {
-            Long ruleId = warehouseAddressRuleManager.batchCreate(warehouseAddressDtos);
+            Long ruleId = warehouseAddressRuleManager.batchCreate(thinAddresses);
             return Response.ok(ruleId);
         } catch (Exception e) {
             log.error("failed to create warehouseAddressRule with address:{}, cause:{}",
-                    warehouseAddressDtos, Throwables.getStackTraceAsString(e));
+                    thinAddresses, Throwables.getStackTraceAsString(e));
             return Response.fail("address.may.conflict");
         }
     }
@@ -49,17 +49,17 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
      * 更新规则对应的warehouseAddresses
      *
      * @param ruleId 规则id
-     * @param warehouseAddressDtos 仓库地址规则 列表
+     * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchUpdate(Long ruleId, List<WarehouseAddressDto> warehouseAddressDtos) {
+    public Response<Long> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses) {
         try {
-            warehouseAddressRuleManager.batchCreate(warehouseAddressDtos);
+            warehouseAddressRuleManager.batchCreate(thinAddresses);
             return Response.ok(ruleId);
         } catch (Exception e) {
             log.error("failed to update warehouseAddressRule(ruleId={}) with address:{}, cause:{}",
-                    ruleId, warehouseAddressDtos, Throwables.getStackTraceAsString(e));
+                    ruleId, thinAddresses, Throwables.getStackTraceAsString(e));
             return Response.fail("address.may.conflict");
         }
     }

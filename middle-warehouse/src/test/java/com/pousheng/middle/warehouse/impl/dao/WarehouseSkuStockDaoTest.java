@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Paging;
 import org.junit.Before;
@@ -30,7 +31,7 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
 
     @Before
     public void init() {
-        warehouseSkuStock = make();
+        warehouseSkuStock = make("same");
 
         warehouseSkuStockDao.create(warehouseSkuStock);
         assertNotNull(warehouseSkuStock.getId());
@@ -70,13 +71,26 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
         assertEquals(warehouseSkuPaging.getData().get(0).getId(), warehouseSkuStock.getId());
     }
 
-    private WarehouseSkuStock make() {
+    @Test
+    public void pagingByDistinctSkuCode() throws Exception {
+        for(int i=0; i<20; i++){
+            String skuCode = i%2==0? "same": "other";
+            WarehouseSkuStock wss = make(skuCode);
+            warehouseSkuStockDao.create(wss);
+        }
+
+        Paging<WarehouseSkuStock> p = warehouseSkuStockDao.pagingByDistinctSkuCode(0,10,
+                Maps.<String, Object>newHashMap());
+        assertThat(p.getTotal(), is(2L));
+    }
+
+    private WarehouseSkuStock make(String skuCode) {
         WarehouseSkuStock warehouseSkuStock = new WarehouseSkuStock();
 
         
         warehouseSkuStock.setWarehouseId(2L);
         
-        warehouseSkuStock.setSkuCode("444");
+        warehouseSkuStock.setSkuCode(skuCode);
         
         warehouseSkuStock.setBaseStock(12L);
         

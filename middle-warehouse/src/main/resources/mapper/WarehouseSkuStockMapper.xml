@@ -98,7 +98,7 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="WarehouseSkuStockMap">
+    <select id="paging" parameterType="map" resultMap="WarehouseSkuStockMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         <where>
@@ -107,12 +107,30 @@
         order by id desc limit #{offset},#{limit}
     </select>
 
-    <select id="count" parameterType="list" resultType="long">
+    <select id="count" parameterType="map" resultType="long">
         select count(1)
         from <include refid="tb"/>
         <where>
         <include refid="queryCondition"/>
         </where>
+    </select>
+
+
+    <select id="countByDistinctSkuCode"  parameterType="map" resultType="long">
+        select count(distinct(sku_code))
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+    </select>
+
+    <select id="pagingByDistinctSkuCode" parameterType="map" resultMap="WarehouseSkuStockMap">
+        select sku_code, sum(avail_stock) as avail_stock
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+        group by sku_code order by  sku_code limit #{offset},#{limit}
     </select>
 
 </mapper>

@@ -1,7 +1,10 @@
 package com.pousheng.middle.warehouse.service;
 
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+
+import java.util.Map;
 
 /**
  * Author: jlchen
@@ -17,4 +20,14 @@ public interface WarehouseSkuReadService {
      * @return sku在仓库的库存情况
      */
     Response<WarehouseSkuStock> findById(Long Id);
+
+    /**
+     * 分页查询 sku的库存概览情况(不分仓)
+     *
+     * @param pageNo 起始页码
+     * @param pageSize 每页返回条数
+     * @param params 查询参数
+     * @return 分页结果
+     */
+    Response<Paging<WarehouseSkuStock>> findBy(Integer pageNo, Integer pageSize, Map<String, Object> params);
 }

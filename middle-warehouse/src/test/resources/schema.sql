@@ -66,7 +66,7 @@ CREATE TABLE `pousheng_warehouse_rule_items` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_rule_items_rid` (`rule_id`)
+  KEY `idx_wri_rid` (`rule_id`)
 )COMMENT='仓库优先级规则项';
 
 
@@ -85,8 +85,9 @@ CREATE TABLE `pousheng_warehouse_sku_stocks` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_pousheng_warehouse_skus_code` (`sku_code`),
-  KEY `idx_pousheng_wss_shop_id` (`shop_id`)
+  KEY `idx_wss_skus_code` (`sku_code`),
+  KEY `idx_wss_shop_id` (`shop_id`),
+  KEY `idx_wss_warehouse_id` (`warehouse_id`)
 )COMMENT='sku在仓库的库存情况';
 
 

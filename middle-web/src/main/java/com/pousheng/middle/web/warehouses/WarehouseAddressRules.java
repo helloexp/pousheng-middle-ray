@@ -1,16 +1,20 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.dto.AddressTree;
+import com.pousheng.middle.warehouse.dto.RuleDto;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
+import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +38,9 @@ public class WarehouseAddressRules {
 
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
+
+    @RpcConsumer
+    private WarehouseRuleReadService warehouseRuleReadService;
 
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
@@ -180,6 +187,19 @@ public class WarehouseAddressRules {
             treeMarker.markSelected(addressTree, id, false);
         }
         return addressTree;
+    }
+
+
+    @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<RuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                      @RequestParam(required = false, value = "pageSize") Integer pageSize){
+
+        Response<Paging<RuleDto>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
+        if(!r.isSuccess()){
+            log.error("failed to pagination rule summary, error code:{}", r.getError());
+            throw new JsonResponseException("warehouse.rule.find.fail");
+        }
+        return r.getResult();
     }
 
 }

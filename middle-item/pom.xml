@@ -23,6 +23,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-mapping</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
     </dependencies>
 
 

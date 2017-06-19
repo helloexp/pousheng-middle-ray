@@ -48,6 +48,33 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- open client -->
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-center</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-fenqile</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-suning</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-jd</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-taobao</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-parana</artifactId>

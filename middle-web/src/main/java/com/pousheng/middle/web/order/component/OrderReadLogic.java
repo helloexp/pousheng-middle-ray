@@ -45,7 +45,7 @@ import java.util.Set;
  * Data: 16/7/13
  * Author: yangzefeng
  */
-@Component
+//@Component
 @Slf4j
 public class OrderReadLogic {
 

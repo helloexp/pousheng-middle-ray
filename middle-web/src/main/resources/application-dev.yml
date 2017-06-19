@@ -38,4 +38,4 @@ redis:
 rpc.mode: true
 rpc.dubbo:
   module: pousheng-middle
-  registryAddress: ${ZK_HOST}:${ZK_PORT}
+  registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}

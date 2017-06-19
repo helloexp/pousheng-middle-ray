@@ -33,3 +33,9 @@ redis:
   max-total: 10
   max-idle: 2
   test-on-borrow: true
+
+
+rpc.mode: true
+rpc.dubbo:
+  module: pousheng-middle
+  registryAddress: 127.0.0.1:2181

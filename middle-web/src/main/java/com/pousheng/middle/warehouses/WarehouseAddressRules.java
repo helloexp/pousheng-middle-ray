@@ -15,6 +15,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,7 +36,7 @@ public class WarehouseAddressRules {
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
 
-    @RpcConsumer
+    @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
 
     @Autowired

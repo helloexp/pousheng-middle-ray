@@ -19,11 +19,11 @@ public interface MiddleOrderReadService {
      * @param criteria 查询条件
      *                 pageNo 分页号, 从1开始
      *                 pageSize 分页大小
-     *                 type {@link com.pousheng.middle.order.enums.OrderSource}
+     *                 shopName 订单来源
      *                 statusStr 状态,用,分割 {@link com.pousheng.middle.order.dto.fsm.MiddleOrderStatus}
      *                 outId 外部订单号
-     *                 outCreateAtStartAt 下单开始时间
-     *                 outCreateAtEndAt  下单结束时间
+     *                 outCreatedStartAt 下单开始时间
+     *                 outCreatedEndAt  下单结束时间
      *                 buyerName 买家名称
      *
      * @return 订单分页信息

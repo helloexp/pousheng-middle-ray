@@ -14,9 +14,9 @@ public enum OrderSource {
 
     POUSHENG(1,"官网"),
     TMALL(2,"天猫"),
-    JD(2,"京东"),
-    FENQILE(2,"分期乐"),
-    SUNING(2,"苏宁");
+    JD(3,"京东"),
+    FENQILE(4,"分期乐"),
+    SUNING(5,"苏宁");
 
     private final int value;
     private final String desc;

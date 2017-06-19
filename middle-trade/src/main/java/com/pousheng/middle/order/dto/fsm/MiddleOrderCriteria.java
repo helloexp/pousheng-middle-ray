@@ -33,17 +33,28 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
     /**
      * 下单开始时间
      */
-    private Date tradeStartAt;
+    private Date outCreatedStartAt;
 
     /**
      * 下单结束
      */
-    private Date tradeEndAt;
+    private Date outCreatedEndAt;
 
     /**
      * 买家名称
      */
     private String buyerName;
+
+    /**
+     * 店铺名称
+     */
+    private String shopName;
+
+    /**
+     * 店铺id
+     */
+    private Long shopId;
+
 
     /**
      * 状态
@@ -65,9 +76,9 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
      */
     @Override
     public void formatDate(){
-        if(tradeStartAt != null && tradeEndAt != null){
-            if(tradeStartAt.equals(tradeEndAt)){
-                tradeEndAt=new DateTime(tradeEndAt.getTime()).plusDays(1).minusSeconds(1).toDate();
+        if(outCreatedStartAt != null && outCreatedEndAt != null){
+            if(outCreatedStartAt.equals(outCreatedEndAt)){
+                outCreatedEndAt=new DateTime(outCreatedEndAt.getTime()).plusDays(1).minusSeconds(1).toDate();
             }
         }
     }

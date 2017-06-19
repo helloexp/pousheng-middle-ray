@@ -18,7 +18,7 @@ public enum MiddleOrderStatus {
     WAIT_HANDLE(0),  //待处理
     WAIT_SHIP(1),    //待发货
     SHIPPED(2),      //待收货（所有发货单全部发货完成）
-    DONE(4),         //已完成
+    DONE(3),         //已完成
     REFUND_APPLY(-1),    //售中申请退款(整单)
     REFUND_APPLY_AGREED(-2),      //同意售中退款
     REFUND(-3),                  //已退款

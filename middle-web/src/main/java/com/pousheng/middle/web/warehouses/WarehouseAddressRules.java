@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.warehouses;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;

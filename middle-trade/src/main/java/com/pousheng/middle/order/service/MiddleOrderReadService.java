@@ -5,8 +5,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ShopOrder;
 
-import java.util.Map;
-
 /**
  * 订单读服务
  * Created by songrenfei on 2017/6/16

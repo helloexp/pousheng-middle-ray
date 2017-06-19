@@ -35,7 +35,7 @@ public class WarehouseAddressRules {
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
 
-    @RpcConsumer
+    @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
 
     @Autowired

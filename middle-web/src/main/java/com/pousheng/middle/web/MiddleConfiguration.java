@@ -10,10 +10,8 @@ import com.pousheng.erp.component.SpuInfoFetcher;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
-import io.terminus.open.client.MappingConfiguration;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
-import io.terminus.parana.ItemAutoConfig;
 import io.terminus.parana.TradeApiConfig;
 import io.terminus.parana.TradeAutoConfig;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
@@ -45,7 +43,6 @@ import java.util.Map;
         ItemApiConfiguration.class,
         TradeApiConfig.class,
         TradeAutoConfig.class,
-        MappingConfiguration.class,
         ParanaAutoConfiguration.class})
 @EnableScheduling
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {

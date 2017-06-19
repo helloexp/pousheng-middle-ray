@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses;
+package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -8,7 +8,7 @@ import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
-import com.pousheng.middle.warehouses.algrithm.TreeMarker;
+import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;

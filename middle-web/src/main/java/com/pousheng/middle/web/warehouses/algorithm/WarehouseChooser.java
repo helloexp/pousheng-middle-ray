@@ -1,14 +1,18 @@
-package com.pousheng.middle.warehouses.algrithm;
+package com.pousheng.middle.web.warehouses.algorithm;
 
 import com.google.common.base.Function;
 import com.google.common.collect.*;
+import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
 import com.pousheng.middle.warehouse.dto.Warehouses4Address;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
-import com.pousheng.middle.warehouses.dto.SelectedWarehouse;
-import com.pousheng.middle.warehouses.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.web.warehouses.dto.SelectedWarehouse;
+import com.pousheng.middle.web.warehouses.dto.SkuCodeAndQuantity;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -36,6 +40,12 @@ public class WarehouseChooser {
     @RpcConsumer
     private WarehouseSkuReadService warehouseSkuReadService;
 
+    @RpcConsumer
+    private WarehouseAddressCacher warehouseAddressCacher;
+
+    @RpcConsumer
+    private WarehouseCacher warehouseCacher;
+
     private static final Ordering<WarehouseWithPriority> byPriority = Ordering.natural().onResultOf(new Function<WarehouseWithPriority, Integer>() {
         @Override
         public Integer apply(WarehouseWithPriority input) {
@@ -44,7 +54,24 @@ public class WarehouseChooser {
     });
 
 
-    public List<SelectedWarehouse> choose(List<Long> addressIds, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+    /**
+     * 根据收货地址id来查找可以发货的仓库
+     *
+     * @param addressId            地址id
+     * @param skuCodeAndQuantities sku及数量
+     * @return 对应的仓库及每个仓库应发货的数量
+     */
+    public List<SelectedWarehouse> choose(Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+
+        List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
+        Long currentAddressId = addressId;
+        addressIds.add(currentAddressId);
+        while (currentAddressId > 1) {
+            WarehouseAddress address = warehouseAddressCacher.findById(addressId);
+            addressIds.add(address.getPid());
+            currentAddressId= address.getPid();
+        }
+
         Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{}, error code:{}", addressIds, r.getError());
@@ -87,7 +114,8 @@ public class WarehouseChooser {
             if (enough) {
                 SelectedWarehouse selectedWarehouse = new SelectedWarehouse();
                 selectedWarehouse.setWarehouseId(warehouseId);
-                selectedWarehouse.setWarehouseName(null);
+                Warehouse warehouse = warehouseCacher.findById(warehouseId);
+                selectedWarehouse.setWarehouseName(warehouse.getName());
                 selectedWarehouse.setSkuCodeAndQuantities(skuCodeAndQuantities);
                 return Lists.newArrayList(selectedWarehouse);
             }
@@ -125,7 +153,7 @@ public class WarehouseChooser {
             } else {//分配发货仓库
                 SelectedWarehouse selectedWarehouse = new SelectedWarehouse();
                 selectedWarehouse.setWarehouseId(candidateWarehouseId);
-                selectedWarehouse.setWarehouseName(null);
+                selectedWarehouse.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getName());
                 List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);

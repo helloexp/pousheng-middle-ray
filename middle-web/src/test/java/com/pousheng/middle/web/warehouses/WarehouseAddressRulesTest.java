@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses;
+package com.pousheng.middle.web.warehouses;
 
 import com.pousheng.middle.warehouse.dto.AddressTree;
 import org.junit.Test;

@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses.dto;
+package com.pousheng.middle.web.warehouses.dto;
 
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import lombok.Data;

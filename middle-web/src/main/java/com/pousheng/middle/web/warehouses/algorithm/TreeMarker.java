@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses.algrithm;
+package com.pousheng.middle.web.warehouses.algorithm;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Iterables;

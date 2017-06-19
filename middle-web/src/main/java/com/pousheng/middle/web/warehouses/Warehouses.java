@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses;
+package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.Warehouse;

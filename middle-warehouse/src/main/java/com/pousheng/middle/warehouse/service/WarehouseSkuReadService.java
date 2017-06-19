@@ -22,6 +22,15 @@ public interface WarehouseSkuReadService {
     Response<WarehouseSkuStock> findById(Long Id);
 
     /**
+     * 查询某个sku在指定仓库的库存情况
+     *
+     * @param warehouseId 仓库id
+     * @param skuCode skuCode
+     * @return sku在仓库的库存情况
+     */
+    Response<WarehouseSkuStock> findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode);
+
+    /**
      * 分页查询 sku的库存概览情况(不分仓)
      *
      * @param pageNo 起始页码
@@ -30,4 +39,5 @@ public interface WarehouseSkuReadService {
      * @return 分页结果
      */
     Response<Paging<WarehouseSkuStock>> findBy(Integer pageNo, Integer pageSize, Map<String, Object> params);
+
 }

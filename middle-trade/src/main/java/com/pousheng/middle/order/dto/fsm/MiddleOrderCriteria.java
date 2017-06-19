@@ -59,14 +59,11 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
     /**
      * 状态
      */
-    @Getter
-    @Setter
     private List<Integer> status;
 
     /**
      * 状态,用,分割
      */
-    @Getter
     private String statusStr;
 
 

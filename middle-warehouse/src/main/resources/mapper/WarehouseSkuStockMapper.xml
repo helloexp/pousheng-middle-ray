@@ -78,6 +78,12 @@
         <include refid="order" />
     </select>
 
+    <select id="findByWarehouseIdAndSkuCode" parameterType="long" resultMap="WarehouseSkuStockMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE  warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </select>
+
     <update id="update" parameterType="WarehouseSkuStock">
         UPDATE
         <include refid="tb"/>

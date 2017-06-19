@@ -102,7 +102,7 @@ public class WarehouseAddressRules {
             throw new JsonResponseException("warehouseAddress.not.exists");
         }
         List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
-        while(current!=null && current.getPid()>0){
+        while(current!=null && current.getPid()>1){
             Long pid = current.getPid();
             parentIds.add(pid);
             current =  warehouseAddressCacher.findById(pid);
@@ -145,6 +145,24 @@ public class WarehouseAddressRules {
             treeMarker.markSelected(addressTree, id, true);
         }
         return addressTree;
+    }
+
+    /**
+     * 编辑规则关联的发货地址信息
+     *
+     * @param ruleId 规则id
+     * @return  地址树形结构, 并已标记选中状态
+     */
+    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean updateAddressByRuleId(@PathVariable Long ruleId, @RequestBody ThinAddress[] addresses){
+        List<ThinAddress> valid = refineWarehouseAddress(addresses);
+        Response<Boolean> r = warehouseAddressRuleWriteService.batchUpdate(ruleId, valid);
+        if(!r.isSuccess()){
+            log.error("failed to update warehouse rule(id={}) with addresses:{}, error code:{}",
+                    ruleId, valid, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return Boolean.TRUE;
     }
 
     @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

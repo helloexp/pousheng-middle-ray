@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Paging;
 import io.terminus.common.mysql.dao.MyBatisDao;
@@ -20,7 +21,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
     public Paging<WarehouseSkuStock> pagingByDistinctSkuCode(Integer offset, Integer limit,
                                                              Map<String, Object> criteria){
         Long total = this.sqlSession.selectOne(this.sqlId("countByDistinctSkuCode"), criteria);
-        if(total.longValue() <= 0L) {
+        if(total <= 0L) {
             return new Paging<WarehouseSkuStock>(0L, Collections.<WarehouseSkuStock>emptyList());
         } else {
             criteria.put("offset", offset);
@@ -30,4 +31,8 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
         }
     }
 
+    public WarehouseSkuStock findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode) {
+        return  this.sqlSession.selectOne(sqlId("findByWarehouseIdAndSkuCode"),
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode));
+    }
 }

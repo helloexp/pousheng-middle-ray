@@ -151,8 +151,10 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
     public Response<List<Warehouses4Address>> findByReceiverAddressIds(List<Long> addressIds) {
         List<Warehouses4Address> candidates = Lists.newArrayList();
         for (Long addressId : addressIds) {
+            //首先根据地址找到符合对应的规则列表
             List<WarehouseAddressRule> rules = warehouseAddressRuleDao.findByAddressId(addressId);
             for (WarehouseAddressRule rule : rules) {
+                //找到对应的规则细则
                 List<WarehouseRuleItem> wris = warehouseRuleItemDao.findByRuleId(rule.getId());
                 if(CollectionUtils.isEmpty(wris)){
                     continue;

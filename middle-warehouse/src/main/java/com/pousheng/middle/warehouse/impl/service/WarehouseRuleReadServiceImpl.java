@@ -1,13 +1,26 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.pousheng.middle.warehouse.dto.ThinAddress;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
+import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.PageInfo;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.BeanMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Author: jlchen
@@ -20,9 +33,13 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
 
     private final WarehouseRuleDao warehouseRuleDao;
 
+    private final WarehouseAddressRuleDao warehouseAddressRuleDao;
+
     @Autowired
-    public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao) {
+    public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao,
+                                        WarehouseAddressRuleDao warehouseAddressRuleDao) {
         this.warehouseRuleDao = warehouseRuleDao;
+        this.warehouseAddressRuleDao = warehouseAddressRuleDao;
     }
 
     @Override
@@ -33,5 +50,55 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
             log.error("find warehouseRule by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.rule.find.fail");
         }
+    }
+
+    /**
+     * 分页查看规则概览
+     *
+     * @param pageNo   起始页码
+     * @param pageSize 每页返回条数
+     * @return 仓库规则概述
+     */
+    @Override
+    public Response<Paging<RuleDto>> pagination(Integer pageNo, Integer pageSize) {
+        try {
+            PageInfo pageInfo = new PageInfo(pageNo, pageSize);
+            Paging<WarehouseRule> p = warehouseRuleDao.paging(pageInfo.getOffset(), pageInfo.getLimit());
+            if(CollectionUtils.isEmpty(p.getData())){
+                return Response.ok(new Paging<>(p.getTotal(), Collections.emptyList()));
+            }
+            List<WarehouseRule> warehouseRules = p.getData();
+            List<RuleDto> ruleDtos = Lists.newArrayListWithCapacity(p.getData().size());
+            for (WarehouseRule warehouseRule : warehouseRules) {
+                Long ruleId = warehouseRule.getId();
+                List<ThinAddress> addresses = doFindWarehouseAddressByRuleId(ruleId);
+                RuleDto ruleDto = new RuleDto();
+                ruleDto.setRuleId(ruleId);
+                ruleDto.setRuleDesc(warehouseRule.getName());
+                ruleDto.setAddresses(addresses);
+                ruleDtos.add(ruleDto);
+            }
+            Paging<RuleDto> r = new Paging<>(p.getTotal(), ruleDtos);
+            return Response.ok(r);
+        } catch (Exception e) {
+            log.error("failed to pagination rule summary, cause:{}",Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.rule.find.fail");
+        }
+    }
+
+    private List<ThinAddress> doFindWarehouseAddressByRuleId(Long ruleId) {
+        List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findByRuleId(ruleId);
+        if(CollectionUtils.isEmpty(addressRules)){
+            log.error("no WarehouseAddressRule found for ruleId({})", ruleId);
+            throw new ServiceException("address.rule.not.found");
+        }
+
+        List<ThinAddress> addresses = Lists.newArrayListWithCapacity(addressRules.size());
+        for (WarehouseAddressRule addressRule : addressRules) {
+            ThinAddress thinAddress = new ThinAddress();
+            BeanMapper.copy(addressRule, thinAddress);
+            addresses.add(thinAddress);
+        }
+        return addresses;
     }
 }

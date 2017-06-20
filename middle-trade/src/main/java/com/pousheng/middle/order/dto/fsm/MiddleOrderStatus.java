@@ -5,7 +5,6 @@
 package com.pousheng.middle.order.dto.fsm;
 
 import com.google.common.base.Objects;
-import io.terminus.parana.order.dto.fsm.OrderStatus;
 
 /**
  * 中台订单状态

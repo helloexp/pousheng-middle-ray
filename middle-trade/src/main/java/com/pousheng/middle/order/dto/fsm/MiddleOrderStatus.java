@@ -20,8 +20,7 @@ public enum MiddleOrderStatus {
     DONE(4),         //已完成
     REFUND_APPLY_WAIT_SYNC_HK(-1),    //售中申请退款商家同意待同步恒康(仅退款)
     REFUND_SYNC_HK_SUCCESS(-2),      //同步恒康成功待退款
-    REFUND_SYNC_HK_FAIL(-3),      //同步恒康失败
-    REFUND(-4);                  //已退款
+    REFUND(-3);                  //已退款
 
 
 

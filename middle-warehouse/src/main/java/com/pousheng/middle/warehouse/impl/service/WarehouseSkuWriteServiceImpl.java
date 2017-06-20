@@ -31,8 +31,8 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
             warehouseSkuStockDao.create(warehouseSkuStock);
             return Response.ok(warehouseSkuStock.getId());
         } catch (Exception e) {
-            log.error("create warehouseSkuStock failed, warehouseSkuStock:{}, cause:{}", warehouseSkuStock, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.sku.create.fail");
+            log.error("batchCreate warehouseSkuStock failed, warehouseSkuStock:{}, cause:{}", warehouseSkuStock, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.batchCreate.fail");
         }
     }
 

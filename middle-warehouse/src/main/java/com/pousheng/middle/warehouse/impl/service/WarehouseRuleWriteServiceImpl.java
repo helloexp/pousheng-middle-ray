@@ -31,8 +31,8 @@ public class WarehouseRuleWriteServiceImpl implements WarehouseRuleWriteService 
             warehouseRuleDao.create(warehouseRule);
             return Response.ok(warehouseRule.getId());
         } catch (Exception e) {
-            log.error("create warehouseRule failed, warehouseRule:{}, cause:{}", warehouseRule, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.rule.create.fail");
+            log.error("batchCreate warehouseRule failed, warehouseRule:{}, cause:{}", warehouseRule, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.rule.batchCreate.fail");
         }
     }
 

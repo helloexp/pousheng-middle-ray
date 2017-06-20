@@ -39,7 +39,7 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
             Long ruleId = warehouseAddressRuleManager.batchCreate(thinAddresses);
             return Response.ok(ruleId);
         } catch (Exception e) {
-            log.error("failed to create warehouseAddressRule with address:{}, cause:{}",
+            log.error("failed to batchCreate warehouseAddressRule with address:{}, cause:{}",
                     thinAddresses, Throwables.getStackTraceAsString(e));
             return Response.fail("address.may.conflict");
         }
@@ -71,8 +71,29 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
             warehouseAddressRuleManager.deleteByRuleId(ruleId);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:{}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));
+            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:ruleId={}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.address.rule.delete.fail");
         }
     }
+
+    /**
+     * 根据主键id删除对应的WarehouseAddressRule
+     *
+     * @param id 主键id
+     * @param ruleId 规则id
+     * @return 是否成功
+     */
+    @Override
+    public Response<Boolean> deleteByIdAndRuleId(Long id, Long ruleId) {
+        try {
+            warehouseAddressRuleManager.deleteByIdAndRuleId(id, ruleId);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:(id={}, ruleId={}), " +
+                    "cause:{}", id, ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.address.rule.delete.fail");
+        }
+    }
+
+
 }

@@ -39,8 +39,8 @@ public class WarehouseWriteServiceImpl implements WarehouseWriteService {
             warehouseDao.create(warehouse);
             return Response.ok(warehouse.getId());
         } catch (Exception e) {
-            log.error("create warehouse failed, warehouse:{}, cause:{}", warehouse, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.create.fail");
+            log.error("batchCreate warehouse failed, warehouse:{}, cause:{}", warehouse, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.batchCreate.fail");
         }
     }
 

@@ -59,7 +59,7 @@ public class WarehouseAddressRules {
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         Response<Long> r = warehouseAddressRuleWriteService.batchCreate(valid);
         if(!r.isSuccess()){
-            log.error("failed to create warehouse rule with addresses:{}, error code:{}", valid, r.getError());
+            log.error("failed to batchCreate warehouse rule with addresses:{}, error code:{}", valid, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
@@ -199,6 +199,22 @@ public class WarehouseAddressRules {
             throw new JsonResponseException("warehouse.rule.find.fail");
         }
         return r.getResult();
+    }
+
+    /**
+     * 编辑规则关联的发货地址信息
+     *
+     * @return  地址树形结构, 并已标记选中状态
+     */
+    @RequestMapping(value = "/{ruleId}/address/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean deleteAddressByRuleId(@PathVariable Long ruleId, @PathVariable Long id){
+        Response<Boolean> r = warehouseAddressRuleWriteService.deleteByIdAndRuleId(id, ruleId);
+        if(!r.isSuccess()){
+            log.error("failed to delete warehouse addresses:(id={}) for rule(id={}), error code:{}",
+                    id, ruleId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return Boolean.TRUE;
     }
 
 }

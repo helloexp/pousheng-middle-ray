@@ -96,6 +96,11 @@
         WHERE id = #{id}
     </delete>
 
+    <delete id="deleteByRuleId" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE rule_id = #{ruleId}
+    </delete>
+
     <select id="paging" parameterType="list" resultMap="WarehouseRuleItemMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>

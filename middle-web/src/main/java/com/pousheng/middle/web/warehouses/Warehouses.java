@@ -34,7 +34,7 @@ public class Warehouses {
     public Long create(@RequestBody Warehouse warehouse) {
         Response<Long> r = warehouseWriteService.create(warehouse);
         if (!r.isSuccess()) {
-            log.error("failed to create {}, error code:{}", warehouse, r.getError());
+            log.error("failed to batchCreate {}, error code:{}", warehouse, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();

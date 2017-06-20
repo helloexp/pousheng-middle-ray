@@ -23,4 +23,14 @@ public class WarehouseRuleItemDao extends MyBatisDao<WarehouseRuleItem> {
     public List<WarehouseRuleItem> findByRuleId(Long ruleId) {
         return getSqlSession().selectList(sqlId("findByRuleId"), ruleId);
     }
+
+
+    /**
+     * 根据规则id删除关联的仓库
+     *
+     * @param ruleId 规则id
+     */
+    public void deleteByRuleId(Long ruleId) {
+        getSqlSession().delete(sqlId("deleteByRuleId"), ruleId);
+    }
 }

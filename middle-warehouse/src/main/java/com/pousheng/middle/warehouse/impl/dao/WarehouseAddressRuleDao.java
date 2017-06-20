@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableList;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
@@ -39,5 +40,15 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
      */
     public List<WarehouseAddressRule> findAllButDefault() {
         return getSqlSession().selectList(sqlId("findAllButDefault"));
+    }
+
+    /**
+     * 删除对应的地址id
+     *
+     * @param id 地址对应的id
+     * @param ruleId 规则id
+     */
+    public void deleteByIdAndRuleId(Long id, Long ruleId) {
+        getSqlSession().delete(sqlId("deleteByIdAndRuleId"), ImmutableList.of("id",id, "ruleId", ruleId));
     }
 }

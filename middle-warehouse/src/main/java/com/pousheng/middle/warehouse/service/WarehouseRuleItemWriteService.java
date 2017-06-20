@@ -3,6 +3,8 @@ package com.pousheng.middle.warehouse.service;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import io.terminus.common.model.Response;
 
+import java.util.List;
+
 /**
  * Author: jlchen
  * Desc: 仓库优先级规则项写服务
@@ -12,23 +14,11 @@ import io.terminus.common.model.Response;
 public interface WarehouseRuleItemWriteService {
 
     /**
-     * 创建WarehouseRuleItem
-     * @param warehouseRuleItem
-     * @return 主键id
+     * 批量保存WarehouseRuleItems
+     *
+     * @param ruleId 规则id
+     * @param warehouseRuleItem 列表
+     * @return 是否创建成功
      */
-    Response<Long> create(WarehouseRuleItem warehouseRuleItem);
-
-    /**
-     * 更新WarehouseRuleItem
-     * @param warehouseRuleItem
-     * @return 是否成功
-     */
-    Response<Boolean> update(WarehouseRuleItem warehouseRuleItem);
-
-    /**
-     * 根据主键id删除WarehouseRuleItem
-     * @param warehouseRuleItemId
-     * @return 是否成功
-     */
-    Response<Boolean> deleteById(Long warehouseRuleItemId);
+    Response<Boolean> batchCreate(Long ruleId, List<WarehouseRuleItem> warehouseRuleItem);
 }

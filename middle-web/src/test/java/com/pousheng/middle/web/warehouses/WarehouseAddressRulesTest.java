@@ -28,7 +28,7 @@ public class WarehouseAddressRulesTest {
     private TestRestTemplate restTemplate;*/
 
 /*    @Test
-    public void create() throws Exception {
+    public void batchCreate() throws Exception {
     }*/
 
     @Autowired

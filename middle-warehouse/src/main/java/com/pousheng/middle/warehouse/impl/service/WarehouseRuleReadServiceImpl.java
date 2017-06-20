@@ -1,25 +1,33 @@
 package com.pousheng.middle.warehouse.impl.service;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.dto.RuleDto;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
+import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Nullable;
+import java.io.Serializable;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -35,11 +43,15 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
 
     private final WarehouseAddressRuleDao warehouseAddressRuleDao;
 
+    private final WarehouseRuleItemDao warehouseRuleItemDao;
+
     @Autowired
     public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao,
-                                        WarehouseAddressRuleDao warehouseAddressRuleDao) {
+                                        WarehouseAddressRuleDao warehouseAddressRuleDao,
+                                        WarehouseRuleItemDao warehouseRuleItemDao) {
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
+        this.warehouseRuleItemDao = warehouseRuleItemDao;
     }
 
     @Override
@@ -71,11 +83,17 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
             List<RuleDto> ruleDtos = Lists.newArrayListWithCapacity(p.getData().size());
             for (WarehouseRule warehouseRule : warehouseRules) {
                 Long ruleId = warehouseRule.getId();
-                List<ThinAddress> addresses = doFindWarehouseAddressByRuleId(ruleId);
+                AddressesAndLastUpdatedAt addressesAndLastUpdatedAt = doFindWarehouseAddressByRuleId(ruleId);
+                List<WarehouseRuleItem> ruleItems = warehouseRuleItemDao.findByRuleId(ruleId);
                 RuleDto ruleDto = new RuleDto();
                 ruleDto.setRuleId(ruleId);
-                ruleDto.setRuleDesc(warehouseRule.getName());
-                ruleDto.setAddresses(addresses);
+                ruleDto.setAddresses(addressesAndLastUpdatedAt.getAddresses());
+                ruleDto.setRuleItems(ruleItems);
+                Date updatedAt = addressesAndLastUpdatedAt.getUpdatedAt();
+                if(!CollectionUtils.isEmpty(ruleItems) && ruleItems.get(0).getCreatedAt().after(updatedAt)){
+                    updatedAt = ruleItems.get(0).getCreatedAt();
+                }
+                ruleDto.setUpdatedAt(updatedAt);
                 ruleDtos.add(ruleDto);
             }
             Paging<RuleDto> r = new Paging<>(p.getTotal(), ruleDtos);
@@ -86,19 +104,47 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
         }
     }
 
-    private List<ThinAddress> doFindWarehouseAddressByRuleId(Long ruleId) {
+    /**
+     * 同时返回最新更新时间及地址列表
+     */
+    private AddressesAndLastUpdatedAt doFindWarehouseAddressByRuleId(Long ruleId) {
         List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findByRuleId(ruleId);
         if(CollectionUtils.isEmpty(addressRules)){
             log.error("no WarehouseAddressRule found for ruleId({})", ruleId);
             throw new ServiceException("address.rule.not.found");
         }
 
+        Date updatedAt = addressRules.get(0).getUpdatedAt();
         List<ThinAddress> addresses = Lists.newArrayListWithCapacity(addressRules.size());
         for (WarehouseAddressRule addressRule : addressRules) {
+            if(addressRule.getUpdatedAt().after(updatedAt)){
+                updatedAt = addressRule.getUpdatedAt();
+            }
             ThinAddress thinAddress = new ThinAddress();
             BeanMapper.copy(addressRule, thinAddress);
             addresses.add(thinAddress);
         }
-        return addresses;
+        return new AddressesAndLastUpdatedAt(addresses, updatedAt);
     }
+
+    /**
+     * 同时返回最新更新时间及地址列表
+     */
+    private static class AddressesAndLastUpdatedAt implements Serializable{
+
+        private static final long serialVersionUID = 3879361032466009274L;
+
+        @Getter
+        private final Date updatedAt;
+
+        @Getter
+        private final List<ThinAddress> addresses;
+
+        public AddressesAndLastUpdatedAt(List<ThinAddress> addresses, Date updatedAt) {
+            this.updatedAt = updatedAt;
+            this.addresses = addresses;
+        }
+    }
+
+
 }

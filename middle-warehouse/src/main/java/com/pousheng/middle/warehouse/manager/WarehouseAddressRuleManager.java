@@ -79,14 +79,4 @@ public class WarehouseAddressRuleManager {
         warehouseAddressRuleDao.deleteByRuleId(ruleId);
     }
 
-    /**
-     * 删除对应的地址id
-     *
-     * @param id 地址对应的id
-     * @param ruleId 规则id
-     */
-    public void deleteByIdAndRuleId(Long id, Long ruleId) {
-        warehouseAddressRuleDao.deleteByIdAndRuleId(id, ruleId);
-
-    }
 }

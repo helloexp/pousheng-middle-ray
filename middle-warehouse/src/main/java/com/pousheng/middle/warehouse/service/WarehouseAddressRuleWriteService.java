@@ -37,11 +37,4 @@ public interface WarehouseAddressRuleWriteService {
      */
     Response<Boolean> deleteByRuleId(Long ruleId);
 
-    /**
-     * 根据主键id删除对应的WarehouseAddressRule
-     * @param id 主键id
-     * @param ruleId 规则id
-     * @return 是否成功
-     */
-    Response<Boolean>  deleteByIdAndRuleId(Long id, Long ruleId);
 }

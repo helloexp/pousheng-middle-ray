@@ -189,32 +189,4 @@ public class WarehouseAddressRules {
     }
 
 
-    @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<RuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
-                                      @RequestParam(required = false, value = "pageSize") Integer pageSize){
-
-        Response<Paging<RuleDto>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
-        if(!r.isSuccess()){
-            log.error("failed to pagination rule summary, error code:{}", r.getError());
-            throw new JsonResponseException("warehouse.rule.find.fail");
-        }
-        return r.getResult();
-    }
-
-    /**
-     * 编辑规则关联的发货地址信息
-     *
-     * @return  地址树形结构, 并已标记选中状态
-     */
-    @RequestMapping(value = "/{ruleId}/address/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean deleteAddressByRuleId(@PathVariable Long ruleId, @PathVariable Long id){
-        Response<Boolean> r = warehouseAddressRuleWriteService.deleteByIdAndRuleId(id, ruleId);
-        if(!r.isSuccess()){
-            log.error("failed to delete warehouse addresses:(id={}) for rule(id={}), error code:{}",
-                    id, ruleId, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        return Boolean.TRUE;
-    }
-
 }

@@ -76,24 +76,5 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
         }
     }
 
-    /**
-     * 根据主键id删除对应的WarehouseAddressRule
-     *
-     * @param id 主键id
-     * @param ruleId 规则id
-     * @return 是否成功
-     */
-    @Override
-    public Response<Boolean> deleteByIdAndRuleId(Long id, Long ruleId) {
-        try {
-            warehouseAddressRuleManager.deleteByIdAndRuleId(id, ruleId);
-            return Response.ok(Boolean.TRUE);
-        } catch (Exception e) {
-            log.error("delete warehouseAddressRule failed, warehouseAddressRuleId:(id={}, ruleId={}), " +
-                    "cause:{}", id, ruleId, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.address.rule.delete.fail");
-        }
-    }
-
 
 }

@@ -41,14 +41,4 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
     public List<WarehouseAddressRule> findAllButDefault() {
         return getSqlSession().selectList(sqlId("findAllButDefault"));
     }
-
-    /**
-     * 删除对应的地址id
-     *
-     * @param id 地址对应的id
-     * @param ruleId 规则id
-     */
-    public void deleteByIdAndRuleId(Long id, Long ruleId) {
-        getSqlSession().delete(sqlId("deleteByIdAndRuleId"), ImmutableList.of("id",id, "ruleId", ruleId));
-    }
 }

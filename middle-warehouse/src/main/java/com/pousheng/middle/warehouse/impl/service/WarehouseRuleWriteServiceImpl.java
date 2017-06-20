@@ -2,6 +2,7 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
+import com.pousheng.middle.warehouse.manager.WarehouseRuleManager;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import io.terminus.common.model.Response;
@@ -20,9 +21,12 @@ public class WarehouseRuleWriteServiceImpl implements WarehouseRuleWriteService 
 
     private final WarehouseRuleDao warehouseRuleDao;
 
+    private final WarehouseRuleManager ruleManager;
+
     @Autowired
-    public WarehouseRuleWriteServiceImpl(WarehouseRuleDao warehouseRuleDao) {
+    public WarehouseRuleWriteServiceImpl(WarehouseRuleDao warehouseRuleDao, WarehouseRuleManager ruleManager) {
         this.warehouseRuleDao = warehouseRuleDao;
+        this.ruleManager = ruleManager;
     }
 
     @Override
@@ -49,7 +53,8 @@ public class WarehouseRuleWriteServiceImpl implements WarehouseRuleWriteService 
     @Override
     public Response<Boolean> deleteById(Long warehouseRuleId) {
         try {
-            return Response.ok(warehouseRuleDao.delete(warehouseRuleId));
+            ruleManager.delete(warehouseRuleId);
+            return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("delete warehouseRule failed, warehouseRuleId:{}, cause:{}", warehouseRuleId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.rule.delete.fail");

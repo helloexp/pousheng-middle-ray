@@ -110,10 +110,9 @@
         WHERE id = #{id}
     </update>
 
-    <delete id="deleteByIdAndRuleId" parameterType="long">
-        DELETE FROM
-        <include refid="tb"/>
-        WHERE id = #{id} and rule_id= #{rule_id}
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE id = #{id}
     </delete>
 
     <delete id="deleteByRuleId" parameterType="long">

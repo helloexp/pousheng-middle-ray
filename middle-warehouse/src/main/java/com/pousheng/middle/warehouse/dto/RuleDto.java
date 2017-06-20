@@ -1,8 +1,10 @@
 package com.pousheng.middle.warehouse.dto;
 
+import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -30,4 +32,14 @@ public class RuleDto implements Serializable {
      * 规则对应的区域
      */
     private List<ThinAddress>  addresses;
+
+    /**
+     * 规则对应的发货仓库
+     */
+    private List<WarehouseRuleItem> ruleItems;
+
+    /**
+     * 最后更新时间
+     */
+    private Date updatedAt;
 }

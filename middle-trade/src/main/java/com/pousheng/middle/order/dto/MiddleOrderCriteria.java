@@ -1,4 +1,4 @@
-package com.pousheng.middle.order.dto.fsm;
+package com.pousheng.middle.order.dto;
 
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.model.PagingCriteria;

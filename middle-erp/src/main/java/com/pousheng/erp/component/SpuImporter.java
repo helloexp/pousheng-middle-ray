@@ -88,7 +88,7 @@ public class SpuImporter {
      *
      * @return spu id
      */
-    Long doProcess(PoushengMaterial material, Brand brand) {
+    public Long doProcess(PoushengMaterial material, Brand brand) {
         //String materialId = material.getMaterialID();
         String materialCode = material.getMaterial_code(); //条码
 
@@ -96,12 +96,12 @@ public class SpuImporter {
             log.info("begin to doProcess material(code={})", materialCode);
 
             String kind_name = material.getKind_name();//类别
-            String seriesId = material.getSeries_name(); //系列
-            String modelId = material.getModel_name(); //款型
-            String itemId = material.getItem_name(); //项目
+            String series_name = material.getSeries_name(); //系列
+            String model_name = material.getModel_name(); //款型
+            String item_name = material.getItem_name(); //项目
 
             //寻找或者创建(如果没有对应的类目存在)后台类目, 获取叶子类目id, 作为spu的categoryId
-            Long leafId = createBackCategoryTreeIfNotExist(kind_name, seriesId, modelId, itemId);
+            Long leafId = createBackCategoryTreeIfNotExist(kind_name, series_name, model_name, item_name);
 
             //根据归组规则, 生成spuCode
             String spuCode = refineCode(materialCode, material.getCard_id(), material.getKind_name());
@@ -143,20 +143,20 @@ public class SpuImporter {
      * 根据分组规则处理货号
      *
      * @param materialCode 货号
-     * @param cardID 品牌
-     * @param kindID 分类
+     * @param card_name 品牌
+     * @param kind_name 分类
      * @return 如果找到对应的处理规则, 则返回对应的处理结果, 否则返回materialCode
      */
-    private String refineCode(String materialCode, String cardID, String kindID) {
-        List<SkuGroupRule> skuGroupRules = skuGroupRuleDao.findByCardId(cardID);
+    private String refineCode(String materialCode, String card_name, String kind_name) {
+        List<SkuGroupRule> skuGroupRules = skuGroupRuleDao.findByCardId(card_name);
         for (SkuGroupRule skuGroupRule : skuGroupRules) {
             SkuGroupRuler skuGroupRuler = SkuGroupRuler.from(skuGroupRule.getRuleType());
-            if(skuGroupRuler.support(skuGroupRule, cardID,kindID)){
+            if(skuGroupRuler.support(skuGroupRule, card_name,kind_name)){
                 return skuGroupRuler.spuCode(skuGroupRule, materialCode);
             }
         }
         log.warn("no sku group rule found for material(code={}, cardId={}), use material code as spu code",
-                materialCode, cardID);
+                materialCode, card_name);
         return materialCode;
     }
 
@@ -164,14 +164,14 @@ public class SpuImporter {
     /**
      * 根据需要创建类目树
      *
-     * @param kindId 类别id
-     * @param seriesId  系列id
-     * @param modelId  款型id
-     * @param itemId 项目id
+     * @param kind_name 类别id
+     * @param series_name  系列id
+     * @param model_name  款型id
+     * @param item_name 项目id
      * @return  叶子类目id
      */
-    private Long createBackCategoryTreeIfNotExist(String kindId, String seriesId, String modelId, String itemId) {
-        List<String> categoryNames = ImmutableList.of(kindId, seriesId, modelId, itemId);
+    private Long createBackCategoryTreeIfNotExist(String kind_name, String series_name, String model_name, String item_name) {
+        List<String> categoryNames = ImmutableList.of(kind_name, series_name, model_name, item_name);
         BackCategory parent = new BackCategory();
         parent.setId(0L);
         parent.setLevel(0);

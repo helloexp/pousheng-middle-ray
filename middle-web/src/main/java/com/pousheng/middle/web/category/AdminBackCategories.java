@@ -72,7 +72,7 @@ public class AdminBackCategories {
     public Response<Boolean> disable(@PathVariable("id") Long id) {
         Response<Boolean> r = backCategoryWriteService.disable(id);
         if (!r.isSuccess()) {
-            log.warn("failed to disable back category(id={}) ,error code:{}", id, r.getError());
+            log.warn("failed to editable back category(id={}) ,error code:{}", id, r.getError());
         }
         return r;
     }

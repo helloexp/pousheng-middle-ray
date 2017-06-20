@@ -27,7 +27,7 @@ public class AddressTree implements Serializable {
     /**
      * 是否可编辑
      */
-    private boolean disable;
+    private boolean editable = true;
 
     /**
      * 对应的下级地址

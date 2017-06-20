@@ -26,6 +26,12 @@
         </dependency>
 
         <dependency>
+            <groupId>io.terminus.parana</groupId>
+            <artifactId>parana-category</artifactId>
+            <version>${parana.version}</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.zaxxer</groupId>
             <artifactId>HikariCP</artifactId>
         </dependency>

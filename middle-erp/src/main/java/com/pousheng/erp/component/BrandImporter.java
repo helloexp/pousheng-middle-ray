@@ -79,13 +79,17 @@ public class BrandImporter {
             List<PoushengCard> cards = pCards.getData();
             hasNext = Objects.equal(cards.size(), PAGE_SIZE);
 
-            List<Brand> brands = createParanaBrands(cards);
-            for (Brand brand : brands) {
-                brandDao.create(brand);
-            }
+            doProcess(cards);
             handleCount+=cards.size();
         }
         return handleCount;
+    }
+
+    public void doProcess(List<PoushengCard> cards) {
+        List<Brand> brands = createParanaBrands(cards);
+        for (Brand brand : brands) {
+            brandDao.create(brand);
+        }
     }
 
     private Paging<PoushengCard> pagination(int offset) {
@@ -99,10 +103,13 @@ public class BrandImporter {
         List<Brand> results = Lists.newArrayListWithCapacity(cards.size());
         for (PoushengCard card : cards) {
             Brand brand = new Brand();
-            brand.setOuterId(card.getCardID());
-            Map<String, String> refinedNames = refine(card.getCardName());
-            brand.setName(refinedNames.get("name"));
-            brand.setEnName(refinedNames.get("enName"));
+            brand.setOuterId(card.getCard_id());
+            //Map<String, String> refinedNames = refine(card.getCard_name());
+            brand.setName(card.getCard_name());
+            brand.setUniqueName(card.getCard_name());
+            brand.setDescription(card.getRemark());
+//            brand.setName(refinedNames.get("name"));
+            //brand.setEnName(refinedNames.get("enName"));
             brand.setStatus(1);
             results.add(brand);
         }

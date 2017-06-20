@@ -55,7 +55,7 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     @Override
     public Response<Boolean> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses) {
         try {
-            warehouseAddressRuleManager.batchCreate(thinAddresses);
+            warehouseAddressRuleManager.batchUpdate(ruleId, thinAddresses);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("failed to update warehouseAddressRule(ruleId={}) with address:{}, cause:{}",

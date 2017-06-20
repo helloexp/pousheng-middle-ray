@@ -15,21 +15,27 @@ import java.util.List;
 public class PoushengMaterial implements Serializable {
 
     private static final long serialVersionUID = 7436383982566463632L;
-    private String materialCode;  //货品编码
+    private String material_code;  //货品编码
 
-    private String materialName; //货品名称
+    private String material_name; //货品名称
 
-    private String foreignName; //外文名称
+    private String foreign_name; //外文名称
 
-    private String cardID; //品牌id
+    private String card_id; //品牌id
 
-    private String kindID; //类别
+    private String card_name; //品牌名称
 
-    private String seriesID; //系列
+    private String kind_name; //类别
 
-    private String itemID; //项目
+    private String series_name; //系列
 
-    private String modelID; //款型
+    private String item_name; //项目
+
+    private String model_name; //款型
+
+    private String color_id;// 颜色id
+
+    private String color_name; //颜色名称
 
     private String stuff; //面料
 
@@ -37,14 +43,16 @@ public class PoushengMaterial implements Serializable {
 
     private String sex; //性别
 
-    private Integer yearNo; //年份
+    private Integer year_no; //年份
 
-    private String invSpec; //规格
+    private String inv_spec; //规格
 
-    private Boolean Season5; //长青
+    private Boolean season5; //长青
 
-    private Boolean Season6; //延续
+    private Boolean season6; //延续
 
-    private List<PoushengSku> skus; //对应的sku信息列表
+    private Double pro_retail_price; //市场价
+
+    private List<PoushengSize> size; //对应的sku信息列表
 
 }

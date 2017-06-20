@@ -4,7 +4,7 @@ logging:
 spring:
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1:3306/pousheng
+    url: jdbc:mysql://127.0.0.1:3306/pousheng?useUnicode=true&characterEncoding=UTF8
     username: root
     password: anywhere
 

@@ -13,13 +13,9 @@ import java.util.Date;
 public class PoushengCard implements Serializable {
 
     private static final long serialVersionUID = 2723092187930687915L;
-    private String cardID;
-    private String cardCode;
-    private String cardName;
-    private String fullName;
-    private String foreignName;
+    private String card_id;
+    private String card_code;
+    private String card_name;
+    private String full_name;
     private String remark;
-    private Boolean allowUsed;
-    private Date modifyDTM;
-    private Boolean lan;
 }

@@ -62,9 +62,10 @@ public class TreeMarker {
         int average = total / Iterables.size(childrenTrees);
         if(average == 2){
             root.setSelected(2);
-            root.setDisable(editable);
+            root.setEditable(editable);
         }else if(total>0){
             root.setSelected(1);
+            root.setEditable(true);
         }else {
             root.setSelected(0);
         }
@@ -78,6 +79,7 @@ public class TreeMarker {
      */
     private void markEntireTree(AddressTree root, boolean editable) {
         root.setSelected(2);
+        root.setEditable(editable);
         for (AddressTree child : root.getChildren()) {
             markEntireTree(child, editable);
         }

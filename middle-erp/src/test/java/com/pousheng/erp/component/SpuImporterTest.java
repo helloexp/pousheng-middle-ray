@@ -23,19 +23,19 @@ public class SpuImporterTest extends BaseServiceTest{
     public void doProcess() throws Exception {
 
         PoushengMaterial m = new PoushengMaterial();
-        m.setMaterialCode("materialCode");
-        m.setMaterialName("测试商品");
-        m.setForeignName("test item");
-        m.setCardID("cardId");
-        m.setKindID("kindId");
-        m.setSeriesID("seriesId");
-        m.setItemID("itemId");
-        m.setModelID("modelId");
+        m.setMaterial_code("material_code");
+        m.setMaterial_name("测试商品");
+        m.setForeign_name("test item");
+        m.setCard_id("cardId");
+        m.setKind_name("kindId");
+        m.setSeries_name("seriesId");
+        m.setItem_name("itemId");
+        m.setModel_name("modelId");
         m.setStuff("stuff");
         m.setTexture("texture");
         m.setSex("男");
-        m.setYearNo(2017);
-        m.setInvSpec("invSpec");
+        m.setYear_no(2017);
+        m.setInv_spec("inv_spec");
         m.setSeason5(true);
         m.setSeason6(true);
 
@@ -55,7 +55,7 @@ public class SpuImporterTest extends BaseServiceTest{
         ps2.setSizeName("40");
         ps2.setMarketPrice("399");
 
-        m.setSkus(Lists.newArrayList(ps1,ps2));
+        //m.setSkus(Lists.newArrayList(ps1,ps2));
 
         Brand brand = new Brand();
         brand.setName("brand");

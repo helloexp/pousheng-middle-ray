@@ -72,7 +72,9 @@ public class ErpSpuManager {
      */
     @Transactional
     public Long createSpuRelatedIfNotExist(Long leafId, Brand brand,
-                                            String spuCode, PoushengMaterial material) {
+                                            String spuCode,
+                                           PoushengMaterial material,
+                                           List<PoushengSku> skus) {
         //因为不同leafId下, 即使spuCode一样, 也视为不同的spu
         Spu spu = erpSpuDao.findByCategoryIdAndCode(leafId, spuCode);
         Long spuId;
@@ -84,13 +86,13 @@ public class ErpSpuManager {
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
-            spu.setName(material.getMaterialName());
+            spu.setName(material.getMaterial_name());
             spu.setType(1);
             spu.setStatus(1);
             spu.setStockType(1);
             int highPrice = 0;
             int lowPrice = Integer.MAX_VALUE;
-            for (PoushengSku poushengSku : material.getSkus()) {
+            for (PoushengSku poushengSku : skus) {
                 int price = priceFen(poushengSku);
                 if(lowPrice>price){
                     lowPrice = price;
@@ -119,13 +121,13 @@ public class ErpSpuManager {
             goa.setGroup("SPU");
             List<OtherAttribute> otherAttributes = makeOtherAttributes(material);
             goa.setOtherAttributes(otherAttributes);
-            List<GroupedSkuAttribute> skuAttributes = makeSkuAttributes(material.getSkus());
+            List<GroupedSkuAttribute> skuAttributes = makeSkuAttributes(skus);
             spuAttribute.setSkuAttrs(skuAttributes);
             spuAttributeDao.create(spuAttribute);
         }
 
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
-        createSkuTemplatesIfNotExist(spuId, material.getMaterialName(), material.getSkus());
+        createSkuTemplatesIfNotExist(spuId, material.getMaterial_name(),skus);
         return spuId;
     }
 
@@ -138,10 +140,10 @@ public class ErpSpuManager {
      */
     private List<OtherAttribute> makeOtherAttributes(PoushengMaterial material) {
         List<OtherAttribute> otherAttributes = Lists.newArrayList();
-        if(StringUtils.hasText(material.getForeignName())) {
+        if(StringUtils.hasText(material.getForeign_name())) {
             OtherAttribute foreignName = new OtherAttribute();
             foreignName.setAttrKey("外文名称");
-            foreignName.setAttrVal(material.getForeignName());
+            foreignName.setAttrVal(material.getForeign_name());
             otherAttributes.add(foreignName);
         }
         if(StringUtils.hasText(material.getStuff())){
@@ -159,15 +161,15 @@ public class ErpSpuManager {
             sex.setAttrKey("性别");
             sex.setAttrVal(material.getSex());
         }
-        if(material.getYearNo()!=null){
+        if(material.getYear_no()!=null){
             OtherAttribute yearNo = new OtherAttribute();
             yearNo.setAttrKey("年份");
-            yearNo.setAttrVal(material.getYearNo().toString());
+            yearNo.setAttrVal(material.getYear_no().toString());
         }
-        if(StringUtils.hasText(material.getInvSpec())){
+        if(StringUtils.hasText(material.getInv_spec())){
             OtherAttribute invSpec = new OtherAttribute();
             invSpec.setAttrKey("规格");
-            invSpec.setAttrVal(material.getInvSpec());
+            invSpec.setAttrVal(material.getInv_spec());
         }
         OtherAttribute always = new OtherAttribute();
         always.setAttrKey("长青");
@@ -269,7 +271,7 @@ public class ErpSpuManager {
 
             Map<String, String> extra = Maps.newHashMap();
             extra.put("colorId", poushengSku.getColorId());
-            extra.put("sizeId", poushengSku.getSizeId());
+            extra.put("size_id", poushengSku.getSizeId());
             skuTemplate.setExtra(extra);
 
             skuTemplateDao.create(skuTemplate);

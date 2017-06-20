@@ -3,10 +3,13 @@ package com.pousheng.erp.component;
 import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
 import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.PoushengMaterial;
+import com.pousheng.erp.model.PoushengSize;
+import com.pousheng.erp.model.PoushengSku;
 import com.pousheng.erp.model.SkuGroupRule;
 import com.pousheng.erp.rules.SkuGroupRuler;
 import io.terminus.parana.brand.model.Brand;
@@ -15,7 +18,9 @@ import io.terminus.parana.category.model.BackCategory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -67,7 +72,7 @@ public class SpuImporter {
             pageNo = pageNo + 1;
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {
-                Brand brand = brandCacher.findByOuterId(material.getCardID());//做品牌映射
+                Brand brand = brandCacher.findByOuterId(material.getCard_id());//做品牌映射
                 doProcess(material, brand);
             }
             handleCount+=materials.size();
@@ -85,24 +90,25 @@ public class SpuImporter {
      */
     Long doProcess(PoushengMaterial material, Brand brand) {
         //String materialId = material.getMaterialID();
-        String materialCode = material.getMaterialCode(); //条码
+        String materialCode = material.getMaterial_code(); //条码
 
         try {
             log.info("begin to doProcess material(code={})", materialCode);
 
-            String kindId = material.getKindID();//类别
-            String seriesId = material.getSeriesID(); //系列
-            String modelId = material.getModelID(); //款型
-            String itemId = material.getItemID(); //项目
+            String kind_name = material.getKind_name();//类别
+            String seriesId = material.getSeries_name(); //系列
+            String modelId = material.getModel_name(); //款型
+            String itemId = material.getItem_name(); //项目
 
             //寻找或者创建(如果没有对应的类目存在)后台类目, 获取叶子类目id, 作为spu的categoryId
-            Long leafId = createBackCategoryTreeIfNotExist(kindId, seriesId, modelId, itemId);
+            Long leafId = createBackCategoryTreeIfNotExist(kind_name, seriesId, modelId, itemId);
 
             //根据归组规则, 生成spuCode
-            String spuCode = refineCode(materialCode, material.getCardID(), material.getKindID());
+            String spuCode = refineCode(materialCode, material.getCard_id(), material.getKind_name());
 
             //判断spuCode是否已经存在, 如果存在, 直接返回对应spuId, 如果不存在, 则生成相应的spu信息, 并返回spuId
-            Long spuId = spuManager.createSpuRelatedIfNotExist(leafId, brand, spuCode,  material);
+            List<PoushengSku> poushengSkus = createSkuFromMaterial(material);
+            Long spuId = spuManager.createSpuRelatedIfNotExist(leafId, brand, spuCode,  material, poushengSkus);
             log.info("doProcess material(code={}) succeed", materialCode);
             return spuId;
         } catch (Exception e) {
@@ -111,6 +117,26 @@ public class SpuImporter {
             return null;
         }
 
+    }
+
+    private List<PoushengSku> createSkuFromMaterial(PoushengMaterial material) {
+        if(CollectionUtils.isEmpty(material.getSize())){
+            return Collections.emptyList();
+        }
+        List<PoushengSku> r = Lists.newArrayListWithCapacity(material.getSize().size());
+        String colorName = material.getColor_name();
+        String colorId = material.getColor_id();
+        for (PoushengSize poushengSize : material.getSize()) {
+            PoushengSku poushengSku = new PoushengSku();
+            poushengSku.setBarCode(poushengSize.getBar_code());
+            poushengSku.setColorId(colorId);
+            poushengSku.setColorName(colorName);
+            poushengSku.setSizeId(poushengSize.getSize_id());
+            poushengSku.setSizeName(poushengSize.getSize_name());
+            poushengSku.setMarketPrice(String.valueOf(material.getPro_retail_price()));
+            r.add(poushengSku);
+        }
+        return r;
     }
 
     /**

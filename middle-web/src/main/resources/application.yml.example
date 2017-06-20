@@ -18,3 +18,8 @@ mybatis:
       io.terminus.open.client.common.(mappings|token|shop).model,
       io.terminus.open.client.item.model
 
+
+rpc.mode: true
+rpc.dubbo:
+  module: pousheng-middle
+  registryAddress: 127.0.0.1:2181

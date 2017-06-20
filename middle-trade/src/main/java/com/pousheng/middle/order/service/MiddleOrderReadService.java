@@ -1,11 +1,9 @@
 package com.pousheng.middle.order.service;
 
-import com.pousheng.middle.order.dto.fsm.MiddleOrderCriteria;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ShopOrder;
-
-import java.util.Map;
 
 /**
  * 订单读服务

@@ -2,8 +2,8 @@ package com.pousheng.middle.web.category;
 
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.web.event.BatchSyncParanaCategoryEvent;
-import com.pousheng.middle.web.task.SyncTask;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
+import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;

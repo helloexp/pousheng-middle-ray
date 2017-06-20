@@ -27,7 +27,7 @@ public interface WarehouseAddressRuleWriteService {
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
-    Response<Long> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses);
+    Response<Boolean> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses);
 
 
     /**

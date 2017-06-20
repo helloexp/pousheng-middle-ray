@@ -40,6 +40,34 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
     }
 
     /**
+     * 查询某个sku在指定仓库的库存情况
+     *
+     * @param warehouseId 仓库id 仓库id
+     * @param skuCode     skuCode
+     * @return sku在仓库的库存情况
+     */
+    @Override
+    public Response<WarehouseSkuStock> findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode) {
+        try {
+            WarehouseSkuStock stock = warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+            if(stock == null){
+                log.warn("no stock record found for warehouseId={} and skuCode={}", warehouseId, skuCode);
+                stock = new WarehouseSkuStock();
+                stock.setWarehouseId(warehouseId);
+                stock.setSkuCode(skuCode);
+                stock.setAvailStock(0L);
+                stock.setLockedStock(0L);
+                stock.setBaseStock(0L);
+            }
+            return Response.ok(stock);
+        } catch (Exception e) {
+            log.error("failed to find stock for warehouseId={} and skuCode={}, cause:{}",
+                    warehouseId, skuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.find.fail");
+        }
+    }
+
+    /**
      * 分页查询 sku的库存概览情况(不分仓)
      *
      * @param pageNo   起始页码
@@ -60,4 +88,7 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
             return Response.fail("warehouse.sku.find.fail");
         }
     }
+
+
+
 }

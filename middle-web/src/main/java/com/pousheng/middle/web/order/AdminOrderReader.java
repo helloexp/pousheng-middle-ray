@@ -1,7 +1,7 @@
 package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderCriteria;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -24,6 +24,7 @@ import java.util.Map;
 @RestController
 @Slf4j
 public class AdminOrderReader {
+
 
     @Autowired
     private ObjectMapper objectMapper;

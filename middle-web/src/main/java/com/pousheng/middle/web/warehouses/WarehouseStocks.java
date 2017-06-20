@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouses;
+package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -6,7 +6,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.warehouses.dto.SkuStock;
+import com.pousheng.middle.web.warehouses.dto.SkuStock;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;

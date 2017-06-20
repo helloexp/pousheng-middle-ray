@@ -33,3 +33,9 @@ redis:
   max-total: 10
   max-idle: 2
   test-on-borrow: true
+
+
+rpc.mode: true
+rpc.dubbo:
+  module: pousheng-middle
+  registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}

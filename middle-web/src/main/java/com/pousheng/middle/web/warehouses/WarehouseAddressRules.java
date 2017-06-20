@@ -1,21 +1,23 @@
-package com.pousheng.middle.warehouses;
+package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.dto.AddressTree;
+import com.pousheng.middle.warehouse.dto.RuleDto;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
-import com.pousheng.middle.warehouses.algrithm.TreeMarker;
+import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
+import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -35,6 +37,10 @@ public class WarehouseAddressRules {
 
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
+
+
+    @RpcConsumer
+    private WarehouseRuleReadService warehouseRuleReadService;
 
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
@@ -103,7 +109,7 @@ public class WarehouseAddressRules {
             throw new JsonResponseException("warehouseAddress.not.exists");
         }
         List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
-        while(current!=null && current.getPid()>0){
+        while(current!=null && current.getPid()>1){
             Long pid = current.getPid();
             parentIds.add(pid);
             current =  warehouseAddressCacher.findById(pid);
@@ -148,6 +154,24 @@ public class WarehouseAddressRules {
         return addressTree;
     }
 
+    /**
+     * 编辑规则关联的发货地址信息
+     *
+     * @param ruleId 规则id
+     * @return  地址树形结构, 并已标记选中状态
+     */
+    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean updateAddressByRuleId(@PathVariable Long ruleId, @RequestBody ThinAddress[] addresses){
+        List<ThinAddress> valid = refineWarehouseAddress(addresses);
+        Response<Boolean> r = warehouseAddressRuleWriteService.batchUpdate(ruleId, valid);
+        if(!r.isSuccess()){
+            log.error("failed to update warehouse rule(id={}) with addresses:{}, error code:{}",
+                    ruleId, valid, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return Boolean.TRUE;
+    }
+
     @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public AddressTree findSelectedAddress(){
         //其他规则选中的地址不可编辑
@@ -163,6 +187,19 @@ public class WarehouseAddressRules {
             treeMarker.markSelected(addressTree, id, false);
         }
         return addressTree;
+    }
+
+
+    @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<RuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                      @RequestParam(required = false, value = "pageSize") Integer pageSize){
+
+        Response<Paging<RuleDto>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
+        if(!r.isSuccess()){
+            log.error("failed to pagination rule summary, error code:{}", r.getError());
+            throw new JsonResponseException("warehouse.rule.find.fail");
+        }
+        return r.getResult();
     }
 
 }

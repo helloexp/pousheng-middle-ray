@@ -111,6 +111,7 @@ public class BrandImporter {
 //            brand.setName(refinedNames.get("name"));
             //brand.setEnName(refinedNames.get("enName"));
             brand.setStatus(1);
+            brand.setOuterId(card.getCard_id());
             results.add(brand);
         }
         return results;

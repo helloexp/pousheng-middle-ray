@@ -18,5 +18,5 @@ public class PoushengSize implements Serializable {
 
     private String size_name; //尺码名称
 
-    private String bar_code; //条码
+    private String barcode; //条码
 }

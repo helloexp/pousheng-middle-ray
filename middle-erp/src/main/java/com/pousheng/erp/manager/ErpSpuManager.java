@@ -1,5 +1,6 @@
 package com.pousheng.erp.manager;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -86,7 +87,7 @@ public class ErpSpuManager {
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
-            spu.setName(material.getMaterial_name());
+            spu.setName(MoreObjects.firstNonNull(material.getMaterial_name(), "未知商品名"));
             spu.setType(1);
             spu.setStatus(1);
             spu.setStockType(1);

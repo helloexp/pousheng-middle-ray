@@ -128,7 +128,7 @@ public class SpuImporter {
         String colorId = material.getColor_id();
         for (PoushengSize poushengSize : material.getSize()) {
             PoushengSku poushengSku = new PoushengSku();
-            poushengSku.setBarCode(poushengSize.getBar_code());
+            poushengSku.setBarCode(poushengSize.getBarcode());
             poushengSku.setColorId(colorId);
             poushengSku.setColorName(colorName);
             poushengSku.setSizeId(poushengSize.getSize_id());
@@ -201,6 +201,7 @@ public class SpuImporter {
                 child.setHasSpu(true);
                 child.setHasChildren(false);
             }else{
+                child.setHasSpu(false);
                 child.setHasChildren(true);
             }
             categoryDao.create(child);

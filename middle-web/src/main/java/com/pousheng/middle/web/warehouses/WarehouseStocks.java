@@ -11,18 +11,17 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +32,7 @@ import java.util.Map;
  * Date: 2017-06-16
  */
 @RestController
-@RequestMapping("/api/stock")
+@RequestMapping("/api/warehouse")
 @Slf4j
 public class WarehouseStocks {
 
@@ -55,7 +54,7 @@ public class WarehouseStocks {
      * @param skuCode sku码查询
      * @return 查询结果
      */
-    @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/stock/summary", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuStock> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                    @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                    @RequestParam(required = false, value = "skuCode") String skuCode){
@@ -108,6 +107,30 @@ public class WarehouseStocks {
         }
 
         return Paging.empty();
+    }
+
+
+    /**
+     * 在一个仓库中对应sku的库存
+     *
+     * @param skuCodes sku codes, 以','分割
+     * @return sku在对应仓库中的可用库存情况
+     */
+    @RequestMapping(value = "/{warehouseId}/stocks", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, Integer> findStocksForSkus(@PathVariable("warehouseId") Long warehouseId,
+                                              @RequestParam("skuCodes") String skuCodes){
+
+        List<String> skuCodeList = Lists.newArrayList(Splitters.COMMA.splitToList(skuCodes));
+        if(CollectionUtils.isEmpty(skuCodeList)){
+            return Collections.emptyMap();
+        }
+        Response<Map<String, Integer>> r = warehouseSkuReadService.findByWarehouseIdAndSkuCodes(warehouseId, skuCodeList);
+        if(!r.isSuccess()){
+            log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
+                    warehouseId, skuCodes, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
     }
 
 

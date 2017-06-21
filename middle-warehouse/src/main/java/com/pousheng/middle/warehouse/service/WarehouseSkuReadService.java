@@ -4,6 +4,7 @@ import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -40,4 +41,12 @@ public interface WarehouseSkuReadService {
      */
     Response<Paging<WarehouseSkuStock>> findBy(Integer pageNo, Integer pageSize, Map<String, Object> params);
 
+    /**
+     * 批量查询skuCodes在某个仓库中的库存情况
+     *
+     * @param warehouseId 仓库id
+     * @param skuCodes sku codes
+     * @return skuCodes在某个仓库中的库存情况
+     */
+    Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes);
 }

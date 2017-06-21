@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
@@ -11,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -89,6 +91,28 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
         }
     }
 
+    /**
+     * 批量查询skuCodes在某个仓库中的库存情况
+     *
+     * @param warehouseId 仓库id
+     * @param skuCodes    sku codes
+     * @return skuCodes在某个仓库中的库存情况
+     */
+    @Override
+    public Response<Map<String, Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes) {
+        try {
+            List<WarehouseSkuStock> stocks = warehouseSkuStockDao.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
+            Map<String, Integer> r = Maps.newHashMapWithExpectedSize(skuCodes.size());
+            for (WarehouseSkuStock stock : stocks) {
+                r.put(stock.getSkuCode(), stock.getAvailStock().intValue());
+            }
+            return Response.ok(r);
+        } catch (Exception e) {
+            log.error("failed to find stock for warehouseId={} and skuCodes={}, cause:{}",
+                    warehouseId, skuCodes, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.find.fail");
+        }
+    }
 
 
 }

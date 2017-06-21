@@ -139,4 +139,15 @@
         group by sku_code order by  sku_code limit #{offset},#{limit}
     </select>
 
+    <select id="findByWarehouseIdAndSkuCodes" parameterType="long" resultMap="WarehouseSkuStockMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE  warehouse_id= #{warehouseId} and
+        sku_code IN
+        <foreach item="skuCode" collection="list" open="(" separator="," close=")">
+            #{skuCode}
+        </foreach>
+
+    </select>
+
 </mapper>

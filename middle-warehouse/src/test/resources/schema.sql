@@ -89,3 +89,5 @@ CREATE TABLE `pousheng_warehouse_sku_stocks` (
 )COMMENT='sku在仓库的库存情况';
 
 
+
+

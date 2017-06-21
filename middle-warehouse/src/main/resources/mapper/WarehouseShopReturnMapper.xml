@@ -65,6 +65,12 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByShopId" parameterType="long" resultMap="WarehouseShopReturnMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE shop_id = #{shopId}
+    </select>
+
    <select id="findByIds" parameterType="list" resultMap="WarehouseShopReturnMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
@@ -80,12 +86,8 @@
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="shopId != null">shop_id = #{shopId},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
-            
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}
@@ -112,5 +114,4 @@
         <include refid="queryCondition"/>
         </where>
     </select>
-
 </mapper>

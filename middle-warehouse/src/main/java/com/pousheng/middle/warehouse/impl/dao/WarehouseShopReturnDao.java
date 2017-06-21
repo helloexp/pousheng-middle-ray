@@ -12,4 +12,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class WarehouseShopReturnDao extends MyBatisDao<WarehouseShopReturn> {
 
+    public WarehouseShopReturn findByShopId(Long shopId) {
+        return getSqlSession().selectOne(sqlId("findByShopId"), shopId);
+    }
 }

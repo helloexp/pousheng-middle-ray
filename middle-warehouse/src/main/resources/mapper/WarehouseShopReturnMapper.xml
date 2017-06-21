@@ -8,6 +8,7 @@
     <resultMap id="WarehouseShopReturnMap" type="WarehouseShopReturn">
         <id column="id" property="id"/>
         <result column="shop_id" property="shopId"/>
+        <result column="shop_name" property="shopName"/>
         <result column="warehouse_id" property="warehouseId"/>
         <result column="warehouse_name" property="warehouseName"/>
         <result column="created_at" property="createdAt"/>
@@ -24,11 +25,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, warehouse_id, warehouse_name, created_at, updated_at
+        shop_id,shop_name, warehouse_id, warehouse_name, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{warehouseId}, #{warehouseName}, now(), now()
+        #{shopId},#{shopName}, #{warehouseId}, #{warehouseName}, now(), now()
     </sql>
 
     <sql id="queryCondition">

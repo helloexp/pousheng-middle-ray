@@ -1,6 +1,5 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
-import com.google.common.collect.ImmutableList;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;

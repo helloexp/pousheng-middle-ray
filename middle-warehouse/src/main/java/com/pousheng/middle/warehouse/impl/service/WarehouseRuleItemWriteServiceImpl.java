@@ -1,7 +1,6 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
 import com.pousheng.middle.warehouse.manager.WarehouseRuleItemManager;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemWriteService;

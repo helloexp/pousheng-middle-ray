@@ -3,7 +3,6 @@ package com.pousheng.erp.component;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.PoushengSku;
 import io.terminus.parana.brand.model.Brand;
-import org.assertj.core.util.Lists;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 

@@ -1,14 +1,17 @@
 package com.pousheng.middle.order.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.pousheng.middle.order.dto.OrderShipmentCriteria;
+import com.pousheng.middle.order.dto.ShipmentDto;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
-import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
+import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -27,6 +30,8 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
 
     @Autowired
     private OrderShipmentDao orderShipmentDao;
+    @Autowired
+    private ShipmentDao shipmentDao;
 
 
     @Override
@@ -42,5 +47,34 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
                     orderId, orderLevel, Throwables.getStackTraceAsString(e));
             return Response.fail("order.shipment.find.fail");
         }
+    }
+
+    public Response<Paging<ShipmentDto>> findBy(OrderShipmentCriteria criteria) {
+        try {
+            Paging<OrderShipment> paging = orderShipmentDao.paging(criteria.toMap());
+            return Response.ok(transToDto(paging));
+        } catch (Exception e) {
+            log.error("failed to paging shipment, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.find.fail");
+        }
+    }
+
+    private Paging<ShipmentDto> transToDto(Paging<OrderShipment> paging) {
+        Paging<ShipmentDto> dtoPaging = new Paging<ShipmentDto>();
+        List<ShipmentDto> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());
+        dtoPaging.setTotal(paging.getTotal());
+        for (OrderShipment orderShipment : paging.getData()){
+            ShipmentDto dto = new ShipmentDto();
+            dto.setOrderShipment(orderShipment);
+            try {
+                dto.setShipment(shipmentDao.findById(orderShipment.getShipmentId()));
+            }catch (Exception e){
+                log.error("find shipment by id:{} fail,cause:{}",orderShipment.getShipmentId(),Throwables.getStackTraceAsString(e));
+                continue;
+            }
+            shipmentDtos.add(dto);
+        }
+        dtoPaging.setData(shipmentDtos);
+        return dtoPaging;
     }
 }

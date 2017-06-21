@@ -144,7 +144,7 @@
         FROM <include refid="tb" />
         WHERE  warehouse_id= #{warehouseId} and
         sku_code IN
-        <foreach item="skuCode" collection="list" open="(" separator="," close=")">
+        <foreach item="skuCode" collection="skuCodes" open="(" separator="," close=")">
             #{skuCode}
         </foreach>
 

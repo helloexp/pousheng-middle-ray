@@ -20,6 +20,11 @@ public class WarehouseShopReturn implements Serializable {
      * 店铺id
      */
     private Long shopId;
+
+    /**
+     * 店铺名称
+     */
+    private String shopName;
     
     /**
      * 仓库id

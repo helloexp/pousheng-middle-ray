@@ -28,6 +28,13 @@ public class WarehouseShopReturnWriteServiceImpl implements WarehouseShopReturnW
     @Override
     public Response<Long> create(WarehouseShopReturn warehouseShopReturn) {
         try {
+            Long shopId = warehouseShopReturn.getShopId();
+            WarehouseShopReturn exist = warehouseShopReturnDao.findByShopId(shopId);
+            if(exist!=null){
+                log.error("failed to create {}, because warehouse for shop(id={}) has existed",
+                        warehouseShopReturn, shopId);
+                return Response.fail("shopId.duplicated");
+            }
             warehouseShopReturnDao.create(warehouseShopReturn);
             return Response.ok(warehouseShopReturn.getId());
         } catch (Exception e) {

@@ -15,12 +15,12 @@ import com.google.common.base.Objects;
 public enum MiddleShipmentsStatus {
 
     WAIT_SYNC_HK(0),  //待同步恒康
-    SYNC_HK_ING(1),    //同步恒康中（次状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_HK_ING(1),    //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
     WAIT_SHIP(2),    //同步成功，待发货
     SHIPPED_WAIT_SYNC_ECP(3),      //已发货，待同步电商平台
-    SYNC_ECP_ING(1),    //同步电商平台中（次状态前端可不用关心，只是为了后端flow通顺）
-    SYNC_ECP_SUCCESS_WAIT_RECEIVED(4),      //待收货
-    DONE(5),         //已完成
+    SYNC_ECP_ING(4),    //同步电商平台中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_ECP_SUCCESS_WAIT_RECEIVED(5),      //待收货
+    DONE(6),         //已完成
     SYNC_HK_FAIL(-1),   //同步恒康失败
     SYNC_ECP_FAIL(-2),   //同步电商失败
     BUYER_CANCEL(-3);  // 买家取消订单

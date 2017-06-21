@@ -43,12 +43,9 @@ public class AdminOrderReader {
 
     //订单分页
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
-    public Response<Paging<ShopOrder>> findBy(@RequestParam Map<String, String> middleOrderCriteria) {
+    public Response<Paging<ShopOrder>> findBy(MiddleOrderCriteria middleOrderCriteria) {
 
-        MiddleOrderCriteria criteria = objectMapper.convertValue(middleOrderCriteria, MiddleOrderCriteria.class);
-
-        return middleOrderReadService.pagingShopOrder(criteria);
+        return middleOrderReadService.pagingShopOrder(middleOrderCriteria);
     }
 
 

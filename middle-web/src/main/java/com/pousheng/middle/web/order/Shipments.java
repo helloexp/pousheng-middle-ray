@@ -16,7 +16,6 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * 发货单相关api （以 order shipment 为发货单）
@@ -36,13 +35,11 @@ public class Shipments {
     //发货单分页
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public Paging<ShipmentDto> findBy(@RequestParam Map<String, String> shipmentCriteria) {
+    public Paging<ShipmentDto> findBy(OrderShipmentCriteria shipmentCriteria) {
 
-        OrderShipmentCriteria criteria = objectMapper.convertValue(shipmentCriteria, OrderShipmentCriteria.class);
-
-        Response<Paging<ShipmentDto>> response =  orderShipmentReadService.findBy(criteria);
+        Response<Paging<ShipmentDto>> response =  orderShipmentReadService.findBy(shipmentCriteria);
         if(!response.isSuccess()){
-            log.error("find shipment by criteria:{} fail,error:{}",criteria,response.getError());
+            log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());
             throw new JsonResponseException(response.getError());
         }
 

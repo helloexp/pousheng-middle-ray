@@ -20,6 +20,8 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.format.datetime.DateFormatter;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -81,6 +83,13 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return new EventBus();
     }
 
+
+
+    @Override
+    public void addFormatters(FormatterRegistry registry) {
+        registry.addFormatter(new DateFormatter("yyyy-MM-dd HH:mm:ss"));
+        registry.addFormatter(new DateFormatter("yyyy-MM-dd"));
+    }
 
     @Override
     public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {

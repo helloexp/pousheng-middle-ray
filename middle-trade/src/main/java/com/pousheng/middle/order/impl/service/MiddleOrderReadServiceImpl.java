@@ -28,7 +28,7 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
     @Override
     public Response<Paging<ShopOrder>> pagingShopOrder(MiddleOrderCriteria criteria) {
         try {
-            Paging<ShopOrder> paging = shopOrderDao.paging(criteria.toMap());
+            Paging<ShopOrder> paging = shopOrderDao.paging(criteria.getOffset(),criteria.getLimit(),criteria.toMap());
             return Response.ok(paging);
         } catch (Exception e) {
             log.error("failed to paging shop order, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));

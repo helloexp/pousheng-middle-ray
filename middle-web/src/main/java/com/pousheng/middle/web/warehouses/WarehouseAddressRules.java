@@ -38,6 +38,7 @@ public class WarehouseAddressRules {
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
 
+
     @RpcConsumer
     private WarehouseRuleReadService warehouseRuleReadService;
 

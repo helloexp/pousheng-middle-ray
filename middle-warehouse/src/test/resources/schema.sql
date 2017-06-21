@@ -89,7 +89,6 @@ CREATE TABLE `pousheng_warehouse_sku_stocks` (
 )COMMENT='sku在仓库的库存情况';
 
 drop table if exists `pousheng_warehouse_shop_returns`;
-
 CREATE TABLE `pousheng_warehouse_shop_returns` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `shop_id` bigint(20)  NULL COMMENT '店铺id',

@@ -3,7 +3,6 @@ package com.pousheng.erp.model;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * Created by xjn on 17/5/9.

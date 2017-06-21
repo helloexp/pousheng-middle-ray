@@ -5,16 +5,13 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.io.CharSource;
 import com.google.common.io.Files;
 import com.pousheng.erp.component.BrandImporter;
-import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.erp.model.PoushengCard;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
 import java.io.File;
 import java.util.List;

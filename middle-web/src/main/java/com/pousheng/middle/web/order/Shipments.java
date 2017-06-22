@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
@@ -174,7 +175,9 @@ public class Shipments {
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
 
         //todo 封装商品信息到extra
-        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(Arrays.asList((Long[]) skuOrderIdAndQuantity.keySet().toArray()));
+        List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
+        skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
 
         Map<String,Integer> skuCodeAndQuantityMap = skuOrders.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));

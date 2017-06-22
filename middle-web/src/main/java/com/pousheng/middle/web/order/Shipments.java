@@ -163,6 +163,9 @@ public class Shipments {
 
     /**
      * 生成发货单
+     * 发货成功：
+     * 1. 更新子单的处理数量
+     * 2. 更新子单的状态（如果子单全部为已处理则更新店铺订单为已处理）
      * @param shopOrderId 店铺订单id
      * @param data skuOrderId及数量 json格式
      * @param warehouseId          仓库id
@@ -254,7 +257,10 @@ public class Shipments {
     //检查库存是否充足
     private void checkStockIsEnough(Long warehouseId, Map<String,Integer> skuCodeAndQuantityMap){
 
-        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId,Arrays.asList((String[]) skuCodeAndQuantityMap.keySet().toArray()));
+
+        List<String> skuCodes = Lists.newArrayListWithCapacity(skuCodeAndQuantityMap.size());
+        skuCodes.addAll(skuCodeAndQuantityMap.keySet());
+        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId,skuCodes);
         for (String skuCode : warehouseStockInfo.keySet()){
             if(warehouseStockInfo.get(skuCode)<skuCodeAndQuantityMap.get(skuCode)){
                 log.error("sku code:{} warehouse stock:{} ship quantity:{} stock not enough",skuCode,warehouseStockInfo.get(skuCode),skuCodeAndQuantityMap.get(skuCode));

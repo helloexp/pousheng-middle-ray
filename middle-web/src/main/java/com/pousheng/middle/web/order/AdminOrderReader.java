@@ -44,10 +44,7 @@ public class AdminOrderReader {
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private MiddleOrderReadService middleOrderReadService;
-    @Autowired
-    private WarehouseReadService warehouseReadService;
 
-    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
     //订单分页
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -72,67 +69,5 @@ public class AdminOrderReader {
         return orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue());
     }
 
-    /**
-     * 发货预览
-     *
-     * @param shopOrderId 店铺订单id
-     * @param data skuOrderId及数量, 是List<SubmittedSku>的json表示形式
-     * @param warehouseId          仓库id
-     * @return 订单信息
-     */
-    @RequestMapping(value = "/api/order/{id}/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<OrderDetail> shipPreview(@PathVariable("id") Long shopOrderId,
-                        @RequestParam("data") String data,
-                                       @RequestParam(value = "warehouseId") Long warehouseId){
-        Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
-
-        Response<OrderDetail> orderDetailRes = orderReadLogic.orderDetail(shopOrderId);
-        if(!orderDetailRes.isSuccess()){
-            log.error("find order detail by order id:{} fail,error:{}",shopOrderId,orderDetailRes.getError());
-            throw new JsonResponseException(orderDetailRes.getError());
-        }
-        OrderDetail orderDetail = orderDetailRes.getResult();
-        List<SkuOrder> allSkuOrders = orderDetail.getSkuOrders();
-        List<SkuOrder> currentSkuOrders = allSkuOrders.stream().filter(skuOrder -> skuOrderIdAndQuantity.containsKey(skuOrder.getId())).collect(Collectors.toList());
-        currentSkuOrders.forEach(skuOrder -> skuOrder.setQuantity(skuOrderIdAndQuantity.get(skuOrder.getId())));
-        orderDetail.setSkuOrders(currentSkuOrders);
-
-        //发货仓库信息
-
-        Warehouse warehouse = findWarehouseById(warehouseId);
-
-        //塞入发货仓库信息
-        ShopOrder shopOrder = orderDetail.getShopOrder();
-        Map<String,String> extraMap = shopOrder.getExtra();
-        if(CollectionUtils.isEmpty(extraMap)){
-            extraMap = Maps.newHashMap();
-        }
-        extraMap.put(TradeConstants.WAREHOUSE_ID,String.valueOf(warehouse.getId()));
-        extraMap.put(TradeConstants.WAREHOUSE_NAME,warehouse.getName());
-        shopOrder.setExtra(extraMap);
-
-        return Response.ok(orderDetail);
-    }
-
-
-    private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
-        Map<Long, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, Long.class, Integer.class));
-        if(skuOrderIdAndQuantity == null) {
-            log.error("failed to parse skuOrderIdAndQuantity:{}",data);
-            throw new JsonResponseException("sku.quantity.invalid");
-        }
-
-        return skuOrderIdAndQuantity;
-    }
-
-    private Warehouse findWarehouseById(Long warehouseId){
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
-        if(!warehouseRes.isSuccess()){
-            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
-            throw new JsonResponseException(warehouseRes.getError());
-        }
-
-        return warehouseRes.getResult();
-    }
 
 }

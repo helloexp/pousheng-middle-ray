@@ -1,10 +1,12 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Set;
 
 /**
  * 发货单复杂信息封装
@@ -25,4 +27,10 @@ public class ShipmentDto implements Serializable{
      * 发货单信息
      */
     private Shipment shipment;
+
+
+    /**
+     * 操作
+     */
+    private Set<OrderOperation> shopOrderOperations;
 }

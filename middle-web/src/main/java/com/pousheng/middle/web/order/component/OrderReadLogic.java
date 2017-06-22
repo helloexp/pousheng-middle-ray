@@ -150,6 +150,23 @@ public class OrderReadLogic {
     }
 
     /**
+     * 订单id集合查询子单
+     * @param skuOrderIds 子订单id集合
+     * @return 子单集合
+     */
+    public List<SkuOrder> findSkuOrdersByIds(List<Long> skuOrderIds){
+        Response<List<SkuOrder>> skuOrdersR = skuOrderReadService.findByIds(skuOrderIds);
+        if (!skuOrdersR.isSuccess()) {
+            log.error("fail to find skuOrders by ids {}, error code:{}",
+                    skuOrderIds, skuOrdersR.getError());
+            throw new JsonResponseException(skuOrdersR.getError());
+        }
+
+        return skuOrdersR.getResult();
+    }
+
+
+    /**
      * 从sku订单总提取共有的操作作为店铺订单操作
      * @param skuOrders sku订单列表
      * @return 店铺订单操作列表

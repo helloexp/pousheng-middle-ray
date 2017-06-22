@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.model.Paging;
 import org.junit.Before;
@@ -29,7 +30,7 @@ public class WarehouseDaoTest extends BaseDaoTest {
     private Warehouse warehouse;
 
     @Before
-    public void init() {
+    public void init() throws Exception{
         warehouse = make();
 
         warehouseDao.create(warehouse);
@@ -70,7 +71,7 @@ public class WarehouseDaoTest extends BaseDaoTest {
         assertEquals(warehousePaging.getData().get(0).getId(), warehouse.getId());
     }
 
-    private Warehouse make() {
+    private Warehouse make() throws Exception{
         Warehouse warehouse = new Warehouse();
 
         
@@ -82,7 +83,7 @@ public class WarehouseDaoTest extends BaseDaoTest {
         
         warehouse.setIsDefault(Boolean.FALSE);
         
-        warehouse.setExtraJson("json");
+        warehouse.setExtra(ImmutableMap.of("key","json"));
         
         warehouse.setCreatedAt(new Date());
         

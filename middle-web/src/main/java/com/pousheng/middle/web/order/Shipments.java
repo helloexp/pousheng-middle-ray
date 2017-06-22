@@ -104,7 +104,7 @@ public class Shipments {
      * @param warehouseId          仓库id
      * @return 订单信息
      */
-    @RequestMapping(value = "/api/order/{id}/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/order/{id}/ship/preview", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OrderDetail> shipPreview(@PathVariable("id") Long shopOrderId,
                                              @RequestParam("data") String data,
                                              @RequestParam(value = "warehouseId") Long warehouseId){

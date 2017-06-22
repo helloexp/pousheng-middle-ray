@@ -10,7 +10,6 @@ import io.terminus.parana.order.dto.fsm.OrderEvent;
 import io.terminus.parana.order.model.OrderBase;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.service.OrderWriteService;
-import io.terminus.parana.web.core.events.trade.OrderCancelEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,7 +41,7 @@ public class OrderWriteLogic {
 
         if (Objects.equals(orderEvent.getValue(), OrderEvent.BUYER_CANCEL.getValue())
                 ||Objects.equals(orderEvent.getValue(), OrderEvent.SELLER_CANCEL.getValue())) {
-            eventBus.post(new OrderCancelEvent(orderBase.getId(), orderLevel.getValue(), orderEvent));
+           // eventBus.post(new OrderCancelEvent(orderBase.getId(), orderLevel.getValue(), orderEvent));
         }
 
         switch (orderLevel) {

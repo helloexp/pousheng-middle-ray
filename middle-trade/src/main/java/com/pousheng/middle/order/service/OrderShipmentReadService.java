@@ -4,10 +4,8 @@ import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.ShipmentDto;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.ShopOrder;
 
 import java.util.List;
 

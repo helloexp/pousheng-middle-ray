@@ -44,7 +44,7 @@ public class SpuImporterFromFile implements CommandLineRunner{
 
     public void run(String... args) throws Exception {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
-                Paths.get("/Users/jlchen/Downloads/product-data2/material"))) {
+                Paths.get("/Users/jlchen/Downloads/product-data/material"))) {
             for (Path path : directoryStream) {
                 if (path.toString().endsWith(".txt")) {
                     log.info("process {}", path.toAbsolutePath());

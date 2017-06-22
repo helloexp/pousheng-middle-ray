@@ -60,6 +60,16 @@ public class WarehouseShopReturns {
         return r.getResult();
     }
 
+    @RequestMapping(value = "/shop/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WarehouseShopReturn findByShopId(@RequestParam Long shopId){
+        Response<WarehouseShopReturn> r = warehouseShopReturnReadService.findByShopId(shopId);
+        if(!r.isSuccess()){
+            log.error("failed to delete WarehouseShopReturn(shop_id={}, error code:{}", shopId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
     @RequestMapping(value = "/paging",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<WarehouseShopReturn> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                                   @RequestParam(required = false, value = "pageSize") Integer pageSize,

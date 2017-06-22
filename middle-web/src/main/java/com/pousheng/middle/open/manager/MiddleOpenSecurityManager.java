@@ -1,8 +1,8 @@
 package com.pousheng.middle.open.manager;
 
 import io.terminus.pampas.openplatform.core.OPHook;
-import io.terminus.pampas.openplatform.entity.OPClientInfo;
 import io.terminus.pampas.openplatform.core.SecurityManager;
+import io.terminus.pampas.openplatform.entity.OPClientInfo;
 import org.springframework.stereotype.Component;
 
 /**

@@ -4,6 +4,7 @@ import com.google.common.base.CharMatcher;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.pousheng.erp.model.SkuGroupRule;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -65,7 +66,7 @@ public enum SkuGroupRuler {
 
     public boolean support(SkuGroupRule skuGroupRule, String cardId, String kindId) {
         //判断品牌id是否匹配
-        if (!Objects.equal(cardId, skuGroupRule.getCardId())) {
+        if (StringUtils.hasText(skuGroupRule.getCardId()) && !Objects.equal(cardId, skuGroupRule.getCardId())) {
             return false;
         }
 

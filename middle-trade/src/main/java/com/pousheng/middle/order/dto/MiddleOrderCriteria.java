@@ -3,8 +3,6 @@ package com.pousheng.middle.order.dto;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.model.PagingCriteria;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import org.joda.time.DateTime;
 import org.springframework.util.StringUtils;
 

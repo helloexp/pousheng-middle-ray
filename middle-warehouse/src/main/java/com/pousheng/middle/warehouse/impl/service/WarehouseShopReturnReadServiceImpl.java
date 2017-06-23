@@ -40,6 +40,23 @@ public class WarehouseShopReturnReadServiceImpl implements WarehouseShopReturnRe
     }
 
     /**
+     * 根据店铺id查找对应的退货仓
+     *
+     * @param shopId 店铺id
+     * @return 店铺的退货仓库
+     */
+    @Override
+    public Response<WarehouseShopReturn> findByShopId(Long shopId) {
+        try {
+            return Response.ok(warehouseShopReturnDao.findByShopId(shopId));
+        } catch (Exception e) {
+            log.error("find warehouseShopReturn by shopId :{} failed,  cause:{}",
+                    shopId, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.shop.return.find.fail");
+        }
+    }
+
+    /**
      * 分页查找退货仓库
      *
      * @param pageNo   起始页码

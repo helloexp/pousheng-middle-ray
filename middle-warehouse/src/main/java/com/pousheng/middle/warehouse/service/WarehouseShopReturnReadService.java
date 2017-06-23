@@ -4,7 +4,6 @@ import com.pousheng.middle.warehouse.model.WarehouseShopReturn;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -21,6 +20,14 @@ public interface WarehouseShopReturnReadService {
      * @return 店铺的退货仓库
      */
     Response<WarehouseShopReturn> findById(Long id);
+
+    /**
+     * 根据店铺id查找对应的退货仓
+     *
+     * @param shopId 店铺id
+     * @return 店铺的退货仓库
+     */
+    Response<WarehouseShopReturn> findByShopId(Long shopId);
 
     /**
      * 分页查找退货仓库

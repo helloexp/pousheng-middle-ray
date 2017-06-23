@@ -9,13 +9,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
+import static org.junit.Assert.*;
 
 
 /**
@@ -65,6 +64,24 @@ public class SpuMaterialDaoTest extends BaseDaoTest {
     }
 
     @Test
+    public void findByMaterialId() throws Exception {
+        SpuMaterial sm = spuMaterialDao.findByMaterialId(spuMaterial.getMaterialId());
+        assertThat(sm, notNullValue());
+    }
+
+    @Test
+    public void findBySpuId() throws Exception {
+        SpuMaterial two = new SpuMaterial();
+        two.setSpuId(3L);
+        two.setMaterialId("any2");
+        two.setMaterialCode("code2");
+        spuMaterialDao.create(two);
+
+        List<SpuMaterial> spuMaterials = spuMaterialDao.findBySpuId(spuMaterial.getSpuId());
+        assertThat(spuMaterials.size(),is(2));
+    }
+
+    @Test
     public void paging() {
         Map<String, Object> params = new HashMap<>();
         params.put("spuId", spuMaterial.getSpuId());
@@ -76,17 +93,10 @@ public class SpuMaterialDaoTest extends BaseDaoTest {
 
     private SpuMaterial make() {
         SpuMaterial spuMaterial = new SpuMaterial();
-
-        
         spuMaterial.setSpuId(3L);
-        
-        spuMaterial.setMaterialId(23L);
-        
+        spuMaterial.setMaterialId("anyss");
         spuMaterial.setMaterialCode("233");
-        
         spuMaterial.setCreatedAt(new Date());
-        
-
         return spuMaterial;
     }
 

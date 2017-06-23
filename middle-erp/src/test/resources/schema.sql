@@ -236,7 +236,7 @@ drop table if exists `pusheng_spu_materials`;
 CREATE TABLE `pusheng_spu_materials` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
   `spu_id` bigint(20) NOT NULL COMMENT 'spu id',
-  `material_id` bigint(20) NOT NULL COMMENT '货品id',
+  `material_id` varchar(20) NOT NULL COMMENT '货品id',
   `material_code` varchar(32) NOT NULL COMMENT '货品编码',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),

@@ -28,11 +28,11 @@ public class SpuMaterialReadService {
         this.spuMaterialDao = spuMaterialDao;
     }
 
-    public Response<SpuMaterial> findById(Long Id) {
+    public Response<SpuMaterial> findById(Long id) {
         try {
-            return Response.ok(spuMaterialDao.findById(Id));
+            return Response.ok(spuMaterialDao.findById(id));
         } catch (Exception e) {
-            log.error("find spuMaterial by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
+            log.error("find spuMaterial by id :{} failed,  cause:{}", id, Throwables.getStackTraceAsString(e));
             return Response.fail("spu.material.find.fail");
         }
     }

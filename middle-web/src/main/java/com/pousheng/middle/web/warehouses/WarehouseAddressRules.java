@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -101,18 +102,22 @@ public class WarehouseAddressRules {
      * @return 祖先id列表
      */
     private List<Long> findAncestorIds(Long addressId) {
-        WarehouseAddress current = warehouseAddressCacher.findById(addressId);
-        if(current == null){
-            log.error("WarehouseAddress(id={}) not exists", addressId);
-            throw new JsonResponseException("warehouseAddress.not.exists");
+        if(addressId >1) {
+            WarehouseAddress current = warehouseAddressCacher.findById(addressId);
+            if (current == null) {
+                log.error("WarehouseAddress(id={}) not exists", addressId);
+                throw new JsonResponseException("warehouseAddress.not.exists");
+            }
+            List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
+            while (current != null && current.getPid() > 1) {
+                Long pid = current.getPid();
+                parentIds.add(pid);
+                current = warehouseAddressCacher.findById(pid);
+            }
+            return parentIds;
+        }else{
+            return Collections.emptyList();
         }
-        List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
-        while(current!=null && current.getPid()>1){
-            Long pid = current.getPid();
-            parentIds.add(pid);
-            current =  warehouseAddressCacher.findById(pid);
-        }
-        return parentIds;
     }
 
     /**

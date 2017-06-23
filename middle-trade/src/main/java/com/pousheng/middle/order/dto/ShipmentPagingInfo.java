@@ -9,11 +9,11 @@ import java.io.Serializable;
 import java.util.Set;
 
 /**
- * 发货单复杂信息封装
+ * 发货单分页信息封装
  * Created by songrenfei on 2017/6/20
  */
 @Data
-public class ShipmentDto implements Serializable{
+public class ShipmentPagingInfo implements Serializable{
 
     private static final long serialVersionUID = 7706149878099313346L;
 

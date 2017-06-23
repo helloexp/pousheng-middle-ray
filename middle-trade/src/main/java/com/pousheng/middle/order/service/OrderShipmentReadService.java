@@ -1,13 +1,11 @@
 package com.pousheng.middle.order.service;
 
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
-import com.pousheng.middle.order.dto.ShipmentDto;
+import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.ShopOrder;
 
 import java.util.List;
 
@@ -32,5 +30,5 @@ public interface OrderShipmentReadService {
      * @param criteria 发货查询条件
      * @return 分页发货单封装信息
      */
-    Response<Paging<ShipmentDto>> findBy(OrderShipmentCriteria criteria);
+    Response<Paging<ShipmentPagingInfo>> findBy(OrderShipmentCriteria criteria);
 }

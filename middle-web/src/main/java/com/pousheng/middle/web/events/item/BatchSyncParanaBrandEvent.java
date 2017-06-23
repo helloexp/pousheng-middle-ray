@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.event;
+package com.pousheng.middle.web.events.item;
 
 import lombok.Data;
 
@@ -9,9 +9,9 @@ import java.util.List;
  * Created by songrenfei on 2017/6/7
  */
 @Data
-public class BatchSyncParanaSpuEvent {
+public class BatchSyncParanaBrandEvent {
 
     private String taskId;
 
-    private List<Long> spuIds;
+    private List<Long> brandIds;
 }

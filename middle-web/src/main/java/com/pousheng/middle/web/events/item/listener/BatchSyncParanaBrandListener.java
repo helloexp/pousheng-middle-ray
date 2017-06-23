@@ -1,9 +1,9 @@
-package com.pousheng.middle.web.event.listener;
+package com.pousheng.middle.web.events.item.listener;
 
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.web.event.BatchSyncParanaBrandEvent;
+import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncErrorData;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;

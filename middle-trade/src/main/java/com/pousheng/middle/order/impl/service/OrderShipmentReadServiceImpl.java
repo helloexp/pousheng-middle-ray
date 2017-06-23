@@ -3,7 +3,7 @@ package com.pousheng.middle.order.impl.service;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
-import com.pousheng.middle.order.dto.ShipmentDto;
+import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
@@ -49,7 +49,7 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
         }
     }
 
-    public Response<Paging<ShipmentDto>> findBy(OrderShipmentCriteria criteria) {
+    public Response<Paging<ShipmentPagingInfo>> findBy(OrderShipmentCriteria criteria) {
         try {
             Paging<OrderShipment> paging = orderShipmentDao.paging(criteria.toMap());
             return Response.ok(transToDto(paging));
@@ -59,12 +59,12 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
         }
     }
 
-    private Paging<ShipmentDto> transToDto(Paging<OrderShipment> paging) {
-        Paging<ShipmentDto> dtoPaging = new Paging<ShipmentDto>();
-        List<ShipmentDto> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());
+    private Paging<ShipmentPagingInfo> transToDto(Paging<OrderShipment> paging) {
+        Paging<ShipmentPagingInfo> dtoPaging = new Paging<ShipmentPagingInfo>();
+        List<ShipmentPagingInfo> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());
         dtoPaging.setTotal(paging.getTotal());
         for (OrderShipment orderShipment : paging.getData()){
-            ShipmentDto dto = new ShipmentDto();
+            ShipmentPagingInfo dto = new ShipmentPagingInfo();
             dto.setOrderShipment(orderShipment);
             try {
                 dto.setShipment(shipmentDao.findById(orderShipment.getShipmentId()));

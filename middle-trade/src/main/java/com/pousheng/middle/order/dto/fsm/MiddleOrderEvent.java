@@ -62,7 +62,7 @@ public enum MiddleOrderEvent {
                 return orderEvent;
             }
         }
-        throw new IllegalArgumentException("unknown order event: " + value);
+        throw new IllegalArgumentException("unknown order events: " + value);
     }
 
     public OrderOperation toOrderOperation() {

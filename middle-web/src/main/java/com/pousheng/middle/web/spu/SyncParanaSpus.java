@@ -2,7 +2,7 @@ package com.pousheng.middle.web.spu;
 
 import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.web.event.BatchSyncParanaSpuEvent;
+import com.pousheng.middle.web.events.item.BatchSyncParanaSpuEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;

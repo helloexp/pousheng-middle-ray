@@ -3,7 +3,7 @@ package com.pousheng.middle.web.brand;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.web.event.BatchSyncParanaBrandEvent;
+import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;

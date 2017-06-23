@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.event;
+package com.pousheng.middle.web.events.item;
 
 import lombok.Data;
 

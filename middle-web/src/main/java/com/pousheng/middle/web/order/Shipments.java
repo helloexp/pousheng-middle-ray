@@ -4,9 +4,10 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
-import com.pousheng.middle.order.dto.ShipmentDto;
+import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -57,6 +58,8 @@ public class Shipments {
     private WarehouseSkuReadService warehouseSkuReadService;
     @Autowired
     private MiddleOrderFlowPicker orderFlowPicker;
+    @Autowired
+    private EventBus eventBus;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -65,14 +68,14 @@ public class Shipments {
     //发货单分页
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public Paging<ShipmentDto> findBy(OrderShipmentCriteria shipmentCriteria) {
+    public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
 
-        Response<Paging<ShipmentDto>> response =  orderShipmentReadService.findBy(shipmentCriteria);
+        Response<Paging<ShipmentPagingInfo>> response =  orderShipmentReadService.findBy(shipmentCriteria);
         if(!response.isSuccess()){
             log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());
             throw new JsonResponseException(response.getError());
         }
-        List<ShipmentDto> shipmentDtos = response.getResult().getData();
+        List<ShipmentPagingInfo> shipmentDtos = response.getResult().getData();
         Flow flow = orderFlowPicker.pickShipments();
         shipmentDtos.forEach(shipmentDto ->shipmentDto.setShopOrderOperations(flow.availableOperations(shipmentDto.getOrderShipment().getStatus())));
         return response.getResult();
@@ -177,7 +180,7 @@ public class Shipments {
                                @RequestParam(value = "warehouseId") Long warehouseId) {
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
 
-        //todo 封装商品信息到extra
+        //todo 封装商品信息到extra 下单店铺、绩效店铺
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
@@ -207,7 +210,12 @@ public class Shipments {
             throw new JsonResponseException(createResp.getError());
         }
 
-        return createResp.getResult();
+
+        Long shipmentId = createResp.getResult();
+
+        //eventBus.post(new OrderShipmentEvent(shipmentId));
+
+        return shipmentId;
 
     }
 

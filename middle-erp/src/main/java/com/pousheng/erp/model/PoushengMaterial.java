@@ -15,6 +15,9 @@ import java.util.List;
 public class PoushengMaterial implements Serializable {
 
     private static final long serialVersionUID = 7436383982566463632L;
+
+    private String material_id; //货品id
+
     private String material_code;  //货品编码
 
     private String material_name; //货品名称

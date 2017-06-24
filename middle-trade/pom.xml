@@ -16,6 +16,12 @@
             <groupId>io.terminus.parana</groupId>
             <artifactId>parana-trade</artifactId>
             <version>${parana.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.terminus.parana</groupId>
+                    <artifactId>parana-user-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>com.zaxxer</groupId>

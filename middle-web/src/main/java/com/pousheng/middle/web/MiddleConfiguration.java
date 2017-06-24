@@ -5,10 +5,12 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.erp.component.SpuInfoFetcher;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
+import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
@@ -17,6 +19,7 @@ import io.terminus.parana.TradeAutoConfig;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -27,6 +30,7 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
 import org.springframework.http.converter.json.AbstractJackson2HttpMessageConverter;
 import org.springframework.scheduling.annotation.EnableScheduling;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.Collections;
@@ -45,9 +49,20 @@ import java.util.Map;
         ItemApiConfiguration.class,
         TradeApiConfig.class,
         TradeAutoConfig.class,
-        ParanaAutoConfiguration.class})
+        ParanaAutoConfiguration.class,
+        AuthConfiguration.class})
 @EnableScheduling
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
+
+
+    @Autowired
+    private LoginInterceptor loginInterceptor;
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(loginInterceptor);
+    }
+
 
     @Bean
     public SpuInfoFetcher<PoushengMaterial> spuInfoFetcher(){

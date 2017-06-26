@@ -12,7 +12,14 @@ mybatis:
       com.pousheng.erp.model,
       com.pousheng.middle.warehouse.model,
       io.terminus.parana.(item|category|brand|spu|shop).model,
-      io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
+      io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+      io.terminus.open.client.common.(mappings|token|shop).model,
+      io.terminus.open.client.item.model
 
 
 rpc.mode: false
+
+gateway:
+  stock:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f

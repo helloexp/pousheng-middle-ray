@@ -19,7 +19,7 @@ mybatis:
       io.terminus.open.client.item.model
 
 
-rpc.mode: true
-rpc.dubbo:
-  module: pousheng-middle
-  registryAddress: 127.0.0.1:2181
+gateway:
+  stock:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f

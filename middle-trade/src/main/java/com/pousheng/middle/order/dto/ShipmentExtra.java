@@ -3,6 +3,7 @@ package com.pousheng.middle.order.dto;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * 发货单扩展信息
@@ -38,4 +39,15 @@ public class ShipmentExtra implements Serializable{
     private Long shipmentDiscountFee;
     //发货单优惠金额
     private Long shipmentTotalFee;
+    //ERP发货单号
+    private String outShipmentId;
+    //物流公司代码
+    private String shipmentCorpCode;
+    //物流公司名称
+    private String shipmentCorpName;
+    //物流单号
+    private String shipmentSerialNo;
+    //发货时间
+    private Date shipmentDate;
+
 }

@@ -226,7 +226,7 @@ public class Shipments {
 
         Long shipmentId = createResp.getResult();
 
-        //eventBus.post(new OrderShipmentEvent(shipmentId));
+        //eventBus.post(new OrderShipmentEvent(shipmentId)); todo 发货成功调用大度仓库接口减库存
 
         return shipmentId;
 

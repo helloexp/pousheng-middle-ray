@@ -74,6 +74,11 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             return Response.fail("shipment.find.fail");
         }    }
 
+    @Override
+    public Response<OrderShipment> findByOrderIdAndSkuCodeAndQuantity(Long id, String skuCode, Integer quantity) {
+        return null;
+    }
+
     private Paging<ShipmentPagingInfo> transToDto(Paging<OrderShipment> paging) {
         Paging<ShipmentPagingInfo> dtoPaging = new Paging<ShipmentPagingInfo>();
         List<ShipmentPagingInfo> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());

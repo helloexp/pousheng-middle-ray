@@ -38,4 +38,13 @@ public interface OrderShipmentReadService {
      * @return 发货单
      */
     Response<OrderShipment> findById(Long id);
+
+    /**
+     * 根据订单id 商品编码 可退货数量查询发货单 for 拉取第三方渠道的逆向订单时需要判断是否需要人工拆单（退货、换货）
+     * @param id 订单id
+     * @param skuCode 商品编码
+     * @param quantity 退货数量
+     * @return 发货单
+     */
+    Response<OrderShipment> findByOrderIdAndSkuCodeAndQuantity(Long id,String skuCode,Integer quantity);
 }

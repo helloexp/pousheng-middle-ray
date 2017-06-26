@@ -76,6 +76,10 @@ public class ShipmentReadLogic {
         shipmentDetail.setShipmentExtra(getShipmentExtra(shipment));
         setInvoiceInfo(shipmentDetail,orderShipment.getOrderId());
         setReceiverInfo(shipmentDetail,shipment);
+        List<Payment> payments = orderReadLogic.findOrderPaymentInfo(orderShipment.getOrderId());
+        if(!CollectionUtils.isEmpty(payments)){
+            shipmentDetail.setPayment(payments.get(0));
+        }
 
         return shipmentDetail;
 
@@ -143,6 +147,7 @@ public class ShipmentReadLogic {
         }
         return mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
     }
+
 
 
     private ShipmentExtra getShipmentExtra(Shipment shipment){

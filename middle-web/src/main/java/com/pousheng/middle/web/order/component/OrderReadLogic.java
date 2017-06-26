@@ -14,11 +14,9 @@ import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderBase;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
+import io.terminus.parana.order.service.PaymentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
 import io.terminus.parana.shop.model.Shop;
@@ -62,6 +60,8 @@ public class OrderReadLogic {
 
     @RpcConsumer
     private SkuReadService skuReadService;
+    @RpcConsumer
+    private PaymentReadService paymentReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
 
@@ -174,6 +174,18 @@ public class OrderReadLogic {
         }
 
         return skuOrdersR.getResult();
+    }
+
+
+    public List<Payment> findOrderPaymentInfo(Long orderId){
+
+        Response<List<Payment>> paymentRes = paymentReadService.findByOrderIdAndOrderLevel(orderId,OrderLevel.SHOP);
+        if(!paymentRes.isSuccess()){
+            log.error("find order payment by order id:{} fail,error:{}",orderId,paymentRes.getError());
+            throw new JsonResponseException(paymentRes.getError())
+        }
+        return paymentRes.getResult();
+
     }
 
 

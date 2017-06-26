@@ -63,13 +63,14 @@ public class Spus {
 
 
     @RequestMapping(value="/bycat",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<Spu> findByCategoryId(@RequestParam(name = "categoryId") Long categoryId,
+    public Paging<Spu> findByCategoryId(@RequestParam(name = "categoryId",required = false) Long categoryId,
+                                        @RequestParam(name="id",required = false)  Long spuId,
                                         @RequestParam(name="keyword",required = false)String keyword,
                                         @RequestParam(name="pageNo",defaultValue = "1")Integer pageNo,
                                         @RequestParam(name = "pageSize", defaultValue = "10")Integer pageSize){
-        Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId, keyword,pageNo, pageSize);
+        Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId, spuId,keyword,pageNo, pageSize);
         if(!rSpu.isSuccess()){
-            log.error("failed to find spu by category(id={}),error code:{}", categoryId, rSpu.getError());
+            log.error("failed to find spu by category(id={}) spu(id:{}) keyword:{},error code:{}", categoryId, spuId,keyword,rSpu.getError());
             throw new JsonResponseException(rSpu.getError());
         }
         return rSpu.getResult();

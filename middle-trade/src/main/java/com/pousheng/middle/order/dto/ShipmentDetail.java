@@ -18,13 +18,17 @@ public class ShipmentDetail implements Serializable{
     //发货信息
     private Shipment shipment;
 
+    private OrderShipment orderShipment;
+
+    private List<ShipmentItem> shipmentItems;
+
     //订单信息
     private ShopOrder shopOrder;
 
     /**
      * 用户收货地址信息
      */
-    private List<OrderReceiverInfo> orderReceiverInfos;
+    private ReceiverInfo  receiverInfo;
 
     /**
      * 发票信息

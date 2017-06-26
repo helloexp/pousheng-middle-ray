@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
+import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -14,6 +15,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -60,6 +62,8 @@ public class Shipments {
     private MiddleOrderFlowPicker orderFlowPicker;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -79,6 +83,15 @@ public class Shipments {
         Flow flow = orderFlowPicker.pickShipments();
         shipmentDtos.forEach(shipmentDto ->shipmentDto.setShopOrderOperations(flow.availableOperations(shipmentDto.getOrderShipment().getStatus())));
         return response.getResult();
+    }
+
+
+    //发货单详情
+    @RequestMapping(value = "/api/shipment/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public ShipmentDetail findDetail(@PathVariable(value = "id") Long orderShipmentId) {
+
+        return shipmentReadLogic.orderDetail(orderShipmentId);
     }
 
 

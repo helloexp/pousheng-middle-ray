@@ -8,6 +8,7 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderLevel;
@@ -58,6 +59,20 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             return Response.fail("shipment.find.fail");
         }
     }
+
+    @Override
+    public Response<OrderShipment> findById(Long id) {
+        try {
+            OrderShipment orderShipment = orderShipmentDao.findById(id);
+            if(Arguments.isNull(orderShipment)){
+                log.error("order shipment(id:{}) not exist",id);
+                return Response.fail("order.shipment.not.exist");
+            }
+            return Response.ok(orderShipment);
+        } catch (Exception e) {
+            log.error("failed to find order shipment, id={}, cause:{}",id, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.find.fail");
+        }    }
 
     private Paging<ShipmentPagingInfo> transToDto(Paging<OrderShipment> paging) {
         Paging<ShipmentPagingInfo> dtoPaging = new Paging<ShipmentPagingInfo>();

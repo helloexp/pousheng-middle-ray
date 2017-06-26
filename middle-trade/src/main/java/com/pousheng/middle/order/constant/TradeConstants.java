@@ -16,6 +16,10 @@ public class TradeConstants {
     public static final String WAREHOUSE_NAME = "warehouseName";
 
 
+    //发货单商品信息
+    public static final String SHIPMENT_ITEM_INFO = "shipmentItemInfo";
+
+
 
 
 

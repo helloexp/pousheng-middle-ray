@@ -21,6 +21,7 @@ import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
+import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,6 +148,16 @@ public class OrderReadLogic {
         }
 
         return skuOrdersR.getResult();
+    }
+
+    public ShopOrder findShopOrderById(Long shopOrderId){
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(shopOrderId);
+        if(!shopOrderRes.isSuccess()){
+            log.error("find shop order by id:{} fail,error:{}",shopOrderId,shopOrderRes.getError());
+            throw new JsonResponseException(shopOrderRes.getError());
+        }
+
+        return shopOrderRes.getResult();
     }
 
     /**

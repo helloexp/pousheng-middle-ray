@@ -31,4 +31,11 @@ public interface OrderShipmentReadService {
      * @return 分页发货单封装信息
      */
     Response<Paging<ShipmentPagingInfo>> findBy(OrderShipmentCriteria criteria);
+
+    /**
+     * 根据主键id查询发货单
+     * @param id 主键id
+     * @return 发货单
+     */
+    Response<OrderShipment> findById(Long id);
 }

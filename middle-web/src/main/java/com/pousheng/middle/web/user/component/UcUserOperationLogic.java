@@ -27,7 +27,7 @@ public class UcUserOperationLogic {
      * @return 用户登录token信息
      */
     public LoginTokenInfo getUserToken(String userName, String password){
-        String url = "http://127.0.0.1:8081/oauth/token";
+        String url = "http://devt-account.pousheng.com/oauth/token";
 
         params.put("client_id","c3");
         params.put("client_secret","secret");
@@ -51,7 +51,7 @@ public class UcUserOperationLogic {
 
     public UcUserInfo authGetUserInfo(String token){
 
-        String resultJson = HttpRequest.get("http://127.0.0.1:8081/userinfo")
+        String resultJson = HttpRequest.get("http://devt-account.pousheng.com/userinfo")
                 .authorization("Bearer " + token)
                 .connectTimeout(1000000)
                 .readTimeout(1000000)

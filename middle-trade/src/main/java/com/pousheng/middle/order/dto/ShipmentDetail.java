@@ -22,6 +22,8 @@ public class ShipmentDetail implements Serializable{
 
     private List<ShipmentItem> shipmentItems;
 
+    private ShipmentExtra shipmentExtra;
+
     //订单信息
     private ShopOrder shopOrder;
 

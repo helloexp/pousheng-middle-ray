@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
@@ -57,6 +58,8 @@ public class ShipmentReadLogic {
             new TypeReference<List<ShipmentItem>>() {
             };
 
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
     /**
      * 发货单详情
      */
@@ -70,6 +73,7 @@ public class ShipmentReadLogic {
         shipmentDetail.setShipment(shipment);
         shipmentDetail.setShopOrder(shopOrder);
         shipmentDetail.setShipmentItems(getShipmentItems(shipment));
+        shipmentDetail.setShipmentExtra(getShipmentExtra(shipment));
         setInvoiceInfo(shipmentDetail,orderShipment.getOrderId());
         setReceiverInfo(shipmentDetail,shipment);
 
@@ -137,15 +141,23 @@ public class ShipmentReadLogic {
             log.error("shipment(id:{}) extra not contain key:{}",shipment.getId(),TradeConstants.SHIPMENT_ITEM_INFO);
             throw new JsonResponseException("shipment.extra.item.info.null");
         }
+        return mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
+    }
 
 
-        try {
-            return JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper()
-                    .readValue(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO), LIST_OF_SHIPMENT_ITEM);
-        } catch (IOException e) {
-            log.error("shipment extra map item info json:{} convert to object fail,cause:{} ",extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO), Throwables.getStackTraceAsString(e));
-            throw new JsonResponseException("analysis.shipment.item.info.json.error");
+    private ShipmentExtra getShipmentExtra(Shipment shipment){
+        Map<String,String> extraMap = shipment.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("shipment(id:{}) extra field is null",shipment.getId());
+            throw new JsonResponseException("shipment.extra.is.null");
         }
+        if(!extraMap.containsKey(TradeConstants.SHIPMENT_EXTRA_INFO)){
+            log.error("shipment(id:{}) extra not contain key:{}",shipment.getId(),TradeConstants.SHIPMENT_EXTRA_INFO);
+            throw new JsonResponseException("shipment.extra.extra.info.null");
+        }
+
+        return mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_EXTRA_INFO),ShipmentExtra.class);
+
 
     }
 

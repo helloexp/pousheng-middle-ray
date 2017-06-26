@@ -26,3 +26,7 @@ CREATE TABLE `pusheng_spu_materials` (
   KEY `idx_psm_spu_id` (spu_id),
   KEY `idx_psm_material_id` (material_id)
 ) COMMENT='spu与material_id的关联' ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+-- 修改字段长度
+ALTER TABLE `parana_shipments` CHANGE `extra_json` `extra_json` VARCHAR(1024);

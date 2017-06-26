@@ -39,3 +39,8 @@ rpc.mode: true
 rpc.dubbo:
   module: pousheng-middle
   registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}
+
+gateway:
+  stock:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f

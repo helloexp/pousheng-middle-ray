@@ -182,7 +182,7 @@ public class OrderReadLogic {
         Response<List<Payment>> paymentRes = paymentReadService.findByOrderIdAndOrderLevel(orderId,OrderLevel.SHOP);
         if(!paymentRes.isSuccess()){
             log.error("find order payment by order id:{} fail,error:{}",orderId,paymentRes.getError());
-            throw new JsonResponseException(paymentRes.getError())
+            throw new JsonResponseException(paymentRes.getError());
         }
         return paymentRes.getResult();
 

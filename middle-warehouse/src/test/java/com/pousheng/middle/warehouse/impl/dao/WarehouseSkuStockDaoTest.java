@@ -84,6 +84,24 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
         assertThat(p.getTotal(), is(2L));
     }
 
+    @Test
+    public void decreaseStock() throws Exception {
+        boolean success = warehouseSkuStockDao.decreaseStock(warehouseSkuStock.getWarehouseId(), warehouseSkuStock.getSkuCode(),
+                warehouseSkuStock.getAvailStock().intValue()-1);
+        assertThat(success, is(true));
+        WarehouseSkuStock actual = warehouseSkuStockDao.findById(warehouseSkuStock.getId());
+        assertThat(actual.getAvailStock(), is(1L));
+    }
+
+    @Test
+    public void insufficientStock() throws Exception {
+        boolean fail = warehouseSkuStockDao.decreaseStock(warehouseSkuStock.getWarehouseId(), warehouseSkuStock.getSkuCode(),
+                warehouseSkuStock.getAvailStock().intValue()+1);
+        assertThat(fail, is(false));
+        WarehouseSkuStock actual = warehouseSkuStockDao.findById(warehouseSkuStock.getId());
+        assertThat(actual.getAvailStock(), is(warehouseSkuStock.getAvailStock()));
+    }
+
     private WarehouseSkuStock make(String skuCode) {
         WarehouseSkuStock warehouseSkuStock = new WarehouseSkuStock();
 

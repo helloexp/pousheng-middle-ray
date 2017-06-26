@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.warehouses.dto;
+package com.pousheng.middle.warehouse.dto;
 
 import lombok.Data;
 

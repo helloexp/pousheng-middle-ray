@@ -98,6 +98,14 @@
         </set>
         WHERE id = #{id}
     </update>
+    
+    <update id="decreaseStock"  parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock - #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
+        <![CDATA[ avail_stock>=#{delta} ]]>
+    </update>
 
     <delete id="delete" parameterType="long">
         DELETE FROM <include refid="tb"/>

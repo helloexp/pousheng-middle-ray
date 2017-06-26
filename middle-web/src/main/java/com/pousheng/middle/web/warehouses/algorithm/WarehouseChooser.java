@@ -11,8 +11,9 @@ import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
-import com.pousheng.middle.web.warehouses.dto.SelectedWarehouse;
-import com.pousheng.middle.web.warehouses.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -39,6 +40,9 @@ public class WarehouseChooser {
 
     @RpcConsumer
     private WarehouseSkuReadService warehouseSkuReadService;
+
+    @RpcConsumer
+    private WarehouseSkuWriteService warehouseSkuWriteService;
 
     @RpcConsumer
     private WarehouseAddressCacher warehouseAddressCacher;
@@ -84,6 +88,13 @@ public class WarehouseChooser {
             List<SelectedWarehouse> warehouses = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
                     skuCodeAndQuantities);
             if (!CollectionUtils.isEmpty(warehouses)) {
+                //todo: 先扣减库存再返回结果
+                Response<Boolean> rDecrease = warehouseSkuWriteService.decreaseStock(warehouses);
+                if(!rDecrease.isSuccess()){
+                    log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
+                            "auto dispatch stock failed", addressId, rDecrease.getError());
+                    return Collections.emptyList();
+                }
                 return warehouses;
             }
         }
@@ -130,6 +141,7 @@ public class WarehouseChooser {
 
         //总是选择可能发货数量最大的仓库
         while (current.size() > 0) {
+            //当前可发货数量
             int affordCount = 0;
             Long candidateWarehouseId = -1L;
             for (Long warehouseId : widskucode2stock.rowKeySet()) {
@@ -142,6 +154,7 @@ public class WarehouseChooser {
                     count += actual;
                 }
                 if (count > affordCount) {
+                    affordCount = count; //更新当前仓库的可发货数量
                     candidateWarehouseId = warehouseId;
                 }
             }

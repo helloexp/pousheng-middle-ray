@@ -1,13 +1,17 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
+import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Author: jlchen
@@ -20,9 +24,13 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
 
     private final WarehouseSkuStockDao warehouseSkuStockDao;
 
+    private final WarehouseSkuStockManager warehouseSkuStockManager;
+
     @Autowired
-    public WarehouseSkuWriteServiceImpl(WarehouseSkuStockDao warehouseSkuStockDao) {
+    public WarehouseSkuWriteServiceImpl(WarehouseSkuStockDao warehouseSkuStockDao,
+                                        WarehouseSkuStockManager warehouseSkuStockManager) {
         this.warehouseSkuStockDao = warehouseSkuStockDao;
+        this.warehouseSkuStockManager = warehouseSkuStockManager;
     }
 
     @Override
@@ -53,6 +61,23 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
         } catch (Exception e) {
             log.error("delete warehouseSku failed, warehouseSkuId:{}, cause:{}", warehouseSkuId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.sku.delete.fail");
+        }
+    }
+
+    /**
+     * 根据指定的仓库分配策略扣减库存
+     *
+     * @param warehouses 仓库及发货数量列表
+     * @return 是否扣减成功
+     */
+    @Override
+    public Response<Boolean> decreaseStock(List<SelectedWarehouse> warehouses) {
+        try {
+            warehouseSkuStockManager.decreaseStock(warehouses);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("failed to decrease stock for {}", warehouses, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.stock.decrease.fail");
         }
     }
 }

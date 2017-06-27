@@ -38,6 +38,8 @@ public class PushedItemMaker implements ParanaFullItemMaker {
     @Autowired
     private BackCategoryCacher backCategoryCacher;
 
+    private final static String ORIGIN_PRICE_KEY = "originPrice";
+
     @Override
     public ParanaFullItem make(Long spuId) {
         Response<FullSpu> rFullSpu = spuReadService.findFullInfoBySpuId(spuId);
@@ -51,7 +53,10 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         final List<SkuTemplate> skuTemplates = fullSpu.getSkuTemplates();
 
         ParanaItem paranaItem = new ParanaItem();
+        paranaItem.setItemId(spuId);
         paranaItem.setSpuId(spuId);
+        paranaItem.setItemCode(spu.getSpuCode());
+        paranaItem.setAdvertise(spu.getAdvertise());
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());
         paranaItem.setCategoryIds(backCategoryCacher.findAncestorsOf(spu.getCategoryId()).stream().map(BackCategory::getId).collect(Collectors.toList()));
@@ -76,9 +81,8 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         List<ParanaSku> paranaSkus = Lists.newArrayListWithCapacity(skuTemplates.size());
         for (SkuTemplate skuTemplate : skuTemplates) {
             ParanaSku paranaSku = new ParanaSku();
-            //TODO 这里是市场价是否填实际值
-            paranaSku.setMarketPrice(0);
-            paranaSku.setPrice(0);
+            paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
+            paranaSku.setPrice(paranaSku.getMarketPrice());
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());
             paranaSku.setSkuCode(skuTemplate.getSkuCode());

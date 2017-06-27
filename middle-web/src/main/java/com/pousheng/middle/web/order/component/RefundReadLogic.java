@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.dto.RefundPaging;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -77,6 +78,10 @@ public class RefundReadLogic {
     }
 
     public Response<Map<Long,OrderRefund>> groupOrderRerundByRefundId(List<Refund> refunds){
+
+        if(CollectionUtils.isEmpty(refunds)){
+            return Response.ok(Maps.newHashMap());
+        }
         List<Long> refundIds = Lists.transform(refunds, new Function<Refund, Long>() {
             @Nullable
             @Override

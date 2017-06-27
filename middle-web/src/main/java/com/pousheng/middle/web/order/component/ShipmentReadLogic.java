@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.component;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
@@ -47,14 +46,6 @@ public class ShipmentReadLogic {
 
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
-
-
-    static final Integer BATCH_SIZE = 100;     // 批处理数量
-
-
-    private final static TypeReference<List<ShipmentItem>> LIST_OF_SHIPMENT_ITEM =
-            new TypeReference<List<ShipmentItem>>() {
-            };
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 

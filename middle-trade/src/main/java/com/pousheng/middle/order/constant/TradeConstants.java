@@ -30,4 +30,10 @@ public class TradeConstants {
     //发货单扩展信息
     public static final String SHIPMENT_EXTRA_INFO = "shipmentExtraInfo";
 
+
+    //逆向单商品信息
+    public static final String REFUND_ITEM_INFO = "refundItemInfo";
+    //逆向单商品信息
+    public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
+
 }

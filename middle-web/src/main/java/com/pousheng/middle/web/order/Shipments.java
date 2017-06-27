@@ -178,6 +178,7 @@ public class Shipments {
 
 
     /**
+     * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
      * 生成发货单
      * 发货成功：
      * 1. 更新子单的处理数量
@@ -226,7 +227,7 @@ public class Shipments {
 
         Long shipmentId = createResp.getResult();
 
-        //eventBus.post(new OrderShipmentEvent(shipmentId)); todo 发货成功调用大度仓库接口减库存
+        //eventBus.post(new OrderShipmentEvent(shipmentId));
 
         return shipmentId;
 

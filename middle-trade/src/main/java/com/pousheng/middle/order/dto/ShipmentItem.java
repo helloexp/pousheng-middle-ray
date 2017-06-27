@@ -21,7 +21,7 @@ public class ShipmentItem implements Serializable{
     private String skuName;
     //数量
     private Integer quantity;
-    //已退货数量
+    //已退货数量 (售后子单级别申请，数量一定大于等于quantity)
     //发货数量 -  已退货数量 = 剩余可退货数量
     private Integer refundQuantity;
     //积分

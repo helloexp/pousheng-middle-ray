@@ -1,18 +1,19 @@
 package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.MiddleRefundDetail;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.RefundPaging;
+import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.OrderRefund;
+import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -31,6 +33,8 @@ public class Refunds {
 
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -60,23 +64,18 @@ public class Refunds {
         MiddleRefundDetail refundDetail = new MiddleRefundDetail();
         refundDetail.setOrderRefund(orderRefund);
         refundDetail.setRefund(refund);
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
+        refundDetail.setRefundExtra(refundExtra);
 
-        Map<String,String> extraMap = refund.getExtra();
-        if(CollectionUtils.isEmpty(extraMap)){
-            log.error("refund(id:{}) extra field is null",refundId);
-            throw new JsonResponseException("refund.extra.is.empty");
+        //如果为换货,则封装发货信息
+        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())){
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(refundExtra.getShipmentId());
+            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+            refundDetail.setShipmentItems(shipmentItems);
+            refundDetail.setOrderShipment(orderShipment);
         }
-        if(!extraMap.containsKey(TradeConstants.REFUND_ITEM_INFO)){
-            log.error("refund(id:{}) extra map not contain key:{}",refundId,TradeConstants.REFUND_ITEM_INFO);
-            throw new JsonResponseException("refund.exit.not.contain.item.info");
-        }
-        if(!extraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
-            log.error("refund(id:{}) extra map not contain key:{}",refundId,TradeConstants.REFUND_EXTRA_INFO);
-            throw new JsonResponseException("refund.exit.not.contain.extra.info");
-        }
-
-        refundDetail.setRefundItems(mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class)));
-        refundDetail.setRefundExtra(mapper.fromJson(extraMap.get(TradeConstants.REFUND_EXTRA_INFO),RefundExtra.class));
 
         return refundDetail;
     }

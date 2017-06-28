@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dto;
 
 import io.terminus.parana.order.model.OrderRefund;
+import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Refund;
 import lombok.Data;
@@ -23,4 +24,9 @@ public class MiddleRefundDetail implements Serializable {
     private List<RefundItem> refundItems;
 
     private RefundExtra refundExtra;
+
+    //发货信息
+    private OrderShipment orderShipment;
+    //发货信息
+    private List<ShipmentItem> shipmentItems;
 }

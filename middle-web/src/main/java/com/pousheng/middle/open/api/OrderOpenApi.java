@@ -24,7 +24,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.servlet.resource.TransformedResource;
 
 import javax.validation.constraints.NotNull;
 import java.util.Map;

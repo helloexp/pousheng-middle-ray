@@ -4,7 +4,6 @@ import io.terminus.parana.ItemAutoConfig;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
-import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * Description: add something here
@@ -14,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @Configuration
 @ComponentScan
 @Import(ItemAutoConfig.class)
-@EnableScheduling
 public class ErpConfiguration {
 
 }

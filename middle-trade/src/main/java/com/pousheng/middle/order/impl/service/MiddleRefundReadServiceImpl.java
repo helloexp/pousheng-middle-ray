@@ -15,7 +15,6 @@ import io.terminus.parana.order.impl.dao.RefundDao;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.SkuOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

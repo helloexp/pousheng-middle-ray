@@ -9,6 +9,7 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -57,6 +58,10 @@ public class FireCall {
         return "ok";
     }
 
+    /**
+     * 每天凌晨2点触发
+     */
+    @Scheduled(cron="0 0 2 * * ?")
     @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpu(@RequestParam String start,
                                  @RequestParam(name = "end", required = false) String end) {
@@ -73,6 +78,9 @@ public class FireCall {
         log.info("synchronized {} spus", spuCount);
         return "ok";
     }
+
+
+
 
 }
 

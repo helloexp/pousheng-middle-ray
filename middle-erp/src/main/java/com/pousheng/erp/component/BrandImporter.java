@@ -5,7 +5,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.model.PoushengCard;
-import io.terminus.common.model.Paging;
 import io.terminus.parana.brand.impl.dao.BrandDao;
 import io.terminus.parana.brand.model.Brand;
 import lombok.extern.slf4j.Slf4j;

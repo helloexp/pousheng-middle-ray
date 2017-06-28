@@ -3,7 +3,6 @@ package com.pousheng.middle.web.warehouses.gateway;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.StockBill;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,8 +12,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>

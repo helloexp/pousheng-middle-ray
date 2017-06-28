@@ -124,7 +124,7 @@ public class ShipmentReadLogic {
     }
 
 
-    private List<ShipmentItem> getShipmentItems(Shipment shipment){
+    public List<ShipmentItem> getShipmentItems(Shipment shipment){
         Map<String,String> extraMap = shipment.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("shipment(id:{}) extra field is null",shipment.getId());
@@ -139,7 +139,7 @@ public class ShipmentReadLogic {
 
 
 
-    private ShipmentExtra getShipmentExtra(Shipment shipment){
+    public ShipmentExtra getShipmentExtra(Shipment shipment){
         Map<String,String> extraMap = shipment.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("shipment(id:{}) extra field is null",shipment.getId());

@@ -9,7 +9,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.item.service.SkuReadService;
-import io.terminus.parana.order.api.FlowPicker;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -19,7 +18,6 @@ import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.PaymentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
-import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,9 +37,6 @@ import java.util.Set;
 @Component
 @Slf4j
 public class OrderReadLogic {
-
-    @Autowired
-    private FlowPicker flowPicker;
 
     @RpcConsumer
     private OrderReadService orderReadService;

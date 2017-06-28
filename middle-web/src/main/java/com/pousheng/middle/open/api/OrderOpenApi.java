@@ -1,21 +1,33 @@
 package com.pousheng.middle.open.api;
 
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
-import io.terminus.parana.order.service.PaymentReadService;
-import io.terminus.parana.order.service.ReceiverInfoReadService;
-import io.terminus.parana.order.service.ShopOrderReadService;
-import io.terminus.parana.order.service.SkuOrderReadService;
+import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.servlet.resource.TransformedResource;
 
 import javax.validation.constraints.NotNull;
+import java.util.Map;
 
 /**
  * 订单open api
@@ -26,15 +38,12 @@ import javax.validation.constraints.NotNull;
 public class OrderOpenApi {
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     @RpcConsumer
-    private PaymentReadService paymentReadService;
-    @RpcConsumer
-    private ShopOrderReadService shopOrderReadService;
-    @RpcConsumer
-    private SkuOrderReadService skuOrderReadService;
-    @RpcConsumer
-    private ReceiverInfoReadService receiverInfoReadService;
+    private ShipmentWriteService shipmentWriteService;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -52,15 +61,63 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId","hkShipmentId","shipmentCorpCode","shipmentSerialNo",
             "shipmentDate"}, httpMethods = RequestMethod.POST)
     public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
-                                                 @NotNull(message = "hk.shipment.id.is.null") Long hkShipmentId,
+                                                 @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                                  @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                                  @NotEmpty(message = "shipment.serial.no.empty") String shipmentSerialNo,
                                                  @NotEmpty(message = "shipment.date.empty") String shipmentDate){
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
                 "shipmentSerialNo is:{} shipmentDate is:{}",shipmentId,hkShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
 
+        try {
+
+            DateTime dt = DateTime.parse(shipmentDate, DFT);
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(shipmentId);
+
+            //判断状态及获取接下来的状态
+            Flow flow = flowPicker.pickShipments();
+            OrderOperation orderOperation =  MiddleOrderEvent.SHIP.toOrderOperation();
+            if (!flow.operationAllowed(orderShipment.getStatus(), orderOperation)) {
+                log.error("shipment(id={})'s status({}) not fit for ship",
+                        orderShipment.getId(), orderShipment.getStatus());
+                throw new OPServerException("shipment.current.status.not.allow.ship");
+            }
+            Integer targetStatus = flow.target(orderShipment.getStatus(),orderOperation);
+            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
+
+            //封装更新信息
+            Shipment update = new Shipment();
+            update.setId(shipment.getId());
+            Map<String,String> extraMap = shipment.getExtra();
+            shipmentExtra.setErpOrderShopCode(hkShipmentId);
+            shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
+            shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
+            //shipmentExtra.setShipmentCorpName();todo 转换为中文
+            shipmentExtra.setShipmentDate(dt.toDate());
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,mapper.toJson(shipmentExtra));
+            update.setExtra(extraMap);
+
+            //更新状态
+            Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(),targetStatus);
+            if(!updateStatusRes.isSuccess()){
+                log.error("update shipment(id:{}) status to :{} fail,error:{}",shipment.getId(),targetStatus,updateStatusRes.getError());
+                throw new OPServerException(updateStatusRes.getError());
+            }
+
+            //更新基本信息
+            Response<Boolean> updateRes = shipmentWriteService.update(update);
+            if(!updateRes.isSuccess()){
+                log.error("update shipment(id:{}) extraMap to :{} fail,error:{}",shipment.getId(),extraMap,updateRes.getError());
+                throw new OPServerException(updateStatusRes.getError());
+            }
+
+        }catch (JsonResponseException e){
+            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}",shipmentId,e.getMessage());
+            throw new OPServerException(e.getMessage());
+        }
+
         log.info("HK-SYNC-SHIPMENT-STATUS-END");
-        throw new OPServerException("更新失败");
     }
 
 

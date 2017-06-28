@@ -8,6 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.ShipmentDetail;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -71,7 +72,6 @@ public class Shipments {
 
     //发货单分页
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
 
         Response<Paging<ShipmentPagingInfo>> response =  orderShipmentReadService.findBy(shipmentCriteria);
@@ -88,7 +88,6 @@ public class Shipments {
 
     //发货单详情
     @RequestMapping(value = "/api/shipment/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public ShipmentDetail findDetail(@PathVariable(value = "id") Long orderShipmentId) {
 
         return shipmentReadLogic.orderDetail(orderShipmentId);
@@ -101,7 +100,6 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public List<OrderShipment> shipments(@PathVariable("id") Long shopOrderId) {
         Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
         if(!response.isSuccess()){
@@ -155,7 +153,19 @@ public class Shipments {
     }
 
 
-    private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
+    //获取发货单商品明细
+    @RequestMapping(value = "/api/shipment/{id}/items", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<ShipmentItem> shipmentItems(@PathVariable("id") Long orderShipmentId) {
+
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(orderShipmentId);
+        Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+        return shipmentReadLogic.getShipmentItems(shipment);
+
+    }
+
+
+
+        private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
         Map<Long, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, Long.class, Integer.class));
         if(skuOrderIdAndQuantity == null) {
             log.error("failed to parse skuOrderIdAndQuantity:{}",data);

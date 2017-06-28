@@ -26,6 +26,7 @@ public enum MiddleOrderEvent {
     SYNC_SUCCESS(3, "syncSuccess", "hk"),
     SYNC_REFUND_SUCCESS(3, "syncRefundSuccess", "hk"),
     SYNC_RETURN_SUCCESS(3, "syncReturnSuccess", "hk"),
+    SYNC_CANCEL_RETURN_SUCCESS(3, "syncCancelReturnSuccess", "hk"),
     SYNC_FAIL(3, "syncFail", "hk"),
     REFUND_APPLY_AGREE(-4, "refundApplyAgree", "seller"),
     REFUND(-7, "refund", "hk"),
@@ -39,6 +40,7 @@ public enum MiddleOrderEvent {
     RETURN_APPLY_CANCEL(-10, "returnApplyCancel", "buyer"),
     RETURN_APPLY_REJECT(-11,"returnApplyReject", "seller"),
     RETURN(-12, "return", "hk"),
+    CANCEL_RETURN(-12, "cancelReturn", "admin"),
     RETURN_CHANGE(-12, "returnChange", "hk"),
     RETURN_REJECT(-13, "returnReject", "seller"),
     RETURN_CONFIRM(-14, "returnConfirm", "seller");

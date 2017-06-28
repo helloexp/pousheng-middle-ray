@@ -165,6 +165,17 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.SYNC_RETURN_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue());
 
+            //同步退货成功-待退货 -->取消退货--> 同步中
+            addTransition(MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue(),
+                    MiddleOrderEvent.CANCEL_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_HK_ING.getValue());
+
+            //同步取消退货中 -->取消成功--> 已取消
+            addTransition(MiddleRefundStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_CANCEL_RETURN_SUCCESS.toOrderOperation(),
+                    MiddleRefundStatus.CANCELED.getValue());
+
+
             //同步退货成功-待退货 -->退货-完成 --> 已退货待退款
             addTransition(MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.RETURN.toOrderOperation(),

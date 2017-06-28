@@ -14,18 +14,19 @@ import com.google.common.base.Objects;
  */
 public enum MiddleRefundStatus {
 
-    WAIT_HANDLE(1),  //待处理
+    WAIT_HANDLE(1),     //待处理
     WAIT_SYNC_HK(2),    //待同步恒康(整单)
-    SYNC_HK_ING(3),    //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_HK_ING(3),     //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
     REFUND_SYNC_HK_SUCCESS(4),      //同步恒康成功待退款(仅退款)
     RETURN_SYNC_HK_SUCCESS(5),      //同步恒康成功待退货完成(退货)
     RETURN_DONE_WAIT_REFUND(6),         //退货完成待退款
     RETURN_DONE_WAIT_CREATE_SHIPMENT(7),         //退货完成待创建发货
-    WAIT_SHIP(7),         //待发货
-    WAIT_CONFIRM_RECEIVE(7),         //待确认收货
-    REFUND(8),              //已退款(仅退款、退货退款)
-    DONE(8),              //已完成（换货）
-    SYNC_HK_FAIL(-1);      //同步恒康失败
+    WAIT_SHIP(8),         //待发货
+    WAIT_CONFIRM_RECEIVE(9),         //待确认收货
+    REFUND(10),              //已退款(仅退款、退货退款)
+    DONE(11),              //已完成（换货）
+    SYNC_HK_FAIL(-1),      //同步恒康失败
+    CANCELED(-2);//已取消
 
 
     private final int value;

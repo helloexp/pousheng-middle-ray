@@ -4,6 +4,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -29,5 +30,16 @@ public class RefundExtra implements Serializable{
     private String shipmentCorpName;
     //物流单号
     private String shipmentSerialNo;
+
+    //处理完成时间
+    private Date handleDoneAt;
+    //恒康同步退货完成时间
+    private Date hkReturnDoneAt;
+    //换货发货单创建时间
+    private Date changeShipmentAt;
+    //发货时间
+    private Date shipAt;
+    //确认收货时间
+    private Date confirmReceivedAt;
 
 }

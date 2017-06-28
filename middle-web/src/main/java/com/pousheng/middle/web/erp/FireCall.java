@@ -58,10 +58,7 @@ public class FireCall {
         return "ok";
     }
 
-    /**
-     * 每天凌晨2点触发
-     */
-    @Scheduled(cron="0 0 2 * * ?")
+
     @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpu(@RequestParam String start,
                                  @RequestParam(name = "end", required = false) String end) {

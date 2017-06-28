@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.warehouses.gateway;
+package com.pousheng.middle.web.erp;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,7 +29,7 @@ import java.util.Map;
  */
 @Component
 @Slf4j
-public class StockClient {
+public class ErpClient {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
     public static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -43,8 +43,8 @@ public class StockClient {
     private final String accessKey;
 
     @Autowired
-    public StockClient(@Value("${gateway.stock.host}") String host,
-                       @Value("${gateway.stock.accessKey}")String accessKey) {
+    public ErpClient(@Value("${gateway.erp.host}") String host,
+                     @Value("${gateway.erp.accessKey}")String accessKey) {
         this.host = host;
         this.accessKey = accessKey;
     }

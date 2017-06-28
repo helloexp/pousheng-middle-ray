@@ -23,5 +23,10 @@ mybatis:
     io.terminus.open.client.common.(mappings|token|shop).model,
     io.terminus.open.client.item.model
 
+gateway:
+  erp:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+
 
 rpc.mode: false

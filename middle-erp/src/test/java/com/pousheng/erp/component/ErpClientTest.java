@@ -1,9 +1,7 @@
-package com.pousheng.middle.web.warehouses.gateway;
+package com.pousheng.erp.component;
 
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.model.StockBill;
 import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +9,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
+import java.util.Date;
 import java.util.Map;
-
-import static org.junit.Assert.*;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -22,22 +18,22 @@ import static org.junit.Assert.*;
  */
 @RunWith(SpringRunner.class)
 //@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@SpringBootTest
-@ActiveProfiles("webtest")
-public class StockClientTest {
+@SpringBootTest(classes = ServiceConfiguration.class)
+@ActiveProfiles("test")
+public class ErpClientTest {
 
     @Autowired
-    private StockClient stockClient;
+    private ErpClient erpClient;
 
 
     @Test
-    public void stockBills() throws Exception {
+    public void get() throws Exception {
 
         Map<String, String > params = Maps.newHashMap();
 
-        DateTime start = new DateTime().minusMonths(1);
-        DateTime end = start.plusDays(1);
-        List<StockBill> stockBills =  stockClient.stockBills("e-commerce-api/v1/hk-cgrk",
+        Date start = DateTime.now().minusMonths(1).toDate();
+        Date end = DateTime.now().plusDays(1).toDate();
+        String stockBills =  erpClient.get("e-commerce-api/v1/hk-cgrk",
                 start, end, 1, 20,params);
         System.out.println(stockBills);
     }

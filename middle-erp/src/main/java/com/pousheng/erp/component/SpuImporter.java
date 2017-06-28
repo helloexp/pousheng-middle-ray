@@ -43,7 +43,7 @@ public class SpuImporter {
 
     private final SpuMaterialDao spuMaterialDao;
 
-    private final SpuInfoFetcher<PoushengMaterial> spuInfoFetcher;
+    private final MaterialFetcher materialFetcher;
 
 
     @Autowired
@@ -52,13 +52,13 @@ public class SpuImporter {
                        BackCategoryDao categoryDao,
                        ErpSpuManager spuManager,
                        SpuMaterialDao spuMaterialDao,
-                       SpuInfoFetcher<PoushengMaterial> spuInfoFetcher) {
+                       MaterialFetcher materialFetcher) {
         this.brandCacher = brandCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;
         this.spuManager = spuManager;
         this.spuMaterialDao = spuMaterialDao;
-        this.spuInfoFetcher = spuInfoFetcher;
+        this.materialFetcher = materialFetcher;
     }
 
     public int process(Date start, Date end){
@@ -70,7 +70,7 @@ public class SpuImporter {
         int pageNo = 1;
         boolean hasNext = true;
         while (hasNext) {
-            List<PoushengMaterial> materials = spuInfoFetcher.fetch(pageNo, PAGE_SIZE, start, end);
+            List<PoushengMaterial> materials = materialFetcher.fetch(pageNo, PAGE_SIZE, start, end);
             pageNo = pageNo + 1;
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {

@@ -4,7 +4,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import io.terminus.common.utils.JsonMapper;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -48,6 +51,24 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Long ownerId;
+
+    /**
+     * 仓库类别
+     */
+    @Setter
+    private Integer type;
+
+    /**
+     * 仓库状态
+     */
+    @Setter
+    private Integer status;
+
+    /**
+     * 仓库地址
+     */
+    @Setter
+    private String address;
     
     /**
      * 是否默认发货仓

@@ -25,7 +25,7 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-20
  */
-@Component
+//@Component
 @Slf4j
 public class SpuImporterFromFile implements CommandLineRunner{
 

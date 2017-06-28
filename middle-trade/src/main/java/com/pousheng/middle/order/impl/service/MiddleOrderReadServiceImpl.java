@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;

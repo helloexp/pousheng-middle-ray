@@ -16,12 +16,6 @@
             <groupId>io.terminus.boot.rpc</groupId>
             <artifactId>rpc-dubbo</artifactId>
         </dependency>
-
-        <dependency>
-            <groupId>com.github.kevinsawicki</groupId>
-            <artifactId>http-request</artifactId>
-            <version>6.0</version>
-        </dependency>
 <!--
         <dependency>
             <groupId>io.terminus.parana</groupId>

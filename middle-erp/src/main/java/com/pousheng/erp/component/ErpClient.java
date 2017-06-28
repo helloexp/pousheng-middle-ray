@@ -1,14 +1,11 @@
-package com.pousheng.middle.web.erp;
+package com.pousheng.erp.component;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.dto.PoushengWarehouse;
-import com.pousheng.middle.warehouse.model.StockBill;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +17,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -33,10 +29,6 @@ public class ErpClient {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
     public static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-    public static final TypeReference<List<StockBill>> LIST_OF_STOCKBILL = new TypeReference<List<StockBill>>() {
-    };
-    public static final TypeReference<PoushengWarehouse> LIST_OF_WAREHOUSE = new TypeReference<PoushengWarehouse>() {
-    };
 
     private final String host;
 
@@ -44,34 +36,27 @@ public class ErpClient {
 
     @Autowired
     public ErpClient(@Value("${gateway.erp.host}") String host,
-                     @Value("${gateway.erp.accessKey}")String accessKey) {
+                     @Value("${gateway.erp.accessKey}") String accessKey) {
         this.host = host;
         this.accessKey = accessKey;
     }
 
-    public List<StockBill> stockBills(String path,
-                                      DateTime start,
-                                      DateTime end,
-                                      Integer pageNo,
-                                      Integer pageSize,
-                                      Map<String, String> params){
+    public String stockBills(String path,
+                             DateTime start,
+                             DateTime end,
+                             Integer pageNo,
+                             Integer pageSize,
+                             Map<String, String> params) {
         params.put("start_datetime", formatter.print(start));
         params.put("end_datetime", formatter.print(end));
         params.put("current_page", MoreObjects.firstNonNull(pageNo, 1).toString());
-        params.put("page_size", MoreObjects.firstNonNull(pageSize,20).toString());
-        HttpRequest r = HttpRequest.get(host+"/"+path, params, true)
+        params.put("page_size", MoreObjects.firstNonNull(pageSize, 20).toString());
+        HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .header("access-key", accessKey)
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {
-            String result =  handleResponse(path, params, r.body());
-            try {
-                return mapper.readValue(result, LIST_OF_STOCKBILL);
-            } catch (Exception e) {
-                log.error("failed to deserialize json to StockBill list:{}, cause:{}",
-                        result, Throwables.getStackTraceAsString(e));
-                throw new ServiceException("stock.bill.synchronize.fail", e);
-            }
+            return handleResponse(path, params, r.body());
         } else {
             int code = r.code();
             String body = r.body();
@@ -82,37 +67,30 @@ public class ErpClient {
     }
 
 
-    public List<PoushengWarehouse>  warehouses(DateTime start,
-                                               DateTime end,
-                                               Integer pageNo,
-                                               Integer pageSize
-                                               ){
+    public String warehouses(DateTime start,
+                                              DateTime end,
+                                              Integer pageNo,
+                                              Integer pageSize
+    ) {
         Map<String, String> params = Maps.newHashMap();
-        if(start!=null){
+        if (start != null) {
             params.put("start_datetime", formatter.print(start));
         }
-        if(end!=null){
+        if (end != null) {
             params.put("end_datetime", formatter.print(end));
         }
-        if(pageNo!=null){
+        if (pageNo != null) {
             params.put("current_page", pageNo.toString());
         }
-        if(pageSize!=null){
+        if (pageSize != null) {
             params.put("page_size", pageSize.toString());
         }
-        HttpRequest r = HttpRequest.get(host+"/e-commerce-api/v1/hk-get-stocks", params, true)
+        HttpRequest r = HttpRequest.get(host + "/e-commerce-api/v1/hk-get-stocks", params, true)
                 .header("access-key", accessKey)
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {
-            String result =  handleResponse(null,params, r.body());
-            try {
-                return mapper.readValue(result, LIST_OF_WAREHOUSE);
-            } catch (Exception e) {
-                log.error("failed to deserialize json to PoushengWarehouse list:{}, cause:{}",
-                        result, Throwables.getStackTraceAsString(e));
-                throw new ServiceException("warehouse.synchronize.fail", e);
-            }
+            return handleResponse(null, params, r.body());
         } else {
             int code = r.code();
             String body = r.body();

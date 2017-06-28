@@ -1,8 +1,6 @@
-package com.pousheng.middle.web.warehouses.gateway;
+package com.pousheng.erp.component;
 
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.model.StockBill;
-import com.pousheng.middle.web.erp.ErpClient;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,7 +9,6 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,7 +32,7 @@ public class ErpClientTest {
 
         DateTime start = new DateTime().minusMonths(1);
         DateTime end = start.plusDays(1);
-        List<StockBill> stockBills =  erpClient.stockBills("e-commerce-api/v1/hk-cgrk",
+        String stockBills =  erpClient.stockBills("e-commerce-api/v1/hk-cgrk",
                 start, end, 1, 20,params);
         System.out.println(stockBills);
     }

@@ -14,6 +14,12 @@
     <dependencies>
 
         <dependency>
+            <groupId>com.github.kevinsawicki</groupId>
+            <artifactId>http-request</artifactId>
+            <version>6.0</version>
+        </dependency>
+
+        <dependency>
             <groupId>io.terminus.parana</groupId>
             <artifactId>parana-item</artifactId>
             <version>${parana.version}</version>

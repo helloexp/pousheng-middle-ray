@@ -1,4 +1,4 @@
-package com.pousheng.middle.warehouse.dto;
+package com.pousheng.erp.model;
 
 import lombok.Data;
 

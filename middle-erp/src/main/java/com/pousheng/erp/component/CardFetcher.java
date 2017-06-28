@@ -10,6 +10,7 @@ import java.util.List;
  * Date: 2017-06-28
  */
 public interface CardFetcher {
+
     /**
      *
      * @param pageNo 起始页码

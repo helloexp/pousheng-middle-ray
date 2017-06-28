@@ -9,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.Date;
 import java.util.Map;
 
 /**
@@ -17,8 +18,8 @@ import java.util.Map;
  */
 @RunWith(SpringRunner.class)
 //@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@SpringBootTest
-@ActiveProfiles("webtest")
+@SpringBootTest(classes = ServiceConfiguration.class)
+@ActiveProfiles("test")
 public class ErpClientTest {
 
     @Autowired
@@ -26,13 +27,13 @@ public class ErpClientTest {
 
 
     @Test
-    public void stockBills() throws Exception {
+    public void get() throws Exception {
 
         Map<String, String > params = Maps.newHashMap();
 
-        DateTime start = new DateTime().minusMonths(1);
-        DateTime end = start.plusDays(1);
-        String stockBills =  erpClient.stockBills("e-commerce-api/v1/hk-cgrk",
+        Date start = DateTime.now().minusMonths(1).toDate();
+        Date end = DateTime.now().plusDays(1).toDate();
+        String stockBills =  erpClient.get("e-commerce-api/v1/hk-cgrk",
                 start, end, 1, 20,params);
         System.out.println(stockBills);
     }

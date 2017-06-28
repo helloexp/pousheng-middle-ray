@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -28,58 +29,33 @@ public class BrandImporter {
 
     private final BrandDao brandDao;
 
+    private final CardFetcher cardFetcher;
+
     @Autowired
-    public BrandImporter(BrandDao brandDao) {
+    public BrandImporter(BrandDao brandDao, CardFetcher cardFetcher) {
         this.brandDao = brandDao;
+        this.cardFetcher = cardFetcher;
     }
 
 
     /**
      * 增量导入
      *
-     * @param start 开始时间
-     * @param end 结束时间
      * @return 处理的条数
      */
-/*    public int process(Date start, Date end) {
+    public int process(Date start, Date end){
         if (start == null) {
-            log.error("no start date specified when import brand");
+            log.error("no start date specified when import material");
             throw new IllegalArgumentException("start.date.miss");
         }
         int handleCount = 0;
-        int offset = 0;
+        int pageNo = 1;
         boolean hasNext = true;
         while (hasNext) {
-            Paging<PoushengCard> pCards = cardDao.paging(offset, PAGE_SIZE, start, end);
-            offset = offset + PAGE_SIZE;
-            List<PoushengCard> cards = pCards.getData();
-            hasNext = Objects.equal(cards.size(), PAGE_SIZE);
-
-            List<Brand> brands = createParanaBrands(cards);
-            for (Brand brand : brands) {
-                brandDao.create(brand);
-            }
-            handleCount+=cards.size();
-        }
-        return handleCount;
-    }*/
-
-    /**
-     * 全量导入
-     *
-     * @return 处理的条数
-     */
-    public int all(){
-        int handleCount = 0;
-        int pageNo = 0;
-        boolean hasNext = true;
-        while (hasNext) {
-            Paging<PoushengCard> pCards =  pagination(pageNo);
+            List<PoushengCard> cards = cardFetcher.fetch(pageNo, PAGE_SIZE, start, end);
             pageNo = pageNo + 1;
-            List<PoushengCard> cards = pCards.getData();
             hasNext = Objects.equal(cards.size(), PAGE_SIZE);
 
-            doProcess(cards);
             handleCount+=cards.size();
         }
         return handleCount;
@@ -90,12 +66,6 @@ public class BrandImporter {
         for (Brand brand : brands) {
             brandDao.create(brand);
         }
-    }
-
-    private Paging<PoushengCard> pagination(int offset) {
-        //return cardDao.paging(offset, PAGE_SIZE);
-        //todo: call
-        return Paging.empty();
     }
 
 

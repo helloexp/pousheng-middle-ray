@@ -48,6 +48,24 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Long ownerId;
+
+    /**
+     * 仓库类别
+     */
+    @Setter
+    private Integer type;
+
+    /**
+     * 仓库状态
+     */
+    @Setter
+    private Integer status;
+
+    /**
+     * 仓库地址
+     */
+    @Setter
+    private String address;
     
     /**
      * 是否默认发货仓

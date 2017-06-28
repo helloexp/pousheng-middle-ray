@@ -6,7 +6,9 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.ErpConfiguration;
+import com.pousheng.erp.component.CardFetcher;
 import com.pousheng.erp.component.SpuInfoFetcher;
+import com.pousheng.erp.model.PoushengCard;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
@@ -53,6 +55,17 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     public SpuInfoFetcher<PoushengMaterial> spuInfoFetcher(){
         return new SpuInfoFetcher<PoushengMaterial>() {
             public List<PoushengMaterial> fetch(int pageNo, int pageSize, Date start, Date end) {
+                //todo: implement me
+                return null;
+            }
+        };
+    }
+
+    @Bean
+    public CardFetcher cardFetcher(){
+        return new CardFetcher() {
+            @Override
+            public List<PoushengCard> fetch(int pageNo, int pageSize, Date start, Date end) {
                 //todo: implement me
                 return null;
             }

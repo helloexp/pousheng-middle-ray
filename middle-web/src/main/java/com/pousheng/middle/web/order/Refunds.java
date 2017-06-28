@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
@@ -8,6 +9,7 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.OrderRefund;
@@ -69,12 +71,12 @@ public class Refunds {
         refundDetail.setRefundExtra(refundExtra);
 
         //如果为换货,则封装发货信息
-        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())){
+        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& Arguments.notNull(refundExtra.getShipmentId())){
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(refundExtra.getShipmentId());
             Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             refundDetail.setShipmentItems(shipmentItems);
-            refundDetail.setOrderShipment(orderShipment);
+            refundDetail.setOrderShipments(Lists.newArrayList(orderShipment));
         }
 
         return refundDetail;

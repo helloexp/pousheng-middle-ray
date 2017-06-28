@@ -40,7 +40,7 @@ public class WarehouseFetcher {
      */
     public List<PoushengWarehouse>  fetch(int pageNo, int pageSize, Date start, Date end){
         try {
-            String result = this.erpClient.get("/e-commerce-api/v1/hk-get-stocks",
+            String result = this.erpClient.get("e-commerce-api/v1/hk-get-stocks",
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,

@@ -2,7 +2,7 @@ package com.pousheng.erp.component;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.model.PoushengCard;
 import io.terminus.parana.brand.impl.dao.BrandDao;
@@ -42,9 +42,9 @@ public class BrandImporter {
      *
      * @return 处理的条数
      */
-    public int process(Date start, Date end){
+    public int process(Date start, Date end) {
         if (start == null) {
-            log.error("no start date specified when import material");
+            log.error("no start date specified when import brand");
             throw new IllegalArgumentException("start.date.miss");
         }
         int handleCount = 0;
@@ -54,36 +54,44 @@ public class BrandImporter {
             List<PoushengCard> cards = cardFetcher.fetch(pageNo, PAGE_SIZE, start, end);
             pageNo = pageNo + 1;
             hasNext = Objects.equal(cards.size(), PAGE_SIZE);
-
-            handleCount+=cards.size();
+            for (PoushengCard card : cards) {
+                doProcess(card);
+                handleCount++;
+            }
         }
         return handleCount;
     }
 
-    public void doProcess(List<PoushengCard> cards) {
-        List<Brand> brands = createParanaBrands(cards);
-        for (Brand brand : brands) {
-            brandDao.create(brand);
+    public void doProcess(PoushengCard card) {
+        try {
+            Brand brand = createParanaBrand(card);
+            Brand exist = brandDao.findByName(brand.getName());
+            if(exist == null) {
+                brandDao.create(brand);
+            }else{
+                brand.setId(exist.getId());
+                brandDao.update(brand);
+            }
+        } catch (Exception e) {
+            log.error("failed to process {}, cause:{}",
+                    card, Throwables.getStackTraceAsString(e));
         }
     }
 
 
-    private List<Brand> createParanaBrands(List<PoushengCard> cards) {
-        List<Brand> results = Lists.newArrayListWithCapacity(cards.size());
-        for (PoushengCard card : cards) {
-            Brand brand = new Brand();
-            brand.setOuterId(card.getCard_id());
-            //Map<String, String> refinedNames = refine(card.getCard_name());
-            brand.setName(card.getCard_name());
-            brand.setUniqueName(card.getCard_name());
-            brand.setDescription(card.getRemark());
+    private Brand createParanaBrand(PoushengCard card) {
+        Brand brand = new Brand();
+        brand.setOuterId(card.getCard_id());
+        //Map<String, String> refinedNames = refine(card.getCard_name());
+        brand.setName(card.getCard_name());
+        brand.setUniqueName(card.getCard_name());
+        brand.setDescription(card.getRemark());
 //            brand.setName(refinedNames.get("name"));
-            //brand.setEnName(refinedNames.get("enName"));
-            brand.setStatus(1);
-            brand.setOuterId(card.getCard_id());
-            results.add(brand);
-        }
-        return results;
+        //brand.setEnName(refinedNames.get("enName"));
+        brand.setStatus(1);
+        brand.setOuterId(card.getCard_id());
+        return brand;
+
     }
 
     Map<String, String> refine(String cardName) {
@@ -92,10 +100,10 @@ public class BrandImporter {
             int index = cardName.lastIndexOf('(');
             String enName = cardName.substring(0, index);
             String name = cardName.substring(index + 1, cardName.length() - 1);
-            result.put("name",name);
+            result.put("name", name);
             result.put("enName", enName);
-        }else{
-            result.put("name",cardName);
+        } else {
+            result.put("name", cardName);
             result.put("enName", cardName);
         }
         return result;

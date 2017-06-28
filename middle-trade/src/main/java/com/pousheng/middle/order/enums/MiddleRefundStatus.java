@@ -24,7 +24,7 @@ public enum MiddleRefundStatus {
     WAIT_SHIP(8),         //待发货
     WAIT_CONFIRM_RECEIVE(9),         //待确认收货
     REFUND(10),              //已退款(仅退款、退货退款)
-    DONE(11),              //已完成（换货）
+    DONE(11),              //已完成（换货确认收货）
     SYNC_HK_FAIL(-1),      //同步恒康失败
     CANCELED(-2);//已取消
 

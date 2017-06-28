@@ -41,5 +41,7 @@ public class RefundExtra implements Serializable{
     private Date shipAt;
     //确认收货时间
     private Date confirmReceivedAt;
+    //退款时间
+    private Date refundAt;
 
 }

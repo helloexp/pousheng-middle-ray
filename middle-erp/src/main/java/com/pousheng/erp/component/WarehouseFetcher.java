@@ -15,7 +15,7 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * 同步仓库
+ * 同步仓库接口
  *
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-28
@@ -23,6 +23,8 @@ import java.util.List;
 @Component
 @Slf4j
 public class WarehouseFetcher {
+    public static final TypeReference<List<PoushengWarehouse>> LIST_OF_WAREHOUSE = new TypeReference<List<PoushengWarehouse>>() {
+    };
     private final ErpClient erpClient;
 
     @Autowired
@@ -44,7 +46,7 @@ public class WarehouseFetcher {
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
-                    new TypeReference<List<PoushengWarehouse>>(){});
+                    LIST_OF_WAREHOUSE);
         } catch (IOException e) {
             log.error("failed to deserialize json to PoushengWarehouse list, cause:{}",
                     Throwables.getStackTraceAsString(e));

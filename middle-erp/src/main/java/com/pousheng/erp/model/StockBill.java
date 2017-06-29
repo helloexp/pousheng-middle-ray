@@ -55,7 +55,7 @@ public class StockBill implements Serializable {
     /**
      * 这个单据引起库存变动的数量
      */
-    private String quantity;
+    private Integer quantity;
 
     /**
      * 修改时间

@@ -31,3 +31,38 @@ CREATE TABLE `pusheng_spu_materials` (
 -- 修改字段长度
 ALTER TABLE `parana_shipments` CHANGE `extra_json` `extra_json` VARCHAR(1024);
 ALTER TABLE `parana_refunds` CHANGE `extra_json` `extra_json` VARCHAR(1024);
+
+
+drop table if exists `pousheng_warehouses`;
+
+CREATE TABLE `pousheng_warehouses` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `code` varchar(64) NULL COMMENT '仓库编码',
+  `name` varchar(64) NOT NULL COMMENT '仓库名称',
+  `type` tinyint(4)  NULL COMMENT '仓库类型',
+  `status` tinyint(4) NOT NULL COMMENT '仓库状态',
+  `address` varchar(128) NULL COMMENT '仓库地址',
+  `owner_id` bigint(20)  NULL COMMENT '负责人id',
+  `is_default` tinyint(4) NULL COMMENT '是否默认发货仓',
+  `extra_json` varchar(2048) NULL COMMENT '附加信息',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouse_code` (`code`)
+) COMMENT='仓库';
+
+drop table if exists `pousheng_stock_bills`;
+
+CREATE TABLE `pousheng_stock_bills` (
+  `bill_no` varchar(32) NOT NULL COMMENT '单据编号' ,
+  `company_id` varchar(32)  NULL COMMENT '账套 id',
+  `bill_status` varchar(10) NOT NULL COMMENT '单据状态',
+  `bill_type` varchar(32)  NULL COMMENT '单据类型',
+  `sequence` varchar(32)  NULL COMMENT '明细順序',
+  `stock_id` varchar(32)  NOT NULL COMMENT '仓库编号',
+  `barcode` varchar(32)  NOT NULL COMMENT '产品条码',
+  `quantity` int(10) NOT NULL COMMENT '数量',
+  `original_bill_no` varchar(32)  NULL COMMENT '单据类型',
+  `modify_datetime` datetime DEFAULT NULL COMMENT '修改时间',
+  KEY `idx_psb_bill_no` (bill_no)
+) COMMENT='库存单据' ENGINE=InnoDB DEFAULT CHARSET=utf8;

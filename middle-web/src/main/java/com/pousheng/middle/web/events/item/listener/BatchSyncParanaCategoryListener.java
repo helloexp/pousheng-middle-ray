@@ -57,6 +57,7 @@ public class BatchSyncParanaCategoryListener {
 
         List<BackCategory> allCategories = Lists.newArrayList();
         findAllCategory(allCategories,0L);
+        log.info("total need sync category size:{}",allCategories.size());
         List<SyncErrorData> errorDatas = Lists.newArrayListWithCapacity(allCategories.size());
         for (BackCategory backCategory : allCategories){
             System.out.println(backCategory);
@@ -97,8 +98,7 @@ public class BatchSyncParanaCategoryListener {
     private Response<Boolean> sync(BackCategory backCategory){
         OpenClientBackCategory openClientBackCategory = new OpenClientBackCategory();
         BeanMapper.copy(backCategory,openClientBackCategory);
-        //return syncParanaCategoryService.syncBackCategory(openClientBackCategory);
-        return Response.ok(Boolean.TRUE);
+        return syncParanaCategoryService.syncBackCategory(openClientBackCategory);
     }
 
 

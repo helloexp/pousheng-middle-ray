@@ -9,6 +9,7 @@ import com.pousheng.middle.order.dto.MiddleRefundDetail;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundPaging;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -23,6 +24,7 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -84,13 +86,10 @@ public class Refunds {
         refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
         refundDetail.setRefundExtra(refundExtra);
 
-        //如果为换货,则封装发货信息
-        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& Arguments.notNull(refundExtra.getShipmentId())){
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(refundExtra.getShipmentId());
-            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            refundDetail.setShipmentItems(shipmentItems);
-            refundDetail.setOrderShipments(Lists.newArrayList(orderShipment));
+        //如果为换货,则封装发货信息（换货的发货单）
+        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
+            refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            refundDetail.setOrderShipments(shipmentReadLogic.findByOrderIdAndType(refundId, ShipmentType.EXCHANGE_SHIP));
         }
 
         return refundDetail;

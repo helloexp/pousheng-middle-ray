@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Mail: F@terminus.io
@@ -72,18 +73,36 @@ public class AdminOrderReader {
     }
 
 
+
+    //判断订单是否存在
+    @RequestMapping(value = "/api/order/{id}/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean checkExist(@PathVariable("id") Long id) {
+
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
+        if(!shopOrderRes.isSuccess()){
+            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
+            if(Objects.equals(shopOrderRes.getError(),"order.not.found")){
+                return Boolean.FALSE;
+            }
+            throw new JsonResponseException(shopOrderRes.getError());
+        }
+
+        return Boolean.TRUE;
+
+    }
+
+
     //新建售后订单 for 展示订单信息
     @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") Long id) {
 
-        ShopOrder shopOrder;
-        try {
-            shopOrder = orderReadLogic.findShopOrderById(id);
-        }catch (JsonResponseException e){
-            log.error("find shop order by id:{} fail,error:{}",id,e.getMessage());
-            return Response.fail(e.getMessage());
 
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
+        if(!shopOrderRes.isSuccess()){
+            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
+            return Response.fail(shopOrderRes.getError());
         }
+        ShopOrder shopOrder = shopOrderRes.getResult();
 
         Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(id, OrderLevel.SHOP);
         if(!response.isSuccess()){

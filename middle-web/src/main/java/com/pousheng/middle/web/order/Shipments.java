@@ -101,12 +101,7 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<OrderShipment> shipments(@PathVariable("id") Long shopOrderId) {
-        Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
-        if(!response.isSuccess()){
-            log.error("find order shipment by order id:{} level:{} fail,error:{}",shopOrderId,OrderLevel.SHOP.toString(),response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        return response.getResult();
+        return shipmentReadLogic.findByOrderIdAndType(shopOrderId,ShipmentType.SALES_SHIP);
     }
 
 

@@ -12,6 +12,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.api.FlowPicker;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +72,16 @@ public class ShipmentReadLogic {
         }
 
         return shipmentDetail;
+
+    }
+
+    public List<OrderShipment> findByOrderIdAndType(Long orderId, ShipmentType shipmentType){
+        Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP,shipmentType);
+        if(!response.isSuccess()){
+            log.error("find order shipment by order id:{} level:{} type:{} fail,error:{}",orderId,OrderLevel.SHOP.toString(),shipmentType.toString(),response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
 
     }
 

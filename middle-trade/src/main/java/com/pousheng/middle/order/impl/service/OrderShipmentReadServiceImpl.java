@@ -9,6 +9,7 @@ import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderLevel;
@@ -36,16 +37,16 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
 
 
     @Override
-    public Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel) {
+    public Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel, ShipmentType shipmentType) {
         try {
-            List<OrderShipment> orderShipments = orderShipmentDao.findByOrderIdAndOrderType(orderId, orderLevel.getValue());
+            List<OrderShipment> orderShipments = orderShipmentDao.findByOrderIdAndOrderTypeAndType(orderId, orderLevel.getValue(),shipmentType.value());
             if (CollectionUtils.isEmpty(orderShipments)) {
                 return Response.ok(Collections.<OrderShipment>emptyList());
             }
             return Response.ok(orderShipments);
         }catch (Exception e) {
-            log.error("failed to find order shipment(orderId={}, orderLevel={}), cause:{}",
-                    orderId, orderLevel, Throwables.getStackTraceAsString(e));
+            log.error("failed to find order shipment(orderId={}, orderLevel={} type:{}), cause:{}",
+                    orderId, orderLevel.toString(),shipmentType.toString(), Throwables.getStackTraceAsString(e));
             return Response.fail("order.shipment.find.fail");
         }
     }

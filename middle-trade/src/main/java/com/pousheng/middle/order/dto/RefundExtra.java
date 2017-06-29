@@ -12,7 +12,7 @@ import java.util.Date;
 @Data
 public class RefundExtra implements Serializable{
 
-    //发货单id 如果不能自动匹配到发货单号，则需要人工拆单
+    //销售发货的发货单id 如果不能自动匹配到发货单号，则需要人工拆单
     private Long shipmentId;
 
     //发货仓ID

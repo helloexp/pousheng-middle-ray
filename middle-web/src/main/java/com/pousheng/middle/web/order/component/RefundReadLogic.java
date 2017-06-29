@@ -147,6 +147,21 @@ public class RefundReadLogic {
     }
 
 
+    public List<RefundItem> findRefundChangeItems(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("refund(id:{}) extra field is null",refund.getId());
+            throw new JsonResponseException("refund.extra.is.empty");
+        }
+        if(!extraMap.containsKey(TradeConstants.REFUND_CHANGE_ITEM_INFO)){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_CHANGE_ITEM_INFO);
+            throw new JsonResponseException("refund.exit.not.contain.item.info");
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REFUND_CHANGE_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
+    }
+
+
+
 
     public RefundExtra findRefundExtra(Refund refund){
         Map<String,String> extraMap = refund.getExtra();

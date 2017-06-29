@@ -27,4 +27,7 @@ public class RefundItem implements Serializable{
 
     //金额
     private Integer fee;
+
+    //已发货数量（换货的发货）
+    private Integer shippedQuantity;
 }

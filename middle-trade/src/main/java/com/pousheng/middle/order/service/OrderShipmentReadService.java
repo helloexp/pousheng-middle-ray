@@ -4,6 +4,7 @@ import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
 
@@ -19,10 +20,11 @@ public interface OrderShipmentReadService {
      * 根据(子)订单id和级别查找对应的发货单列表
      *
      * @param orderId    (子)订单id
-     * @param orderLevel 级别
+     * @param orderLevel 级别(宝胜统一为 shop) {@link OrderLevel}
+     * @param shipmentType 发货单类型 {@link ShipmentType}
      * @return 对应的发货单列表
      */
-    Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel);
+    Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel, ShipmentType shipmentType);
 
     /**
      * 发货单分页列表, 供开放平台使用

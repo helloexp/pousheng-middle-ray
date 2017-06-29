@@ -24,8 +24,8 @@ public class MiddleRefundDetail implements Serializable {
 
     private RefundExtra refundExtra;
 
-    //发货信息,这里包成list只是为了方便前端复用其他页面的发货单信息渲染
+    //发货信息
     private List<OrderShipment> orderShipments;
     //发货信息
-    private List<ShipmentItem> shipmentItems;
+    private List<RefundItem> shipmentItems;
 }

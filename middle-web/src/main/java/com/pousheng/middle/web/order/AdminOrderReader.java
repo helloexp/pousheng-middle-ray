@@ -76,7 +76,15 @@ public class AdminOrderReader {
     @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") Long id) {
 
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+        ShopOrder shopOrder;
+        try {
+            shopOrder = orderReadLogic.findShopOrderById(id);
+        }catch (JsonResponseException e){
+            log.error("find shop order by id:{} fail,error:{}",id,e.getMessage());
+            return Response.fail(e.getMessage());
+
+        }
+
         Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(id, OrderLevel.SHOP);
         if(!response.isSuccess()){
             log.error("find order receive info by order id:{} fial,error:{}",id,response.getError());

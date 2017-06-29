@@ -35,7 +35,7 @@ redis:
   test-on-borrow: true
 
 
-rpc.mode: true
+rpc.mode: false
 rpc.dubbo:
   module: pousheng-middle
   registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}

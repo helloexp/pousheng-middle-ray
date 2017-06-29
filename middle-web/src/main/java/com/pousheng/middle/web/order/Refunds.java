@@ -182,6 +182,8 @@ public class Refunds {
         }
         //todo 封装换货商品信息
         RefundItem refundItem = new RefundItem();
+        refundItem.setQuantity(submitRefundInfo.getChangeQuantity());
+        refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
         return refundItem;
 
     }

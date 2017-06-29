@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="ExpressCode">
+    <resultMap id="ExpressCodeMap" type="ExpressCode">
+        <id column="id" property="id"/>
+        <result column="express_name" property="expressName"/>
+        <result column="offical_express_code" property="officalExpressCode"/>
+        <result column="pousheng_express_code" property="poushengExpressCode"/>
+        <result column="jd_express_code" property="jdExpressCode"/>
+        <result column="taobao_express_code" property="taobaoExpressCode"/>
+        <result column="suning_express_code" property="suningExpressCode"/>
+        <result column="fenqile_express_code" property="fenqileExpressCode"/>
+        <result column="hk_express_code" property="hkExpressCode"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="tb">
+        pousheng_trade_express_code
+    </sql>
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        express_name, offical_express_code,pousheng_express_code,jd_express_code, taobao_express_code,suning_express_code,
+        fenqile_express_code,hk_express_code,created_at, updated_at
+    </sql>
+    <sql id="vals">
+         #{expressName}, #{officalExpressCode},#{poushengExpressCode}, #{jdExpressCode},#{taobaoExpressCode},
+        #{suningExpressCode},#{fenqileExpressCode},#{hkExpressCode}, now(), now()
+    </sql>
+    <sql id="queryCondition">
+
+        <if test="expressName != null">and `express_name` LIKE CONCAT(#{expressName}, '%')</if>
+
+        <if test="officalExpressCode != null">and `offical_express_code` = #{officalExpressCode}</if>
+
+        <if test="poushengExpressCode != null">and `pousheng_express_code` = #{poushengExpressCode}</if>
+
+        <if test="jdExpressCode != null">and `jd_express_code` = #{jdExpressCode}</if>
+
+        <if test="taobaoExpressCode != null">and `taobao_express_code` = #{taobaoExpressCode}</if>
+
+        <if test="suningExpressCode != null">and `suning_express_code` = #{suningExpressCode}</if>
+
+        <if test="fenqileExpressCode != null">and `fenqile_express_code` = #{fenqileExpressCode}</if>
+
+        <if test="hkExpressCode != null">and `hk_express_code` = #{hkExpressCode}</if>
+    </sql>
+    <sql id="order">
+        order by id desc
+    </sql>
+
+    <insert id="create" parameterType="ExpressCode" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="ExpressCodeMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE id = #{id}
+    </select>
+    <select id="findByExpressName" parameterType="string" resultMap="ExpressCodeMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE express_name = #{expressName}
+    </select>
+    <update id="update" parameterType="ExpressCode">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="expressName != null">express_name = #{expressName},</if>
+            <if test="officalExpressCode != null">offical_express_code = #{officalExpressCode},</if>
+            <if test="poushengExpressCode != null">pousheng_express_code = #{poushengExpressCode},</if>
+            <if test="jdExpressCode != null">jd_express_code = #{jdExpressCode},</if>
+            <if test="taobaoExpressCode != null">taobao_express_code = #{taobaoExpressCode},</if>
+            <if test="suningExpressCode != null">suning_express_code = #{suningExpressCode},</if>
+            <if test="fenqileExpressCode != null">fenqile_express_code = #{fenqileExpressCode},</if>
+            <if test="hkExpressCode != null">hk_express_code = #{hkExpressCode},</if>
+            updated_at=now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE id = #{id}
+    </delete>
+
+    <select id="paging" parameterType="list" resultMap="ExpressCodeMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="count" parameterType="list" resultType="long">
+        select count(1)
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+    </select>
+</mapper>

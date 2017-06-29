@@ -187,6 +187,29 @@ public class Shipments {
 
 
 
+    //判断发货单是否有效，切是否属于当前订单
+    @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> checkExist(@PathVariable("id") Long orderShipmentId,@RequestParam Long orderId){
+
+        try {
+
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(orderShipmentId);
+            if(!Objects.equals(orderShipment.getOrderId(),orderId)){
+                log.error("order shipment(id:{}) order id:{} not equal :{}",orderShipmentId,orderShipment.getOrderId(),orderId);
+                return Response.fail("shipment.not.belong.to.order");
+
+            }
+        }catch (JsonResponseException e){
+            log.error("check order shipment id:{} is exist fail,error:{}",orderShipmentId,e.getMessage());
+            return Response.fail(e.getMessage());
+        }
+
+        return Response.ok(Boolean.TRUE);
+
+    }
+
+
+
     /**
      * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
      * 生成发货单

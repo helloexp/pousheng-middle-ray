@@ -74,25 +74,25 @@ public class AdminOrderReader {
 
     //新建售后订单 for 展示订单信息
     @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ShopOrderWithReceiveInfo afterSaleOrderInfo(@PathVariable("id") Long id) {
+    public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") Long id) {
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
         Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(id, OrderLevel.SHOP);
         if(!response.isSuccess()){
             log.error("find order receive info by order id:{} fial,error:{}",id,response.getError());
-            throw new JsonResponseException(response.getError());
+            return Response.fail(response.getError());
         }
         List<ReceiverInfo> receiverInfos = response.getResult();
         if(CollectionUtils.isEmpty(receiverInfos)){
             log.error("not find receive info by order id:{}",id);
-            throw new JsonResponseException("order.receive.info.not.exist");
+            return Response.fail("order.receive.info.not.exist");
         }
 
         ShopOrderWithReceiveInfo withReceiveInfo = new ShopOrderWithReceiveInfo();
         withReceiveInfo.setShopOrder(shopOrder);
         withReceiveInfo.setReceiverInfo(receiverInfos.get(0));
 
-        return withReceiveInfo;
+        return Response.ok(withReceiveInfo);
     }
 
 

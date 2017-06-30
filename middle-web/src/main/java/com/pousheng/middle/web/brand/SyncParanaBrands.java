@@ -4,6 +4,8 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
+import com.pousheng.middle.web.events.item.BatchSyncParanaCategoryEvent;
+import com.pousheng.middle.web.events.item.DumpSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -79,6 +81,23 @@ public class SyncParanaBrands {
         BatchSyncParanaBrandEvent event = new BatchSyncParanaBrandEvent();
         event.setTaskId(taskId);
         event.setBrandIds(ids);
+        eventBus.post(event);
+        return taskId;
+
+    }
+
+    /**
+     * 全量同步品牌
+     * @return 任务ID
+     */
+    @RequestMapping(value = "/dump-sync", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
+    public String batchSynCategory(){
+
+        SyncTask task = new SyncTask();
+        task.setStatus(1);
+        String taskId = syncParanaTaskRedisHandler.saveTask(task);
+        DumpSyncParanaBrandEvent event = new DumpSyncParanaBrandEvent();
+        event.setTaskId(taskId);
         eventBus.post(event);
         return taskId;
 

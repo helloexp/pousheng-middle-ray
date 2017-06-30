@@ -60,7 +60,6 @@ public class BatchSyncParanaCategoryListener {
         log.info("total need sync category size:{}",allCategories.size());
         List<SyncErrorData> errorDatas = Lists.newArrayListWithCapacity(allCategories.size());
         for (BackCategory backCategory : allCategories){
-            System.out.println(backCategory);
             Response<Boolean> syncRes = sync(backCategory);
             if(!syncRes.isSuccess()){
                 log.error("sync back category(id:{}) to parana fail,error:{}",backCategory.getId(),syncRes.getError());

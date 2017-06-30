@@ -1,23 +1,29 @@
 package com.pousheng.middle.web.events.item.listener;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.events.item.BatchSyncParanaSpuEvent;
+import com.pousheng.middle.web.events.item.DumpSyncParanaSpuEvent;
 import com.pousheng.middle.web.task.SyncErrorData;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.parana.item.SyncParanaSpuService;
 import io.terminus.parana.spu.dto.FullSpu;
+import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.List;
 
@@ -38,6 +44,9 @@ public class BatchSyncParanaSpuListener {
     private SyncParanaSpuService syncParanaSpuService;
     @Autowired
     private SyncParanaTaskRedisHandler syncParanaTaskRedisHandler;
+    static final Integer BATCH_SIZE = 100;     // 批处理数量
+
+
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -55,6 +64,37 @@ public class BatchSyncParanaSpuListener {
         List<Long> spuIds = event.getSpuIds();
 
         List<SyncErrorData> errorDatas = Lists.newArrayListWithCapacity(spuIds.size());
+
+        batchSync(spuIds,errorDatas);
+        handleResult(taskId,errorDatas);
+
+        log.info("batch sync spu to parana end");
+
+    }
+
+
+    @Subscribe
+    public void onDumpSyncSpu(DumpSyncParanaSpuEvent event){
+
+        log.info("dump sync spu to parana start");
+        String taskId = event.getTaskId();
+
+        List<SyncErrorData> errorDatas = Lists.newArrayList();
+
+        int pageNo = 1;
+        boolean next = batchHandle(pageNo, BATCH_SIZE,errorDatas);
+        while (next) {
+            pageNo ++;
+            next = batchHandle(pageNo, BATCH_SIZE,errorDatas);
+        }
+
+        handleResult(taskId,errorDatas);
+
+        log.info("dump sync spu to parana end");
+
+    }
+
+    private void  batchSync(List<Long> spuIds,List<SyncErrorData> errorDatas){
         List<FullSpu> fullSpus = findByIds(spuIds,errorDatas);
 
         for (FullSpu fullSpu : fullSpus){
@@ -70,6 +110,11 @@ public class BatchSyncParanaSpuListener {
             }
         }
 
+    }
+
+
+
+    private void handleResult(String taskId,List<SyncErrorData> errorDatas){
 
         if (!Arguments.isNullOrEmpty(errorDatas)){
             log.error("sync spu failed data = {}", errorDatas);
@@ -87,18 +132,12 @@ public class BatchSyncParanaSpuListener {
             syncParanaTaskRedisHandler.updateTask(taskId,task);
 
         }
-
-        log.info("batch sync spu to parana end");
-
     }
 
     private Response<Boolean> sync(FullSpu fullSpu){
 
-
-        //return syncParanaSpuService.syncSpus(mapper.toJson(fullSpu));
-        return Response.fail("同步失败");
+        return syncParanaSpuService.syncSpus(mapper.toJson(fullSpu));
     }
-
 
 
     private List<FullSpu> findByIds(List<Long> ids,List<SyncErrorData> errorDatas){
@@ -116,5 +155,35 @@ public class BatchSyncParanaSpuListener {
             fullSpus.add(fullSpuRes.getResult());
         }
         return fullSpus;
+    }
+
+
+
+    @SuppressWarnings("unchecked")
+    private boolean batchHandle(int pageNo, int size,List<SyncErrorData> syncErrorDatas) {
+        Response<Paging<Spu>> pagingRes = spuReadService.findByCategoryId(null,null,pageNo, size);
+        if(!pagingRes.isSuccess()){
+            log.error("paging brand fail error:{}",pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<Spu> paging = pagingRes.getResult();
+        List<Spu> spus = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(spus)) {
+            return Boolean.FALSE;
+        }
+        List<Long> spuIds = Lists.transform(spus, new Function<Spu, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable Spu spu) {
+                return spu.getId();
+            }
+        });
+
+        batchSync(spuIds,syncErrorDatas);
+
+        int current = spuIds.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
     }
 }

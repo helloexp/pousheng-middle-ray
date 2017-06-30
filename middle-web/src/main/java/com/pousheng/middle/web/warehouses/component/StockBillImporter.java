@@ -9,6 +9,10 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.pousheng.erp.component.ErpClient;
 import com.pousheng.erp.model.StockBill;
+import com.pousheng.erp.service.StockBillService;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +35,6 @@ public class StockBillImporter {
     private static final TypeReference<List<StockBill>> LIST_OF_STOCKBILL = new TypeReference<List<StockBill>>() {
     };
 
-/*
     @RpcConsumer
     private WarehouseCacher warehouseCacher;
 
@@ -40,7 +43,6 @@ public class StockBillImporter {
 
     @RpcConsumer
     private StockBillService stockBillService;
-*/
 
     @RpcConsumer
     private ErpClient erpClient;
@@ -113,6 +115,8 @@ public class StockBillImporter {
 
     public void processSingle(StockBill stockBill, Table<String, Long, Integer> deltas) {
         try {
+            //Warehouse warehouse =  warehouseCacher.findByCode(stockBill.getCompany_id()+"-"+stockBill.getStock_id());
+
             System.out.println(stockBill);
 
         } catch (Exception e) {

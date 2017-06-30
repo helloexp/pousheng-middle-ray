@@ -42,7 +42,7 @@ public class StockBillDaoTest extends BaseDaoTest {
     @Test
     public void findByBillNo() throws Exception {
 
-        StockBill actual = stockBillDao.findByBillNo(stockBill.getBill_no());
+        StockBill actual = stockBillDao.findByBillNoAndBillType(stockBill.getBill_no(), stockBill.getBill_type());
         assertThat(actual, is(stockBill));
     }
 

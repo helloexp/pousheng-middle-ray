@@ -37,10 +37,10 @@
         VALUES(<include refid="vals"/>)
     </insert>
 
-    <select id="findByBillNo" parameterType="string" resultMap="StockBillMap" >
+    <select id="findByBillNoAndBillType" parameterType="string" resultMap="StockBillMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE bill_no = #{bill_no}
+        WHERE bill_no = #{bill_no} and bill_type=#{bill_type}
     </select>
 
     <select id="count" parameterType="map" resultType="long">

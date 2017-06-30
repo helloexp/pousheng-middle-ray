@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.warehouses.component;
 
+import com.pousheng.middle.web.MiddleConfiguration;
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,7 +20,7 @@ import static org.junit.Assert.*;
 
 @RunWith(SpringRunner.class)
 //@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@SpringBootTest
+@SpringBootTest(classes = MiddleConfiguration.class)
 @ActiveProfiles("webtest")
 public class StockBillImporterTest {
 

@@ -30,16 +30,17 @@ public class StockBillService {
      * @param billNo 单据号
      * @return 对应的单据
      */
-    public Response<StockBill> findByBillNo(String billNo){
+    public Response<StockBill> findByBillNo(String billNo, String billType){
         try {
-            StockBill stockBill = stockBillDao.findByBillNo(billNo);
+            StockBill stockBill = stockBillDao.findByBillNoAndBillType(billNo, billType);
             if(stockBill == null){
-                log.error("StockBill(bill_no={}) not found", billNo);
+                log.error("StockBill(bill_no={}, bill_type={}) not found", billNo, billType);
                 return Response.fail("stockBill.not.found");
             }
             return Response.ok(stockBill);
         } catch (Exception e) {
-            log.error("failed to find stockBill by billNo={}, cause:{}", billNo, Throwables.getStackTraceAsString(e));
+            log.error("failed to find stockBill by billNo={} and bill_type={}, cause:{}",
+                    billNo, billType, Throwables.getStackTraceAsString(e));
             return Response.fail("stockBill.find.fail");
         }
     }
@@ -52,7 +53,7 @@ public class StockBillService {
      */
     public Response<Boolean> persist(StockBill stockBill){
         try {
-            StockBill existed = stockBillDao.findByBillNo(stockBill.getBill_no());
+            StockBill existed = stockBillDao.findByBillNoAndBillType(stockBill.getBill_no(), stockBill.getBill_type());
             if(existed != null){ //如果已经存在则更新
                 stockBillDao.update(stockBill);
             }else {

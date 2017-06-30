@@ -35,7 +35,7 @@
     </sql>
     <sql id="queryCondition">
 
-        <if test="expressName != null">and `express_name` LIKE CONCAT(#{expressName}, '%')</if>
+        <if test="expressName != null">and `express_name` LIKE CONCAT('%', #{expressName}, '%')</if>
 
         <if test="officalExpressCode != null">and `offical_express_code` = #{officalExpressCode}</if>
 

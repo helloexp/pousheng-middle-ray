@@ -44,7 +44,7 @@ public class ExpressCodeDaoTest extends BaseDaoTest {
      */
     @Test
     public void findByExpressName() {
-        ExpressCode expressCodeExist = expressCodeDao.findByExpressName(expressCode.getExpressName());
+        ExpressCode expressCodeExist = expressCodeDao.findByName(expressCode.getName());
         assertNotNull(expressCodeExist);
     }
 
@@ -53,11 +53,11 @@ public class ExpressCodeDaoTest extends BaseDaoTest {
      */
     @Test
     public void update() {
-        expressCode.setJdExpressCode("jdExpressCode1");
-        expressCode.setSuningExpressCode("suningExpressCode1");
+        expressCode.setJdCode("jdExpressCode1");
+        expressCode.setSuningCode("suningExpressCode1");
         expressCodeDao.update(expressCode);
         ExpressCode updated = expressCodeDao.findById(expressCode.getId());
-        assertEquals(expressCode.getJdExpressCode(), String.valueOf("jdExpressCode1"));
+        assertEquals(expressCode.getJdCode(), String.valueOf("jdExpressCode1"));
     }
 
     /**
@@ -77,7 +77,7 @@ public class ExpressCodeDaoTest extends BaseDaoTest {
     @Test
     public void paging() {
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put("expressName", expressCode.getExpressName());
+        params.put("name", expressCode.getName());
         Paging<ExpressCode> expressCodePaging = expressCodeDao.paging(0, 20, params);
 
         assertThat(expressCodePaging.getTotal(), is(1L));
@@ -87,14 +87,14 @@ public class ExpressCodeDaoTest extends BaseDaoTest {
 
     private ExpressCode make() throws Exception {
         ExpressCode expressCode = new ExpressCode();
-        expressCode.setExpressName("中通");
-        expressCode.setOfficalExpressCode("officalZhongTong");
-        expressCode.setPoushengExpressCode("poushengZhongTong");
-        expressCode.setJdExpressCode("jdZhongTong");
-        expressCode.setTaobaoExpressCode("taobaoZhongTong");
-        expressCode.setSuningExpressCode("suningZhongTong");
-        expressCode.setFenqileExpressCode("fenqileZhongTong");
-        expressCode.setHkExpressCode("hkExpressZhongTong");
+        expressCode.setName("中通");
+        expressCode.setOfficalCode("officalZhongTong");
+        expressCode.setPoushengCode("poushengZhongTong");
+        expressCode.setJdCode("jdZhongTong");
+        expressCode.setTaobaoCode("taobaoZhongTong");
+        expressCode.setSuningCode("suningZhongTong");
+        expressCode.setFenqileCode("fenqileZhongTong");
+        expressCode.setHkCode("hkExpressZhongTong");
         expressCode.setCreatedAt(new Date());
         expressCode.setUpdatedAt(new Date());
         return expressCode;

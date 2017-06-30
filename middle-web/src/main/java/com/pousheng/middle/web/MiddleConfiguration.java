@@ -48,19 +48,21 @@ import java.util.concurrent.Executors;
         ParanaAutoConfiguration.class})
 @ComponentScan(
         {"com.pousheng.middle.order",
-        "com.pousheng.middle.warehouse",
-        "com.pousheng.middle.open",
-        "com.pousheng.middle.advices",
-        "com.pousheng.middle.web"})
+                "com.pousheng.middle.warehouse",
+                "com.pousheng.middle.open",
+                "com.pousheng.middle.advices",
+                "com.pousheng.middle.erpsyc",
+                "com.pousheng.middle.web"})
 @EnableScheduling
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
     /**
      * 中台不需要计算运费
+     *
      * @return deliveryFeeCharger
      */
     @Bean
-    public DeliveryFeeCharger deliveryFeeCharger(){
+    public DeliveryFeeCharger deliveryFeeCharger() {
         return new DeliveryFeeCharger() {
             @Override
             public Integer charge(Long aLong, Integer integer, Integer integer1) {

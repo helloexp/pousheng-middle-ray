@@ -31,7 +31,7 @@ import java.util.List;
 @Slf4j
 public class SpuImporter {
 
-    private static final int PAGE_SIZE = 300;
+    private static final int PAGE_SIZE = 200;
 
     private final ErpBrandCacher brandCacher;
 

@@ -24,7 +24,7 @@ import java.util.Map;
 @Component
 @Slf4j
 public class BrandImporter {
-    private static final int PAGE_SIZE = 300;
+    private static final int PAGE_SIZE = 200;
 
     private final BrandDao brandDao;
 

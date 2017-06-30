@@ -4,6 +4,7 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.erp.component.CardFetcher;
@@ -35,6 +36,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Description: add something here
@@ -71,11 +73,10 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public EventBus eventBus(){
-        return new EventBus();
+    public EventBus eventBus() {
+        return new AsyncEventBus(
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2));
     }
-
-
 
     @Override
     public void addFormatters(FormatterRegistry registry) {

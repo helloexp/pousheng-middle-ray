@@ -37,16 +37,32 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
 
 
     @Override
-    public Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel, ShipmentType shipmentType) {
+    public Response<List<OrderShipment>> findByOrderIdAndOrderLevel(Long orderId, OrderLevel orderLevel) {
         try {
-            List<OrderShipment> orderShipments = orderShipmentDao.findByOrderIdAndOrderTypeAndType(orderId, orderLevel.getValue(),shipmentType.value());
+            List<OrderShipment> orderShipments = orderShipmentDao.findByOrderIdAndOrderType(orderId, orderLevel.getValue());
             if (CollectionUtils.isEmpty(orderShipments)) {
                 return Response.ok(Collections.<OrderShipment>emptyList());
             }
             return Response.ok(orderShipments);
         }catch (Exception e) {
-            log.error("failed to find order shipment(orderId={}, orderLevel={} type:{}), cause:{}",
-                    orderId, orderLevel.toString(),shipmentType.toString(), Throwables.getStackTraceAsString(e));
+            log.error("failed to find order shipment(orderId={}, orderLevel={}), cause:{}",
+                    orderId, orderLevel.toString(), Throwables.getStackTraceAsString(e));
+            return Response.fail("order.shipment.find.fail");
+        }
+    }
+
+
+    @Override
+    public Response<List<OrderShipment>> findByAfterSaleOrderIdAndOrderLevel(Long afterSaleOrderId, OrderLevel orderLevel) {
+        try {
+            List<OrderShipment> orderShipments = orderShipmentDao.findByAfterSaleOrderIdAndOrderType(afterSaleOrderId, orderLevel.getValue());
+            if (CollectionUtils.isEmpty(orderShipments)) {
+                return Response.ok(Collections.<OrderShipment>emptyList());
+            }
+            return Response.ok(orderShipments);
+        }catch (Exception e) {
+            log.error("failed to find order shipment(afterSaleOrderId={}, orderLevel={}), cause:{}",
+                    afterSaleOrderId, orderLevel.toString(), Throwables.getStackTraceAsString(e));
             return Response.fail("order.shipment.find.fail");
         }
     }
@@ -73,7 +89,25 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
         } catch (Exception e) {
             log.error("failed to find order shipment, id={}, cause:{}",id, Throwables.getStackTraceAsString(e));
             return Response.fail("shipment.find.fail");
-        }    }
+        }
+    }
+
+
+
+    @Override
+    public Response<OrderShipment> findByShipmentId(Long shipmentId) {
+        try {
+            List<OrderShipment> orderShipments = orderShipmentDao.findByShipmentId(shipmentId);
+            if(CollectionUtils.isEmpty(orderShipments)){
+                log.error("not find order shipment by shipment id:{}",shipmentId);
+                return Response.fail("order.shipment.not.exist");
+            }
+            return Response.ok(orderShipments.get(0));//一个发货单只会对应一条关联信息
+        } catch (Exception e) {
+            log.error("failed to find order shipment by shipment id={}, cause:{}",shipmentId, Throwables.getStackTraceAsString(e));
+            return Response.fail("order.shipment.find.fail");
+        }
+    }
 
     @Override
     public Response<OrderShipment> findByOrderIdAndSkuCodeAndQuantity(Long id, String skuCode, Integer quantity) {

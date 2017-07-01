@@ -1,8 +1,11 @@
 package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
+import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -51,7 +54,11 @@ public class AdminOrderReader {
     private ReceiverInfoReadService receiverInfoReadService;
 
 
-    //订单分页
+    /**
+     * 交易订单分页
+     * @param middleOrderCriteria 查询参数
+     * @return 订单分页结果（不包含操作按钮）
+     */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrder>> findBy(MiddleOrderCriteria middleOrderCriteria) {
 
@@ -59,22 +66,42 @@ public class AdminOrderReader {
     }
 
 
-    //订单详情
+    /**
+     * 交易订单详情
+     * @param id 交易订单id
+     * @return 订单详情DTO
+     */
     @RequestMapping(value = "/api/order/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OrderDetail> detail(@PathVariable("id") Long id) {
         return orderReadLogic.orderDetail(id);
     }
 
 
-    //订单待处理商品列表
+    /**
+     * 交易订单待处理商品列表 for 手动生成发货单流程的选择仓库页面
+     * @param id 交易订单id
+     * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 下单数量 - 已发货数量 ,waitHandleNumber为skuOrder.extraMap中的一个key，value为待发货数量
+     */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<SkuOrder> waitHandleSku(@PathVariable("id") Long id) {
-        return orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue());
+    public List<WaitShipItemInfo> waitHandleSku(@PathVariable("id") Long id) {
+        List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue());
+        List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
+        for (SkuOrder skuOrder : skuOrders){
+            WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+            waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
+            waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
+            waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
+            waitShipItemInfos.add(waitShipItemInfo);
+        }
+        return waitShipItemInfos;
     }
 
 
-
-    //判断订单是否存在
+    /**
+     * 判断交易订单是否存在
+     * @param id 交易订单id
+     * @return boolean类型 ，true为存在，false为不存在
+     */
     @RequestMapping(value = "/api/order/{id}/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean checkExist(@PathVariable("id") Long id) {
 
@@ -92,7 +119,11 @@ public class AdminOrderReader {
     }
 
 
-    //新建售后订单 for 展示订单信息
+    /**
+     * 订单信息和收货地址信息封装 for 新建售后订单展示订单信息
+     * @param id 交易订单id
+     * @return 订单信息和收货地址信息封装DTO
+     */
     @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") Long id) {
 

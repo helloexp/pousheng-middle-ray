@@ -9,17 +9,18 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /**
+ * 换货发货事件
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2016-05-23
  */
-public class OrderShipmentEvent implements Serializable {
+public class RefundShipmentEvent implements Serializable {
 
     private static final long serialVersionUID = 2969280492730054880L;
 
     @Getter
     private final Long shipmentId;
 
-    public OrderShipmentEvent(Long shipmentId) {
+    public RefundShipmentEvent(Long shipmentId) {
         this.shipmentId = shipmentId;
     }
 }

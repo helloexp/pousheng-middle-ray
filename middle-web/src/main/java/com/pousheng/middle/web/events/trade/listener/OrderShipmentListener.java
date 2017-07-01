@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 
 /**
+ * 更新子单商品待处理数量
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2016-05-23
  */

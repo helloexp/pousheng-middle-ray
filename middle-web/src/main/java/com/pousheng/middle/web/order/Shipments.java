@@ -6,16 +6,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.OrderShipmentCriteria;
-import com.pousheng.middle.order.dto.ShipmentDetail;
-import com.pousheng.middle.order.dto.ShipmentItem;
-import com.pousheng.middle.order.dto.ShipmentPagingInfo;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -65,12 +64,17 @@ public class Shipments {
     private EventBus eventBus;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
 
-
-    //发货单分页
+    /**
+     * 发货单分页 注意查的是 orderShipment
+     * @param shipmentCriteria
+     * @return
+     */
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
 
@@ -88,9 +92,9 @@ public class Shipments {
 
     //发货单详情
     @RequestMapping(value = "/api/shipment/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ShipmentDetail findDetail(@PathVariable(value = "id") Long orderShipmentId) {
+    public ShipmentDetail findDetail(@PathVariable(value = "id") Long shipmentId) {
 
-        return shipmentReadLogic.orderDetail(orderShipmentId);
+        return shipmentReadLogic.orderDetail(shipmentId);
     }
 
 
@@ -101,12 +105,22 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<OrderShipment> shipments(@PathVariable("id") Long shopOrderId) {
-        return shipmentReadLogic.findByOrderIdAndType(shopOrderId,ShipmentType.SALES_SHIP);
+        return shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+    }
+
+    /**
+     * 换货单下的发货单
+     * @param afterSaleOrderId 售后单id
+     * @return 发货单
+     */
+    @RequestMapping(value = "/api/refund/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<OrderShipment> changeShipments(@PathVariable("id") Long afterSaleOrderId) {
+        return shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
     }
 
 
     /**
-     * 发货预览
+     * 销售发货的发货预览
      *
      * @param shopOrderId 店铺订单id
      * @param data skuOrderId及数量 json格式
@@ -114,9 +128,9 @@ public class Shipments {
      * @return 订单信息
      */
     @RequestMapping(value = "/api/order/{id}/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<OrderDetail> shipPreview(@PathVariable("id") Long shopOrderId,
-                                             @RequestParam("data") String data,
-                                             @RequestParam(value = "warehouseId") Long warehouseId){
+    public Response<ShipmentPreview> shipPreview(@PathVariable("id") Long shopOrderId,
+                                                 @RequestParam("data") String data,
+                                                 @RequestParam(value = "warehouseId") Long warehouseId){
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
 
         Response<OrderDetail> orderDetailRes = orderReadLogic.orderDetail(shopOrderId);
@@ -128,74 +142,64 @@ public class Shipments {
         List<SkuOrder> allSkuOrders = orderDetail.getSkuOrders();
         List<SkuOrder> currentSkuOrders = allSkuOrders.stream().filter(skuOrder -> skuOrderIdAndQuantity.containsKey(skuOrder.getId())).collect(Collectors.toList());
         currentSkuOrders.forEach(skuOrder -> skuOrder.setQuantity(skuOrderIdAndQuantity.get(skuOrder.getId())));
-        orderDetail.setSkuOrders(currentSkuOrders);
 
         //发货仓库信息
-
         Warehouse warehouse = findWarehouseById(warehouseId);
 
-        //塞入发货仓库信息
-        ShopOrder shopOrder = orderDetail.getShopOrder();
-        Map<String,String> extraMap = shopOrder.getExtra();
-        if(CollectionUtils.isEmpty(extraMap)){
-            extraMap = Maps.newHashMap();
-        }
-        extraMap.put(TradeConstants.WAREHOUSE_ID,String.valueOf(warehouse.getId()));
-        extraMap.put(TradeConstants.WAREHOUSE_NAME,warehouse.getName());
-        shopOrder.setExtra(extraMap);
+        //封装发货预览基本信息
+        ShipmentPreview shipmentPreview  = new ShipmentPreview();
+        shipmentPreview.setWarehouseId(warehouse.getId());
+        shipmentPreview.setWarehouseName(warehouse.getName());
+        shipmentPreview.setInvoices(orderDetail.getInvoices());
+        shipmentPreview.setPayment(orderDetail.getPayment());
+        List<OrderReceiverInfo> orderReceiverInfos = orderDetail.getOrderReceiverInfos();
+        shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
+        shipmentPreview.setShopOrder(orderDetail.getShopOrder());
+        //封装发货预览商品信息
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
+        for (SkuOrder skuOrder : currentSkuOrders){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            shipmentItem.setSkuOrderId(skuOrder.getId());
+            shipmentItem.setSkuCode(skuOrder.getSkuCode());
+            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
+            shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setQuantity(skuOrder.getQuantity());
+            //todo 计算各种价格
 
-        return Response.ok(orderDetail);
+            shipmentItems.add(shipmentItem);
+        }
+        shipmentPreview.setShipmentItems(shipmentItems);
+
+        return Response.ok(shipmentPreview);
     }
+
 
 
     //获取发货单商品明细
     @RequestMapping(value = "/api/shipment/{id}/items", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ShipmentItem> shipmentItems(@PathVariable("id") Long orderShipmentId) {
+    public List<ShipmentItem> shipmentItems(@PathVariable("id") Long shipmentId) {
 
-        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(orderShipmentId);
-        Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         return shipmentReadLogic.getShipmentItems(shipment);
 
     }
 
 
 
-        private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
-        Map<Long, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, Long.class, Integer.class));
-        if(skuOrderIdAndQuantity == null) {
-            log.error("failed to parse skuOrderIdAndQuantity:{}",data);
-            throw new JsonResponseException("sku.quantity.invalid");
-        }
-
-        return skuOrderIdAndQuantity;
-    }
-
-    private Warehouse findWarehouseById(Long warehouseId){
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
-        if(!warehouseRes.isSuccess()){
-            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
-            throw new JsonResponseException(warehouseRes.getError());
-        }
-
-        return warehouseRes.getResult();
-    }
-
-
-
-    //判断发货单是否有效，切是否属于当前订单
+    //判断发货单是否有效，切是否属于当前订单 for 销售单
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> checkExist(@PathVariable("id") Long orderShipmentId,@RequestParam Long orderId){
+    public Response<Boolean> checkExist(@PathVariable("id") Long shipmentId,@RequestParam Long orderId){
 
         try {
 
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(orderShipmentId);
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
             if(!Objects.equals(orderShipment.getOrderId(),orderId)){
-                log.error("order shipment(id:{}) order id:{} not equal :{}",orderShipmentId,orderShipment.getOrderId(),orderId);
+                log.error("shipment(id:{}) order id:{} not equal :{}",shipmentId,orderShipment.getOrderId(),orderId);
                 return Response.fail("shipment.not.belong.to.order");
 
             }
         }catch (JsonResponseException e){
-            log.error("check order shipment id:{} is exist fail,error:{}",orderShipmentId,e.getMessage());
+            log.error("check  shipment(id:{}) is exist fail,error:{}",shipmentId,e.getMessage());
             return Response.fail(e.getMessage());
         }
 
@@ -207,7 +211,7 @@ public class Shipments {
 
     /**
      * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
-     * 生成发货单
+     * 生成销售发货单
      * 发货成功：
      * 1. 更新子单的处理数量
      * 2. 更新子单的状态（如果子单全部为已处理则更新店铺订单为已处理）
@@ -217,7 +221,7 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createShipment(@PathVariable("id") Long shopOrderId,
+    public Long createSalesShipment(@PathVariable("id") Long shopOrderId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
@@ -256,6 +260,63 @@ public class Shipments {
         Long shipmentId = createResp.getResult();
 
         //eventBus.post(new OrderShipmentEvent(shipmentId));
+
+        return shipmentId;
+
+    }
+
+
+
+
+    /**
+     * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
+     * 生成换货发货单
+     * 发货成功：
+     * 1. 更新子单的处理数量
+     * 2. 更新子单的状态（如果子单全部为已处理则更新店铺订单为已处理）
+     * @param refundId 换货单id
+     * @param data skuCode及数量 json格式
+     * @param warehouseId          仓库id
+     * @return 发货单id
+     */
+    @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long createAfterShipment(@PathVariable("id") Long refundId,
+                               @RequestParam("data") String data,
+                               @RequestParam(value = "warehouseId") Long warehouseId) {
+        Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+        //todo 封装商品信息到extra 下单店铺、绩效店铺
+        //检查库存是否充足
+        checkStockIsEnough(warehouseId,skuCodeAndQuantity);
+
+
+        Shipment shipment = new Shipment();
+        shipment.setType(ShipmentType.EXCHANGE_SHIP.value());
+        //shipment.setSkuInfos(skuOrderIdAndQuantity);
+        shipment.setReceiverInfos(JSON_MAPPER.toJson(orderReadLogic.findReceiverInfo(orderRefund.getOrderId())));
+
+        //发货仓库信息
+
+        Warehouse warehouse = findWarehouseById(warehouseId);
+        Map<String,String> extraMap = Maps.newHashMap();
+        extraMap.put(TradeConstants.WAREHOUSE_ID,String.valueOf(warehouse.getId()));
+        extraMap.put(TradeConstants.WAREHOUSE_NAME,warehouse.getName());
+
+        //换货的发货关联的订单id 为换货单id
+        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(refundId), OrderLevel.SHOP);
+        if (!createResp.isSuccess()) {
+            log.error("fail to create shipment:{} for refund(id={}),and level={},cause:{}",
+                    shipment, refundId, OrderLevel.SHOP.getValue(), createResp.getError());
+            throw new JsonResponseException(createResp.getError());
+        }
+
+
+        Long shipmentId = createResp.getResult();
+
+        eventBus.post(new RefundShipmentEvent(shipmentId));
 
         return shipmentId;
 
@@ -318,4 +379,40 @@ public class Shipments {
             }
         }
     }
+
+
+
+    private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
+        Map<Long, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, Long.class, Integer.class));
+        if(skuOrderIdAndQuantity == null) {
+            log.error("failed to parse skuOrderIdAndQuantity:{}",data);
+            throw new JsonResponseException("sku.quantity.invalid");
+        }
+        return skuOrderIdAndQuantity;
+    }
+
+    private Map<String, Integer> analysisSkuCodeAndQuantity(String data){
+        Map<String, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, Integer.class));
+        if(skuOrderIdAndQuantity == null) {
+            log.error("failed to parse skuCodeAndQuantity:{}",data);
+            throw new JsonResponseException("sku.quantity.invalid");
+        }
+        return skuOrderIdAndQuantity;
+    }
+
+
+
+
+
+    private Warehouse findWarehouseById(Long warehouseId){
+        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        if(!warehouseRes.isSuccess()){
+            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
+            throw new JsonResponseException(warehouseRes.getError());
+        }
+
+        return warehouseRes.getResult();
+    }
+
+
 }

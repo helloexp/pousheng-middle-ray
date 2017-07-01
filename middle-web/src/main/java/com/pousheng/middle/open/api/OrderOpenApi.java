@@ -2,6 +2,7 @@ package com.pousheng.middle.open.api;
 
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -70,18 +71,17 @@ public class OrderOpenApi {
         try {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(shipmentId);
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
 
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
             OrderOperation orderOperation =  MiddleOrderEvent.SHIP.toOrderOperation();
-            if (!flow.operationAllowed(orderShipment.getStatus(), orderOperation)) {
+            if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
                 log.error("shipment(id={})'s status({}) not fit for ship",
-                        orderShipment.getId(), orderShipment.getStatus());
+                        shipment.getId(), shipment.getStatus());
                 throw new OPServerException("shipment.current.status.not.allow.ship");
             }
-            Integer targetStatus = flow.target(orderShipment.getStatus(),orderOperation);
-            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            Integer targetStatus = flow.target(shipment.getStatus(),orderOperation);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
 

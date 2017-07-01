@@ -36,9 +36,6 @@ public class ShipmentReadLogic {
     private FlowPicker flowPicker;
     @Autowired
     private OrderReadLogic orderReadLogic;
-    @RpcConsumer
-    private MiddleOrderReadService middleOrderReadService;
-
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -53,9 +50,9 @@ public class ShipmentReadLogic {
     /**
      * 发货单详情
      */
-    public ShipmentDetail orderDetail(Long orderShipmentId) {
-        OrderShipment orderShipment = findOrderShipmentById(orderShipmentId);
-        Shipment shipment = findShipmentById(orderShipment.getShipmentId());
+    public ShipmentDetail orderDetail(Long shipmentId) {
+        Shipment shipment = findShipmentById(shipmentId);
+        OrderShipment orderShipment = findOrderShipmentByShipmentId(shipmentId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
 
         ShipmentDetail shipmentDetail = new ShipmentDetail();
@@ -75,10 +72,21 @@ public class ShipmentReadLogic {
 
     }
 
-    public List<OrderShipment> findByOrderIdAndType(Long orderId, ShipmentType shipmentType){
-        Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP,shipmentType);
+    public List<OrderShipment> findByOrderIdAndType(Long orderId){
+        Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
         if(!response.isSuccess()){
-            log.error("find order shipment by order id:{} level:{} type:{} fail,error:{}",orderId,OrderLevel.SHOP.toString(),shipmentType.toString(),response.getError());
+            log.error("find order shipment by order id:{} level:{} fail,error:{}",orderId,OrderLevel.SHOP.toString(),response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
+
+    }
+
+
+    public List<OrderShipment> findByAfterOrderIdAndType(Long afterSaleOrderId){
+        Response<List<OrderShipment>> response = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId ,OrderLevel.SHOP);
+        if(!response.isSuccess()){
+            log.error("find order shipment by order id:{} level:{} fail,error:{}",afterSaleOrderId,OrderLevel.SHOP.toString(),response.getError());
             throw new JsonResponseException(response.getError());
         }
         return response.getResult();
@@ -106,30 +114,30 @@ public class ShipmentReadLogic {
         return orderShipmentRes.getResult();
     }
 
+    public OrderShipment findOrderShipmentByShipmentId(Long shipmenId){
+        Response<OrderShipment> orderShipmentRes = orderShipmentReadService.findByShipmentId(shipmenId);
+        if(!orderShipmentRes.isSuccess()){
+            log.error("find order shipment by shipment id:{} fail,error:{}",shipmenId,orderShipmentRes.getError());
+            throw new JsonResponseException(orderShipmentRes.getError());
+        }
+
+        return orderShipmentRes.getResult();
+    }
+
+
 
     /**
      * 商品详情返回发票信息
      */
     private void setInvoiceInfo(ShipmentDetail shipmentDetail, Long shopOrderId) {
 
-        Response<List<Invoice>> invoicesRes = middleOrderReadService.findInvoiceInfo(shopOrderId,OrderLevel.SHOP);
-        if(!invoicesRes.isSuccess()){
-            log.error("failed to find order invoice, order id={}, order level:{} cause:{}",shopOrderId, OrderLevel.SHOP.getValue(), invoicesRes.getError());
-            throw new JsonResponseException(invoicesRes.getError());
-        }
-
-        shipmentDetail.setInvoices(invoicesRes.getResult());
+        shipmentDetail.setInvoices(orderReadLogic.findInvoiceInfo(shopOrderId));
     }
 
     /**
      * 收货地址信息
      */
     private void setReceiverInfo(ShipmentDetail shipmentDetail,Shipment shipment) {
-      /*  Response<List<OrderReceiverInfo>> orderReceiverInfoRes = middleOrderReadService.findOrderReceiverInfo(shopOrderId,OrderLevel.SHOP);
-        if(!orderReceiverInfoRes.isSuccess()){
-            log.error("find order receiver info by order id:{} order level:{} fai,cause:{}",shopOrderId,OrderLevel.SHOP.getValue(),orderReceiverInfoRes.getError());
-            throw  new JsonResponseException(orderReceiverInfoRes.getError());
-        }*/
         ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipment.getReceiverInfos(),ReceiverInfo.class);
         shipmentDetail.setReceiverInfo(receiverInfo);
     }

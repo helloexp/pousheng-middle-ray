@@ -5,10 +5,6 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.dto.MiddleRefundDetail;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundPaging;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
@@ -20,17 +16,17 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
-import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -89,20 +85,92 @@ public class Refunds {
         //如果为换货,则封装发货信息（换货的发货单）
         if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
-            refundDetail.setOrderShipments(shipmentReadLogic.findByOrderIdAndType(refundId, ShipmentType.EXCHANGE_SHIP));
+            refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
         }
 
         return refundDetail;
     }
 
+
+
+
+    /**
+     * 换货发货的发货预览
+     *
+     * @param refundId 换货单id
+     * @param data skuCode及数量 json格式
+     * @param warehouseId          仓库id
+     * @return 订单信息
+     */
+    @RequestMapping(value = "/api/refund/{id}/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<ShipmentPreview> changeShipPreview(@PathVariable("id") Long refundId,
+                                                       @RequestParam("data") String data,
+                                                       @RequestParam(value = "warehouseId") Long warehouseId){
+        Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+        Warehouse warehouse = findWarehouseById(warehouseId);
+
+
+        //订单基本信息
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());//orderRefund.getOrderId()为交易订单id
+        List<Invoice> invoices = orderReadLogic.findInvoiceInfo(orderRefund.getOrderId());
+        List<Payment> payments = orderReadLogic.findOrderPaymentInfo(orderRefund.getOrderId());
+        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(orderRefund.getOrderId());
+
+
+        //封装发货预览基本信息
+        ShipmentPreview shipmentPreview  = new ShipmentPreview();
+        shipmentPreview.setWarehouseId(warehouse.getId());
+        shipmentPreview.setWarehouseName(warehouse.getName());
+        shipmentPreview.setInvoices(invoices);
+        if(!CollectionUtils.isEmpty(payments)){
+            shipmentPreview.setPayment(payments.get(0));
+        }
+        shipmentPreview.setReceiverInfo(receiverInfo);
+        shipmentPreview.setShopOrder(shopOrder);
+        //封装发货预览商品信息
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(refundChangeItems.size());
+        for (RefundItem refundItem : refundChangeItems){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            shipmentItem.setSkuCode(refundItem.getSkuCode());
+            shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
+            shipmentItem.setSkuName(refundItem.getSkuName());
+            shipmentItem.setQuantity(skuCodeAndQuantity.get(refundItem.getSkuCode()));//替换为发货数量
+            //todo 计算各种价格
+
+            shipmentItems.add(shipmentItem);
+        }
+        shipmentPreview.setShipmentItems(shipmentItems);
+
+        return Response.ok(shipmentPreview);
+    }
+
+
+    private Map<String, Integer> analysisSkuCodeAndQuantity(String data){
+        Map<String, Integer> skuOrderIdAndQuantity = mapper.fromJson(data, mapper.createCollectionType(HashMap.class, String.class, Integer.class));
+        if(skuOrderIdAndQuantity == null) {
+            log.error("failed to parse skuCodeAndQuantity:{}",data);
+            throw new JsonResponseException("sku.quantity.invalid");
+        }
+        return skuOrderIdAndQuantity;
+    }
+
+
+
+    /**
+     * 创建逆向单
+     * @param submitRefundInfo 提交信息
+     * @return 逆向单id
+     */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo){
         //验证提交信息是否有效
         //订单是否有效
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
         //发货单是否有效
-        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentById(submitRefundInfo.getOrderShipmentId());
-        Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentById(submitRefundInfo.getShipmentId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //申请数量是否有效
         RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
@@ -127,7 +195,7 @@ public class Refunds {
 
         ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipment.getReceiverInfos(),ReceiverInfo.class);
         refundExtra.setReceiverInfo(receiverInfo);
-        refundExtra.setShipmentId(orderShipment.getId());
+        refundExtra.setShipmentId(shipment.getId());
         //非仅退款则验证仓库是否有效、物流信息是否有效
         if(!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
             Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
@@ -154,6 +222,35 @@ public class Refunds {
 
         return rRefundRes.getResult();
     }
+
+
+
+
+
+
+    /**
+     * 换货单待发货商品列表 for 手动生成发货单流程的选择仓库页面
+     * @param refundId 换货单id
+     * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 退货数量 - 已发货数量
+     */
+    @RequestMapping(value = "/api/refund/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<WaitShipItemInfo> waitHandleSku(@PathVariable("id") Long refundId) {
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+
+        List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
+        for (RefundItem refundItem : refundChangeItems){
+            WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+            waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
+            waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+            waitShipItemInfo.setWaitHandleNumber(refundItem.getQuantity()-refundItem.getAlreadyHandleNumber());
+            waitShipItemInfos.add(waitShipItemInfo);
+        }
+        return waitShipItemInfos;
+    }
+
+
 
     private RefundItem checkRefundQuantity(SubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
         for (ShipmentItem shipmentItem : shipmentItems){

@@ -4,10 +4,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.item.service.SkuReadService;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -24,10 +26,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Mail: F@terminus.io
@@ -57,6 +56,8 @@ public class OrderReadLogic {
     private SkuReadService skuReadService;
     @RpcConsumer
     private PaymentReadService paymentReadService;
+    @RpcConsumer
+    private MiddleOrderReadService middleOrderReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
 
@@ -180,6 +181,48 @@ public class OrderReadLogic {
             throw new JsonResponseException(paymentRes.getError());
         }
         return paymentRes.getResult();
+
+    }
+
+    public List<Invoice> findInvoiceInfo(Long shopOrderId){
+
+        Response<List<Invoice>> invoicesRes = middleOrderReadService.findInvoiceInfo(shopOrderId,OrderLevel.SHOP);
+            if(!invoicesRes.isSuccess()){
+            log.error("failed to find order invoice, order id={}, order level:{} cause:{}",shopOrderId, OrderLevel.SHOP.getValue(), invoicesRes.getError());
+            throw new JsonResponseException(invoicesRes.getError());
+        }
+        return invoicesRes.getResult();
+    }
+
+    public ReceiverInfo findReceiverInfo(Long shopOrderId){
+        Response<List<OrderReceiverInfo>> orderReceiverInfoRes = middleOrderReadService.findOrderReceiverInfo(shopOrderId,OrderLevel.SHOP);
+        if(!orderReceiverInfoRes.isSuccess()){
+            log.error("find order receiver info by order id:{} order level:{} fai,cause:{}",shopOrderId,OrderLevel.SHOP.getValue(),orderReceiverInfoRes.getError());
+            throw  new JsonResponseException(orderReceiverInfoRes.getError());
+        }
+
+        return JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(orderReceiverInfoRes.getResult().get(0).getReceiverInfoJson(),ReceiverInfo.class);
+    }
+
+
+    /**
+     * 根据key获取子单extraMap中的value
+     * @param key key
+     * @param skuOrder 子单
+     * @return value
+     */
+
+    public String getSkuExtraMapValueByKey(String key,SkuOrder skuOrder){
+        Map<String,String> extraMap = skuOrder.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+           log.error("sku order(id:{}) extra map is empty",skuOrder.getId());
+            throw new JsonResponseException("sku.order.extra.is.null");
+        }
+        if(!extraMap.containsKey(key)){
+            log.error("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),key);
+            throw new JsonResponseException("sku.order.extra.not.contains.valid.key");
+        }
+        return extraMap.get(key);
 
     }
 

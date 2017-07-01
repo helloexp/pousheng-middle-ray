@@ -17,8 +17,8 @@ public class SubmitRefundInfo {
 
     //交易单id
     private Long orderId;
-    //发货单id (order shipment id)
-    private Long orderShipmentId;
+    //发货单id
+    private Long shipmentId;
     //商品编码和数量 (退货)
     private String refundSkuCode;
     //数量 (退货)

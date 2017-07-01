@@ -1,7 +1,8 @@
-package com.pousheng.middle;
+package com.pousheng.middle.web;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import springfox.documentation.builders.PathSelectors;
 import springfox.documentation.builders.RequestHandlerSelectors;
 import springfox.documentation.spi.DocumentationType;
@@ -13,6 +14,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * Date: 2017-06-09
  */
 @Configuration
+@Profile({"default","dev","test"})
 @EnableSwagger2
 public class Swagger2Configuration {
     @Bean

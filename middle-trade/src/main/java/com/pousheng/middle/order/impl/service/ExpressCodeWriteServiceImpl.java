@@ -17,9 +17,12 @@ import org.springframework.util.StringUtils;
 @Slf4j
 @Service
 public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
-    @Autowired
-    private ExpressCodeDao expressCodeDao;
+    private final ExpressCodeDao expressCodeDao;
 
+    @Autowired
+    public ExpressCodeWriteServiceImpl(ExpressCodeDao expressCodeDao) {
+        this.expressCodeDao = expressCodeDao;
+    }
 
     @Override
     public Response<Long> create(ExpressCode expressCode) {

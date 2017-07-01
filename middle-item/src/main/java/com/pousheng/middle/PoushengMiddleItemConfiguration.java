@@ -9,16 +9,9 @@ import org.springframework.context.annotation.Import;
  * Description: Item Boot Configuration
  * User: xiao
  * Date: 20/04/2017
-
-
-
-
-
-
-
  */
 @Configuration
-@ComponentScan
+@ComponentScan("com.pousheng.middle.spu.service")
 @Import({ItemAutoConfig.class})
 public class PoushengMiddleItemConfiguration {
 

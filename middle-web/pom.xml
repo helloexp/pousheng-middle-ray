@@ -14,7 +14,7 @@
     <dependencies>
         <dependency>
             <groupId>io.terminus.boot.rpc</groupId>
-            <artifactId>rpc-dubbo</artifactId>
+            <artifactId>rpc-common</artifactId>
         </dependency>
 <!--
         <dependency>

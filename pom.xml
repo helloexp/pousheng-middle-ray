@@ -74,7 +74,7 @@
 
             <dependency>
                 <groupId>io.terminus.boot.rpc</groupId>
-                <artifactId>rpc-dubbo</artifactId>
+                <artifactId>rpc-common</artifactId>
                 <version>1.0.5.RELEASE</version>
                 <exclusions>
                     <exclusion>

@@ -5,7 +5,9 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -25,6 +27,8 @@ public class SkuTemplates {
 
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
+    private SpuReadService spuReadService;
 
     /**
      * 获取当前sku code对应sku的spu下的全部sku模板
@@ -46,11 +50,21 @@ public class SkuTemplates {
 
         SkuTemplate skuTemplate = skuTemplates.get(0);
 
+        Response<Spu> spuRes = spuReadService.findById(skuTemplate.getSpuId());
+        if(!spuRes.isSuccess()){
+            log.error("find spu by id:{} fail,error:{}",skuTemplate.getSpuId(),spuRes.getError());
+            throw new JsonResponseException(spuRes.getError());
+        }
+
+
         Response<List<SkuTemplate>> spuSkuTemplatesRes = skuTemplateReadService.findBySpuId(skuTemplate.getSpuId());
         if(!spuSkuTemplatesRes.isSuccess()){
             log.error("find sku template by spu id:{} fail,error:{}",skuTemplate.getSpuId());
             throw new JsonResponseException(spuSkuTemplatesRes.getError());
         }
+
+        List<SkuTemplate> skuTemplatesList = spuSkuTemplatesRes.getResult();
+        skuTemplatesList.forEach(skuTemplate1 -> skuTemplate1.setName(spuRes.getResult().getName()));
         return spuSkuTemplatesRes.getResult();
     }
 }

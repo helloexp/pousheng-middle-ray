@@ -38,4 +38,12 @@ public class TradeConstants {
     //逆向单商品信息
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
 
+
+    /**
+     * 逆向单来源
+     * see RefundSource
+     */
+    public static final String REFUND_SOURCE = "refundSource";
+
+
 }

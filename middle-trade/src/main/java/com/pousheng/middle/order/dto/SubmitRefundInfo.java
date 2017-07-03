@@ -39,6 +39,10 @@ public class SubmitRefundInfo {
     private String shipmentSerialNo;
 
 
+    //操作类型 1：保存 2：提交
+    private Integer operationType;
+
+
 
 
 }

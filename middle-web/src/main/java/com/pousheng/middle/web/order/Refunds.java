@@ -80,23 +80,14 @@ public class Refunds {
     @RequestMapping(value = "/api/refund/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public MiddleRefundDetail detail(@PathVariable(value = "id") Long refundId) {
+        return makeRefundDetail(refundId);
+    }
 
-        Refund refund = refundReadLogic.findRefundById(refundId);
-        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
-        MiddleRefundDetail refundDetail = new MiddleRefundDetail();
-        refundDetail.setOrderRefund(orderRefund);
-        refundDetail.setRefund(refund);
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
-        refundDetail.setRefundExtra(refundExtra);
-
-        //如果为换货,则封装发货信息（换货的发货单）
-        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
-            refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
-            refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
-        }
-
-        return refundDetail;
+    //编辑逆向单
+    @RequestMapping(value = "/api/refund/{id}/edit", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public MiddleRefundDetail edit(@PathVariable(value = "id") Long refundId) {
+        return makeRefundDetail(refundId);
     }
 
 
@@ -182,8 +173,11 @@ public class Refunds {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //申请数量是否有效
         RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
-        //换货数量是否有效
-        RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
+
+        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
+            //换货数量是否有效
+            RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
+        }
 
 
 
@@ -357,6 +351,27 @@ public class Refunds {
             throw new JsonResponseException(warehouseRes.getError());
         }
         return warehouseRes.getResult();
+
+    }
+
+    private MiddleRefundDetail makeRefundDetail(Long refundId){
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+        MiddleRefundDetail refundDetail = new MiddleRefundDetail();
+        refundDetail.setOrderRefund(orderRefund);
+        refundDetail.setRefund(refund);
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
+        refundDetail.setRefundExtra(refundExtra);
+
+        //如果为换货,则封装发货信息（换货的发货单）
+        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
+            refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
+        }
+
+        return  refundDetail;
 
     }
 

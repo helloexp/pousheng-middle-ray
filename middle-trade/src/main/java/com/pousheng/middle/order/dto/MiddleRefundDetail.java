@@ -26,6 +26,6 @@ public class MiddleRefundDetail implements Serializable {
 
     //发货信息
     private List<OrderShipment> orderShipments;
-    //发货信息
+    //换货信息
     private List<RefundItem> shipmentItems;
 }

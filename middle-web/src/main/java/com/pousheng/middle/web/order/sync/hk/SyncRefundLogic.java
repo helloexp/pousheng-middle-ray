@@ -9,8 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.Random;
-
 /**
  * 同步恒康逆向订单逻辑
  * Created by songrenfei on 2017/6/27

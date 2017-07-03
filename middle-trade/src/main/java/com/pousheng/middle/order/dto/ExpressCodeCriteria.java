@@ -2,9 +2,6 @@ package com.pousheng.middle.order.dto;
 
 import io.terminus.parana.common.model.PagingCriteria;
 import lombok.Data;
-import org.joda.time.DateTime;
-
-import java.util.Date;
 
 /**
  * Created by tony on 2017/6/28.

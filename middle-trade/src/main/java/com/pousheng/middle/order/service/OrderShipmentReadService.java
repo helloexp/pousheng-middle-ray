@@ -4,7 +4,6 @@ import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
 

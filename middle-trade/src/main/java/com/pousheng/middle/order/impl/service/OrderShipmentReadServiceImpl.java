@@ -9,7 +9,6 @@ import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderLevel;

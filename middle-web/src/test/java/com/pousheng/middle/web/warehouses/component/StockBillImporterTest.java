@@ -11,8 +11,6 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Date;
 
-import static org.junit.Assert.*;
-
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-30

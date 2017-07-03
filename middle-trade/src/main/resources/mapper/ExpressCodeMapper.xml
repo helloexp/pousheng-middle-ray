@@ -6,14 +6,14 @@
 <mapper namespace="ExpressCode">
     <resultMap id="ExpressCodeMap" type="ExpressCode">
         <id column="id" property="id"/>
-        <result column="express_name" property="expressName"/>
-        <result column="offical_express_code" property="officalExpressCode"/>
-        <result column="pousheng_express_code" property="poushengExpressCode"/>
-        <result column="jd_express_code" property="jdExpressCode"/>
-        <result column="taobao_express_code" property="taobaoExpressCode"/>
-        <result column="suning_express_code" property="suningExpressCode"/>
-        <result column="fenqile_express_code" property="fenqileExpressCode"/>
-        <result column="hk_express_code" property="hkExpressCode"/>
+        <result column="name" property="name"/>
+        <result column="offical_code" property="officalCode"/>
+        <result column="pousheng_code" property="poushengCode"/>
+        <result column="jd_code" property="jdCode"/>
+        <result column="taobao_code" property="taobaoCode"/>
+        <result column="suning_code" property="suningCode"/>
+        <result column="fenqile_code" property="fenqileCode"/>
+        <result column="hk_code" property="hkCode"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -26,30 +26,30 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        express_name, offical_express_code,pousheng_express_code,jd_express_code, taobao_express_code,suning_express_code,
-        fenqile_express_code,hk_express_code,created_at, updated_at
+        name, offical_code,pousheng_code,jd_code, taobao_code,suning_code,
+        fenqile_code,hk_code,created_at, updated_at
     </sql>
     <sql id="vals">
-         #{expressName}, #{officalExpressCode},#{poushengExpressCode}, #{jdExpressCode},#{taobaoExpressCode},
-        #{suningExpressCode},#{fenqileExpressCode},#{hkExpressCode}, now(), now()
+         #{name}, #{officalCode},#{poushengCode}, #{jdCode},#{taobaoCode},
+        #{suningCode},#{fenqileCode},#{hkCode}, now(), now()
     </sql>
     <sql id="queryCondition">
 
-        <if test="expressName != null">and `express_name` LIKE CONCAT(#{expressName}, '%')</if>
+        <if test="name != null">and `name` LIKE CONCAT('%', #{name}, '%')</if>
 
-        <if test="officalExpressCode != null">and `offical_express_code` = #{officalExpressCode}</if>
+        <if test="officalCode != null">and `offical_code` = #{officalCode}</if>
 
-        <if test="poushengExpressCode != null">and `pousheng_express_code` = #{poushengExpressCode}</if>
+        <if test="poushengCode != null">and `pousheng_code` = #{poushengCode}</if>
 
-        <if test="jdExpressCode != null">and `jd_express_code` = #{jdExpressCode}</if>
+        <if test="jdCode != null">and `jd_code` = #{jdCode}</if>
 
-        <if test="taobaoExpressCode != null">and `taobao_express_code` = #{taobaoExpressCode}</if>
+        <if test="taobaoCode != null">and `taobao_code` = #{taobaoCode}</if>
 
-        <if test="suningExpressCode != null">and `suning_express_code` = #{suningExpressCode}</if>
+        <if test="suningCode != null">and `suning_code` = #{suningCode}</if>
 
-        <if test="fenqileExpressCode != null">and `fenqile_express_code` = #{fenqileExpressCode}</if>
+        <if test="fenqileCode != null">and `fenqile_code` = #{fenqileCode}</if>
 
-        <if test="hkExpressCode != null">and `hk_express_code` = #{hkExpressCode}</if>
+        <if test="hkCode != null">and `hk_code` = #{hkCode}</if>
     </sql>
     <sql id="order">
         order by id desc
@@ -68,23 +68,23 @@
         FROM <include refid="tb" />
         WHERE id = #{id}
     </select>
-    <select id="findByExpressName" parameterType="string" resultMap="ExpressCodeMap" >
+    <select id="findByName" parameterType="string" resultMap="ExpressCodeMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE express_name = #{expressName}
+        WHERE name = #{name}
     </select>
     <update id="update" parameterType="ExpressCode">
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="expressName != null">express_name = #{expressName},</if>
-            <if test="officalExpressCode != null">offical_express_code = #{officalExpressCode},</if>
-            <if test="poushengExpressCode != null">pousheng_express_code = #{poushengExpressCode},</if>
-            <if test="jdExpressCode != null">jd_express_code = #{jdExpressCode},</if>
-            <if test="taobaoExpressCode != null">taobao_express_code = #{taobaoExpressCode},</if>
-            <if test="suningExpressCode != null">suning_express_code = #{suningExpressCode},</if>
-            <if test="fenqileExpressCode != null">fenqile_express_code = #{fenqileExpressCode},</if>
-            <if test="hkExpressCode != null">hk_express_code = #{hkExpressCode},</if>
+            <if test="name != null">name = #{name},</if>
+            <if test="officalCode != null">offical_code = #{officalCode},</if>
+            <if test="poushengCode != null">pousheng_code = #{poushengCode},</if>
+            <if test="jdCode != null">jd_code = #{jdCode},</if>
+            <if test="taobaoCode != null">taobao_code = #{taobaoCode},</if>
+            <if test="suningCode != null">suning_code = #{suningCode},</if>
+            <if test="fenqileCode != null">fenqile_code = #{fenqileCode},</if>
+            <if test="hkCode != null">hk_code = #{hkCode},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}

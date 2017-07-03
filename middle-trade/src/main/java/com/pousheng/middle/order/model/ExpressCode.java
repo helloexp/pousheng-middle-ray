@@ -20,36 +20,36 @@ public class ExpressCode implements Serializable {
     /**
      * 快递商名称
      */
-    private String expressName;
+    private String name;
 
     /**
      * 快递官方代码
      */
-    private String officalExpressCode;
+    private String officalCode;
     /**
      * 宝胜官网快递代码
      */
-    private String poushengExpressCode;
+    private String poushengCode;
     /**
      * 京东快递代码
      */
-    private String jdExpressCode;
+    private String jdCode;
     /**
      * 淘宝快递代码
      */
-    private String taobaoExpressCode;
+    private String taobaoCode;
     /**
      * 苏宁快递代码
      */
-    private String suningExpressCode;
+    private String suningCode;
     /**
      * 分期乐快递代码
      */
-    private String fenqileExpressCode;
+    private String fenqileCode;
     /**
      * 恒康快递代码
      */
-    private String hkExpressCode;
+    private String hkCode;
 
     private Date createdAt;
 

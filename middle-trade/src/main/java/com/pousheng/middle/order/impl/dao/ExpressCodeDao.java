@@ -10,8 +10,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class ExpressCodeDao extends MyBatisDao<ExpressCode> {
 
-    public ExpressCode findByExpressName(String expressName) {
-        return getSqlSession().selectOne(sqlId("findByExpressName"), expressName);
+    public ExpressCode findByName(String expressName) {
+        return getSqlSession().selectOne(sqlId("findByName"), expressName);
     }
 
 }

@@ -27,11 +27,11 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
     @Override
     public Response<Long> create(ExpressCode expressCode) {
         try {
-            if (StringUtils.hasText(expressCode.getExpressName())) {
-                ExpressCode exist = expressCodeDao.findByExpressName(expressCode.getExpressName());
+            if (StringUtils.hasText(expressCode.getName())) {
+                ExpressCode exist = expressCodeDao.findByName(expressCode.getName());
                 if (exist != null) {
-                    log.error("duplicated expressName({}) with existed(exprssName={})", expressCode.getExpressName(), exist.getExpressName());
-                    return Response.fail("expressCode.expressName.duplicate");
+                    log.error("duplicated name({}) with existed(name={})", expressCode.getName(), exist.getName());
+                    return Response.fail("expressCode.name.duplicate");
                 }
             }
             expressCodeDao.create(expressCode);

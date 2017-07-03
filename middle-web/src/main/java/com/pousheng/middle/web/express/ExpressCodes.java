@@ -59,13 +59,13 @@ public class ExpressCodes {
     @RequestMapping(value = "/paging",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<ExpressCode> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                                                           @RequestParam(required = false, value = "pageSize") Integer pageSize,
-                                                                          @RequestParam(required = false, value = "expressName") String expressName
+                                                                          @RequestParam(required = false, value = "name") String name
                                                                           )
     {
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
-        if(StringUtils.isNoneEmpty(expressName))
+        if(StringUtils.isNoneEmpty(name))
         {
-            criteria.setExpressName(expressName);
+            criteria.setName(name);
         }
         Response<Paging<ExpressCode>> r = expressCodeReadService.pagingExpressCode(criteria);
 

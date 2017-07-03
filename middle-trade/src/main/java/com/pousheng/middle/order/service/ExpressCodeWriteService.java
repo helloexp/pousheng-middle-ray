@@ -12,7 +12,7 @@ public interface ExpressCodeWriteService {
     /**
      * 该方法可用于快递管理中新增快递机构
      *
-     * @param expressCode,需要判断expressName是否已经存在
+     * @param expressCode,需要判断name是否已经存在
      * @return id, 返回快递机构的id
      */
     public Response<Long> create(ExpressCode expressCode);

@@ -191,7 +191,11 @@ public class Refunds {
         refund.setBuyerId(shopOrder.getBuyerId());
         refund.setBuyerName(shopOrder.getBuyerName());
         refund.setBuyerNote(submitRefundInfo.getBuyerNote());
-        refund.setStatus(MiddleOrderStatus.WAIT_HANDLE.getValue());
+        if(Objects.equals(submitRefundInfo.getOperationType(),1)){
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }else {
+            refund.setStatus(MiddleRefundStatus.WAIT_SYNC_HK.getValue());
+        }
         refund.setShopId(shopOrder.getShopId());
         refund.setShopName(shopOrder.getShopName());
         refund.setFee(submitRefundInfo.getFee());

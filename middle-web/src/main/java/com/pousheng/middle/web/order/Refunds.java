@@ -174,10 +174,7 @@ public class Refunds {
         //申请数量是否有效
         RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
 
-        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
-            //换货数量是否有效
-            RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
-        }
+
 
 
 
@@ -214,7 +211,11 @@ public class Refunds {
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
-        extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
+        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
+            //换货数量是否有效
+            RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
+            extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
+        }
 
         refund.setExtra(extraMap);
 

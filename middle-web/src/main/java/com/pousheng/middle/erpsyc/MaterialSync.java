@@ -46,7 +46,7 @@ public class MaterialSync implements CommandLineRunner {
     public void run(String... args) throws Exception {
         try {
             ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
-            Path dir = Paths.get("product-data/material");
+            Path dir = Paths.get("/Users/jlchen/Downloads/material");
             if (Files.exists(dir)) {
                 try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
                         dir)) {

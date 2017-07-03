@@ -15,7 +15,7 @@
     </resultMap>
 
     <sql id="tb">
-        pusheng_spu_materials
+        pousheng_spu_materials
     </sql>
 
     <sql id="cols_all">

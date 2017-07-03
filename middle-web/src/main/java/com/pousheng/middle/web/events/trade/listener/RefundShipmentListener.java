@@ -7,17 +7,11 @@ package com.pousheng.middle.web.events.trade.listener;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.dto.ShipmentItem;
-import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import io.swagger.models.auth.In;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 

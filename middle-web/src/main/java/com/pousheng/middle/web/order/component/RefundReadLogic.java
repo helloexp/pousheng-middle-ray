@@ -106,10 +106,10 @@ public class RefundReadLogic {
         return Response.ok(groupByRefundIdMap);
     }
 
-    public Refund findRefundById(Long refunId){
-        Response<Refund> refundRes = refundReadService.findById(refunId);
+    public Refund findRefundById(Long refundId){
+        Response<Refund> refundRes = refundReadService.findById(refundId);
         if(!refundRes.isSuccess()){
-            log.error("find refund by id:{} fail,error:{}",refunId,refundRes.getError());
+            log.error("find refund by id:{} fail,error:{}",refundId,refundRes.getError());
             throw new JsonResponseException(refundRes.getError());
         }
 

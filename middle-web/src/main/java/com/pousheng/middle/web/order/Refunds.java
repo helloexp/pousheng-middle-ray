@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
@@ -12,7 +13,9 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -41,6 +44,8 @@ public class Refunds {
     @Autowired
     private RefundReadLogic refundReadLogic;
     @Autowired
+    private RefundWriteLogic refundWriteLogic;
+    @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
@@ -48,6 +53,8 @@ public class Refunds {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private MiddleRefundWriteService middleRefundWriteService;
+    @Autowired
+    private SyncRefundLogic syncRefundLogic;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -248,6 +255,53 @@ public class Refunds {
             waitShipItemInfos.add(waitShipItemInfo);
         }
         return waitShipItemInfos;
+    }
+
+
+
+    /**
+     * 同步售后单到恒康
+     * @param refundId 售后单id
+     */
+    @RequestMapping(value = "api/refund/{id}/sync/hk",method = RequestMethod.PUT)
+    public void syncHkRefund(@PathVariable(value = "id") Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+        if(!syncRes.isSuccess()){
+            log.error("sync refund(id:{}) to hk fail,error:{}",refundId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+
+
+    /**
+     * 取消售后单
+     * @param refundId 售后单id
+     */
+    @RequestMapping(value = "api/refund/{id}/cancel",method = RequestMethod.PUT)
+    public void cancleRefund(@PathVariable(value = "id") Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
+        if(!cancelRes.isSuccess()){
+            log.error("cancel refund(id:{}) fail,error:{}",refundId,cancelRes.getError());
+            throw new JsonResponseException(cancelRes.getError());
+        }
+    }
+
+
+    /**
+     * 同步售后单取消状态到恒康
+     * @param refundId 售后单id
+     */
+    @RequestMapping(value = "api/refund/{id}/cancel/sync/hk",method = RequestMethod.PUT)
+    public void syncHkCancelRefund(@PathVariable(value = "id") Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+        if(!syncRes.isSuccess()){
+            log.error("sync cancel refund(id:{}) to hk fail,error:{}",refundId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
     }
 
 

@@ -7,15 +7,14 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
-import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -66,14 +65,18 @@ public class Shipments {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
 
     /**
      * 发货单分页 注意查的是 orderShipment
-     * @param shipmentCriteria
-     * @return
+     * @param shipmentCriteria 查询参数
+     * @return 发货单分页信息
      */
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
@@ -186,7 +189,7 @@ public class Shipments {
 
 
 
-    //判断发货单是否有效，切是否属于当前订单 for 销售单
+    //判断发货单是否有效，且是否属于当前订单 for 销售单
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> checkExist(@PathVariable("id") Long shipmentId,@RequestParam Long orderId){
 
@@ -321,6 +324,52 @@ public class Shipments {
         return shipmentId;
 
     }
+
+    /**
+     * 同步发货单到恒康
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
+    public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+
+
+    /**
+     * 取消发货单
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/cancel",method = RequestMethod.PUT)
+    public void cancleShipment(@PathVariable(value = "id") Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL.toOrderOperation());
+        if(!cancelRes.isSuccess()){
+            log.error("cancel shipment(id:{}) fail,error:{}",shipmentId,cancelRes.getError());
+            throw new JsonResponseException(cancelRes.getError());
+        }
+    }
+
+
+    /**
+     * 同步发货单取消状态到恒康
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk",method = RequestMethod.PUT)
+    public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
 
     private String findReceiverInfos(Long orderId, OrderLevel orderLevel) {
 

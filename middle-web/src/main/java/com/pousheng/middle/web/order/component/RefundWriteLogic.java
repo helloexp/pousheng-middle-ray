@@ -7,7 +7,9 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.RefundWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,4 +80,26 @@ public class RefundWriteLogic {
         }
 
     }
+
+
+
+    public Response<Boolean> updateStatus(Refund refund, OrderOperation orderOperation){
+
+        Flow flow = flowPicker.pickAfterSales();
+        if(!flow.operationAllowed(refund.getStatus(),orderOperation)){
+            log.error("refund(id:{}) current status:{} not allow operation:{}",refund.getId(),refund.getStatus(),orderOperation.getText());
+            return Response.fail("shipment.status.invalid");
+        }
+
+        Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+        Response<Boolean> updateRes = refundWriteService.updateStatus(refund.getId(),targetStatus);
+        if(!updateRes.isSuccess()){
+            log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+
+        return Response.ok();
+
+    }
+
 }

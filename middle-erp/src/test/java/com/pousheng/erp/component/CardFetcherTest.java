@@ -1,7 +1,6 @@
 package com.pousheng.erp.component;
 
 import com.pousheng.erp.model.PoushengCard;
-import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -3,8 +3,6 @@ package com.pousheng.middle.order.dto.fsm;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.dto.fsm.OrderEvent;
-import io.terminus.parana.order.dto.fsm.OrderStatus;
 
 /**
  * Created by songrenfei on 2017/6/12

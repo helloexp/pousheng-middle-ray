@@ -4,7 +4,6 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
-import com.pousheng.middle.web.events.item.BatchSyncParanaCategoryEvent;
 import com.pousheng.middle.web.events.item.DumpSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;

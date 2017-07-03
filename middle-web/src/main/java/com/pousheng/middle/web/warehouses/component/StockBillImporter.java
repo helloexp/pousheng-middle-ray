@@ -11,7 +11,6 @@ import com.pousheng.erp.component.ErpClient;
 import com.pousheng.erp.model.StockBill;
 import com.pousheng.erp.service.StockBillService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.utils.JsonMapper;

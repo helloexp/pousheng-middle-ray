@@ -35,6 +35,8 @@ public class SubmitRefundInfo {
     private Long warehouseId;
     //物流公司代码
     private String shipmentCorpCode;
+    //物流公司名称
+    private String shipmentCorpName;
     //物流单号
     private String shipmentSerialNo;
 

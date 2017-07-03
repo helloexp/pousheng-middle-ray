@@ -12,10 +12,10 @@ import java.util.Objects;
  */
 public enum MiddleRefundType {
 
-    ON_SALES_REFUND(1,"售中仅退款"),
-    AFTER_SALES_REFUND(2,"售后仅退款"),
-    AFTER_SALES_RETURN(3,"售后退货"),
-    AFTER_SALES_CHANGE(4,"售后换货");
+    AFTER_SALES_REFUND(1,"售后仅退款"),
+    AFTER_SALES_RETURN(2,"售后退货"),
+    AFTER_SALES_CHANGE(3,"售后换货"),
+    ON_SALES_REFUND(4,"售中仅退款");
 
     private final int value;
     private final String desc;

@@ -213,9 +213,9 @@ public class Refunds {
             Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
             refundExtra.setWarehouseId(warehouse.getId());
             refundExtra.setWarehouseName(warehouse.getName());
-            //todo 物流名称
             refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
             refundExtra.setShipmentSerialNo(submitRefundInfo.getShipmentSerialNo());
+            refundExtra.setShipmentCorpName(submitRefundInfo.getShipmentCorpName());
         }
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));

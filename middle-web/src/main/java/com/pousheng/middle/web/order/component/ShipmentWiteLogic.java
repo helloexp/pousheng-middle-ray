@@ -1,14 +1,20 @@
 package com.pousheng.middle.web.order.component;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.jackson.JsonComponent;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
 
 /**
  * 发货单写服务
@@ -40,6 +46,26 @@ public class ShipmentWiteLogic {
 
         return Response.ok();
 
+    }
+
+
+    //更新发货单
+    public void update(Shipment shipment){
+        Response<Boolean> updateRes =  shipmentWriteService.update(shipment);
+        if(!updateRes.isSuccess()){
+            log.error("update shipment:{} fail,error:{}",shipment,updateRes.getError());
+            throw new JsonResponseException(updateRes.getError());
+        }
+    }
+
+    //更新发货单Extra
+    public void updateExtra(Long shipmentId, Map<String,String> extraMap){
+
+        Shipment updateShipment = new Shipment();
+        updateShipment.setId(shipmentId);
+        updateShipment.setExtra(extraMap);
+
+        this.update(updateShipment);
     }
 
 }

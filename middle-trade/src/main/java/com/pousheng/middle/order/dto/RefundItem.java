@@ -20,7 +20,7 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     private Integer skuPrice;
 
     //金额
-    private Integer fee;
+    private Long fee;
 
     //已处理数量（换货的发货）
     private Integer alreadyHandleNumber;

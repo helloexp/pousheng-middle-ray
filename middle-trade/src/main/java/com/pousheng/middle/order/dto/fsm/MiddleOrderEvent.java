@@ -25,6 +25,7 @@ public enum MiddleOrderEvent {
     SYNC_HK(3, "syncHk", "admin"),
     SYNC_ECP(3, "syncEcp", "admin"),
     CANCEL(-12, "cancel", "admin"),
+    DELETE(-12, "delete", "admin"),
     CANCEL_HK(-12, "cancelHk", "admin"),
     SYNC_REFUND(3, "syncRefund", "admin"),
     SYNC_SUCCESS(3, "syncSuccess", "hk"),

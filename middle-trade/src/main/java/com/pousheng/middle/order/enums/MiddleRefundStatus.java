@@ -17,7 +17,7 @@ public enum MiddleRefundStatus {
     WAIT_HANDLE(1),     //待处理
     WAIT_SYNC_HK(2),    //待同步恒康(整单)
     SYNC_HK_ING(3),     //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
-     REFUND_SYNC_HK_SUCCESS(4),      //同步恒康成功待退款(仅退款)
+    REFUND_SYNC_HK_SUCCESS(4),      //同步恒康成功待退款(仅退款)
     RETURN_SYNC_HK_SUCCESS(5),      //同步恒康成功待退货完成(退货)
     CHANGE_SYNC_HK_SUCCESS(5),      //同步恒康成功待退货完成(换货)
     RETURN_DONE_WAIT_REFUND(6),         //退货完成待退款
@@ -26,10 +26,11 @@ public enum MiddleRefundStatus {
     WAIT_CONFIRM_RECEIVE(9),         //待确认收货（所有发货单全部发货完成）
     REFUND(10),              //已退款(仅退款、退货退款)
     DONE(11),              //已完成（换货确认收货）
-    SYNC_HK_CANCEL_ING(3),     //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     SYNC_HK_FAIL(-1),      //同步恒康失败
-    CANCELED(-2),//已取消
-    SYNC_HK_CANCEL_FAIL(-2);//同步恒康取消失败
+    SYNC_HK_CANCEL_ING(-2),     //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
+    CANCELED(-3),//已取消
+    SYNC_HK_CANCEL_FAIL(-4),//同步恒康取消失败
+    DELETED(-5);//已删除
 
 
 

@@ -7,6 +7,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.RefundPaging;
+import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -158,6 +159,21 @@ public class RefundReadLogic {
             throw new JsonResponseException("refund.exit.not.contain.item.info");
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_CHANGE_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
+    }
+
+
+
+    public RefundSource findRefundSource(Refund refund){
+        Map<String,String> tagMap = refund.getTags();
+        if(CollectionUtils.isEmpty(tagMap)){
+            log.error("refund(id:{}) tag_Json field is null",refund.getId());
+            throw new JsonResponseException("refund.tag.is.empty");
+        }
+        if(!tagMap.containsKey(TradeConstants.REFUND_SOURCE)){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_SOURCE);
+            throw new JsonResponseException("refund.exit.not.contain.item.info");
+        }
+        return RefundSource.from(Integer.valueOf(tagMap.get(TradeConstants.REFUND_SOURCE)));
     }
 
 

@@ -12,10 +12,7 @@ import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -51,6 +48,8 @@ public class Refunds {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
     private WarehouseReadService warehouseReadService;
     @Autowired
     private MiddleRefundWriteService middleRefundWriteService;
@@ -83,11 +82,31 @@ public class Refunds {
         return makeRefundDetail(refundId);
     }
 
+    //完善处理逆向单
+    @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public void completeHandle(@PathVariable(value = "id") Long refundId,@RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        refundWriteLogic.completeHandle(refund,editSubmitRefundInfo);
+    }
+
+
     //编辑逆向单
     @RequestMapping(value = "/api/refund/{id}/edit", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
     public MiddleRefundDetail edit(@PathVariable(value = "id") Long refundId) {
         return makeRefundDetail(refundId);
+    }
+
+
+
+    //删除逆向单
+    @RequestMapping(value = "/api/refund/{id}/delete", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+    @ResponseBody
+    public void delete(@PathVariable(value = "id") Long refundId) {
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        refundWriteLogic.deleteRefund(refund);
     }
 
 
@@ -165,80 +184,9 @@ public class Refunds {
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo){
-        //验证提交信息是否有效
-        //订单是否有效
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
-        //发货单是否有效
-        Shipment shipment = shipmentReadLogic.findShipmentById(submitRefundInfo.getShipmentId());
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        //申请数量是否有效
-        RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
 
-
-
-
-
-        Refund refund = new Refund();
-        refund.setBuyerId(shopOrder.getBuyerId());
-        refund.setBuyerName(shopOrder.getBuyerName());
-        refund.setBuyerNote(submitRefundInfo.getBuyerNote());
-        if(Objects.equals(submitRefundInfo.getOperationType(),1)){
-            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
-        }else {
-            refund.setStatus(MiddleRefundStatus.WAIT_SYNC_HK.getValue());
-        }
-        refund.setShopId(shopOrder.getShopId());
-        refund.setShopName(shopOrder.getShopName());
-        refund.setFee(submitRefundInfo.getFee());
-        refund.setRefundType(submitRefundInfo.getRefundType());
-
-        Map<String,String> extraMap = Maps.newHashMap();
-
-        RefundExtra refundExtra = new RefundExtra();
-
-        ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipment.getReceiverInfos(),ReceiverInfo.class);
-        refundExtra.setReceiverInfo(receiverInfo);
-        refundExtra.setShipmentId(shipment.getId());
-        //非仅退款则验证仓库是否有效、物流信息是否有效
-        if(!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
-            Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
-            refundExtra.setWarehouseId(warehouse.getId());
-            refundExtra.setWarehouseName(warehouse.getName());
-            refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
-            refundExtra.setShipmentSerialNo(submitRefundInfo.getShipmentSerialNo());
-            refundExtra.setShipmentCorpName(submitRefundInfo.getShipmentCorpName());
-        }
-
-        extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
-        extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
-        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
-            //换货数量是否有效
-            RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
-            extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
-        }
-
-        refund.setExtra(extraMap);
-
-        //打标
-        Map<String,String> tagMap = Maps.newHashMap();
-        tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
-        refund.setTags(tagMap);
-
-
-
-
-        Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(submitRefundInfo.getOrderId()), OrderLevel.SHOP);
-        if (!rRefundRes.isSuccess()) {
-            log.error("failed to create {}, error code:{}", refund, rRefundRes.getError());
-            throw new JsonResponseException(rRefundRes.getError());
-        }
-
-        return rRefundRes.getResult();
+        return refundWriteLogic.createRefund(submitRefundInfo);
     }
-
-
-
-
 
 
     /**
@@ -312,48 +260,6 @@ public class Refunds {
 
 
 
-    private RefundItem checkRefundQuantity(SubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
-        for (ShipmentItem shipmentItem : shipmentItems){
-            if(Objects.equals(submitRefundInfo.getRefundSkuCode(),shipmentItem.getSkuCode())){
-                Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();
-                if(submitRefundInfo.getRefundQuantity()>availableQuantity){
-                    log.error("refund quantity:{} gt available quantity:{}",submitRefundInfo.getRefundQuantity(),availableQuantity);
-                    throw new JsonResponseException("refund.quantity.invalid");
-                }
-                RefundItem refundItem = new RefundItem();
-                BeanMapper.copy(refundItem,shipmentItem);
-                refundItem.setQuantity(submitRefundInfo.getRefundQuantity());
-                return refundItem;
-            }
-        }
-        log.error("refund sku code:{} invalid",submitRefundInfo.getRefundSkuCode());
-        throw new JsonResponseException("check.refund.quantity.fail");
-
-    }
-
-    private RefundItem checkChangeQuantity(SubmitRefundInfo submitRefundInfo){
-        if(!Objects.equals(submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity())){
-            log.error("refund quantity:{} not equal change quantity:{}",submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity());
-            throw new JsonResponseException("refund.quantity.not.equal.change.quantity");
-        }
-        //todo 封装换货商品信息
-        RefundItem refundItem = new RefundItem();
-        refundItem.setQuantity(submitRefundInfo.getChangeQuantity());
-        refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
-        return refundItem;
-
-    }
-
-    private Warehouse findWarehouseById(Long warehouseId){
-
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
-        if(!warehouseRes.isSuccess()){
-            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
-            throw new JsonResponseException(warehouseRes.getError());
-        }
-        return warehouseRes.getResult();
-
-    }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId){
 
@@ -376,4 +282,15 @@ public class Refunds {
 
     }
 
+
+    private Warehouse findWarehouseById(Long warehouseId){
+
+        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        if(!warehouseRes.isSuccess()){
+            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
+            throw new JsonResponseException(warehouseRes.getError());
+        }
+        return warehouseRes.getResult();
+
+    }
 }

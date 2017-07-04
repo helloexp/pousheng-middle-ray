@@ -249,6 +249,13 @@ public class MiddleFlowBook {
 
             //===========逆向流程
 
+
+            //待处理 -->取消 -> 已取消（不需同步恒康）
+            addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.DELETE.toOrderOperation(),
+                    MiddleRefundStatus.DELETED.getValue());
+
+
             //待处理 -->取消 -> 已取消（不需同步恒康）
             addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.CANCEL.toOrderOperation(),

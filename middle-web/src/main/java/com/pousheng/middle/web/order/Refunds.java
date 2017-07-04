@@ -293,6 +293,6 @@ public class Refunds {
     }
 
     private Boolean isChnageRefund(Refund refund){
-        return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value();
+        return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value());
     }
 }

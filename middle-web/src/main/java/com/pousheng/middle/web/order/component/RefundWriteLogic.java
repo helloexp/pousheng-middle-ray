@@ -440,7 +440,7 @@ public class RefundWriteLogic {
                     throw new JsonResponseException("refund.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();
-                BeanMapper.copy(refundItem,shipmentItem);
+                BeanMapper.copy(shipmentItem,refundItem);
                 refundItem.setQuantity(submitRefundInfo.getRefundQuantity());
                 return refundItem;
             }

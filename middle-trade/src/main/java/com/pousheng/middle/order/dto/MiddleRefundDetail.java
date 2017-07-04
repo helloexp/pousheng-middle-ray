@@ -28,4 +28,9 @@ public class MiddleRefundDetail implements Serializable {
     private List<OrderShipment> orderShipments;
     //换货信息
     private List<RefundItem> shipmentItems;
+
+    /**
+     * 是否为新建售后单
+     */
+    private Boolean isToCreate;
 }

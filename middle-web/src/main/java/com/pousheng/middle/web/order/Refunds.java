@@ -1,14 +1,10 @@
 package com.pousheng.middle.web.order;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -17,7 +13,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.BeanMapper;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.*;
@@ -92,9 +88,13 @@ public class Refunds {
 
 
     //编辑逆向单
-    @RequestMapping(value = "/api/refund/{id}/edit", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @ResponseBody
-    public MiddleRefundDetail edit(@PathVariable(value = "id") Long refundId) {
+    public MiddleRefundDetail edit(@RequestParam(required = false) Long refundId) {
+        if(Arguments.isNull(refundId)){
+            MiddleRefundDetail refundDetail = new MiddleRefundDetail();
+            refundDetail.setIsToCreate(Boolean.TRUE);
+        }
         return makeRefundDetail(refundId);
     }
 
@@ -266,6 +266,7 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
         MiddleRefundDetail refundDetail = new MiddleRefundDetail();
+        refundDetail.setIsToCreate(Boolean.FALSE);
         refundDetail.setOrderRefund(orderRefund);
         refundDetail.setRefund(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

@@ -266,9 +266,13 @@ public class Refunds {
         refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
         refundDetail.setRefundExtra(refundExtra);
 
-        //如果为换货,则封装发货信息（换货的发货单）
-        if(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
+        //如果为换货,则获取换货商品信息
+        if(isChnageRefund(refund)){
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+        }
+
+        //如果为换货,切已经生成过发货单，则封装发货信息（换货的发货单）
+        if(isChnageRefund(refund)&& refund.getStatus()> MiddleRefundStatus.WAIT_SHIP.getValue()){
             refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
         }
 
@@ -286,5 +290,9 @@ public class Refunds {
         }
         return warehouseRes.getResult();
 
+    }
+
+    private Boolean isChnageRefund(Refund refund){
+        return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value();
     }
 }

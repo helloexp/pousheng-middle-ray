@@ -216,6 +216,8 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleRefundStatus.REFUND.getValue());
 
+            //todo 中台同步电商退货完成
+
 
             //=============== 换货 ==================
 

@@ -286,7 +286,7 @@ public class RefundWriteLogic {
 
         //更新退换货信息
         //退款总金额变化
-        if(Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
+        if(!Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
             //如果只是改了退款金额，则要更新退货商品中的退款金额
             if(!isRefundItemChanged){
                 existRefundItem.setFee(submitRefundInfo.getFee());
@@ -371,6 +371,7 @@ public class RefundWriteLogic {
         }else {
             //改变了商品
             updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),editSubmitRefundInfo.getRefundQuantity(),shipmentItems);
+            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-refundItem.getQuantity(),shipmentItems);
 
         }
 

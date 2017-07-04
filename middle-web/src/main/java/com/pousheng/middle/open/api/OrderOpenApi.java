@@ -132,4 +132,14 @@ public class OrderOpenApi {
     }
 
 
+
+    @OpenMethod(key = "hk.hello.world.api", paramNames = {"name"}, httpMethods = RequestMethod.GET)
+    public String helloWord(@NotEmpty(message = "name.empty") String name){
+        log.info("HK-HELLER-WORLD-START param name is:{} " ,name);
+
+        log.info("HK-HELLER-WORLD-START-END");
+        return "hell world:"+name;
+    }
+
+
 }

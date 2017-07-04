@@ -232,7 +232,7 @@ public class RefundWriteLogic {
 
         //更新发货单商品中的已退货数量
         Map<String,String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonDefaultMapper().toJson(shipmentItems));
+        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
         shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
 
         return rRefundRes.getResult();

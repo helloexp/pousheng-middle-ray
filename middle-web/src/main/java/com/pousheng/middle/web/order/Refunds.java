@@ -83,8 +83,7 @@ public class Refunds {
         refundWriteLogic.completeHandle(refund,editSubmitRefundInfo);
     }
 
-
-    //编辑逆向单
+    //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public MiddleRefundDetail edit(@RequestParam(required = false) Long refundId) {
         if(Arguments.isNull(refundId)){

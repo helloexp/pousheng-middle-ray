@@ -16,10 +16,12 @@ import io.terminus.parana.TradeAutoConfig;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.DateFormatter;
 import org.springframework.http.MediaType;
@@ -111,6 +113,18 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         final PoushengJsonMessageConverter paranaJsonMessageConverter = new PoushengJsonMessageConverter();
         //paranaJsonMessageConverter.setObjectMapper(JsonMapper.nonEmptyMapper().getMapper());
         converters.add(paranaJsonMessageConverter);
+    }
+
+
+
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasenames("middle_messages", "messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setFallbackToSystemLocale(true);
+        messageSource.setCacheSeconds(-1);
+        return messageSource;
     }
 
 }

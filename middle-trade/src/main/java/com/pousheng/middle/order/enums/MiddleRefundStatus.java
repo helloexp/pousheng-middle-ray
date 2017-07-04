@@ -19,18 +19,21 @@ public enum MiddleRefundStatus {
     SYNC_HK_ING(3),     //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
     REFUND_SYNC_HK_SUCCESS(4),      //同步恒康成功待退款(仅退款)
     RETURN_SYNC_HK_SUCCESS(5),      //同步恒康成功待退货完成(退货)
-    CHANGE_SYNC_HK_SUCCESS(5),      //同步恒康成功待退货完成(换货)
-    RETURN_DONE_WAIT_REFUND(6),         //退货完成待退款
-    RETURN_DONE_WAIT_CREATE_SHIPMENT(7),         //退货完成待创建发货
-    WAIT_SHIP(8),         //待发货
-    WAIT_CONFIRM_RECEIVE(9),         //待确认收货（所有发货单全部发货完成）
-    REFUND(10),              //已退款(仅退款、退货退款)
-    DONE(11),              //已完成（换货确认收货）
+    CHANGE_SYNC_HK_SUCCESS(6),      //同步恒康成功待退货完成(换货)
+    RETURN_DONE_WAIT_SYNC_ECP(7),         //退货完成待同步电商
+    SYNC_ECP_ING(8),    //同步电商平台中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_ECP_SUCCESS_WAIT_REFUND(9),      //待退款
+    RETURN_DONE_WAIT_CREATE_SHIPMENT(10),         //退货完成待创建发货
+    WAIT_SHIP(11),         //待发货
+    WAIT_CONFIRM_RECEIVE(12),         //待确认收货（所有发货单全部发货完成）
+    REFUND(13),              //已退款(仅退款、退货退款)
+    DONE(14),              //已完成（换货确认收货）
     SYNC_HK_FAIL(-1),      //同步恒康失败
     SYNC_HK_CANCEL_ING(-2),     //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     CANCELED(-3),//已取消
     SYNC_HK_CANCEL_FAIL(-4),//同步恒康取消失败
-    DELETED(-5);//已删除
+    SYNC_ECP_FAIL(-5),   //同步电商失败
+    DELETED(-6);//已删除
 
 
 

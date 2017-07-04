@@ -37,6 +37,12 @@ public class MiddleFlowBook {
                     MiddleOrderStatus.CONFIRMED.getValue());
 
 
+            //待处理 -->取消 -> 已取消
+            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.CANCEL.toOrderOperation(),
+                    MiddleOrderStatus.CANCEL.getValue());
+
+
             //在付款后发货前, 买家可申请退款, 商家同意退款
             //买家申请退款 -->审核通过 -> 商家同意退款
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
@@ -45,7 +51,7 @@ public class MiddleFlowBook {
 
             //商家同意退款 -->同步hk -> 同步成功
             addTransition(MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue(),
-                    MiddleOrderEvent.SYNC_HK.toOrderOperation(),
+                    MiddleOrderEvent.SYNC_REFUND_SUCCESS.toOrderOperation(),
                     MiddleOrderStatus.REFUND_SYNC_HK_SUCCESS.getValue());
 
             //同步成功 -->退款 -> 已退款
@@ -206,20 +212,38 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.SYNC_RETURN_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue());
 
-            //同步退货成功-待退货 -->退货-完成 --> 已退货待退款
+            //同步退货成功-待退货 -->退货-完成 --> 已退货待同步电商平台
             addTransition(MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.RETURN.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_REFUND.getValue());
+                    MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue());
 
-            //已退货待退款 -->退款 --> 已退款
-            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_REFUND.getValue(),
+            //已退货待同步电商 -->同步电商 --> 同步电商中
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
+                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_ING.getValue());
+
+            //同步电商中 -->同步成功 --> 同步电商成功待退款
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
+                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
+
+            //同步电商成功待退款 -->退款 --> 已退款
+            addTransition(MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue(),
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleRefundStatus.REFUND.getValue());
 
-            //todo 中台同步电商退货完成
+            //同步电商中 -->同步失败 --> 同步电商失败
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
+                    MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_FAIL.getValue());
+
+            //同步电商失败 -->同步 --> 同步电商中
+            addTransition(MiddleRefundStatus.SYNC_ECP_FAIL.getValue(),
+                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
+                    MiddleRefundStatus.SYNC_ECP_ING.getValue());
 
 
-            //=============== 换货 ==================
+            //=============== 换货 (全部是手动创建，不用和电商交互)==================
 
 
             //同步中 -->同步换货成功 --> 同步换货成功-待退货
@@ -280,7 +304,7 @@ public class MiddleFlowBook {
             //取消同步失败 -->退货-完成 --> 已退货待退款
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.RETURN.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_REFUND.getValue());
+                    MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue());
 
 
             //=============== 换货 ================

@@ -113,7 +113,7 @@ public class SpuImporter {
             Long leafId = createBackCategoryTreeIfNotExist(kind_name, series_name, model_name, item_name);
 
             //根据归组规则, 生成spuCode
-            String spuCode = refineCode(materialCode, material.getCard_id(), material.getKind_name());
+            String spuCode = refineCode(materialCode, material.getCard_name(), material.getKind_name());
 
             //判断spuCode是否已经存在, 如果存在, 直接返回对应spuId, 如果不存在, 则生成相应的spu信息, 并返回spuId
             List<PoushengSku> poushengSkus = createSkuFromMaterial(material);
@@ -172,7 +172,7 @@ public class SpuImporter {
                 return skuGroupRuler.spuCode(skuGroupRule, materialCode);
             }
         }
-        log.warn("no sku group rule found for material(code={}, cardId={}), use material code as spu code",
+        log.warn("no sku group rule found for material(code={}, cardName={}), use material code as spu code",
                 materialCode, card_name);
         return materialCode;
     }

@@ -1,5 +1,6 @@
 package com.pousheng.erp.cache;
 
+import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,6 +50,12 @@ public class ErpBrandCacher {
      * @return 对应的品牌
      */
     public Brand findByOuterId(String outerId){
-        return brandCache.getUnchecked(outerId);
+        try {
+            return brandCache.getUnchecked(outerId);
+        } catch (Exception e) {
+            Throwables.propagateIfPossible(e, ServiceException.class);
+            log.error("failed to find brand by outerId({}), cause:{}", outerId, Throwables.getStackTraceAsString(e));
+            throw new ServiceException(e);
+        }
     }
 }

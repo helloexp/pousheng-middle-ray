@@ -15,9 +15,9 @@ CREATE TABLE `pousheng_sku_group_rules` (
 create index idx_sgr_card_id on pousheng_sku_group_rules(`card_id`);
 
 
-drop table if exists `pusheng_spu_materials`;
+drop table if exists `pousheng_spu_materials`;
 
-CREATE TABLE `pusheng_spu_materials` (
+CREATE TABLE `pousheng_spu_materials` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
   `spu_id` bigint(20) NOT NULL COMMENT 'spu id',
   `material_id` varchar(32) NOT NULL COMMENT '货品id',
@@ -175,7 +175,7 @@ CREATE TABLE `parana_spus` (
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) COMMENT='SPU表';
-CREATE UNIQUE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
+CREATE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
 CREATE INDEX idx_spus_cid ON `parana_spus` (`category_id`);
 
 -- SPU详情: parana_spu_details

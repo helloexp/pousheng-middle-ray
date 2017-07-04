@@ -64,7 +64,7 @@ public class BrandImporter {
 
     public void doProcess(PoushengCard card) {
         try {
-            Brand brand = createParanaBrand(card);
+            Brand brand = makeParanaBrand(card);
             Brand exist = brandDao.findByName(brand.getName());
             if(exist == null) {
                 brandDao.create(brand);
@@ -79,7 +79,7 @@ public class BrandImporter {
     }
 
 
-    private Brand createParanaBrand(PoushengCard card) {
+    private Brand makeParanaBrand(PoushengCard card) {
         Brand brand = new Brand();
         brand.setOuterId(card.getCard_id());
         //Map<String, String> refinedNames = refine(card.getCard_name());

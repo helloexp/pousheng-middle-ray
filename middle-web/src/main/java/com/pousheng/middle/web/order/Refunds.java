@@ -58,7 +58,6 @@ public class Refunds {
 
     //逆向单分页
     @RequestMapping(value = "/api/refund/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public Paging<RefundPaging> findBy(RefundCriteria criteria) {
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
@@ -73,14 +72,12 @@ public class Refunds {
 
     //逆向单详情
     @RequestMapping(value = "/api/refund/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public MiddleRefundDetail detail(@PathVariable(value = "id") Long refundId) {
         return makeRefundDetail(refundId);
     }
 
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public void completeHandle(@PathVariable(value = "id") Long refundId,@RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         refundWriteLogic.completeHandle(refund,editSubmitRefundInfo);
@@ -89,11 +86,11 @@ public class Refunds {
 
     //编辑逆向单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public MiddleRefundDetail edit(@RequestParam(required = false) Long refundId) {
         if(Arguments.isNull(refundId)){
             MiddleRefundDetail refundDetail = new MiddleRefundDetail();
             refundDetail.setIsToCreate(Boolean.TRUE);
+            return refundDetail;
         }
         return makeRefundDetail(refundId);
     }
@@ -102,7 +99,6 @@ public class Refunds {
 
     //删除逆向单
     @RequestMapping(value = "/api/refund/{id}/delete", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    @ResponseBody
     public void delete(@PathVariable(value = "id") Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);

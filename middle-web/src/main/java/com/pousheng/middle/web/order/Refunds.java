@@ -5,10 +5,12 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.order.component.RefundWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -44,11 +46,7 @@ public class Refunds {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private ShipmentWiteLogic shipmentWiteLogic;
-    @Autowired
     private WarehouseReadService warehouseReadService;
-    @Autowired
-    private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
     private SyncRefundLogic syncRefundLogic;
 
@@ -88,12 +86,6 @@ public class Refunds {
     public MiddleRefundDetail edit(@RequestParam(required = false) Long refundId) {
         if(Arguments.isNull(refundId)){
             MiddleRefundDetail refundDetail = new MiddleRefundDetail();
-            refundDetail.setRefund(new Refund());
-            refundDetail.setRefundItems(Lists.newArrayList());
-            refundDetail.setOrderRefund(new OrderRefund());
-            refundDetail.setRefundExtra(new RefundExtra());
-            refundDetail.setOrderShipments(Lists.newArrayList());
-            refundDetail.setShipmentItems(Lists.newArrayList());
             refundDetail.setIsToCreate(Boolean.TRUE);
             return refundDetail;
         }

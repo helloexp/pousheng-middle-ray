@@ -116,7 +116,7 @@ public class WarehouseRules {
         for (OpenShop openShop : openShops) {
             ThinShop thinShop = new ThinShop();
             thinShop.setShopId(openShop.getId());
-            thinShop.setShopName(openShop.getShopName());
+            thinShop.setShopName(openShop.getChannel()+"-"+openShop.getShopName());
             thinShops.add(thinShop);
         }
         return thinShops;

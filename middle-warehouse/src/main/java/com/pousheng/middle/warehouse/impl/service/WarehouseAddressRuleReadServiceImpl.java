@@ -118,14 +118,16 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
     }
 
     /**
-     * 查找所有非默认规则用掉的地址
+     * 查找店铺所有其他非默认规则用掉的地址
      *
+     * @param shopId  店铺id
+     * @param ruleId  除ruleId之外的规则id
      * @return 所有仓库发货地址集合
      */
     @Override
-    public Response<List<ThinAddress>> findAllNoneDefaultAddresses() {
+    public Response<List<ThinAddress>> findOtherNonDefaultAddressesByShopId(Long shopId, Long ruleId) {
         try {
-            List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findAllButDefault();
+            List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findOtherNonDefaultRuleByShopId(shopId, ruleId);
 
             List<ThinAddress> addresses = Lists.newArrayListWithCapacity(addressRules.size());
             for (WarehouseAddressRule addressRule : addressRules) {
@@ -144,15 +146,16 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
     /**
      * 根据层级地址, 返回满足条件的仓库, 最精确的地址优先
      *
+     * @param  shopId, 店铺id
      * @param addressIds 收货地址, 最精确的地址放在第一个,比如按照[区, 市, 省, 全国]的顺序传入
      * @return 所有能够发货到该地址的仓库列表
      */
     @Override
-    public Response<List<Warehouses4Address>> findByReceiverAddressIds(List<Long> addressIds) {
+    public Response<List<Warehouses4Address>> findByReceiverAddressIds(Long shopId, List<Long> addressIds) {
         List<Warehouses4Address> candidates = Lists.newArrayList();
         for (Long addressId : addressIds) {
             //首先根据地址找到符合对应的规则列表
-            List<WarehouseAddressRule> rules = warehouseAddressRuleDao.findByAddressId(addressId);
+            List<WarehouseAddressRule> rules = warehouseAddressRuleDao.findByShopIdAndAddressId(shopId, addressId);
             for (WarehouseAddressRule rule : rules) {
                 //找到对应的规则细则
                 List<WarehouseRuleItem> wris = warehouseRuleItemDao.findByRuleId(rule.getId());

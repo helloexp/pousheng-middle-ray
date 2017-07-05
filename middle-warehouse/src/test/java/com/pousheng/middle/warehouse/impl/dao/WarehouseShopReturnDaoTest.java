@@ -45,11 +45,11 @@ public class WarehouseShopReturnDaoTest extends BaseDaoTest {
 
     @Test
     public void update() {
-        warehouseShopReturn.setShopId(1L);
+        warehouseShopReturn.setWarehouseId(44L);
         warehouseShopReturnDao.update(warehouseShopReturn);
 
         WarehouseShopReturn  updated = warehouseShopReturnDao.findById(warehouseShopReturn.getId());
-        assertEquals(updated.getShopId(), Long.valueOf(1));
+        assertThat(updated.getWarehouseId(), is(44L));
     }
 
     @Test

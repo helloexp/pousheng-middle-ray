@@ -65,7 +65,7 @@ public class WarehouseChooser {
      * @param skuCodeAndQuantities sku及数量
      * @return 对应的仓库及每个仓库应发货的数量
      */
-    public List<SelectedWarehouse> choose(Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+    public List<SelectedWarehouse> choose(Long shopId, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
 
         List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
         Long currentAddressId = addressId;
@@ -76,7 +76,7 @@ public class WarehouseChooser {
             currentAddressId= address.getPid();
         }
 
-        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(addressIds);
+        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopId, addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{}, error code:{}", addressIds, r.getError());
             throw new JsonResponseException(r.getError());

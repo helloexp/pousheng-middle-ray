@@ -1,8 +1,5 @@
 package com.pousheng.middle.order.dto;
 
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Refund;
 import lombok.Data;
 
 import java.io.Serializable;

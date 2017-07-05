@@ -2,7 +2,6 @@ package com.pousheng.middle.order.dto;
 
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import lombok.Data;
-import lombok.Getter;
 
 import java.io.Serializable;
 import java.util.List;

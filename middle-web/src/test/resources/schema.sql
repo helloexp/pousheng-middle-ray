@@ -37,6 +37,7 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
   `address_name` varchar(20) NOT NULL COMMENT '地址名称',
   `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
+  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),

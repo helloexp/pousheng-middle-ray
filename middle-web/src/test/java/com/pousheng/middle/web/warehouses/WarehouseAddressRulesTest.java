@@ -37,7 +37,7 @@ public class WarehouseAddressRulesTest {
 
     @Test
     public void findAddressByRuleId() throws Exception {
-        AddressTree actual = warehouseAddressRules.findAddressByRuleId(1L);
+        AddressTree actual = warehouseAddressRules.findAddressByRuleId(1L,1L);
         //System.out.println(actual);
         assertThat(actual, notNullValue());
     }

@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
@@ -25,19 +26,25 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
     /**
      * 匹配能够发货到对应地址的规则
      *
+     * @param shopId 店铺id
      * @param addressId 地址id
      * @return 符合条件的规则列表
      */
-    public List<WarehouseAddressRule> findByAddressId(Long addressId){
-        return getSqlSession().selectList(sqlId("findByAddressId"), addressId);
+    public List<WarehouseAddressRule> findByShopIdAndAddressId(Long shopId, Long addressId){
+        return getSqlSession().selectList(sqlId("findByShopIdAndAddressId"),
+                ImmutableMap.of("shopId", shopId, "addressId", addressId));
+
     }
 
     /**
-     * 查找所有的规则
+     * 查找店铺其他规则用掉的非默认地址
      *
-     * @return  所有的规则
+     * @param shopId 店铺id
+     * @param ruleId ruleId
+     * @return 对应的仓库发货地址集合
      */
-    public List<WarehouseAddressRule> findAllButDefault() {
-        return getSqlSession().selectList(sqlId("findAllButDefault"));
+    public List<WarehouseAddressRule> findOtherNonDefaultRuleByShopId(Long shopId, Long ruleId) {
+        return getSqlSession().selectList(sqlId("findOtherNonDefaultRuleByShopId"),
+                ImmutableMap.of("shopId", shopId, "ruleId", ruleId));
     }
 }

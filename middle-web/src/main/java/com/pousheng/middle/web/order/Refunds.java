@@ -16,6 +16,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.*;
@@ -29,6 +30,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -83,13 +85,13 @@ public class Refunds {
 
     //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public MiddleRefundDetail edit(@RequestParam(required = false) Long refundId) {
+    public EditMiddleRefund edit(@RequestParam(required = false) Long refundId) {
         if(Arguments.isNull(refundId)){
-            MiddleRefundDetail refundDetail = new MiddleRefundDetail();
-            refundDetail.setIsToCreate(Boolean.TRUE);
-            return refundDetail;
+            EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
+            editMiddleRefund.setIsToCreate(Boolean.TRUE);
+            return editMiddleRefund;
         }
-        return makeRefundDetail(refundId);
+        return makeEditMiddleRefund(refundId);
     }
 
 
@@ -163,7 +165,7 @@ public class Refunds {
         Map<String, Integer> skuOrderIdAndQuantity = mapper.fromJson(data, mapper.createCollectionType(HashMap.class, String.class, Integer.class));
         if(skuOrderIdAndQuantity == null) {
             log.error("failed to parse skuCodeAndQuantity:{}",data);
-            throw new JsonResponseException("sku.quantity.invalid");
+            throw new JsonResponseException("sku.applyQuantity.invalid");
         }
         return skuOrderIdAndQuantity;
     }
@@ -198,7 +200,7 @@ public class Refunds {
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
             waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
             waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
-            waitShipItemInfo.setWaitHandleNumber(refundItem.getQuantity()-refundItem.getAlreadyHandleNumber());
+            waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
             waitShipItemInfos.add(waitShipItemInfo);
         }
         return waitShipItemInfos;
@@ -259,7 +261,6 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
         MiddleRefundDetail refundDetail = new MiddleRefundDetail();
-        refundDetail.setIsToCreate(Boolean.FALSE);
         refundDetail.setOrderRefund(orderRefund);
         refundDetail.setRefund(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
@@ -278,6 +279,48 @@ public class Refunds {
 
         return  refundDetail;
 
+    }
+
+    private EditMiddleRefund makeEditMiddleRefund(Long refundId){
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+        EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
+        editMiddleRefund.setOrderRefund(orderRefund);
+        editMiddleRefund.setRefund(refund);
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund,refundExtra.getShipmentId()));
+        editMiddleRefund.setRefundExtra(refundExtra);
+
+        //如果为换货,则获取换货商品信息
+        if(isChangeRefund(refund)){
+            editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+        }
+
+        return  editMiddleRefund;
+
+    }
+
+    //根据退货商品封装 EditRefundItem
+    private List<EditRefundItem> makeEditRefundItemFromRefund(Refund refund,Long shipmentId){
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+
+        Map<String, ShipmentItem> shipmentItemMap = shipmentItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(ShipmentItem::getSkuCode, it -> it));
+
+        List<EditRefundItem> editRefundItems = Lists.newArrayListWithCapacity(shipmentItems.size());
+        for (RefundItem refundItem : refundItems){
+            EditRefundItem editRefundItem = new EditRefundItem();
+            BeanMapper.copy(refundItem,editRefundItem);
+            ShipmentItem shipmentItem = shipmentItemMap.get(refundItem.getSkuCode());
+            editRefundItem.setQuantity(shipmentItem.getQuantity());
+            editRefundItem.setRefundQuantity(shipmentItem.getRefundQuantity());
+            editRefundItems.add(editRefundItem);
+        }
+
+        return editRefundItems;
     }
 
 

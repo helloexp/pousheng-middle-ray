@@ -121,7 +121,7 @@ public class OrderWriteLogic {
         Integer quantity = skuOrderIdAndQuantity.get(skuOrder.getId());
         Integer remainNumber = waitHandleNumber - quantity;
         if(remainNumber<0){
-            log.error("sku order(id:{}) extra wait handle number:{} ship quantity:{} ,not enough to ship",skuOrder.getId(),waitHandleNumber,quantity);
+            log.error("sku order(id:{}) extra wait handle number:{} ship applyQuantity:{} ,not enough to ship",skuOrder.getId(),waitHandleNumber,quantity);
             return Response.fail("");
         }
         extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(remainNumber));

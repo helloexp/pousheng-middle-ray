@@ -4,12 +4,15 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.dto.RuleDto;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
+import com.pousheng.middle.warehouse.dto.ThinShop;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseShopRuleDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
+import com.pousheng.middle.warehouse.model.WarehouseShopRule;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.PageInfo;
@@ -42,13 +45,17 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
 
     private final WarehouseRuleItemDao warehouseRuleItemDao;
 
+    private final WarehouseShopRuleDao warehouseShopRuleDao;
+
     @Autowired
     public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao,
                                         WarehouseAddressRuleDao warehouseAddressRuleDao,
-                                        WarehouseRuleItemDao warehouseRuleItemDao) {
+                                        WarehouseRuleItemDao warehouseRuleItemDao,
+                                        WarehouseShopRuleDao warehouseShopRuleDao) {
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
         this.warehouseRuleItemDao = warehouseRuleItemDao;
+        this.warehouseShopRuleDao = warehouseShopRuleDao;
     }
 
     @Override
@@ -80,10 +87,19 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
             List<RuleDto> ruleDtos = Lists.newArrayListWithCapacity(p.getData().size());
             for (WarehouseRule warehouseRule : warehouseRules) {
                 Long ruleId = warehouseRule.getId();
+                List<WarehouseShopRule> warehouseShopRules = warehouseShopRuleDao.findByRuleId(ruleId);
+                List<ThinShop> shops = Lists.newArrayListWithCapacity(warehouseShopRules.size());
+                for (WarehouseShopRule warehouseShopRule : warehouseShopRules) {
+                    ThinShop shop = new ThinShop();
+                    shop.setShopId(warehouseShopRule.getShopId());
+                    shop.setShopName(warehouseShopRule.getShopName());
+                    shops.add(shop);
+                }
                 AddressesAndLastUpdatedAt addressesAndLastUpdatedAt = doFindWarehouseAddressByRuleId(ruleId);
                 List<WarehouseRuleItem> ruleItems = warehouseRuleItemDao.findByRuleId(ruleId);
                 RuleDto ruleDto = new RuleDto();
                 ruleDto.setRuleId(ruleId);
+                ruleDto.setShops(shops);
                 ruleDto.setAddresses(addressesAndLastUpdatedAt.getAddresses());
                 ruleDto.setRuleItems(ruleItems);
                 Date updatedAt = addressesAndLastUpdatedAt.getUpdatedAt();

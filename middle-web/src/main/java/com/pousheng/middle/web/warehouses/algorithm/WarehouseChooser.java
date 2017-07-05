@@ -78,7 +78,8 @@ public class WarehouseChooser {
 
         Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopId, addressIds);
         if (!r.isSuccess()) {
-            log.error("failed to find warehouses for addressIds:{}, error code:{}", addressIds, r.getError());
+            log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",
+                    addressIds, shopId, r.getError());
             throw new JsonResponseException(r.getError());
         }
 

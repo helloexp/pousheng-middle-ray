@@ -16,21 +16,24 @@ public interface WarehouseSkuWriteService {
 
     /**
      * 创建WarehouseSku
-     * @param warehouseSkuStock
+     *
+     * @param warehouseSkuStock 待创建的库存
      * @return 主键id
      */
     Response<Long> create(WarehouseSkuStock warehouseSkuStock);
 
     /**
      * 更新WarehouseSku
-     * @param warehouseSkuStock
+     *
+     * @param warehouseSkuStock 待更新的库存
      * @return 是否成功
      */
     Response<Boolean> update(WarehouseSkuStock warehouseSkuStock);
 
     /**
      * 根据主键id删除WarehouseSku
-     * @param warehouseSkuId
+     *
+     * @param warehouseSkuId 仓库id
      * @return 是否成功
      */
     Response<Boolean> deleteById(Long warehouseSkuId);

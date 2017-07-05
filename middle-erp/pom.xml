@@ -16,7 +16,7 @@
         <dependency>
             <groupId>com.github.kevinsawicki</groupId>
             <artifactId>http-request</artifactId>
-            <version>6.0</version>
+            <version>5.6.x</version>
         </dependency>
 
         <dependency>

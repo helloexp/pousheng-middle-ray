@@ -105,7 +105,7 @@ public class WarehouseRules {
         return thinShops;
     }
 
-    public List<ThinShop> findAllCandidateShops() {
+    private List<ThinShop> findAllCandidateShops() {
         Response<List<OpenShop>> r = openShopReadService.findAll();
         if (!r.isSuccess()) {
             log.error("failed to find open shops, error code:{}", r.getError());
@@ -116,13 +116,13 @@ public class WarehouseRules {
         for (OpenShop openShop : openShops) {
             ThinShop thinShop = new ThinShop();
             thinShop.setShopId(openShop.getId());
-            thinShop.setShopName(openShop.getShopName());
+            thinShop.setShopName(openShop.getChannel()+"-"+openShop.getShopName());
             thinShops.add(thinShop);
         }
         return thinShops;
     }
 
-    public void disableRuleShops( List<ThinShop> thinShops) {
+    private void disableRuleShops( List<ThinShop> thinShops) {
         //获取所有已设置规则的店铺
         Response<Set<Long>> rShopIds = warehouseShopRuleReadService.findShopIds();
         if (!rShopIds.isSuccess()) {
@@ -142,7 +142,7 @@ public class WarehouseRules {
     }
 
     //标记当前规则选的店铺可以编辑
-    public void enableCurrentRuleShops(Long ruleId, List<ThinShop> thinShops) {
+    private void enableCurrentRuleShops(Long ruleId, List<ThinShop> thinShops) {
 
         Response<List<WarehouseShopRule>> rwsrs = warehouseShopRuleReadService.findByRuleId(ruleId);
         if (!rwsrs.isSuccess()) {
@@ -157,7 +157,5 @@ public class WarehouseRules {
                 }
             }
         }
-
-
     }
 }

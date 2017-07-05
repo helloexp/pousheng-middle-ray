@@ -4,7 +4,6 @@ import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
-import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.utils.BeanMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -31,23 +30,24 @@ public class WarehouseAddressRuleManager {
     }
 
     /**
-     * 先创建规则, 然后为每一个地址创建一条关联记录
+     * 为每一个地址创建一条和规则关联的记录
      *
-     * @param thinAddresses  地址列表
+     * @param shopIds       店铺id
+     * @param ruleId        规则id
+     * @param thinAddresses 地址列表
      * @return 规则id
      */
     @Transactional
-    public Long batchCreate(List<ThinAddress> thinAddresses){
+    public Long batchCreate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
 
-        WarehouseRule warehouseRule = new WarehouseRule();
-        warehouseRuleDao.create(warehouseRule);
-        Long ruleId = warehouseRule.getId();
-
-        for (ThinAddress thinAddress : thinAddresses) {
-            WarehouseAddressRule war = new WarehouseAddressRule();
-            BeanMapper.copy(thinAddress, war);
-            war.setRuleId(ruleId);
-            warehouseAddressRuleDao.create(war);
+        for (Long shopId : shopIds) {
+            for (ThinAddress thinAddress : thinAddresses) {
+                WarehouseAddressRule war = new WarehouseAddressRule();
+                BeanMapper.copy(thinAddress, war);
+                war.setRuleId(ruleId);
+                war.setShopId(shopId);
+                warehouseAddressRuleDao.create(war);
+            }
         }
         return ruleId;
     }
@@ -55,18 +55,22 @@ public class WarehouseAddressRuleManager {
     /**
      * 更新规则对应的地址信息
      *
-     * @param ruleId  规则id
+     * @param shopIds       店铺id列表
+     * @param ruleId        规则id
      * @param thinAddresses 地址信息列表
      */
     @Transactional
-    public void batchUpdate(Long ruleId, List<ThinAddress> thinAddresses){
+    public void batchUpdate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
         //首先清理掉原来规则对应的地址信息
         warehouseAddressRuleDao.deleteByRuleId(ruleId);
-        for (ThinAddress thinAddress : thinAddresses) {
-            WarehouseAddressRule war = new WarehouseAddressRule();
-            BeanMapper.copy(thinAddress, war);
-            war.setRuleId(ruleId);
-            warehouseAddressRuleDao.create(war);
+        for (Long shopId : shopIds) {
+            for (ThinAddress thinAddress : thinAddresses) {
+                WarehouseAddressRule war = new WarehouseAddressRule();
+                BeanMapper.copy(thinAddress, war);
+                war.setRuleId(ruleId);
+                war.setShopId(shopId);
+                warehouseAddressRuleDao.create(war);
+            }
         }
     }
 
@@ -75,7 +79,7 @@ public class WarehouseAddressRuleManager {
      *
      * @param ruleId 规则id
      */
-    public void deleteByRuleId(Long ruleId){
+    public void deleteByRuleId(Long ruleId) {
         warehouseAddressRuleDao.deleteByRuleId(ruleId);
     }
 

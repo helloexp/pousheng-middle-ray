@@ -14,6 +14,9 @@ import java.util.Date;
 public class WarehouseAddressRule implements Serializable {
 
     private static final long serialVersionUID = 6678551853222246588L;
+    /**
+     * 主键
+     */
     private Long id;
     
     /**
@@ -30,8 +33,19 @@ public class WarehouseAddressRule implements Serializable {
      * 规则id
      */
     private Long ruleId;
-    
+
+    /**
+     * 店铺id
+     */
+    private Long shopId;
+
+    /**
+     * 创建时间
+     */
     private Date createdAt;
-    
+
+    /**
+     * 更新时间
+     */
     private Date updatedAt;
 }

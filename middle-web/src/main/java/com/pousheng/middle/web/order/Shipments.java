@@ -441,7 +441,7 @@ public class Shipments {
         Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId,skuCodes);
         for (String skuCode : warehouseStockInfo.keySet()){
             if(warehouseStockInfo.get(skuCode)<skuCodeAndQuantityMap.get(skuCode)){
-                log.error("sku code:{} warehouse stock:{} ship quantity:{} stock not enough",skuCode,warehouseStockInfo.get(skuCode),skuCodeAndQuantityMap.get(skuCode));
+                log.error("sku code:{} warehouse stock:{} ship applyQuantity:{} stock not enough",skuCode,warehouseStockInfo.get(skuCode),skuCodeAndQuantityMap.get(skuCode));
                 throw new JsonResponseException(skuCode+".stock.not.enough");
             }
         }
@@ -453,7 +453,7 @@ public class Shipments {
         Map<Long, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, Long.class, Integer.class));
         if(skuOrderIdAndQuantity == null) {
             log.error("failed to parse skuOrderIdAndQuantity:{}",data);
-            throw new JsonResponseException("sku.quantity.invalid");
+            throw new JsonResponseException("sku.applyQuantity.invalid");
         }
         return skuOrderIdAndQuantity;
     }
@@ -462,7 +462,7 @@ public class Shipments {
         Map<String, Integer> skuOrderIdAndQuantity = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, Integer.class));
         if(skuOrderIdAndQuantity == null) {
             log.error("failed to parse skuCodeAndQuantity:{}",data);
-            throw new JsonResponseException("sku.quantity.invalid");
+            throw new JsonResponseException("sku.applyQuantity.invalid");
         }
         return skuOrderIdAndQuantity;
     }

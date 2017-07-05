@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -11,7 +12,6 @@ import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -20,15 +20,14 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.service.PaymentReadService;
 import io.terminus.parana.order.service.RefundWriteService;
+import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.RequestBody;
 
-import java.sql.Ref;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +45,8 @@ public class RefundWriteLogic {
     private RefundReadLogic refundReadLogic;
     @RpcConsumer
     private RefundWriteService refundWriteService;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
@@ -83,7 +84,7 @@ public class RefundWriteLogic {
             }
 
             //如果存在未处理完成的
-            if(!Objects.equals(refundItem.getQuantity(),refundItem.getAlreadyHandleNumber())){
+            if(!Objects.equals(refundItem.getApplyQuantity(),refundItem.getAlreadyHandleNumber())){
                 isAllHandle = Boolean.FALSE;
             }
         }
@@ -162,7 +163,7 @@ public class RefundWriteLogic {
         //回滚发货单的已退货数量
         shipmentItems.forEach(it -> {
             RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
-            it.setRefundQuantity(it.getRefundQuantity()-refundItem.getQuantity());
+            it.setRefundQuantity(it.getRefundQuantity()-refundItem.getApplyQuantity());
         });
 
 
@@ -184,6 +185,7 @@ public class RefundWriteLogic {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //申请数量是否有效
         RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
+        completeSkuAttributeInfo(Lists.newArrayList(refundItem));
         updateShipmentItemRefundQuantity(submitRefundInfo.getRefundSkuCode(),submitRefundInfo.getRefundQuantity(),shipmentItems);
 
         Refund refund = new Refund();
@@ -325,7 +327,7 @@ public class RefundWriteLogic {
     private Boolean refundItemIsChanged(EditSubmitRefundInfo editSubmitRefundInfo,RefundItem existRefundItem){
         Boolean isChanged = Boolean.FALSE;
 
-        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existRefundItem.getQuantity())){
+        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existRefundItem.getApplyQuantity())){
             isChanged = Boolean.TRUE;
         }
 
@@ -350,7 +352,7 @@ public class RefundWriteLogic {
         List<RefundItem> existChangeItems = refundReadLogic.findRefundChangeItems(refund);
         RefundItem existChangeItem = existChangeItems.get(0);//只会存在一条 换货商品
 
-        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existChangeItem.getQuantity())){
+        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existChangeItem.getApplyQuantity())){
             isChanged = Boolean.TRUE;
         }
 
@@ -366,12 +368,12 @@ public class RefundWriteLogic {
         //编辑前后商品没改变只改变了数量
         if(Objects.equals(editSubmitRefundInfo.getRefundSkuCode(),refundItem.getSkuCode())){
             //计算出变化量
-            Integer quantity = editSubmitRefundInfo.getRefundQuantity() - refundItem.getQuantity();
+            Integer quantity = editSubmitRefundInfo.getRefundQuantity() - refundItem.getApplyQuantity();
             updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),quantity,shipmentItems);
         }else {
             //改变了商品
             updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),editSubmitRefundInfo.getRefundQuantity(),shipmentItems);
-            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-refundItem.getQuantity(),shipmentItems);
+            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-refundItem.getApplyQuantity(),shipmentItems);
 
         }
 
@@ -396,6 +398,7 @@ public class RefundWriteLogic {
         if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),refunType)){
             //换货数量是否有效
             RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
+            completeSkuAttributeInfo(Lists.newArrayList(changeItem));
             extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
         }
     }
@@ -405,12 +408,12 @@ public class RefundWriteLogic {
 
     private RefundItem checkChangeQuantity(EditSubmitRefundInfo submitRefundInfo){
         if(!Objects.equals(submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity())){
-            log.error("refund quantity:{} not equal change quantity:{}",submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity());
-            throw new JsonResponseException("refund.quantity.not.equal.change.quantity");
+            log.error("refund applyQuantity:{} not equal change applyQuantity:{}",submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity());
+            throw new JsonResponseException("refund.applyQuantity.not.equal.change.applyQuantity");
         }
         //todo 封装换货商品信息
         RefundItem refundItem = new RefundItem();
-        refundItem.setQuantity(submitRefundInfo.getChangeQuantity());
+        refundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
         refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
         return refundItem;
 
@@ -433,21 +436,21 @@ public class RefundWriteLogic {
             if(Objects.equals(submitRefundInfo.getRefundSkuCode(),shipmentItem.getSkuCode())){
                 Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();
                 if(submitRefundInfo.getRefundQuantity()<=0){
-                    log.error("refund quantity:{} invalid",submitRefundInfo.getRefundQuantity());
-                    throw new JsonResponseException("refund.quantity.invalid");
+                    log.error("refund applyQuantity:{} invalid",submitRefundInfo.getRefundQuantity());
+                    throw new JsonResponseException("refund.applyQuantity.invalid");
                 }
                 if(submitRefundInfo.getRefundQuantity()>availableQuantity){
-                    log.error("refund quantity:{} gt available quantity:{}",submitRefundInfo.getRefundQuantity(),availableQuantity);
-                    throw new JsonResponseException("refund.quantity.invalid");
+                    log.error("refund applyQuantity:{} gt available applyQuantity:{}",submitRefundInfo.getRefundQuantity(),availableQuantity);
+                    throw new JsonResponseException("refund.applyQuantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();
                 BeanMapper.copy(shipmentItem,refundItem);
-                refundItem.setQuantity(submitRefundInfo.getRefundQuantity());
+                refundItem.setApplyQuantity(submitRefundInfo.getRefundQuantity());
                 return refundItem;
             }
         }
         log.error("refund sku code:{} invalid",submitRefundInfo.getRefundSkuCode());
-        throw new JsonResponseException("check.refund.quantity.fail");
+        throw new JsonResponseException("check.refund.applyQuantity.fail");
 
     }
 
@@ -459,6 +462,32 @@ public class RefundWriteLogic {
                 shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()+refundQuantity);
             }
         }
+    }
+
+
+    private void completeSkuAttributeInfo(List<RefundItem> refundItems){
+
+        List<String> skuCodes = Lists.transform(refundItems, new Function<RefundItem, String>() {
+            @Nullable
+            @Override
+            public String apply(@Nullable RefundItem refundItem) {
+                return refundItem.getSkuCode();
+            }
+        });
+
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(skuCodes);
+        if(!skuTemplateRes.isSuccess()){
+            log.error("find sku template by sku skuCodes:{} fail,error:{}",skuCodes,skuTemplateRes.getError());
+            throw new JsonResponseException(skuTemplateRes.getError());
+        }
+
+        Map<String,SkuTemplate> skuCodeAndTemplateMap =  skuTemplateRes.getResult().stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
+
+        refundItems.forEach(it -> {
+            SkuTemplate skuTemplate = skuCodeAndTemplateMap.get(it.getSkuCode());
+            it.setAttrs(skuTemplate.getAttrs());
+        });
     }
 
 

@@ -69,3 +69,19 @@ CREATE TABLE `pousheng_stock_bills` (
 
 drop index idx_spus_spu_code on `parana_spus`;
 CREATE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
+
+drop table if exists `pousheng_warehouse_address_rules`;
+
+CREATE TABLE `pousheng_warehouse_address_rules`(
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `address_id` bigint(20) NOT NULL COMMENT '地址id',
+  `address_name` varchar(20) NOT NULL COMMENT '地址名称',
+  `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
+  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouse_address_rules_rid` (`rule_id`),
+  KEY `idx_warehouse_address_rules_aid` (`address_id`),
+  KEY `idx_warehouse_address_rules_sid` (`shop_id`)
+)COMMENT='地址和仓库规则的关联';

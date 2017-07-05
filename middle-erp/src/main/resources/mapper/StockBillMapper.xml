@@ -11,7 +11,7 @@
         <result column="sequence" property="sequence"/>
         <result column="stock_id" property="stock_id"/>
         <result column="barcode" property="barcode"/>
-        <result column="quantity" property="quantity"/>
+        <result column="applyQuantity" property="applyQuantity"/>
         <result column="original_bill_no" property="original_bill_no"/>
         <result column="modify_datetime" property="modify_datetime"/>
     </resultMap>
@@ -22,13 +22,13 @@
 
     <sql id="cols_all">
         bill_no, company_id, bill_status, bill_type, sequence, stock_id, barcode,
-        quantity, original_bill_no, modify_datetime
+        applyQuantity, original_bill_no, modify_datetime
     </sql>
     
 
     <sql id="vals">
         #{bill_no}, #{company_id}, #{bill_status}, #{bill_type}, #{sequence}, #{stock_id}, #{barcode},
-        #{quantity}, #{original_bill_no}, #{modify_datetime}
+        #{applyQuantity}, #{original_bill_no}, #{modify_datetime}
     </sql>
 
     <insert id="create" parameterType="StockBill">
@@ -71,7 +71,7 @@
             <if test="company_id != null">company_id = #{company_id},</if>
             <if test="bill_status != null">bill_status = #{bill_status},</if>
             <if test="bill_type != null">bill_type = #{bill_type},</if>
-            <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="applyQuantity != null">applyQuantity = #{applyQuantity},</if>
             modify_datetime = #{modify_datetime}
         </set>
         WHERE bill_no = #{bill_no}

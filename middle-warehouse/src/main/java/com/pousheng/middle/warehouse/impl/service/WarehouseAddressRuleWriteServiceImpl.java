@@ -30,17 +30,19 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     /**
      * 创建WarehouseAddresses
      *
+     * @param shopIds 店铺id列表
+     * @param  ruleId 规则id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchCreate(List<ThinAddress> thinAddresses) {
+    public Response<Long> batchCreate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
         try {
-            Long ruleId = warehouseAddressRuleManager.batchCreate(thinAddresses);
-            return Response.ok(ruleId);
+            Long rid = warehouseAddressRuleManager.batchCreate(shopIds, ruleId, thinAddresses);
+            return Response.ok(rid);
         } catch (Exception e) {
-            log.error("failed to batchCreate warehouseAddressRule with address:{}, cause:{}",
-                    thinAddresses, Throwables.getStackTraceAsString(e));
+            log.error("failed to batchCreate warehouseAddressRule with address:{} for rule(id={}), cause:{}",
+                    thinAddresses, ruleId, Throwables.getStackTraceAsString(e));
             return Response.fail("address.may.conflict");
         }
     }
@@ -48,14 +50,15 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     /**
      * 更新规则对应的warehouseAddresses
      *
+     * @param shopIds 店铺id列表
      * @param ruleId 规则id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Boolean> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses) {
+    public Response<Boolean> batchUpdate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
         try {
-            warehouseAddressRuleManager.batchUpdate(ruleId, thinAddresses);
+            warehouseAddressRuleManager.batchUpdate(shopIds, ruleId, thinAddresses);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("failed to update warehouseAddressRule(ruleId={}) with address:{}, cause:{}",

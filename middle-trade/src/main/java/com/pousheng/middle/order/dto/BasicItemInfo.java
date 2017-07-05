@@ -1,8 +1,10 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 商品基本信息
@@ -25,5 +27,10 @@ public class BasicItemInfo implements Serializable{
     private Integer cleanPrice;
     //商品总净价
     private Integer cleanFee;
+
+    /**
+     * sku的销售属性, 不存数据库
+     */
+    private List<SkuAttribute> attrs;
 
 }

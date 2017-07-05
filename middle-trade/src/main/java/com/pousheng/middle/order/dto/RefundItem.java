@@ -14,7 +14,7 @@ public class RefundItem extends BasicItemInfo implements Serializable{
 
     private Long skuOrderId;
     //数量
-    private Integer quantity;
+    private Integer applyQuantity;
 
     //价格
     private Integer skuPrice;

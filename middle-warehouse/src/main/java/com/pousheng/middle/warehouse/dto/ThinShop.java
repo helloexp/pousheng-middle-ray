@@ -22,4 +22,9 @@ public class ThinShop implements Serializable {
      * 店铺名称
      */
     private String shopName;
+
+    /**
+     * 是否可编辑
+     */
+    private boolean editable = true;
 }

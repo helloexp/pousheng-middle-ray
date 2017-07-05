@@ -95,6 +95,10 @@
         <include refid="order"/>
     </select>
 
+    <select id="findDistinctShopIds" resultType="long">
+        select distinct(shop_id) from <include refid="tb"/>
+    </select>
+
     <update id="update" parameterType="WarehouseShopRule">
         UPDATE
         <include refid="tb"/>

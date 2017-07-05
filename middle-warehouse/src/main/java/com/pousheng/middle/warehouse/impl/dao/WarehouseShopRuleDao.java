@@ -30,4 +30,13 @@ public class WarehouseShopRuleDao extends MyBatisDao<WarehouseShopRule> {
     public List<WarehouseShopRule> findByShopId(Long shopId){
         return getSqlSession().selectList(sqlId("findByShopId"), shopId);
     }
+
+    /**
+     * 获取已设置发货规则的店铺id集合
+     *
+     * @return 已设置发货规则的店铺id集合
+     */
+    public List<Long> findDistinctShopIds() {
+        return getSqlSession().selectList(sqlId("findDistinctShopIds"));
+    }
 }

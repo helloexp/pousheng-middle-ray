@@ -1,14 +1,17 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.dto.AddressTree;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
-import com.pousheng.middle.warehouse.dto.ThinShop;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseShopRule;
-import com.pousheng.middle.warehouse.service.*;
+import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
+import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseShopRuleReadService;
 import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -28,7 +31,7 @@ import java.util.Set;
  * Date: 2017-06-08
  */
 @RestController
-@RequestMapping("/api/warehouse/rule")
+@RequestMapping("/api/warehouse/rule/{ruleId}/address")
 @Slf4j
 public class WarehouseAddressRules {
 
@@ -37,9 +40,6 @@ public class WarehouseAddressRules {
 
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
-
-    @RpcConsumer
-    private WarehouseShopRuleWriteService warehouseShopRuleWriteService;
 
     @RpcConsumer
     private WarehouseShopRuleReadService warehouseShopRuleReadService;
@@ -53,22 +53,6 @@ public class WarehouseAddressRules {
     @Autowired
     private TreeMarker treeMarker;
 
-    /**
-     * 创建规则适用的地址信息, 同时会创建仓库发货优先级规则, 并返回新创建的rule id
-     *
-     * @param shops 勾选的店铺
-     * @return rule id 新生成的规则id
-     */
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody ThinShop[] shops) {
-
-        Response<Long> r = warehouseShopRuleWriteService.batchCreate(Lists.newArrayList(shops));
-        if(!r.isSuccess()){
-            log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        return r.getResult();
-    }
 
     /**
      * 创建规则适用的地址信息, 同时会创建仓库发货优先级规则, 并返回新创建的rule id
@@ -77,8 +61,8 @@ public class WarehouseAddressRules {
      * @param  ruleId 规则id
      * @return  ruleId 规则id
      */
-    @RequestMapping(value="/{ruleId}/addresses",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@PathVariable("ruleId")Long ruleId,
+    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long addAddresses(@PathVariable("ruleId")Long ruleId,
                        @RequestBody ThinAddress[] addresses) {
         //需要过滤掉本次提交中冗余的地址,如果父节点全选了, 那么子节点就可以过滤掉了
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
@@ -98,7 +82,7 @@ public class WarehouseAddressRules {
      * @param ruleId 规则id
      * @return 关联的店铺id列表
      */
-    private Set<Long> findShopIdsByRuleId(@PathVariable("ruleId") Long ruleId) {
+    private Set<Long> findShopIdsByRuleId(Long ruleId) {
         Response<List<WarehouseShopRule>> rwsr = warehouseShopRuleReadService.findByRuleId(ruleId);
         if(!rwsr.isSuccess()){
             log.error("failed to find warehouseShopRules for rule(id={}),error code:{}", ruleId, rwsr.getError());
@@ -177,10 +161,13 @@ public class WarehouseAddressRules {
      * @param ruleId 规则id
      * @return  地址树形结构, 并已标记选中状态
      */
-    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree findAddressByRuleId(@PathVariable("ruleId") Long ruleId,
-                                           @RequestParam("shopId") Long shopId) {
+    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressTree findAddressByRuleId(@PathVariable("ruleId") Long ruleId) {
 
+        //根据规则id查找店铺id列表
+        Set<Long> shopIds = findShopIdsByRuleId(ruleId);
+        //对于同一个规则, 取其中任意一个店铺均可, 因为地址完全一样
+        Long shopId = Iterables.getFirst(shopIds, -1L);
         //同店铺其他规则选中的地址不可编辑
         Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findOtherNonDefaultAddressesByShopId(shopId, ruleId);
         if (!r.isSuccess()) {
@@ -215,7 +202,7 @@ public class WarehouseAddressRules {
      * @param ruleId 规则id
      * @return  地址树形结构, 并已标记选中状态
      */
-    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean updateAddressByRuleId(@PathVariable Long ruleId, @RequestBody ThinAddress[] addresses){
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         Set<Long> shopIds = findShopIdsByRuleId(ruleId);
@@ -227,23 +214,4 @@ public class WarehouseAddressRules {
         }
         return Boolean.TRUE;
     }
-
-    /*@RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree findSelectedAddress(){
-        //其他规则选中的地址不可编辑
-        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findOtherNonDefaultAddressesByShopId();
-        if (!r.isSuccess()) {
-            log.error("failed to find all warehouse address , error code:{}", r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        AddressTree addressTree = warehouseAddressCacher.buildTree(2);
-        List<ThinAddress> warehouseAddresses = r.getResult();
-        for (ThinAddress warehouseAddress : warehouseAddresses) {
-            Long id = warehouseAddress.getAddressId();
-            treeMarker.markSelected(addressTree, id, false);
-        }
-        return addressTree;
-    }*/
-
-
 }

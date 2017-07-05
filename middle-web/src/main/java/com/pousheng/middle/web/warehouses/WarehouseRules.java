@@ -157,7 +157,5 @@ public class WarehouseRules {
                 }
             }
         }
-
-
     }
 }

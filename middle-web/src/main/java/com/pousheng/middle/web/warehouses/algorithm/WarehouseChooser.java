@@ -108,28 +108,9 @@ public class WarehouseChooser {
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
             Long warehouseId = warehouseWithPriority.getWarehouseId();
-            boolean enough = true;
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-                String skuCode = skuCodeAndQuantity.getSkuCode();
-                Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-                if (!rStock.isSuccess()) {
-                    log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
-                            skuCode, warehouseId, rStock.getError());
-                    throw new ServiceException(rStock.getError());
-                }
-                int stock = rStock.getResult().getAvailStock().intValue();
-                widskucode2stock.put(warehouseId, skuCode, stock);
-                if (stock < skuCodeAndQuantity.getQuantity()) {
-                    enough = false;
-                }
-            }
-            if (enough) {
-                WarehouseShipment warehouseShipment = new WarehouseShipment();
-                warehouseShipment.setWarehouseId(warehouseId);
-                Warehouse warehouse = warehouseCacher.findById(warehouseId);
-                warehouseShipment.setWarehouseName(warehouse.getName());
-                warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-                return Lists.newArrayList(warehouseShipment);
+            List<WarehouseShipment> warehouseShipments = trySingleWarehouseByPriority(skuCodeAndQuantities, widskucode2stock, warehouseId);
+            if (!CollectionUtils.isEmpty(warehouseShipments)) {
+                return warehouseShipments;
             }
         }
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
@@ -188,5 +169,35 @@ public class WarehouseChooser {
             }
         }
         return result;
+    }
+
+
+    private List<WarehouseShipment> trySingleWarehouseByPriority(List<SkuCodeAndQuantity> skuCodeAndQuantities,
+                                                                 Table<Long, String, Integer> widskucode2stock,
+                                                                 Long warehouseId) {
+        boolean enough = true;
+        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+            String skuCode = skuCodeAndQuantity.getSkuCode();
+            Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+            if (!rStock.isSuccess()) {
+                log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
+                        skuCode, warehouseId, rStock.getError());
+                throw new ServiceException(rStock.getError());
+            }
+            int stock = rStock.getResult().getAvailStock().intValue();
+            widskucode2stock.put(warehouseId, skuCode, stock);
+            if (stock < skuCodeAndQuantity.getQuantity()) {
+                enough = false;
+            }
+        }
+        if (enough) {
+            WarehouseShipment warehouseShipment = new WarehouseShipment();
+            warehouseShipment.setWarehouseId(warehouseId);
+            Warehouse warehouse = warehouseCacher.findById(warehouseId);
+            warehouseShipment.setWarehouseName(warehouse.getName());
+            warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            return Lists.newArrayList(warehouseShipment);
+        }
+        return Collections.emptyList();
     }
 }

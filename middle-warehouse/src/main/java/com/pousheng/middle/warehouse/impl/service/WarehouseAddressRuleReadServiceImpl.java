@@ -147,8 +147,33 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
             }
             return Response.ok(addresses);
         } catch (Exception e) {
-            log.error("failed to find all rule addresses information, cause:{}",
-                    Throwables.getStackTraceAsString(e));
+            log.error("failed to find other rule addresses information in the same group as rule(id={}), cause:{}",
+                    ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail("rule.address.find.fail");
+        }
+    }
+
+    /**
+     * 查找店铺组中发货规则已经用掉的地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 对应的仓库发货地址集合
+     */
+    @Override
+    public Response<List<ThinAddress>> findNonDefaultAddressesByShopGroupId(Long shopGroupId) {
+        try {
+            List<WarehouseAddressRule>  addressRules = warehouseAddressRuleDao.findNonDefaultRuleByShopGroupId(shopGroupId);
+
+            List<ThinAddress> addresses = Lists.newArrayListWithCapacity(addressRules.size());
+            for (WarehouseAddressRule addressRule : addressRules) {
+                ThinAddress thinAddress = new ThinAddress();
+                BeanMapper.copy(addressRule, thinAddress);
+                addresses.add(thinAddress);
+            }
+            return Response.ok(addresses);
+        } catch (Exception e) {
+            log.error("failed to find rule addresses information in the shop group(id={}), cause:{}",
+                    shopGroupId, Throwables.getStackTraceAsString(e));
             return Response.fail("rule.address.find.fail");
         }
     }

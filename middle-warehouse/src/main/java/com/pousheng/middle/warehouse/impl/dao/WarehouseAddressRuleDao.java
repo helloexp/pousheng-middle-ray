@@ -37,14 +37,25 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
     }
 
     /**
-     * 查找店铺其他规则用掉的非默认地址
+     * 查找店铺组其他规则用掉的非默认地址
      *
      * @param shopGroupId 店铺组id
      * @param ruleId ruleId
      * @return 对应的仓库发货地址集合
      */
     public List<WarehouseAddressRule> findOtherNonDefaultRuleByShopGroupId(Long shopGroupId, Long ruleId) {
-        return getSqlSession().selectList(sqlId("findOtherNonDefaultRuleByShopId"),
+        return getSqlSession().selectList(sqlId("findOtherNonDefaultRuleByShopGroupId"),
                 ImmutableMap.of("shopGroupId", shopGroupId, "ruleId", ruleId));
+    }
+
+    /**
+     * 查找店铺组规则用掉的非默认地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 对应的仓库发货地址集合
+     */
+    public List<WarehouseAddressRule> findNonDefaultRuleByShopGroupId(Long shopGroupId) {
+        return getSqlSession().selectList(sqlId("findNonDefaultRuleByShopGroupId"),
+               shopGroupId);
     }
 }

@@ -48,6 +48,7 @@ public class WarehouseShopGroupManager {
         Long nextShopGroupId = warehouseShopGroupDao.maxGroupId()+1;
 
         WarehouseRule warehouseRule = new WarehouseRule();
+        warehouseRule.setShopGroupId(nextShopGroupId);
         warehouseRuleDao.create(warehouseRule);
         Long ruleId = warehouseRule.getId();
 

@@ -69,6 +69,34 @@ public class WarehouseAddressRules {
         return r.getResult();
     }
 
+    /**
+     * 为同一个店铺组新建发货规则时, 不再允许编辑已经使用过的地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 地址树
+     */
+    @RequestMapping(value="/group/{groupId}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressTree findAddresses(@PathVariable("groupId")Long shopGroupId){
+
+        AddressTree addressTree = warehouseAddressCacher.buildTree(2);
+        //同一个group下已选的地址不可编辑
+        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findNonDefaultAddressesByShopGroupId(shopGroupId);
+        if (!r.isSuccess()) {
+            log.error("failed to find warehouse address for shopGroup(id={}) , error code:{}",shopGroupId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        List<ThinAddress> warehouseAddresses = r.getResult();
+        for (ThinAddress warehouseAddress : warehouseAddresses) {
+            Long id = warehouseAddress.getAddressId();
+            treeMarker.markSelected(addressTree, id, false);
+        }
+
+        return addressTree;
+    }
+
+
+
+
 
 
     /**
@@ -179,10 +207,5 @@ public class WarehouseAddressRules {
             throw new JsonResponseException(r.getError());
         }
         return Boolean.TRUE;
-    }
-
-    @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree addressTree(){
-        return warehouseAddressCacher.buildTree(2);
     }
 }

@@ -200,6 +200,7 @@ public class Refunds {
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
             waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
             waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+            waitShipItemInfo.setSkuName(refundItem.getSkuName());
             waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
             waitShipItemInfos.add(waitShipItemInfo);
         }

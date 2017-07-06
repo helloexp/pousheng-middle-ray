@@ -48,7 +48,7 @@ public class CreateShipments {
     /**
      * 发货预览
      *
-     * @param id 单价单id
+     * @param id 单据id
      * @param data json格式
      * @param warehouseId          仓库id
      * @param type    1 销售发货  2 换货发货

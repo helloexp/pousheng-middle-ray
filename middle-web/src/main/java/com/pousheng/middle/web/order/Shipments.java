@@ -256,6 +256,7 @@ public class Shipments {
         Shipment shipment = makeShipment(shopOrderId,warehouseId);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
+        shipment.setExtra(extraMap);
 
 
         //创建发货单
@@ -274,96 +275,6 @@ public class Shipments {
         return shipmentId;
 
     }
-
-
-
-    private Shipment makeShipment(Long shopOrderId,Long warehouseId){
-        Shipment shipment = new Shipment();
-        shipment.setType(ShipmentType.SALES_SHIP.value());
-        shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
-        shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
-
-        //发货仓库信息
-        Warehouse warehouse = findWarehouseById(warehouseId);
-        Map<String,String> extraMap = Maps.newHashMap();
-        ShipmentExtra shipmentExtra = new ShipmentExtra();
-        shipmentExtra.setWarehouseId(warehouse.getId());
-        shipmentExtra.setWarehouseName(warehouse.getName());
-
-        //todo 绩效店铺名称
-        shipmentExtra.setErpPerformanceShopName("绩效店铺");
-        //绩效店铺编码
-        shipmentExtra.setErpPerformanceShopCode("TEST001");
-        //下单店铺名称
-        shipmentExtra.setErpOrderShopName("下单店铺");
-        //下单店铺编码
-        shipmentExtra.setErpOrderShopCode("TEST002");
-        //发货单商品金额
-        shipmentExtra.setShipmentItemFee(33L);
-        //发货单运费金额
-        shipmentExtra.setShipmentShipFee(0L);
-        //发货单运费优惠金额
-        shipmentExtra.setShipmentShipDiscountFee(0L);
-        //发货单优惠金额
-        shipmentExtra.setShipmentDiscountFee(0L);
-        //发货单优惠金额
-        shipmentExtra.setShipmentTotalFee(33L);
-
-        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
-
-        shipment.setExtra(extraMap);
-
-        return shipment;
-    }
-
-
-    private List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long,Integer> skuOrderIdAndQuantity){
-        Map<Long,SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId,it -> it));
-        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
-        for (Long skuOrderId : skuOrderIdAndQuantity.keySet()){
-            ShipmentItem shipmentItem = new ShipmentItem();
-            SkuOrder skuOrder = skuOrderMap.get(skuOrderId);
-            shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
-            shipmentItem.setRefundQuantity(0);
-            shipmentItem.setSkuOrderId(skuOrderId);
-            shipmentItem.setSkuName(skuOrder.getItemName());
-            shipmentItem.setSkuPrice(2);//todo 计算价格
-            shipmentItem.setIntegral(0);
-            shipmentItem.setSkuDiscount(0);
-            shipmentItem.setCleanFee(0);
-            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
-
-            shipmentItems.add(shipmentItem);
-
-        }
-
-
-        return shipmentItems;
-    }
-
-    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems,Map<String,Integer> skuCodeAndQuantity){
-        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
-
-        Map<String,RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode,it -> it));
-        for (String skuCode : skuCodeAndQuantity.keySet()){
-            ShipmentItem shipmentItem = new ShipmentItem();
-            RefundItem refundItem = refundItemMap.get(skuCode);
-            shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
-            shipmentItem.setRefundQuantity(0);
-            shipmentItem.setSkuName(refundItem.getSkuName());
-            shipmentItem.setSkuPrice(2);//todo 计算价格
-            shipmentItem.setIntegral(0);
-            shipmentItem.setSkuDiscount(0);
-            shipmentItem.setCleanFee(0);
-            shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
-
-            shipmentItems.add(shipmentItem);
-        }
-
-
-        return shipmentItems;
-    }
-
 
 
 
@@ -395,7 +306,7 @@ public class Shipments {
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeChangeShipmentItems(refundChangeItems,skuCodeAndQuantity)));
-
+        shipment.setExtra(extraMap);
         //换货的发货关联的订单id 为换货单id
         Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, orderRefund.getOrderId(),refundId);
         if (!createResp.isSuccess()) {
@@ -550,6 +461,98 @@ public class Shipments {
 
         return warehouseRes.getResult();
     }
+
+
+
+    private Shipment makeShipment(Long shopOrderId,Long warehouseId){
+        Shipment shipment = new Shipment();
+        shipment.setType(ShipmentType.SALES_SHIP.value());
+        shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
+        shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
+
+        //发货仓库信息
+        Warehouse warehouse = findWarehouseById(warehouseId);
+        Map<String,String> extraMap = Maps.newHashMap();
+        ShipmentExtra shipmentExtra = new ShipmentExtra();
+        shipmentExtra.setWarehouseId(warehouse.getId());
+        shipmentExtra.setWarehouseName(warehouse.getName());
+
+        //todo 绩效店铺名称
+        shipmentExtra.setErpPerformanceShopName("绩效店铺");
+        //绩效店铺编码
+        shipmentExtra.setErpPerformanceShopCode("TEST001");
+        //下单店铺名称
+        shipmentExtra.setErpOrderShopName("下单店铺");
+        //下单店铺编码
+        shipmentExtra.setErpOrderShopCode("TEST002");
+        //发货单商品金额
+        shipmentExtra.setShipmentItemFee(33L);
+        //发货单运费金额
+        shipmentExtra.setShipmentShipFee(0L);
+        //发货单运费优惠金额
+        shipmentExtra.setShipmentShipDiscountFee(0L);
+        //发货单优惠金额
+        shipmentExtra.setShipmentDiscountFee(0L);
+        //发货单优惠金额
+        shipmentExtra.setShipmentTotalFee(33L);
+
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
+
+        shipment.setExtra(extraMap);
+
+        return shipment;
+    }
+
+
+    private List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long,Integer> skuOrderIdAndQuantity){
+        Map<Long,SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId,it -> it));
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
+        for (Long skuOrderId : skuOrderIdAndQuantity.keySet()){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            SkuOrder skuOrder = skuOrderMap.get(skuOrderId);
+            shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
+            shipmentItem.setRefundQuantity(0);
+            shipmentItem.setSkuOrderId(skuOrderId);
+            shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setSkuPrice(2);//todo 计算价格
+            shipmentItem.setIntegral(0);
+            shipmentItem.setSkuDiscount(0);
+            shipmentItem.setCleanFee(0);
+            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
+
+            shipmentItems.add(shipmentItem);
+
+        }
+
+
+        return shipmentItems;
+    }
+
+    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems,Map<String,Integer> skuCodeAndQuantity){
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
+
+        Map<String,RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode,it -> it));
+        for (String skuCode : skuCodeAndQuantity.keySet()){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            RefundItem refundItem = refundItemMap.get(skuCode);
+            shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
+            shipmentItem.setRefundQuantity(0);
+            shipmentItem.setSkuName(refundItem.getSkuName());
+            shipmentItem.setSkuPrice(2);//todo 计算价格
+            shipmentItem.setIntegral(0);
+            shipmentItem.setSkuDiscount(0);
+            shipmentItem.setCleanFee(0);
+            shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
+
+            shipmentItems.add(shipmentItem);
+        }
+
+
+        return shipmentItems;
+    }
+
+
+
 
 
 }

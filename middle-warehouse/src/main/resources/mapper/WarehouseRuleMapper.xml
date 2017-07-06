@@ -8,9 +8,9 @@
     <resultMap id="WarehouseRuleMap" type="WarehouseRule">
         <id column="id" property="id"/>
         <result column="name" property="name"/>
+        <result column="shop_group_id" property="shopGroupId"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-        
     </resultMap>
 
     <sql id="tb">
@@ -22,24 +22,13 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        name, created_at, updated_at
+        name, shop_group_id, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{name}, now(), now()
+        #{name}, #{shopGroupId}, now(), now()
     </sql>
 
-    <sql id="queryCondition">
-        
-        <if test="name != null">and `name` = #{name}</if>
-        
-        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
-        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
-    </sql>
 
     <sql id="order">
         order by id desc
@@ -76,8 +65,6 @@
         <set>
             <if test="name != null">name = #{name},</if>
             
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}
@@ -88,21 +75,36 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="WarehouseRuleMap">
+
+ <!--   <sql id="queryCondition">
+        <if test="shopGroupId != null">and `shop_group_id` = #{shopGroupId}</if>
+
+    </sql>-->
+
+    <select id="findByShopGroupIds" parameterType="list" resultMap="WarehouseRuleMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
-        <where>
-        <include refid="queryCondition"/>
-        </where>
-        order by id desc limit #{offset},#{limit}
+        where shop_group_id in
+        <foreach collection="list" open="(" separator="," close=")"
+                 item="item">
+            #{item}
+        </foreach>
     </select>
 
-    <select id="count" parameterType="list" resultType="long">
-        select count(1)
+    <select id="count" resultType="long">
+        select count(distinct(shop_group_id))
         from <include refid="tb"/>
-        <where>
-        <include refid="queryCondition"/>
-        </where>
+    </select>
+
+    <select id="pagination" parameterType="map" resultType="long">
+        select distinct(shop_group_id) from <include refid="tb"/>
+        order by shop_group_id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="findByShopGroupId" parameterType="long" resultMap="WarehouseRuleMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        where shop_group_id=#{shopGroupId}
     </select>
 
 </mapper>

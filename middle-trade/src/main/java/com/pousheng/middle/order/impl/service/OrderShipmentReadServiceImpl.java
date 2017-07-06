@@ -126,6 +126,7 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
                 log.error("find shipment by id:{} fail,cause:{}",orderShipment.getShipmentId(),Throwables.getStackTraceAsString(e));
                 continue;
             }
+
             shipmentDtos.add(dto);
         }
         dtoPaging.setData(shipmentDtos);

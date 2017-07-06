@@ -35,9 +35,9 @@ public class WarehouseAddressRule implements Serializable {
     private Long ruleId;
 
     /**
-     * 店铺id
+     * 店铺组id
      */
-    private Long shopId;
+    private Long shopGroupId;
 
     /**
      * 创建时间

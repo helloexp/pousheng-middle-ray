@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.pousheng.middle.warehouse.dto.RuleSummary;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.dto.Warehouses4Address;
 import io.terminus.common.model.Response;
@@ -21,7 +21,7 @@ public interface WarehouseAddressRuleReadService {
      * @param ruleId 规则id
      * @return 规则概述
      */
-    Response<RuleDto> findByRuleId(Long ruleId);
+    Response<RuleSummary> findByRuleId(Long ruleId);
 
     /**
      * 根据仓库优先级规则id, 返回对应的仓库发货地址信息
@@ -34,11 +34,10 @@ public interface WarehouseAddressRuleReadService {
     /**
      * 查找店铺其他规则用掉的非默认地址
      *
-     * @param shopId 店铺id
      * @param ruleId ruleId
      * @return 对应的仓库发货地址集合
      */
-    Response<List<ThinAddress>> findOtherNonDefaultAddressesByShopId(Long shopId, Long ruleId);
+    Response<List<ThinAddress>> findOtherNonDefaultAddressesByRuleId(Long ruleId);
 
 
     /**

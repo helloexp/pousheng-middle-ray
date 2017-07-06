@@ -14,7 +14,7 @@ import java.util.List;
  * Date: 2017-06-08
  */
 @Data
-public class RuleDto implements Serializable {
+public class RuleSummary implements Serializable {
 
     private static final long serialVersionUID = -557448986173832968L;
 
@@ -22,16 +22,6 @@ public class RuleDto implements Serializable {
      * 规则id
      */
     private Long ruleId;
-
-    /**
-     * 规则描述
-     */
-    private String ruleDesc;
-
-    /**
-     * 规则关联的店铺
-     */
-    private List<ThinShop> shops;
 
     /**
      * 规则对应的区域

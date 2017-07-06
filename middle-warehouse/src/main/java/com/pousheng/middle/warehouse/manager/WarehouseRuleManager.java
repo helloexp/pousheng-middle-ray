@@ -3,7 +3,7 @@ package com.pousheng.middle.warehouse.manager;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseShopRuleDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseShopGroupDao;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,17 +21,17 @@ public class WarehouseRuleManager {
 
     private final WarehouseRuleItemDao warehouseRuleItemDao;
 
-    private final WarehouseShopRuleDao warehouseShopRuleDao;
+    private final WarehouseShopGroupDao warehouseShopGroupDao;
 
     @Autowired
     public WarehouseRuleManager(WarehouseRuleDao warehouseRuleDao,
                                 WarehouseAddressRuleDao warehouseAddressRuleDao,
                                 WarehouseRuleItemDao warehouseRuleItemDao,
-                                WarehouseShopRuleDao warehouseShopRuleDao) {
+                                WarehouseShopGroupDao warehouseShopGroupDao) {
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
         this.warehouseRuleItemDao = warehouseRuleItemDao;
-        this.warehouseShopRuleDao = warehouseShopRuleDao;
+        this.warehouseShopGroupDao = warehouseShopGroupDao;
     }
 
     @Transactional
@@ -39,6 +39,6 @@ public class WarehouseRuleManager {
         warehouseRuleDao.delete(warehouseRuleId);
         warehouseAddressRuleDao.deleteByRuleId(warehouseRuleId);
         warehouseRuleItemDao.deleteByRuleId(warehouseRuleId);
-        warehouseShopRuleDao.deleteByRuleId(warehouseRuleId);
+        warehouseShopGroupDao.deleteByGroupId(warehouseRuleId);
     }
 }

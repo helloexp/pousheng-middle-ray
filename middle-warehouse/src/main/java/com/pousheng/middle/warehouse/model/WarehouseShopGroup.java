@@ -6,13 +6,13 @@ import java.io.Serializable;
 import java.util.Date;
 
 /**
- * 店铺和发货规则的关联
+ * 店铺组
  *
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-07-05
  */
 @Data
-public class WarehouseShopRule implements Serializable {
+public class WarehouseShopGroup implements Serializable {
 
     private static final long serialVersionUID = 9019038647279671163L;
 
@@ -32,9 +32,9 @@ public class WarehouseShopRule implements Serializable {
     private String shopName;
 
     /**
-     * 规则id
+     * 店铺组id
      */
-    private Long ruleId;
+    private Long groupId;
 
     /**
      * 创建时间

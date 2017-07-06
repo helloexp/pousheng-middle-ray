@@ -29,8 +29,11 @@ public class ShipmentPagingInfo implements Serializable{
     private Shipment shipment;
 
 
+    //extra信息
+    private ShipmentExtra shipmentExtra;
+
     /**
      * 操作
      */
-    private Set<OrderOperation> shopOrderOperations;
+    private Set<OrderOperation> operations;
 }

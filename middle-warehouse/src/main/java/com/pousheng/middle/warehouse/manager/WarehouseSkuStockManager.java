@@ -1,7 +1,7 @@
 package com.pousheng.middle.warehouse.manager;
 
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.exception.ServiceException;

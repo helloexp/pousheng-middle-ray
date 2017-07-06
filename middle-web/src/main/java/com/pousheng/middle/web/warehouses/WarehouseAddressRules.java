@@ -182,7 +182,7 @@ public class WarehouseAddressRules {
     }
 
     @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree findSelectedAddress(){
+    public AddressTree addressTree(){
         return warehouseAddressCacher.buildTree(2);
     }
 }

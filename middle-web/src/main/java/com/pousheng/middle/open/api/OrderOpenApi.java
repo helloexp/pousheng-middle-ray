@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 订单open api
@@ -82,12 +83,16 @@ public class OrderOpenApi {
             Integer targetStatus = flow.target(shipment.getStatus(),orderOperation);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
+            if(!Objects.equals(hkShipmentId,shipmentExtra.getOutShipmentId())){
+                log.error("hk shipment id:{} not equal middle shipment(id:{} ) out shipment id:{}",hkShipmentId,shipment.getId(),shipmentExtra.getOutShipmentId());
+                throw new OPServerException("hk.shipment.id.not.matching");
+            }
+
 
             //封装更新信息
             Shipment update = new Shipment();
             update.setId(shipment.getId());
             Map<String,String> extraMap = shipment.getExtra();
-            shipmentExtra.setErpOrderShopCode(hkShipmentId);
             shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
             shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
             //shipmentExtra.setShipmentCorpName();todo 转换为中文

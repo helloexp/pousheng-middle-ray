@@ -29,7 +29,7 @@ public class OrderWrites {
      * @param shopOrderId 订单id
      */
     @RequestMapping(value = "api/order/{id}/cancel",method = RequestMethod.PUT)
-    public void cancleOrder(@PathVariable(value = "id") Long shopOrderId){
+    public void cancelOrder(@PathVariable(value = "id") Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP,MiddleOrderEvent.CANCEL);
     }

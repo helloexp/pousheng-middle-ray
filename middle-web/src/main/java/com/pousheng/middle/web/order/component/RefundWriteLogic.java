@@ -25,6 +25,7 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
@@ -217,7 +218,7 @@ public class RefundWriteLogic {
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
         //完善换货信息
-        completeChangeItemInfo(submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
+        completeChangeItemInfo(refundItem,submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
         refund.setExtra(extraMap);
 
         //打标
@@ -267,17 +268,17 @@ public class RefundWriteLogic {
         Boolean isRefundItemChanged = refundItemIsChanged(submitRefundInfo,existRefundItem);
         if(isRefundItemChanged){
             //申请数量是否有效
-            RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
+            existRefundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
             //更新发货商品中的已退货数量
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItem);
-            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
+            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(existRefundItem)));
         }
 
         //判断换货货商品及数量是否有变化
         Boolean isChangeItemChanged = changeItemIsChanged(refund,submitRefundInfo);
         if(isChangeItemChanged){
             //完善换货信息
-            completeChangeItemInfo(refund.getRefundType(),submitRefundInfo,extraMap);
+            completeChangeItemInfo(existRefundItem,refund.getRefundType(),submitRefundInfo,extraMap);
         }
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
 
@@ -399,10 +400,11 @@ public class RefundWriteLogic {
     }
 
 
-    private void completeChangeItemInfo(Integer refunType,EditSubmitRefundInfo submitRefundInfo,Map<String,String> extraMap){
-        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),refunType)){
+    private void completeChangeItemInfo(RefundItem refundItem,Integer refundType,EditSubmitRefundInfo submitRefundInfo,Map<String,String> extraMap){
+        if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),refundType)){
             //换货数量是否有效
-            RefundItem changeItem = checkChangeQuantity(submitRefundInfo);
+            checkChangeQuantity(submitRefundInfo);
+            RefundItem changeItem = makeChangeItemInfo(refundItem,submitRefundInfo);
             completeSkuAttributeInfo(Lists.newArrayList(changeItem));
             extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
         }
@@ -411,16 +413,22 @@ public class RefundWriteLogic {
 
 
 
-    private RefundItem checkChangeQuantity(EditSubmitRefundInfo submitRefundInfo){
+    private void checkChangeQuantity(EditSubmitRefundInfo submitRefundInfo){
         if(!Objects.equals(submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity())){
             log.error("refund applyQuantity:{} not equal change applyQuantity:{}",submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity());
             throw new JsonResponseException("refund.applyQuantity.not.equal.change.applyQuantity");
         }
+    }
+
+    private RefundItem makeChangeItemInfo(RefundItem refundItem,EditSubmitRefundInfo submitRefundInfo){
+
         //todo 封装换货商品信息
-        RefundItem refundItem = new RefundItem();
-        refundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
-        refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
-        return refundItem;
+        RefundItem changeRefundItem = new RefundItem();
+        BeanMapper.copy(refundItem,changeRefundItem);
+        changeRefundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
+        changeRefundItem.setAlreadyHandleNumber(0);
+        changeRefundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
+        return changeRefundItem;
 
     }
 

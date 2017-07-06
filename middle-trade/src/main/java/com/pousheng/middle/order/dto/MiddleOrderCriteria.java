@@ -18,6 +18,11 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
 
     private static final long serialVersionUID = -4118002783835337285L;
 
+
+    /**
+     * 订单id
+     */
+    private String id;
     /**
      * 外部订单id
      */

@@ -44,6 +44,11 @@ public class OrderWriteLogic {
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {
         Flow flow = flowPicker.pickOrder();
+
+        if(!flow.operationAllowed(orderBase.getStatus(),orderEvent.toOrderOperation())){
+            log.error("refund(id:{}) current status:{} not allow operation:{}",orderBase.getId(),orderBase.getStatus(),orderEvent.toOrderOperation().getText());
+            throw new JsonResponseException("order.status.invalid");
+        }
         Integer targetStatus = flow.target(orderBase.getStatus(), orderEvent.toOrderOperation());
 
         switch (orderLevel) {

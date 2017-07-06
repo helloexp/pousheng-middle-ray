@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -91,9 +92,20 @@ public class Shipments {
             log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());
             throw new JsonResponseException(response.getError());
         }
-        List<ShipmentPagingInfo> shipmentDtos = response.getResult().getData();
+        List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
         Flow flow = orderFlowPicker.pickShipments();
-        shipmentDtos.forEach(shipmentDto ->shipmentDto.setShopOrderOperations(flow.availableOperations(shipmentDto.getOrderShipment().getStatus())));
+        shipmentPagingInfos.forEach(shipmentPagingInfo ->{
+            Shipment shipment = shipmentPagingInfo.getShipment();
+            try {
+                shipmentPagingInfo.setShopOrderOperations(flow.availableOperations(shipment.getStatus()));
+                shipmentPagingInfo.setShipmentExtra(shipmentReadLogic.getShipmentExtra(shipment));
+            }catch (JsonResponseException e){
+                log.error("complete paging info fail,error:{}", e.getMessage());
+            }catch (Exception e){
+                log.error("complete paging info fail,cause:{}", Throwables.getStackTraceAsString(e));
+            }
+
+        });
         return response.getResult();
     }
 

@@ -17,22 +17,20 @@ public interface WarehouseAddressRuleWriteService {
     /**
      * 创建WarehouseAddresses
      *
-     * @param shopIds 店铺id列表
-     * @param ruleId 规则id
+     * @param shopGroupId 店铺组id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
-    Response<Long> batchCreate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses);
+    Response<Long> batchCreate(Long shopGroupId, List<ThinAddress> thinAddresses);
 
 
     /**
      * 更新规则对应的warehouseAddresses
-     * @param shopIds 店铺id列表
      * @param ruleId 规则id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
-    Response<Boolean> batchUpdate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses);
+    Response<Boolean> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses);
 
 
     /**

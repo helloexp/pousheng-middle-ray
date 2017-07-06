@@ -10,7 +10,7 @@
         <result column="address_id" property="addressId"/>
         <result column="address_name" property="addressName"/>
         <result column="rule_id" property="ruleId"/>
-        <result column="shop_id" property="shopId"/>
+        <result column="shop_group_id" property="shopGroupId"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
 
@@ -26,17 +26,17 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        address_id, address_name, rule_id, shop_id,  created_at, updated_at
+        address_id, address_name, rule_id, shop_group_id,  created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{addressId}, #{addressName}, #{ruleId}, #{shopId},  now(), now()
+        #{addressId}, #{addressName}, #{ruleId}, #{shopGroupId},  now(), now()
     </sql>
 
     <sql id="queryCondition">
 
         <if test="addressId != null">and `address_id` = #{addressId}</if>
-        <if test="shopId != null">and `shop_id` = #{shopId}</if>
+        <if test="shopGroupId != null">and `shop_group_id` = #{shopGroupId}</if>
         <if test="ruleId != null">and `rule_id` = #{ruleId}</if>
     </sql>
 
@@ -68,28 +68,28 @@
         WHERE rule_id = #{ruleId}
     </select>
 
-    <select id="findByShopIdAndAddressId" parameterType="long" resultMap="WarehouseAddressRuleMap">
+    <select id="findByShopGroupIdAndAddressId" parameterType="long" resultMap="WarehouseAddressRuleMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE shop_id= #{shopId} and address_id = #{addressId}
+        WHERE shop_group_id= #{shopGroupId} and address_id = #{addressId}
     </select>
 
-    <select id="findByShopId" parameterType="long" resultMap="WarehouseAddressRuleMap">
+    <select id="findByShopGroupId" parameterType="long" resultMap="WarehouseAddressRuleMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE shop_id = #{shopId}
+        WHERE shop_group_id = #{shopGroupId}
     </select>
 
-    <select id="findOtherNonDefaultRuleByShopId" resultMap="WarehouseAddressRuleMap">
+    <select id="findOtherNonDefaultRuleByShopGroupId" resultMap="WarehouseAddressRuleMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE  shop_id= #{shopId} and rule_id!=#{ruleId} and address_id != 1
+        WHERE  shop_group_id= #{shopGroupId} and rule_id!=#{ruleId} and address_id != 1
     </select>
 
     <select id="findByIds" parameterType="list" resultMap="WarehouseAddressRuleMap">

@@ -38,7 +38,7 @@
         
         <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
 
-        <if test="shopId!=null"> and `shop_id`=#{shopId}</if>
+        <if test="shopId!=null"> and `shop_id`=#{shopGroupId}</if>
         
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
         

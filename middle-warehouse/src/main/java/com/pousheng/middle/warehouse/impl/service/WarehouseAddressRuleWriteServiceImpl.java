@@ -2,7 +2,9 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.manager.WarehouseAddressRuleManager;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -22,27 +24,30 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
 
     private final WarehouseAddressRuleManager warehouseAddressRuleManager;
 
+    private final WarehouseRuleDao warehouseRuleDao;
+
     @Autowired
-    public WarehouseAddressRuleWriteServiceImpl(WarehouseAddressRuleManager warehouseAddressRuleManager) {
+    public WarehouseAddressRuleWriteServiceImpl(WarehouseAddressRuleManager warehouseAddressRuleManager,
+                                                WarehouseRuleDao warehouseRuleDao) {
         this.warehouseAddressRuleManager = warehouseAddressRuleManager;
+        this.warehouseRuleDao = warehouseRuleDao;
     }
 
     /**
      * 创建WarehouseAddresses
      *
-     * @param shopIds 店铺id列表
-     * @param  ruleId 规则id
+     * @param  shopGroupId 店铺组id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Long> batchCreate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
+    public Response<Long> batchCreate(Long shopGroupId, List<ThinAddress> thinAddresses) {
         try {
-            Long rid = warehouseAddressRuleManager.batchCreate(shopIds, ruleId, thinAddresses);
+            Long rid = warehouseAddressRuleManager.batchCreate(shopGroupId, shopGroupId, thinAddresses);
             return Response.ok(rid);
         } catch (Exception e) {
-            log.error("failed to batchCreate warehouseAddressRule with address:{} for rule(id={}), cause:{}",
-                    thinAddresses, ruleId, Throwables.getStackTraceAsString(e));
+            log.error("failed to batchCreate warehouseAddressRule with address:{} for shopGroup(id={}), cause:{}",
+                    thinAddresses, shopGroupId, Throwables.getStackTraceAsString(e));
             return Response.fail("address.may.conflict");
         }
     }
@@ -50,15 +55,20 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     /**
      * 更新规则对应的warehouseAddresses
      *
-     * @param shopIds 店铺id列表
      * @param ruleId 规则id
      * @param thinAddresses 仓库地址规则 列表
      * @return 对应的规则id
      */
     @Override
-    public Response<Boolean> batchUpdate(List<Long> shopIds, Long ruleId, List<ThinAddress> thinAddresses) {
+    public Response<Boolean> batchUpdate(Long ruleId, List<ThinAddress> thinAddresses) {
         try {
-            warehouseAddressRuleManager.batchUpdate(shopIds, ruleId, thinAddresses);
+            WarehouseRule rule = warehouseRuleDao.findById(ruleId);
+            if(rule == null){
+                log.error("warehouse rule(id={}) not found", ruleId);
+                return Response.fail("warehouse.rule.not.found");
+            }
+            Long shopGroupId = rule.getShopGroupId();
+            warehouseAddressRuleManager.batchUpdate(shopGroupId, ruleId, thinAddresses);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("failed to update warehouseAddressRule(ruleId={}) with address:{}, cause:{}",

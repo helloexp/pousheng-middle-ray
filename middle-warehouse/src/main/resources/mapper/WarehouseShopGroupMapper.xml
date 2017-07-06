@@ -4,19 +4,19 @@
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 
-<mapper namespace="WarehouseShopRule">
-    <resultMap id="WarehouseShopRuleMap" type="WarehouseShopRule">
+<mapper namespace="WarehouseShopGroup">
+    <resultMap id="WarehouseShopGroupMap" type="WarehouseShopGroup">
         <id column="id" property="id"/>
         <result column="shop_id" property="shopId"/>
         <result column="shop_name" property="shopName"/>
-        <result column="rule_id" property="ruleId"/>
+        <result column="group_id" property="groupId"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
 
     </resultMap>
 
     <sql id="tb">
-        pousheng_warehouse_shop_rules
+        pousheng_warehouse_shop_groups
     </sql>
 
     <sql id="cols_all">
@@ -25,24 +25,24 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name, rule_id, created_at, updated_at
+        shop_id, shop_name, group_id, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName}, #{ruleId}, now(), now()
+        #{shopId}, #{shopName}, #{groupId}, now(), now()
     </sql>
 
 <!--    <sql id="queryCondition">
 
-        <if test="shopId != null">and `shop_id` = #{shopId}</if>
-        <if test="ruleId != null">and `rule_id` = #{ruleId}</if>
+        <if test="shopId != null">and `shop_id` shopGroupIdopId}</if>
+        <if test="groupId != null">and `group_id` = #{groupId}</if>
     </sql>-->
 
     <sql id="order">
         order by id desc
     </sql>
 
-    <insert id="create" parameterType="WarehouseShopRule" keyProperty="id" useGeneratedKeys="true">
+    <insert id="create" parameterType="WarehouseShopGroup" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO
         <include refid="tb"/>
         (<include refid="cols_exclude_id"/>)
@@ -50,7 +50,7 @@
         (<include refid="vals"/>)
     </insert>
 
-    <select id="findById" parameterType="long" resultMap="WarehouseShopRuleMap">
+    <select id="findById" parameterType="long" resultMap="WarehouseShopGroupMap">
         SELECT
         <include refid="cols_all"/>
         FROM
@@ -58,15 +58,15 @@
         WHERE id = #{id}
     </select>
 
-    <select id="findByRuleId" parameterType="long" resultMap="WarehouseShopRuleMap">
+    <select id="findByGroupId" parameterType="long" resultMap="WarehouseShopGroupMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE rule_id = #{ruleId}
+        WHERE group_id = #{groupId}
     </select>
 
-    <select id="findByShopId" parameterType="long" resultMap="WarehouseShopRuleMap">
+    <select id="findByShopId" parameterType="long" resultMap="WarehouseShopGroupMap">
         SELECT
         <include refid="cols_all"/>
         FROM
@@ -74,7 +74,7 @@
         WHERE shop_id = #{shopId}
     </select>
 
-<!--    <select id="findAllButDefault" resultMap="WarehouseShopRuleMap">
+<!--    <select id="findAllButDefault" resultMap="WarehouseShopGroupMap">
         SELECT
         <include refid="cols_all"/>
         FROM
@@ -82,7 +82,7 @@
         WHERE shop_id = #{shopId}
     </select>-->
 
-    <select id="findByIds" parameterType="list" resultMap="WarehouseShopRuleMap">
+    <select id="findByIds" parameterType="list" resultMap="WarehouseShopGroupMap">
         select id,
         <include refid="cols_exclude_id"/>
         from
@@ -99,13 +99,17 @@
         select distinct(shop_id) from <include refid="tb"/>
     </select>
 
-    <update id="update" parameterType="WarehouseShopRule">
+    <select id="maxGroupId" resultType="long">
+        select max(group_id) from <include refid="tb"/>
+    </select>
+
+    <update id="update" parameterType="WarehouseShopGroup">
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="shopId != null">shop_id = #{shopId},</if>
+            <if test="shopId != null">shop_id = #{shopGroupId},</if>
             <if test="shopName != null">shop_name = #{shopName},</if>
-            <if test="ruleId != null">rule_id = #{ruleId},</if>
+            <if test="groupId != null">group_id = #{groupId},</if>
 
             updated_at=now()
         </set>
@@ -117,13 +121,13 @@
         WHERE id = #{id}
     </delete>
 
-    <delete id="deleteByRuleId" parameterType="long">
+    <delete id="deleteByGroupId" parameterType="long">
         DELETE FROM
         <include refid="tb"/>
-        WHERE rule_id = #{rule_id}
+        WHERE group_id = #{group_id}
     </delete>
 
-<!--    <select id="paging" parameterType="list" resultMap="WarehouseShopRuleMap">
+<!--    <select id="paging" parameterType="list" resultMap="WarehouseShopGroupMap">
         select id,
         <include refid="cols_exclude_id"/>
         from

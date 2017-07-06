@@ -2,7 +2,7 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.dto.ThinShop;
-import com.pousheng.middle.warehouse.manager.WarehouseShopRuleManager;
+import com.pousheng.middle.warehouse.manager.WarehouseShopGroupManager;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -19,11 +19,11 @@ import java.util.List;
 @Slf4j
 public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWriteService {
 
-    private final WarehouseShopRuleManager warehouseShopRuleManager;
+    private final WarehouseShopGroupManager warehouseShopGroupManager;
 
     @Autowired
-    public WarehouseShopRuleWriteServiceImpl(WarehouseShopRuleManager warehouseShopRuleManager) {
-        this.warehouseShopRuleManager = warehouseShopRuleManager;
+    public WarehouseShopRuleWriteServiceImpl(WarehouseShopGroupManager warehouseShopGroupManager) {
+        this.warehouseShopGroupManager = warehouseShopGroupManager;
     }
 
     /**
@@ -35,7 +35,7 @@ public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWrite
     @Override
     public Response<Long> batchCreate(List<ThinShop> thinShops) {
         try {
-            Long rid = warehouseShopRuleManager.batchCreate(thinShops);
+            Long rid = warehouseShopGroupManager.batchCreate(thinShops);
             return Response.ok(rid);
         } catch (Exception e) {
             log.error("failed to batchCreate warehouseShopRule with shops:{}, cause:{}",
@@ -54,7 +54,7 @@ public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWrite
     @Override
     public Response<Boolean> batchUpdate(Long ruleId, List<ThinShop> shops) {
         try {
-            warehouseShopRuleManager.batchUpdate(ruleId, shops);
+            warehouseShopGroupManager.batchUpdate(ruleId, shops);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("failed to update warehouseShopRule(ruleId={}) with shops:{}, cause:{}",
@@ -72,7 +72,7 @@ public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWrite
     @Override
     public Response<Boolean> deleteByRuleId(Long ruleId) {
         try {
-            warehouseShopRuleManager.deleteByRuleId(ruleId);
+            warehouseShopGroupManager.deleteByGroupId(ruleId);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("delete warehouseAddressRule failed, ruleId={}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));

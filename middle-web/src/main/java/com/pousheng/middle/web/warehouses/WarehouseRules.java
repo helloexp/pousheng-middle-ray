@@ -2,12 +2,13 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.pousheng.middle.warehouse.dto.RuleGroup;
 import com.pousheng.middle.warehouse.dto.ThinShop;
-import com.pousheng.middle.warehouse.model.WarehouseShopRule;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
+import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
-import com.pousheng.middle.warehouse.service.WarehouseShopRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -46,7 +47,7 @@ public class WarehouseRules {
     private OpenShopReadService openShopReadService;
 
     @RpcConsumer
-    private WarehouseShopRuleReadService warehouseShopRuleReadService;
+    private WarehouseShopGroupReadService warehouseShopGroupReadService;
 
 
     /**
@@ -68,12 +69,12 @@ public class WarehouseRules {
 
 
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<RuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
-                                      @RequestParam(required = false, value = "pageSize") Integer pageSize) {
+    public Paging<RuleGroup> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                        @RequestParam(required = false, value = "pageSize") Integer pageSize) {
 
-        Response<Paging<RuleDto>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
+        Response<Paging<RuleGroup>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
         if (!r.isSuccess()) {
-            log.error("failed to pagination rule summary, error code:{}", r.getError());
+            log.error("failed to pagination rule group, error code:{}", r.getError());
             throw new JsonResponseException("warehouse.rule.find.fail");
         }
         return r.getResult();
@@ -124,7 +125,7 @@ public class WarehouseRules {
 
     private void disableRuleShops( List<ThinShop> thinShops) {
         //获取所有已设置规则的店铺
-        Response<Set<Long>> rShopIds = warehouseShopRuleReadService.findShopIds();
+        Response<Set<Long>> rShopIds = warehouseShopGroupReadService.findShopIds();
         if (!rShopIds.isSuccess()) {
             log.error("failed to find shopIds which have warehouse rules set, error code :{} ",
                     rShopIds.getError());
@@ -144,13 +145,19 @@ public class WarehouseRules {
     //标记当前规则选的店铺可以编辑
     private void enableCurrentRuleShops(Long ruleId, List<ThinShop> thinShops) {
 
-        Response<List<WarehouseShopRule>> rwsrs = warehouseShopRuleReadService.findByRuleId(ruleId);
+        Response<WarehouseRule> r = warehouseRuleReadService.findById(ruleId);
+        if(!r.isSuccess()){
+            log.error("failed to find warehouse rule(id={}), error code:{}", ruleId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        Long shopGroupId = r.getResult().getShopGroupId();
+        Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
         if (!rwsrs.isSuccess()) {
-            log.error("failed to find warehouseShopRules by ruleId={}, error code:{}", ruleId, rwsrs.getError());
+            log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", shopGroupId, rwsrs.getError());
             throw new JsonResponseException(rwsrs.getError());
         }
-        for (WarehouseShopRule warehouseShopRule : rwsrs.getResult()) {
-            Long shopId = warehouseShopRule.getShopId();
+        for (WarehouseShopGroup warehouseShopGroup : rwsrs.getResult()) {
+            Long shopId = warehouseShopGroup.getShopId();
             for (ThinShop thinShop : thinShops) {
                 if (Objects.equal(thinShop.getShopId(), shopId)) {
                     thinShop.setEditable(true);

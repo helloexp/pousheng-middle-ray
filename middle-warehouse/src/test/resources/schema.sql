@@ -30,17 +30,17 @@ CREATE TABLE `pousheng_warehouses` (
 ) COMMENT='仓库';
 
 
-drop table if exists `pousheng_warehouse_shop_rules`;
-CREATE TABLE `pousheng_warehouse_shop_rules`(
+drop table if exists `pousheng_warehouse_shop_groups`;
+CREATE TABLE `pousheng_warehouse_shop_groups`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
   `shop_name` varchar(20) NOT NULL COMMENT '店铺名称',
-  `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
+  `group_id` bigint(20)  NOT NULL COMMENT '店铺组id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_shop_rules_rid` (`rule_id`),
-  KEY `idx_warehouse_shop_rules_sid` (`shop_id`)
+  KEY `idx_warehouse_shop_groups_gid` (`group_id`),
+  KEY `idx_warehouse_shop_groups_sid` (`shop_id`)
 )COMMENT='店铺和仓库规则的关联';
 
 
@@ -51,13 +51,13 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
   `address_name` varchar(20) NOT NULL COMMENT '地址名称',
   `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
-  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
+  `shop_group_id` bigint(20) NOT NULL COMMENT '店铺组id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_warehouse_address_rules_rid` (`rule_id`),
   KEY `idx_warehouse_address_rules_aid` (`address_id`),
-  KEY `idx_warehouse_address_rules_sid` (`shop_id`)
+  KEY `idx_warehouse_address_rules_sgid` (`shop_group_id`)
 )COMMENT='地址和仓库规则的关联';
 
 
@@ -66,10 +66,12 @@ drop table if exists `pousheng_warehouse_rules`;
 CREATE TABLE `pousheng_warehouse_rules` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(128) NULL COMMENT '规则描述, 按照优先级将各仓名称拼接起来',
+  `shop_group_id` bigint(10) NOT NULL COMMENT '店铺组id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`)
-)COMMENT='仓库优先级规则概述';
+  PRIMARY KEY (`id`),
+  KEY `idx_warehouse_rules_sgid` (`shop_group_id`)
+)COMMENT='仓库发货规则与店铺组的关联关系';
 
 
 drop table if exists `pousheng_warehouse_rule_items`;
@@ -84,7 +86,7 @@ CREATE TABLE `pousheng_warehouse_rule_items` (
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
   KEY `idx_wri_rid` (`rule_id`)
-)COMMENT='仓库优先级规则项';
+)COMMENT='仓库发货规则项';
 
 
 

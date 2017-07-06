@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.pousheng.middle.warehouse.dto.RuleGroup;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -26,8 +26,8 @@ public interface WarehouseRuleReadService {
      *
      * @param pageNo 起始页码
      * @param pageSize 每页返回条数
-     * @return 仓库规则概述
+     * @return 按照店铺组id归组的仓库规则概述
      */
-    Response<Paging<RuleDto>> pagination(Integer pageNo, Integer pageSize);
+    Response<Paging<RuleGroup>> pagination(Integer pageNo, Integer pageSize);
 
 }

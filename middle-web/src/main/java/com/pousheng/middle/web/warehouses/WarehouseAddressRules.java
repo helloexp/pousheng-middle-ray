@@ -180,4 +180,9 @@ public class WarehouseAddressRules {
         }
         return Boolean.TRUE;
     }
+
+    @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressTree findSelectedAddress(){
+        return warehouseAddressCacher.buildTree(2);
+    }
 }

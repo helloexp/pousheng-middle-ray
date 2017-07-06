@@ -266,6 +266,7 @@ public class Shipments {
 
         //封装发货信息
         Shipment shipment = makeShipment(shopOrderId,warehouseId);
+        shipment.setType(ShipmentType.SALES_SHIP.value());
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
         shipment.setExtra(extraMap);
@@ -316,6 +317,7 @@ public class Shipments {
 
         //封装发货信息
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId);
+        shipment.setType(ShipmentType.EXCHANGE_SHIP.value());
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeChangeShipmentItems(refundChangeItems,skuCodeAndQuantity)));
         shipment.setExtra(extraMap);
@@ -478,7 +480,6 @@ public class Shipments {
 
     private Shipment makeShipment(Long shopOrderId,Long warehouseId){
         Shipment shipment = new Shipment();
-        shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
 

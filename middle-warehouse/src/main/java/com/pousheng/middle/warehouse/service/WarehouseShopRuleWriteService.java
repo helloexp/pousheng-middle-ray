@@ -34,5 +34,5 @@ public interface WarehouseShopRuleWriteService {
      * @param ruleId 规则id
      * @return 是否成功
      */
-    Response<Boolean> deleteByRuleId(Long ruleId);
+    Response<Boolean> deleteByShopGroupId(Long ruleId);
 }

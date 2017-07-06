@@ -12,6 +12,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -50,7 +51,29 @@ public class User implements Serializable {
     @Getter
     @Setter
     private String mobile;
-    
+
+    /**
+     * 用户类型 1:超级管理员, 2:普通用户, 3:后台运营, 4:站点拥有者
+     */
+    @Getter
+    @Setter
+    private Integer type;
+
+
+    /**
+     * 用户所有的角色列表, 不存数据库
+     */
+    @Getter
+    private List<String> roles;
+
+    /**
+     * 用户所有的角色列表, json存储, 存数据库
+     */
+    @Getter
+    @JsonIgnore
+    private String rolesJson;
+
+
     /**
      * 放店铺扩展信息,不存数据库
      */
@@ -95,4 +118,28 @@ public class User implements Serializable {
             }
         }
     }
+
+
+    public void setRolesJson(String rolesJson) throws Exception{
+        this.rolesJson = rolesJson;
+        if(Strings.isNullOrEmpty(rolesJson)){
+            this.roles= Collections.emptyList();
+        } else{
+            this.roles = objectMapper.readValue(rolesJson, JacksonType.LIST_OF_STRING);
+        }
+    }
+
+    public void setRoles(List<String> roles) {
+        this.roles = roles;
+        if(roles ==null ||roles.isEmpty()){
+            this.rolesJson = null;
+        }else{
+            try {
+                this.rolesJson = objectMapper.writeValueAsString(roles);
+            } catch (Exception e) {
+                //ignore this fuck exception
+            }
+        }
+    }
+
 }

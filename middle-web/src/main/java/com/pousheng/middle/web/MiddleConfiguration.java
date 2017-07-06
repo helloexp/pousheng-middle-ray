@@ -16,6 +16,7 @@ import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
 import io.terminus.parana.TradeAutoConfig;
+import io.terminus.parana.auth.AuthApiConfiguration;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -50,7 +51,8 @@ import java.util.Map;
         TradeApiConfig.class,
         TradeAutoConfig.class,
         ParanaAutoConfiguration.class,
-        AuthConfiguration.class})
+        AuthConfiguration.class,
+        AuthApiConfiguration.class})
 @EnableScheduling
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 

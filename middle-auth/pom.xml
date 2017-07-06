@@ -44,6 +44,12 @@
             <artifactId>parana-common</artifactId>
             <version>${parana.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>io.terminus.parana</groupId>
+            <artifactId>parana-auth</artifactId>
+            <version>${parana.version}</version>
+        </dependency>
     </dependencies>
 
 

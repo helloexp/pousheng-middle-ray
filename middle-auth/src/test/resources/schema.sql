@@ -5,6 +5,8 @@ CREATE TABLE `pusheng_users` (
   `out_id` bigint(20) NOT NULL COMMENT '外部用户 id',
   `name` varchar(32) NOT NULL COMMENT '用户名',
   `mobile`   VARCHAR(16)     NULL  COMMENT '手机号码',
+  `type`              SMALLINT        NOT NULL    COMMENT '用户类型',
+  `roles_json`        VARCHAR(512)    NULL        COMMENT '用户角色信息',
   `extra_json`        VARCHAR(1024)   NULL        COMMENT '用户额外信息,建议json字符串',
   `created_at`        DATETIME        NOT NULL,
   `updated_at`        DATETIME        NOT NULL,

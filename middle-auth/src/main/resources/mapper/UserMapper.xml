@@ -10,6 +10,8 @@
         <result column="out_id" property="outId"/>
         <result column="name" property="name"/>
         <result column="mobile" property="mobile"/>
+        <result column="type" property="type"/>
+        <result column="roles_json" property="rolesJson"/>
         <result column="extra_json" property="extraJson"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -25,11 +27,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        out_id, name, mobile, extra_json, created_at, updated_at
+        out_id, name, mobile,`type`,roles_json, extra_json, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{outId}, #{name}, #{mobile}, #{extraJson}, now(), now()
+        #{outId}, #{name}, #{mobile}, #{type},#{rolesJson}, #{extraJson}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -39,7 +41,9 @@
         <if test="name != null">and `name` = #{name}</if>
         
         <if test="mobile != null">and `mobile` = #{mobile}</if>
-        
+
+        <if test="type != null">and `type` = #{type}</if>
+
         <if test="extraJson != null">and `extra_json` = #{extraJson}</if>
         
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>

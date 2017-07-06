@@ -12,7 +12,12 @@ import com.pousheng.middle.web.events.user.LoginEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.parana.auth.api.Role;
+import io.terminus.parana.auth.api.RoleContent;
+import io.terminus.parana.auth.api.UserRoleLoader;
+import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.model.ParanaUser;
+import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -24,6 +29,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author songrenfei
@@ -40,6 +47,9 @@ public class Users {
     private UserReadService userReadService;
     @Autowired
     private UcUserOperationLogic operationLogic;
+    @Autowired
+    private UserRoleLoader userRoleLoader;
+
 
     private static final DateTimeFormatter DTF = DateTimeFormat.forPattern("yyyy-MM-dd");
 
@@ -54,6 +64,7 @@ public class Users {
         }
         return Response.ok(buildParanaUser(userResp.getResult()));
     }
+
 
 
     @RequestMapping(value = "/login", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -102,6 +113,26 @@ public class Users {
         }*/
 
         return ParanaUserMaker.from(user);
+    }
+
+    @RequestMapping(value = "/{userId}/roles", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<RoleContent> getUserRolesByUserId(@PathVariable Long userId) {
+        return userRoleLoader.hardLoadRoles(userId);
+    }
+
+    @GetMapping("/{userId}/role-names")
+    public List<String> getRoleNamesOfUserId(@PathVariable Long userId) {
+        RoleContent content = RespHelper.or500(userRoleLoader.hardLoadRoles(userId));
+        List<String> result = new ArrayList<>();
+        if (content != null) {
+            for (Role role : content.getRoles()) {
+                result.add(role.getBase());
+            }
+            for (Role role : content.getDynamicRoles()) {
+                result.addAll(role.getNames());
+            }
+        }
+        return result;
     }
 
 

@@ -17,6 +17,9 @@ public class WaitShipItemInfo extends BasicItemInfo implements Serializable{
     //待处理数量即待发货数量
     private Integer waitHandleNumber;
 
+    //子单号
+    private Long skuOrderId;
+
 
 
 

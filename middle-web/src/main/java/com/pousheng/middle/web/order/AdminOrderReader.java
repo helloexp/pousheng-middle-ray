@@ -88,6 +88,7 @@ public class AdminOrderReader {
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders){
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+            waitShipItemInfo.setSkuOrderId(skuOrder.getId());
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());

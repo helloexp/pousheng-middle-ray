@@ -35,5 +35,5 @@ public class ShipmentPagingInfo implements Serializable{
     /**
      * 操作
      */
-    private Set<OrderOperation> shopOrderOperations;
+    private Set<OrderOperation> operations;
 }

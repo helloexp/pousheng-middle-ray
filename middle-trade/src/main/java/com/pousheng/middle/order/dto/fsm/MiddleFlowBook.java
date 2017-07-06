@@ -21,8 +21,13 @@ public class MiddleFlowBook {
         @Override
         protected void configure() {
             //===========正向流程
-            //待处理 -->处理 -> 待发货
+            //待处理 -->处理 -> 处理中
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.HANDLE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+
+            //处理中 -->处理完成 -> 待发货
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_SHIP.getValue());
 
@@ -44,8 +49,14 @@ public class MiddleFlowBook {
 
 
             //在付款后发货前, 买家可申请退款, 商家同意退款
-            //买家申请退款 -->审核通过 -> 商家同意退款
-            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
+            //待全部处理完成 -->审核通过 -> 商家同意退款
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+                    MiddleOrderEvent.REFUND_APPLY_AGREE.toOrderOperation(),
+                    MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue());
+
+
+            //待发货 -->审核通过 -> 商家同意退款
+            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.REFUND_APPLY_AGREE.toOrderOperation(),
                     MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue());
 

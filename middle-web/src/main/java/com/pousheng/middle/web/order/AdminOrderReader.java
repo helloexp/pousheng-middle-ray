@@ -4,16 +4,19 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
+import com.pousheng.middle.order.dto.ShopOrderPagingInfo;
 import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.OrderDetail;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -52,6 +55,8 @@ public class AdminOrderReader {
     private ShopOrderReadService shopOrderReadService;
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
 
 
     /**
@@ -60,9 +65,28 @@ public class AdminOrderReader {
      * @return 订单分页结果（不包含操作按钮）
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Paging<ShopOrder>> findBy(MiddleOrderCriteria middleOrderCriteria) {
+    public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
 
-        return middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+        Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+        if(!pagingRes.isSuccess()){
+            return Response.fail(pagingRes.getError());
+        }
+        Flow flow = flowPicker.pickOrder();
+        List<ShopOrder> shopOrders = pagingRes.getResult().getData();
+        Paging<ShopOrderPagingInfo> pagingInfoPaging = Paging.empty();
+        List<ShopOrderPagingInfo> pagingInfos = Lists.newArrayListWithCapacity(shopOrders.size());
+        shopOrders.forEach(shopOrder -> {
+            ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
+            shopOrderPagingInfo.setShopOrder(shopOrder);
+            shopOrderPagingInfo.setShopOrderOperations(flow.availableOperations(shopOrder.getStatus()));
+            pagingInfos.add(shopOrderPagingInfo);
+        });
+
+        pagingInfoPaging.setData(pagingInfos);
+        pagingInfoPaging.setTotal(pagingRes.getResult().getTotal());
+
+        return Response.ok(pagingInfoPaging);
+
     }
 
 

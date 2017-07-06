@@ -20,6 +20,7 @@ import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.PaymentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
+import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,6 +226,29 @@ public class OrderReadLogic {
         return extraMap.get(key);
 
     }
+
+
+    /**
+     * 根据key获取交易单extraMap中的value
+     * @param key key
+     * @param shopOrder 交易单
+     * @return value
+     */
+
+    public String getOrderExtraMapValueByKey(String key,ShopOrder shopOrder){
+        Map<String,String> extraMap = shopOrder.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("shop order(id:{}) extra map is empty",shopOrder.getId());
+            throw new JsonResponseException("shop.order.extra.is.null");
+        }
+        if(!extraMap.containsKey(key)){
+            log.error("shop order(id:{}) extra map not contains key:{}",shopOrder.getId(),key);
+            throw new JsonResponseException("shop.order.extra.not.contains.valid.key");
+        }
+        return extraMap.get(key);
+
+    }
+
 
 
     /**

@@ -8,6 +8,8 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -33,6 +35,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -59,6 +62,8 @@ public class Shipments {
     private WarehouseSkuReadService warehouseSkuReadService;
     @Autowired
     private MiddleOrderFlowPicker orderFlowPicker;
+    @Autowired
+    private MiddleShipmentWriteService middleShipmentWriteService;
     @Autowired
     private EventBus eventBus;
     @Autowired
@@ -227,31 +232,26 @@ public class Shipments {
     public Long createSalesShipment(@PathVariable("id") Long shopOrderId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
+
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
 
-        //todo 封装商品信息到extra 下单店铺、绩效店铺
+        //获取子单商品
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-
         Map<String,Integer> skuCodeAndQuantityMap = skuOrders.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));
         //检查库存是否充足
         checkStockIsEnough(warehouseId,skuCodeAndQuantityMap);
 
+        //封装发货信息
+        Shipment shipment = makeShipment(shopOrder,warehouseId);
+        Map<String,String> extraMap = shipment.getExtra();
+        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
 
-        Shipment shipment = new Shipment();
-        shipment.setType(ShipmentType.SALES_SHIP.value());
-        shipment.setSkuInfos(skuOrderIdAndQuantity);
-        shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
 
-        //发货仓库信息
-
-        Warehouse warehouse = findWarehouseById(warehouseId);
-        Map<String,String> extraMap = Maps.newHashMap();
-        extraMap.put(TradeConstants.WAREHOUSE_ID,String.valueOf(warehouse.getId()));
-        extraMap.put(TradeConstants.WAREHOUSE_NAME,warehouse.getName());
-
+        //创建发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrderId), OrderLevel.SHOP);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
@@ -266,6 +266,95 @@ public class Shipments {
 
         return shipmentId;
 
+    }
+
+
+
+    private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId){
+        Shipment shipment = new Shipment();
+        shipment.setType(ShipmentType.SALES_SHIP.value());
+        shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
+        shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
+
+        //发货仓库信息
+        Warehouse warehouse = findWarehouseById(warehouseId);
+        Map<String,String> extraMap = Maps.newHashMap();
+        ShipmentExtra shipmentExtra = new ShipmentExtra();
+        shipmentExtra.setWarehouseId(warehouse.getId());
+        shipmentExtra.setWarehouseName(warehouse.getName());
+
+        //绩效店铺名称
+        shipmentExtra.setErpPerformanceShopName(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_NAME,shopOrder));
+        //绩效店铺编码
+        shipmentExtra.setErpPerformanceShopCode(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder));
+        //下单店铺名称
+        shipmentExtra.setErpOrderShopName(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_ORDER_SHOP_NAME,shopOrder));
+        //下单店铺编码
+        shipmentExtra.setErpOrderShopCode(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_ORDER_SHOP_CODE,shopOrder));
+        //发货单商品金额
+        shipmentExtra.setShipmentItemFee(33L);
+        //发货单运费金额
+        shipmentExtra.setShipmentShipFee(0L);
+        //发货单运费优惠金额
+        shipmentExtra.setShipmentShipDiscountFee(0L);
+        //发货单优惠金额
+        shipmentExtra.setShipmentDiscountFee(0L);
+        //发货单优惠金额
+        shipmentExtra.setShipmentTotalFee(33L);
+
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
+
+        shipment.setExtra(extraMap);
+
+        return shipment;
+    }
+
+
+    private List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long,Integer> skuOrderIdAndQuantity){
+        Map<Long,SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId,it -> it));
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
+        for (Long skuOrderId : skuOrderIdAndQuantity.keySet()){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            SkuOrder skuOrder = skuOrderMap.get(skuOrderId);
+            shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
+            shipmentItem.setRefundQuantity(0);
+            shipmentItem.setSkuOrderId(skuOrderId);
+            shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setSkuPrice(2);//todo 计算价格
+            shipmentItem.setIntegral(0);
+            shipmentItem.setSkuDiscount(0);
+            shipmentItem.setCleanFee(0);
+            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
+
+            shipmentItems.add(shipmentItem);
+
+        }
+
+
+        return shipmentItems;
+    }
+
+    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems,Map<String,Integer> skuCodeAndQuantity){
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
+
+        Map<String,RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode,it -> it));
+        for (String skuCode : skuCodeAndQuantity.keySet()){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            RefundItem refundItem = refundItemMap.get(skuCode);
+            shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
+            shipmentItem.setRefundQuantity(0);
+            shipmentItem.setSkuName(refundItem.getSkuName());
+            shipmentItem.setSkuPrice(2);//todo 计算价格
+            shipmentItem.setIntegral(0);
+            shipmentItem.setSkuDiscount(0);
+            shipmentItem.setCleanFee(0);
+            shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
+
+            shipmentItems.add(shipmentItem);
+        }
+
+
+        return shipmentItems;
     }
 
 
@@ -286,30 +375,23 @@ public class Shipments {
     public Long createAfterShipment(@PathVariable("id") Long refundId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
-        Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
 
+        Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);
         List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
-        //todo 封装商品信息到extra 下单店铺、绩效店铺
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+
         //检查库存是否充足
         checkStockIsEnough(warehouseId,skuCodeAndQuantity);
 
-
-        Shipment shipment = new Shipment();
-        shipment.setType(ShipmentType.EXCHANGE_SHIP.value());
-        //shipment.setSkuInfos(skuOrderIdAndQuantity);
-        shipment.setReceiverInfos(JSON_MAPPER.toJson(orderReadLogic.findReceiverInfo(orderRefund.getOrderId())));
-
-        //发货仓库信息
-
-        Warehouse warehouse = findWarehouseById(warehouseId);
-        Map<String,String> extraMap = Maps.newHashMap();
-        extraMap.put(TradeConstants.WAREHOUSE_ID,String.valueOf(warehouse.getId()));
-        extraMap.put(TradeConstants.WAREHOUSE_NAME,warehouse.getName());
+        //封装发货信息
+        Shipment shipment = makeShipment(shopOrder,warehouseId);
+        Map<String,String> extraMap = shipment.getExtra();
+        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeChangeShipmentItems(refundChangeItems,skuCodeAndQuantity)));
 
         //换货的发货关联的订单id 为换货单id
-        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(refundId), OrderLevel.SHOP);
+        Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, shopOrder.getId(),refundId);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for refund(id={}),and level={},cause:{}",
                     shipment, refundId, OrderLevel.SHOP.getValue(), createResp.getError());

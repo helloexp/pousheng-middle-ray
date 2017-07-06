@@ -3,6 +3,7 @@ package com.pousheng.middle.warehouse.manager;
 import com.pousheng.middle.warehouse.dto.ThinShop;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseShopGroupDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
@@ -27,13 +28,17 @@ public class WarehouseShopGroupManager {
 
     private final WarehouseAddressRuleDao warehouseAddressRuleDao;
 
+    private final WarehouseRuleItemDao warehouseRuleItemDao;
+
     @Autowired
     public WarehouseShopGroupManager(WarehouseShopGroupDao warehouseShopGroupDao,
                                      WarehouseRuleDao warehouseRuleDao,
-                                     WarehouseAddressRuleDao warehouseAddressRuleDao) {
+                                     WarehouseAddressRuleDao warehouseAddressRuleDao,
+                                     WarehouseRuleItemDao warehouseRuleItemDao) {
         this.warehouseShopGroupDao = warehouseShopGroupDao;
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
+        this.warehouseRuleItemDao = warehouseRuleItemDao;
     }
 
     /**
@@ -92,8 +97,14 @@ public class WarehouseShopGroupManager {
      *
      * @param groupId 店铺组id
      */
-    public void deleteByGroupId(Long groupId){
+    @Transactional
+    public void deleteByGroupId(Long groupId, List<Long> ruleIds){
         warehouseShopGroupDao.deleteByGroupId(groupId);
+        for (Long ruleId : ruleIds) {
+            warehouseRuleDao.delete(ruleId);
+            warehouseAddressRuleDao.deleteByRuleId(ruleId);
+            warehouseRuleItemDao.deleteByRuleId(ruleId);
+        }
     }
 
 }

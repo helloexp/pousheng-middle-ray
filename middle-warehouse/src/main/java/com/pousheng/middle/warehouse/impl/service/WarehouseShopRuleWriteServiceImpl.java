@@ -1,8 +1,11 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.dto.ThinShop;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.manager.WarehouseShopGroupManager;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -21,9 +24,13 @@ public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWrite
 
     private final WarehouseShopGroupManager warehouseShopGroupManager;
 
+    private final WarehouseRuleDao warehouseRuleDao;
+
     @Autowired
-    public WarehouseShopRuleWriteServiceImpl(WarehouseShopGroupManager warehouseShopGroupManager) {
+    public WarehouseShopRuleWriteServiceImpl(WarehouseShopGroupManager warehouseShopGroupManager,
+                                             WarehouseRuleDao warehouseRuleDao) {
         this.warehouseShopGroupManager = warehouseShopGroupManager;
+        this.warehouseRuleDao = warehouseRuleDao;
     }
 
     /**
@@ -64,18 +71,20 @@ public class WarehouseShopRuleWriteServiceImpl implements WarehouseShopRuleWrite
     }
 
     /**
-     * 根据规则id删除店铺到发货规则的映射关系
+     * 根据店铺组id删除店铺到发货规则的映射关系
      *
-     * @param ruleId 规则id
+     * @param shopGroupId 店铺组id
      * @return 是否成功
      */
     @Override
-    public Response<Boolean> deleteByRuleId(Long ruleId) {
+    public Response<Boolean> deleteByShopGroupId(Long shopGroupId) {
         try {
-            warehouseShopGroupManager.deleteByGroupId(ruleId);
+            List<WarehouseRule> rules = warehouseRuleDao.findByShopGroupId(shopGroupId);
+            List<Long> ruleIds = Lists.transform(rules, WarehouseRule::getId);
+            warehouseShopGroupManager.deleteByGroupId(shopGroupId, ruleIds);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("delete warehouseAddressRule failed, ruleId={}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));
+            log.error("delete warehouseAddressRule failed, shopGroupId={}, cause:{}", shopGroupId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.shop.rule.delete.fail");
         }
     }

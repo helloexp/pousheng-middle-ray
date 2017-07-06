@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.dto.RuleGroup;
 import com.pousheng.middle.warehouse.dto.ThinShop;
-import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
@@ -80,6 +79,12 @@ public class WarehouseRules {
         return r.getResult();
     }
 
+    /**
+     * 删除单条规则
+     *
+     * @param ruleId 规则id
+     * @return 是否删除成功
+     */
     @RequestMapping(value = "/{ruleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean delete(@PathVariable Long ruleId) {
         Response<Boolean> r = warehouseRuleWriteService.deleteById(ruleId);
@@ -90,8 +95,24 @@ public class WarehouseRules {
         return r.getResult();
     }
 
+    /**
+     * 删除店铺组, 同时删除对应的发货规则记录
+     *
+     * @param groupId 店铺组id
+     * @return 是否删除成功
+     */
+    @RequestMapping(value = "/group/{groupId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean deleteShopGroup(@PathVariable Long groupId){
+        Response<Boolean> r = warehouseShopRuleWriteService.deleteByShopGroupId(groupId);
+        if (!r.isSuccess()) {
+            log.error("failed to delete warehouse shop group(id={}), error code:{}", groupId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
     @RequestMapping(value = "/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ThinShop> markShops(@RequestParam(value = "ruleId", required = false) Long ruleId) {
+    public List<ThinShop> markShops(@RequestParam(value = "groupId", required = false) Long groupId) {
         //获取店铺列表集合
         List<ThinShop> thinShops = findAllCandidateShops();
 
@@ -100,8 +121,8 @@ public class WarehouseRules {
 
 
         //标记当前规则选的店铺可以编辑
-        if(ruleId!=null) {
-            enableCurrentRuleShops(ruleId, thinShops);
+        if(groupId!=null) {
+            enableCurrentRuleShops(groupId, thinShops);
         }
         return thinShops;
     }
@@ -143,14 +164,7 @@ public class WarehouseRules {
     }
 
     //标记当前规则选的店铺可以编辑
-    private void enableCurrentRuleShops(Long ruleId, List<ThinShop> thinShops) {
-
-        Response<WarehouseRule> r = warehouseRuleReadService.findById(ruleId);
-        if(!r.isSuccess()){
-            log.error("failed to find warehouse rule(id={}), error code:{}", ruleId, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        Long shopGroupId = r.getResult().getShopGroupId();
+    private void enableCurrentRuleShops(Long shopGroupId, List<ThinShop> thinShops) {
         Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
         if (!rwsrs.isSuccess()) {
             log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", shopGroupId, rwsrs.getError());

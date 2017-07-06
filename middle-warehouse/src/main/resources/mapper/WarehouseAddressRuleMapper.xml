@@ -92,6 +92,14 @@
         WHERE  shop_group_id= #{shopGroupId} and rule_id!=#{ruleId} and address_id != 1
     </select>
 
+    <select id="findNonDefaultRuleByShopGroupId" parameterType="long" resultMap="WarehouseAddressRuleMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        WHERE  shop_group_id= #{shopGroupId} and address_id != 1
+    </select>
+
     <select id="findByIds" parameterType="list" resultMap="WarehouseAddressRuleMap">
         select id,
         <include refid="cols_exclude_id"/>

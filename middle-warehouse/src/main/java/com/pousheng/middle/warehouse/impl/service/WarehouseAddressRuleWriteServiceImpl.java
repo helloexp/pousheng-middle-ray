@@ -43,7 +43,7 @@ public class WarehouseAddressRuleWriteServiceImpl implements WarehouseAddressRul
     @Override
     public Response<Long> batchCreate(Long shopGroupId, List<ThinAddress> thinAddresses) {
         try {
-            Long rid = warehouseAddressRuleManager.batchCreate(shopGroupId, shopGroupId, thinAddresses);
+            Long rid = warehouseAddressRuleManager.batchCreate(shopGroupId, thinAddresses);
             return Response.ok(rid);
         } catch (Exception e) {
             log.error("failed to batchCreate warehouseAddressRule with address:{} for shopGroup(id={}), cause:{}",

@@ -32,12 +32,22 @@ public interface WarehouseAddressRuleReadService {
     Response<List<ThinAddress>> findAddressByRuleId(Long ruleId);
 
     /**
-     * 查找店铺其他规则用掉的非默认地址
+     * 查找店铺组其他规则用掉的非默认地址
      *
      * @param ruleId ruleId
      * @return 对应的仓库发货地址集合
      */
     Response<List<ThinAddress>> findOtherNonDefaultAddressesByRuleId(Long ruleId);
+
+
+    /**
+     * 查找店铺组中发货规则已经用掉的地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 对应的仓库发货地址集合
+     */
+    Response<List<ThinAddress>> findNonDefaultAddressesByShopGroupId(Long shopGroupId);
+
 
 
     /**

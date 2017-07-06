@@ -2,7 +2,9 @@ package com.pousheng.middle.warehouse.manager;
 
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.utils.BeanMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -19,27 +21,33 @@ public class WarehouseAddressRuleManager {
 
     private final WarehouseAddressRuleDao warehouseAddressRuleDao;
 
+    private final WarehouseRuleDao warehouseRuleDao;
+
     @Autowired
-    public WarehouseAddressRuleManager(WarehouseAddressRuleDao warehouseAddressRuleDao) {
+    public WarehouseAddressRuleManager(WarehouseAddressRuleDao warehouseAddressRuleDao,
+                                       WarehouseRuleDao warehouseRuleDao) {
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
+        this.warehouseRuleDao = warehouseRuleDao;
     }
 
     /**
      * 为每一个地址创建一条和规则关联的记录
      *
      * @param shopGroupId       店铺组id
-     * @param ruleId        规则id
      * @param thinAddresses 地址列表
      * @return 规则id
      */
     @Transactional
-    public Long batchCreate(Long shopGroupId, Long ruleId, List<ThinAddress> thinAddresses) {
-
+    public Long batchCreate(Long shopGroupId,List<ThinAddress> thinAddresses) {
+        WarehouseRule rule = new WarehouseRule();
+        rule.setShopGroupId(shopGroupId);
+        warehouseRuleDao.create(rule);
+        Long ruleId = rule.getId();
         for (ThinAddress thinAddress : thinAddresses) {
             WarehouseAddressRule war = new WarehouseAddressRule();
             BeanMapper.copy(thinAddress, war);
-            war.setRuleId(ruleId);
             war.setShopGroupId(shopGroupId);
+            war.setRuleId(ruleId);
             warehouseAddressRuleDao.create(war);
         }
 

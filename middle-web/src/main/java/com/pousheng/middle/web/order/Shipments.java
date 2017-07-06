@@ -97,7 +97,7 @@ public class Shipments {
         shipmentPagingInfos.forEach(shipmentPagingInfo ->{
             Shipment shipment = shipmentPagingInfo.getShipment();
             try {
-                shipmentPagingInfo.setShopOrderOperations(flow.availableOperations(shipment.getStatus()));
+                shipmentPagingInfo.setOperations(flow.availableOperations(shipment.getStatus()));
                 shipmentPagingInfo.setShipmentExtra(shipmentReadLogic.getShipmentExtra(shipment));
             }catch (JsonResponseException e){
                 log.error("complete paging info fail,error:{}", e.getMessage());

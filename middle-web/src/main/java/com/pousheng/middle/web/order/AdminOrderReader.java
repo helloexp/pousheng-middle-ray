@@ -62,7 +62,7 @@ public class AdminOrderReader {
     /**
      * 交易订单分页
      * @param middleOrderCriteria 查询参数
-     * @return 订单分页结果（不包含操作按钮）
+     * @return 订单分页结果
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {

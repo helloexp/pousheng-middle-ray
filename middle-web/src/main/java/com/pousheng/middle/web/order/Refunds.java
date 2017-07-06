@@ -193,7 +193,7 @@ public class Refunds {
      * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 退货数量 - 已发货数量
      */
     @RequestMapping(value = "/api/refund/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WaitShipItemInfo> waitHandleSku(@PathVariable("id") Long refundId) {
+    public List<WaitShipItemInfo> refundWaitHandleSku(@PathVariable("id") Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
         List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
@@ -203,6 +203,7 @@ public class Refunds {
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
             waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
             waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+            waitShipItemInfo.setSkuName(refundItem.getSkuName());
             waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
             waitShipItemInfos.add(waitShipItemInfo);
         }

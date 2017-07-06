@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.manager;
 
-import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
@@ -27,12 +27,64 @@ public class WarehouseSkuStockManager {
         this.warehouseSkuStockDao = warehouseSkuStockDao;
     }
 
+    /**
+     * 锁定库存
+     * @param warehouses 待锁定的库存明细
+     */
     @Transactional
-    public void decreaseStock(List<SelectedWarehouse> warehouses){
-        for (SelectedWarehouse selectedWarehouse : warehouses) {
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = selectedWarehouse.getSkuCodeAndQuantities();
-            Long warehouseId = selectedWarehouse.getWarehouseId();
+    public void lockStock(List<WarehouseShipment> warehouses) {
+        for (WarehouseShipment warehouseShipment : warehouses) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = warehouseShipment.getSkuCodeAndQuantities();
+            Long warehouseId = warehouseShipment.getWarehouseId();
 
+            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+                String skuCode = skuCodeAndQuantity.getSkuCode();
+                Integer quantity = skuCodeAndQuantity.getQuantity();
+                boolean success = warehouseSkuStockDao.lockStock(warehouseId,
+                        skuCode,
+                        quantity);
+                if (!success) {
+                    WarehouseSkuStock wss = this.warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+                    if (wss == null) {
+                        log.error("no sku(skuCode={}) stock found in warehouse(id={})", skuCode, warehouseId);
+                    } else {
+                        log.error("insufficient sku stock(skuCode={}, required stock={}, actual stock={}) for warehouse(id={})",
+                                skuCode, quantity, wss.getAvailStock(), warehouseId);
+
+                    }
+                    throw new ServiceException("insufficient.sku.stock");
+                }
+            }
+        }
+    }
+
+    /**
+     * 先解锁之前的锁定的库存, 在扣减实际发货的库存
+     *
+     * @param lockedShipments 之前锁定的库存明细
+     * @param actualShipments 实际发货的库存明细
+     */
+    @Transactional
+    public void decreaseStock(List<WarehouseShipment> lockedShipments, List<WarehouseShipment> actualShipments) {
+        for (WarehouseShipment lockedShipment : lockedShipments) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = lockedShipment.getSkuCodeAndQuantities();
+            Long warehouseId = lockedShipment.getWarehouseId();
+            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+                String skuCode = skuCodeAndQuantity.getSkuCode();
+                Integer quantity = skuCodeAndQuantity.getQuantity();
+                boolean success = warehouseSkuStockDao.unlockStock(warehouseId,
+                        skuCode,
+                        quantity);
+                if(!success){
+                    log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
+                            warehouseId, skuCode, quantity );
+                    throw new ServiceException("stock.unlock.fail");
+                }
+            }
+        }
+        for (WarehouseShipment actualShipment : actualShipments) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = actualShipment.getSkuCodeAndQuantities();
+            Long warehouseId = actualShipment.getWarehouseId();
             for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
                 String skuCode = skuCodeAndQuantity.getSkuCode();
                 Integer quantity = skuCodeAndQuantity.getQuantity();
@@ -40,17 +92,12 @@ public class WarehouseSkuStockManager {
                         skuCode,
                         quantity);
                 if(!success){
-                    WarehouseSkuStock wss = this.warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-                    if(wss == null){
-                        log.error("no sku(skuCode={}) stock found in warehouse(id={})",skuCode, warehouseId );
-                    }else {
-                        log.error("insufficient sku stock(skuCode={}, required stock={}, actual stock={}) for warehouse(id={})",
-                                skuCode, quantity,wss.getAvailStock(), warehouseId );
-
-                    }
-                    throw new ServiceException("insufficient sku stock");
+                    log.error("failed to decrease stock of warehouse where warehouseId={} and skuCode={}, delta={}",
+                            warehouseId, skuCode, quantity );
+                    throw new ServiceException("stock.decrease.fail");
                 }
             }
         }
+
     }
 }

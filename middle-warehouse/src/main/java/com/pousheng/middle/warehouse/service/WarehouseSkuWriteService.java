@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Response;
 
@@ -39,10 +39,20 @@ public interface WarehouseSkuWriteService {
     Response<Boolean> deleteById(Long warehouseSkuId);
 
     /**
-     * 根据指定的仓库分配策略扣减库存
+     * 根据指定的仓库分配策略锁定库存
      *
-     * @param warehouses 仓库及发货数量列表
-     * @return 是否扣减成功
+     * @param warehouseShipments 仓库及发货数量列表
+     * @return 是否锁定成功
      */
-    Response<Boolean> decreaseStock(List<SelectedWarehouse> warehouses);
+    Response<Boolean> lockStock(List<WarehouseShipment> warehouseShipments);
+
+
+    /**
+     * 根据实际出库的库存情况来变更库存, 这里需要先恢复原来锁定的仓库明细, 然后再根据实际库存做扣减
+     *
+     * @param lockedShipments 之前锁定的仓库明细
+     * @param actualShipments 实际仓库发货明细
+     * @return 是否变更成功
+     */
+    Response<Boolean> decreaseStock(List<WarehouseShipment> lockedShipments,List<WarehouseShipment> actualShipments);
 }

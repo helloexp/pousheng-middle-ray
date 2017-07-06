@@ -98,12 +98,14 @@
         </set>
         WHERE id = #{id}
     </update>
-    
+
     <update id="decreaseStock"  parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET locked_stock = locked_stock - #{delta}
+        SET avail_stock = avail_stock - #{delta}
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+        and
+        <![CDATA[ avail_stock>=#{delta} ]]>
     </update>
 
     <update id="lockStock" parameterType="map">
@@ -112,6 +114,13 @@
         SET avail_stock = avail_stock - #{delta}, locked_stock = locked_stock + #{delta}
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
         <![CDATA[ avail_stock>=#{delta} ]]>
+    </update>
+
+    <update id="unlockStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock + #{delta}, locked_stock = locked_stock - #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
     </update>
 
     <delete id="delete" parameterType="long">
@@ -162,7 +171,6 @@
         <foreach item="skuCode" collection="skuCodes" open="(" separator="," close=")">
             #{skuCode}
         </foreach>
-
     </select>
 
 </mapper>

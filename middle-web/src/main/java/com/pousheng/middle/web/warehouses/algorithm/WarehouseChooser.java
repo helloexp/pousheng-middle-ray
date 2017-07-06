@@ -4,7 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.*;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
 import com.pousheng.middle.warehouse.dto.Warehouses4Address;
@@ -65,7 +65,7 @@ public class WarehouseChooser {
      * @param skuCodeAndQuantities sku及数量
      * @return 对应的仓库及每个仓库应发货的数量
      */
-    public List<SelectedWarehouse> choose(Long shopId, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+    public List<WarehouseShipment> choose(Long shopId, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
 
         List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
         Long currentAddressId = addressId;
@@ -86,23 +86,23 @@ public class WarehouseChooser {
         List<Warehouses4Address> warehouses4Addresses = r.getResult();
         for (Warehouses4Address warehouses4Address : warehouses4Addresses) {
             List<WarehouseWithPriority> warehouseWithPriorities = warehouses4Address.getWarehouses();
-            List<SelectedWarehouse> warehouses = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
+            List<WarehouseShipment> warehouseShipments = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
                     skuCodeAndQuantities);
-            if (!CollectionUtils.isEmpty(warehouses)) {
-                //todo: 先扣减库存再返回结果
-                Response<Boolean> rDecrease = warehouseSkuWriteService.decreaseStock(warehouses);
+            if (!CollectionUtils.isEmpty(warehouseShipments)) {
+                // 先锁定库存, 锁定成功后再返回结果
+                Response<Boolean> rDecrease = warehouseSkuWriteService.lockStock(warehouseShipments);
                 if(!rDecrease.isSuccess()){
                     log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
                             "auto dispatch stock failed", addressId, rDecrease.getError());
                     return Collections.emptyList();
                 }
-                return warehouses;
+                return warehouseShipments;
             }
         }
         return Collections.emptyList();
     }
 
-    private List<SelectedWarehouse> chooseWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
+    private List<WarehouseShipment> chooseWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
                                                     List<SkuCodeAndQuantity> skuCodeAndQuantities) {
         Table<Long, String, Integer> widskucode2stock = HashBasedTable.create();
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
@@ -124,12 +124,12 @@ public class WarehouseChooser {
                 }
             }
             if (enough) {
-                SelectedWarehouse selectedWarehouse = new SelectedWarehouse();
-                selectedWarehouse.setWarehouseId(warehouseId);
+                WarehouseShipment warehouseShipment = new WarehouseShipment();
+                warehouseShipment.setWarehouseId(warehouseId);
                 Warehouse warehouse = warehouseCacher.findById(warehouseId);
-                selectedWarehouse.setWarehouseName(warehouse.getName());
-                selectedWarehouse.setSkuCodeAndQuantities(skuCodeAndQuantities);
-                return Lists.newArrayList(selectedWarehouse);
+                warehouseShipment.setWarehouseName(warehouse.getName());
+                warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+                return Lists.newArrayList(warehouseShipment);
             }
         }
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
@@ -138,7 +138,7 @@ public class WarehouseChooser {
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
         }
 
-        List<SelectedWarehouse> result = Lists.newArrayList();
+        List<WarehouseShipment> result = Lists.newArrayList();
 
         //总是选择可能发货数量最大的仓库
         while (current.size() > 0) {
@@ -165,9 +165,9 @@ public class WarehouseChooser {
                 }
                 return Collections.emptyList();
             } else {//分配发货仓库
-                SelectedWarehouse selectedWarehouse = new SelectedWarehouse();
-                selectedWarehouse.setWarehouseId(candidateWarehouseId);
-                selectedWarehouse.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getName());
+                WarehouseShipment warehouseShipment = new WarehouseShipment();
+                warehouseShipment.setWarehouseId(candidateWarehouseId);
+                warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getName());
                 List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
@@ -183,8 +183,8 @@ public class WarehouseChooser {
                     //减少当前可用库存
                     widskucode2stock.put(candidateWarehouseId, skuCode, stock - actual);
                 }
-                selectedWarehouse.setSkuCodeAndQuantities(scaqs);
-                result.add(selectedWarehouse);
+                warehouseShipment.setSkuCodeAndQuantities(scaqs);
+                result.add(warehouseShipment);
             }
         }
         return result;

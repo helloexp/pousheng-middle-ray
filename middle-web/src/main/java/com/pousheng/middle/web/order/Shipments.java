@@ -158,6 +158,14 @@ public class Shipments {
         ShipmentPreview shipmentPreview  = new ShipmentPreview();
         shipmentPreview.setWarehouseId(warehouse.getId());
         shipmentPreview.setWarehouseName(warehouse.getName());
+        //todo 绩效店铺名称
+        shipmentPreview.setErpPerformanceShopName("绩效店铺");
+        //绩效店铺编码
+        shipmentPreview.setErpPerformanceShopCode("TEST001");
+        //下单店铺名称
+        shipmentPreview.setErpOrderShopName("下单店铺");
+        //下单店铺编码
+        shipmentPreview.setErpOrderShopCode("TEST002");
         shipmentPreview.setInvoices(orderDetail.getInvoices());
         shipmentPreview.setPayment(orderDetail.getPayment());
         List<OrderReceiverInfo> orderReceiverInfos = orderDetail.getOrderReceiverInfos();
@@ -233,7 +241,6 @@ public class Shipments {
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
 
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
 
         //获取子单商品
@@ -246,7 +253,7 @@ public class Shipments {
         checkStockIsEnough(warehouseId,skuCodeAndQuantityMap);
 
         //封装发货信息
-        Shipment shipment = makeShipment(shopOrder,warehouseId);
+        Shipment shipment = makeShipment(shopOrderId,warehouseId);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
 
@@ -270,11 +277,11 @@ public class Shipments {
 
 
 
-    private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId){
+    private Shipment makeShipment(Long shopOrderId,Long warehouseId){
         Shipment shipment = new Shipment();
         shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
-        shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
+        shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
 
         //发货仓库信息
         Warehouse warehouse = findWarehouseById(warehouseId);
@@ -283,14 +290,14 @@ public class Shipments {
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
 
-        //绩效店铺名称
-        shipmentExtra.setErpPerformanceShopName(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_NAME,shopOrder));
+        //todo 绩效店铺名称
+        shipmentExtra.setErpPerformanceShopName("绩效店铺");
         //绩效店铺编码
-        shipmentExtra.setErpPerformanceShopCode(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder));
+        shipmentExtra.setErpPerformanceShopCode("TEST001");
         //下单店铺名称
-        shipmentExtra.setErpOrderShopName(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_ORDER_SHOP_NAME,shopOrder));
+        shipmentExtra.setErpOrderShopName("下单店铺");
         //下单店铺编码
-        shipmentExtra.setErpOrderShopCode(orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_ORDER_SHOP_CODE,shopOrder));
+        shipmentExtra.setErpOrderShopCode("TEST002");
         //发货单商品金额
         shipmentExtra.setShipmentItemFee(33L);
         //发货单运费金额
@@ -380,18 +387,17 @@ public class Shipments {
         Refund refund = refundReadLogic.findRefundById(refundId);
         List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
 
         //检查库存是否充足
         checkStockIsEnough(warehouseId,skuCodeAndQuantity);
 
         //封装发货信息
-        Shipment shipment = makeShipment(shopOrder,warehouseId);
+        Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeChangeShipmentItems(refundChangeItems,skuCodeAndQuantity)));
 
         //换货的发货关联的订单id 为换货单id
-        Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, shopOrder.getId(),refundId);
+        Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, orderRefund.getOrderId(),refundId);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for refund(id={}),and level={},cause:{}",
                     shipment, refundId, OrderLevel.SHOP.getValue(), createResp.getError());

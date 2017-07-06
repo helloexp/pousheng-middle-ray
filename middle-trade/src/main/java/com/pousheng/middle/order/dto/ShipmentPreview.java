@@ -20,6 +20,15 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
     //发货仓名称
     public String warehouseName;
 
+    //绩效店铺名称
+    private String erpPerformanceShopName;
+    //绩效店铺编码
+    private String erpPerformanceShopCode;
+    //下单店铺名称
+    private String erpOrderShopName;
+    //下单店铺编码
+    private String erpOrderShopCode;
+
     //发货商品信息
     List<ShipmentItem> shipmentItems;
 

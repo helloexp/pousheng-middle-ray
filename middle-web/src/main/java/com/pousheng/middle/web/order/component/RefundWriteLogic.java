@@ -28,6 +28,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -192,6 +193,7 @@ public class RefundWriteLogic {
         refund.setBuyerId(shopOrder.getBuyerId());
         refund.setBuyerName(shopOrder.getBuyerName());
         refund.setBuyerNote(submitRefundInfo.getBuyerNote());
+        refund.setRefundAt(new Date());
         if(Objects.equals(submitRefundInfo.getOperationType(),1)){
             refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }else {

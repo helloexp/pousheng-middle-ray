@@ -83,7 +83,7 @@ public class AdminOrderReader {
      * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 下单数量 - 已发货数量 ,waitHandleNumber为skuOrder.extraMap中的一个key，value为待发货数量
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WaitShipItemInfo> waitHandleSku(@PathVariable("id") Long id) {
+    public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") Long id) {
         List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders){

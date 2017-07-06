@@ -11,6 +11,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -51,6 +52,8 @@ public class Refunds {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private SyncRefundLogic syncRefundLogic;
+    @Autowired
+    private SyncRefundToEcpLogic syncRefundToEcpLogic;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -254,6 +257,20 @@ public class Refunds {
         }
     }
 
+    /**
+     *恒康同步信息到中台提示已经退货完成,此时调用该接口通知电商退款
+     * @param refundId
+     */
+    @RequestMapping(value = "api/refund/{id}/cancel/sync/ecp",method = RequestMethod.PUT)
+    public void syncECPRefund(@PathVariable(value = "id") Long refundId)
+    {
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> syncRes = syncRefundToEcpLogic.syncRefundToECP(refund);
+        if(!syncRes.isSuccess()){
+            log.error("sync cancel refund(id:{}) to ecp fail,error:{}",refundId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
 
 
 

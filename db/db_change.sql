@@ -51,22 +51,6 @@ CREATE TABLE `pousheng_warehouses` (
   KEY `idx_warehouse_code` (`code`)
 ) COMMENT='仓库';
 
-drop table if exists `pousheng_stock_bills`;
-
-CREATE TABLE `pousheng_stock_bills` (
-  `bill_no` varchar(32) NOT NULL COMMENT '单据编号' ,
-  `company_id` varchar(32)  NULL COMMENT '账套 id',
-  `bill_status` varchar(10) NOT NULL COMMENT '单据状态',
-  `bill_type` varchar(32)  NULL COMMENT '单据类型',
-  `sequence` varchar(32)  NULL COMMENT '明细順序',
-  `stock_id` varchar(32)  NOT NULL COMMENT '仓库编号',
-  `barcode` varchar(32)  NOT NULL COMMENT '产品条码',
-  `quantity` int(10) NOT NULL COMMENT '数量',
-  `original_bill_no` varchar(32)  NULL COMMENT '单据类型',
-  `modify_datetime` datetime DEFAULT NULL COMMENT '修改时间',
-  KEY `idx_psb_bill_no` (bill_no)
-) COMMENT='库存单据' ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
 drop index idx_spus_spu_code on `parana_spus`;
 CREATE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
 
@@ -85,3 +69,5 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   KEY `idx_warehouse_address_rules_aid` (`address_id`),
   KEY `idx_warehouse_address_rules_sid` (`shop_id`)
 )COMMENT='地址和仓库规则的关联';
+
+drop table if exists `pousheng_stock_bills`;

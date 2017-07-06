@@ -279,11 +279,14 @@ public class RefundWriteLogic {
         }
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
 
-        //更新售后单状态
-        Response<Boolean> updateStatusRes = updateStatus(refund,MiddleOrderEvent.HANDLE.toOrderOperation());
-        if(!updateStatusRes.isSuccess()){
-            log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateStatusRes.getError());
-            throw new JsonResponseException(updateStatusRes.getError());
+        //提交动作
+        if(Objects.equals(submitRefundInfo.getOperationType(),2)){
+            //更新售后单状态
+            Response<Boolean> updateStatusRes = updateStatus(refund,MiddleOrderEvent.HANDLE.toOrderOperation());
+            if(!updateStatusRes.isSuccess()){
+                log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateStatusRes.getError());
+                throw new JsonResponseException(updateStatusRes.getError());
+            }
         }
 
         //更新退换货信息

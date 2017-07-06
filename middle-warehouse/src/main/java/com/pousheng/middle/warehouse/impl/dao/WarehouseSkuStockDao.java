@@ -36,13 +36,42 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
                 ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode));
     }
 
+    /**
+     * 根据仓库id和sku编码查找对应的库存
+     *
+     * @param warehouseId 仓库id
+     * @param skuCodes sku编码
+     * @return 库存列表
+     */
     public List<WarehouseSkuStock> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes) {
         return this.sqlSession.selectList(sqlId("findByWarehouseIdAndSkuCodes"),
                 ImmutableMap.of("warehouseId", warehouseId, "skuCodes", skuCodes));
     }
 
+    /**
+     * 减库存, 实际上是减掉锁定的库存
+     *
+     * @param warehouseId 仓库id
+     * @param skuCode sku代码
+     * @param delta  变化的数值
+     * @return 是否操作成功
+     */
     public boolean decreaseStock(Long warehouseId, String skuCode, Integer delta){
         return this.sqlSession.update(sqlId("decreaseStock"),
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode",skuCode, "delta",delta))
+                == 1;
+    }
+
+    /**
+     * 锁库存, 减少可用库存, 增加锁定库存
+     *
+     * @param warehouseId 仓库id
+     * @param skuCode sku编码
+     * @param delta 变化的数值
+     * @return 是否操作成功
+     */
+    public boolean lockStock(Long warehouseId, String skuCode, Integer delta){
+        return this.sqlSession.update(sqlId("lockStock"),
                 ImmutableMap.of("warehouseId", warehouseId, "skuCode",skuCode, "delta",delta))
                 == 1;
     }

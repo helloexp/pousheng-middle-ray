@@ -20,8 +20,6 @@ public class SubmitRefundInfo extends EditSubmitRefundInfo {
     //发货单id
     private Long shipmentId;
 
-    //操作类型 1：保存 2：提交
-    private Integer operationType;
 
 
 

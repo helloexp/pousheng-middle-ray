@@ -303,6 +303,7 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
         EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
+        editMiddleRefund.setIsToCreate(Boolean.FALSE);
         editMiddleRefund.setOrderRefund(orderRefund);
         editMiddleRefund.setRefund(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

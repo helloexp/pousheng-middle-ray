@@ -29,6 +29,11 @@ public class RuleDto implements Serializable {
     private String ruleDesc;
 
     /**
+     * 规则关联的店铺
+     */
+    private List<ThinShop> shops;
+
+    /**
      * 规则对应的区域
      */
     private List<ThinAddress>  addresses;

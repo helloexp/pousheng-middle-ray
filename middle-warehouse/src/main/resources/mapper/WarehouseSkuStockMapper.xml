@@ -102,7 +102,14 @@
     <update id="decreaseStock"  parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET avail_stock = avail_stock - #{delta}
+        SET locked_stock = locked_stock - #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </update>
+
+    <update id="lockStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock - #{delta}, locked_stock = locked_stock + #{delta}
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
         <![CDATA[ avail_stock>=#{delta} ]]>
     </update>

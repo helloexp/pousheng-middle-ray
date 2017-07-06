@@ -15,6 +15,9 @@ public class WarehouseSkuStock implements Serializable {
 
     private static final long serialVersionUID = 7582078350954212292L;
 
+    /**
+     * 主键id
+     */
     private Long id;
     
     /**
@@ -51,8 +54,14 @@ public class WarehouseSkuStock implements Serializable {
      * 上次同步校准时间
      */
     private Date syncAt;
-    
+
+    /**
+     * 创建时间
+     */
     private Date createdAt;
-    
+
+    /**
+     * 更新时间
+     */
     private Date updatedAt;
 }

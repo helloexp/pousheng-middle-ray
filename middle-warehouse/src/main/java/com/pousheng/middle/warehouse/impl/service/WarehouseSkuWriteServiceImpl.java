@@ -1,7 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.warehouse.dto.SelectedWarehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
@@ -65,18 +65,37 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
     }
 
     /**
-     * 根据指定的仓库分配策略扣减库存
+     * 根据指定的仓库分配策略锁定库存
      *
-     * @param warehouses 仓库及发货数量列表
+     * @param warehouseShipments 仓库及发货数量列表
      * @return 是否扣减成功
      */
     @Override
-    public Response<Boolean> decreaseStock(List<SelectedWarehouse> warehouses) {
+    public Response<Boolean> lockStock(List<WarehouseShipment> warehouseShipments) {
         try {
-            warehouseSkuStockManager.decreaseStock(warehouses);
+            warehouseSkuStockManager.lockStock(warehouseShipments);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("failed to decrease stock for {}", warehouses, Throwables.getStackTraceAsString(e));
+            log.error("failed to lock stock for {}", warehouseShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.stock.lock.fail");
+        }
+    }
+
+    /**
+     * 根据实际出库的库存情况来变更库存, 这里需要先恢复原来锁定的仓库明细, 然后再根据实际库存做扣减
+     *
+     * @param lockedShipments 之前锁定的仓库明细
+     * @param actualShipments 实际仓库发货明细
+     * @return 是否变更成功
+     */
+    @Override
+    public Response<Boolean> decreaseStock(List<WarehouseShipment> lockedShipments,
+                                           List<WarehouseShipment> actualShipments) {
+        try {
+            warehouseSkuStockManager.decreaseStock(lockedShipments,actualShipments);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("failed to decrease stock for {}", actualShipments, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.stock.decrease.fail");
         }
     }

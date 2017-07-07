@@ -87,7 +87,7 @@ public class ErpSpuManager {
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
-            spu.setName(MoreObjects.firstNonNull(material.getMaterial_name(), "未知商品名"));
+            spu.setName(MoreObjects.firstNonNull(material.getMaterial_name(), spuCode));
             spu.setType(1);
             spu.setStatus(1);
             spu.setStockType(1);

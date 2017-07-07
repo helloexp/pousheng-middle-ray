@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -19,6 +20,8 @@ import org.springframework.stereotype.Component;
 public class SyncShipmentToEcpLogic {
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     /**
      * 同步发货单号到电商平台
@@ -34,7 +37,16 @@ public class SyncShipmentToEcpLogic {
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
             return Response.fail(updateStatusRes.getError());
         }
-        //TOdo
+
+        //todo 同步电商
+        Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
+        //更新发货单的状态
+        OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
+        if(!updateStatusRes.isSuccess()){
+            log.error("shipment(id:{}) operation :{} fail,error:{}",shipment.getId(),syncOrderOperation.getText(),updateSyncStatusRes.getError());
+            return Response.fail(updateStatusRes.getError());
+        }
             return Response.ok();
     }
 }

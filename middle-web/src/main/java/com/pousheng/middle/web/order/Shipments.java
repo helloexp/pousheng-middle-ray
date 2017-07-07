@@ -15,6 +15,7 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncShipmentToEcpLogic;
@@ -37,7 +38,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -270,6 +270,7 @@ public class Shipments {
 
         //封装发货信息
         Shipment shipment = makeShipment(shopOrderId,warehouseId);
+        shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
@@ -287,7 +288,7 @@ public class Shipments {
 
         Long shipmentId = createResp.getResult();
 
-        //eventBus.post(new OrderShipmentEvent(shipmentId));
+        eventBus.post(new OrderShipmentEvent(shipmentId));
 
         return shipmentId;
 

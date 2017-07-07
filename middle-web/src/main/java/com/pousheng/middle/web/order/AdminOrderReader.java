@@ -108,7 +108,7 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") Long id) {
-        List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue());
+        List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders){
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();

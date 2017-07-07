@@ -29,7 +29,7 @@ public class MiddleFlowBook {
             //处理中 -->处理 -> 处理中
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
-                    MiddleOrderStatus.WAIT_SHIP.getValue());
+                    MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
 
             //处理中 -->处理完成 -> 待发货
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),

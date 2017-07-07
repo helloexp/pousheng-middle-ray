@@ -37,6 +37,7 @@ public enum MiddleOrderEvent {
     SYNC_CANCEL_FAIL(17, "syncCancelFail", "hk"),
     REFUND_APPLY_AGREE(18, "refundApplyAgree", "seller"),
     REFUND(19, "refund", "hk"),
+    HANDLE_DONE(20, "refund", "backend"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),

@@ -26,10 +26,16 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
 
-            //处理中 -->处理完成 -> 待发货
+            //处理中 -->处理 -> 处理中
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_SHIP.getValue());
+
+            //处理中 -->处理完成 -> 待发货
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+                    MiddleOrderEvent.HANDLE_DONE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_SHIP.getValue());
+
 
             //待发货 -->发货 -> 商家已发货
             addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),

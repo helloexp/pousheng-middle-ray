@@ -89,16 +89,19 @@ public class OrderWriteLogic {
             Response<Integer> handleRes = updateSkuOrderExtra(skuOrder,skuOrderIdAndQuantity);
             //2. 判断是否需要更新子单状态
             if(handleRes.isSuccess()){
+                Integer targetStatus ;
                 //如果剩余数量为0则更新子单状态为待发货
                 if(handleRes.getResult()==0){
-                    Integer targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation());
-                    Response<Boolean> updateSkuOrderResp = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), targetStatus);
-                    if (!updateSkuOrderResp.isSuccess()) {
-                        log.error("fail to update sku shop order(id={}) from current status:{} to target:{},cause:{}",
-                                skuOrder.getId(), skuOrder.getStatus(), targetStatus);
-                        throw new ServiceException(updateSkuOrderResp.getError());
-                    }
+                    targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                }else {
+                    targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation());
+                }
 
+                Response<Boolean> updateSkuOrderResp = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), targetStatus);
+                if (!updateSkuOrderResp.isSuccess()) {
+                    log.error("fail to update sku shop order(id={}) from current status:{} to target:{},cause:{}",
+                            skuOrder.getId(), skuOrder.getStatus(), targetStatus);
+                    throw new ServiceException(updateSkuOrderResp.getError());
                 }
             }
         }

@@ -1,12 +1,16 @@
 package com.pousheng.middle.open.api;
 
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
@@ -43,6 +47,8 @@ public class OrderOpenApi {
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @RpcConsumer
+    private ExpressCodeReadService expressCodeReadService;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -95,7 +101,8 @@ public class OrderOpenApi {
             Map<String,String> extraMap = shipment.getExtra();
             shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
             shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
-            //shipmentExtra.setShipmentCorpName();todo 转换为中文
+            //通过恒康代码查找快递名称
+            shipmentExtra.setShipmentCorpName(makeExpressNameByhkCode(shipmentCorpCode));
             shipmentExtra.setShipmentDate(dt.toDate());
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
@@ -146,5 +153,23 @@ public class OrderOpenApi {
         return "hell world:"+name;
     }
 
+    public String makeExpressNameByhkCode(String hkExpressCode)
+    {
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setHkCode(hkExpressCode);
+        Response<Paging<ExpressCode>> response= expressCodeReadService.pagingExpressCode(criteria);
+        if(!response.isSuccess())
+        {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if(response.getResult().getData().size()==0)
+        {
+            log.error("there is not any express info by hkCode:{}",hkExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
+        }
+        ExpressCode expressCode = response.getResult().getData().get(0);
+        return expressCode.getName();
+    }
 
 }

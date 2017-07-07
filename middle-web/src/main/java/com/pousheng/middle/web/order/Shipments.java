@@ -39,6 +39,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +56,8 @@ public class Shipments {
     private ObjectMapper objectMapper;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
     @Autowired
     private WarehouseReadService warehouseReadService;
     @RpcConsumer
@@ -389,6 +392,15 @@ public class Shipments {
             log.error("cancel shipment(id:{}) fail,error:{}",shipmentId,cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
         }
+        //取消发货单,要将skuOrder对应的发待货数量回滚
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        Map<Long, Integer> skuOrderIdAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity)
+                );
+        //回滚子订单的待处理数量,因为是增加待处理数量,所以不会出现方法中的更新状态的情况
+        orderWriteLogic.updateSkuHandleNumber(skuOrderIdAndQuantityMap);
+
+
     }
 
 

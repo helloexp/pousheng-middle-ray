@@ -137,7 +137,7 @@ public class MiddleFlowBook {
             //待处理 -->取消 -> 已取消（不需同步恒康）
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL.toOrderOperation(),
-                    MiddleShipmentsStatus.BUYER_CANCEL.getValue());
+                    MiddleShipmentsStatus.REVOKE.getValue());
 
             //待发货 -->取消恒康 -> 取消同步中
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),

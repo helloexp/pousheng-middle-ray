@@ -14,7 +14,30 @@ public class ExpressCodeCriteria extends PagingCriteria implements java.io.Seria
      * 快递名称
      */
     private String name;
-
+    /**
+     * 恒康快递代码
+     */
+    private String hkCode;
+    /**
+     * 苏宁快递代码
+     */
+    private String suningCode;
+    /**
+     * 京东快递代码
+     */
+    private String jdCode;
+    /**
+     * 淘宝快递代码
+     */
+    private String taobaoCode;
+    /**
+     * 宝胜快递代码
+     */
+    private String poushengCode;
+    /**
+     * 分期乐快递代码
+     */
+    private String fenqileCode;
 
 
 }

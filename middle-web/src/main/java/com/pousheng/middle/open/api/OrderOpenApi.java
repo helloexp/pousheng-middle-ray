@@ -165,8 +165,8 @@ public class OrderOpenApi {
         }
         if(response.getResult().getData().size()==0)
         {
-            log.error("expresscode can not be null");
-            throw new JsonResponseException("there is not any express info by hkCode");
+            log.error("there is not any express info by hkCode:{}",hkExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
         }
         ExpressCode expressCode = response.getResult().getData().get(0);
         return expressCode.getName();

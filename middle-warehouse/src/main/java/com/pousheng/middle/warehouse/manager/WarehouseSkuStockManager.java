@@ -66,22 +66,7 @@ public class WarehouseSkuStockManager {
      */
     @Transactional
     public void decreaseStock(List<WarehouseShipment> lockedShipments, List<WarehouseShipment> actualShipments) {
-        for (WarehouseShipment lockedShipment : lockedShipments) {
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = lockedShipment.getSkuCodeAndQuantities();
-            Long warehouseId = lockedShipment.getWarehouseId();
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-                String skuCode = skuCodeAndQuantity.getSkuCode();
-                Integer quantity = skuCodeAndQuantity.getQuantity();
-                boolean success = warehouseSkuStockDao.unlockStock(warehouseId,
-                        skuCode,
-                        quantity);
-                if(!success){
-                    log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
-                            warehouseId, skuCode, quantity );
-                    throw new ServiceException("stock.unlock.fail");
-                }
-            }
-        }
+        doUnlock(lockedShipments);
         for (WarehouseShipment actualShipment : actualShipments) {
             List<SkuCodeAndQuantity> skuCodeAndQuantities = actualShipment.getSkuCodeAndQuantities();
             Long warehouseId = actualShipment.getWarehouseId();
@@ -100,4 +85,34 @@ public class WarehouseSkuStockManager {
         }
 
     }
+
+    /**
+     * 根据指定的仓库分配策略解锁库存, 当撤销发货单时, 调用这个接口
+     *
+     * @param warehouseShipments 仓库及解锁数量列表
+     */
+    @Transactional
+    public void unlockStock(List<WarehouseShipment> warehouseShipments) {
+        doUnlock(warehouseShipments);
+    }
+
+    private void doUnlock(List<WarehouseShipment> lockedShipments) {
+        for (WarehouseShipment lockedShipment : lockedShipments) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = lockedShipment.getSkuCodeAndQuantities();
+            Long warehouseId = lockedShipment.getWarehouseId();
+            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+                String skuCode = skuCodeAndQuantity.getSkuCode();
+                Integer quantity = skuCodeAndQuantity.getQuantity();
+                boolean success = warehouseSkuStockDao.unlockStock(warehouseId,
+                        skuCode,
+                        quantity);
+                if(!success){
+                    log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
+                            warehouseId, skuCode, quantity );
+                    throw new ServiceException("stock.unlock.fail");
+                }
+            }
+        }
+    }
+
 }

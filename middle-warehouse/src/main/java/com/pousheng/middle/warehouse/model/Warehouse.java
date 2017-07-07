@@ -2,12 +2,14 @@ package com.pousheng.middle.warehouse.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import io.terminus.common.utils.JsonMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -111,5 +113,17 @@ public class Warehouse implements Serializable {
                 //ignore this fuck exception
             }
         }
+    }
+
+    /**
+     * 获取公司编码
+     *
+     * @return 公司编码
+     */
+    public String getCompanyCode(){
+        if(StringUtils.hasText(code)) {
+            return Splitter.on('-').omitEmptyStrings().trimResults().limit(2).splitToList(code).get(0);
+        }
+        return null;
     }
 }

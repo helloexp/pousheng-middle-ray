@@ -82,6 +82,23 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
     }
 
     /**
+     * 根据指定的仓库分配策略解锁库存, 当撤销发货单时, 调用这个接口
+     *
+     * @param warehouseShipments 仓库及解锁数量列表
+     * @return 是否解锁成功
+     */
+    @Override
+    public Response<Boolean> unlockStock(List<WarehouseShipment> warehouseShipments) {
+        try {
+            warehouseSkuStockManager.unlockStock(warehouseShipments);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("failed to unlock stock for {}", warehouseShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.stock.unlock.fail");
+        }
+    }
+
+    /**
      * 根据实际出库的库存情况来变更库存, 这里需要先恢复原来锁定的仓库明细, 然后再根据实际库存做扣减
      *
      * @param lockedShipments 之前锁定的仓库明细

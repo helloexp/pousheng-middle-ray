@@ -7,6 +7,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -102,6 +104,18 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
         assertThat(actual.getAvailStock(), is(warehouseSkuStock.getAvailStock()));
     }
 
+    @Test
+    public void syncStock() throws Exception {
+
+        warehouseSkuStockDao.syncStock(warehouseSkuStock.getWarehouseId(), warehouseSkuStock.getSkuCode(), 2, new Date());
+
+        WarehouseSkuStock actual = warehouseSkuStockDao.findById(warehouseSkuStock.getId());
+        assertThat(actual.getBaseStock(), is(2L));
+        assertThat(actual.getAvailStock(), is(2-warehouseSkuStock.getLockedStock()));
+        assertThat(actual.getLockedStock(), is(warehouseSkuStock.getLockedStock()));
+
+    }
+
     private WarehouseSkuStock make(String skuCode) {
         WarehouseSkuStock warehouseSkuStock = new WarehouseSkuStock();
 
@@ -116,13 +130,11 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
         
         warehouseSkuStock.setLockedStock(4L);
         
-        warehouseSkuStock.setSyncAt(new Date());
+        warehouseSkuStock.setSyncAt(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
         
         warehouseSkuStock.setCreatedAt(new Date());
         
         warehouseSkuStock.setUpdatedAt(new Date());
-        
-
         return warehouseSkuStock;
     }
 

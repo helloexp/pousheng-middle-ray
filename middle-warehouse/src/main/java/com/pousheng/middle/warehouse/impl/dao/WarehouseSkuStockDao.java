@@ -7,6 +7,7 @@ import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -88,5 +89,19 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
         return this.sqlSession.update(sqlId("unlockStock"),
                 ImmutableMap.of("warehouseId", warehouseId, "skuCode",skuCode, "delta",delta))
                 == 1;
+    }
+
+    /**
+     * 从erp同步库存, 只有大于上次同步请求的库存才进行处理
+     *
+     * @param warehouseId  仓库id
+     * @param skuCode sku编码
+     * @param erpStock  erp的可用库存
+     * @param syncAt 本次同步时间
+     */
+    public void syncStock(Long warehouseId, String skuCode, Integer erpStock, Date syncAt ){
+        this.sqlSession.update(sqlId("syncStock"),
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode",skuCode,
+                        "erpStock",erpStock, "syncAt", syncAt));
     }
 }

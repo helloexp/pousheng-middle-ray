@@ -112,28 +112,28 @@ public class OrderWriteLogic {
         Map<String,String> extraMap = skuOrder.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("sku order(id:{}) extra is null,can not update wait handle number reduce：{}",skuOrder.getId(),skuOrderIdAndQuantity.get(skuOrder.getId()));
-            return Response.fail("");
+            return Response.fail("sku.extra.field.is.null");
         }
         if(!extraMap.containsKey(TradeConstants.WAIT_HANDLE_NUMBER)){
             log.error("sku order(id:{}) extra not contains key:{},can not update wait handle number reduce：{}",skuOrder.getId(),TradeConstants.WAIT_HANDLE_NUMBER,skuOrderIdAndQuantity.get(skuOrder.getId()));
-            return Response.fail("");
+            return Response.fail("sku.extra.not.contains.key.wait.handle.number");
         }
         Integer waitHandleNumber = Integer.valueOf(extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER));
         if(waitHandleNumber<=0){
             log.error("sku order(id:{}) extra wait handle number:{} ,not enough to ship",skuOrder.getId(),waitHandleNumber);
-            return Response.fail("");
+            return Response.fail("sku.order.wait.handle.number.invalid");
         }
         Integer quantity = skuOrderIdAndQuantity.get(skuOrder.getId());
         Integer remainNumber = waitHandleNumber - quantity;
         if(remainNumber<0){
             log.error("sku order(id:{}) extra wait handle number:{} ship applyQuantity:{} ,not enough to ship",skuOrder.getId(),waitHandleNumber,quantity);
-            return Response.fail("");
+            return Response.fail("handle.number.get.wait.handle.number");
         }
         extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(remainNumber));
         Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,extraMap);
         if(!response.isSuccess()){
             log.error("update sku order：{} extra map to:{} fail,error:{}",skuOrder.getId(),extraMap,response.getError());
-            return Response.fail("");
+            return Response.fail(response.getError());
         }
 
         return Response.ok(remainNumber);

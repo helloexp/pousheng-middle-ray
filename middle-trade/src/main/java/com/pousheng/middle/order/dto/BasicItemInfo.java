@@ -29,7 +29,7 @@ public class BasicItemInfo implements Serializable{
     private Integer cleanFee;
 
     /**
-     * sku的销售属性, 不存数据库
+     * sku的销售属性
      */
     private List<SkuAttribute> attrs;
 

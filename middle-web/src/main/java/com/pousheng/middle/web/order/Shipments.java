@@ -551,6 +551,7 @@ public class Shipments {
             shipmentItem.setSkuDiscount(0);
             shipmentItem.setCleanFee(0);
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
+            shipmentItem.setSkuCode(skuOrder.getSkuCode());
 
             shipmentItems.add(shipmentItem);
 

@@ -11,10 +11,24 @@ import java.util.Date;
  * Date: 2017-06-21
  */
 @Data
-public class WarehouseShopReturn implements Serializable {
+public class WarehouseCompanyRule implements Serializable {
 
     private static final long serialVersionUID = 3112083070991083157L;
+
+    /**
+     * 主键id
+     */
     private Long id;
+
+    /**
+     * 公司编码
+     */
+    private String companyCode;
+
+    /**
+     * 公司名称
+     */
+    private String companyName;
     
     /**
      * 店铺id
@@ -35,8 +49,14 @@ public class WarehouseShopReturn implements Serializable {
      * 仓库名称
      */
     private String warehouseName;
-    
+
+    /**
+     * 创建时间
+     */
     private Date createdAt;
-    
+
+    /**
+     * 更新时间
+     */
     private Date updatedAt;
 }

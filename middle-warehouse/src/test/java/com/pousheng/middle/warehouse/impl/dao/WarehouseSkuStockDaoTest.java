@@ -116,6 +116,17 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
 
     }
 
+    @Test
+    public void syncOutdatedStock() throws Exception {
+        warehouseSkuStockDao.syncStock(warehouseSkuStock.getWarehouseId(), warehouseSkuStock.getSkuCode(), 2,
+                Date.from(LocalDate.now().minusDays(2).atStartOfDay(ZoneId.systemDefault()).toInstant()));
+
+        WarehouseSkuStock actual = warehouseSkuStockDao.findById(warehouseSkuStock.getId());
+        assertThat(actual.getBaseStock(), is(warehouseSkuStock.getBaseStock()));
+        assertThat(actual.getAvailStock(), is(warehouseSkuStock.getAvailStock()));
+        assertThat(actual.getLockedStock(), is(warehouseSkuStock.getLockedStock()));
+    }
+
     private WarehouseSkuStock make(String skuCode) {
         WarehouseSkuStock warehouseSkuStock = new WarehouseSkuStock();
 

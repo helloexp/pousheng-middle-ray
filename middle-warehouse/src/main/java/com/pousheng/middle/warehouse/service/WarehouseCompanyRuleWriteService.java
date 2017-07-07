@@ -1,6 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.WarehouseShopReturn;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import io.terminus.common.model.Response;
 
 /**
@@ -9,21 +9,21 @@ import io.terminus.common.model.Response;
  * Date: 2017-06-21
  */
 
-public interface WarehouseShopReturnWriteService {
+public interface WarehouseCompanyRuleWriteService {
 
     /**
      * 创建WarehouseShopReturn
-     * @param warehouseShopReturn
+     * @param warehouseCompanyRule
      * @return 主键id
      */
-    Response<Long> create(WarehouseShopReturn warehouseShopReturn);
+    Response<Long> create(WarehouseCompanyRule warehouseCompanyRule);
 
     /**
      * 更新WarehouseShopReturn
-     * @param warehouseShopReturn
+     * @param warehouseCompanyRule
      * @return 是否成功
      */
-    Response<Boolean> update(WarehouseShopReturn warehouseShopReturn);
+    Response<Boolean> update(WarehouseCompanyRule warehouseCompanyRule);
 
     /**
      * 根据主键id删除WarehouseShopReturn

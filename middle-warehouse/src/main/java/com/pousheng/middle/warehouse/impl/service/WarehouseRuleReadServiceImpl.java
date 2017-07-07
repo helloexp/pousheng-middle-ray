@@ -1,10 +1,8 @@
 package com.pousheng.middle.warehouse.impl.service;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
+import com.google.common.collect.*;
 import com.pousheng.middle.warehouse.dto.RuleGroup;
 import com.pousheng.middle.warehouse.dto.RuleSummary;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
@@ -50,6 +48,17 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
     private final WarehouseRuleItemDao warehouseRuleItemDao;
 
     private final WarehouseShopGroupDao warehouseShopGroupDao;
+
+    private static final Ordering<RuleSummary> RULE_ORDERING = Ordering.natural().nullsLast().reverse().onResultOf(ruleSummary -> {
+        //默认规则放在最后, 因为是reverse
+        List<ThinAddress> thinAddresses = ruleSummary.getAddresses();
+        for (ThinAddress thinAddress : thinAddresses) {
+            if (Objects.equal(thinAddress.getAddressId(), 1L)) { //默认规则放在最后, 因为是reverse
+                return null;
+            }
+        }
+        return ruleSummary.getUpdatedAt();
+    });
 
     @Autowired
     public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao,
@@ -123,7 +132,9 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
                     ruleSummary.setUpdatedAt(updatedAt);
                     ruleSummaries.add(ruleSummary);
                 }
-                ruleGroup.setRuleSummaries(ruleSummaries);
+
+                //规则排序
+                ruleGroup.setRuleSummaries(RULE_ORDERING.sortedCopy(ruleSummaries));
                 ruleGroups.add(ruleGroup);
             }
             Paging<RuleGroup> r = new Paging<>(p.getTotal(), ruleGroups);

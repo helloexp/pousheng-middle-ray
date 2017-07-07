@@ -20,6 +20,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncShipmentToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -217,18 +218,35 @@ public class Shipments {
     }
 
 
-
-    //判断发货单是否有效，且是否属于当前订单 for 销售单
+    /**
+     * 判断发货单是否有效
+     * 1、是否属于当前订单
+     * 2、发货单状态是否为已发货
+     * @param shipmentId 发货单主键id
+     * @param orderId 交易订单id
+     * @return 是否有效
+     */
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> checkExist(@PathVariable("id") Long shipmentId,@RequestParam Long orderId){
 
         try {
 
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+            //是否属于当前订单
             if(!Objects.equals(orderShipment.getOrderId(),orderId)){
                 log.error("shipment(id:{}) order id:{} not equal :{}",shipmentId,orderShipment.getOrderId(),orderId);
                 return Response.fail("shipment.not.belong.to.order");
+            }
 
+            List<Integer> alreadyShipStatus = Lists.newArrayList(MiddleShipmentsStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
+                    MiddleShipmentsStatus.SYNC_ECP_ING.getValue(),
+                    MiddleShipmentsStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue(),
+                    MiddleShipmentsStatus.DONE.getValue(),
+                    MiddleShipmentsStatus.SYNC_ECP_FAIL.getValue());
+            //发货单状态是否为已发货
+            if(!alreadyShipStatus.contains(orderShipment.getStatus())){
+                log.error("shipment(id:{}) current status:{} can not apply after sale",shipmentId,orderShipment.getStatus());
+                return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }
         }catch (JsonResponseException e){
             log.error("check  shipment(id:{}) is exist fail,error:{}",shipmentId,e.getMessage());

@@ -31,7 +31,7 @@ public class ShipmentWiteLogic {
         Flow flow = flowPicker.pickShipments();
         if(!flow.operationAllowed(shipment.getStatus(),orderOperation)){
             log.error("shipment(id:{}) current status:{} not allow operation:{}",shipment.getId(),shipment.getStatus(),orderOperation.getText());
-            return Response.fail("shipment.status.invalid");
+            return Response.fail("shipment.status.not.allow.current.operation");
         }
 
         Integer targetStatus = flow.target(shipment.getStatus(),orderOperation);

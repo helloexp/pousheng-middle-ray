@@ -1,23 +1,31 @@
 package com.pousheng.middle.open.api;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +35,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
+import springfox.documentation.spring.web.json.Json;
 
 import javax.validation.constraints.NotNull;
 import java.util.Map;
@@ -43,6 +52,10 @@ public class OrderOpenApi {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @Autowired
@@ -84,14 +97,14 @@ public class OrderOpenApi {
             if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
                 log.error("shipment(id={})'s status({}) not fit for ship",
                         shipment.getId(), shipment.getStatus());
-                throw new OPServerException("shipment.current.status.not.allow.ship");
+                throw new ServiceException("shipment.current.status.not.allow.ship");
             }
             Integer targetStatus = flow.target(shipment.getStatus(),orderOperation);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
             if(!Objects.equals(hkShipmentId,shipmentExtra.getOutShipmentId())){
                 log.error("hk shipment id:{} not equal middle shipment(id:{} ) out shipment id:{}",hkShipmentId,shipment.getId(),shipmentExtra.getOutShipmentId());
-                throw new OPServerException("hk.shipment.id.not.matching");
+                throw new ServiceException("hk.shipment.id.not.matching");
             }
 
 
@@ -111,36 +124,80 @@ public class OrderOpenApi {
             Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(),targetStatus);
             if(!updateStatusRes.isSuccess()){
                 log.error("update shipment(id:{}) status to :{} fail,error:{}",shipment.getId(),targetStatus,updateStatusRes.getError());
-                throw new OPServerException(updateStatusRes.getError());
+                throw new ServiceException(updateStatusRes.getError());
             }
 
             //更新基本信息
             Response<Boolean> updateRes = shipmentWriteService.update(update);
             if(!updateRes.isSuccess()){
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}",shipment.getId(),extraMap,updateRes.getError());
-                throw new OPServerException(updateStatusRes.getError());
+                throw new ServiceException(updateStatusRes.getError());
             }
 
-        }catch (JsonResponseException e){
+        }catch (JsonResponseException | ServiceException e){
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}",shipmentId,e.getMessage());
             throw new OPServerException(e.getMessage());
+        }catch (Exception e){
+            log.error("hk sync shipment(id:{}) fail,cause:{}",shipmentId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException("sync.fail");
         }
 
         log.info("HK-SYNC-SHIPMENT-STATUS-END");
     }
 
 
-    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId","hkRefundOrderId","receivedDate","itemInfo",
-            "shipmentDate"}, httpMethods = RequestMethod.POST)
+    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId","hkRefundOrderId","itemInfo","receivedDate"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
-                                     @NotNull(message = "hk.refund.order.id.is.null") Long hkRefundOrderId,
+                                     @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                      @NotEmpty(message = "item.info.empty") String itemInfo,
                                      @NotEmpty(message = "received.date.empty") String receivedDate){
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
                 "shipmentDate is:{}",refundOrderId,hkRefundOrderId,itemInfo,receivedDate);
 
+        try {
+            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+            if(!Objects.equals(hkRefundOrderId,refund.getOutId())){
+                log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}",hkRefundOrderId,refund.getId(),refund.getOutId());
+                throw new ServiceException("hk.refund.id.not.matching");
+            }
+
+            //todo 恒康返回的商品信息如何处理
+
+            DateTime dt = DateTime.parse(receivedDate, DFT);
+
+            RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            refundExtra.setHkReturnDoneAt(dt.toDate());
+            refundExtra.setHkConfirmItemInfo(itemInfo);
+
+            //更新状态
+            OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,orderOperation);
+            if(!updateStatusRes.isSuccess()){
+                log.error("update refund(id:{}) status,operation:{} fail,error:{}",refund.getId(),orderOperation.getText(),updateStatusRes.getError());
+                throw new ServiceException(updateStatusRes.getError());
+            }
+
+            //更新扩展信息
+            Refund update  = new Refund();
+            update.setId(refundOrderId);
+            Map<String,String> extraMap = refund.getExtra();
+            extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+            update.setExtra(extraMap);
+
+            Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
+            if(!updateExtraRes.isSuccess()){
+                log.error("update refund(id:{}) extra:{} fail,error:{}",refundOrderId,refundExtra,updateExtraRes.getError());
+                //这就就不抛出错了，中台自己处理即可。
+            }
+
+        }catch (JsonResponseException |ServiceException e){
+            log.error("hk sync refund confirm to middle fail,error:{}",e.getMessage());
+            throw new OPServerException(e.getMessage());
+        }catch (Exception e){
+            log.error("hk sync refund confirm to middle fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new OPServerException("sync.fail");
+        }
         log.info("HK-SYNC-REFUND-STATUS-END");
-        throw new OPServerException("更新失败");
     }
 
 
@@ -170,6 +227,31 @@ public class OrderOpenApi {
         }
         ExpressCode expressCode = response.getResult().getData().get(0);
         return expressCode.getName();
+    }
+
+
+
+    //获取同步成功事件
+    private OrderOperation getSyncConfirmSuccessOperation(Refund refund){
+        MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
+        if (Arguments.isNull(middleRefundType)) {
+            log.error("refund(id:{}) type:{} invalid",refund.getId(),refund.getRefundType());
+            throw new JsonResponseException("refund.type.invalid");
+        }
+
+        switch (middleRefundType){
+            case AFTER_SALES_RETURN:
+                return MiddleOrderEvent.RETURN.toOrderOperation();
+            case AFTER_SALES_REFUND:
+                log.error("refund(id:{}) type:{} not allow hk confirm",refund.getId(),refund.getRefundType());
+                throw new JsonResponseException("refund.not.allow.hk.confirm");
+            case AFTER_SALES_CHANGE:
+                return MiddleOrderEvent.RETURN_CHANGE.toOrderOperation();
+            default:
+                log.error("refund(id:{}) type:{} invalid",refund.getId(),refund.getRefundType());
+                throw new JsonResponseException("refund.type.invalid");
+        }
+
     }
 
 }

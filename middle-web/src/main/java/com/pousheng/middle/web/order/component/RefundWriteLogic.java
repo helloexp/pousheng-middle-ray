@@ -93,7 +93,7 @@ public class RefundWriteLogic {
         Refund update = new Refund();
         update.setId(refundId);
         Map<String,String> extrMap = refund.getExtra();
-        extrMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonDefaultMapper().toJson(refundChangeItems));
+        extrMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundChangeItems));
         update.setExtra(extrMap);
 
         Response<Boolean> updateRes = refundWriteService.update(update);
@@ -119,13 +119,26 @@ public class RefundWriteLogic {
         Flow flow = flowPicker.pickAfterSales();
         if(!flow.operationAllowed(refund.getStatus(),orderOperation)){
             log.error("refund(id:{}) current status:{} not allow operation:{}",refund.getId(),refund.getStatus(),orderOperation.getText());
-            return Response.fail("shipment.status.invalid");
+            return Response.fail("refund.status.not.allow.current.operation");
         }
 
         Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
         Response<Boolean> updateRes = refundWriteService.updateStatus(refund.getId(),targetStatus);
         if(!updateRes.isSuccess()){
             log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+
+        return Response.ok();
+
+    }
+
+
+    public Response<Boolean> update(Refund refund){
+
+        Response<Boolean> updateRes = refundWriteService.update(refund);
+        if(!updateRes.isSuccess()){
+            log.error("update refund({}) status to:{} fail,error:{}",refund,updateRes.getError());
             return Response.fail(updateRes.getError());
         }
 
@@ -247,6 +260,7 @@ public class RefundWriteLogic {
 
         List<RefundItem> existRefundItems = refundReadLogic.findRefundItems(refund);
         RefundItem existRefundItem = existRefundItems.get(0);//只会存在一条 退货商品
+        RefundItem currentRefundItem = existRefundItem;//当前编辑情况下的退货商品
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //发货单信息
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
@@ -267,17 +281,18 @@ public class RefundWriteLogic {
         Boolean isRefundItemChanged = refundItemIsChanged(submitRefundInfo,existRefundItem);
         if(isRefundItemChanged){
             //申请数量是否有效
-            existRefundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
+            currentRefundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
             //更新发货商品中的已退货数量
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItem);
-            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(existRefundItem)));
+            completeSkuAttributeInfo(Lists.newArrayList(currentRefundItem));
+            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(currentRefundItem)));
         }
 
         //判断换货货商品及数量是否有变化
         Boolean isChangeItemChanged = changeItemIsChanged(refund,submitRefundInfo);
         if(isChangeItemChanged){
             //完善换货信息
-            completeChangeItemInfo(existRefundItem,refund.getRefundType(),submitRefundInfo,extraMap);
+            completeChangeItemInfo(currentRefundItem,refund.getRefundType(),submitRefundInfo,extraMap);
         }
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
 
@@ -296,8 +311,8 @@ public class RefundWriteLogic {
         if(!Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
             //如果只是改了退款金额，则要更新退货商品中的退款金额
             if(!isRefundItemChanged){
-                existRefundItem.setFee(submitRefundInfo.getFee());
-                extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(existRefundItem)));
+                currentRefundItem.setFee(submitRefundInfo.getFee());
+                extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(currentRefundItem)));
 
             }
 
@@ -320,7 +335,7 @@ public class RefundWriteLogic {
         if(isRefundItemChanged){
             //更新发货单商品中的已退货数量
             Map<String,String> shipmentExtraMap = shipment.getExtra();
-            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonDefaultMapper().toJson(shipmentItems));
+            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,mapper.toJson(shipmentItems));
             shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
         }
 
@@ -449,11 +464,11 @@ public class RefundWriteLogic {
                 Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();
                 if(submitRefundInfo.getRefundQuantity()<=0){
                     log.error("refund applyQuantity:{} invalid",submitRefundInfo.getRefundQuantity());
-                    throw new JsonResponseException("refund.applyQuantity.invalid");
+                    throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 if(submitRefundInfo.getRefundQuantity()>availableQuantity){
                     log.error("refund applyQuantity:{} gt available applyQuantity:{}",submitRefundInfo.getRefundQuantity(),availableQuantity);
-                    throw new JsonResponseException("refund.applyQuantity.invalid");
+                    throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();
                 BeanMapper.copy(shipmentItem,refundItem);

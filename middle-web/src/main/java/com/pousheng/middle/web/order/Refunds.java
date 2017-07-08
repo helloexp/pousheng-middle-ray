@@ -261,7 +261,7 @@ public class Refunds {
      *恒康同步信息到中台提示已经退货完成,此时调用该接口通知电商退款
      * @param refundId
      */
-    @RequestMapping(value = "api/refund/{id}/cancel/sync/ecp",method = RequestMethod.PUT)
+    @RequestMapping(value = "api/refund/{id}/sync/ecp",method = RequestMethod.PUT)
     public void syncECPRefund(@PathVariable(value = "id") Long refundId)
     {
         Refund refund = refundReadLogic.findRefundById(refundId);
@@ -271,6 +271,23 @@ public class Refunds {
             throw new JsonResponseException(syncRes.getError());
         }
     }
+
+
+
+    /**
+     * 运营确认收货 （换货）
+     * @param refundId 售后单id
+     */
+    @RequestMapping(value = "api/refund/{id}/confirm/received",method = RequestMethod.PUT)
+    public void confirmReceived(@PathVariable(value = "id") Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CONFIRM.toOrderOperation());
+        if(!cancelRes.isSuccess()){
+            log.error("confirm refund(id:{}) fail,error:{}",refundId,cancelRes.getError());
+            throw new JsonResponseException(cancelRes.getError());
+        }
+    }
+
 
 
 

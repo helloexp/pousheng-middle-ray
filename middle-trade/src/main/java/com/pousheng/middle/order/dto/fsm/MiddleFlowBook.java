@@ -240,7 +240,7 @@ public class MiddleFlowBook {
                     MiddleRefundStatus.SYNC_ECP_ING.getValue());
 
             //同步电商中 -->同步成功 --> 同步电商成功待退款
-            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
+            addTransition(MiddleRefundStatus.SYNC_ECP_ING.getValue(),
                     MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
 
@@ -250,7 +250,7 @@ public class MiddleFlowBook {
                     MiddleRefundStatus.REFUND.getValue());
 
             //同步电商中 -->同步失败 --> 同步电商失败
-            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
+            addTransition(MiddleRefundStatus.SYNC_ECP_ING.getValue(),
                     MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
                     MiddleRefundStatus.SYNC_ECP_FAIL.getValue());
 

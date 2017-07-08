@@ -44,4 +44,13 @@ public class RefundExtra implements Serializable{
     //退款时间
     private Date refundAt;
 
+
+
+    //恒康确认收到买家退货商品时间
+    //private Date hkConfirmAt;
+    //恒康确认收到买家退货商品信息
+    private String hkConfirmItemInfo;
+
+
+
 }

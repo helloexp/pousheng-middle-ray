@@ -433,6 +433,7 @@ public class Shipments {
 
     }
 
+
     private String findReceiverInfos(Long orderId, OrderLevel orderLevel) {
 
         List<ReceiverInfo> receiverInfos = doFindReceiverInfos(orderId, orderLevel);
@@ -583,6 +584,7 @@ public class Shipments {
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuCode(skuOrder.getSkuCode());
 
+
             shipmentItems.add(shipmentItem);
 
         }
@@ -605,6 +607,7 @@ public class Shipments {
             shipmentItem.setIntegral(0);
             shipmentItem.setSkuDiscount(0);
             shipmentItem.setCleanFee(0);
+            shipmentItem.setSkuCode(refundItem.getSkuCode());
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
 
             shipmentItems.add(shipmentItem);

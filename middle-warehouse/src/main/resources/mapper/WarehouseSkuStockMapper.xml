@@ -123,6 +123,14 @@
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
     </update>
 
+    <update id="syncStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{syncAt}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
+        <![CDATA[ sync_at < #{syncAt} ]]>
+    </update>
+
     <delete id="delete" parameterType="long">
         DELETE FROM <include refid="tb"/>
         WHERE id = #{id}

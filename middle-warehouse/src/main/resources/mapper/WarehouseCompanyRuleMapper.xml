@@ -4,9 +4,11 @@
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 
-<mapper namespace="WarehouseShopReturn">
-    <resultMap id="WarehouseShopReturnMap" type="WarehouseShopReturn">
+<mapper namespace="WarehouseCompanyRule">
+    <resultMap id="WarehouseCompanyRuleMap" type="WarehouseCompanyRule">
         <id column="id" property="id"/>
+        <result column="company_code" property="companyCode"/>
+        <result column="company_name" property="companyName"/>
         <result column="shop_id" property="shopId"/>
         <result column="shop_name" property="shopName"/>
         <result column="warehouse_id" property="warehouseId"/>
@@ -17,7 +19,7 @@
     </resultMap>
 
     <sql id="tb">
-        pousheng_warehouse_shop_returns
+        pousheng_warehouse_company_rules
     </sql>
 
     <sql id="cols_all">
@@ -25,11 +27,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id,shop_name, warehouse_id, warehouse_name, created_at, updated_at
+        company_code, company_name, shop_id,shop_name, warehouse_id, warehouse_name, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId},#{shopName}, #{warehouseId}, #{warehouseName}, now(), now()
+        #{companyCode}, #{companyName}, #{shopId},#{shopName}, #{warehouseId}, #{warehouseName}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -52,7 +54,7 @@
         order by id desc
     </sql>
 
-    <insert id="create" parameterType="WarehouseShopReturn" keyProperty="id" useGeneratedKeys="true">
+    <insert id="create" parameterType="WarehouseCompanyRule" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO
         <include refid="tb" />
         (<include refid="cols_exclude_id" />)
@@ -60,19 +62,19 @@
         (<include refid="vals" />)
     </insert>
 
-    <select id="findById" parameterType="long" resultMap="WarehouseShopReturnMap" >
+    <select id="findById" parameterType="long" resultMap="WarehouseCompanyRuleMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
     </select>
 
-    <select id="findByShopId" parameterType="long" resultMap="WarehouseShopReturnMap" >
+    <select id="findByCompanyCode" parameterType="long" resultMap="WarehouseCompanyRuleMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE shop_id = #{shopId}
+        WHERE company_code = #{companyCode}
     </select>
 
-   <select id="findByIds" parameterType="list" resultMap="WarehouseShopReturnMap">
+   <select id="findByIds" parameterType="list" resultMap="WarehouseCompanyRuleMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
@@ -83,7 +85,7 @@
         <include refid="order" />
     </select>
 
-    <update id="update" parameterType="WarehouseShopReturn">
+    <update id="update" parameterType="WarehouseCompanyRule">
         UPDATE
         <include refid="tb"/>
         <set>
@@ -99,7 +101,7 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="WarehouseShopReturnMap">
+    <select id="paging" parameterType="list" resultMap="WarehouseCompanyRuleMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         <where>

@@ -110,16 +110,19 @@ CREATE TABLE `pousheng_warehouse_sku_stocks` (
 )COMMENT='sku在仓库的库存情况';
 
 drop table if exists `pousheng_warehouse_shop_returns`;
-CREATE TABLE `pousheng_warehouse_shop_returns` (
+drop table if exists `pousheng_warehouse_company_rules`;
+CREATE TABLE `pousheng_warehouse_company_rules`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
-  `shop_name` varchar(128) NULL COMMENT '店铺名称',
+  `company_code` varchar(20) NOT NULL COMMENT '公司编码',
+  `company_name` varchar(128) NULL COMMENT '公司名称',
+  `shop_id` bigint(20) NOT NULL COMMENT '下单店铺id',
+  `shop_name` varchar(128) NULL COMMENT '下单店铺名称',
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
   `warehouse_name` varchar(128)  NULL COMMENT '仓库名称',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_wsr_shop_id` (`shop_id`)
-)COMMENT='店铺的退货仓库';
+  KEY `idx_wcr_company_code` (`company_code`)
+)COMMENT='公司规则';
 
 

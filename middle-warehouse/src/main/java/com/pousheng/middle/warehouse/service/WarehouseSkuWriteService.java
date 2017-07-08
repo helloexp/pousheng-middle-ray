@@ -39,12 +39,21 @@ public interface WarehouseSkuWriteService {
     Response<Boolean> deleteById(Long warehouseSkuId);
 
     /**
-     * 根据指定的仓库分配策略锁定库存
+     * 根据指定的仓库分配策略锁定库存, 当
      *
      * @param warehouseShipments 仓库及发货数量列表
      * @return 是否锁定成功
      */
     Response<Boolean> lockStock(List<WarehouseShipment> warehouseShipments);
+
+
+    /**
+     * 根据指定的仓库分配策略解锁库存, 当撤销发货单时, 调用这个接口
+     *
+     * @param warehouseShipments 仓库及解锁数量列表
+     * @return 是否解锁成功
+     */
+    Response<Boolean> unlockStock(List<WarehouseShipment> warehouseShipments);
 
 
     /**

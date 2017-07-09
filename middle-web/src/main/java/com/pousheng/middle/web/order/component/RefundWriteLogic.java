@@ -76,6 +76,7 @@ public class RefundWriteLogic {
         //换货商品
         List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
 
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //是否全部处理
         Boolean isAllHandle= Boolean.TRUE;
         //更新发货数量
@@ -87,6 +88,9 @@ public class RefundWriteLogic {
             //如果存在未处理完成的
             if(!Objects.equals(refundItem.getApplyQuantity(),refundItem.getAlreadyHandleNumber())){
                 isAllHandle = Boolean.FALSE;
+            }else{
+                //换货商品已经全部处理完,此时处于待发货状态,此时填入换货发货单创建时间
+                refundExtra.setChangeShipmentAt(new Date());
             }
         }
 
@@ -94,6 +98,7 @@ public class RefundWriteLogic {
         update.setId(refundId);
         Map<String,String> extrMap = refund.getExtra();
         extrMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonDefaultMapper().toJson(refundChangeItems));
+        extrMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         update.setExtra(extrMap);
 
         Response<Boolean> updateRes = refundWriteService.update(update);
@@ -257,7 +262,8 @@ public class RefundWriteLogic {
 
         //完善仓库及物流信息
         completeWareHoseAndExpressInfo(refund.getRefundType(),refundExtra,submitRefundInfo);
-
+        //添加处理完成时间
+        refundExtra.setHandleDoneAt(new Date());
         Refund updateRefund = new Refund();
         updateRefund.setId(refund.getId());
         updateRefund.setBuyerNote(submitRefundInfo.getBuyerNote());

@@ -207,6 +207,7 @@ public class OrderOpenApi {
                     Response<Boolean> updateRefundRes = refundWriteService.update(refund);
                     if (!updateRefundRes.isSuccess()) {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
+                        throw new  JsonResponseException("update.refund.error");
                     }
                 }
 

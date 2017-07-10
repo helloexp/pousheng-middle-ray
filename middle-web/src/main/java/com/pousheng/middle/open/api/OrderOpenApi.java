@@ -277,7 +277,7 @@ public class OrderOpenApi {
             throw new OPServerException("sync.fail");
         }
         log.info("HK-SYNC-REFUND-STATUS-END");
-        throw new OPServerException("更新失败");
+
     }
 
 

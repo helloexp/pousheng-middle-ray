@@ -10,7 +10,6 @@ import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.cache.BackCategoryCacher;
-import io.terminus.parana.category.model.BackCategory;
 import io.terminus.parana.item.dto.ImageInfo;
 import io.terminus.parana.spu.dto.FullSpu;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -59,7 +58,7 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         paranaItem.setAdvertise(spu.getAdvertise());
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());
-        paranaItem.setCategoryIds(backCategoryCacher.findAncestorsOf(spu.getCategoryId()).stream().map(BackCategory::getId).collect(Collectors.toList()));
+        paranaItem.setCategoryId(spu.getCategoryId());
         paranaItem.setImages(spuDetail.getImages().stream().map(ImageInfo::getUrl).collect(Collectors.toList()));
         paranaItem.setDetail(spuDetail.getDetail());
 

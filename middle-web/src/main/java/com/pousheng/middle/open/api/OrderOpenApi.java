@@ -1,14 +1,19 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
@@ -27,6 +32,9 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.enums.ShipmentType;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -37,7 +45,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 import springfox.documentation.spring.web.json.Json;
 
+import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
+import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -52,16 +63,24 @@ public class OrderOpenApi {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-    @Autowired
-    private RefundReadLogic refundReadLogic;
-    @Autowired
-    private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @RpcConsumer
     private ExpressCodeReadService expressCodeReadService;
+    @RpcConsumer
+    private OrderWriteLogic orderWriteLogic;
+    @RpcConsumer
+    private OrderReadLogic orderReadLogic;
+    @RpcConsumer
+    private RefundWriteLogic refundWriteLogic;
+    @RpcConsumer
+    private RefundReadLogic refundReadLogic;
+    @RpcConsumer
+    private RefundWriteService refundWriteService;
+    @RpcConsumer
+    private OrderShipmentReadService orderShipmentReadService;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -93,13 +112,13 @@ public class OrderOpenApi {
 
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
-            OrderOperation orderOperation =  MiddleOrderEvent.SHIP.toOrderOperation();
+            OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
             if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
                 log.error("shipment(id={})'s status({}) not fit for ship",
                         shipment.getId(), shipment.getStatus());
                 throw new ServiceException("shipment.current.status.not.allow.ship");
             }
-            Integer targetStatus = flow.target(shipment.getStatus(),orderOperation);
+            Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
             if(!Objects.equals(hkShipmentId,shipmentExtra.getOutShipmentId())){
@@ -111,13 +130,13 @@ public class OrderOpenApi {
             //封装更新信息
             Shipment update = new Shipment();
             update.setId(shipment.getId());
-            Map<String,String> extraMap = shipment.getExtra();
+            Map<String, String> extraMap = shipment.getExtra();
             shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
             shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
             //通过恒康代码查找快递名称
             shipmentExtra.setShipmentCorpName(makeExpressNameByhkCode(shipmentCorpCode));
             shipmentExtra.setShipmentDate(dt.toDate());
-            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,mapper.toJson(shipmentExtra));
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
 
             //更新状态
@@ -132,6 +151,66 @@ public class OrderOpenApi {
             if(!updateRes.isSuccess()){
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}",shipment.getId(),extraMap,updateRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
+            }
+            //判断发货单是否发货完
+            if (Objects.equals(shipment.getType(), ShipmentType.SALES_SHIP.value())) {
+                //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货
+                Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
+                OrderShipment orderShipment = orderShipmentResponse.getResult();
+                long orderShopId = orderShipment.getOrderId();
+                Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByOrderIdAndOrderLevel(orderShopId, OrderLevel.SHOP);
+                List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
+                    @Nullable
+                    @Override
+                    public Integer apply(@Nullable OrderShipment orderShipment) {
+                        return orderShipment.getStatus();
+                    }
+                });
+                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
+                    //待发货--商家已经发货
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
+                    boolean updateRlt = orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP, MiddleOrderEvent.SHIP);
+                    if (!updateRlt) {
+                        log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
+                        throw new JsonResponseException("update.shop.order.status.error");
+                    }
+                }
+
+            }
+            if (Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
+                //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成
+                Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
+                OrderShipment orderShipment = orderShipmentResponse.getResult();
+                long afterSaleOrderId = orderShipment.getAfterSaleOrderId();
+                Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
+                List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
+                    @Nullable
+                    @Override
+                    public Integer apply(@Nullable OrderShipment orderShipment) {
+                        return orderShipment.getStatus();
+                    }
+                });
+                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
+                    //更新售后单的处理状态
+                    Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
+                    Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.SHIP.toOrderOperation());
+                    if (!resRlt.isSuccess()) {
+                        log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
+                        throw new JsonResponseException("update.refund.status.error");
+                    }
+                    //将shipmentExtra的已发货时间塞入值
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                    refundExtra.setShipAt(new Date());
+                    Map<String, String> extrMap = refund.getExtra();
+                    extrMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+                    refund.setExtra(extraMap);
+                    Response<Boolean> updateRefundRes = refundWriteService.update(refund);
+                    if (!updateRefundRes.isSuccess()) {
+                        log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
+                    }
+                }
+
+
             }
 
         }catch (JsonResponseException | ServiceException e){
@@ -198,6 +277,7 @@ public class OrderOpenApi {
             throw new OPServerException("sync.fail");
         }
         log.info("HK-SYNC-REFUND-STATUS-END");
+        throw new OPServerException("更新失败");
     }
 
 

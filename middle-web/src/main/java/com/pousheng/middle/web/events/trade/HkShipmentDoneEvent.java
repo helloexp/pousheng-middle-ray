@@ -10,7 +10,7 @@ import lombok.Getter;
  * pousheng-middle
  */
 @Data
-public class ShipOrderRefundEvent implements java.io.Serializable {
+public class HkShipmentDoneEvent implements java.io.Serializable {
 
     private static final long serialVersionUID = -8769698989115811349L;
 

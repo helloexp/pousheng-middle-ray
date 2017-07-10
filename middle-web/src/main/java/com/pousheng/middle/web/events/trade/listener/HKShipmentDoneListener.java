@@ -11,7 +11,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.web.events.trade.ShipOrderRefundEvent;
+import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
@@ -38,7 +38,7 @@ import java.util.Objects;
  * pousheng-middle
  */
 @Slf4j
-public class ShipOrderRefundListener {
+public class HKShipmentDoneListener {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     @Autowired
     private OrderShipmentReadService orderShipmentReadService;
@@ -61,7 +61,7 @@ public class ShipOrderRefundListener {
     }
 
     @Subscribe
-    public void updateOrderOrRefundInfo(ShipOrderRefundEvent event){
+    public void doneShipment(HkShipmentDoneEvent event){
         Shipment shipment = event.getShipment();
         //判断发货单是否发货完
         if (Objects.equals(shipment.getType(), ShipmentType.SALES_SHIP.value())) {

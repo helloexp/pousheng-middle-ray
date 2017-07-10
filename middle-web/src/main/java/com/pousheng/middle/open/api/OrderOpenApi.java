@@ -203,7 +203,7 @@ public class OrderOpenApi {
                     refundExtra.setShipAt(new Date());
                     Map<String, String> extrMap = refund.getExtra();
                     extrMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-                    refund.setExtra(extraMap);
+                    refund.setExtra(extrMap);
                     Response<Boolean> updateRefundRes = refundWriteService.update(refund);
                     if (!updateRefundRes.isSuccess()) {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());

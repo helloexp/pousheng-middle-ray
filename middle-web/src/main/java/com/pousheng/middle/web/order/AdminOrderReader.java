@@ -24,13 +24,11 @@ import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
@@ -66,7 +64,9 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
-
+        if(middleOrderCriteria.getOutCreatedEndAt()!=null){
+            middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());
@@ -179,5 +179,9 @@ public class AdminOrderReader {
         return Response.ok(withReceiveInfo);
     }
 
+    @RequestMapping(value = "api/order/{}/cancel/skuorder",method = RequestMethod.PUT)
+    public void cancelSkuOrder(@PathVariable("id") Long id,@RequestParam("skuCode") String skuCode){
+
+    }
 
 }

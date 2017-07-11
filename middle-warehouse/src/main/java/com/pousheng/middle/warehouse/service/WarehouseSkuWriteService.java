@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
+import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Response;
@@ -64,4 +65,13 @@ public interface WarehouseSkuWriteService {
      * @return 是否变更成功
      */
     Response<Boolean> decreaseStock(List<WarehouseShipment> lockedShipments,List<WarehouseShipment> actualShipments);
+
+
+    /**
+     * 同步erp获取的库存列表, 允许部分失败
+     *
+     * @param stockDtos 从erp同步过来的库存
+     * @return 是否更新成功
+     */
+    Response<Boolean> syncStock(List<StockDto> stockDtos);
 }

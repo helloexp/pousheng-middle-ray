@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.item.api.ParanaFullItemMaker;
 import io.terminus.open.client.center.item.dto.*;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
@@ -22,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -59,7 +61,10 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());
         paranaItem.setCategoryId(spu.getCategoryId());
-        paranaItem.setImages(spuDetail.getImages().stream().map(ImageInfo::getUrl).collect(Collectors.toList()));
+        if(Arguments.notNull(spuDetail.getImages())){
+            paranaItem.setImages(spuDetail.getImages().stream().filter(Objects::nonNull)
+                    .map(ImageInfo::getUrl).collect(Collectors.toList()));
+        }
         paranaItem.setDetail(spuDetail.getDetail());
 
         final List<GroupedOtherAttribute> groupedOtherAttributes = fullSpu.getGroupedOtherAttributes();
@@ -80,7 +85,9 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         List<ParanaSku> paranaSkus = Lists.newArrayListWithCapacity(skuTemplates.size());
         for (SkuTemplate skuTemplate : skuTemplates) {
             ParanaSku paranaSku = new ParanaSku();
-            paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
+            //todo ExtraPrice可能为空
+            //paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
+            paranaSku.setMarketPrice(skuTemplate.getPrice());
             paranaSku.setPrice(paranaSku.getMarketPrice());
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());

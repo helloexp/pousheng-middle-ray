@@ -26,7 +26,7 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-30
  */
-@Profile({"sync"})
+@Profile({"dev"})
 @Component
 @Slf4j
 public class MaterialSync implements CommandLineRunner {
@@ -46,7 +46,7 @@ public class MaterialSync implements CommandLineRunner {
     public void run(String... args) throws Exception {
         try {
             ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
-            Path dir = Paths.get("/Users/jlchen/Downloads/material");
+            Path dir = Paths.get("/pousheng/file");
             if (Files.exists(dir)) {
                 try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
                         dir)) {

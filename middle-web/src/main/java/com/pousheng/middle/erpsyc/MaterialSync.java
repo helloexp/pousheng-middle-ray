@@ -26,7 +26,7 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-30
  */
-@Profile({"sync"})
+@Profile({"default"})
 @Component
 @Slf4j
 public class MaterialSync implements CommandLineRunner {

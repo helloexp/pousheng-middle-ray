@@ -126,7 +126,7 @@
     <update id="syncStock" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{syncAt}
+        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{updatedAt}
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
         <![CDATA[ sync_at < #{updatedAt} ]]>
     </update>

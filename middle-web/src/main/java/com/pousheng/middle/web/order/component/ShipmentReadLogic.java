@@ -1,25 +1,30 @@
 package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ShipmentDetail;
-import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.api.FlowPicker;
+import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Mail: F@terminus.io
@@ -34,6 +39,8 @@ public class ShipmentReadLogic {
     private FlowPicker flowPicker;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -70,6 +77,97 @@ public class ShipmentReadLogic {
 
     }
 
+
+
+    public Response<ShipmentPreview> orderShipPreview(Long shopOrderId, String data){
+        Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
+
+        Response<OrderDetail> orderDetailRes = orderReadLogic.orderDetail(shopOrderId);
+        if(!orderDetailRes.isSuccess()){
+            log.error("find order detail by order id:{} fail,error:{}",shopOrderId,orderDetailRes.getError());
+            throw new JsonResponseException(orderDetailRes.getError());
+        }
+        OrderDetail orderDetail = orderDetailRes.getResult();
+        List<SkuOrder> allSkuOrders = orderDetail.getSkuOrders();
+        List<SkuOrder> currentSkuOrders = allSkuOrders.stream().filter(skuOrder -> skuOrderIdAndQuantity.containsKey(skuOrder.getId())).collect(Collectors.toList());
+        currentSkuOrders.forEach(skuOrder -> skuOrder.setQuantity(skuOrderIdAndQuantity.get(skuOrder.getId())));
+
+
+        //封装发货预览基本信息
+        ShipmentPreview shipmentPreview  = new ShipmentPreview();
+
+        //todo 绩效店铺名称
+        shipmentPreview.setErpPerformanceShopName("绩效店铺");
+        //绩效店铺编码
+        shipmentPreview.setErpPerformanceShopCode("TEST001");
+        //下单店铺名称
+        shipmentPreview.setErpOrderShopName("下单店铺");
+        //下单店铺编码
+        shipmentPreview.setErpOrderShopCode("TEST002");
+        shipmentPreview.setInvoices(orderDetail.getInvoices());
+        shipmentPreview.setPayment(orderDetail.getPayment());
+        List<OrderReceiverInfo> orderReceiverInfos = orderDetail.getOrderReceiverInfos();
+        shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
+        shipmentPreview.setShopOrder(orderDetail.getShopOrder());
+        //封装发货预览商品信息
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
+        for (SkuOrder skuOrder : currentSkuOrders){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            shipmentItem.setSkuOrderId(skuOrder.getId());
+            shipmentItem.setSkuCode(skuOrder.getSkuCode());
+            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
+            shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setQuantity(skuOrder.getQuantity());
+            //todo 计算各种价格
+
+            shipmentItems.add(shipmentItem);
+        }
+        shipmentPreview.setShipmentItems(shipmentItems);
+
+        return Response.ok(shipmentPreview);
+    }
+
+
+
+
+    public Response<ShipmentPreview> changeShipPreview(Long refundId,String data){
+        Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+
+        //订单基本信息
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());//orderRefund.getOrderId()为交易订单id
+        List<Invoice> invoices = orderReadLogic.findInvoiceInfo(orderRefund.getOrderId());
+        List<Payment> payments = orderReadLogic.findOrderPaymentInfo(orderRefund.getOrderId());
+        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(orderRefund.getOrderId());
+
+
+        //封装发货预览基本信息
+        ShipmentPreview shipmentPreview  = new ShipmentPreview();
+        shipmentPreview.setInvoices(invoices);
+        if(!CollectionUtils.isEmpty(payments)){
+            shipmentPreview.setPayment(payments.get(0));
+        }
+        shipmentPreview.setReceiverInfo(receiverInfo);
+        shipmentPreview.setShopOrder(shopOrder);
+        //封装发货预览商品信息
+        List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(refundChangeItems.size());
+        for (RefundItem refundItem : refundChangeItems){
+            ShipmentItem shipmentItem = new ShipmentItem();
+            shipmentItem.setSkuCode(refundItem.getSkuCode());
+            shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
+            shipmentItem.setSkuName(refundItem.getSkuName());
+            shipmentItem.setQuantity(skuCodeAndQuantity.get(refundItem.getSkuCode()));//替换为发货数量
+            //todo 计算各种价格
+
+            shipmentItems.add(shipmentItem);
+        }
+        shipmentPreview.setShipmentItems(shipmentItems);
+
+        return Response.ok(shipmentPreview);
+    }
+
     public List<OrderShipment> findByOrderIdAndType(Long orderId){
         Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
         if(!response.isSuccess()){
@@ -79,6 +177,27 @@ public class ShipmentReadLogic {
         return response.getResult();
 
     }
+
+    private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
+        Map<Long, Integer> skuOrderIdAndQuantity = mapper.fromJson(data, mapper.createCollectionType(HashMap.class, Long.class, Integer.class));
+        if(skuOrderIdAndQuantity == null) {
+            log.error("failed to parse skuOrderIdAndQuantity:{}",data);
+            throw new JsonResponseException("sku.applyQuantity.invalid");
+        }
+        return skuOrderIdAndQuantity;
+    }
+
+    private Map<String, Integer> analysisSkuCodeAndQuantity(String data){
+        Map<String, Integer> skuOrderIdAndQuantity = mapper.fromJson(data, mapper.createCollectionType(HashMap.class, String.class, Integer.class));
+        if(skuOrderIdAndQuantity == null) {
+            log.error("failed to parse skuCodeAndQuantity:{}",data);
+            throw new JsonResponseException("sku.applyQuantity.invalid");
+        }
+        return skuOrderIdAndQuantity;
+    }
+
+
+
 
 
     public List<OrderShipment> findByAfterOrderIdAndType(Long afterSaleOrderId){

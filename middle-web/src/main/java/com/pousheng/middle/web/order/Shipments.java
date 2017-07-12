@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -13,6 +14,8 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
+import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
@@ -78,6 +81,8 @@ public class Shipments {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+    @Autowired
+    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
 
     @Autowired
     private SyncShipmentToEcpLogic syncShipmentToEcpLogic;
@@ -142,69 +147,6 @@ public class Shipments {
     @RequestMapping(value = "/api/refund/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<OrderShipment> changeShipments(@PathVariable("id") Long afterSaleOrderId) {
         return shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
-    }
-
-
-    /**
-     * 销售发货的发货预览
-     *
-     * @param shopOrderId 店铺订单id
-     * @param data skuOrderId及数量 json格式
-     * @param warehouseId          仓库id
-     * @return 订单信息
-     */
-    @RequestMapping(value = "/api/order/{id}/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<ShipmentPreview> shipPreview(@PathVariable("id") Long shopOrderId,
-                                                 @RequestParam("data") String data,
-                                                 @RequestParam(value = "warehouseId") Long warehouseId){
-        Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
-
-        Response<OrderDetail> orderDetailRes = orderReadLogic.orderDetail(shopOrderId);
-        if(!orderDetailRes.isSuccess()){
-            log.error("find order detail by order id:{} fail,error:{}",shopOrderId,orderDetailRes.getError());
-            throw new JsonResponseException(orderDetailRes.getError());
-        }
-        OrderDetail orderDetail = orderDetailRes.getResult();
-        List<SkuOrder> allSkuOrders = orderDetail.getSkuOrders();
-        List<SkuOrder> currentSkuOrders = allSkuOrders.stream().filter(skuOrder -> skuOrderIdAndQuantity.containsKey(skuOrder.getId())).collect(Collectors.toList());
-        currentSkuOrders.forEach(skuOrder -> skuOrder.setQuantity(skuOrderIdAndQuantity.get(skuOrder.getId())));
-
-        //发货仓库信息
-        Warehouse warehouse = findWarehouseById(warehouseId);
-
-        //封装发货预览基本信息
-        ShipmentPreview shipmentPreview  = new ShipmentPreview();
-        shipmentPreview.setWarehouseId(warehouse.getId());
-        shipmentPreview.setWarehouseName(warehouse.getName());
-        //todo 绩效店铺名称
-        shipmentPreview.setErpPerformanceShopName("绩效店铺");
-        //绩效店铺编码
-        shipmentPreview.setErpPerformanceShopCode("TEST001");
-        //下单店铺名称
-        shipmentPreview.setErpOrderShopName("下单店铺");
-        //下单店铺编码
-        shipmentPreview.setErpOrderShopCode("TEST002");
-        shipmentPreview.setInvoices(orderDetail.getInvoices());
-        shipmentPreview.setPayment(orderDetail.getPayment());
-        List<OrderReceiverInfo> orderReceiverInfos = orderDetail.getOrderReceiverInfos();
-        shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
-        shipmentPreview.setShopOrder(orderDetail.getShopOrder());
-        //封装发货预览商品信息
-        List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
-        for (SkuOrder skuOrder : currentSkuOrders){
-            ShipmentItem shipmentItem = new ShipmentItem();
-            shipmentItem.setSkuOrderId(skuOrder.getId());
-            shipmentItem.setSkuCode(skuOrder.getSkuCode());
-            shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
-            shipmentItem.setSkuName(skuOrder.getItemName());
-            shipmentItem.setQuantity(skuOrder.getQuantity());
-            //todo 计算各种价格
-
-            shipmentItems.add(shipmentItem);
-        }
-        shipmentPreview.setShipmentItems(shipmentItems);
-
-        return Response.ok(shipmentPreview);
     }
 
 
@@ -538,15 +480,31 @@ public class Shipments {
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
 
-        //todo 绩效店铺名称
-        shipmentExtra.setErpPerformanceShopName("绩效店铺");
-        //绩效店铺编码
-        shipmentExtra.setErpPerformanceShopCode("TEST001");
-        //下单店铺名称
-        shipmentExtra.setErpOrderShopName("下单店铺");
-        //下单店铺编码
-        shipmentExtra.setErpOrderShopCode("TEST002");
-        //发货单商品金额
+
+        String warehouseCode = warehouse.getCode();
+
+        String companyCode;
+        try {
+            //获取公司编码
+            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
+        }catch (Exception e){
+            log.error("analysis warehouse code:{} fail,cause:{}",warehouseCode, Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("analysis.warehouse.code.fail");
+        }
+
+        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        if(!ruleRes.isSuccess()){
+            log.error("find warehouse company rule by company code:{} fail,error:{}",companyCode,ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
+        }
+
+        WarehouseCompanyRule companyRule = ruleRes.getResult();
+        shipmentExtra.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentExtra.setErpOrderShopName(companyRule.getShopName());
+        shipmentExtra.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentExtra.setErpPerformanceShopName(companyRule.getShopName());
+
+        //todo 发货单商品金额
         shipmentExtra.setShipmentItemFee(33L);
         //发货单运费金额
         shipmentExtra.setShipmentShipFee(0L);

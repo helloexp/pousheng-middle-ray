@@ -1,8 +1,18 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
+import com.jd.open.api.sdk.domain.supplier.AdvertiseJosService.JosAdvertiseApplyDto;
 import com.pousheng.middle.order.dto.ShipmentPreview;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
+import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -27,7 +37,11 @@ public class CreateShipments {
     @Autowired
     private Refunds refunds;
     @Autowired
-    private Shipments shipments;
+    private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private WarehouseReadService warehouseReadService;
+    @Autowired
+    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
 
 
     /**
@@ -62,13 +76,58 @@ public class CreateShipments {
                                                        @RequestParam("data") String data,
                                                        @RequestParam(value = "warehouseId") Long warehouseId,
                                                        @RequestParam(defaultValue = "1") Integer type){
-
+        Response<ShipmentPreview> response;
         if(Objects.equals(1,type)){
-            return shipments.shipPreview(id,data,warehouseId);
+            response =  shipmentReadLogic.orderShipPreview(id,data);
+        }else if(Objects.equals(2,type)) {
+            response =  shipmentReadLogic.changeShipPreview(id,data);
+        }else {
+            throw new JsonResponseException("invalid.type");
         }
 
-        return refunds.changeShipPreview(id,data,warehouseId);
+        if(!response.isSuccess()){
+            return Response.fail(response.getError());
+        }
 
+        //封装发货仓及下单店铺信息
+        ShipmentPreview shipmentPreview = response.getResult();
+
+        //发货仓库信息
+        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        if(!warehouseRes.isSuccess()){
+            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
+            return Response.fail(warehouseRes.getError());
+        }
+
+        Warehouse warehouse = warehouseRes.getResult();
+        shipmentPreview.setWarehouseId(warehouse.getId());
+        shipmentPreview.setWarehouseName(warehouse.getName());
+        String warehouseCode = warehouse.getCode();
+
+        String companyCode;
+        try {
+            //获取公司编码
+            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
+        }catch (Exception e){
+            log.error("analysis warehouse code:{} fail,cause:{}",warehouseCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("analysis.warehouse.code.fail");
+        }
+
+        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        if(!ruleRes.isSuccess()){
+            log.error("find warehouse company rule by company code:{} fail,error:{}",companyCode,ruleRes.getError());
+            return Response.fail(ruleRes.getError());
+        }
+
+        WarehouseCompanyRule companyRule = ruleRes.getResult();
+        shipmentPreview.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentPreview.setErpOrderShopName(companyRule.getShopName());
+        shipmentPreview.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentPreview.setErpPerformanceShopName(companyRule.getShopName());
+
+        return Response.ok(shipmentPreview);
     }
+
+
 
 }

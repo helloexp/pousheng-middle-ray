@@ -68,7 +68,7 @@
         WHERE id = #{id}
     </select>
 
-    <select id="findByCompanyCode" parameterType="long" resultMap="WarehouseCompanyRuleMap" >
+    <select id="findByCompanyCode" parameterType="string" resultMap="WarehouseCompanyRuleMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE company_code = #{companyCode}

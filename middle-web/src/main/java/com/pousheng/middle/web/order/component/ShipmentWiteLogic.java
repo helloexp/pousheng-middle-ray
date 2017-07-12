@@ -40,7 +40,7 @@ public class ShipmentWiteLogic {
             log.error("update shipment(id:{}) status to:{} fail,error:{}",shipment.getId(),updateRes.getError());
             return Response.fail(updateRes.getError());
         }
-
+        shipment.setStatus(targetStatus);
         return Response.ok();
 
     }

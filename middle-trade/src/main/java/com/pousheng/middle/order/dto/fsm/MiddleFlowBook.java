@@ -35,7 +35,10 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE_DONE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_SHIP.getValue());
-
+            //待处理 -->处理完成 -> 待发货
+            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.HANDLE_DONE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_SHIP.getValue());
 
             //待发货 -->发货 -> 商家已发货
             addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
@@ -75,6 +78,31 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.REFUND_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleOrderStatus.REFUND.getValue());
+            //===========逆向流程
+            //待发货 --->取消发货单(sku订单存在于多个发货单中)-->处理中
+            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.SHIP_CANCEL.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+            //处理中-->取消发货单(sku订单存在于多个发货单中)-->待处理
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+                    MiddleOrderEvent.SHIP_CANCEL.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
+            //待发货-->取消发货单(sku订单只存在于一个发货单中)-->待处理
+            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.SHIP_CANCEL_DONE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
+            //处理中->取消发货单(sku订单只存在于一个发货单中)->待处理
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+                    MiddleOrderEvent.SHIP_CANCEL_DONE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
+            //待发货->取消->已取消
+            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.CANCEL.toOrderOperation(),
+                    MiddleOrderStatus.CANCEL.getValue());
+            //待发货->取消->已取消
+            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+                    MiddleOrderEvent.CANCEL.toOrderOperation(),
+                    MiddleOrderStatus.CANCEL.getValue());
         }
     };
 
@@ -148,7 +176,7 @@ public class MiddleFlowBook {
             //待发货 -->取消恒康 -> 取消同步中
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
-                    MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue());
+                    MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
 
             //同步失败 -->取消恒康 -> 同步中
             addTransition(MiddleShipmentsStatus.SYNC_HK_FAIL.getValue(),

@@ -9,6 +9,8 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
@@ -32,6 +34,7 @@ import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -92,7 +95,9 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
-
+        if(shipmentCriteria.getEndAt()!=null){
+            shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
         Response<Paging<ShipmentPagingInfo>> response =  orderShipmentReadService.findBy(shipmentCriteria);
         if(!response.isSuccess()){
             log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());
@@ -333,7 +338,12 @@ public class Shipments {
 
         Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);
-        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        //只有售后类型是换货的,并且处理状态为待发货的售后单才能创建发货单
+        if (!validateCreateShipment4Refund(refund)) {
+            log.error("can not create shipment becacuse of not right refundtype ({}) or status({}) ", refund.getRefundType(), refund.getStatus());
+            throw new JsonResponseException("refund.can.not.create.shipment.error.type.or.status");
+        }
+        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
         //检查库存是否充足
@@ -393,10 +403,9 @@ public class Shipments {
         //取消发货单,要将skuOrder对应的发待货数量回滚
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Map<Long, Integer> skuOrderIdAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity)
-                );
-        //回滚子订单的待处理数量,因为是增加待处理数量,所以不会出现方法中的更新状态的情况
-        orderWriteLogic.updateSkuHandleNumber(skuOrderIdAndQuantityMap);
+                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity));
+        //回滚子订单的待处理数量,同时判断是否需要同步回滚状态
+        orderWriteLogic.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, shipment);
 
 
     }
@@ -615,8 +624,19 @@ public class Shipments {
         return shipmentItems;
     }
 
-
-
+    /**
+     * 判断类型为换货的售后单是否可以创建发货单
+     *
+     * @param refund
+     * @return
+     */
+    private boolean validateCreateShipment4Refund(Refund refund) {
+        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())
+                && Objects.equals(refund.getStatus(), MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue())) {
+            return true;
+        }
+        return false;
+    }
 
 
 }

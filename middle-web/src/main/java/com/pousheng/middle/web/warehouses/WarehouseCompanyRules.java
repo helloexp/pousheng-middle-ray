@@ -4,9 +4,12 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kevinsawicki.http.HttpRequest;
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleWriteService;
@@ -20,6 +23,7 @@ import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Sets;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
@@ -40,7 +44,7 @@ public class WarehouseCompanyRules {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
 
-    @Value("pousheng.member.host")
+    @Value("${gateway.member.host}")
     private String memberHost;
 
     @RpcConsumer
@@ -49,9 +53,19 @@ public class WarehouseCompanyRules {
     @RpcConsumer
     private WarehouseCompanyRuleWriteService warehouseCompanyRuleWriteService;
 
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long create(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+        Long warehouseId = warehouseCompanyRule.getWarehouseId();
+        Warehouse warehouse = warehouseCacher.findById(warehouseId);
+        if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
+            log.error("company code mismatch, expect: {}, actual:{}",warehouseCompanyRule.getCompanyCode(),
+                    warehouse.getCompanyCode() );
+            throw new JsonResponseException("company.code.mismatch");
+        }
         Response<Long> r = warehouseCompanyRuleWriteService.create(warehouseCompanyRule);
         if(!r.isSuccess()){
             log.error("failed to create {}, error code:{}", warehouseCompanyRule, r.getError());
@@ -62,6 +76,13 @@ public class WarehouseCompanyRules {
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean update(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+        Long warehouseId = warehouseCompanyRule.getWarehouseId();
+        Warehouse warehouse = warehouseCacher.findById(warehouseId);
+        if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
+            log.error("company code mismatch, expect: {}, actual:{}",warehouseCompanyRule.getCompanyCode(),
+                    warehouse.getCompanyCode() );
+            throw new JsonResponseException("company.code.mismatch");
+        }
         Response<Boolean> r = warehouseCompanyRuleWriteService.update(warehouseCompanyRule);
         if(!r.isSuccess()){
             log.error("failed to update {}, error code:{}", warehouseCompanyRule, r.getError());
@@ -74,7 +95,17 @@ public class WarehouseCompanyRules {
     public Boolean delete(@PathVariable Long id){
         Response<Boolean> r = warehouseCompanyRuleWriteService.deleteById(id);
         if(!r.isSuccess()){
-            log.error("failed to delete WarehouseCompanyRule(id={}_, error code:{}", id, r.getError());
+            log.error("failed to delete WarehouseCompanyRule(id={}), error code:{}", id, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
+    @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WarehouseCompanyRule findById(@PathVariable Long id){
+        Response<WarehouseCompanyRule> r = warehouseCompanyRuleReadService.findById(id);
+        if(!r.isSuccess()){
+            log.error("failed to find WarehouseCompanyRule(id={}), error code:{}", id, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();

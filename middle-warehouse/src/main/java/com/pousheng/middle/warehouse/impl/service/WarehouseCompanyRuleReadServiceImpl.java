@@ -88,6 +88,11 @@ public class WarehouseCompanyRuleReadServiceImpl implements WarehouseCompanyRule
     @Override
     public Response<List<String>> findCompanyCodes() {
 
-        return null;
+        try {
+            return Response.ok(warehouseCompanyRuleDao.companyCodes());
+        } catch (Exception e) {
+            log.error("failed to find company codes for company rules, error:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.company.rule.find.fail");
+        }
     }
 }

@@ -24,3 +24,7 @@ gateway:
   erp:
     host: http://localhost:27073
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+
+open.api.app.key: terminus
+open.api.secret: anywhere
+open.api.gateway: http://127.0.0.1:8090/api/gateway

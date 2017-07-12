@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -47,6 +48,8 @@ public class AdminOrderReader {
     private ObjectMapper objectMapper;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
     @RpcConsumer
     private MiddleOrderReadService middleOrderReadService;
     @RpcConsumer
@@ -179,9 +182,9 @@ public class AdminOrderReader {
         return Response.ok(withReceiveInfo);
     }
 
-    @RequestMapping(value = "api/order/{}/cancel/skuorder",method = RequestMethod.PUT)
-    public void cancelSkuOrder(@PathVariable("id") Long id,@RequestParam("skuCode") String skuCode){
-
+    @RequestMapping(value = "api/order/{id}/cancel/skuorder", method = RequestMethod.PUT)
+    public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
+        orderWriteLogic.cancelSkuOrder(id, skuCode);
     }
 
 }

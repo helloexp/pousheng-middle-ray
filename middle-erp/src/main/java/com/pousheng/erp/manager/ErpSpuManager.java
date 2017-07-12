@@ -127,6 +127,7 @@ public class ErpSpuManager {
             goa.setOtherAttributes(otherAttributes);
             List<GroupedSkuAttribute> skuAttributes = makeSkuAttributes(skus);
             spuAttribute.setSkuAttrs(skuAttributes);
+            spuAttribute.setOtherAttrs(Lists.newArrayList(goa));
             spuAttributeDao.create(spuAttribute);
         }
 
@@ -154,26 +155,31 @@ public class ErpSpuManager {
             OtherAttribute stuff = new OtherAttribute();
             stuff.setAttrKey("面料");
             stuff.setAttrKey(material.getStuff());
+            otherAttributes.add(stuff);
         }
         if(StringUtils.hasText(material.getTexture())){
             OtherAttribute texture = new OtherAttribute();
             texture.setAttrKey("材质说明");
             texture.setAttrVal(material.getTexture());
+            otherAttributes.add(texture);
         }
         if(StringUtils.hasText(material.getSex())){
             OtherAttribute sex = new OtherAttribute();
             sex.setAttrKey("性别");
             sex.setAttrVal(material.getSex());
+            otherAttributes.add(sex);
         }
         if(material.getYear_no()!=null){
             OtherAttribute yearNo = new OtherAttribute();
             yearNo.setAttrKey("年份");
             yearNo.setAttrVal(material.getYear_no().toString());
+            otherAttributes.add(yearNo);
         }
         if(StringUtils.hasText(material.getInv_spec())){
             OtherAttribute invSpec = new OtherAttribute();
             invSpec.setAttrKey("规格");
             invSpec.setAttrVal(material.getInv_spec());
+            otherAttributes.add(invSpec);
         }
         OtherAttribute always = new OtherAttribute();
         always.setAttrKey("长青");
@@ -191,6 +197,7 @@ public class ErpSpuManager {
         }else{
             cont.setAttrVal("否");
         }
+        otherAttributes.add(cont);
 
         for (OtherAttribute otherAttribute : otherAttributes) {
             otherAttribute.setGroup("SPU");

@@ -84,7 +84,12 @@ public class SyncShipmentLogic {
         }
 
         //todo 同步恒康，同步调用成功后，更新发货单的状态
-
+        OrderOperation orderOperation1 = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
+        Response<Boolean> updateStatusRes1 = shipmentWiteLogic.updateStatus(shipment, orderOperation1);
+        if(!updateStatusRes1.isSuccess()){
+            log.error("shipment(id:{}) operation :{} fail,error:{}",shipment.getId(),orderOperation1.getText(),updateStatusRes1.getError());
+            return Response.fail(updateStatusRes.getError());
+        }
         return Response.ok(Boolean.TRUE);
 
     }

@@ -22,6 +22,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -62,7 +63,9 @@ public class Refunds {
     //逆向单分页
     @RequestMapping(value = "/api/refund/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<RefundPaging> findBy(RefundCriteria criteria) {
-
+        if(criteria.getRefundEndAt()!=null){
+            criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
         if(!pagingRes.isSuccess()){
             log.error("paging refund by criteria:{} fail,error:{}",criteria,pagingRes.getError());

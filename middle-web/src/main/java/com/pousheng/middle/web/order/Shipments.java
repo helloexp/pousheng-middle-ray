@@ -601,7 +601,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      * @return 发货单
      */
-    @RequestMapping(value = "/api/shipment/{id}/warehouse/compay/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/shipment/{id}/warehouse/company/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public WarehouseCompanyRule getwarehousecompayrule(@PathVariable("id") Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);

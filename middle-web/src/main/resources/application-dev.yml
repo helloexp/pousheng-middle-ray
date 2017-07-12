@@ -45,3 +45,7 @@ gateway:
   erp:
     host: http://localhost:27073
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+
+open.api.app.key: ${OPEN_API_APP_KEY}
+open.api.secret: ${OPEN_API_SECRET}
+open.api.gateway: ${OPEN_API_GATEWAY}

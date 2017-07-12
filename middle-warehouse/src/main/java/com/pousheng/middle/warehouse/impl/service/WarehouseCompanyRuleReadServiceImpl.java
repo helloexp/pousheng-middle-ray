@@ -11,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -77,5 +78,16 @@ public class WarehouseCompanyRuleReadServiceImpl implements WarehouseCompanyRule
                     params, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.company.rule.find.fail");
         }
+    }
+
+    /**
+     * 获取所有的已设置规则的公司的编码
+     *
+     * @return 已设置规则的公司的编码
+     */
+    @Override
+    public Response<List<String>> findCompanyCodes() {
+
+        return null;
     }
 }

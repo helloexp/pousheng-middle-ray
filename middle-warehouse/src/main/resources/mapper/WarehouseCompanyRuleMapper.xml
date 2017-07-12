@@ -85,6 +85,10 @@
         <include refid="order" />
     </select>
 
+    <select id="findCompanyCodes" resultType="string">
+        select company_code from <include refid="tb"/>
+    </select>
+
     <update id="update" parameterType="WarehouseCompanyRule">
         UPDATE
         <include refid="tb"/>

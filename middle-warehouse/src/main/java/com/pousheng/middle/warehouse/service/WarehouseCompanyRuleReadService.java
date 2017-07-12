@@ -4,6 +4,7 @@ import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -38,4 +39,11 @@ public interface WarehouseCompanyRuleReadService {
      * @return 公司对应的规则
      */
     Response<Paging<WarehouseCompanyRule>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> params);
+
+    /**
+     * 获取所有的已设置规则的公司的编码
+     *
+     * @return 已设置规则的公司的编码
+     */
+    Response<List<String>> findCompanyCodes();
 }

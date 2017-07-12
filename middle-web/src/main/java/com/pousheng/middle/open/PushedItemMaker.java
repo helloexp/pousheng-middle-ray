@@ -61,7 +61,7 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());
         paranaItem.setCategoryId(spu.getCategoryId());
-        if(Arguments.notNull(spuDetail.getImages())){
+        if (Arguments.notNull(spuDetail.getImages())) {
             paranaItem.setImages(spuDetail.getImages().stream().filter(Objects::nonNull)
                     .map(ImageInfo::getUrl).collect(Collectors.toList()));
         }
@@ -85,9 +85,11 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         List<ParanaSku> paranaSkus = Lists.newArrayListWithCapacity(skuTemplates.size());
         for (SkuTemplate skuTemplate : skuTemplates) {
             ParanaSku paranaSku = new ParanaSku();
-            //todo ExtraPrice可能为空
-            //paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
-            paranaSku.setMarketPrice(skuTemplate.getPrice());
+            if (skuTemplate.getExtraPrice() != null) {
+                paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
+            } else {
+                paranaSku.setMarketPrice(skuTemplate.getPrice());
+            }
             paranaSku.setPrice(paranaSku.getMarketPrice());
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());

@@ -56,7 +56,7 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         ParanaItem paranaItem = new ParanaItem();
         paranaItem.setItemId(spuId);
         paranaItem.setSpuId(spuId);
-        paranaItem.setItemCode(spu.getSpuCode());
+        paranaItem.setItemCode(spu.getId().toString());
         paranaItem.setAdvertise(spu.getAdvertise());
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());

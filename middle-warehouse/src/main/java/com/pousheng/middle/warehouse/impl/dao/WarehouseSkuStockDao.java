@@ -97,11 +97,11 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      * @param warehouseId  仓库id
      * @param skuCode sku编码
      * @param erpStock  erp的可用库存
-     * @param syncAt 本次同步时间
+     * @param updatedAt 库存的变化发生时间
      */
-    public void syncStock(Long warehouseId, String skuCode, Integer erpStock, Date syncAt ){
+    public void syncStock(Long warehouseId, String skuCode, Integer erpStock, Date updatedAt ){
         this.sqlSession.update(sqlId("syncStock"),
                 ImmutableMap.of("warehouseId", warehouseId, "skuCode",skuCode,
-                        "erpStock",erpStock, "syncAt", syncAt));
+                        "erpStock",erpStock, "updatedAt", updatedAt));
     }
 }

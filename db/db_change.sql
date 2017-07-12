@@ -71,3 +71,9 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
 )COMMENT='地址和仓库规则的关联';
 
 drop table if exists `pousheng_stock_bills`;
+
+
+-- 删除spu spu_code 唯一索引
+drop index idx_spus_spu_code on parana_spus ;
+-- 创建spu spu_code 索引
+create index idx_spus_spu_code on parana_spus (spu_code) ;

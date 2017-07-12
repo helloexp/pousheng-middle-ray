@@ -9,6 +9,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
+import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
@@ -47,7 +48,9 @@ import java.util.concurrent.Executors;
         ItemApiConfiguration.class,
         TradeApiConfig.class,
         TradeAutoConfig.class,
-        ParanaAutoConfiguration.class})
+        ParanaAutoConfiguration.class,
+        OpenClientCenterAutoConfig.class})
+
 @ComponentScan(
         {"com.pousheng.middle.order",
                 "com.pousheng.middle.warehouse",

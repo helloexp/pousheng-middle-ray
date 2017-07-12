@@ -2,7 +2,6 @@ package com.pousheng.middle.web.events.trade;
 
 import io.terminus.parana.order.model.Shipment;
 import lombok.Data;
-import lombok.Getter;
 
 /**
  * 判断订单或者售后订单下面的发货单是否已经全部发货完成

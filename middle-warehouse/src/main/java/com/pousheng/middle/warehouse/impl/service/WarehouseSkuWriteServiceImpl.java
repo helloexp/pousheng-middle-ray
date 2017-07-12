@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
@@ -116,4 +117,27 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
             return Response.fail("warehouse.stock.decrease.fail");
         }
     }
+
+    /**
+     * 同步erp获取的库存列表, 允许部分失败
+     *
+     * @param stockDtos 从erp同步过来的库存
+     * @return 是否更新成功
+     */
+    @Override
+    public Response<Boolean> syncStock(List<StockDto> stockDtos) {
+        for (StockDto stockDto : stockDtos) {
+            try {
+                warehouseSkuStockDao.syncStock(stockDto.getWarehouseId(),
+                        stockDto.getSkuCode(),
+                        stockDto.getQuantity(),
+                        stockDto.getUpdatedAt());
+            } catch (Exception e) {
+                log.error("failed to sync {}, skip, cause:{}", stockDto, Throwables.getStackTraceAsString(e));
+            }
+        }
+        return Response.ok(Boolean.TRUE);
+    }
+
+
 }

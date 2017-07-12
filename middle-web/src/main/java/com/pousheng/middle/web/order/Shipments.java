@@ -602,7 +602,7 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/shipment/{id}/warehouse/company/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public WarehouseCompanyRule getwarehousecompayrule(@PathVariable("id") Long shipmentId) {
+    public WarehouseCompanyRule findWarehouseCompanyRule(@PathVariable("id") Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Long warehouseId = shipmentExtra.getWarehouseId();

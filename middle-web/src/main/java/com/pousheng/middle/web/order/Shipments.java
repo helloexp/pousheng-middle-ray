@@ -596,5 +596,33 @@ public class Shipments {
         return false;
     }
 
+    /**
+     * 根据发货单id查询公司规则
+     * @param shipmentId 发货单id
+     * @return 发货单
+     */
+    @RequestMapping(value = "/api/shipment/{id}/warehouse/compay/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WarehouseCompanyRule getwarehousecompayrule(@PathVariable("id") Long shipmentId) {
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Long warehouseId = shipmentExtra.getWarehouseId();
+        Warehouse warehouse = findWarehouseById(warehouseId);
+        String warehouseCode = warehouse.getCode();
+
+        String companyCode;
+        try {
+            //获取公司编码
+            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
+        } catch (Exception e) {
+            log.error("analysis warehouse code:{} fail,cause:{}", warehouseCode, Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("analysis.warehouse.code.fail");
+        }
+        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        if (!ruleRes.isSuccess()) {
+            log.error("find warehouse company rule by company code:{} fail,error:{}", companyCode, ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
+        }
+        return ruleRes.getResult();
+    }
 
 }

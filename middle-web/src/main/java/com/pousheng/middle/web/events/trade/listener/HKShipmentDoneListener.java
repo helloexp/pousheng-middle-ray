@@ -151,42 +151,5 @@ public class HKShipmentDoneListener {
                 }
             }
         }
-        //扣减库存
-        this.decreaseStock(shipment);
-    }
-
-    /**
-     * 扣减库存方法
-     * @param shipment
-     */
-    private void decreaseStock(Shipment shipment){
-        //扣减库存
-        //获取发货单下的sku订单信息
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        //获取发货仓信息
-        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
-        WarehouseShipment warehouseShipment = new WarehouseShipment();
-        //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.transform(shipmentItems, new Function<ShipmentItem, SkuCodeAndQuantity>() {
-            @Nullable
-            @Override
-            public SkuCodeAndQuantity apply(@Nullable ShipmentItem shipmentItem) {
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                return skuCodeAndQuantity;
-            }
-        });
-        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-        warehouseShipment.setWarehouseId(extra.getWarehouseId());
-        warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> decreaseStockRlt =  warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
-        if (!decreaseStockRlt.isSuccess()){
-            log.error("this shipment can not unlock stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
-            throw new JsonResponseException("decrease.stock.error");
-        }
     }
 }

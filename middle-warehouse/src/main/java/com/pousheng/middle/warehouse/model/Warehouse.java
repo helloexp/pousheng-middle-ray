@@ -126,4 +126,16 @@ public class Warehouse implements Serializable {
         }
         return null;
     }
+
+    /**
+     * 获取公司内码
+     *
+     * @return 公司内码
+     */
+    public String getInnerCode() {
+        if (StringUtils.hasText(code)) {
+            return Splitter.on('-').omitEmptyStrings().trimResults().limit(2).splitToList(code).get(1);
+        }
+        return null;
+    }
 }

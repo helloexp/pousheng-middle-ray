@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -15,13 +16,17 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
+import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncShipmentToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
@@ -30,7 +35,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -43,6 +47,7 @@ import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -86,6 +91,9 @@ public class Shipments {
     private SyncShipmentLogic syncShipmentLogic;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
+    @Autowired
+    private WarehouseSkuWriteService warehouseSkuWriteService;
+
 
     @Autowired
     private SyncShipmentToEcpLogic syncShipmentToEcpLogic;
@@ -242,6 +250,12 @@ public class Shipments {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
         shipment.setExtra(extraMap);
 
+        //锁定库存
+        Response<Boolean> lockStockRlt = lockStock(shipment);
+        if (!lockStockRlt.isSuccess()){
+            log.error("this shipment can not unlock stock,shipment id is :{}",shipment.getId());
+            throw new JsonResponseException("lock.stock.error");
+        }
 
         //创建发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrderId), OrderLevel.SHOP);
@@ -297,6 +311,13 @@ public class Shipments {
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeChangeShipmentItems(refundChangeItems,skuCodeAndQuantity)));
         shipment.setExtra(extraMap);
+
+        //锁定库存
+        Response<Boolean> lockStockRlt = lockStock(shipment);
+        if (!lockStockRlt.isSuccess()){
+            log.error("this shipment can not unlock stock,shipment id is :{}",shipment.getId());
+            throw new JsonResponseException("lock.stock.error");
+        }
         //换货的发货关联的订单id 为换货单id
         Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, orderRefund.getOrderId(),refundId);
         if (!createResp.isSuccess()) {
@@ -304,12 +325,8 @@ public class Shipments {
                     shipment, refundId, OrderLevel.SHOP.getValue(), createResp.getError());
             throw new JsonResponseException(createResp.getError());
         }
-
-
         Long shipmentId = createResp.getResult();
-
         eventBus.post(new RefundShipmentEvent(shipmentId));
-
         return shipmentId;
 
     }
@@ -349,9 +366,11 @@ public class Shipments {
         //回滚子订单的待处理数量,同时判断是否需要同步回滚状态
         orderWriteLogic.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, shipment);
 
-
+        //解锁库存
+        UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
+        unLockStockEvent.setShipment(shipment);
+        eventBus.post(unLockStockEvent);
     }
-
 
     /**
      * 同步发货单取消状态到恒康
@@ -596,5 +615,60 @@ public class Shipments {
         return false;
     }
 
+    /**
+     * 根据发货单id查询公司规则
+     * @param shipmentId 发货单id
+     * @return 发货单
+     */
+    @RequestMapping(value = "/api/shipment/{id}/warehouse/company/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WarehouseCompanyRule findWarehouseCompanyRule(@PathVariable("id") Long shipmentId) {
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Long warehouseId = shipmentExtra.getWarehouseId();
+        Warehouse warehouse = findWarehouseById(warehouseId);
+        String warehouseCode = warehouse.getCode();
+
+        String companyCode;
+        try {
+            //获取公司编码
+            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
+        } catch (Exception e) {
+            log.error("analysis warehouse code:{} fail,cause:{}", warehouseCode, Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("analysis.warehouse.code.fail");
+        }
+        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        if (!ruleRes.isSuccess()) {
+            log.error("find warehouse company rule by company code:{} fail,error:{}", companyCode, ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
+        }
+        return ruleRes.getResult();
+    }
+
+    private Response<Boolean> lockStock(Shipment shipment){
+        //获取发货单下的sku订单信息
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        //获取发货仓信息
+        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
+
+        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
+        WarehouseShipment warehouseShipment = new WarehouseShipment();
+        //组装sku订单数量信息
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.transform(shipmentItems, new Function<ShipmentItem, SkuCodeAndQuantity>() {
+            @Nullable
+            @Override
+            public SkuCodeAndQuantity apply(@Nullable ShipmentItem shipmentItem) {
+                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
+                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+                return skuCodeAndQuantity;
+            }
+        });
+        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+        warehouseShipment.setWarehouseId(extra.getWarehouseId());
+        warehouseShipment.setWarehouseName(extra.getWarehouseName());
+        warehouseShipmentList.add(warehouseShipment);
+        return warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
+
+    }
 
 }

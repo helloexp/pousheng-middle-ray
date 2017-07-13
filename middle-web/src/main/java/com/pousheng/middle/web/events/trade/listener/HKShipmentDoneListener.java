@@ -6,24 +6,28 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -31,6 +35,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 一旦订单或者售后单下面的发货单已经全部发货,更新订单或者发货单的状态为已经发货
@@ -38,10 +43,16 @@ import java.util.Objects;
  * pousheng-middle
  */
 @Slf4j
+@Component
 public class HKShipmentDoneListener {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     @Autowired
     private OrderShipmentReadService orderShipmentReadService;
+    @Autowired
+    private OrderWriteService orderWriteService;
+
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -52,6 +63,8 @@ public class HKShipmentDoneListener {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private RefundWriteService refundWriteService;
+    @Autowired
+    private WarehouseSkuWriteService warehouseSkuWriteService;
     @Autowired
     private EventBus eventBus;
 
@@ -64,38 +77,50 @@ public class HKShipmentDoneListener {
     public void doneShipment(HkShipmentDoneEvent event){
         Shipment shipment = event.getShipment();
         //判断发货单是否发货完
-        if (Objects.equals(shipment.getType(), ShipmentType.SALES_SHIP.value())) {
+        if (shipment.getType()==ShipmentType.SALES_SHIP.value()) {
             //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货
-            Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
-            OrderShipment orderShipment = orderShipmentResponse.getResult();
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-            if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.WAIT_SHIP.getValue())) {
-                Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByOrderIdAndOrderLevel(orderShopId, OrderLevel.SHOP);
-                List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
+            if (shopOrder.getStatus()== MiddleOrderStatus.WAIT_SHIP.getValue()) {
+                List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(orderShopId);
+                List<Integer> orderShipMentStatusList = Lists.transform(orderShipments, new Function<OrderShipment, Integer>() {
                     @Nullable
                     @Override
                     public Integer apply(@Nullable OrderShipment orderShipment) {
                         return orderShipment.getStatus();
                     }
                 });
-                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
+
+                //判断此时是否还有处于待发货的发货单,如果没有,则此时店铺订单状态应该更新为待通知电商平台,sku订单更新状态时应该考虑排除已取消订单状态的更新
+             if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
                     //待发货--商家已经发货
-                    boolean updateRlt = orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP, MiddleOrderEvent.SHIP);
-                    if (!updateRlt) {
-                        log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
-                        throw new JsonResponseException("update.shop.order.status.error");
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                    List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).
+                            filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL.getValue())).collect(Collectors.toList());
+                    for (SkuOrder skuOrder:skuOrdersFilter){
+                        Response<Boolean> updateRlt = orderWriteService.updateOrderStatus(skuOrder.getId(),OrderLevel.SKU,MiddleOrderStatus.SHIPPED.getValue());
+                        if (!updateRlt.getResult()) {
+                            log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                            throw new JsonResponseException("update.sku.order.status.error");
+                        }
                     }
+                        //更新总的订单
+                     Response<Boolean> updateRlt = orderWriteService.updateOrderStatus(shopOrder.getId(),OrderLevel.SHOP,MiddleOrderStatus.SHIPPED.getValue());
+                     if (!updateRlt.getResult()) {
+                         log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
+                         throw new JsonResponseException("update.shop.order.status.error");
+                     }
                 }
             }
         }
-        if (Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
+        if (shipment.getType()==ShipmentType.EXCHANGE_SHIP.value()) {
             //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             long afterSaleOrderId = orderShipment.getAfterSaleOrderId();
             Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
-            if (Objects.equals(refund.getStatus(), MiddleRefundStatus.WAIT_SHIP.getValue())) {
+            if (refund.getStatus()==MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
                 List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
                     @Nullable
@@ -127,5 +152,4 @@ public class HKShipmentDoneListener {
             }
         }
     }
-
 }

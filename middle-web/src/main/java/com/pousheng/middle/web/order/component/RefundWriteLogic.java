@@ -182,7 +182,11 @@ public class RefundWriteLogic {
         //回滚发货单的已退货数量
         shipmentItems.forEach(it -> {
             RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
-            it.setRefundQuantity(it.getRefundQuantity()-refundItem.getApplyQuantity());
+            if (refundItem!=null)
+            {
+                it.setRefundQuantity(it.getRefundQuantity()-refundItem.getApplyQuantity());
+            }
+
         });
 
 

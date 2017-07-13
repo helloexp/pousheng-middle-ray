@@ -144,10 +144,12 @@ public class OrderOpenApi {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
             }
+
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
             event.setShipment(shipment);
             eventBus.post(event);
+
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
             throw new OPServerException(e.getMessage());

@@ -30,3 +30,5 @@ gateway:
 open.api.app.key: terminus
 open.api.secret: anywhere
 open.api.gateway: http://127.0.0.1:8090/api/gateway
+
+user.center.gateway: http://devt-account.pousheng.com

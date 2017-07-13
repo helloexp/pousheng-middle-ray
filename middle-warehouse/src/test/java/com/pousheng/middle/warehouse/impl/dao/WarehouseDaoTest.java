@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
@@ -45,6 +46,12 @@ public class WarehouseDaoTest extends BaseDaoTest {
     }
 
     @Test
+    public void findByFuzzyCode() throws Exception {
+        List<Warehouse> actual = warehouseDao.findByFuzzyCode("34");
+        assertThat(actual.get(0).getCode(), is(warehouse.getCode()));
+    }
+
+    @Test
     public void update() {
         warehouse.setCode("123");
         warehouseDao.update(warehouse);
@@ -75,7 +82,7 @@ public class WarehouseDaoTest extends BaseDaoTest {
         Warehouse warehouse = new Warehouse();
 
         
-        warehouse.setCode("233333");
+        warehouse.setCode("23333345");
         
         warehouse.setName("name");
         
@@ -84,6 +91,8 @@ public class WarehouseDaoTest extends BaseDaoTest {
         warehouse.setIsDefault(Boolean.FALSE);
         
         warehouse.setExtra(ImmutableMap.of("key","json"));
+
+        warehouse.setStatus(1);
         
         warehouse.setCreatedAt(new Date());
         

@@ -3,7 +3,12 @@ package com.pousheng.middle.order.service;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.Invoice;
+import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.OrderReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+
+import java.util.List;
 
 /**
  * 订单读服务
@@ -27,4 +32,21 @@ public interface MiddleOrderReadService {
      * @return 订单分页信息
      */
     Response<Paging<ShopOrder>> pagingShopOrder(MiddleOrderCriteria criteria);
+
+
+    /**
+     * 查询订单相关发票信息
+     * @param orderId 订单（子单）id
+     * @param orderLevel {@link OrderLevel}
+     * @return 发票信息
+     */
+    Response<List<Invoice>> findInvoiceInfo(Long orderId, OrderLevel orderLevel);
+
+    /**
+     * 查询订单相关收货地址信息
+     * @param orderId 订单（子单）id
+     * @param orderLevel {@link OrderLevel}
+     * @return 发票信息
+     */
+    Response<List<OrderReceiverInfo>> findOrderReceiverInfo(Long orderId, OrderLevel orderLevel);
 }

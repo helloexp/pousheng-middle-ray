@@ -17,6 +17,9 @@ CREATE TABLE `pousheng_warehouses` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `code` varchar(64) NULL COMMENT '仓库编码',
   `name` varchar(64) NOT NULL COMMENT '仓库名称',
+  `type` tinyint(4)  NULL COMMENT '仓库类型',
+  `status` tinyint(4) NOT NULL COMMENT '仓库状态',
+  `address` varchar(128) NULL COMMENT '仓库地址',
   `owner_id` bigint(20)  NULL COMMENT '负责人id',
   `is_default` tinyint(4) NULL COMMENT '是否默认发货仓',
   `extra_json` varchar(2048) NULL COMMENT '附加信息',
@@ -34,6 +37,7 @@ CREATE TABLE `pousheng_warehouse_address_rules`(
   `address_id` bigint(20) NOT NULL COMMENT '地址id',
   `address_name` varchar(20) NOT NULL COMMENT '地址名称',
   `rule_id` bigint(20)  NOT NULL COMMENT '规则id',
+  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
@@ -88,5 +92,25 @@ CREATE TABLE `pousheng_warehouse_sku_stocks` (
   KEY `idx_pousheng_warehouse_skus_code` (`sku_code`),
   KEY `idx_pousheng_wss_shop_id` (`shop_id`)
 )COMMENT='sku在仓库的库存情况';
+
+
+drop table if exists `pousheng_trade_express_code`;
+CREATE TABLE `pousheng_trade_express_code`
+(
+ `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+ `express_name` varchar(128) NOT NULL COMMENT '快递商名称',
+ `offical_express_code` varchar(64) NOT NULL COMMENT '快递官方代码',
+ `pousheng_express_code` varchar(64) NOT NULL COMMENT '宝胜官网快递代码',
+ `jd_express_code` varchar(64) NOT NULL COMMENT '京东快递代码',
+ `taobao_express_code` varchar(64) NOT NULL COMMENT '淘宝快递代码',
+ `suning_express_code` varchar(64) NOT NULL COMMENT '苏宁快递代码',
+ `fenqile_express_code`varchar(64) NOT NULL COMMENT '分期乐代码',
+ `hk_express_code` varchar(64) NOT NULL COMMENT '恒康快递代码',
+ `created_at` datetime NOT NULL,
+ `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `idx_express_code_name` (`express_name`)
+)COMMENT='快递商代码';
+
 
 

@@ -1,15 +1,20 @@
 package com.pousheng.middle.warehouse.impl.service;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.pousheng.middle.warehouse.dto.RuleDto;
+import com.google.common.collect.*;
+import com.pousheng.middle.warehouse.dto.RuleGroup;
+import com.pousheng.middle.warehouse.dto.RuleSummary;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
+import com.pousheng.middle.warehouse.dto.ThinShop;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseShopGroupDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
+import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.PageInfo;
@@ -42,13 +47,28 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
 
     private final WarehouseRuleItemDao warehouseRuleItemDao;
 
+    private final WarehouseShopGroupDao warehouseShopGroupDao;
+
+    private static final Ordering<RuleSummary> RULE_ORDERING = Ordering.natural().nullsLast().reverse().onResultOf(ruleSummary -> {
+        //默认规则放在最后, 因为是reverse
+        List<ThinAddress> thinAddresses = ruleSummary.getAddresses();
+        for (ThinAddress thinAddress : thinAddresses) {
+            if (Objects.equal(thinAddress.getAddressId(), 1L)) { //默认规则放在最后, 因为是reverse
+                return null;
+            }
+        }
+        return ruleSummary.getUpdatedAt();
+    });
+
     @Autowired
     public WarehouseRuleReadServiceImpl(WarehouseRuleDao warehouseRuleDao,
                                         WarehouseAddressRuleDao warehouseAddressRuleDao,
-                                        WarehouseRuleItemDao warehouseRuleItemDao) {
+                                        WarehouseRuleItemDao warehouseRuleItemDao,
+                                        WarehouseShopGroupDao warehouseShopGroupDao) {
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
         this.warehouseRuleItemDao = warehouseRuleItemDao;
+        this.warehouseShopGroupDao = warehouseShopGroupDao;
     }
 
     @Override
@@ -69,7 +89,7 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
      * @return 仓库规则概述
      */
     @Override
-    public Response<Paging<RuleDto>> pagination(Integer pageNo, Integer pageSize) {
+    public Response<Paging<RuleGroup>> pagination(Integer pageNo, Integer pageSize) {
         try {
             PageInfo pageInfo = new PageInfo(pageNo, pageSize);
             Paging<WarehouseRule> p = warehouseRuleDao.paging(pageInfo.getOffset(), pageInfo.getLimit());
@@ -77,23 +97,47 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
                 return Response.ok(new Paging<>(p.getTotal(), Collections.emptyList()));
             }
             List<WarehouseRule> warehouseRules = p.getData();
-            List<RuleDto> ruleDtos = Lists.newArrayListWithCapacity(p.getData().size());
-            for (WarehouseRule warehouseRule : warehouseRules) {
-                Long ruleId = warehouseRule.getId();
-                AddressesAndLastUpdatedAt addressesAndLastUpdatedAt = doFindWarehouseAddressByRuleId(ruleId);
-                List<WarehouseRuleItem> ruleItems = warehouseRuleItemDao.findByRuleId(ruleId);
-                RuleDto ruleDto = new RuleDto();
-                ruleDto.setRuleId(ruleId);
-                ruleDto.setAddresses(addressesAndLastUpdatedAt.getAddresses());
-                ruleDto.setRuleItems(ruleItems);
-                Date updatedAt = addressesAndLastUpdatedAt.getUpdatedAt();
-                if(!CollectionUtils.isEmpty(ruleItems) && ruleItems.get(0).getCreatedAt().after(updatedAt)){
-                    updatedAt = ruleItems.get(0).getCreatedAt();
+            Multimap<Long, WarehouseRule> byShopGroupIds = Multimaps.index(warehouseRules, warehouseRule -> warehouseRule.getShopGroupId());
+
+            List<RuleGroup> ruleGroups = Lists.newArrayListWithCapacity(byShopGroupIds.keySet().size());
+            for (Long shopGroupId : byShopGroupIds.keySet()) {
+                RuleGroup ruleGroup = new RuleGroup();
+                ruleGroup.setShopGroupId(shopGroupId);
+
+                List<WarehouseShopGroup> warehouseShopGroups = warehouseShopGroupDao.findByGroupId(shopGroupId);
+                List<ThinShop> shops = Lists.newArrayListWithCapacity(warehouseShopGroups.size());
+                for (WarehouseShopGroup warehouseShopGroup : warehouseShopGroups) {
+                    ThinShop shop = new ThinShop();
+                    shop.setShopId(warehouseShopGroup.getShopId());
+                    shop.setShopName(warehouseShopGroup.getShopName());
+                    shops.add(shop);
                 }
-                ruleDto.setUpdatedAt(updatedAt);
-                ruleDtos.add(ruleDto);
+                ruleGroup.setShops(shops);
+
+                Iterable<WarehouseRule> groupedRules = byShopGroupIds.get(shopGroupId);
+                List<RuleSummary> ruleSummaries = Lists.newArrayListWithCapacity(Iterables.size(groupedRules));
+
+                for (WarehouseRule warehouseRule : groupedRules) {
+                    RuleSummary ruleSummary = new RuleSummary();
+                    Long ruleId = warehouseRule.getId();
+                    List<WarehouseRuleItem> ruleItems = warehouseRuleItemDao.findByRuleId(ruleId);
+                    AddressesAndLastUpdatedAt addressesAndLastUpdatedAt = doFindWarehouseAddressByRuleId(ruleId);
+                    ruleSummary.setRuleId(ruleId);
+                    ruleSummary.setRuleItems(ruleItems);
+                    ruleSummary.setAddresses(addressesAndLastUpdatedAt.getAddresses());
+                    Date updatedAt = addressesAndLastUpdatedAt.getUpdatedAt();
+                    if(!CollectionUtils.isEmpty(ruleItems) && ruleItems.get(0).getCreatedAt().after(updatedAt)){
+                        updatedAt = ruleItems.get(0).getCreatedAt();
+                    }
+                    ruleSummary.setUpdatedAt(updatedAt);
+                    ruleSummaries.add(ruleSummary);
+                }
+
+                //规则排序
+                ruleGroup.setRuleSummaries(RULE_ORDERING.sortedCopy(ruleSummaries));
+                ruleGroups.add(ruleGroup);
             }
-            Paging<RuleDto> r = new Paging<>(p.getTotal(), ruleDtos);
+            Paging<RuleGroup> r = new Paging<>(p.getTotal(), ruleGroups);
             return Response.ok(r);
         } catch (Exception e) {
             log.error("failed to pagination rule summary, cause:{}",Throwables.getStackTraceAsString(e));

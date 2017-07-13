@@ -4,13 +4,13 @@ import com.google.common.collect.Lists;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.item.api.ParanaFullItemMaker;
 import io.terminus.open.client.center.item.dto.*;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.cache.BackCategoryCacher;
-import io.terminus.parana.category.model.BackCategory;
 import io.terminus.parana.item.dto.ImageInfo;
 import io.terminus.parana.spu.dto.FullSpu;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +39,8 @@ public class PushedItemMaker implements ParanaFullItemMaker {
     @Autowired
     private BackCategoryCacher backCategoryCacher;
 
+    private final static String ORIGIN_PRICE_KEY = "originPrice";
+
     @Override
     public ParanaFullItem make(Long spuId) {
         Response<FullSpu> rFullSpu = spuReadService.findFullInfoBySpuId(spuId);
@@ -51,11 +54,17 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         final List<SkuTemplate> skuTemplates = fullSpu.getSkuTemplates();
 
         ParanaItem paranaItem = new ParanaItem();
+        paranaItem.setItemId(spuId);
         paranaItem.setSpuId(spuId);
+        paranaItem.setItemCode(spu.getId().toString());
+        paranaItem.setAdvertise(spu.getAdvertise());
         paranaItem.setBrandId(spu.getBrandId());
         paranaItem.setName(spu.getName());
-        paranaItem.setCategoryIds(backCategoryCacher.findAncestorsOf(spu.getCategoryId()).stream().map(BackCategory::getId).collect(Collectors.toList()));
-        paranaItem.setImages(spuDetail.getImages().stream().map(ImageInfo::getUrl).collect(Collectors.toList()));
+        paranaItem.setCategoryId(spu.getCategoryId());
+        if (Arguments.notNull(spuDetail.getImages())) {
+            paranaItem.setImages(spuDetail.getImages().stream().filter(Objects::nonNull)
+                    .map(ImageInfo::getUrl).collect(Collectors.toList()));
+        }
         paranaItem.setDetail(spuDetail.getDetail());
 
         final List<GroupedOtherAttribute> groupedOtherAttributes = fullSpu.getGroupedOtherAttributes();
@@ -76,9 +85,12 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         List<ParanaSku> paranaSkus = Lists.newArrayListWithCapacity(skuTemplates.size());
         for (SkuTemplate skuTemplate : skuTemplates) {
             ParanaSku paranaSku = new ParanaSku();
-            //TODO 这里是市场价是否填实际值
-            paranaSku.setMarketPrice(0);
-            paranaSku.setPrice(0);
+            if (skuTemplate.getExtraPrice() != null) {
+                paranaSku.setMarketPrice(skuTemplate.getExtraPrice().get(ORIGIN_PRICE_KEY));
+            } else {
+                paranaSku.setMarketPrice(skuTemplate.getPrice());
+            }
+            paranaSku.setPrice(paranaSku.getMarketPrice());
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());
             paranaSku.setSkuCode(skuTemplate.getSkuCode());

@@ -4,14 +4,15 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
-import com.pousheng.erp.component.SpuInfoFetcher;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
+import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
@@ -21,9 +22,12 @@ import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.DateFormatter;
 import org.springframework.http.MediaType;
@@ -38,6 +42,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 
 /**
  * Description: add something here
@@ -52,7 +57,17 @@ import java.util.Map;
         TradeAutoConfig.class,
         ParanaAutoConfiguration.class,
         AuthConfiguration.class,
-        AuthApiConfiguration.class})
+        AuthApiConfiguration.class,
+        OpenClientCenterAutoConfig.class})
+
+@ComponentScan(
+        {"com.pousheng.middle.order",
+                "com.pousheng.middle.warehouse",
+                "com.pousheng.middle.open",
+                "com.pousheng.middle.advices",
+                "com.pousheng.middle.erpsyc",
+                "com.pousheng.middle.interceptors",
+                "com.pousheng.middle.web"})
 @EnableScheduling
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
@@ -66,22 +81,13 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     }
 
 
-    @Bean
-    public SpuInfoFetcher<PoushengMaterial> spuInfoFetcher(){
-        return new SpuInfoFetcher<PoushengMaterial>() {
-            public List<PoushengMaterial> fetch(int pageNo, int pageSize, Date start, Date end) {
-                //todo: implement me
-                return null;
-            }
-        };
-    }
-
     /**
      * 中台不需要计算运费
+     *
      * @return deliveryFeeCharger
      */
     @Bean
-    public DeliveryFeeCharger deliveryFeeCharger(){
+    public DeliveryFeeCharger deliveryFeeCharger() {
         return new DeliveryFeeCharger() {
             @Override
             public Integer charge(Long aLong, Integer integer, Integer integer1) {
@@ -96,11 +102,10 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public EventBus eventBus(){
-        return new EventBus();
+    public EventBus eventBus() {
+        return new AsyncEventBus(
+                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2));
     }
-
-
 
     @Override
     public void addFormatters(FormatterRegistry registry) {
@@ -131,6 +136,18 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         final PoushengJsonMessageConverter paranaJsonMessageConverter = new PoushengJsonMessageConverter();
         //paranaJsonMessageConverter.setObjectMapper(JsonMapper.nonEmptyMapper().getMapper());
         converters.add(paranaJsonMessageConverter);
+    }
+
+
+
+    @Bean
+    public MessageSource messageSource() {
+        ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();
+        messageSource.setBasenames("middle_messages", "messages");
+        messageSource.setDefaultEncoding("UTF-8");
+        messageSource.setFallbackToSystemLocale(true);
+        messageSource.setCacheSeconds(-1);
+        return messageSource;
     }
 
 }

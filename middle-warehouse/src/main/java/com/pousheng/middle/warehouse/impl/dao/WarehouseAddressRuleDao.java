@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
@@ -25,19 +26,36 @@ public class WarehouseAddressRuleDao extends MyBatisDao<WarehouseAddressRule> {
     /**
      * 匹配能够发货到对应地址的规则
      *
+     * @param shopGroupId 店铺组id
      * @param addressId 地址id
      * @return 符合条件的规则列表
      */
-    public List<WarehouseAddressRule> findByAddressId(Long addressId){
-        return getSqlSession().selectList(sqlId("findByAddressId"), addressId);
+    public List<WarehouseAddressRule> findByShopGroupIdAndAddressId(Long shopGroupId, Long addressId){
+        return getSqlSession().selectList(sqlId("findByShopGroupIdAndAddressId"),
+                ImmutableMap.of("shopGroupId", shopGroupId, "addressId", addressId));
+
     }
 
     /**
-     * 查找所有的规则
+     * 查找店铺组其他规则用掉的非默认地址
      *
-     * @return  所有的规则
+     * @param shopGroupId 店铺组id
+     * @param ruleId ruleId
+     * @return 对应的仓库发货地址集合
      */
-    public List<WarehouseAddressRule> findAllButDefault() {
-        return getSqlSession().selectList(sqlId("findAllButDefault"));
+    public List<WarehouseAddressRule> findOtherNonDefaultRuleByShopGroupId(Long shopGroupId, Long ruleId) {
+        return getSqlSession().selectList(sqlId("findOtherNonDefaultRuleByShopGroupId"),
+                ImmutableMap.of("shopGroupId", shopGroupId, "ruleId", ruleId));
+    }
+
+    /**
+     * 查找店铺组规则用掉的非默认地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 对应的仓库发货地址集合
+     */
+    public List<WarehouseAddressRule> findNonDefaultRuleByShopGroupId(Long shopGroupId) {
+        return getSqlSession().selectList(sqlId("findNonDefaultRuleByShopGroupId"),
+               shopGroupId);
     }
 }

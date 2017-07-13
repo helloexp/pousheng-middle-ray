@@ -38,7 +38,7 @@ public class SyncParanaCategorys {
     @Autowired
     private EventBus eventBus;
 
-    @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{id}/sync", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> synCategory(@PathVariable(name = "id") Long categoryId){
 
         Response<BackCategory> categoryRes = backCategoryReadService.findById(categoryId);

@@ -14,6 +14,20 @@ CREATE TABLE `pousheng_sku_group_rules` (
 
 create index idx_sgr_card_id on pousheng_sku_group_rules(`card_id`);
 
+
+drop table if exists `pousheng_spu_materials`;
+
+CREATE TABLE `pousheng_spu_materials` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
+  `spu_id` bigint(20) NOT NULL COMMENT 'spu id',
+  `material_id` varchar(32) NOT NULL COMMENT '货品id',
+  `material_code` varchar(32) NOT NULL COMMENT '货品编码',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_psm_spu_id` (spu_id),
+  KEY `idx_psm_material_id` (material_id)
+) COMMENT='spu与material_id的关联' ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
 -- 后台类目表: parana_back_categories
 drop table if exists `parana_back_categories`;
 CREATE TABLE `parana_back_categories` (
@@ -161,7 +175,7 @@ CREATE TABLE `parana_spus` (
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)
 ) COMMENT='SPU表';
-CREATE UNIQUE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
+CREATE INDEX idx_spus_spu_code ON `parana_spus` (`spu_code`);
 CREATE INDEX idx_spus_cid ON `parana_spus` (`category_id`);
 
 -- SPU详情: parana_spu_details
@@ -222,7 +236,7 @@ drop table if exists `pusheng_spu_materials`;
 CREATE TABLE `pusheng_spu_materials` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
   `spu_id` bigint(20) NOT NULL COMMENT 'spu id',
-  `material_id` bigint(20) NOT NULL COMMENT '货品id',
+  `material_id` varchar(20) NOT NULL COMMENT '货品id',
   `material_code` varchar(32) NOT NULL COMMENT '货品编码',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),

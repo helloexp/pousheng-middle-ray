@@ -15,12 +15,12 @@ public class MiddleOpenSecurityManager implements SecurityManager {
     @Override
     public OPClientInfo findClientByAppKey(String appKey) {
         //just for dev
-        return new OPClientInfo(1L, appKey,"anywhere");
+        return new OPClientInfo(1L, appKey,"middle");
     }
 
     @Override
     public OPClientInfo findClientById(Long clientId) {
-        return new OPClientInfo(clientId, "terminus","anywhere");
+        return new OPClientInfo(clientId, "pousheng","middle");
     }
 
     @Override

@@ -8,6 +8,7 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderLevel;
@@ -44,7 +45,23 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             return Response.ok(orderShipments);
         }catch (Exception e) {
             log.error("failed to find order shipment(orderId={}, orderLevel={}), cause:{}",
-                    orderId, orderLevel, Throwables.getStackTraceAsString(e));
+                    orderId, orderLevel.toString(), Throwables.getStackTraceAsString(e));
+            return Response.fail("order.shipment.find.fail");
+        }
+    }
+
+
+    @Override
+    public Response<List<OrderShipment>> findByAfterSaleOrderIdAndOrderLevel(Long afterSaleOrderId, OrderLevel orderLevel) {
+        try {
+            List<OrderShipment> orderShipments = orderShipmentDao.findByAfterSaleOrderIdAndOrderType(afterSaleOrderId, orderLevel.getValue());
+            if (CollectionUtils.isEmpty(orderShipments)) {
+                return Response.ok(Collections.<OrderShipment>emptyList());
+            }
+            return Response.ok(orderShipments);
+        }catch (Exception e) {
+            log.error("failed to find order shipment(afterSaleOrderId={}, orderLevel={}), cause:{}",
+                    afterSaleOrderId, orderLevel.toString(), Throwables.getStackTraceAsString(e));
             return Response.fail("order.shipment.find.fail");
         }
     }
@@ -57,6 +74,43 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             log.error("failed to paging shipment, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
             return Response.fail("shipment.find.fail");
         }
+    }
+
+    @Override
+    public Response<OrderShipment> findById(Long id) {
+        try {
+            OrderShipment orderShipment = orderShipmentDao.findById(id);
+            if(Arguments.isNull(orderShipment)){
+                log.error("order shipment(id:{}) not exist",id);
+                return Response.fail("order.shipment.not.exist");
+            }
+            return Response.ok(orderShipment);
+        } catch (Exception e) {
+            log.error("failed to find order shipment, id={}, cause:{}",id, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.find.fail");
+        }
+    }
+
+
+
+    @Override
+    public Response<OrderShipment> findByShipmentId(Long shipmentId) {
+        try {
+            List<OrderShipment> orderShipments = orderShipmentDao.findByShipmentId(shipmentId);
+            if(CollectionUtils.isEmpty(orderShipments)){
+                log.error("not find order shipment by shipment id:{}",shipmentId);
+                return Response.fail("order.shipment.not.exist");
+            }
+            return Response.ok(orderShipments.get(0));//一个发货单只会对应一条关联信息
+        } catch (Exception e) {
+            log.error("failed to find order shipment by shipment id={}, cause:{}",shipmentId, Throwables.getStackTraceAsString(e));
+            return Response.fail("order.shipment.find.fail");
+        }
+    }
+
+    @Override
+    public Response<OrderShipment> findByOrderIdAndSkuCodeAndQuantity(Long id, String skuCode, Integer quantity) {
+        return null;
     }
 
     private Paging<ShipmentPagingInfo> transToDto(Paging<OrderShipment> paging) {
@@ -72,6 +126,7 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
                 log.error("find shipment by id:{} fail,cause:{}",orderShipment.getShipmentId(),Throwables.getStackTraceAsString(e));
                 continue;
             }
+
             shipmentDtos.add(dto);
         }
         dtoPaging.setData(shipmentDtos);

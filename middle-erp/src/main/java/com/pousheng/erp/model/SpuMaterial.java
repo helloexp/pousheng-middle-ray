@@ -24,7 +24,7 @@ public class SpuMaterial implements Serializable {
     /**
      * 货品id
      */
-    private Long materialId;
+    private String materialId;
     
     /**
      * 货品编码

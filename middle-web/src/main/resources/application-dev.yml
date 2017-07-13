@@ -19,6 +19,7 @@ mybatis:
   type-aliases-package: >
         com.pousheng.erp.model,
         com.pousheng.middle.warehouse.model,
+        com.pousheng.middle.order.model,
         io.terminus.parana.(item|category|brand|spu|shop).model,
         io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
         io.terminus.open.client.common.(mappings|token|shop).model,
@@ -35,7 +36,18 @@ redis:
   test-on-borrow: true
 
 
-rpc.mode: true
+rpc.mode: false
 rpc.dubbo:
   module: pousheng-middle
   registryAddress: ${POUSHENG_ZK_HOST}:${POUSHENG_ZK_PORT}
+
+gateway:
+  erp:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+  member:
+    host: http://api-test-member.pousheng.com
+
+open.api.app.key: ${OPEN_API_APP_KEY}
+open.api.secret: ${OPEN_API_SECRET}
+open.api.gateway: ${OPEN_API_GATEWAY}

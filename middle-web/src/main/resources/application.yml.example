@@ -13,13 +13,20 @@ mybatis:
   type-aliases-package: >
       com.pousheng.(erp|auth).model,
       com.pousheng.middle.warehouse.model,
+      com.pousheng.middle.order.model,
       io.terminus.parana.(item|category|brand|spu|shop).model,
       io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
       io.terminus.open.client.common.(mappings|token|shop).model,
       io.terminus.open.client.item.model
 
 
-rpc.mode: true
-rpc.dubbo:
-  module: pousheng-middle
-  registryAddress: 127.0.0.1:2181
+gateway:
+  erp:
+    host: http://localhost:27073
+    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+  member:
+    host: http://api-test-member.pousheng.com
+
+open.api.app.key: terminus
+open.api.secret: anywhere
+open.api.gateway: http://127.0.0.1:8090/api/gateway

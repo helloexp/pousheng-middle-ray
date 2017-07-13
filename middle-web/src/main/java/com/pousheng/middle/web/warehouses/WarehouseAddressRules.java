@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -36,7 +37,6 @@ public class WarehouseAddressRules {
     @RpcConsumer
     private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
 
-
     @RpcConsumer
     private WarehouseRuleReadService warehouseRuleReadService;
 
@@ -46,23 +46,58 @@ public class WarehouseAddressRules {
     @Autowired
     private TreeMarker treeMarker;
 
+
     /**
      * 创建规则适用的地址信息, 同时会创建仓库发货优先级规则, 并返回新创建的rule id
      *
      * @param addresses 对应的地址数组, 注意, 只需要将全选的节点提交上来即可, 部分选择和不选择的节点不要提交
-     * @return rule id 新生成的规则id
+     * @param  shopGroupId 店铺组id
+     * @return  ruleId 规则id
      */
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody ThinAddress[] addresses) {
+    @RequestMapping(value="/group/{groupId}",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long addAddresses(@PathVariable("groupId")Long shopGroupId,
+                       @RequestBody ThinAddress[] addresses) {
         //需要过滤掉本次提交中冗余的地址,如果父节点全选了, 那么子节点就可以过滤掉了
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
-        Response<Long> r = warehouseAddressRuleWriteService.batchCreate(valid);
+        //Set<Long> shopIds = findShopIdsByRuleId(ruleId);
+        Response<Long> r = warehouseAddressRuleWriteService.batchCreate(shopGroupId, valid);
         if(!r.isSuccess()){
-            log.error("failed to batchCreate warehouse rule with addresses:{}, error code:{}", valid, r.getError());
+            log.error("failed to add rule address for shop group(id={}) with addresses:{}, error code:{}",
+                    shopGroupId, valid, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
     }
+
+    /**
+     * 为同一个店铺组新建发货规则时, 不再允许编辑已经使用过的地址
+     *
+     * @param shopGroupId 店铺组id
+     * @return 地址树
+     */
+    @RequestMapping(value="/group/{groupId}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressTree findAddresses(@PathVariable("groupId")Long shopGroupId){
+
+        AddressTree addressTree = warehouseAddressCacher.buildTree(2);
+        //同一个group下已选的地址不可编辑
+        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findNonDefaultAddressesByShopGroupId(shopGroupId);
+        if (!r.isSuccess()) {
+            log.error("failed to find warehouse address for shopGroup(id={}) , error code:{}",shopGroupId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        List<ThinAddress> warehouseAddresses = r.getResult();
+        for (ThinAddress warehouseAddress : warehouseAddresses) {
+            Long id = warehouseAddress.getAddressId();
+            treeMarker.markSelected(addressTree, id, false);
+        }
+
+        return addressTree;
+    }
+
+
+
+
+
 
     /**
      * 消除当前冗余的地址信息
@@ -101,18 +136,22 @@ public class WarehouseAddressRules {
      * @return 祖先id列表
      */
     private List<Long> findAncestorIds(Long addressId) {
-        WarehouseAddress current = warehouseAddressCacher.findById(addressId);
-        if(current == null){
-            log.error("WarehouseAddress(id={}) not exists", addressId);
-            throw new JsonResponseException("warehouseAddress.not.exists");
+        if(addressId >1) {
+            WarehouseAddress current = warehouseAddressCacher.findById(addressId);
+            if (current == null) {
+                log.error("WarehouseAddress(id={}) not exists", addressId);
+                throw new JsonResponseException("warehouseAddress.not.exists");
+            }
+            List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
+            while (current != null && current.getPid() > 1) {
+                Long pid = current.getPid();
+                parentIds.add(pid);
+                current = warehouseAddressCacher.findById(pid);
+            }
+            return parentIds;
+        }else{
+            return Collections.emptyList();
         }
-        List<Long> parentIds = Lists.newArrayListWithExpectedSize(3);
-        while(current!=null && current.getPid()>1){
-            Long pid = current.getPid();
-            parentIds.add(pid);
-            current =  warehouseAddressCacher.findById(pid);
-        }
-        return parentIds;
     }
 
     /**
@@ -121,13 +160,13 @@ public class WarehouseAddressRules {
      * @param ruleId 规则id
      * @return  地址树形结构, 并已标记选中状态
      */
-    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree findAddressByRuleId(@PathVariable Long ruleId) {
+    @RequestMapping(value="/{ruleId}/address",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressTree findAddressByRuleId(@PathVariable("ruleId") Long ruleId) {
 
-        //其他规则选中的地址不可编辑
-        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findAllNoneDefaultAddresses();
+        //同店铺其他规则选中的地址不可编辑
+        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findOtherNonDefaultAddressesByRuleId(ruleId);
         if (!r.isSuccess()) {
-            log.error("failed to find all warehouse address , error code:{}", r.getError());
+            log.error("failed to find warehouse address for rule(id={}) , error code:{}",ruleId, r.getError());
             throw new JsonResponseException(r.getError());
         }
         AddressTree addressTree = warehouseAddressCacher.buildTree(2);
@@ -158,7 +197,7 @@ public class WarehouseAddressRules {
      * @param ruleId 规则id
      * @return  地址树形结构, 并已标记选中状态
      */
-    @RequestMapping(value = "/{ruleId}/address", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value="/{ruleId}/address",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean updateAddressByRuleId(@PathVariable Long ruleId, @RequestBody ThinAddress[] addresses){
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         Response<Boolean> r = warehouseAddressRuleWriteService.batchUpdate(ruleId, valid);
@@ -169,23 +208,4 @@ public class WarehouseAddressRules {
         }
         return Boolean.TRUE;
     }
-
-    @RequestMapping(value = "/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public AddressTree findSelectedAddress(){
-        //其他规则选中的地址不可编辑
-        Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findAllNoneDefaultAddresses();
-        if (!r.isSuccess()) {
-            log.error("failed to find all warehouse address , error code:{}", r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        AddressTree addressTree = warehouseAddressCacher.buildTree(2);
-        List<ThinAddress> warehouseAddresses = r.getResult();
-        for (ThinAddress warehouseAddress : warehouseAddresses) {
-            Long id = warehouseAddress.getAddressId();
-            treeMarker.markSelected(addressTree, id, false);
-        }
-        return addressTree;
-    }
-
-
 }

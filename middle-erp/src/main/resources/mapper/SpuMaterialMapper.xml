@@ -15,7 +15,7 @@
     </resultMap>
 
     <sql id="tb">
-        pusheng_spu_materials
+        pousheng_spu_materials
     </sql>
 
     <sql id="cols_all">
@@ -60,6 +60,18 @@
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
+    </select>
+
+    <select id="findByMaterialId" parameterType="string" resultMap="SpuMaterialMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE material_id = #{materialId}
+    </select>
+
+    <select id="findBySpuId" parameterType="long" resultMap="SpuMaterialMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE spu_id = #{spuId}
     </select>
 
    <select id="findByIds" parameterType="list" resultMap="SpuMaterialMap">

@@ -32,6 +32,7 @@ public class PoushengMiddleSpus {
     @RequestMapping(value = "/api/pousheng-spus/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<Spu> findBy(@RequestParam(required = false) String name,
                               @RequestParam(required = false) Long brandId,
+                              @RequestParam(required = false) Long id,
                               @RequestParam(required = false) Integer type,
                               @RequestParam(required = false) Integer pageNo,
                               @RequestParam(required = false) Integer pageSize){
@@ -45,6 +46,7 @@ public class PoushengMiddleSpus {
         if(type!=null){
             params.put("type", type);
         }
+        params.put("id",id);
 
         try {
             Response<Paging<Spu>> r = poushengMiddleSpuService.findBy(pageNo, pageSize, params);

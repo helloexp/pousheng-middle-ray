@@ -4526,10 +4526,10 @@ VALUES
 	(659004502,659004,'兵团一零三团',3,'bing tuan yi ling san tuan','','\\u5175\\u56e2\\u4e00\\u96f6\\u4e09\\u56e2','');
 
 
-insert into `pousheng_warehouse_address_rules` (id, address_id, address_name, rule_id, created_at, updated_at)
+insert into `pousheng_warehouse_address_rules` (id, address_id, address_name, rule_id, shop_id, created_at, updated_at)
    values
-   (1, 110100, '北京市',1, now(), now()),
-   (2, 330100, '杭州市', 1, now(), now()),
-   (3, 330200, '宁波市', 1, now(), now()),
-   (4, 320000,'江苏省',1, now(), now());
+   (1, 110100, '北京市',1, 1,now(), now()),
+   (2, 330100, '杭州市', 1,1, now(), now()),
+   (3, 330200, '宁波市', 1,1, now(), now()),
+   (4, 320000,'江苏省',1,1, now(), now());
 

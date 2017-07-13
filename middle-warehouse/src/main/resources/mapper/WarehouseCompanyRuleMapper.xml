@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="WarehouseCompanyRule">
+    <resultMap id="WarehouseCompanyRuleMap" type="WarehouseCompanyRule">
+        <id column="id" property="id"/>
+        <result column="company_code" property="companyCode"/>
+        <result column="company_name" property="companyName"/>
+        <result column="shop_id" property="shopId"/>
+        <result column="shop_name" property="shopName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+    </resultMap>
+
+    <sql id="tb">
+        pousheng_warehouse_company_rules
+    </sql>
+
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        company_code, company_name, shop_id,shop_name, warehouse_id, warehouse_name, created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{companyCode}, #{companyName}, #{shopId},#{shopName}, #{warehouseId}, #{warehouseName}, now(), now()
+    </sql>
+
+    <sql id="queryCondition">
+        
+        <if test="shopId != null">and `shop_id` = #{shopGroupId}</if>
+        
+        <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
+        
+        <if test="warehouseName != null">and `warehouse_name` = #{warehouseName}</if>
+        
+        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
+        
+        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
+        
+        <if test="startAt != null">and created_at &gt; #{startAt}</if>
+        <if test="endAt != null">and created_at &lt; #{endAt}</if>
+    </sql>
+
+    <sql id="order">
+        order by id desc
+    </sql>
+
+    <insert id="create" parameterType="WarehouseCompanyRule" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="WarehouseCompanyRuleMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByCompanyCode" parameterType="long" resultMap="WarehouseCompanyRuleMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE company_code = #{companyCode}
+    </select>
+
+   <select id="findByIds" parameterType="list" resultMap="WarehouseCompanyRuleMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        where id in
+        <foreach collection="list" open="(" separator="," close=")"
+                 item="item">
+            #{item}
+        </foreach>
+        <include refid="order" />
+    </select>
+
+    <select id="findCompanyCodes" resultType="string">
+        select company_code from <include refid="tb"/>
+    </select>
+
+    <update id="update" parameterType="WarehouseCompanyRule">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
+            updated_at=now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE id = #{id}
+    </delete>
+
+    <select id="paging" parameterType="list" resultMap="WarehouseCompanyRuleMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+        <include refid="queryCondition"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="count" parameterType="list" resultType="long">
+        select count(1)
+        from <include refid="tb"/>
+        <where>
+        <include refid="queryCondition"/>
+        </where>
+    </select>
+</mapper>

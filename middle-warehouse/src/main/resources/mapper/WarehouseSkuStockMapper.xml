@@ -38,7 +38,7 @@
         
         <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
 
-        <if test="shopId!=null"> and `shop_id`=#{shopId}</if>
+        <if test="shopId!=null"> and `shop_id`=#{shopGroupId}</if>
         
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
         
@@ -99,6 +99,38 @@
         WHERE id = #{id}
     </update>
 
+    <update id="decreaseStock"  parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock - #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+        and
+        <![CDATA[ avail_stock>=#{delta} ]]>
+    </update>
+
+    <update id="lockStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock - #{delta}, locked_stock = locked_stock + #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
+        <![CDATA[ avail_stock>=#{delta} ]]>
+    </update>
+
+    <update id="unlockStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET avail_stock = avail_stock + #{delta}, locked_stock = locked_stock - #{delta}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </update>
+
+    <update id="syncStock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{updatedAt}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
+        <![CDATA[ sync_at < #{updatedAt} ]]>
+    </update>
+
     <delete id="delete" parameterType="long">
         DELETE FROM <include refid="tb"/>
         WHERE id = #{id}
@@ -147,7 +179,6 @@
         <foreach item="skuCode" collection="skuCodes" open="(" separator="," close=")">
             #{skuCode}
         </foreach>
-
     </select>
 
 </mapper>

@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.cache;
 
+import com.google.common.base.Optional;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.common.exception.ServiceException;
@@ -19,18 +20,21 @@ import java.util.function.Function;
 @Component
 @Slf4j
 public class WarehouseCacher {
-    private final ConcurrentMap<Long, Warehouse> cache;
+    private final ConcurrentMap<Long, Warehouse> byId;
+
+    private final ConcurrentMap<String, Warehouse> byCode;
 
     private final WarehouseReadService warehouseReadService;
 
     @Autowired
     public WarehouseCacher(WarehouseReadService warehouseReadService) {
         this.warehouseReadService = warehouseReadService;
-        cache = new ConcurrentHashMap<Long, Warehouse>();
+        byId = new ConcurrentHashMap<>();
+        byCode = new ConcurrentHashMap<>();
     }
 
     public Warehouse findById(Long id){
-        return cache.computeIfAbsent(id, new Function<Long, Warehouse>() {
+        return byId.computeIfAbsent(id, new Function<Long, Warehouse>() {
             @Override
             public Warehouse apply(Long id) {
                 Response<Warehouse> r =  warehouseReadService.findById(id);
@@ -39,6 +43,26 @@ public class WarehouseCacher {
                     throw new ServiceException(r.getError());
                 }
                 return r.getResult();
+            }
+        });
+    }
+
+    public Warehouse findByCode(String code){
+        return byCode.computeIfAbsent(code, new Function<String, Warehouse>() {
+            @Override
+            public Warehouse apply(String code) {
+                Response<Optional<Warehouse>> r =  warehouseReadService.findByCode(code);
+                if(!r.isSuccess()){
+                    log.error("failed to find warehouse(code={}), error code:{}", code, r.getError());
+                    throw new ServiceException(r.getError());
+                }
+                Optional<Warehouse> result = r.getResult();
+                if(result.isPresent()) {
+                    return result.get();
+                }else{
+                    log.error("warehouse(code={}) not found", code);
+                    throw new ServiceException("warehouse not found");
+                }
             }
         });
     }

@@ -49,7 +49,11 @@ public class BrandImporterFromFile implements CommandLineRunner {
         List<PoushengCard> poushengCards = mapper.readValue(root.findPath("list").toString(),
                 new TypeReference<List<PoushengCard>>() {
                 });
-        brandImporter.doProcess(poushengCards);
+
+        for (PoushengCard poushengCard : poushengCards) {
+            brandImporter.doProcess(poushengCard);
+        }
+
     }
 
     // public

@@ -13,7 +13,6 @@ import io.terminus.parana.brand.model.Brand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
 
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -25,7 +24,7 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-20
  */
-@Component
+//@Component
 @Slf4j
 public class SpuImporterFromFile implements CommandLineRunner{
 

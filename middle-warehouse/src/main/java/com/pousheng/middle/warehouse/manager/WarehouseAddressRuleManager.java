@@ -31,43 +31,48 @@ public class WarehouseAddressRuleManager {
     }
 
     /**
-     * 先创建规则, 然后为每一个地址创建一条关联记录
+     * 为每一个地址创建一条和规则关联的记录
      *
-     * @param thinAddresses  地址列表
+     * @param shopGroupId       店铺组id
+     * @param thinAddresses 地址列表
      * @return 规则id
      */
     @Transactional
-    public Long batchCreate(List<ThinAddress> thinAddresses){
-
-        WarehouseRule warehouseRule = new WarehouseRule();
-        warehouseRuleDao.create(warehouseRule);
-        Long ruleId = warehouseRule.getId();
-
+    public Long batchCreate(Long shopGroupId,List<ThinAddress> thinAddresses) {
+        WarehouseRule rule = new WarehouseRule();
+        rule.setShopGroupId(shopGroupId);
+        warehouseRuleDao.create(rule);
+        Long ruleId = rule.getId();
         for (ThinAddress thinAddress : thinAddresses) {
             WarehouseAddressRule war = new WarehouseAddressRule();
             BeanMapper.copy(thinAddress, war);
+            war.setShopGroupId(shopGroupId);
             war.setRuleId(ruleId);
             warehouseAddressRuleDao.create(war);
         }
+
         return ruleId;
     }
 
     /**
      * 更新规则对应的地址信息
      *
-     * @param ruleId  规则id
+     * @param shopGroupId   店铺组id
+     * @param ruleId        规则id
      * @param thinAddresses 地址信息列表
      */
     @Transactional
-    public void batchUpdate(Long ruleId, List<ThinAddress> thinAddresses){
+    public void batchUpdate(Long shopGroupId, Long ruleId, List<ThinAddress> thinAddresses) {
         //首先清理掉原来规则对应的地址信息
         warehouseAddressRuleDao.deleteByRuleId(ruleId);
         for (ThinAddress thinAddress : thinAddresses) {
             WarehouseAddressRule war = new WarehouseAddressRule();
             BeanMapper.copy(thinAddress, war);
             war.setRuleId(ruleId);
+            war.setShopGroupId(shopGroupId);
             warehouseAddressRuleDao.create(war);
         }
+
     }
 
     /**
@@ -75,7 +80,7 @@ public class WarehouseAddressRuleManager {
      *
      * @param ruleId 规则id
      */
-    public void deleteByRuleId(Long ruleId){
+    public void deleteByRuleId(Long ruleId) {
         warehouseAddressRuleDao.deleteByRuleId(ruleId);
     }
 

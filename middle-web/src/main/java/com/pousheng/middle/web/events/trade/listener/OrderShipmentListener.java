@@ -14,14 +14,17 @@ import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
 /**
+ * 更新子单商品待处理数量
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2016-05-23
  */
 @Slf4j
+@Component
 public class OrderShipmentListener {
 
     @RpcConsumer

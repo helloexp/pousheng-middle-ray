@@ -7,10 +7,12 @@ package com.pousheng.middle.web.spu;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.component.dto.spu.EditSpu;
 import io.terminus.parana.component.spu.component.SpuReader;
 import io.terminus.parana.component.spu.component.SpuWriter;
@@ -63,16 +65,34 @@ public class Spus {
 
 
     @RequestMapping(value="/bycat",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<Spu> findByCategoryId(@RequestParam(name = "categoryId") Long categoryId,
+    public Paging<Spu> findByCategoryId(@RequestParam(name = "categoryId",required = false) Long categoryId,
+                                        @RequestParam(name="id",required = false)  Long spuId,
                                         @RequestParam(name="keyword",required = false)String keyword,
                                         @RequestParam(name="pageNo",defaultValue = "1")Integer pageNo,
                                         @RequestParam(name = "pageSize", defaultValue = "10")Integer pageSize){
-        Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId, keyword,pageNo, pageSize);
+
+        if(Arguments.notNull(spuId)){
+            return pagingById(spuId);
+        }
+        Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId,keyword,pageNo, pageSize);
         if(!rSpu.isSuccess()){
-            log.error("failed to find spu by category(id={}),error code:{}", categoryId, rSpu.getError());
+            log.error("failed to find spu by category(id={}) spu(id:{}) keyword:{},error code:{}", categoryId, spuId,keyword,rSpu.getError());
             throw new JsonResponseException(rSpu.getError());
         }
         return rSpu.getResult();
+    }
+
+    private Paging<Spu> pagingById(Long spuId){
+        Response<Spu> spuResp = spuReadService.findById(spuId);
+        if(!spuResp.isSuccess()){
+            log.error("find spu by id:{} fail,error:{}",spuId,spuResp.getError());
+            throw new JsonResponseException(spuResp.getError());
+        }
+        Paging<Spu> paging = Paging.empty();
+        List<Spu> spus = Lists.newArrayList(spuResp.getResult());
+        paging.setTotal(1L);
+        paging.setData(spus);
+        return paging;
     }
 
 
@@ -215,4 +235,7 @@ public class Spus {
         }
         return resp.getResult();
     }
+
+
+
 }

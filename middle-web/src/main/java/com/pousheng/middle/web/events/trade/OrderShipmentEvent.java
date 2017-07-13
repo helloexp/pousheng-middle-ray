@@ -9,6 +9,7 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /**
+ * 销售发货事件
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2016-05-23
  */

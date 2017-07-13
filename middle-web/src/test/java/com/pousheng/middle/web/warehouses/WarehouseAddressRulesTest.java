@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.pousheng.middle.warehouse.dto.AddressTree;
+import com.pousheng.middle.web.MiddleConfiguration;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,8 +17,8 @@ import static org.junit.Assert.assertThat;
  * Date: 2017-06-10
  */
 @RunWith(SpringRunner.class)
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-//@SpringBootTest
+//@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes= MiddleConfiguration.class)
 @ActiveProfiles("webtest")
 public class WarehouseAddressRulesTest {
 

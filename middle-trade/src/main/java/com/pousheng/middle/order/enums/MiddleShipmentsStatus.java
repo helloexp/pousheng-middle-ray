@@ -23,7 +23,9 @@ public enum MiddleShipmentsStatus {
     DONE(7),         //已完成
     SYNC_HK_FAIL(-1),   //同步恒康失败
     SYNC_ECP_FAIL(-2),   //同步电商失败
-    BUYER_CANCEL(-3);  // 买家取消订单
+    SYNC_HK_CANCEL_ING(-3),     //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_HK_CANCEL_FAIL(-4),   //同步恒康失败
+    CANCELED(-5);  // 已取消取消
 
 
     private final int value;

@@ -6,11 +6,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
+import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.manager.ErpSpuManager;
-import com.pousheng.erp.model.PoushengMaterial;
-import com.pousheng.erp.model.PoushengSize;
-import com.pousheng.erp.model.PoushengSku;
-import com.pousheng.erp.model.SkuGroupRule;
+import com.pousheng.erp.model.*;
 import com.pousheng.erp.rules.SkuGroupRuler;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.category.impl.dao.BackCategoryDao;
@@ -33,7 +31,7 @@ import java.util.List;
 @Slf4j
 public class SpuImporter {
 
-    private static final int PAGE_SIZE = 300;
+    private static final int PAGE_SIZE = 200;
 
     private final ErpBrandCacher brandCacher;
 
@@ -43,7 +41,9 @@ public class SpuImporter {
 
     private final ErpSpuManager spuManager;
 
-    private final SpuInfoFetcher<PoushengMaterial> spuInfoFetcher;
+    private final SpuMaterialDao spuMaterialDao;
+
+    private final MaterialFetcher materialFetcher;
 
 
     @Autowired
@@ -51,12 +51,14 @@ public class SpuImporter {
                        SkuGroupRuleDao skuGroupRuleDao,
                        BackCategoryDao categoryDao,
                        ErpSpuManager spuManager,
-                       SpuInfoFetcher<PoushengMaterial> spuInfoFetcher) {
+                       SpuMaterialDao spuMaterialDao,
+                       MaterialFetcher materialFetcher) {
         this.brandCacher = brandCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;
         this.spuManager = spuManager;
-        this.spuInfoFetcher = spuInfoFetcher;
+        this.spuMaterialDao = spuMaterialDao;
+        this.materialFetcher = materialFetcher;
     }
 
     public int process(Date start, Date end){
@@ -68,7 +70,7 @@ public class SpuImporter {
         int pageNo = 1;
         boolean hasNext = true;
         while (hasNext) {
-            List<PoushengMaterial> materials = spuInfoFetcher.fetch(pageNo, PAGE_SIZE, start, end);
+            List<PoushengMaterial> materials = materialFetcher.fetch(pageNo, PAGE_SIZE, start, end);
             pageNo = pageNo + 1;
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {
@@ -89,11 +91,18 @@ public class SpuImporter {
      * @return spu id
      */
     public Long doProcess(PoushengMaterial material, Brand brand) {
-        //String materialId = material.getMaterialID();
+        String materialId = material.getMaterial_id();
         String materialCode = material.getMaterial_code(); //条码
 
         try {
             log.info("begin to doProcess material(code={})", materialCode);
+
+            //检查货品是否已经被同步, 如果已经同步, 则直接返回
+            SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
+            if(exist!=null){
+                log.info("material(id={}) has been synchronized, skip");
+                return exist.getSpuId();
+            }
 
             String kind_name = material.getKind_name();//类别
             String series_name = material.getSeries_name(); //系列
@@ -104,11 +113,19 @@ public class SpuImporter {
             Long leafId = createBackCategoryTreeIfNotExist(kind_name, series_name, model_name, item_name);
 
             //根据归组规则, 生成spuCode
-            String spuCode = refineCode(materialCode, material.getCard_id(), material.getKind_name());
+            String spuCode = refineCode(materialCode, material.getCard_name(), material.getKind_name());
 
             //判断spuCode是否已经存在, 如果存在, 直接返回对应spuId, 如果不存在, 则生成相应的spu信息, 并返回spuId
             List<PoushengSku> poushengSkus = createSkuFromMaterial(material);
             Long spuId = spuManager.createSpuRelatedIfNotExist(leafId, brand, spuCode,  material, poushengSkus);
+
+            //创建货品id与spu的映射关系
+            SpuMaterial spuMaterial = new SpuMaterial();
+            spuMaterial.setSpuId(spuId);
+            spuMaterial.setMaterialId(materialId);
+            spuMaterial.setMaterialCode(materialCode);
+            spuMaterialDao.create(spuMaterial);
+
             log.info("doProcess material(code={}) succeed", materialCode);
             return spuId;
         } catch (Exception e) {
@@ -155,7 +172,7 @@ public class SpuImporter {
                 return skuGroupRuler.spuCode(skuGroupRule, materialCode);
             }
         }
-        log.warn("no sku group rule found for material(code={}, cardId={}), use material code as spu code",
+        log.warn("no sku group rule found for material(code={}, cardName={}), use material code as spu code",
                 materialCode, card_name);
         return materialCode;
     }

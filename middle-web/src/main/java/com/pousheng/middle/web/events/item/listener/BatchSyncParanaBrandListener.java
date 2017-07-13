@@ -4,10 +4,12 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
+import com.pousheng.middle.web.events.item.DumpSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncErrorData;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
@@ -19,6 +21,7 @@ import io.terminus.parana.brand.service.BrandReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -40,6 +43,9 @@ public class BatchSyncParanaBrandListener {
     private SyncParanaBrandService syncParanaBrandService;
     @Autowired
     private SyncParanaTaskRedisHandler syncParanaTaskRedisHandler;
+    static final Integer BATCH_SIZE = 100;     // 批处理数量
+
+
 
     @PostConstruct
     private void register() {
@@ -47,7 +53,7 @@ public class BatchSyncParanaBrandListener {
     }
 
     @Subscribe
-    public void onSyncCategory(BatchSyncParanaBrandEvent event){
+    public void onBatchSyncBrand(BatchSyncParanaBrandEvent event){
 
         log.info("batch sync brand to parana start");
         String taskId = event.getTaskId();
@@ -57,11 +63,38 @@ public class BatchSyncParanaBrandListener {
 
         Response<Boolean> syncRes = sync(brands);
         if(!syncRes.isSuccess()){
-            log.error("sync  brand:{} to parana fail,error:{}",brands,syncRes.getError());
+            log.error("sync  brand to parana fail,error:{}",syncRes.getError());
             SyncErrorData errorData = new SyncErrorData();
             errorData.setError(syncRes.getError());
             errorDatas.add(errorData);
         }
+
+        handResult(errorDatas,taskId);
+        log.info("batch sync brand to parana end");
+
+    }
+
+
+
+
+
+    @Subscribe
+    public void onDumpSyncBrand(DumpSyncParanaBrandEvent event){
+
+        log.info("dump sync brand to parana start");
+        String taskId = event.getTaskId();
+
+        List<SyncErrorData> syncErrorDatas = handleAll();
+
+        handResult(syncErrorDatas,taskId);
+
+
+        log.info("dump sync brand to parana end");
+
+    }
+
+
+    private void handResult(List<SyncErrorData> errorDatas,String taskId){
 
 
         if (!Arguments.isNullOrEmpty(errorDatas)){
@@ -80,10 +113,8 @@ public class BatchSyncParanaBrandListener {
             syncParanaTaskRedisHandler.updateTask(taskId,task);
 
         }
-
-        log.info("batch sync brand to parana end");
-
     }
+
 
     private Response<Boolean> sync(List<Brand> brands){
         List<OpenClientBrand> openClientBrands = Lists.newArrayListWithCapacity(brands.size());
@@ -92,8 +123,8 @@ public class BatchSyncParanaBrandListener {
             BeanMapper.copy(brand,openClientBrand);
             openClientBrands.add(openClientBrand);
         }
-        //return syncParanaBrandService.syncBrands(openClientBrands);
-        return Response.ok(Boolean.TRUE);
+        return syncParanaBrandService.syncBrands(openClientBrands);
+        //return Response.ok(Boolean.TRUE);
     }
 
 
@@ -106,4 +137,58 @@ public class BatchSyncParanaBrandListener {
         }
         return childRes.getResult();
     }
+
+
+    private List<SyncErrorData> handleAll(){
+
+        List<SyncErrorData> errorDatas = Lists.newArrayList();
+        int pageNo = 1;
+        boolean next = batchHandle(pageNo, BATCH_SIZE,errorDatas);
+        while (next) {
+            pageNo ++;
+            next = batchHandle(pageNo, BATCH_SIZE,errorDatas);
+        }
+
+        return errorDatas;
+    }
+
+
+
+
+
+
+    @SuppressWarnings("unchecked")
+    private boolean batchHandle(int pageNo, int size,List<SyncErrorData> syncErrorDatas) {
+        Response<Paging<Brand>> pagingRes = brandReadService.pagination(pageNo, size, null);
+        if(!pagingRes.isSuccess()){
+            log.error("paging brand fail error:{}",pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<Brand> paging = pagingRes.getResult();
+        List<Brand> brands = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(brands)) {
+            return Boolean.FALSE;
+        }
+
+        for (Brand brand : brands){
+            Response<Boolean> syncRes = sync(Lists.newArrayList(brand));
+            if(!syncRes.isSuccess()){
+                log.error("sync brand (id:{}) to parana fail,error:{}",brand.getId(),syncRes.getError());
+                SyncErrorData errorData = new SyncErrorData();
+                errorData.setId(brand.getId());
+                errorData.setName(brand.getName());
+                errorData.setError(syncRes.getError());
+                syncErrorDatas.add(errorData);
+            }
+
+        }
+
+        int current = brands.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+
+
 }

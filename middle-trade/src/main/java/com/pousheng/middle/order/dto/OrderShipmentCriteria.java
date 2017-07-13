@@ -18,7 +18,7 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     /**
      * 发货单id
      */
-    private String id;
+    private String shipmentId;
 
     /**
      * 订单类型
@@ -40,6 +40,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      * 订单id
      */
     private Long orderId;
+
+    /**
+     * 售后单id
+     */
+    private Long afterSaleOrderId;
 
 
     /**

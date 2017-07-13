@@ -2,9 +2,14 @@ package com.pousheng.middle.warehouse.model;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import io.terminus.common.utils.JsonMapper;
-import lombok.*;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -48,6 +53,24 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Long ownerId;
+
+    /**
+     * 仓库类别
+     */
+    @Setter
+    private Integer type;
+
+    /**
+     * 仓库状态
+     */
+    @Setter
+    private Integer status;
+
+    /**
+     * 仓库地址
+     */
+    @Setter
+    private String address;
     
     /**
      * 是否默认发货仓
@@ -90,5 +113,29 @@ public class Warehouse implements Serializable {
                 //ignore this fuck exception
             }
         }
+    }
+
+    /**
+     * 获取公司编码
+     *
+     * @return 公司编码
+     */
+    public String getCompanyCode(){
+        if(StringUtils.hasText(code)) {
+            return Splitter.on('-').omitEmptyStrings().trimResults().limit(2).splitToList(code).get(0);
+        }
+        return null;
+    }
+
+    /**
+     * 获取公司内码
+     *
+     * @return 公司内码
+     */
+    public String getInnerCode() {
+        if (StringUtils.hasText(code)) {
+            return Splitter.on('-').omitEmptyStrings().trimResults().limit(2).splitToList(code).get(1);
+        }
+        return null;
     }
 }

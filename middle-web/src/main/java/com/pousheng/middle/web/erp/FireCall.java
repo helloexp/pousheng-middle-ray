@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.erp;
 
+import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.SpuImporter;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
@@ -27,12 +28,15 @@ public class FireCall {
 
     private final SpuImporter spuImporter;
 
+    private final BrandImporter brandImporter;
+
     private final DateTimeFormatter dft;
 
 
     @Autowired
-    public FireCall(SpuImporter spuImporter) {
+    public FireCall(SpuImporter spuImporter, BrandImporter brandImporter) {
         this.spuImporter = spuImporter;
+        this.brandImporter = brandImporter;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -40,21 +44,39 @@ public class FireCall {
         dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
     }
 
-    @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpu(@RequestParam String start,
-                                 @RequestParam(name = "end", required = false) String end) {
-
-        log.info("begin to synchronize spu modified from {} to {}", start, end);
+    @RequestMapping(value = "/brand", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeBrand(@RequestParam String start,
+                                   @RequestParam(name = "end", required = false) String end){
         Date from = dft.parseDateTime(start).toDate();
         Date to = null;
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }
-        spuImporter.process(from, to);
-        log.info("finished to synchronize spu modified from {} to {} ", start, end);
-
+        int cardCount = brandImporter.process(from, to);
+        log.info("synchronized {} brands", cardCount);
         return "ok";
     }
+
+
+    @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpu(@RequestParam String start,
+                                 @RequestParam(name = "end", required = false) String end) {
+
+        Date from = dft.parseDateTime(start).toDate();
+        Date to = null;
+        if (StringUtils.hasText(end)) {
+            to = dft.parseDateTime(end).toDate();
+        }
+        log.info("synchronize brand first");
+        int cardCount = brandImporter.process(from, to);
+        log.info("synchronized {} brands", cardCount);
+        int spuCount =spuImporter.process(from, to);
+        log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
+
+
+
 
 }
 

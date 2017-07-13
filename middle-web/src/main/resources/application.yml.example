@@ -24,6 +24,8 @@ gateway:
   erp:
     host: http://localhost:27073
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+  member:
+    host: http://api-test-member.pousheng.com
 
 open.api.app.key: terminus
 open.api.secret: anywhere

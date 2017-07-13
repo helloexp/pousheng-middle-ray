@@ -4,6 +4,8 @@ import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Author: jlchen
  * Desc: 店铺的退货仓库Dao类
@@ -20,5 +22,14 @@ public class WarehouseCompanyRuleDao extends MyBatisDao<WarehouseCompanyRule> {
      */
     public WarehouseCompanyRule findByCompanyCode(String companyCode) {
         return getSqlSession().selectOne(sqlId("findByCompanyCode"), companyCode);
+    }
+
+    /**
+     * 获取公司编码列表
+     *
+     * @return 公司编码列表
+     */
+    public List<String>  companyCodes(){
+        return getSqlSession().selectList(sqlId("findCompanyCodes"));
     }
 }

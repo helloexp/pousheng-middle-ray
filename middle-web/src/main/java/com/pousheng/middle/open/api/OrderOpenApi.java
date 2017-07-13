@@ -11,6 +11,7 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.web.events.trade.DecreaseStockEvent;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -144,6 +145,10 @@ public class OrderOpenApi {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
             }
+            //扣减库存
+            DecreaseStockEvent decreaseStockEvent = new DecreaseStockEvent();
+            decreaseStockEvent.setShipment(shipment);
+            eventBus.post(decreaseStockEvent);
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
             event.setShipment(shipment);

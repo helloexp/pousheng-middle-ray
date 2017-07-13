@@ -24,7 +24,6 @@ import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.events.trade.LockStockEvent;
 import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
@@ -36,7 +35,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -252,6 +250,12 @@ public class Shipments {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(makeShipmentItems(skuOrders,skuOrderIdAndQuantity)));
         shipment.setExtra(extraMap);
 
+        //锁定库存
+        Response<Boolean> lockStockRlt = lockStock(shipment);
+        if (!lockStockRlt.isSuccess()){
+            log.error("this shipment can not unlock stock,shipment id is :{}",shipment.getId());
+            throw new JsonResponseException("lock.stock.error");
+        }
 
         //创建发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrderId), OrderLevel.SHOP);
@@ -265,11 +269,6 @@ public class Shipments {
         Long shipmentId = createResp.getResult();
 
         eventBus.post(new OrderShipmentEvent(shipmentId));
-
-        //锁定库存
-        LockStockEvent lockStockEvent = new LockStockEvent();
-        lockStockEvent.setShipment(shipment);
-        eventBus.post(lockStockEvent);
 
         return shipmentId;
 

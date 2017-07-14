@@ -235,9 +235,14 @@ public class OrderWriteLogic {
                 }
                 //将该发货单下其他子订单的待处理数量回滚,状态回滚
                 Map<Long, Integer> skuOrderIdAndQuantityMap = itemsFilter.stream().filter(Objects::nonNull)
-                        .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getQuantity)
-                        );
+                        .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getQuantity));
                 this.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, s);
+
+                //将取消的这个子单的数量回滚,状态不变
+                List<ShipmentItem> itemsCanceled = items.stream().filter(shipmentItem -> (shipmentItem.getSkuOrderId()==skuOrder.getId())).collect(Collectors.toList());
+                Map<Long, Integer> skuOrderIdAndQuantityCanceled = itemsCanceled.stream().filter(Objects::nonNull)
+                        .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getQuantity));
+                this.rollbackSkuOrderExtra(skuOrder,skuOrderIdAndQuantityCanceled);
 
             }
             //将需要撤单的子订单或者店铺订单状态更新为已取消
@@ -419,7 +424,7 @@ public class OrderWriteLogic {
                         skuOrder.getId(), skuOrder.getStatus(), targetStatus);
                 throw new ServiceException(updateSkuOrderResp.getError());
             }
-        }
+        };
     }
 }
 

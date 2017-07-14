@@ -9,7 +9,6 @@
         <id column="id" property="id"/>
         <result column="out_id" property="outId"/>
         <result column="name" property="name"/>
-        <result column="mobile" property="mobile"/>
         <result column="type" property="type"/>
         <result column="roles_json" property="rolesJson"/>
         <result column="extra_json" property="extraJson"/>
@@ -27,11 +26,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        out_id, name, mobile,`type`,roles_json, extra_json, created_at, updated_at
+        out_id, name,`type`,roles_json, extra_json, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{outId}, #{name}, #{mobile}, #{type},#{rolesJson}, #{extraJson}, now(), now()
+        #{outId}, #{name},  #{type},#{rolesJson}, #{extraJson}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -40,7 +39,6 @@
         
         <if test="name != null">and `name` = #{name}</if>
         
-        <if test="mobile != null">and `mobile` = #{mobile}</if>
 
         <if test="type != null">and `type` = #{type}</if>
 
@@ -95,11 +93,7 @@
         <set>
             <if test="outId != null">out_id = #{outId},</if>
             <if test="name != null">name = #{name},</if>
-            <if test="mobile != null">mobile = #{mobile},</if>
             <if test="extraJson != null">extra_json = #{extraJson},</if>
-            
-            
-            
             updated_at=now()
         </set>
         WHERE id = #{id}

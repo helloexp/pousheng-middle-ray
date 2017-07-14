@@ -44,13 +44,6 @@ public class User implements Serializable {
     @Getter
     @Setter
     private String name;
-    
-    /**
-     * 手机号码
-     */
-    @Getter
-    @Setter
-    private String mobile;
 
     /**
      * 用户类型 1:超级管理员, 2:普通用户, 3:后台运营, 4:站点拥有者

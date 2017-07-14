@@ -87,8 +87,6 @@ public class UserDaoTest extends BaseDaoTest {
         
         user.setName("SONGRENFEI");
         
-        user.setMobile("13093771726");
-        
         user.setExtra(extra);
         
         user.setCreatedAt(new Date());

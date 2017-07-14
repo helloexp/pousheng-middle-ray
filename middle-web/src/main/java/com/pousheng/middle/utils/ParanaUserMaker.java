@@ -25,9 +25,6 @@ public abstract class ParanaUserMaker {
         if (!Strings.isNullOrEmpty(user.getName())) {
             return user.getName();
         }
-        if (!Strings.isNullOrEmpty(user.getMobile())) {
-            return user.getMobile();
-        }
         return "";
     }
 }

@@ -37,6 +37,7 @@ session:
   serialize-type: json
   redis-host: ${POUSHENG_REDIS_HOST}
   redis-port: ${POUSHENG_REDIS_PORT}
+  redis-auth: ${POUSHENG_REDIS_PASSWORD}
   redis-index: 0
   redis-cluster: false
   redis-test-on-borrow: true

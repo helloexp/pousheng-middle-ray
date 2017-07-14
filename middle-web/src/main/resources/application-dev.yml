@@ -17,7 +17,7 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
-        com.pousheng.erp.model,
+        com.pousheng.(erp|auth).model,
         com.pousheng.middle.warehouse.model,
         com.pousheng.middle.order.model,
         io.terminus.parana.(item|category|brand|spu|shop).model,

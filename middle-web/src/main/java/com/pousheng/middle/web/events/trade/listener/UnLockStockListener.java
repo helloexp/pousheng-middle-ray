@@ -9,7 +9,6 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.events.trade.LockStockEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -57,16 +56,8 @@ public class UnLockStockListener {
         List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
         WarehouseShipment warehouseShipment = new WarehouseShipment();
         //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.transform(shipmentItems, new Function<ShipmentItem, SkuCodeAndQuantity>() {
-            @Nullable
-            @Override
-            public SkuCodeAndQuantity apply(@Nullable ShipmentItem shipmentItem) {
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                return skuCodeAndQuantity;
-            }
-        });
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = makeSkuCodeAndQuantities(shipmentItems);
+
         warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
@@ -74,7 +65,19 @@ public class UnLockStockListener {
         Response<Boolean> unlockRlt =  warehouseSkuWriteService.unlockStock(warehouseShipmentList);
         if (!unlockRlt.isSuccess()){
             log.error("this shipment can not unlock stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
-            throw new JsonResponseException("unlock.stock.error");
         }
+    }
+
+    private List<SkuCodeAndQuantity> makeSkuCodeAndQuantities(List<ShipmentItem> list){
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
+        if (list.size()>0){
+            for (ShipmentItem shipmentItem:list){
+                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
+                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+                skuCodeAndQuantities.add(skuCodeAndQuantity);
+            }
+        }
+        return skuCodeAndQuantities;
     }
 }

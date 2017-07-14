@@ -71,28 +71,13 @@ public class Spus {
                                         @RequestParam(name="pageNo",defaultValue = "1")Integer pageNo,
                                         @RequestParam(name = "pageSize", defaultValue = "10")Integer pageSize){
 
-        if(Arguments.notNull(spuId)){
-            return pagingById(spuId);
-        }
+
         Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId,keyword,pageNo, pageSize);
         if(!rSpu.isSuccess()){
             log.error("failed to find spu by category(id={}) spu(id:{}) keyword:{},error code:{}", categoryId, spuId,keyword,rSpu.getError());
             throw new JsonResponseException(rSpu.getError());
         }
         return rSpu.getResult();
-    }
-
-    private Paging<Spu> pagingById(Long spuId){
-        Response<Spu> spuResp = spuReadService.findById(spuId);
-        if(!spuResp.isSuccess()){
-            log.error("find spu by id:{} fail,error:{}",spuId,spuResp.getError());
-            throw new JsonResponseException(spuResp.getError());
-        }
-        Paging<Spu> paging = Paging.empty();
-        List<Spu> spus = Lists.newArrayList(spuResp.getResult());
-        paging.setTotal(1L);
-        paging.setData(spus);
-        return paging;
     }
 
 

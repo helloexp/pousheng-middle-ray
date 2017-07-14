@@ -17,15 +17,33 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
-        com.pousheng.erp.model,
+        com.pousheng.(erp|auth).model,
         com.pousheng.middle.warehouse.model,
         com.pousheng.middle.order.model,
         io.terminus.parana.(item|category|brand|spu|shop).model,
-        io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+        io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
         io.terminus.open.client.common.(mappings|token|shop).model,
         io.terminus.open.client.item.model
 
 
+
+
+session:
+  cookie-context-path: /
+  cookie-domain: pousheng.com
+  cookie-name: msid
+  cookie-max-age: 1800
+  source: redis
+  serialize-type: json
+  redis-host: ${POUSHENG_REDIS_HOST}
+  redis-port: ${POUSHENG_REDIS_PORT}
+  redis-auth: ${POUSHENG_REDIS_PASSWORD}
+  redis-index: 0
+  redis-cluster: false
+  redis-test-on-borrow: true
+  redis-max-total: 10
+  redis-max-idle: 0
+  redis-prefix: afsession
 
 redis:
   host: ${POUSHENG_REDIS_HOST}
@@ -51,3 +69,7 @@ gateway:
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
 open.api.gateway: ${OPEN_API_GATEWAY}
+
+
+
+user.center.gateway: ${USER_CENTER_GATEWAY}

@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -30,6 +31,14 @@ public interface WarehouseSkuReadService {
      * @return sku在仓库的库存情况
      */
     Response<WarehouseSkuStock> findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode);
+
+    /**
+     * 根据sku编码查找在仓库中的总的可用库存
+     *
+     * @param skuCode sku编码
+     * @return 库存结果
+     */
+    Response<WarehouseSkuStock>  findAvailStockBySkuCode(String skuCode);
 
     /**
      * 分页查询 sku的库存概览情况(不分仓)

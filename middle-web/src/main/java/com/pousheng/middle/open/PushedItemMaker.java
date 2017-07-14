@@ -75,6 +75,7 @@ public class PushedItemMaker implements ParanaFullItemMaker {
                     ParanaItemAttribute paranaItemAttribute = new ParanaItemAttribute();
                     paranaItemAttribute.setAttributeKeyId(otherAttribute.getAttrKey());
                     paranaItemAttribute.setAttributeValueId(otherAttribute.getAttrVal());
+                    paranaItemAttribute.setGroup(otherAttribute.getGroup());
                     paranaItemAttributes.add(paranaItemAttribute);
                 }
             }

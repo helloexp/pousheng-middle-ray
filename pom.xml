@@ -73,6 +73,18 @@
             </dependency>
 
             <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>spring-boot-starter-mybatis</artifactId>
+                <version>1.5.1.RELEASE</version>
+            </dependency>
+
+            <dependency>
+                <groupId>io.terminus.boot</groupId>
+                <artifactId>terminus-spring-boot-starter-session</artifactId>
+                <version>1.6.1.RELEASE</version>
+            </dependency>
+
+            <dependency>
                 <groupId>io.terminus.boot.rpc</groupId>
                 <artifactId>rpc-common</artifactId>
                 <version>1.0.5.RELEASE</version>

@@ -23,7 +23,7 @@ mybatis:
 
 session:
   cookie-context-path: /
-  cookie-domain: middle-dev.pousheng.com
+  cookie-domain: pousheng.com
   cookie-name: msid
   cookie-max-age: 1800
   source: redis

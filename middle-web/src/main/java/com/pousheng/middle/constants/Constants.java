@@ -29,4 +29,9 @@ public class Constants {
      * 手机重置密码
      */
     public static final String SESSION_SMS_CODE_RESET_PW = "sms-code-reset-pw";
+
+    /**
+     * 用户管理店铺ID列表
+     */
+    public static final String MANAGE_SHOP_IDS = "manageShopIds";
 }

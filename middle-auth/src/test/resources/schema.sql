@@ -1,6 +1,6 @@
 drop table if exists `pusheng_users`;
 
-CREATE TABLE `pusheng_users` (
+CREATE TABLE `pousheng_users` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
   `out_id` bigint(20) NOT NULL COMMENT '外部用户 id',
   `name` varchar(32) NOT NULL COMMENT '用户名',

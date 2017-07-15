@@ -18,7 +18,7 @@
     </resultMap>
 
     <sql id="tb">
-        pusheng_users
+        pousheng_users
     </sql>
 
     <sql id="cols_all">
@@ -43,7 +43,7 @@
         <if test="type != null">and `type` = #{type}</if>
 
         <if test="extraJson != null">and `extra_json` = #{extraJson}</if>
-        
+
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>

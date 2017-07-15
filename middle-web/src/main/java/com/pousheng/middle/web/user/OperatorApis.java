@@ -2,15 +2,18 @@ package com.pousheng.middle.web.user;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.auth.service.UserWriteService;
+import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Params;
 import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
@@ -22,8 +25,11 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -71,6 +77,9 @@ public class OperatorApis {
         toCreateOperator.setUserName(operator.getUsername());
         toCreateOperator.setPassword(operator.getPassword());
         toCreateOperator.setRoleId(operator.getRoleId());
+        Map<String,String> extraMap = Maps.newHashMap();
+        extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
+        toCreateOperator.setExtra(extraMap);
 
 
         //调用用户中心创建用户
@@ -150,6 +159,10 @@ public class OperatorApis {
         toUpdateOperator.setId(existOp.getId());
         toUpdateOperator.setUserName(toUpdateMiddleUser.getName());
         toUpdateOperator.setRoleId(operator.getRoleId());
+        Map<String,String> extraMap = existOp.getExtra();//这里就不判断extra是否为空了，创建时会塞入管理店铺id，所以这里一定不会为空
+        extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
+        toUpdateOperator.setExtra(extraMap);
+
         Response<Boolean> opUpdateResp = operatorWriteService.update(toUpdateOperator);
         if (!opUpdateResp.isSuccess()) {
             log.warn("operator update failed, error={}", opUpdateResp.getError());
@@ -169,6 +182,13 @@ public class OperatorApis {
                 || CharMatcher.is('@').matchesAnyOf(username)) {
             throw new JsonResponseException(400, "user.username.invalid");
         }
+    }
+
+    private List<Long> handleManageShopIds(List<Long> manageShopIds){
+        if(CollectionUtils.isEmpty(manageShopIds)){
+            manageShopIds = Lists.newArrayList();
+        }
+        return manageShopIds;
     }
 
     @RequestMapping(value = "/{userId}/frozen", method = RequestMethod.PUT)
@@ -232,5 +252,7 @@ public class OperatorApis {
         private String password;
 
         private Long roleId;
+        //管理店铺ids
+        private List<Long> manageShopIds;
     }
 }

@@ -3,7 +3,7 @@ package com.pousheng.middle.web.user;
 import com.google.common.base.CharMatcher;
 import com.google.common.collect.Lists;
 import com.pousheng.auth.dto.UcUserInfo;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.auth.service.UserWriteService;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
@@ -17,7 +17,6 @@ import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.auth.service.OperatorWriteService;
 import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.enums.UserType;
-import io.terminus.parana.common.utils.EncryptUtil;
 import io.terminus.parana.common.utils.RespHelper;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
@@ -77,21 +76,21 @@ public class OperatorApis {
         //调用用户中心创建用户
         Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(),operator.getPassword());
         if(!ucUserInfoRes.isSuccess()){
-            log.error("create user center user(name:{}) fail,error:{}",operator.getUsername(),ucUserInfoRes.getError());
+            log.error("create middleUser center middleUser(name:{}) fail,error:{}",operator.getUsername(),ucUserInfoRes.getError());
             throw new JsonResponseException(ucUserInfoRes.getError());
         }
         UcUserInfo ucUserInfo = ucUserInfoRes.getResult();
 
 
-        // 创建 middle user
-        User user = new User();
-        user.setName(un);
-        user.setOutId(ucUserInfo.getUserId());
-        user.setType(UserType.OPERATOR.value());
-        user.setRoles(Lists.newArrayList(UserRole.OPERATOR.name()));
-        Response<Long> userCreateResp = userWriteService.create(user);
+        // 创建 middle middleUser
+        MiddleUser middleUser = new MiddleUser();
+        middleUser.setName(un);
+        middleUser.setOutId(ucUserInfo.getUserId());
+        middleUser.setType(UserType.OPERATOR.value());
+        middleUser.setRoles(Lists.newArrayList(UserRole.OPERATOR.name()));
+        Response<Long> userCreateResp = userWriteService.create(middleUser);
         if (!userCreateResp.isSuccess()) {
-            log.error("failed to create operator user = {}, cause: {}", user, userCreateResp.getError());
+            log.error("failed to create operator middleUser = {}, cause: {}", middleUser, userCreateResp.getError());
             throw new JsonResponseException(userCreateResp.getError());
         }
 
@@ -105,12 +104,12 @@ public class OperatorApis {
     @RequestMapping(value = "/{userId}", method = RequestMethod.PUT)
     public Boolean updateOperator(@PathVariable Long userId, @RequestBody OperatorPost operator) {
 
-        Response<User> userRes = userReadService.findById(userId);
+        Response<MiddleUser> userRes = userReadService.findById(userId);
         if(!userRes.isSuccess()){
             log.error("find user(id:{}) fail,error:{}",userId,userRes.getError());
             throw new JsonResponseException(userRes.getError());
         }
-        User existUser = userRes.getResult();
+        MiddleUser existMiddleUser = userRes.getResult();
 
 
         Response<Operator> operatorResp = operatorReadService.findByUserId(userId);
@@ -120,13 +119,13 @@ public class OperatorApis {
         }
         Operator existOp = operatorResp.getResult();
 
-        User toUpdateUser = new User();
-        toUpdateUser.setId(userId);
+        MiddleUser toUpdateMiddleUser = new MiddleUser();
+        toUpdateMiddleUser.setId(userId);
         String username = Params.trimToNull(operator.getUsername());
 
         if (username != null) {
             judgeUsername(username);
-            toUpdateUser.setName(username);
+            toUpdateMiddleUser.setName(username);
         }
 
         String password = Params.trimToNull(operator.getPassword());
@@ -135,13 +134,13 @@ public class OperatorApis {
         }
 
         //更新用户中心用户信息
-        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(existUser.getOutId(),operator.getUsername(),operator.getPassword());
+        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(existMiddleUser.getOutId(),operator.getUsername(),operator.getPassword());
         if(!ucUserInfoRes.isSuccess()){
-            log.error("update user center user(id:{}) fail,error:{}",existUser.getOutId(),ucUserInfoRes.getError());
+            log.error("update user center user(id:{}) fail,error:{}", existMiddleUser.getOutId(),ucUserInfoRes.getError());
             throw new JsonResponseException(ucUserInfoRes.getError());
         }
 
-        Response<Boolean> userResp = userWriteService.update(toUpdateUser);
+        Response<Boolean> userResp = userWriteService.update(toUpdateMiddleUser);
         if (!userResp.isSuccess()) {
             log.warn("user update failed, cause:{}", userResp.getError());
             throw new JsonResponseException(userResp.getError());
@@ -149,7 +148,7 @@ public class OperatorApis {
 
         Operator toUpdateOperator = new Operator();
         toUpdateOperator.setId(existOp.getId());
-        toUpdateOperator.setUserName(toUpdateUser.getName());
+        toUpdateOperator.setUserName(toUpdateMiddleUser.getName());
         toUpdateOperator.setRoleId(operator.getRoleId());
         Response<Boolean> opUpdateResp = operatorWriteService.update(toUpdateOperator);
         if (!opUpdateResp.isSuccess()) {

@@ -5,7 +5,7 @@ import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import com.pousheng.middle.web.events.user.LoginEvent;
@@ -15,7 +15,6 @@ import io.terminus.common.model.Response;
 import io.terminus.parana.auth.api.Role;
 import io.terminus.parana.auth.api.RoleContent;
 import io.terminus.parana.auth.api.UserRoleLoader;
-import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
@@ -89,7 +88,7 @@ public class Users {
             log.warn("find  user failed, outId={}, error={}", ucUserInfo.getUserId(), userResp.getError());
             throw new JsonResponseException(userResp.getError());
         }
-        Optional<User> userOptional = userResp.getResult();
+        Optional<MiddleUser> userOptional = userResp.getResult();
         if(!userOptional.isPresent()){
             log.error("user(name:{}) not belong to current system",ucUserInfo.getUsername());
             throw new JsonResponseException("authorize.fail");
@@ -101,18 +100,18 @@ public class Users {
         return paranaUser;
     }
 
-    private ParanaUser buildParanaUser(User user) {
-  /*      if (Objects.equal(user.getStatus(), UserStatus.DELETED.value())) {
-            throw new JsonResponseException("user.not.found");
+    private ParanaUser buildParanaUser(MiddleUser middleUser) {
+  /*      if (Objects.equal(middleUser.getStatus(), UserStatus.DELETED.value())) {
+            throw new JsonResponseException("middleUser.not.found");
         }
-        if (Objects.equal(user.getStatus(), UserStatus.FROZEN.value())) {
-            throw new JsonResponseException("user.status.frozen");
+        if (Objects.equal(middleUser.getStatus(), UserStatus.FROZEN.value())) {
+            throw new JsonResponseException("middleUser.status.frozen");
         }
-        if (Objects.equal(user.getStatus(), UserStatus.LOCKED.value())) {
-            throw new JsonResponseException("user.status.locked");
+        if (Objects.equal(middleUser.getStatus(), UserStatus.LOCKED.value())) {
+            throw new JsonResponseException("middleUser.status.locked");
         }*/
 
-        return ParanaUserMaker.from(user);
+        return ParanaUserMaker.from(middleUser);
     }
 
     @RequestMapping(value = "/{userId}/roles", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

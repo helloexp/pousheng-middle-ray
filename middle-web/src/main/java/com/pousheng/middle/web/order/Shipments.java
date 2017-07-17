@@ -384,6 +384,17 @@ public class Shipments {
             log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
+        //取消发货单,要将skuOrder对应的发待货数量回滚
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        Map<Long, Integer> skuOrderIdAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity));
+        //回滚子订单的待处理数量,同时判断是否需要同步回滚状态
+        orderWriteLogic.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, shipment);
+
+        //通知恒康取消同步之后需要解锁库存
+        UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
+        unLockStockEvent.setShipment(shipment);
+        eventBus.post(unLockStockEvent);
     }
 
     /**
@@ -667,7 +678,7 @@ public class Shipments {
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
         warehouseShipmentList.add(warehouseShipment);
-        return warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
+        return warehouseSkuWriteService.lockStock(warehouseShipmentList);
 
     }
 

@@ -20,7 +20,7 @@ import java.util.Map;
  * Desc: 用户基本信息表Model类
  * Date: 2017-06-23
  */
-public class User implements Serializable {
+public class MiddleUser implements Serializable {
 
     private static final long serialVersionUID = -6094139869714274527L;
 

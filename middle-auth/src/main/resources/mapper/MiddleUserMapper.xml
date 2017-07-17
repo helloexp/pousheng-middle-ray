@@ -4,8 +4,8 @@
   -->
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
 
-<mapper namespace="User">
-    <resultMap id="UserMap" type="User">
+<mapper namespace="MiddleUser">
+    <resultMap id="MiddleUserMap" type="MiddleUser">
         <id column="id" property="id"/>
         <result column="out_id" property="outId"/>
         <result column="name" property="name"/>
@@ -18,7 +18,7 @@
     </resultMap>
 
     <sql id="tb">
-        pusheng_users
+        pousheng_users
     </sql>
 
     <sql id="cols_all">
@@ -43,7 +43,7 @@
         <if test="type != null">and `type` = #{type}</if>
 
         <if test="extraJson != null">and `extra_json` = #{extraJson}</if>
-        
+
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
@@ -56,7 +56,7 @@
         order by id desc
     </sql>
 
-    <insert id="create" parameterType="User" keyProperty="id" useGeneratedKeys="true">
+    <insert id="create" parameterType="MiddleUser" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO
         <include refid="tb" />
         (<include refid="cols_exclude_id" />)
@@ -64,13 +64,13 @@
         (<include refid="vals" />)
     </insert>
 
-    <select id="findById" parameterType="long" resultMap="UserMap" >
+    <select id="findById" parameterType="long" resultMap="MiddleUserMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
     </select>
 
-   <select id="findByIds" parameterType="list" resultMap="UserMap">
+   <select id="findByIds" parameterType="list" resultMap="MiddleUserMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
@@ -81,13 +81,13 @@
         <include refid="order" />
     </select>
 
-    <select id="findByOutId" parameterType="long" resultMap="UserMap" >
+    <select id="findByOutId" parameterType="long" resultMap="MiddleUserMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE out_id = #{id}
     </select>
 
-    <update id="update" parameterType="User">
+    <update id="update" parameterType="MiddleUser">
         UPDATE
         <include refid="tb"/>
         <set>
@@ -104,7 +104,7 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="UserMap">
+    <select id="paging" parameterType="list" resultMap="MiddleUserMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         <where>

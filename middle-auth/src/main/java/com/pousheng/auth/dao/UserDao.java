@@ -1,6 +1,6 @@
 package com.pousheng.auth.dao;
 
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
@@ -10,9 +10,9 @@ import org.springframework.stereotype.Repository;
  * Date: 2017-06-23
  */
 @Repository
-public class UserDao extends MyBatisDao<User> {
+public class UserDao extends MyBatisDao<MiddleUser> {
 
-    public User findByOutId(Long outId){
+    public MiddleUser findByOutId(Long outId){
         return getSqlSession().selectOne(sqlId("findByOutId"),outId);
     }
 

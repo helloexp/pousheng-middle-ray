@@ -15,8 +15,8 @@ CREATE TABLE `pousheng_warehouse_shop_returns` (
 )COMMENT='店铺的退货仓库';
 
 
-alter table pusheng_users add column `roles_json` varchar(512) DEFAULT NULL COMMENT '用户角色信息' AFTER `mobile`;
-alter table pusheng_users add column `type`  SMALLINT  NOT NULL    COMMENT '用户类型' AFTER `mobile`;
+alter table pousheng_users add column `roles_json` varchar(512) DEFAULT NULL COMMENT '用户角色信息' AFTER `mobile`;
+alter table pousheng_users add column `type`  SMALLINT  NOT NULL    COMMENT '用户类型' AFTER `mobile`;
 drop table if exists `pousheng_spu_materials`;
 
 CREATE TABLE `pousheng_spu_materials` (

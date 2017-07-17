@@ -1,7 +1,7 @@
 package com.pousheng.middle.auth;
 
 import com.google.common.base.Throwables;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import io.terminus.common.model.Response;
 import io.terminus.parana.auth.api.*;
@@ -34,25 +34,25 @@ public class MiddleUserRoleLoader implements UserRoleLoader {
         try {
             if (userId == null) {
                 log.warn("hard load roles failed, userId=null");
-                return Response.fail("user.id.empty");
+                return Response.fail("middleUser.id.empty");
             }
             val findResp = userReadService.findById(userId);
             if (!findResp.isSuccess()) {
-                log.warn("find user failed, userId={}, error={}", userId, findResp.getError());
+                log.warn("find middleUser failed, userId={}, error={}", userId, findResp.getError());
                 return Response.fail(findResp.getError());
             }
-            User user = findResp.getResult();
-            if (user == null) {
+            MiddleUser middleUser = findResp.getResult();
+            if (middleUser == null) {
                 // findById 已经保证不会进入这里
-                log.warn("hard load roles failed, user not found, id={}", userId);
-                return Response.fail("user.not.found");
+                log.warn("hard load roles failed, middleUser not found, id={}", userId);
+                return Response.fail("middleUser.not.found");
             }
 
-            if (user.getType() == null) {
-                log.warn("user has no type, userId={}, we treat is as empty permission", userId);
+            if (middleUser.getType() == null) {
+                log.warn("middleUser has no type, userId={}, we treat is as empty permission", userId);
                 return Response.ok(initRoles());
             }
-            int userType = user.getType();
+            int userType = middleUser.getType();
 
             RoleContent mutableRoles = initRoles();
 

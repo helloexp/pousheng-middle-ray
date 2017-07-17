@@ -3,7 +3,7 @@ package com.pousheng.auth.dao.mysql;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dao.BaseDaoTest;
 import com.pousheng.auth.dao.UserDao;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.model.Paging;
 import org.junit.Before;
 import org.junit.Test;
@@ -25,76 +25,76 @@ import static org.junit.Assert.assertThat;
  * Desc: 用户基本信息表Dao 测试类
  * Date: 2017-06-23
  */
-public class UserDaoTest extends BaseDaoTest {
+public class MiddleUserDaoTest extends BaseDaoTest {
 
 
 
     @Autowired
     private UserDao userDao;
 
-    private User user;
+    private MiddleUser middleUser;
 
     @Before
     public void init() {
-        user = make();
+        middleUser = make();
 
-        userDao.create(user);
-        assertNotNull(user.getId());
+        userDao.create(middleUser);
+        assertNotNull(middleUser.getId());
     }
 
     @Test
     public void findById() {
-        User userExist = userDao.findById(user.getId());
+        MiddleUser middleUserExist = userDao.findById(middleUser.getId());
 
-        assertNotNull(userExist);
+        assertNotNull(middleUserExist);
     }
 
     @Test
     public void update() {
-        user.setOutId(1L);
-        userDao.update(user);
+        middleUser.setOutId(1L);
+        userDao.update(middleUser);
 
-        User  updated = userDao.findById(user.getId());
+        MiddleUser updated = userDao.findById(middleUser.getId());
         assertEquals(updated.getOutId(), Long.valueOf(1));
     }
 
     @Test
     public void delete() {
-        userDao.delete(user.getId());
+        userDao.delete(middleUser.getId());
 
-        User deleted = userDao.findById(user.getId());
+        MiddleUser deleted = userDao.findById(middleUser.getId());
         assertNull(deleted);
     }
 
     @Test
     public void paging() {
         Map<String, Object> params = new HashMap<>();
-        params.put("outId", user.getOutId());
-        Paging<User > userPaging = userDao.paging(0, 20, params);
+        params.put("outId", middleUser.getOutId());
+        Paging<MiddleUser> userPaging = userDao.paging(0, 20, params);
 
         assertThat(userPaging.getTotal(), is(1L));
-        assertEquals(userPaging.getData().get(0).getId(), user.getId());
+        assertEquals(userPaging.getData().get(0).getId(), middleUser.getId());
     }
 
-    private User make() {
-        User user = new User();
+    private MiddleUser make() {
+        MiddleUser middleUser = new MiddleUser();
 
 
         Map<String, String> extra = Maps.newHashMap();
         extra.put("213","23");
 
-        user.setOutId(43L);
+        middleUser.setOutId(43L);
         
-        user.setName("SONGRENFEI");
+        middleUser.setName("SONGRENFEI");
         
-        user.setExtra(extra);
+        middleUser.setExtra(extra);
         
-        user.setCreatedAt(new Date());
+        middleUser.setCreatedAt(new Date());
         
-        user.setUpdatedAt(new Date());
+        middleUser.setUpdatedAt(new Date());
         
 
-        return user;
+        return middleUser;
     }
 
 }

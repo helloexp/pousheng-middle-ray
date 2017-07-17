@@ -3,13 +3,11 @@ package com.pousheng.auth.service;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.pousheng.auth.dao.UserDao;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 /**
  * Author: songrenfei
@@ -27,7 +25,7 @@ public class UserReadService {
         this.userDao = userDao;
     }
 
-    public Response<User> findById(Long Id) {
+    public Response<MiddleUser> findById(Long Id) {
         try {
             return Response.ok(userDao.findById(Id));
         } catch (Exception e) {
@@ -36,7 +34,7 @@ public class UserReadService {
         }
     }
 
-    public Response<Optional<User>> findByOutId(Long outId){
+    public Response<Optional<MiddleUser>> findByOutId(Long outId){
         try {
             return Response.ok(Optional.fromNullable(userDao.findByOutId(outId)));
         } catch (Exception e) {

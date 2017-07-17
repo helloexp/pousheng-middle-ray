@@ -2,7 +2,7 @@ package com.pousheng.auth.service;
 
 import com.google.common.base.Throwables;
 import com.pousheng.auth.dao.UserDao;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,22 +24,22 @@ public class UserWriteService {
         this.userDao = userDao;
     }
 
-    public Response<Long> create(User user) {
+    public Response<Long> create(MiddleUser middleUser) {
         try {
-            userDao.create(user);
-            return Response.ok(user.getId());
+            userDao.create(middleUser);
+            return Response.ok(middleUser.getId());
         } catch (Exception e) {
-            log.error("create user failed, user:{}, cause:{}", user, Throwables.getStackTraceAsString(e));
-            return Response.fail("user.create.fail");
+            log.error("create middleUser failed, middleUser:{}, cause:{}", middleUser, Throwables.getStackTraceAsString(e));
+            return Response.fail("middleUser.create.fail");
         }
     }
 
-    public Response<Boolean> update(User user) {
+    public Response<Boolean> update(MiddleUser middleUser) {
         try {
-            return Response.ok(userDao.update(user));
+            return Response.ok(userDao.update(middleUser));
         } catch (Exception e) {
-            log.error("update user failed, user:{}, cause:{}", user, Throwables.getStackTraceAsString(e));
-            return Response.fail("user.update.fail");
+            log.error("update middleUser failed, middleUser:{}, cause:{}", middleUser, Throwables.getStackTraceAsString(e));
+            return Response.fail("middleUser.update.fail");
         }
     }
 

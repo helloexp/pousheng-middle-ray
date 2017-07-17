@@ -7,7 +7,7 @@ package com.pousheng.middle.interceptors;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.pousheng.auth.model.User;
+import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
@@ -33,16 +33,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LoginInterceptor extends HandlerInterceptorAdapter {
 
-    private LoadingCache<Long, Response<User>> userCache;
+    private LoadingCache<Long, Response<MiddleUser>> userCache;
 
     @Autowired
     private UserReadService userReadService;
 
     @PostConstruct
     public void init() {
-        userCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(new CacheLoader<Long, Response<User>>() {
+        userCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(new CacheLoader<Long, Response<MiddleUser>>() {
             @Override
-            public Response<User> load(Long userId) throws Exception {
+            public Response<MiddleUser> load(Long userId) throws Exception {
                 return userReadService.findById(userId);
             }
         });
@@ -56,32 +56,32 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
             if (userIdInSession != null) {
 
                 final Long userId = Long.valueOf(userIdInSession.toString());
-                Response<? extends User> result = userCache.getUnchecked(userId);
+                Response<? extends MiddleUser> result = userCache.getUnchecked(userId);
                 if (!result.isSuccess()) {
-                    log.warn("failed to find user where id={},error code:{}", userId, result.getError());
+                    log.warn("failed to find middleUser where id={},error code:{}", userId, result.getError());
                     return false;
                 }
-                User user = result.getResult();
-                if (user != null) {
-                 /*   if (Objects.equal(user.getStatus(), UserStatus.DELETED.value()) ||
-                            Objects.equal(user.getStatus(), UserStatus.FROZEN.value()) ||
-                            Objects.equal(user.getStatus(), UserStatus.LOCKED.value())) {
+                MiddleUser middleUser = result.getResult();
+                if (middleUser != null) {
+                 /*   if (Objects.equal(middleUser.getStatus(), UserStatus.DELETED.value()) ||
+                            Objects.equal(middleUser.getStatus(), UserStatus.FROZEN.value()) ||
+                            Objects.equal(middleUser.getStatus(), UserStatus.LOCKED.value())) {
                         session.invalidate();
                         return false;
                     }*/
-                   /* if (!userTypeBean.isAdmin(user) && !userTypeBean.isOperator(user)) {
-                        log.warn("user(id={})'s is not admin or operator, its type is {}", userId, user.getType());
+                   /* if (!userTypeBean.isAdmin(middleUser) && !userTypeBean.isOperator(middleUser)) {
+                        log.warn("middleUser(id={})'s is not admin or operator, its type is {}", userId, middleUser.getType());
                         session.invalidate();
                         return false;
                     }
-                    if (userTypeBean.isOperator(user)) {
-                        Operator operator = RespHelper.or500(operatorReadService.findByUserId(user.getId()));
+                    if (userTypeBean.isOperator(middleUser)) {
+                        Operator operator = RespHelper.or500(operatorReadService.findByUserId(middleUser.getId()));
                         if (operator == null || !Objects.equal(operator.getStatus(), 1)) {
                             session.invalidate();
                             return false;
                         }
                     }*/
-                    ParanaUser paranaUser = ParanaUserMaker.from(user);
+                    ParanaUser paranaUser = ParanaUserMaker.from(middleUser);
                     UserUtil.putCurrentUser(paranaUser);
                 }
             }

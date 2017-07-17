@@ -188,27 +188,7 @@ public class MiddleFlowBook {
             //待发货 -->发货 -> 商家已发货,待同步电商平台
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
-                    MiddleShipmentsStatus.SHIPPED_WAIT_SYNC_ECP.getValue());
-
-            //待同步电商平台 -->同步 --> 同步中
-            addTransition(MiddleShipmentsStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
-                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_ECP_ING.getValue());
-
-            //同步中 -->同步成功 --> 待收货
-            addTransition(MiddleShipmentsStatus.SYNC_ECP_ING.getValue(),
-                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue());
-
-            //同步中 -->同步失败 --> 同步失败
-            addTransition(MiddleShipmentsStatus.SYNC_ECP_ING.getValue(),
-                    MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_ECP_FAIL.getValue());
-
-            //同步失败 -->同步 --> 同步中
-            addTransition(MiddleShipmentsStatus.SYNC_ECP_FAIL.getValue(),
-                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_ECP_ING.getValue());
+                    MiddleShipmentsStatus.SHIPPED.getValue());
 
             //===========逆向流程
 

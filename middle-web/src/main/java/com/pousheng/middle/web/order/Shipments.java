@@ -194,13 +194,8 @@ public class Shipments {
                 return Response.fail("shipment.not.belong.to.order");
             }
 
-            List<Integer> alreadyShipStatus = Lists.newArrayList(MiddleShipmentsStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
-                    MiddleShipmentsStatus.SYNC_ECP_ING.getValue(),
-                    MiddleShipmentsStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue(),
-                    MiddleShipmentsStatus.DONE.getValue(),
-                    MiddleShipmentsStatus.SYNC_ECP_FAIL.getValue());
             //发货单状态是否为已发货
-            if(!alreadyShipStatus.contains(orderShipment.getStatus())){
+            if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue())){
                 log.error("shipment(id:{}) current status:{} can not apply after sale",shipmentId,orderShipment.getStatus());
                 return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }

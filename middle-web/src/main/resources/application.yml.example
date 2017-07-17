@@ -38,15 +38,6 @@ session:
   redis-prefix: afsession
 
 
-
-redis:
-  host: 127.0.0.1
-  port: 6379
-  max-total: 10
-  max-idle: 2
-  test-on-borrow: true
-
-
 gateway:
   erp:
     host: http://localhost:27073

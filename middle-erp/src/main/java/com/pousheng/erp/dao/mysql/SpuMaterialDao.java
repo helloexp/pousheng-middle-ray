@@ -33,4 +33,15 @@ public class SpuMaterialDao extends MyBatisDao<SpuMaterial> {
     public List<SpuMaterial> findBySpuId(Long spuId){
         return getSqlSession().selectList(sqlId("findBySpuId"), spuId);
     }
+
+
+    /**
+     * 根据spuId列表查找对应的映射关系列表, 一个spuId可能对应多个货品id(归组)
+     *
+     * @param spuIds spuId 列表
+     * @return 对应的货品映射关系
+     */
+    public List<SpuMaterial> findBySpuIds(List<Long> spuIds){
+        return getSqlSession().selectList(sqlId("findBySpuIds"), spuIds);
+    }
 }

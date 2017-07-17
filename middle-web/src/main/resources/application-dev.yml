@@ -65,11 +65,9 @@ gateway:
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
   member:
     host: http://api-test-member.pousheng.com
+  uc:
+    host: ${USER_CENTER_GATEWAY}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
 open.api.gateway: ${OPEN_API_GATEWAY}
-
-
-
-user.center.gateway: ${USER_CENTER_GATEWAY}

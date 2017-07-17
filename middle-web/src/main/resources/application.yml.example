@@ -53,9 +53,9 @@ gateway:
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
   member:
     host: http://api-test-member.pousheng.com
+  uc:
+    host: http://devt-account.pousheng.com
 
 open.api.app.key: terminus
 open.api.secret: anywhere
 open.api.gateway: http://127.0.0.1:8090/api/gateway
-
-user.center.gateway: http://devt-account.pousheng.com

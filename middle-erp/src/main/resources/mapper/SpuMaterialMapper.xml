@@ -74,6 +74,16 @@
         WHERE spu_id = #{spuId}
     </select>
 
+    <select id="findBySpuIds" parameterType="list" resultMap="SpuMaterialMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE spu_id in
+        <foreach collection="list" open="(" separator="," close=")"
+                 item="item">
+            #{item}
+        </foreach>
+    </select>
+
    <select id="findByIds" parameterType="list" resultMap="SpuMaterialMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>

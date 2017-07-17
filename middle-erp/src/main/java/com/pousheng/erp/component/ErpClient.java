@@ -26,7 +26,7 @@ import java.util.Map;
 public class ErpClient {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
-    public static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     private final String host;
 
@@ -69,7 +69,70 @@ public class ErpClient {
             String body = r.body();
             log.error("failed to get (path={}, params:{}), http code:{}, message:{}",
                     path, params, code, body);
-            throw new ServiceException("erp.request.fail");
+            throw new ServiceException("erp.request.get.fail");
+        }
+    }
+
+
+    public String post(String path, Map<String, String> params){
+        HttpRequest r = HttpRequest.post(host+"/"+path, params, true)
+                .header("access-key", accessKey)
+                .acceptJson()
+                .acceptCharset(HttpRequest.CHARSET_UTF8);
+        if(r.ok()){
+            String body = r.body();
+            try {
+                JsonNode root = mapper.readTree(body);
+                boolean success = root.findPath("retCode").asInt() == 0;
+                if (!success) {
+                    String errorCode = root.findPath("retMessage").textValue();
+                    log.error("request url:{} failed,error code:{}", path, errorCode);
+                    throw new ServiceException(errorCode);
+                }
+                return body;
+            } catch (IOException e) {
+                log.error("failed to request url (path={}, params:{}), cause:{}",
+                        path, params, Throwables.getStackTraceAsString(e));
+                throw new ServiceException(e);
+            }
+        }else{
+            int code = r.code();
+            String body = r.body();
+            log.error("failed to post (path={}, params:{}), http code:{}, message:{}",
+                    path, params, code, body);
+            throw new ServiceException("erp.request.post.fail");
+        }
+    }
+
+    public String postJson(String path, String json){
+        HttpRequest r = HttpRequest.post(host+"/"+path)
+                .header("access-key", accessKey)
+                .contentType("application/json")
+                .send(json)
+                .acceptJson()
+                .acceptCharset(HttpRequest.CHARSET_UTF8);
+        if(r.ok()){
+            String body = r.body();
+            try {
+                JsonNode root = mapper.readTree(body);
+                boolean success = root.findPath("retCode").asInt() == 0;
+                if (!success) {
+                    String errorCode = root.findPath("retMessage").textValue();
+                    log.error("request url:{} failed,error code:{}", path, errorCode);
+                    throw new ServiceException(errorCode);
+                }
+                return body;
+            } catch (IOException e) {
+                log.error("failed to request url (path={}, params:{}), cause:{}",
+                        path, json, Throwables.getStackTraceAsString(e));
+                throw new ServiceException(e);
+            }
+        }else{
+            int code = r.code();
+            String body = r.body();
+            log.error("failed to post (path={}, params:{}), http code:{}, message:{}",
+                    path, json, code, body);
+            throw new ServiceException("erp.request.post.fail");
         }
     }
 

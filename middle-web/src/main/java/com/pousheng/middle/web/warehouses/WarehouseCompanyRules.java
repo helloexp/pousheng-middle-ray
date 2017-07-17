@@ -132,8 +132,8 @@ public class WarehouseCompanyRules {
      *
      * @return 当前未设置规则的公司列表
      */
-    @RequestMapping(value = "/todo", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Company> todo(){
+    @RequestMapping(value = "/company-candidate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Company> companyCandidate(){
         Map<String, Integer> params = ImmutableMap.of("pageNo",1, "pageSize", Integer.MAX_VALUE);
         HttpRequest r = HttpRequest.get(memberHost+"/api/member/pousheng/company/list", params, true)
                 .acceptJson()
@@ -156,6 +156,7 @@ public class WarehouseCompanyRules {
         Map<String, Object> params = Maps.newHashMap();
         params.put("pageNo", 1);
         params.put("pageSize", 10);
+        params.put("storeType", 1);
         if(StringUtils.hasText(namePrefix)){
             params.put("storeName", namePrefix);
         }

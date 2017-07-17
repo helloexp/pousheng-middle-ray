@@ -537,14 +537,18 @@ public class RefundWriteLogic {
         long shipmentId = refundExtra.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        for (RefundItem refundItem: refundItems){
-            for (ShipmentItem shipmentItem:shipmentItems){
-                if (Objects.equals(refundItem.getSkuCode(),shipmentItem.getSkuCode())){
-                    shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-refundItem.getApplyQuantity());
-                }
-            }
-        }
 
+        Map<String,RefundItem> skuCodeAndRefundItemMap = refundItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
+
+        shipmentItems.forEach(it -> {
+            RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
+            if (refundItem!=null)
+            {
+                it.setRefundQuantity(it.getRefundQuantity()-refundItem.getApplyQuantity());
+            }
+
+        });
         Map<String,String> shipmentExtraMap = shipment.getExtra();
         shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
         shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);

@@ -108,8 +108,6 @@ public class Refunds {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
         refundWriteLogic.deleteRefund(refund);
-        //回滚发货单的数量
-        refundWriteLogic.rollbackRefundQuantities(refund);
     }
 
 

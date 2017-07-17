@@ -166,7 +166,6 @@ public class Refunds {
     }
 
 
-
     /**
      * 取消售后单
      * @param refundId 售后单id
@@ -179,6 +178,8 @@ public class Refunds {
             log.error("cancel refund(id:{}) fail,error:{}",refundId,cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
         }
+        //回滚发货单的数量
+        refundWriteLogic.rollbackRefundQuantities(refund);
     }
 
 
@@ -194,6 +195,8 @@ public class Refunds {
             log.error("sync cancel refund(id:{}) to hk fail,error:{}",refundId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
+        //回滚发货单的数量
+        refundWriteLogic.rollbackRefundQuantities(refund);
     }
 
     /**

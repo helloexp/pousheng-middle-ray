@@ -14,6 +14,7 @@ import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -124,6 +125,26 @@ public class UcUserOperationLogic {
             return Response.fail("create.uc.user.fail");
 
         }
+
+    }
+
+
+
+    public Response<List<UcUserInfo>> queryUserByName(String userName){
+        try {
+            String criteria =  "?query=username:"+userName;
+            String result = HttpRequest.get(userCenterGateway+criteria).connectTimeout(1000000).readTimeout(1000000).body();
+            log.info("query uc user result:{}",result);
+            checkResult(result);
+            return Response.ok(JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(result,JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,UcUserInfo.class)));
+        }catch (ServiceException e){
+            log.error("query user center user by name:{} fail,error:{}",userName,e.getMessage());
+            return Response.fail(e.getMessage());
+        }catch (Exception e){
+            log.error("query user center user by name:{} fail,cause:{}",userName,Throwables.getStackTraceAsString(e));
+            return Response.fail("query.user.center.user.fail");
+        }
+
 
     }
 

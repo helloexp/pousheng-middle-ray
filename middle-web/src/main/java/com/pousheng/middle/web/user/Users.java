@@ -139,4 +139,17 @@ public class Users {
     public ParanaUser findCurrentUser() {
         return UserUtil.getCurrentUser();
     }
+
+
+    @RequestMapping(value = "/uc/query", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<UcUserInfo> findUserCenterUser(@RequestParam String userName) {
+        Response<List<UcUserInfo>> listRes = operationLogic.queryUserByName(userName);
+        if(!listRes.isSuccess()){
+            log.error("find user center user by name:{} fail,error:{}",userName,listRes.getError());
+            throw new JsonResponseException(listRes.getError());
+        }
+
+        return listRes.getResult();
+    }
+
 }

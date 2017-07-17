@@ -9,18 +9,22 @@ import com.pousheng.auth.service.UserReadService;
 import com.pousheng.auth.service.UserWriteService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.user.component.UserManageShopReader;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Params;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.auth.service.OperatorWriteService;
 import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.utils.RespHelper;
+import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.user.model.User;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +54,9 @@ public class OperatorApis {
     private OperatorWriteService operatorWriteService;
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
+    @Autowired
+    private UserManageShopReader userManageShopReader;
+
 
     /**
      * ADMIN 创建运营
@@ -242,6 +249,11 @@ public class OperatorApis {
                                                      @RequestParam(required = false) Integer pageNo,
                                                      @RequestParam(required = false) Integer pageSize) {
         return operatorReadService.pagination(roleId, null, pageNo, pageSize);
+    }
+
+    @RequestMapping(value = "/manage/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<OpenClientShop> findManageShops() {
+        return userManageShopReader.findManageShops(UserUtil.getCurrentUser());
     }
 
     @Data

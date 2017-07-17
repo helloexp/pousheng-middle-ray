@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dto.fsm;
 
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -8,6 +9,52 @@ import io.terminus.parana.order.dto.fsm.Flow;
  * Created by songrenfei on 2017/6/12
  */
 public class MiddleFlowBook {
+
+
+
+    /**
+     * 电商订单流程
+     */
+    public static final Flow ecpOrderFlow = new Flow("ecpOrderFlow") {
+
+        /**
+         * 配置流程
+         */
+        @Override
+        protected void configure() {
+            //===========正向流程
+            //待发货 -->发货 -> 已发货，待同步电商
+            addTransition(EcpOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue());
+
+            //待同步电商平台 -->同步 --> 同步中
+            addTransition(EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
+                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_ING.getValue());
+
+            //同步中 -->同步成功 --> 待收货
+            addTransition(EcpOrderStatus.SYNC_ECP_ING.getValue(),
+                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue());
+
+            //待收货 -->确认收货 --> 确认收货
+            addTransition(EcpOrderStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue(),
+                    MiddleOrderEvent.CONFIRM.toOrderOperation(),
+                    EcpOrderStatus.CONFIRMED.getValue());
+
+            //同步中 -->同步失败 --> 同步失败
+            addTransition(EcpOrderStatus.SYNC_ECP_ING.getValue(),
+                    MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_FAIL.getValue());
+
+            //同步失败 -->同步 --> 同步中
+            addTransition(EcpOrderStatus.SYNC_ECP_FAIL.getValue(),
+                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_ING.getValue());
+        }
+    };
+
 
 
     /**

@@ -152,11 +152,13 @@ public class WarehouseCompanyRules {
     }
 
     @RequestMapping(value = "/erpShops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ErpShop> erpShops(@RequestParam(value = "prefix", required = false) String namePrefix){
+    public List<ErpShop> erpShops(@RequestParam("companyCode")String companyCode,
+                                  @RequestParam(value = "prefix", required = false) String namePrefix){
         Map<String, Object> params = Maps.newHashMap();
         params.put("pageNo", 1);
         params.put("pageSize", 10);
         params.put("storeType", 1);
+        params.put("companyId", companyCode);
         if(StringUtils.hasText(namePrefix)){
             params.put("storeName", namePrefix);
         }

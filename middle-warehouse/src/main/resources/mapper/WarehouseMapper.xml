@@ -39,6 +39,8 @@
 
     <sql id="queryCondition">
 
+        <if test="codePrefix!=null">and `code` like concat(#{codePrefix},'-%')</if>
+
         <if test="code != null">and `code` = #{code}</if>
 
         <if test="name != null">and `name` LIKE CONCAT(#{name}, '%')</if>
@@ -135,6 +137,7 @@
         from
         <include refid="tb"/>
         <where>
+            1=1
             <include refid="queryCondition"/>
         </where>
     </select>

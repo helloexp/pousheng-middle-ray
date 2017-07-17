@@ -527,6 +527,31 @@ public class RefundWriteLogic {
         });
     }
 
+    /**
+     * 售后单取消,删除时回滚发货单中退货数量
+     * @param refund
+     */
+    public  void rollbackRefundQuantities(Refund refund){
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        long shipmentId = refundExtra.getShipmentId();
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
+        Map<String,RefundItem> skuCodeAndRefundItemMap = refundItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
+
+        shipmentItems.forEach(it -> {
+            RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
+            if (refundItem!=null)
+            {
+                it.setRefundQuantity(it.getRefundQuantity()-refundItem.getApplyQuantity());
+            }
+
+        });
+        Map<String,String> shipmentExtraMap = shipment.getExtra();
+        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+        shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
+    }
 
 }

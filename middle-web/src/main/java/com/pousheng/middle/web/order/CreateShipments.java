@@ -12,6 +12,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -120,6 +121,10 @@ public class CreateShipments {
         }
 
         WarehouseCompanyRule companyRule = ruleRes.getResult();
+        if(Arguments.isNull(companyRule)){
+            log.error("not find warehouse company rule by company code:{}",companyCode);
+           return Response.fail("warehouse.company.rule.not.exist");
+        }
         shipmentPreview.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
         shipmentPreview.setErpOrderShopName(companyRule.getShopName());
         shipmentPreview.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));

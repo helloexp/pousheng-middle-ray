@@ -62,7 +62,7 @@ public class UcUserOperationLogic {
 
     public UcUserInfo authGetUserInfo(String token){
 
-        String resultJson = HttpRequest.get("http://devt-account.pousheng.com/userinfo")
+        String resultJson = HttpRequest.get(userCenterGateway+"/userinfo")
                 .authorization("Bearer " + token)
                 .connectTimeout(1000000)
                 .readTimeout(1000000)

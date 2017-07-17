@@ -119,6 +119,7 @@ public class ShipmentReadLogic {
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setQuantity(skuOrder.getQuantity());
             //todo 计算各种价格
+            shipmentItem.setCleanFee(10000);
 
             shipmentItems.add(shipmentItem);
         }

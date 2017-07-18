@@ -88,18 +88,24 @@ public class OrderOpenApi {
      * @return 是否同步成功
      */
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId", "shipmentCorpCode", "shipmentSerialNo",
-            "shipmentDate"}, httpMethods = RequestMethod.POST)
+            "shipmentDate","posSerialNo","posType","posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
     public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.no.empty") String shipmentSerialNo,
-                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate) {
+                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate,
+                                     @NotEmpty(message = "pos.serial.no.empty")String posSerialNo,
+                                     @NotEmpty(message = "pos.type.no.empty")String posType,
+                                     @NotEmpty(message = "pos.amt.no.empty")String posAmt,
+                                     @NotEmpty(message = "pos.created.time.no.empty")String posCreatedAt) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
-                "shipmentSerialNo is:{} shipmentDate is:{}", shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
+                "shipmentSerialNo is:{} shipmentDate is:{} posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",
+                shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate,posSerialNo,posType,posAmt,posCreatedAt);
 
         try {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
+            DateTime dPos = DateTime.parse(posCreatedAt, DFT);
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
 
             //判断状态及获取接下来的状态
@@ -128,6 +134,11 @@ public class OrderOpenApi {
             //通过恒康代码查找快递名称
             shipmentExtra.setShipmentCorpName(makeExpressNameByhkCode(shipmentCorpCode));
             shipmentExtra.setShipmentDate(dt.toDate());
+            //添加pos单相关信息
+            shipmentExtra.setPosSerialNo(posSerialNo);
+            shipmentExtra.setPosType(posType);
+            shipmentExtra.setPosAmt(Integer.valueOf(posAmt));
+            shipmentExtra.setPosCreatedAt(dPos.toDate());
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
 
@@ -169,7 +180,6 @@ public class OrderOpenApi {
                                    @NotEmpty(message = "received.date.empty") String receivedDate) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
                 "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
-
         try {
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
             if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {

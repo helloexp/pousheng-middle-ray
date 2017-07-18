@@ -49,5 +49,13 @@ public class ShipmentExtra implements Serializable{
     private String shipmentSerialNo;
     //发货时间
     private Date shipmentDate;
+    //pos单号
+    private String posSerialNo;
+    //pos单类型
+    private String posType;
+    //pos单金额
+    private Integer posAmt;
+    //pos单生成时间
+    private Date posCreatedAt;
 
 }

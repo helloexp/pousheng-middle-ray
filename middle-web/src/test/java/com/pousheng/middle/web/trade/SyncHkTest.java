@@ -47,11 +47,15 @@ public class SyncHkTest {
 
         params.put("appKey","pousheng");
         params.put("pampasCall","hk.shipments.api");
-        params.put("shipmentId","10");
-        params.put("hkShipmentId","10");
+        params.put("shipmentId","11");
+        params.put("hkShipmentId","11");
         params.put("shipmentCorpCode","hkshunfeng");
         params.put("shipmentSerialNo","7423333332");
         params.put("shipmentDate","20160625224210");
+        params.put("posSerialNo","123455687");
+        params.put("posType","2");
+        params.put("posAmt","234.75");
+        params.put("posCreatedAt","20170625224210");
         String sign = sign("middle");
         System.out.println("==============sign: "+sign);
         params.put("sign",sign);

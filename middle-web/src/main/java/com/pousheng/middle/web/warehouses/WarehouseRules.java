@@ -74,7 +74,7 @@ public class WarehouseRules {
         Response<Paging<RuleGroup>> r = warehouseRuleReadService.pagination(pageNo, pageSize);
         if (!r.isSuccess()) {
             log.error("failed to pagination rule group, error code:{}", r.getError());
-            throw new JsonResponseException("warehouse.rule.find.fail");
+            throw new JsonResponseException(r.getError());
         }
         return r.getResult();
     }

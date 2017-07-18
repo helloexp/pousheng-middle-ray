@@ -13,6 +13,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -48,9 +49,11 @@ public class WarehouseStockApi {
             Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
             if(!r.isSuccess()){
                 log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
+                throw new OPServerException(r.getError());
             }
         } catch (Exception e) {
             log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
+            throw new OPServerException("stock.data.invalid");
         }
 
     }

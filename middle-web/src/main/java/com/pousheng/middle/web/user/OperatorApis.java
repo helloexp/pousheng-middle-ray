@@ -9,18 +9,23 @@ import com.pousheng.auth.service.UserReadService;
 import com.pousheng.auth.service.UserWriteService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.user.component.UserManageShopReader;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Params;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.auth.service.OperatorWriteService;
 import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.utils.RespHelper;
+import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.user.model.User;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +55,9 @@ public class OperatorApis {
     private OperatorWriteService operatorWriteService;
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
+    @Autowired
+    private UserManageShopReader userManageShopReader;
+
 
     /**
      * ADMIN 创建运营
@@ -64,13 +72,15 @@ public class OperatorApis {
             log.warn("create operator failed, no username specified");
             throw new JsonResponseException("operator.username.can.not.be.null");
         }
-        String pw = Params.trimToNull(operator.getPassword());
-        if (pw == null) {
-            log.warn("create operator failed, no password specified");
-            throw new JsonResponseException("operator.password.can.not.be.null");
-        }
 
-        judgePassword(operator.getPassword());
+        if(!isBindingUser(operator)){
+            String pw = Params.trimToNull(operator.getPassword());
+            if (pw == null) {
+                log.warn("create operator failed, no password specified");
+                throw new JsonResponseException("operator.password.can.not.be.null");
+            }
+            judgePassword(operator.getPassword());
+        }
         judgeUsername(operator.getUsername());
 
         Operator toCreateOperator = new Operator();
@@ -81,20 +91,25 @@ public class OperatorApis {
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
         toCreateOperator.setExtra(extraMap);
 
-
-        //调用用户中心创建用户
-        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(),operator.getPassword());
-        if(!ucUserInfoRes.isSuccess()){
-            log.error("create middleUser center middleUser(name:{}) fail,error:{}",operator.getUsername(),ucUserInfoRes.getError());
-            throw new JsonResponseException(ucUserInfoRes.getError());
+        Long outUserId ;
+        if(isBindingUser(operator)){
+            outUserId = operator.getUserId();
+        }else {
+            //调用用户中心创建用户
+            Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(),operator.getPassword());
+            if(!ucUserInfoRes.isSuccess()){
+                log.error("create middleUser center middleUser(name:{}) fail,error:{}",operator.getUsername(),ucUserInfoRes.getError());
+                throw new JsonResponseException(ucUserInfoRes.getError());
+            }
+            UcUserInfo ucUserInfo = ucUserInfoRes.getResult();
+            outUserId = ucUserInfo.getUserId();
         }
-        UcUserInfo ucUserInfo = ucUserInfoRes.getResult();
 
 
         // 创建 middle middleUser
         MiddleUser middleUser = new MiddleUser();
         middleUser.setName(un);
-        middleUser.setOutId(ucUserInfo.getUserId());
+        middleUser.setOutId(outUserId);
         middleUser.setType(UserType.OPERATOR.value());
         middleUser.setRoles(Lists.newArrayList(UserRole.OPERATOR.name()));
         Response<Long> userCreateResp = userWriteService.create(middleUser);
@@ -191,6 +206,10 @@ public class OperatorApis {
         return manageShopIds;
     }
 
+    private Boolean isBindingUser(OperatorPost operatorPost){
+        return !Arguments.isNull(operatorPost.getUserId());
+    }
+
     @RequestMapping(value = "/{userId}/frozen", method = RequestMethod.PUT)
     public Boolean frozenOperator(@PathVariable Long userId) {
         Response<Operator> opResp = operatorReadService.findByUserId(userId);
@@ -244,6 +263,11 @@ public class OperatorApis {
         return operatorReadService.pagination(roleId, null, pageNo, pageSize);
     }
 
+    @RequestMapping(value = "/manage/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<OpenClientShop> findManageShops() {
+        return userManageShopReader.findManageShops(UserUtil.getCurrentUser());
+    }
+
     @Data
     public static class OperatorPost {
 
@@ -254,5 +278,8 @@ public class OperatorApis {
         private Long roleId;
         //管理店铺ids
         private List<Long> manageShopIds;
+
+        //用户中心用户id（绑定已有账户时）
+        private Long userId;
     }
 }

@@ -79,6 +79,7 @@ public class StockPusher {
             @Override
             public void run() {
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
+                //找到对应的店铺id, 这些店铺需要进行库存推送
                 Response<List<Long>> r =pushedItemReadService.findPushedOpenShopIdsOfItem(spuId);
                 if(!r.isSuccess()){
                     log.error("failed to find out shops for spu(id={}), error code:{}", spuId, r.getError());

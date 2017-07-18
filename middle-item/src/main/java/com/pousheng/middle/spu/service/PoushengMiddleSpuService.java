@@ -4,12 +4,16 @@ import com.google.common.base.Throwables;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
 import io.terminus.parana.spu.impl.dao.SpuDao;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -18,8 +22,12 @@ import java.util.Map;
 @Slf4j
 @Service
 public class PoushengMiddleSpuService {
+
     @Autowired
     private SpuDao spuDao;
+
+    @Autowired
+    private SkuTemplateDao skuTemplateDao;
 
     /**
      * 分页查询spu列表
@@ -37,6 +45,21 @@ public class PoushengMiddleSpuService {
         } catch (Exception e) {
             log.error("failed to find spus by {}, cause:{}", params, Throwables.getStackTraceAsString(e));
             return Response.fail("spu.find.fail");
+        }
+    }
+
+    public Response<SkuTemplate> findBySkuCode(String skuCode) {
+        try {
+            List<SkuTemplate> skuTemplates = skuTemplateDao.findBySkuCode(skuCode);
+            if (CollectionUtils.isEmpty(skuTemplates)) {
+                log.error("sku template not found where skuCode={}", skuCode);
+                return Response.fail("sku.template.not.found");
+            }
+            return Response.ok(skuTemplates.get(0));
+        } catch (Exception e) {
+            log.error("fail to find sku template by skuCode={},cause:{}",
+                    skuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.template.find.fail");
         }
     }
 }

@@ -16,7 +16,11 @@
         <dependency>
             <groupId>com.github.kevinsawicki</groupId>
             <artifactId>http-request</artifactId>
-            <version>6.0</version>
+            <!-- 这里是个特殊的版本，定制修改了http的HttpRequest.java中的TLS为TLSv1
+              SSLContext context = SSLContext.getInstance("TLS");
+              SSLContext context = SSLContext.getInstance("TLSv1");
+            -->
+            <version>5.6.x</version>
         </dependency>
 
         <dependency>

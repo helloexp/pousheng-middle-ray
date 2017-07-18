@@ -29,12 +29,14 @@ public interface WarehouseShopStockRuleReadService {
      */
     Response<WarehouseShopStockRule> findByShopId(Long shopId);
 
+
     /**
-     * 分页
-     * @param pageNo 起始页码
+     * 分页列出对应店铺的库存分配规则
+     *
+     * @param pageNo  起始页码
      * @param pageSize 每页返回数量
-     * @param criteria 查询参数
-     * @return Paging<WarehouseShopStockRule>
+     * @param shopIds 店铺列表
+     * @return 对应的规则
      */
-    Response<Paging<WarehouseShopStockRule>> paging(Integer pageNo, Integer pageSize, Map<String, Object> criteria);
+    Response<Paging<WarehouseShopStockRule>> pagination(Integer pageNo, Integer pageSize, List<Long> shopIds);
 }

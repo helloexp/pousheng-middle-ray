@@ -12,22 +12,22 @@ public interface WarehouseShopStockRuleWriteService {
 
     /**
      * 创建
-     * @param warehouseShopStockRule
-     * @return Boolean
+     * @param warehouseShopStockRule  店铺库存分配规则
+     * @return  新创建的规则id
      */
     Response<Long> create(WarehouseShopStockRule warehouseShopStockRule);
 
     /**
      * 更新
-     * @param warehouseShopStockRule
-     * @return Boolean
+     * @param warehouseShopStockRule 店铺库存分配规则
+     * @return 是否更新成功
      */
     Response<Boolean> update(WarehouseShopStockRule warehouseShopStockRule);
 
     /**
      * 删除
-     * @param id
-     * @return Boolean
+     * @param id 要删除分配规则的id
+     * @return  是否删除成功
      */
     Response<Boolean> delete(Long id);
 

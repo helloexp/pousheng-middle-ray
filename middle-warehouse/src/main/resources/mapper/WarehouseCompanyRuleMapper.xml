@@ -93,6 +93,8 @@
         UPDATE
         <include refid="tb"/>
         <set>
+            <if test="shopId != null">shop_id = #{shopId},</if>
+            <if test="shopName != null">shop_name = #{shopName},</if>
             <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
             updated_at=now()

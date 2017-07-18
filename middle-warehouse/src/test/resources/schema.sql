@@ -125,4 +125,19 @@ CREATE TABLE `pousheng_warehouse_company_rules`(
   KEY `idx_wcr_company_code` (`company_code`)
 )COMMENT='公司规则';
 
+drop table if exists `pousheng_warehouse_shop_stock_rules`;
+CREATE TABLE `pousheng_warehouse_shop_stock_rules`(
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
+  `shop_name` varchar(128) NULL COMMENT '店铺名称',
+  `safe_stock` bigint(20) NOT NULL COMMENT '安全库存, 低于这个库存认为要推送的是0',
+  `ratio` int(10) NOT NULL COMMENT '库存分配比率, 以整数表示',
+  `status` tinyint(4) NOT NULL COMMENT '状态, 1 - 启用, -1 停用',
+  `last_push_stock` bigint(20)  NULL COMMENT '上次推送数量',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_pwssr_shop_id` (`shop_id`)
+)COMMENT='店铺的库存分配规则';
+
 

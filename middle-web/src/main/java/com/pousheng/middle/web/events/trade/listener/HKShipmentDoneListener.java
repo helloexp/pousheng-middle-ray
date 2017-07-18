@@ -97,29 +97,23 @@ public class HKShipmentDoneListener {
                     }
                 });
 
-                //判断此时是否还有处于待发货的发货单,如果没有,则此时店铺订单状态应该更新为待通知电商平台,sku订单更新状态时应该考虑排除已取消订单状态的更新
-                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
+                //判断此时是否还有处于待发货,待通知恒康,通知恒康中的发货单;如果没有,则此时店铺订单状态应该更新为已发货,sku订单更新状态时应该考虑排除已取消订单状态的更新
+                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
+                        && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
+                        !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
                     //待发货--商家已经发货
-                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
-                    List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).
-                            filter(skuOrder -> (skuOrder.getStatus() != MiddleOrderStatus.CANCEL.getValue())).collect(Collectors.toList());
-                    for (SkuOrder skuOrder : skuOrdersFilter) {
-                        Response<Boolean> updateRlt = orderWriteService.updateOrderStatus(skuOrder.getId(), OrderLevel.SKU, MiddleOrderStatus.SHIPPED.getValue());
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue());
+                    for (SkuOrder skuOrder : skuOrders) {
+                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue(), MiddleOrderStatus.SHIPPED.getValue());
                         if (!updateRlt.getResult()) {
                             log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                             throw new JsonResponseException("update.sku.order.status.error");
                         }
                     }
-                    //更新总的订单
-                    Response<Boolean> updateRlt = orderWriteService.updateOrderStatus(shopOrder.getId(), OrderLevel.SHOP, MiddleOrderStatus.SHIPPED.getValue());
-                    if (!updateRlt.getResult()) {
-                        log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
-                        throw new JsonResponseException("update.shop.order.status.error");
-                    }
                     //此时判断EcpOrderStatus的状态,如果ecpOrderStatus是已收货,直接将订单表状态更新为已经完成
-                    String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
-                    if (Objects.equals(Integer.valueOf(ecpOrderStatus),EcpOrderStatus.CONFIRMED.getValue())){
-                        Response<Boolean> updateRes = orderWriteService.shopOrderStatusChanged(shopOrder.getId(),MiddleOrderStatus.SHIPPED.getValue(),MiddleOrderStatus.CONFIRMED.getValue());
+                    String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+                    if (Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.CONFIRMED.getValue())) {
+                        Response<Boolean> updateRes = orderWriteService.shopOrderStatusChanged(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
                         if (!updateRes.getResult()) {
                             log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
                             throw new JsonResponseException("update.shop.order.status.error");
@@ -145,7 +139,9 @@ public class HKShipmentDoneListener {
                         return orderShipment.getStatus();
                     }
                 });
-                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
+                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
+                        && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
+                        !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
                     //更新售后单的处理状态
 
                     Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.SHIP.toOrderOperation());

@@ -447,7 +447,7 @@ public class OrderWriteLogic {
         extraMap.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(targetStatus));
         Response<Boolean> response = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
         if (!response.isSuccess()) {
-            log.error("update sku order：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response.getError());
+            log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response.getError());
             return Response.fail(response.getError());
         }
         return Response.ok();

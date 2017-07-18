@@ -182,40 +182,4 @@ public class AdminOrderReader {
 
         return Response.ok(withReceiveInfo);
     }
-
-
-    /**
-     * 同步订单信息到电商
-     * @param shopOrderId
-     */
-    @RequestMapping(value = "api/order/{id}/sync/ecp",method = RequestMethod.PUT)
-    public void syncOrderInfoToEcp(@PathVariable(value = "id") Long shopOrderId){
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder);
-        if(!syncRes.isSuccess()){
-            log.error("sync shopOrder(id:{}) to ecp fail,error:{}",shopOrderId,syncRes.getError());
-            throw new JsonResponseException(syncRes.getError());
-        }
-
-    }
-
-    /**
-     * 删除子订单
-     * @param id shopOrder的id
-     * @param skuCode
-     */
-    @RequestMapping(value = "api/order/{id}/cancel/skuorder", method = RequestMethod.PUT)
-    public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.cancelSkuOrder(id, skuCode);
-    }
-
-    /**
-     * 电商确认收货
-     * @param shopOrderId
-     */
-    @RequestMapping(value = "api/order/{id}/confirm")
-    public void confirmOrders(@PathVariable("id") Long shopOrderId){
-        ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
-        orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
-    }
 }

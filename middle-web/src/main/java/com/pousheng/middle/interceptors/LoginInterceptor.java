@@ -4,6 +4,7 @@
 
 package com.pousheng.middle.interceptors;
 
+import com.google.common.base.Objects;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -11,8 +12,14 @@ import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.parana.auth.model.Operator;
+import io.terminus.parana.auth.service.OperatorReadService;
+import io.terminus.parana.common.enums.UserStatus;
+import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.model.ParanaUser;
+import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +44,8 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
 
     @Autowired
     private UserReadService userReadService;
+    @RpcConsumer
+    private OperatorReadService operatorReadService;
 
     @PostConstruct
     public void init() {
@@ -63,24 +72,19 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
                 }
                 MiddleUser middleUser = result.getResult();
                 if (middleUser != null) {
-                 /*   if (Objects.equal(middleUser.getStatus(), UserStatus.DELETED.value()) ||
-                            Objects.equal(middleUser.getStatus(), UserStatus.FROZEN.value()) ||
-                            Objects.equal(middleUser.getStatus(), UserStatus.LOCKED.value())) {
-                        session.invalidate();
-                        return false;
-                    }*/
-                   /* if (!userTypeBean.isAdmin(middleUser) && !userTypeBean.isOperator(middleUser)) {
+
+                    if (!Objects.equal(middleUser.getType(), UserType.ADMIN.value()) && !Objects.equal(middleUser.getType(), UserType.OPERATOR.value())) {
                         log.warn("middleUser(id={})'s is not admin or operator, its type is {}", userId, middleUser.getType());
                         session.invalidate();
                         return false;
                     }
-                    if (userTypeBean.isOperator(middleUser)) {
+                    if (Objects.equal(middleUser.getType(), UserType.OPERATOR.value())) {
                         Operator operator = RespHelper.or500(operatorReadService.findByUserId(middleUser.getId()));
                         if (operator == null || !Objects.equal(operator.getStatus(), 1)) {
                             session.invalidate();
                             return false;
                         }
-                    }*/
+                    }
                     ParanaUser paranaUser = ParanaUserMaker.from(middleUser);
                     UserUtil.putCurrentUser(paranaUser);
                 }

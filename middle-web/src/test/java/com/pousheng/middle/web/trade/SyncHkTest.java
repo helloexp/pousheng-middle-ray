@@ -5,9 +5,20 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.web.MiddleConfiguration;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import java.util.Map;
 
@@ -17,7 +28,10 @@ import java.util.Map;
 @Slf4j
 public class SyncHkTest {
 
-
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
     @Test
     public void testEsb(){
         String url ="https://esbt.pousheng.com/common/terminus/base/gethelloworld?name=1923311113";
@@ -33,8 +47,8 @@ public class SyncHkTest {
 
         params.put("appKey","pousheng");
         params.put("pampasCall","hk.shipments.api");
-        params.put("shipmentId","76");
-        params.put("hkShipmentId","76");
+        params.put("shipmentId","7");
+        params.put("hkShipmentId","7");
         params.put("shipmentCorpCode","hkshunfeng");
         params.put("shipmentSerialNo","7423333332");
         params.put("shipmentDate","20160625224210");

@@ -33,4 +33,10 @@ public class MiddleOrderFlowPicker {
     public Flow pickAfterSales() {
         return MiddleFlowBook.afterSalesFlow;
     }
+
+    /**
+     * 获取订单通知电商流程
+     * @return
+     */
+    public Flow pickEcpOrder(){ return MiddleFlowBook.ecpOrderFlow;}
 }

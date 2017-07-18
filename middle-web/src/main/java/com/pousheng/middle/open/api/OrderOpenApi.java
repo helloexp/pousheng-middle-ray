@@ -137,7 +137,7 @@ public class OrderOpenApi {
             //添加pos单相关信息
             shipmentExtra.setPosSerialNo(posSerialNo);
             shipmentExtra.setPosType(posType);
-            shipmentExtra.setPosAmt(Integer.valueOf(posAmt));
+            shipmentExtra.setPosAmt(posAmt);
             shipmentExtra.setPosCreatedAt(dPos.toDate());
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);

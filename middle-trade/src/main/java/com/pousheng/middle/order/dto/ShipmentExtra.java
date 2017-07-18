@@ -54,7 +54,7 @@ public class ShipmentExtra implements Serializable{
     //pos单类型
     private String posType;
     //pos单金额
-    private Integer posAmt;
+    private String posAmt;
     //pos单生成时间
     private Date posCreatedAt;
 

@@ -47,8 +47,8 @@ public class SyncHkTest {
 
         params.put("appKey","pousheng");
         params.put("pampasCall","hk.shipments.api");
-        params.put("shipmentId","11");
-        params.put("hkShipmentId","11");
+        params.put("shipmentId","12");
+        params.put("hkShipmentId","12");
         params.put("shipmentCorpCode","hkshunfeng");
         params.put("shipmentSerialNo","7423333332");
         params.put("shipmentDate","20160625224210");

@@ -9,6 +9,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.taobao.api.domain.Sku;
@@ -18,6 +19,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -425,6 +427,30 @@ public class OrderWriteLogic {
                 throw new ServiceException(updateSkuOrderResp.getError());
             }
         };
+    }
+
+    /**
+     * 更新shopOrder表的ecpOrderStatus
+     * @param shopOrder
+     * @param orderOperation
+     */
+    public Response<Boolean> updateEcpOrderStatus(ShopOrder shopOrder, OrderOperation orderOperation){
+        Flow flow = flowPicker.pickEcpOrder();
+        String currentStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+        if (!flow.operationAllowed(Integer.valueOf(currentStatus), orderOperation)) {
+            log.error("shopOrder(id:{}) current status:{} not allow operation:{}", shopOrder.getId(), currentStatus,orderOperation.getText());
+            return Response.fail("shopOrder.ecp.status.not.allow.current.operation");
+        }
+        Integer targetStatus = flow.target(Integer.valueOf(currentStatus),orderOperation);
+
+        Map<String, String> extraMap = shopOrder.getExtra();
+        extraMap.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(targetStatus));
+        Response<Boolean> response = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+        if (!response.isSuccess()) {
+            log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response.getError());
+            return Response.fail(response.getError());
+        }
+        return Response.ok();
     }
 }
 

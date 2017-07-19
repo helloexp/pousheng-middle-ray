@@ -28,7 +28,6 @@ import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.sync.ecp.SyncShipmentToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -94,9 +93,6 @@ public class Shipments {
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
 
-
-    @Autowired
-    private SyncShipmentToEcpLogic syncShipmentToEcpLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -391,22 +387,6 @@ public class Shipments {
         unLockStockEvent.setShipment(shipment);
         eventBus.post(unLockStockEvent);
     }
-
-    /**
-     * 恒康发货后,同步发货单信息到电商
-     * @param shipmentId 发货单id
-     */
-    @RequestMapping(value = "api/shipment/{id}/sync/ecp",method = RequestMethod.PUT)
-    public void syncECPshipment(@PathVariable(value = "id") Long shipmentId){
-        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncShipmentToEcpLogic.syncShipmentToECP(shipment);
-        if(!syncRes.isSuccess()){
-            log.error("sync shipment(id:{}) to ecp fail,error:{}",shipmentId,syncRes.getError());
-            throw new JsonResponseException(syncRes.getError());
-        }
-
-    }
-
 
     private String findReceiverInfos(Long orderId, OrderLevel orderLevel) {
 

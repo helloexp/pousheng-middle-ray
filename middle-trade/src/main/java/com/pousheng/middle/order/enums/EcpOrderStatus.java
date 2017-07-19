@@ -18,8 +18,8 @@ public enum EcpOrderStatus {
     SHIPPED_WAIT_SYNC_ECP(1),      //已发货，待同步电商平台
     SYNC_ECP_ING(2),    //同步电商平台中（此状态前端可不用关心，只是为了后端flow通顺）
     SYNC_ECP_SUCCESS_WAIT_RECEIVED(3), //待收货
-    CONFIRMED(5),         //确认收货，已完成
-    SYNC_ECP_FAIL(-2);   //同步电商失败
+    CONFIRMED(4),         //确认收货，已完成
+    SYNC_ECP_FAIL(-1);   //同步电商失败
 
     private final int value;
 

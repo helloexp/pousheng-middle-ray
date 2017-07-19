@@ -3,7 +3,6 @@ package com.pousheng.middle.open.api.dto;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * erp推送过来的库存情况
@@ -38,5 +37,5 @@ public class ErpStock implements Serializable {
     /**
      * 更新时间
      */
-    private Date modify_time;
+    private String modify_time;
 }

@@ -90,7 +90,7 @@ public class StockPusher {
                 List<Long> shopIds = r.getResult();
                 for (Long shopId : shopIds) {
                     try{
-                        //todo: 计算每个渠道的可用库存
+                        //todo: 计算每个店铺的可用库存
                         Integer stock =0;
                         Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock);
                         if(!rP.isSuccess()){

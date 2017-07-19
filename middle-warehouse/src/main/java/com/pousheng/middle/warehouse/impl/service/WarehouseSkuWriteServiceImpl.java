@@ -138,6 +138,4 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
         }
         return Response.ok(Boolean.TRUE);
     }
-
-
 }

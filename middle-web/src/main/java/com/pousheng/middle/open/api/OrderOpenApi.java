@@ -95,7 +95,7 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate,
                                      @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
-                                     @NotEmpty(message = "pos.type.is.empty")String posType,
+                                     @NotEmpty(message = "pos.type.is.null")Integer posType,
                                      @NotEmpty(message = "pos.amt.is.empty")String posAmt,
                                      @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
@@ -177,9 +177,13 @@ public class OrderOpenApi {
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate) {
-        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
-                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
+                                   @NotEmpty(message = "received.date.empty") String receivedDate,
+                                   @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
+                                   @NotNull(message = "pos.type.is.null")Integer posType,
+                                   @NotEmpty(message = "pos.amt.is.empty")String posAmt,
+                                   @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
+        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{} " +
+                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,posSerialNo,posType,posAmt,posCreatedAt);
         try {
            /* Refund refund = refundReadLogic.findRefundById(refundOrderId);
             if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {

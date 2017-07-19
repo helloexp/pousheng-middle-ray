@@ -83,6 +83,8 @@ public class OperatorApis {
         }
         judgeUsername(operator.getUsername());
 
+        checkUserExist(un);
+
         Operator toCreateOperator = new Operator();
         toCreateOperator.setUserName(operator.getUsername());
         toCreateOperator.setPassword(operator.getPassword());
@@ -281,5 +283,22 @@ public class OperatorApis {
 
         //用户中心用户id（绑定已有账户时）
         private Long userId;
+    }
+
+
+    private void checkUserExist(String name){
+
+        Response<MiddleUser> middleUserRes = userReadService.findByName(name);
+        if(!middleUserRes.isSuccess()){
+            log.error("find middle user by name:{} fail ,error:{}",name,middleUserRes.getError());
+            throw new JsonResponseException(middleUserRes.getError());
+        }
+
+        if(!Arguments.isNull(middleUserRes.getResult())){
+            log.error("user name:{} is exist");
+            throw new JsonResponseException("user.name.already.exist");
+        }
+
+
     }
 }

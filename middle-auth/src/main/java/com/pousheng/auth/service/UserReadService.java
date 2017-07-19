@@ -34,6 +34,17 @@ public class UserReadService {
         }
     }
 
+
+
+    public Response<MiddleUser> findByName(String name) {
+        try {
+            return Response.ok(userDao.findByName(name));
+        } catch (Exception e) {
+            log.error("find user by name :{} failed,  cause:{}", name, Throwables.getStackTraceAsString(e));
+            return Response.fail("user.find.fail");
+        }
+    }
+
     public Response<Optional<MiddleUser>> findByOutId(Long outId){
         try {
             return Response.ok(Optional.fromNullable(userDao.findByOutId(outId)));

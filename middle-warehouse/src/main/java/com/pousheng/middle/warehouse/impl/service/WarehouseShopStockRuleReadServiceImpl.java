@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseShopStockRuleDao;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
@@ -28,7 +29,12 @@ public class WarehouseShopStockRuleReadServiceImpl implements WarehouseShopStock
     @Override
     public Response<WarehouseShopStockRule> findById(Long id) {
         try{
-            return Response.ok(warehouseShopStockRuleDao.findById(id));
+            WarehouseShopStockRule rule = warehouseShopStockRuleDao.findById(id);
+            if(rule == null){
+                log.error("WarehouseShopStockRule(id={}) not found", id);
+                return Response.fail("warehouse.shop.stock.rule.not.found");
+            }
+            return Response.ok(rule);
         }catch (Exception e){
             log.error("failed to find warehouse shop stock rule by id:{}, cause:{}", id, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.shop.stock.rule.find.fail");
@@ -44,7 +50,8 @@ public class WarehouseShopStockRuleReadServiceImpl implements WarehouseShopStock
     @Override
     public Response<WarehouseShopStockRule> findByShopId(Long shopId) {
         try{
-            return Response.ok(warehouseShopStockRuleDao.findByShopId(shopId));
+            WarehouseShopStockRule byShopId = warehouseShopStockRuleDao.findByShopId(shopId);
+            return Response.ok(byShopId);
         }catch (Exception e){
             log.error("failed to find warehouse shop stock rule by shopId:{}, cause:{}",
                     shopId, Throwables.getStackTraceAsString(e));
@@ -52,13 +59,24 @@ public class WarehouseShopStockRuleReadServiceImpl implements WarehouseShopStock
         }
     }
 
+    /**
+     * 分页列出对应店铺的库存分配规则
+     *
+     * @param pageNo  起始页码
+     * @param pageSize 每页返回数量
+     * @param shopIds 店铺列表
+     * @return 对应的规则
+     */
     @Override
-    public Response<Paging<WarehouseShopStockRule>> paging(Integer pageNo, Integer pageSize, Map<String, Object> criteria) {
+    public Response<Paging<WarehouseShopStockRule>> pagination(Integer pageNo, Integer pageSize, List<Long> shopIds) {
         try{
             PageInfo pageInfo = new PageInfo(pageNo, pageSize);
-            return Response.ok(warehouseShopStockRuleDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), criteria));
+            Map<String, Object> params = Maps.newHashMap();
+            params.put("shopIds", shopIds);
+            return Response.ok(warehouseShopStockRuleDao.paging(pageInfo.getOffset(), pageInfo.getLimit(),params));
         }catch (Exception e){
-            log.error("failed to paging warehouse shop stock rule by pageNo:{} pageSize:{}, cause:{}", pageNo, pageSize, Throwables.getStackTraceAsString(e));
+            log.error("failed to paging warehouse shop stock rule by pageNo:{} pageSize:{}, cause:{}",
+                    pageNo, pageSize, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.shop.stock.rule.paging.fail");
         }
     }

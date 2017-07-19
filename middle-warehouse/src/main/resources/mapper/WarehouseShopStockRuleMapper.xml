@@ -40,6 +40,12 @@
         <where>
             <if test="shopId != null">AND `shop_id` = #{shopId}</if>
             <if test="status != null">AND `status` = #{status}</if>
+            <if test="shopIds !=null">
+                AND `shop_id` in
+                <foreach item="shopId" collection="shopIds" open="(" separator="," close=")">
+                    #{shopId}
+                </foreach>
+            </if>
         </where>
     </sql>
 

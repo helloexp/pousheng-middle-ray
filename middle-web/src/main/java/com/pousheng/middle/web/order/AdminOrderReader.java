@@ -7,21 +7,20 @@ import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.ShopOrderPagingInfo;
 import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +57,8 @@ public class AdminOrderReader {
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @Autowired
+    private SyncOrderToEcpLogic syncOrderToEcpLogic;
 
 
     /**
@@ -181,10 +182,4 @@ public class AdminOrderReader {
 
         return Response.ok(withReceiveInfo);
     }
-
-    @RequestMapping(value = "api/order/{id}/cancel/skuorder", method = RequestMethod.PUT)
-    public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.cancelSkuOrder(id, skuCode);
-    }
-
 }

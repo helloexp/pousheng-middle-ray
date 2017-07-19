@@ -29,6 +29,7 @@ public class WarehouseShopStockRuleWriteServiceImpl implements WarehouseShopStoc
                 log.error("warehouse shop stock rule(shopId={}) has exist", shopId);
                 return Response.fail("shop.rule.duplicated");
             }
+            warehouseShopStockRule.setStatus(1);
             warehouseShopStockRuleDao.create(warehouseShopStockRule);
             return Response.ok(warehouseShopStockRule.getId());
         }catch (Exception e){

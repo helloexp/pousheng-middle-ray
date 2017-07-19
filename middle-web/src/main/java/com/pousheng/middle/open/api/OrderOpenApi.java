@@ -92,12 +92,12 @@ public class OrderOpenApi {
     public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
-                                     @NotEmpty(message = "shipment.serial.no.empty") String shipmentSerialNo,
+                                     @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate,
-                                     @NotEmpty(message = "pos.serial.no.empty")String posSerialNo,
-                                     @NotEmpty(message = "pos.type.no.empty")String posType,
-                                     @NotEmpty(message = "pos.amt.no.empty")String posAmt,
-                                     @NotEmpty(message = "pos.created.time.no.empty")String posCreatedAt) {
+                                     @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
+                                     @NotEmpty(message = "pos.type.is.empty")String posType,
+                                     @NotEmpty(message = "pos.amt.is.empty")String posAmt,
+                                     @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
                 "shipmentSerialNo is:{} shipmentDate is:{} posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",
                 shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate,posSerialNo,posType,posAmt,posCreatedAt);
@@ -106,7 +106,7 @@ public class OrderOpenApi {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
-            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+           /* Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
 
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
@@ -159,7 +159,7 @@ public class OrderOpenApi {
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
             event.setShipment(shipment);
-            eventBus.post(event);
+            eventBus.post(event);*/
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
@@ -181,7 +181,7 @@ public class OrderOpenApi {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
                 "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
-            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+           /* Refund refund = refundReadLogic.findRefundById(refundOrderId);
             if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {
                 log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), refund.getOutId());
                 throw new ServiceException("hk.refund.id.not.matching");
@@ -214,7 +214,7 @@ public class OrderOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update refund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
-            }
+            }*/
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync refund confirm to middle fail,error:{}", e.getMessage());

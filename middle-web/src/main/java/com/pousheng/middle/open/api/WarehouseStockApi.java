@@ -52,11 +52,11 @@ public class WarehouseStockApi {
             Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
             if(!r.isSuccess()){
                 log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
-                throw new OPServerException(r.getError());
+                throw new OPServerException(200,r.getError());
             }
         } catch (Exception e) {
             log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
-            throw new OPServerException("stock.data.invalid");
+            throw new OPServerException(200,"stock.data.invalid");
         }
 
     }

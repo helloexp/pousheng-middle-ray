@@ -163,10 +163,10 @@ public class OrderOpenApi {
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
-            throw new OPServerException(e.getMessage());
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync shipment(id:{}) fail,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
-            throw new OPServerException("sync.fail");
+            throw new OPServerException(200,"sync.fail");
         }
 
         log.info("HK-SYNC-SHIPMENT-STATUS-END");
@@ -222,10 +222,10 @@ public class OrderOpenApi {
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync refund confirm to middle fail,error:{}", e.getMessage());
-            throw new OPServerException(e.getMessage());
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync refund confirm to middle fail,cause:{}", Throwables.getStackTraceAsString(e));
-            throw new OPServerException("sync.fail");
+            throw new OPServerException(200,"sync.fail");
         }
         log.info("HK-SYNC-REFUND-STATUS-END");
 

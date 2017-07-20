@@ -1,6 +1,5 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;

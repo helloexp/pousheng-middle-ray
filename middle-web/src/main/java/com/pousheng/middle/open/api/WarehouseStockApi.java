@@ -3,6 +3,7 @@ package com.pousheng.middle.open.api;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.open.api.dto.ErpStock;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
@@ -43,6 +44,9 @@ public class WarehouseStockApi {
     @RpcConsumer
     private WarehouseSkuWriteService warehouseSkuWriteService;
 
+    @Autowired
+    private StockPusher stockPusher;
+
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
         log.info("ERPSTOCK -- begin to handle erp stock:{}", data);
@@ -53,6 +57,10 @@ public class WarehouseStockApi {
             if(!r.isSuccess()){
                 log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
                 throw new OPServerException(200,r.getError());
+            }
+            //触发库存推送
+            for (StockDto stockDto : stockDtos) {
+                stockPusher.submit(stockDto.getSkuCode());
             }
         } catch (Exception e) {
             log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));

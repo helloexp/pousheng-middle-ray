@@ -3,23 +3,18 @@ package com.pousheng.middle.web.trade;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.web.MiddleConfiguration;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import io.terminus.common.model.Response;
+import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
+import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
+import com.pousheng.middle.hksyc.component.SycHkShipmentOrderApi;
+import com.pousheng.middle.hksyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.test.context.junit4.SpringRunner;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -28,10 +23,6 @@ import java.util.Map;
 @Slf4j
 public class SyncHkTest {
 
-    @Autowired
-    private OrderWriteLogic orderWriteLogic;
-    @Autowired
-    private OrderReadLogic orderReadLogic;
     @Test
     public void testEsb(){
         String url ="https://esbt.pousheng.com/common/terminus/base/gethelloworld?name=1923311113";
@@ -64,6 +55,59 @@ public class SyncHkTest {
         post(middleUrl());
 
     }
+
+
+    @Test
+    public void testHkShipment(){
+        SycHkShipmentOrderApi api = new SycHkShipmentOrderApi();
+
+        List<SycHkShipmentOrderDto> orders = Lists.newArrayList();
+
+        SycHkShipmentOrder sycHkShipmentOrder = new SycHkShipmentOrder();
+        SycHkUserAddress sycHkUserAddress = new SycHkUserAddress();
+        SycHkShipmentItem sycHkShipmentItem = new SycHkShipmentItem();
+        List<SycHkShipmentItem> items = Lists.newArrayList();
+        items.add(sycHkShipmentItem);
+        sycHkShipmentOrder.setItems(items);
+
+        SycHkShipmentOrderDto dto = new SycHkShipmentOrderDto();
+        dto.setTradeOrder(sycHkShipmentOrder);
+        dto.setUserAddress(sycHkUserAddress);
+        orders.add(dto);
+
+        api.doSyncShipmentOrder(orders);
+    }
+
+
+    @Test
+    public void testOrderCancel(){
+        SycHkOrderCancelApi api = new SycHkOrderCancelApi();
+        api.doCancelOrder("hkh01",12121L,0);
+    }
+
+    @Test
+    public void testSycHkRefundOrder(){
+        SycHkRefundOrderApi api = new SycHkRefundOrderApi();
+        SycHkRefund sycHkRefund = new SycHkRefund();
+        List<SycHkRefundItem> sycHkRefundItems = Lists.newArrayList();
+        SycHkRefundItem sycHkRefundItem = new SycHkRefundItem();
+        sycHkRefundItems.add(sycHkRefundItem);
+        api.doSyncRefundOrder(sycHkRefund,sycHkRefundItems);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /**
      * 对参数列表进行签名
      */

@@ -46,6 +46,8 @@ gateway:
     host: http://api-test-member.pousheng.com
   uc:
     host: http://devt-account.pousheng.com
+  hk:
+    host: http://esbt.pousheng.com
 
 open.api.app.key: terminus
 open.api.secret: anywhere

@@ -216,7 +216,7 @@ public class OrderOpenApi {
 
             Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
             if (!updateExtraRes.isSuccess()) {
-                log.error("update refund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
+                log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
             }*/
 

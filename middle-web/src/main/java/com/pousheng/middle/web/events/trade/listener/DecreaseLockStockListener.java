@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -37,6 +38,9 @@ public class DecreaseLockStockListener {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
+    @Autowired
+    private StockPusher stockPusher;
+
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -63,6 +67,12 @@ public class DecreaseLockStockListener {
         Response<Boolean> decreaseStockRlt =  warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
         if (!decreaseStockRlt.isSuccess()){
             log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
+        }
+        //触发库存推送
+        for (WarehouseShipment ws : warehouseShipmentList) {
+            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
+                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+            }
         }
     }
 

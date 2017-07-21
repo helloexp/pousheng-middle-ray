@@ -39,6 +39,8 @@ public class TradeConstants {
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
     //通知电商平台状态
     public static final String ECP_ORDER_STATUS = "ecpOrderStatus";
+    //冗余的shipmentId
+    public static final String ECP_SHIPMENT_ID ="ecpShipmentId";
 
 
 

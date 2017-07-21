@@ -26,7 +26,7 @@ public enum MiddleOrderEvent {
     SYNC_ECP(6, "syncEcp", "admin"),
     CANCEL(7, "cancel", "admin"),
     DELETE(8, "delete", "admin"),
-    CANCEL_HK(9, "cancelHk", "admin"),
+    CANCEL_HK(9, "cancelHk", "hk"),
     SYNC_REFUND(10, "syncRefund", "admin"),
     SYNC_SUCCESS(11, "syncSuccess", "hk"),
     SYNC_REFUND_SUCCESS(12, "syncRefundSuccess", "hk"),
@@ -38,6 +38,17 @@ public enum MiddleOrderEvent {
     REFUND_APPLY_AGREE(18, "refundApplyAgree", "seller"),
     REFUND(19, "refund", "hk"),
     HANDLE_DONE(20, "refund", "backend"),
+    CANCEL_SUCCESS(21,"cancelSuccess","seller"),
+    CANCEL_FAIL(22,"cancelFail","seller"),
+    REVOKE(23,"revoke","admin"),
+    REVOKE_FAIL(24,"revokeFail","seller"),
+    REVOKE_SUCCESS(25,"revokeSuccess","seller"),
+    CANCEL_SHIP(26,"cancelShip","seller"),
+    CANCEL_SKU(27,"cancelSku","admin"),
+    CANCEL_SKU_SUCCESS(28,"cancelSkuSuccess","seller"),
+    CANCEL_SKU_FAIL(29,"cancelSkuFail","seller"),
+    AUTO_CANCEL(30,"autoCancel","seller"),
+    AUTO_CANCEL_SKU(31,"autoCancelSku","seller"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),
@@ -51,9 +62,8 @@ public enum MiddleOrderEvent {
     CANCEL_RETURN(-13, "cancelReturn", "admin"),
     RETURN_CHANGE(-14, "returnChange", "hk"),
     RETURN_REJECT(-15, "returnReject", "seller"),
-    RETURN_CONFIRM(-16, "returnConfirm", "seller"),
-    SHIP_CANCEL(-17,"shipCancel","seller"),
-    SHIP_CANCEL_DONE(-18,"shipCancelDone","seller");
+    RETURN_CONFIRM(-16, "returnConfirm", "seller");
+
 
     @Getter
     private final int value;

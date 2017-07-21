@@ -339,7 +339,7 @@ public class Shipments {
 
 
     /**
-     * 取消发货单
+     * 取消发货单,这个时候没有同步到恒康
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/cancel",method = RequestMethod.PUT)
@@ -350,13 +350,6 @@ public class Shipments {
             log.error("cancel shipment(id:{}) fail,error:{}",shipmentId,cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
         }
-        //取消发货单,要将skuOrder对应的发待货数量回滚
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        Map<Long, Integer> skuOrderIdAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity));
-        //回滚子订单的待处理数量,同时判断是否需要同步回滚状态
-        orderWriteLogic.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, shipment);
-
         //解锁库存
         UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
         unLockStockEvent.setShipment(shipment);
@@ -375,12 +368,6 @@ public class Shipments {
             log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
-        //取消发货单,要将skuOrder对应的发待货数量回滚
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        Map<Long, Integer> skuOrderIdAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId,ShipmentItem::getQuantity));
-        //回滚子订单的待处理数量,同时判断是否需要同步回滚状态
-        orderWriteLogic.updateOrderHandleNumberAndStatus(skuOrderIdAndQuantityMap, shipment);
 
         //通知恒康取消同步之后需要解锁库存
         UnLockStockEvent unLockStockEvent = new UnLockStockEvent();

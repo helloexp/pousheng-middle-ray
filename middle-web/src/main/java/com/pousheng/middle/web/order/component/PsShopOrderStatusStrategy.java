@@ -31,7 +31,13 @@ public class PsShopOrderStatusStrategy implements ShopOrderStatusStrategy {
                 List<SkuOrder> listFilter = list.stream().filter(Objects::nonNull).filter(skuOrder ->(skuOrder.getStatus()!= MiddleOrderStatus.CANCEL.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_SYNC_HK_SUCCESS.getValue()))
-                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND.getValue())).collect(Collectors.toList());
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_ING.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_FAILED.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REVOKE_ING.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REVOKE_FAILED.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_SKU_ING.getValue()))
+                        .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_SKU_FAILED.getValue())).collect(Collectors.toList());
                 listFilter.sort((SkuOrder s1, SkuOrder s2) -> s1.getStatus().compareTo(s2.getStatus()));
                 return listFilter.get(0).getStatus();
             }

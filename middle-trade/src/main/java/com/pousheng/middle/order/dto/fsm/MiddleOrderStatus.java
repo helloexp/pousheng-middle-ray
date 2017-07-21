@@ -22,10 +22,13 @@ public enum MiddleOrderStatus {
     REFUND_APPLY_WAIT_SYNC_HK(-1),    //售中申请退款商家同意待同步恒康取消
     REFUND_SYNC_HK_SUCCESS(-2),      //同步恒康取消成功待退款
     REFUND(-3),                  //已退款
-    CANCEL(-4);                  //已取消
-
-
-
+    CANCEL(-4),                  //已取消
+    CANCEL_ING(-5),              //取消中(后台流转使用,前台不需要关心)
+    CANCEL_FAILED(-6),           //取消失败
+    REVOKE_ING(-7),              //撤销中(后台流转使用,前台不需要关心)
+    REVOKE_FAILED(-8),           //撤销失败
+    CANCEL_SKU_ING(-9),          //子单撤销中(后台流转使用,前台不需要关心)
+    CANCEL_SKU_FAILED(-10);       //子单撤销失败(该状态给总单使用,标记时可以调用撤销子单的接口)
     private final int value;
 
     MiddleOrderStatus(int value) {

@@ -19,7 +19,7 @@ public enum MiddleShipmentsStatus {
     WAIT_SHIP(3),    //同步成功，待发货
     SHIPPED(4),      //已发货
     SYNC_HK_FAIL(-1),   //同步恒康失败
-    SYNC_HK_CANCEL_ING(-2),     //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_HK_CANCEL_ING(-2),       //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     SYNC_HK_CANCEL_FAIL(-3),   //同步恒康失败
     CANCELED(-4);  // 已取消取消
 

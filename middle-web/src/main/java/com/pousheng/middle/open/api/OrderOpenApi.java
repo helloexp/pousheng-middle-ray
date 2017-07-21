@@ -7,6 +7,7 @@ import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -25,8 +26,8 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
@@ -60,6 +61,8 @@ public class OrderOpenApi {
     private ExpressCodeReadService expressCodeReadService;
     @RpcConsumer
     private OrderWriteLogic orderWriteLogic;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
     @RpcConsumer
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
@@ -155,7 +158,27 @@ public class OrderOpenApi {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
             }
-
+            //恒康第一个发货单发货完成之后需要将ecpOrderstatus状态从初始的代发货修改为已发货
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+            long orderShopId = orderShipment.getOrderId();
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
+            String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+            //判断ecpOrder的状态是否是初始的待发货状态,如果不是,跳过
+            if (Objects.equals(Integer.valueOf(status), EcpOrderStatus.WAIT_SHIP.getValue())) {
+                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
+                if (!response.isSuccess()){
+                    log.error("update shopOrder(id:{}) extraMap fail,error:{}",orderShopId,response.getError());
+                    throw new ServiceException(response.getError());
+                }
+                //冗余shipmentId到extra中
+                Map<String, String> extraMap1 = shopOrder.getExtra();
+                extraMap1.put(TradeConstants.ECP_SHIPMENT_ID, String.valueOf(shipmentId));
+                Response<Boolean> response1 = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP,extraMap1);
+                if (!response1.isSuccess()) {
+                    log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response1.getError());
+                    throw new ServiceException(response1.getError());
+                }
+            }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
             event.setShipment(shipment);

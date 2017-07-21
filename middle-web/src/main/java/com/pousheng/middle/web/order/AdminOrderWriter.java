@@ -40,7 +40,7 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 删除子订单
+     * 取消子订单(手动)
      * @param id shopOrder的id
      * @param skuCode
      */
@@ -48,6 +48,43 @@ public class AdminOrderWriter {
     public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
         orderWriteLogic.cancelSkuOrder(id, skuCode);
     }
+    /**
+     * 取消子订单(自动)
+     * @param id shopOrder的id
+     * @param skuCode
+     */
+    @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
+    public void autoCancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
+        orderWriteLogic.autoCancelSkuOrder(id,skuCode);
+    }
+
+    /**
+     * 整单撤销,状态恢复成初始状态
+     * @param shopOrderId
+     */
+    @RequestMapping(value = "api/order/{id}/rollback/shop/order",method = RequestMethod.PUT)
+    public void rollbackShopOrder(@PathVariable("id")Long shopOrderId){
+      orderWriteLogic.rollbackShopOrder(shopOrderId);
+    }
+
+    /**
+     * 整单取消,子单整单发货单状态变为已取消(手动)
+     * @param shopOrderId
+     */
+    @RequestMapping(value="api/order/{id}/cancel/shop/order")
+    public void cancelShopOrder(@PathVariable("id") Long shopOrderId){
+        orderWriteLogic.cancelShopOrder(shopOrderId);
+    }
+    /**
+     * 整单取消,子单整单发货单状态变为已取消(自动)
+     * @param shopOrderId
+     */
+    @RequestMapping(value="api/order/{id}/auto/cancel/shop/order")
+    public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId){
+        orderWriteLogic.autoCancelShopOrder(shopOrderId);
+    }
+
+
 
     /**
      * 电商确认收货,此时通知中台修改shopOrder中ecpOrderStatus状态为已完成

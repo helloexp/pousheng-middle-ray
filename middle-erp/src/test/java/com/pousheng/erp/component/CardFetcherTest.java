@@ -29,6 +29,7 @@ public class CardFetcherTest {
     public void fetch() throws Exception {
 
         List<PoushengCard> cards = cardFetcher.fetch(1, 20, null, null);
+       // System.out.println(cards);
         assertThat(cards, notNullValue());
     }
 

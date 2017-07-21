@@ -43,7 +43,7 @@ public class MaterialFetcher {
      */
     List<PoushengMaterial>  fetch(int pageNo, int pageSize, Date start, Date end){
         try {
-            String result = this.erpClient.get("e-commerce-api/v1/hk-materials",
+            String result = this.erpClient.get("common/erp/base/gethkmaterial",
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,

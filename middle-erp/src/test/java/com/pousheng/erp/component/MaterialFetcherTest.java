@@ -31,7 +31,7 @@ public class MaterialFetcherTest {
         Date start = DateTime.now().minusMonths(1).toDate();
         Date end = DateTime.now().plusDays(1).toDate();
         List<PoushengMaterial> materials = materialFetcher.fetch(1, 20, start, end);
-        //System.out.println(materials);
+        System.out.println(materials);
         assertThat(materials, notNullValue());
     }
 

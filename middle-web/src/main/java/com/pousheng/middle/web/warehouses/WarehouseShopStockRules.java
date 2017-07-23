@@ -1,9 +1,11 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
+import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -36,6 +38,9 @@ public class WarehouseShopStockRules {
 
     @Autowired
     private UserManageShopReader userManageShopReader;
+
+    @Autowired
+    private EventBus eventBus;
 
     /**
      * 创建店铺库存发货规则
@@ -159,6 +164,18 @@ public class WarehouseShopStockRules {
         Long shopId = r.getResult().getShopId();
         authCheck(shopId);
         return r.getResult();
+    }
+
+    /**
+     * 推送指定店铺的库存
+     *
+     * @param shopId 店铺id
+     * @return 是否发送请求
+     */
+    @RequestMapping(value = "/{push}", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean push(@RequestParam("shopId")Long shopId){
+        eventBus.post(new PushEvent(shopId));
+        return Boolean.TRUE;
     }
 
 

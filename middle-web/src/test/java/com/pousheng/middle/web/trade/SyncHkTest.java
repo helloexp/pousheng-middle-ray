@@ -55,7 +55,7 @@ public class SyncHkTest {
         post(middleUrl());
 
     }
-<<<<<<< HEAD
+
     @Test
     public void testHkSyncRefund(){
 
@@ -73,7 +73,7 @@ public class SyncHkTest {
         post(middleUrl());
 
     }
-=======
+
 
 
     @Test
@@ -115,19 +115,6 @@ public class SyncHkTest {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
->>>>>>> master
     /**
      * 对参数列表进行签名
      */

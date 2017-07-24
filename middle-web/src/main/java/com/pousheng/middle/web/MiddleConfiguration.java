@@ -8,19 +8,24 @@ import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
-import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
+import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
 import io.terminus.parana.TradeAutoConfig;
 import io.terminus.parana.auth.AuthApiConfiguration;
+import io.terminus.parana.cache.BackCategoryCacher;
+import io.terminus.parana.cache.CategoryAttributeCacher;
+import io.terminus.parana.cache.SpuCacher;
+import io.terminus.parana.component.attribute.CategoryAttributeNoCacher;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
+import io.terminus.parana.rule.RuleExecutorRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
@@ -39,7 +44,6 @@ import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter;
 
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -101,6 +105,19 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
             }
         };
     }
+
+    @Bean
+    public PoushengPipelineConfigurer pipelineConfigurer(BackCategoryCacher backCategoryCacher,
+                                                         SpuCacher spuCacher,
+                                                         CategoryAttributeCacher categoryAttributeCacher,
+                                                         CategoryAttributeNoCacher categoryAttributeNoCacher,
+                                                         RuleExecutorRegistry ruleExecutorRegistry) {
+        PoushengPipelineConfigurer poushengPipelineConfigurer = new PoushengPipelineConfigurer(backCategoryCacher,
+                categoryAttributeNoCacher);
+        poushengPipelineConfigurer.configureRuleExecutors(ruleExecutorRegistry);
+        return poushengPipelineConfigurer;
+    }
+
 
     @Bean
     public EventBus eventBus() {

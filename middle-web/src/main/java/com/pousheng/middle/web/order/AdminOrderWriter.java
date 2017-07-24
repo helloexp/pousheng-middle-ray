@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
@@ -8,8 +9,11 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 /**
  * Created by tony on 2017/7/18.
@@ -40,14 +44,51 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 删除子订单
-     * @param id shopOrder的id
+     * 取消子订单(自动)
+     * @param shopOrderId
      * @param skuCode
      */
-    @RequestMapping(value = "api/order/{id}/cancel/sku/order", method = RequestMethod.PUT)
-    public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.cancelSkuOrder(id, skuCode);
+    @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
+    public void autoCancelSkuOrder(@PathVariable("id") Long shopOrderId, @RequestParam("skuCode") String skuCode) {
+        orderWriteLogic.autoCancelSkuOrder(shopOrderId,skuCode);
     }
+
+    /**
+     * 整单撤销,状态恢复成初始状态
+     * @param shopOrderId
+     */
+    @RequestMapping(value = "api/order/{id}/rollback/shop/order",method = RequestMethod.PUT)
+    public void rollbackShopOrder(@PathVariable("id")Long shopOrderId){
+      orderWriteLogic.rollbackShopOrder(shopOrderId);
+    }
+
+    /**
+     * 订单(包括整单和子单)取消失败,手工操作逻辑
+     * @param shopOrderId
+     */
+    @RequestMapping(value="api/order/{id}/cancel/order",method = RequestMethod.PUT)
+    public void cancelShopOrder(@PathVariable("id") Long shopOrderId){
+        //判断是整单取消还是子单取消
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        //获取是否存在失败的sku记录
+        String skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED,shopOrder);
+        if(StringUtils.isNotEmpty(skuCodeCanceled)){
+            orderWriteLogic.cancelSkuOrder(shopOrderId,skuCodeCanceled);
+        }else{
+            orderWriteLogic.cancelShopOrder(shopOrderId);
+        }
+
+    }
+    /**
+     * 整单取消,子单整单发货单状态变为已取消(自动)
+     * @param shopOrderId
+     */
+    @RequestMapping(value="api/order/{id}/auto/cancel/shop/order",method = RequestMethod.PUT)
+    public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId){
+        orderWriteLogic.autoCancelShopOrder(shopOrderId);
+    }
+
+
 
     /**
      * 电商确认收货,此时通知中台修改shopOrder中ecpOrderStatus状态为已完成

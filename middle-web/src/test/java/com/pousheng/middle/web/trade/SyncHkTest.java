@@ -38,8 +38,8 @@ public class SyncHkTest {
 
         params.put("appKey","pousheng");
         params.put("pampasCall","hk.shipments.api");
-        params.put("shipmentId","12");
-        params.put("hkShipmentId","12");
+        params.put("shipmentId","36");
+        params.put("hkShipmentId","36");
         params.put("shipmentCorpCode","hkshunfeng");
         params.put("shipmentSerialNo","7423333332");
         params.put("shipmentDate","20160625224210");
@@ -55,6 +55,25 @@ public class SyncHkTest {
         post(middleUrl());
 
     }
+
+    @Test
+    public void testHkSyncRefund(){
+
+        params.put("appKey","pousheng");
+        params.put("pampasCall","hk.refund.confirm.received.api");
+        params.put("refundOrderId","8");
+        params.put("hkRefundOrderId","8");
+        params.put("itemInfo","{\"refundExtraInfo\":\"{\\\"shipmentId\\\":23,\\\"receiverInfo\\\":{\\\"id\\\":392,\\\"userId\\\":3,\\\"receiveUserName\\\":\\\"buyer\\\",\\\"mobile\\\":\\\"15763948284\\\",\\\"isDefault\\\":true,\\\"status\\\":1,\\\"province\\\":\\\"天津\\\",\\\"provinceId\\\":120000,\\\"city\\\":\\\"天津市\\\",\\\"cityId\\\":120100,\\\"region\\\":\\\"和平区\\\",\\\"regionId\\\":120101,\\\"detail\\\":\\\"ffffsssssssshjh\\\",\\\"createdAt\\\":1482645231000,\\\"updatedAt\\\":1484644903000},\\\"handleDoneAt\\\":1500449189480}\",\"refundItemInfo\":\"[{\\\"skuCode\\\":\\\"W07090020S\\\",\\\"outSkuCode\\\":\\\"W07090020\\\",\\\"skuName\\\":\\\"测试新产品1\\\",\\\"cleanFee\\\":10000,\\\"attrs\\\":[{\\\"attrKey\\\":\\\"颜色\\\",\\\"attrVal\\\":\\\"深蓝色\\\",\\\"showImage\\\":false},{\\\"attrKey\\\":\\\"尺码\\\",\\\"attrVal\\\":\\\"S\\\",\\\"showImage\\\":false}],\\\"skuOrderId\\\":1,\\\"applyQuantity\\\":5,\\\"skuPrice\\\":2}]\"}");
+        params.put("receivedDate","20160625224210");
+        String sign = sign("middle");
+        System.out.println("==============sign: "+sign);
+        params.put("sign",sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));;
+        post(middleUrl());
+
+    }
+
 
 
     @Test
@@ -94,18 +113,6 @@ public class SyncHkTest {
         sycHkRefundItems.add(sycHkRefundItem);
         api.doSyncRefundOrder(sycHkRefund,sycHkRefundItems);
     }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
     /**

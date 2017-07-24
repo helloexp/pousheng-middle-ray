@@ -76,7 +76,7 @@ public class ErpClient {
 
     public String post(String path, Map<String, String> params){
         HttpRequest r = HttpRequest.post(host+"/"+path, params, true)
-                .header("access-key", accessKey)
+                .header("verifycode", accessKey)
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if(r.ok()){
@@ -106,11 +106,12 @@ public class ErpClient {
 
     public String postJson(String path, String json){
         HttpRequest r = HttpRequest.post(host+"/"+path)
-                .header("access-key", accessKey)
+                .header("verifycode", accessKey)
                 .contentType("application/json")
-                .send(json)
                 .acceptJson()
-                .acceptCharset(HttpRequest.CHARSET_UTF8);
+                .acceptCharset(HttpRequest.CHARSET_UTF8)
+                .send(json);
+
         if(r.ok()){
             String body = r.body();
             try {

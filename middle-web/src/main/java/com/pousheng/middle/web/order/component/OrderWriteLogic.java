@@ -242,7 +242,7 @@ public class OrderWriteLogic {
     }
     /**
      *取消整单失败时,用于补偿失败的订单
-     * @param shopOrderId
+     * @param shopOrderId 店铺订单主键
      */
     public void cancelShopOrder(Long shopOrderId) {
 
@@ -324,11 +324,11 @@ public class OrderWriteLogic {
         }
         if (count>0){
             //子单取消失败
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,skuOrder,
+            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,skuOrder,
                     MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),skuCode);
         }else{
             //子单取消成功
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,skuOrder,
+            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,skuOrder,
                     MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation(),"");
         }
     }
@@ -372,11 +372,11 @@ public class OrderWriteLogic {
             }
         }
         if (count>0){
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,
+            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,
                     skuOrder,MiddleOrderEvent.CANCEL.toOrderOperation(),MiddleOrderEvent.CANCEL.toOrderOperation(),skuCode);
 
         }else{
-           middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,
+           middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,
                    skuOrder,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(),"");
         }
     }
@@ -431,7 +431,7 @@ public class OrderWriteLogic {
      * @param shopOrder
      * @return
      */
-    public boolean validateAutoCancelShopOrder(ShopOrder shopOrder) {
+    private boolean validateAutoCancelShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
@@ -444,7 +444,7 @@ public class OrderWriteLogic {
      * @param shopOrder
      * @return
      */
-    public boolean validateCancelShopOrder(ShopOrder shopOrder) {
+    private boolean validateCancelShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
@@ -457,7 +457,7 @@ public class OrderWriteLogic {
      * @param shopOrder
      * @return
      */
-    public boolean validateAutoCancelShopOrder4Sku(ShopOrder shopOrder) {
+    private boolean validateAutoCancelShopOrder4Sku(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
@@ -470,7 +470,7 @@ public class OrderWriteLogic {
      * @param shopOrder
      * @return
      */
-    public boolean validateCancelShopOrder4Sku(ShopOrder shopOrder) {
+    private boolean validateCancelShopOrder4Sku(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
@@ -484,7 +484,7 @@ public class OrderWriteLogic {
      * @param shopOrder
      * @return
      */
-    public boolean validateRollbackShopOrder(ShopOrder shopOrder) {
+    private boolean validateRollbackShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
@@ -498,7 +498,7 @@ public class OrderWriteLogic {
      * @param skuOrder
      * @return
      */
-    public boolean validateAutoCancelSkuOrder(SkuOrder skuOrder) {
+    private boolean validateAutoCancelSkuOrder(SkuOrder skuOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = skuOrder.getStatus();
         return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
@@ -506,21 +506,21 @@ public class OrderWriteLogic {
     /**
      * 判断子单是否可以取消(取消子单失败,手动取消)
      *
-     * @param skuOrder
-     * @return
+     * @param skuOrder 子单
+     * @return  判断子单的状态是否有下一步的操作,如果有返回true
      */
-    public boolean validateCancelSkuOrder(SkuOrder skuOrder) {
+    private boolean validateCancelSkuOrder(SkuOrder skuOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = skuOrder.getStatus();
         return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.CANCEL.toOrderOperation());
     }
     /**
      * 根据skuCode获取skuOrder
-     * @param skuOrders
-     * @param skuCode
-     * @return
+     * @param skuOrders 子单集合
+     * @param skuCode sku代码
+     * @return 返回经过过滤的skuOrder记录
      */
-    public SkuOrder getSkuOrder(List<SkuOrder> skuOrders,String skuCode){
+    private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode){
         return skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).collect(Collectors.toList()).get(0);
     }
 

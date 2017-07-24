@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.ShopOrder;
@@ -31,20 +32,26 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,operation);
             return Response.ok();
 
-        }catch (Exception e){
+        }catch (ServiceException e1){
+            log.error("failed to update order.cause:{}",Throwables.getStackTraceAsString(e1));
+            return Response.fail(e1.getMessage());
+        } catch (Exception e){
             log.error("failed to update order, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }
     }
 
     @Override
-    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation,String skuCode) {
+    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation,String skuCode) {
         try{
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrders,skuOrder,cancelOperation,waitHandleOperation,skuCode);
+            middleOrderManager.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrders,skuOrder,cancelOperation,waitHandleOperation,skuCode);
             return Response.ok();
 
-        }catch (Exception e){
+        }catch (ServiceException e1){
+            log.error("failed to update order.cause:{}",Throwables.getStackTraceAsString(e1));
+            return Response.fail(e1.getMessage());
+        } catch (Exception e){
             log.error("failed to update order, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }

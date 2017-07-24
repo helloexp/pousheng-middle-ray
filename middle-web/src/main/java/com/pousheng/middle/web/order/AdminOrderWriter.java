@@ -45,12 +45,12 @@ public class AdminOrderWriter {
 
     /**
      * 取消子订单(自动)
-     * @param id shopOrder的id
+     * @param shopOrderId
      * @param skuCode
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
-    public void autoCancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.autoCancelSkuOrder(id,skuCode);
+    public void autoCancelSkuOrder(@PathVariable("id") Long shopOrderId, @RequestParam("skuCode") String skuCode) {
+        orderWriteLogic.autoCancelSkuOrder(shopOrderId,skuCode);
     }
 
     /**
@@ -83,7 +83,7 @@ public class AdminOrderWriter {
      * 整单取消,子单整单发货单状态变为已取消(自动)
      * @param shopOrderId
      */
-    @RequestMapping(value="api/order/{id}/auto/cancel/shop/order")
+    @RequestMapping(value="api/order/{id}/auto/cancel/shop/order",method = RequestMethod.PUT)
     public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId){
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
     }

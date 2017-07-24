@@ -30,5 +30,5 @@ public interface MiddleOrderWriteService {
      * @param skuCode 子单撤单失败时添加的skuCode用于标识
      * @return
      */
-    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder,OrderOperation cancelOperation,OrderOperation waitHandleOperation,String skuCode);
+    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder,OrderOperation cancelOperation,OrderOperation waitHandleOperation,String skuCode);
 }

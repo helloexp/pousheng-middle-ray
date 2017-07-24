@@ -41,6 +41,8 @@ public class TradeConstants {
     public static final String ECP_ORDER_STATUS = "ecpOrderStatus";
     //冗余的shipmentId
     public static final String ECP_SHIPMENT_ID ="ecpShipmentId";
+    //从电商平台拉取消子单时,子单取消失败,需要将取消失败的子单冗余进总单的extra
+    public static final String SKU_CODE_CANCELED="skuCodeCanceled";
 
 
 

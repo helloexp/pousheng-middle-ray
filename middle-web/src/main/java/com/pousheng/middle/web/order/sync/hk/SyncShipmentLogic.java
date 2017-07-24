@@ -99,6 +99,7 @@ public class SyncShipmentLogic {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation1.getText(), updateStatusRes1.getError());
                 return Response.fail(updateStatusRes.getError());
             }
+            return Response.fail("sync.cancel.hk.failed");
         }
         return Response.ok(Boolean.TRUE);
 

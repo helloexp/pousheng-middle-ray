@@ -107,7 +107,7 @@ public class ShipmentWiteLogic {
             }
             return true;
         } catch (Exception e) {
-            log.error("");
+            log.error("cancel shipment failed,shipment id is :{},error{}",shipment.getId(),e.getMessage());
             return false;
         }
 

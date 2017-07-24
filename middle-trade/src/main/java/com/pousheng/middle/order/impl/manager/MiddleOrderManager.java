@@ -45,7 +45,7 @@ public class MiddleOrderManager {
      * @param orderOperation
      */
     @Transactional
-    public void updateOrderStatusAnndSkuQuantities(ShopOrder shopOrder, List<SkuOrder> skuOrders, OrderOperation orderOperation) {
+    public void updateOrderStatusAndSkuQuantities(ShopOrder shopOrder, List<SkuOrder> skuOrders, OrderOperation orderOperation) {
         Flow flow = this.pickOrder();
         //更新sku订单记录
         for (SkuOrder skuOrder : skuOrders) {
@@ -82,7 +82,7 @@ public class MiddleOrderManager {
     }
 
     @Transactional
-    public void updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation revokeOperation){
+    public void updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation revokeOperation,String skuCode){
         Flow flow = this.pickOrder();
         //更新子单的取消状态
         if (!flow.operationAllowed(skuOrder.getStatus(),cancelOperation)){
@@ -103,6 +103,15 @@ public class MiddleOrderManager {
             log.error("failed to update order(id={}, level={})'s extraMap to : {}", new Object[]{skuOrder.getStatus(), OrderLevel.SKU, extraMap});
             throw new JsonResponseException("update.sku.order.failed");
         }
+        //订单添加失败的skuCode
+        Map<String, String> extra = shopOrder.getExtra();
+        extra.put(TradeConstants.SKU_CODE_CANCELED, skuCode);
+        Response<Boolean> res =orderWriteService.updateOrderExtra(shopOrder.getId(),OrderLevel.SHOP,extra);
+        if (!res.isSuccess()){
+            log.error("failed to update order(id={}, level={})'s extraMap to : {}", new Object[]{skuOrder.getStatus(), OrderLevel.SHOP, extra});
+            throw new JsonResponseException("update.sku.order.failed");
+        }
+
         //判断是否存在需要恢复成待处理状态的子单
         if (skuOrders.size()==0)
         {

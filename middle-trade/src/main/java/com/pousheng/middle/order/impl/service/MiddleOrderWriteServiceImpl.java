@@ -25,10 +25,10 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     @Autowired
     private MiddleOrderManager middleOrderManager;
     @Override
-    public Response<Boolean> updateOrderStatusAnndSkuQuantities(ShopOrder shopOrder,List<SkuOrder> skuOrders, OrderOperation operation) {
+    public Response<Boolean> updateOrderStatusAndSkuQuantities(ShopOrder shopOrder,List<SkuOrder> skuOrders, OrderOperation operation) {
         try{
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,operation);
+            middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,operation);
             return Response.ok();
 
         }catch (Exception e){
@@ -38,10 +38,10 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     }
 
     @Override
-    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation) {
+    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation,String skuCode) {
         try{
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrders,skuOrder,cancelOperation,waitHandleOperation);
+            middleOrderManager.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrders,skuOrder,cancelOperation,waitHandleOperation,skuCode);
             return Response.ok();
 
         }catch (Exception e){

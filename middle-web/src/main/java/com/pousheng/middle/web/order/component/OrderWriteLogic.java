@@ -233,10 +233,10 @@ public class OrderWriteLogic {
         if (count>0)
         {
             //发货单取消失败,订单状态设置为取消失败
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
         }else {
             //发货单取消成功,订单状态设置为取消成功
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
         }
 
     }
@@ -274,11 +274,11 @@ public class OrderWriteLogic {
         if (count>0)
         {
             //发货单取消成功,订单状态设置为取消成功
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.CANCEL.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.CANCEL.toOrderOperation());
 
         }else {
             //发货单取消失败,订单状态设置为取消失败
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
         }
     }
     /**
@@ -325,11 +325,11 @@ public class OrderWriteLogic {
         if (count>0){
             //子单取消失败
             middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,skuOrder,
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation());
+                    MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),skuCode);
         }else{
             //子单取消成功
             middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,skuOrder,
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation());
+                    MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation(),"");
         }
     }
 
@@ -347,7 +347,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("shop.order.cancel.failed");
         }
         //获取该订单下所有的子单和发货单
-        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId,MiddleOrderStatus.CANCEL_SKU_FAILED.getValue());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId,MiddleOrderStatus.CANCEL_FAILED.getValue(),MiddleOrderStatus.WAIT_HANDLE.getValue());
         SkuOrder skuOrder = this.getSkuOrder(skuOrders,skuCode);
         //判断该订单是否有取消订单的权限
         if (!validateCancelSkuOrder(skuOrder)){
@@ -373,11 +373,11 @@ public class OrderWriteLogic {
         }
         if (count>0){
             middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,
-                    skuOrder,MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation());
+                    skuOrder,MiddleOrderEvent.CANCEL.toOrderOperation(),MiddleOrderEvent.CANCEL.toOrderOperation(),skuCode);
 
         }else{
            middleOrderWriteService.updateOrderStatusAndSkuQuantities4Sku(shopOrder,skuOrdersFilter,
-                   skuOrder,MiddleOrderEvent.CANCEL_SKU.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation());
+                   skuOrder,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(),"");
         }
     }
 
@@ -416,9 +416,9 @@ public class OrderWriteLogic {
         }
 
         if (count>0){
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
         }else{
-            middleOrderWriteService.updateOrderStatusAnndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
         }
 
 
@@ -461,7 +461,7 @@ public class OrderWriteLogic {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-        return (orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation()))
+        return (orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation()))
                 && (Objects.equals(Integer.valueOf(ecpStatus), EcpOrderStatus.WAIT_SHIP.getValue()));
     }
     /**
@@ -474,7 +474,7 @@ public class OrderWriteLogic {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
         String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-        return (orderFlow.operationAllowed(sourceStatus,MiddleOrderEvent.CANCEL_SKU.toOrderOperation()))
+        return (orderFlow.operationAllowed(sourceStatus,MiddleOrderEvent.CANCEL.toOrderOperation()))
                 && (Objects.equals(Integer.valueOf(ecpStatus), EcpOrderStatus.WAIT_SHIP.getValue()));
     }
 
@@ -501,7 +501,7 @@ public class OrderWriteLogic {
     public boolean validateAutoCancelSkuOrder(SkuOrder skuOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = skuOrder.getStatus();
-        return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation());
+        return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
     }
     /**
      * 判断子单是否可以取消(取消子单失败,手动取消)
@@ -512,7 +512,7 @@ public class OrderWriteLogic {
     public boolean validateCancelSkuOrder(SkuOrder skuOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = skuOrder.getStatus();
-        return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.CANCEL_SKU.toOrderOperation());
+        return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.CANCEL.toOrderOperation());
     }
     /**
      * 根据skuCode获取skuOrder

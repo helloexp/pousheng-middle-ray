@@ -24,8 +24,7 @@ public enum MiddleOrderStatus {
     REFUND(-3),                  //已退款
     CANCEL(-4),                  //已取消
     CANCEL_FAILED(-5),           //取消失败
-    REVOKE_FAILED(-6),           //撤销失败
-    CANCEL_SKU_FAILED(-7);       //子单撤销失败(该状态给总单使用,标记时可以调用撤销子单的接口)
+    REVOKE_FAILED(-6);          //撤销失败
     private final int value;
 
     MiddleOrderStatus(int value) {

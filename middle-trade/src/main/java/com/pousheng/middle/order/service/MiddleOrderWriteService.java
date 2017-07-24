@@ -19,7 +19,7 @@ public interface MiddleOrderWriteService {
      * @param skuOrders
      * @param operation
      */
-    public Response<Boolean> updateOrderStatusAnndSkuQuantities(ShopOrder shopOrder,List<SkuOrder> skuOrders, OrderOperation operation);
+    public Response<Boolean> updateOrderStatusAndSkuQuantities(ShopOrder shopOrder,List<SkuOrder> skuOrders, OrderOperation operation);
 
     /**
      * 更新订单状态,回滚子单待处理数量,子单取消使用
@@ -27,7 +27,8 @@ public interface MiddleOrderWriteService {
      * @param skuOrders 需要回滚成待处理状态的子单
      * @param skuOrder  需要撤销的子单
      * @param cancelOperation 撤销子单取消动作,取消成功或者取消失败
+     * @param skuCode 子单撤单失败时添加的skuCode用于标识
      * @return
      */
-    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder,OrderOperation cancelOperation,OrderOperation waitHandleOperation);
+    public Response<Boolean> updateOrderStatusAndSkuQuantities4Sku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder,OrderOperation cancelOperation,OrderOperation waitHandleOperation,String skuCode);
 }

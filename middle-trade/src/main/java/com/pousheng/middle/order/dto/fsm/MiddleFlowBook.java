@@ -152,6 +152,10 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
                     MiddleOrderEvent.CANCEL.toOrderOperation(),
                     MiddleOrderStatus.CANCEL_FAILED.getValue());
+            //取消失败->撤销->待处理(总单使用)
+            addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
+                    MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
             //===>>撤销流程
             //待处理->撤销->待处理
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
@@ -185,44 +189,6 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
                     MiddleOrderEvent.REVOKE_FAIL.toOrderOperation(),
                     MiddleOrderStatus.REVOKE_FAILED.getValue());
-
-            //===>>子单取消流程
-            //待处理->子单取消成功->已取消
-            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL.getValue());
-            //待发货->子单取消成功->已取消
-            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL.getValue());
-            //订单处理中->子单取消成功->已取消
-            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_SUCCESS.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL.getValue());
-            //待处理->子单取消失败->子单取消失败
-            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL_SKU_FAILED.getValue());
-            //待发货->子单取消失败->子单取消失败
-            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL_SKU_FAILED.getValue());
-            //订单处理中->子单取消失败->子单取消失败
-            addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL_SKU_FAILED.getValue());
-            //子单取消失败->子单取消->已取消
-            addTransition(MiddleOrderStatus.CANCEL_SKU_FAILED.getValue(),
-                    MiddleOrderEvent.CANCEL_SKU.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL.getValue());
-            //子单取消失败->子单取消->子单取消失败
-            addTransition(MiddleOrderStatus.CANCEL_SKU_FAILED.getValue(),
-                    MiddleOrderEvent.AUTO_CANCEL_SKU_FAIL.toOrderOperation(),
-                    MiddleOrderStatus.CANCEL_SKU_FAILED.getValue());
-            //子单取消失败->撤销->待处理
-            addTransition(MiddleOrderStatus.CANCEL_SKU_FAILED.getValue(),
-                    MiddleOrderEvent.REVOKE.toOrderOperation(),
-                    MiddleOrderStatus.WAIT_HANDLE.getValue());
         }
     };
 

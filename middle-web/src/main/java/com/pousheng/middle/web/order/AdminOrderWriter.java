@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
@@ -8,8 +9,11 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Objects;
 
 /**
  * Created by tony on 2017/7/18.
@@ -40,15 +44,6 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 取消子订单(手动)
-     * @param id shopOrder的id
-     * @param skuCode
-     */
-    @RequestMapping(value = "api/order/{id}/cancel/sku/order", method = RequestMethod.PUT)
-    public void cancelSkuOrder(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.cancelSkuOrder(id, skuCode);
-    }
-    /**
      * 取消子订单(自动)
      * @param id shopOrder的id
      * @param skuCode
@@ -68,12 +63,21 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 整单取消,子单整单发货单状态变为已取消(手动)
+     * 订单(包括整单和子单)取消失败,手工操作逻辑
      * @param shopOrderId
      */
-    @RequestMapping(value="api/order/{id}/cancel/shop/order")
+    @RequestMapping(value="api/order/{id}/cancel/order",method = RequestMethod.PUT)
     public void cancelShopOrder(@PathVariable("id") Long shopOrderId){
-        orderWriteLogic.cancelShopOrder(shopOrderId);
+        //判断是整单取消还是子单取消
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        //获取是否存在失败的sku记录
+        String skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED,shopOrder);
+        if(StringUtils.isNotEmpty(skuCodeCanceled)){
+            orderWriteLogic.cancelSkuOrder(shopOrderId,skuCodeCanceled);
+        }else{
+            orderWriteLogic.cancelShopOrder(shopOrderId);
+        }
+
     }
     /**
      * 整单取消,子单整单发货单状态变为已取消(自动)

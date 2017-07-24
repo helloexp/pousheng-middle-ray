@@ -5,10 +5,14 @@ import com.google.common.collect.Sets;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.model.SpuMaterial;
 import io.terminus.common.utils.JsonMapper;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
@@ -41,8 +45,8 @@ public class MaterialPusher {
         for (SpuMaterial spuMaterial : spuMaterials) {
             materialIds.add(spuMaterial.getMaterialId());
         }
-        erpClient.postJson("e-commerce-api/v1/create-material-mapper",
-                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(materialIds)));
+        erpClient.postJson("common/erp/base/creatematerialmapper",
+                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds))));
     }
 
     /**
@@ -56,7 +60,17 @@ public class MaterialPusher {
         for (SpuMaterial spuMaterial : spuMaterials) {
             materialIds.add(spuMaterial.getMaterialId());
         }
-        erpClient.postJson("e-commerce-api/v1/remove-material-mapper",
-                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(materialIds)) );
+        erpClient.postJson("common/erp/base/removematerialmapper",
+                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds))) );
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    public static class MaterialIds implements Serializable{
+
+        private static final long serialVersionUID = -5368312307537675586L;
+
+        private List<String> material_lists;
     }
 }

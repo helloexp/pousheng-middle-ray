@@ -5,6 +5,8 @@ import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
+import java.util.List;
+
 /**
  * Author: jlchen
  * Desc: 仓库优先级规则概述读服务
@@ -29,5 +31,14 @@ public interface WarehouseRuleReadService {
      * @return 按照店铺组id归组的仓库规则概述
      */
     Response<Paging<RuleGroup>> pagination(Integer pageNo, Integer pageSize);
+
+
+    /**
+     * 根据店铺id查找设置的仓库列表
+     *
+     * @param shopId  店铺id
+     * @return 仓库列表
+     */
+    Response<List<Long>>  findWarehouseIdsByShopId(Long shopId);
 
 }

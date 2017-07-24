@@ -8,6 +8,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -92,6 +93,8 @@ public class Shipments {
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
+    @Autowired
+    private StockPusher stockPusher;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -640,7 +643,15 @@ public class Shipments {
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
         warehouseShipmentList.add(warehouseShipment);
-        return warehouseSkuWriteService.lockStock(warehouseShipmentList);
+        Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
+
+        //触发库存推送
+        for (WarehouseShipment ws : warehouseShipmentList) {
+            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
+                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+            }
+        }
+        return result;
 
     }
 

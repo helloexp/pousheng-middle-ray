@@ -16,4 +16,9 @@ public class UserDao extends MyBatisDao<MiddleUser> {
         return getSqlSession().selectOne(sqlId("findByOutId"),outId);
     }
 
+    public MiddleUser findByName(String name){
+        return getSqlSession().selectOne(sqlId("findByName"),name);
+    }
+
+
 }

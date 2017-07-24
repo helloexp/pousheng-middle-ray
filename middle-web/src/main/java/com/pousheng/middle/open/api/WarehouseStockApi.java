@@ -3,6 +3,7 @@ package com.pousheng.middle.open.api;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.open.api.dto.ErpStock;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
@@ -15,6 +16,8 @@ import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,11 +37,15 @@ public class WarehouseStockApi {
     private static final TypeReference<List<ErpStock>> LIST_OF_ERP_STOCK = new TypeReference<List<ErpStock>>() {
     };
 
+    private static final DateTimeFormatter dft = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     @Autowired
     private WarehouseCacher warehouseCacher;
 
     @RpcConsumer
     private WarehouseSkuWriteService warehouseSkuWriteService;
+
+    @Autowired
+    private StockPusher stockPusher;
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
@@ -49,11 +56,15 @@ public class WarehouseStockApi {
             Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
             if(!r.isSuccess()){
                 log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
-                throw new OPServerException(r.getError());
+                throw new OPServerException(200,r.getError());
+            }
+            //触发库存推送
+            for (StockDto stockDto : stockDtos) {
+                stockPusher.submit(stockDto.getSkuCode());
             }
         } catch (Exception e) {
             log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
-            throw new OPServerException("stock.data.invalid");
+            throw new OPServerException(200,"stock.data.invalid");
         }
 
     }
@@ -64,7 +75,7 @@ public class WarehouseStockApi {
             StockDto stockDto = new StockDto();
             stockDto.setSkuCode(erpStock.getBarcode());
             stockDto.setQuantity(erpStock.getQuantity());
-            stockDto.setUpdatedAt(erpStock.getModify_time());
+            stockDto.setUpdatedAt(dft.parseDateTime(erpStock.getModify_time()).toDate());
 
             String warehouseCode = erpStock.getCompany_id()+"-"+erpStock.getStock_id();
             Warehouse warehouse = warehouseCacher.findByCode(warehouseCode);

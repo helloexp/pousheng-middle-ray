@@ -87,6 +87,16 @@
         WHERE out_id = #{id}
     </select>
 
+
+
+    <select id="findByName" parameterType="string" resultMap="MiddleUserMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE name = #{name}
+    </select>
+
+
+
     <update id="update" parameterType="MiddleUser">
         UPDATE
         <include refid="tb"/>

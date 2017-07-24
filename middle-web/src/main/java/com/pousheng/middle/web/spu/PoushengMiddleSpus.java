@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.spu;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -74,6 +75,9 @@ public class PoushengMiddleSpus {
     private Paging<Spu> pagingById(Long spuId){
         Response<Spu> spuResp = spuReadService.findById(spuId);
         if(!spuResp.isSuccess()){
+            if(Objects.equal("spu.not.found",spuResp.getError())){
+                return Paging.empty();
+            }
             log.error("find spu by id:{} fail,error:{}",spuId,spuResp.getError());
             throw new JsonResponseException(spuResp.getError());
         }

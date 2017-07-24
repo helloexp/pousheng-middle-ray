@@ -128,6 +128,7 @@ public class WarehouseRules {
     }
 
     private List<ThinShop> findAllCandidateShops() {
+
         Response<List<OpenShop>> r = openShopReadService.findAll();
         if (!r.isSuccess()) {
             log.error("failed to find open shops, error code:{}", r.getError());

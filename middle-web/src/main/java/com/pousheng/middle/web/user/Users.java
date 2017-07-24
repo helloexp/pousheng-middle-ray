@@ -12,6 +12,7 @@ import com.pousheng.middle.web.events.user.LoginEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.auth.api.Role;
 import io.terminus.parana.auth.api.RoleContent;
 import io.terminus.parana.auth.api.UserRoleLoader;
@@ -75,6 +76,12 @@ public class Users {
 
         //获取登录token
         LoginTokenInfo tokenInfo =  operationLogic.getUserToken(username,password);
+
+        if(Arguments.isNull(tokenInfo)){
+            log.error("get user center token fail");
+            throw new JsonResponseException("get.user.center.token.fail");
+        }
+
         if(!Strings.isNullOrEmpty(tokenInfo.getError())){
             log.error("user login by user name:{} password:{} fail,error:{}",username,password,tokenInfo.getErrorDescription());
             throw new JsonResponseException(tokenInfo.getErrorDescription());

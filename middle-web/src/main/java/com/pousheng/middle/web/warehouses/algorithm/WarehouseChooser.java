@@ -2,6 +2,7 @@ package com.pousheng.middle.web.warehouses.algorithm;
 
 import com.google.common.base.Function;
 import com.google.common.collect.*;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -19,6 +20,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -49,6 +51,9 @@ public class WarehouseChooser {
 
     @RpcConsumer
     private WarehouseCacher warehouseCacher;
+
+    @Autowired
+    private StockPusher stockPusher;
 
     private static final Ordering<WarehouseWithPriority> byPriority = Ordering.natural().onResultOf(new Function<WarehouseWithPriority, Integer>() {
         @Override
@@ -95,6 +100,12 @@ public class WarehouseChooser {
                     log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
                             "auto dispatch stock failed", addressId, rDecrease.getError());
                     return Collections.emptyList();
+                }
+                //触发库存推送
+                for (WarehouseShipment warehouseShipment : warehouseShipments) {
+                    for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
+                        stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                    }
                 }
                 return warehouseShipments;
             }
@@ -166,6 +177,13 @@ public class WarehouseChooser {
                 }
                 warehouseShipment.setSkuCodeAndQuantities(scaqs);
                 result.add(warehouseShipment);
+            }
+        }
+
+        //触发库存推送
+        for (WarehouseShipment warehouseShipment : result) {
+            for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
+                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
             }
         }
         return result;

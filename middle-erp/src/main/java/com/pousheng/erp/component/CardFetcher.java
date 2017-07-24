@@ -42,7 +42,7 @@ public class CardFetcher {
      */
     List<PoushengCard> fetch(int pageNo, int pageSize, Date start, Date end) {
         try {
-            String result = this.erpClient.get("e-commerce-api/v1/hk-cards",
+            String result = this.erpClient.get("common/erp/base/gethkcards",
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result, LIST_OF_CARD);

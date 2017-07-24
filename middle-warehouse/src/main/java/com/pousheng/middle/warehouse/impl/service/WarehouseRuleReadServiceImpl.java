@@ -31,6 +31,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Author: jlchen
@@ -142,6 +143,34 @@ public class WarehouseRuleReadServiceImpl implements WarehouseRuleReadService {
         } catch (Exception e) {
             log.error("failed to pagination rule summary, cause:{}",Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.rule.find.fail");
+        }
+    }
+
+    /**
+     * 根据店铺id查找设置的仓库列表
+     *
+     * @param shopId 店铺id
+     * @return 仓库列表
+     */
+    @Override
+    public Response<List<Long>> findWarehouseIdsByShopId(Long shopId) {
+        try {
+            List<WarehouseShopGroup> groups = warehouseShopGroupDao.findByShopId(shopId);
+            Set<Long> warehouseIds = Sets.newHashSet();
+            for (WarehouseShopGroup group : groups) {
+                List<WarehouseRule> rules = warehouseRuleDao.findByShopGroupId(group.getGroupId());
+                for (WarehouseRule rule : rules) {
+                    List<WarehouseRuleItem> ruleItems = warehouseRuleItemDao.findByRuleId(rule.getId());
+                    for (WarehouseRuleItem ruleItem : ruleItems) {
+                        warehouseIds.add(ruleItem.getWarehouseId());
+                    }
+                }
+            }
+            return Response.ok(Lists.newArrayList(warehouseIds));
+        } catch (Exception e) {
+            log.error("failed to find warehouseIds by shopId({}), cause:{}",
+                    shopId, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.find.fail");
         }
     }
 

@@ -36,7 +36,7 @@
 
     <sql id="queryCondition">
         
-        <if test="shopId != null">and `shop_id` = #{shopGroupId}</if>
+        <if test="shopId != null">and `shop_id` = #{shopId}</if>
         
         <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
         

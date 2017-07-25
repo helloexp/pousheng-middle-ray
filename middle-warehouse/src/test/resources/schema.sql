@@ -115,7 +115,7 @@ CREATE TABLE `pousheng_warehouse_company_rules`(
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `company_code` varchar(20) NOT NULL COMMENT '公司编码',
   `company_name` varchar(128) NULL COMMENT '公司名称',
-  `shop_id` bigint(20) NOT NULL COMMENT '下单店铺id',
+  `shop_id` varchar(32) NOT NULL COMMENT '下单店铺id',
   `shop_name` varchar(128) NULL COMMENT '下单店铺名称',
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
   `warehouse_name` varchar(128)  NULL COMMENT '仓库名称',

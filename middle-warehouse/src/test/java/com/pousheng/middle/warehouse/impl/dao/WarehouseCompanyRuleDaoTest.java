@@ -80,7 +80,7 @@ public class WarehouseCompanyRuleDaoTest extends BaseDaoTest {
 
         warehouseCompanyRule.setCompanyCode("001");
         warehouseCompanyRule.setCompanyName("company1");
-        warehouseCompanyRule.setShopId(12L);
+        warehouseCompanyRule.setShopId("12");
         warehouseCompanyRule.setShopName("shop12");
         
         warehouseCompanyRule.setWarehouseId(23L);

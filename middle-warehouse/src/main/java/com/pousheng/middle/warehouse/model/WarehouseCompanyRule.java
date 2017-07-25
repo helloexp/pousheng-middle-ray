@@ -33,7 +33,7 @@ public class WarehouseCompanyRule implements Serializable {
     /**
      * 店铺id
      */
-    private Long shopId;
+    private String shopId;
 
     /**
      * 店铺名称

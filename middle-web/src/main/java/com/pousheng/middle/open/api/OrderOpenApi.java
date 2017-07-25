@@ -90,16 +90,18 @@ public class OrderOpenApi {
      * @param shipmentDate     发货时间
      * @return 是否同步成功
      */
-    @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId", "shipmentCorpCode", "shipmentSerialNo",
-            "shipmentDate","posSerialNo","posType","posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
+    @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
+                                                         "shipmentCorpCode", "shipmentSerialNo",
+                                                         "shipmentDate","posSerialNo","posType",
+                                                         "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
     public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate,
                                      @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
-                                     @NotEmpty(message = "pos.type.is.null")Integer posType,
-                                     @NotEmpty(message = "pos.amt.is.empty")String posAmt,
+                                     @NotNull(message = "pos.type.is.null")Integer posType,
+                                     @NotNull(message = "pos.amt.is.empty")Long posAmt,
                                      @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
                 "shipmentSerialNo is:{} shipmentDate is:{} posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",
@@ -196,14 +198,16 @@ public class OrderOpenApi {
     }
 
 
-    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo", "receivedDate"}, httpMethods = RequestMethod.POST)
+    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
+                                                                      "receivedDate","posSerialNo","posType",
+                                                                      "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate,
                                    @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
                                    @NotNull(message = "pos.type.is.null")Integer posType,
-                                   @NotEmpty(message = "pos.amt.is.empty")String posAmt,
+                                   @NotNull(message = "pos.amt.is.empty")Long posAmt,
                                    @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{} " +
                 "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,posSerialNo,posType,posAmt,posCreatedAt);

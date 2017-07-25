@@ -125,9 +125,9 @@ public class CreateShipments {
             log.error("not find warehouse company rule by company code:{}",companyCode);
            return Response.fail("warehouse.company.rule.not.exist");
         }
-        shipmentPreview.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentPreview.setErpOrderShopCode(companyRule.getShopId());
         shipmentPreview.setErpOrderShopName(companyRule.getShopName());
-        shipmentPreview.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentPreview.setErpPerformanceShopCode(companyRule.getShopId());
         shipmentPreview.setErpPerformanceShopName(companyRule.getShopName());
 
         return Response.ok(shipmentPreview);

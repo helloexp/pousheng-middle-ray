@@ -4,19 +4,15 @@
 
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * 菜鸟地址DAO
- *
- * Author  : panxin
- * Date    : 2:04 PM 3/5/16
- * Mail    : panxin@terminus.io
- */
+
+
 @Repository
 public class WarehouseAddressDao extends MyBatisDao<WarehouseAddress>{
 
@@ -59,5 +55,15 @@ public class WarehouseAddressDao extends MyBatisDao<WarehouseAddress>{
      */
     public Boolean createWithId(WarehouseAddress address) {
         return getSqlSession().insert(sqlId("createWithId"), address) == 1;
+    }
+
+    /**
+     * 根据地址名和类别查询地址信息
+     * @param name
+     * @param level
+     * @return
+     */
+    public WarehouseAddress findByNameAndLevel(String name,Integer level){
+        return getSqlSession().selectOne(sqlId("findByNameAndLevel"), ImmutableMap.of("name", name, "level", level));
     }
 }

@@ -207,7 +207,15 @@ public class Shipments {
 
     }
 
-
+    /**
+     * 自动创建发货单
+     * @param shopOrderId
+     */
+    @RequestMapping(value = "api/shipment/{id}/auto/create/shipment",method = RequestMethod.PUT)
+    public void autoCreateSaleShipment(@PathVariable("id") Long shopOrderId){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        shipmentWiteLogic.doAutoCreateShipment(shopOrder);
+    }
 
     /**
      * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单

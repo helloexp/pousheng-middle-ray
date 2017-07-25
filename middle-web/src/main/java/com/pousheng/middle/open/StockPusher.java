@@ -115,6 +115,9 @@ public class StockPusher {
                         }
                         //和安全库存进行比较, 确定推送库存数量
                         WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
+                        if(shopStockRule.getStatus()<0){//非启用状态
+                            return;
+                        }
                         //按照设定的比例确定推送数量
                         stock = stock * shopStockRule.getRatio() / 100;
                         if (shopStockRule.getSafeStock() >= stock) {

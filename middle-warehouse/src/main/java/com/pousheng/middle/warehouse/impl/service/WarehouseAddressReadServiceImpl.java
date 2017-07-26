@@ -27,7 +27,7 @@ public class WarehouseAddressReadServiceImpl implements WarehouseAddressReadServ
             WarehouseAddress warehouseAddress = warehouseAddressDao.findByNameAndLevel(addressName, level);
             if (warehouseAddress == null) {
                 log.error("no WarehouseAddress found by name({}),level({})", addressName, level);
-                throw new ServiceException("address.not.found");
+                return Response.fail("rule.address.find.fail");
             }
             return Response.ok(warehouseAddress);
         } catch (ServiceException e1) {

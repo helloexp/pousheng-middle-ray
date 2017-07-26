@@ -1,16 +1,15 @@
-package com.pousheng.middle.web.export;
+package com.pousheng.middle.web.utils.export;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.joda.time.DateTime;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Date;
@@ -23,37 +22,21 @@ import java.util.stream.Stream;
 public class ExportUtil {
 
 
-    public static File export(ExportContext context) {
+    public static void export(ExportContext context) {
 
-        if (null == context)
-            return null;
-        if (null == context.getData() || context.getData().isEmpty())
-            return null;
-
-        return export(new DefaultExportExecutor(context));
+        export(new DefaultExportExecutor(context));
     }
 
-    public static void export(ExportContext context, OutputStream out) {
-        if (null == context)
-            return;
-        if (null == context.getData() || context.getData().isEmpty())
-            return;
-
-        export(new DefaultExportExecutor(context, out));
-    }
-
-
-    public static File export(ExportExecutor executor) {
-
+    public static void export(ExportExecutor executor) {
 
         try (Workbook wb = new HSSFWorkbook()) {
 
             Sheet sheet = wb.createSheet();
 
-            return executor.execute(wb, sheet);
+            executor.execute(wb, sheet);
 
         } catch (IOException e) {
-            return null;
+            throw new RuntimeException(e);
         }
     }
 
@@ -63,21 +46,13 @@ public class ExportUtil {
 
         private ExportContext context;
 
-        private OutputStream out;
-
 
         public DefaultExportExecutor(ExportContext context) {
             this.context = context;
         }
 
-
-        public DefaultExportExecutor(ExportContext context, OutputStream out) {
-            this.context = context;
-            this.out = out;
-        }
-
         @Override
-        public File execute(Workbook wb, Sheet sheet) {
+        public void execute(Workbook wb, Sheet sheet) {
 
             List<String> fieldNames = setUpTitleRow(context, sheet.createRow(0));
 
@@ -105,18 +80,18 @@ public class ExportUtil {
             }
 
 
-            if (null == out) {
-                File file = new File(System.currentTimeMillis() + ".xls");
+            if (context.getResultType() == ExportContext.ResultType.FILE) {
+                File file = new File(context.getPath(), StringUtils.isBlank(context.getFilename()) ? (DateTime.now().toString("yyyyMMddHHmmss") + ".xls") : context.getFilename());
                 try (FileOutputStream out = new FileOutputStream(file)) {
                     wb.write(out);
-                    return file;
+                    context.setResultFile(file);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             } else {
-                try {
+                try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                     wb.write(out);
-                    return null;
+                    context.setResultByteArray(out.toByteArray());
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }

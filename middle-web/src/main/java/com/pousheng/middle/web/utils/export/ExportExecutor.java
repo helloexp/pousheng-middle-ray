@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.export;
+package com.pousheng.middle.web.utils.export;
 
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
@@ -10,5 +10,5 @@ import java.io.File;
  */
 public interface ExportExecutor {
 
-     File execute(Workbook wb, Sheet sheet);
+     void execute(Workbook wb, Sheet sheet);
 }

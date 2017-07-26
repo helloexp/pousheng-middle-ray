@@ -9,8 +9,9 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.utils.export.ExportContext;
+import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -18,21 +19,19 @@ import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
-import io.terminus.parana.settle.enums.PayType;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -62,14 +61,18 @@ public class ExportController {
     private ShopOrderReadService shopOrderReadService;
 
 
+    @Autowired
+    private ExportService exportService;
+
+
     /**
      * 导出订单
      *
      * @param middleOrderCriteria 查询参数
      * @return
      */
-    @GetMapping(value = "order/export", produces = "application/vnd.ms-excel")
-    public void orderExport(MiddleOrderCriteria middleOrderCriteria, HttpServletResponse response) {
+    @GetMapping("order/export")
+    public void orderExport(MiddleOrderCriteria middleOrderCriteria) {
 
         if (middleOrderCriteria.getOutCreatedEndAt() != null) {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
@@ -180,15 +183,11 @@ public class ExportController {
             });
         }
 
-
-        ExportContext exportContext = new ExportContext(orderExportData);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ExportUtil.export(exportContext, out);
-
+        exportService.saveToCloud(new ExportContext(orderExportData));
     }
 
     @GetMapping("refund/export")
-    public byte[] refundExport(RefundCriteria criteria, HttpServletResponse response) {
+    public void refundExport(RefundCriteria criteria) {
 
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
@@ -253,11 +252,17 @@ public class ExportController {
 
         }
 
-        ExportContext context = new ExportContext(refundExportData);
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        ExportUtil.export(context, out);
-
-        response.setHeader("Content-Disposition", "attachment;filename=export.xls");
-        return out.toByteArray();
+        exportService.saveToCloud(new ExportContext(refundExportData));
     }
+
+
+    @GetMapping("export/files")
+    public Response<Paging<FileRecord>> exportFiles() {
+
+        List<FileRecord> files = exportService.getExportFiles();
+
+        return Response.ok(new Paging<FileRecord>((long) files.size(), files));
+    }
+
+
 }

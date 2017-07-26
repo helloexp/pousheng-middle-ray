@@ -171,7 +171,7 @@ public class ShipmentWiteLogic {
      */
     public void doAutoCreateShipment(ShopOrder shopOrder){
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
-                MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+                MiddleOrderStatus.WAIT_HANDLE.getValue());
         //判断是否满足自动生成发货单
         if(!commValidateOfOrder(shopOrder,skuOrders)){
             return;
@@ -188,6 +188,7 @@ public class ShipmentWiteLogic {
         Response<List<ReceiverInfo>> response =receiverInfoReadService.findByOrderId(shopOrder.getId(), OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find ReceiverInfo failed,shopOrderId is(:{})",shopOrder.getId());
+            return;
         }
         ReceiverInfo receiverInfo = response.getResult().get(0);
         String cityName = receiverInfo.getCity();
@@ -249,33 +250,13 @@ public class ShipmentWiteLogic {
      * @return
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
-        //1.判断订单是否是京东支付
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())){
-            return false;
-        }
-        //2.判断订单是否是货到付款
-        if (Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
+        //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
+        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             return false;
         }
         //3.判断订单有无备注
-        if (StringUtils.isEmpty(shopOrder.getBuyerNote())){
-            return false;
-        }
-        //判断库存是否充足
-        int count=0;//计数器,用于判断是否存在sku订单存在库存不足的情况
-        for (SkuOrder skuOrder:skuOrders){
-            Response<WarehouseSkuStock>  warehouseSkuStockResponse =  warehouseSkuReadService.findAvailStockBySkuCode(skuOrder.getSkuCode());
-            if (!warehouseSkuStockResponse.isSuccess()){
-                log.error("find avail stock by skuCode failed,skuOrderId is(:{})",skuOrder.getId());
-            }
-            WarehouseSkuStock warehouseSkuStock = warehouseSkuStockResponse.getResult();
-            Integer waitHandleNumber = Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder));
-            if (warehouseSkuStock.getAvailStock()<waitHandleNumber)
-            {
-                count++;
-            }
-        }
-        if (count>0){
+        if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
             return false;
         }
         return true;
@@ -323,7 +304,7 @@ public class ShipmentWiteLogic {
      */
     private Shipment makeShipment(Long shopOrderId,Long warehouseId){
         Shipment shipment = new Shipment();
-        shipment.setStatus(MiddleShipmentsStatus.WAIT_SHIP.getValue());
+        shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
 
         //发货仓库信息
@@ -463,7 +444,8 @@ public class ShipmentWiteLogic {
     private WarehouseAddress getWarehouseAddress(String addressName,Integer level){
         Response<WarehouseAddress> warehouseResponse = warehouseAddressReadService.findByNameAndLevel(addressName,level);
         if (!warehouseResponse.isSuccess()){
-            log.error("=============================");
+            log.error("find warehouseAddress failed,addressName is(:{}) and level is (:{})",addressName,level);
+            throw new JsonResponseException("find.warehouse.address.failed");
         }
         return  warehouseResponse.getResult();
     }

@@ -13,7 +13,7 @@ public class ErpShop implements Serializable {
 
     private static final long serialVersionUID = -847340496467876243L;
 
-    private Long id;
+    private String id;
 
     private String storeName;
 

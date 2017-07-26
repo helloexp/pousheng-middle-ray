@@ -80,3 +80,7 @@ drop table if exists `pousheng_stock_bills`;
 drop index idx_spus_spu_code on parana_spus ;
 -- 创建spu spu_code 索引
 create index idx_spus_spu_code on parana_spus (spu_code) ;
+
+
+
+ALTER TABLE `pousheng_warehouse_company_rules` change  `shop_id` `shop_id` varchar(32) NOT NULL COMMENT '下单店铺id';

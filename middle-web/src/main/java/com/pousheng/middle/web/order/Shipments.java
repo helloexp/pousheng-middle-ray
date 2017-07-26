@@ -511,9 +511,9 @@ public class Shipments {
         }
 
         WarehouseCompanyRule companyRule = ruleRes.getResult();
-        shipmentExtra.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentExtra.setErpOrderShopCode(companyRule.getShopId());
         shipmentExtra.setErpOrderShopName(companyRule.getShopName());
-        shipmentExtra.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
+        shipmentExtra.setErpPerformanceShopCode(companyRule.getShopId());
         shipmentExtra.setErpPerformanceShopName(companyRule.getShopName());
 
         //todo 发货单商品金额

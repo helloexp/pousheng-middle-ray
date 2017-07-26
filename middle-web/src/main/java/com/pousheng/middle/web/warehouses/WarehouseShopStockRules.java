@@ -172,7 +172,7 @@ public class WarehouseShopStockRules {
      * @param shopId 店铺id
      * @return 是否发送请求
      */
-    @RequestMapping(value = "/{push}", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean push(@RequestParam("shopId")Long shopId){
         eventBus.post(new PushEvent(shopId));
         return Boolean.TRUE;

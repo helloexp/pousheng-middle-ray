@@ -5,6 +5,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -49,7 +50,7 @@ public class RefundExtra implements Serializable{
     //恒康确认收到买家退货商品时间
     //private Date hkConfirmAt;
     //恒康确认收到买家退货商品信息
-    private String hkConfirmItemInfo;
+    private List<HkConfirmReturnItemInfo> hkConfirmItemInfos;
 
 
 

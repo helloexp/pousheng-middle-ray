@@ -76,7 +76,7 @@ public class WarehouseChooser {
         Long currentAddressId = addressId;
         addressIds.add(currentAddressId);
         while (currentAddressId > 1) {
-            WarehouseAddress address = warehouseAddressCacher.findById(addressId);
+            WarehouseAddress address = warehouseAddressCacher.findById(currentAddressId);
             addressIds.add(address.getPid());
             currentAddressId= address.getPid();
         }

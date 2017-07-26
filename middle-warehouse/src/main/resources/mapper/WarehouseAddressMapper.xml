@@ -68,6 +68,12 @@
         WHERE name like concat(concat('%',#{name}),'%') limit 1
     </select>
 
+    <select id="findByNameAndLevel" parameterType="map" resultMap="WarehouseAddressMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE name like concat(concat('%',#{name}),'%') and level=#{level} limit 1
+    </select>
+
     <select id="findByLevel" parameterType="int" resultMap="WarehouseAddressMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />

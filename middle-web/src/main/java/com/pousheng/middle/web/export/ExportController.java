@@ -155,7 +155,7 @@ public class ExportController {
                     //TODO paytype enum
                     export.setPayType("在线支付");
                     payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
-                    export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).name());
+                    export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
                     export.setShipFee(skuOrder.getShipFee());
                     //TODO 发票信息待完善
@@ -224,7 +224,7 @@ public class ExportController {
                     export.setShopName(refundInfo.getRefund().getShopName());
                     export.setMemo(refundInfo.getRefund().getBuyerNote());
                     export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
-                    export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).name());
+                    export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                     export.setAmt(item.getFee());
                     //TODO 货号

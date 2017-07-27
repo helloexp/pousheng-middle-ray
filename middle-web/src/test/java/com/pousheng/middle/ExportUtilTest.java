@@ -1,5 +1,6 @@
 package com.pousheng.middle;
 
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportTitleContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
@@ -49,9 +50,8 @@ public class ExportUtilTest {
         ExportContext context = new ExportContext(entities);
         context.setResultType(ExportContext.ResultType.FILE);
         ExportUtil.export(context);
-
-
     }
+
 
     @Test
     public void orderTest() {
@@ -59,7 +59,11 @@ public class ExportUtilTest {
         orderExport.setOrderID(3434888387674L);
         orderExport.setShopName("shangzhaer");
         orderExport.setPaymentDate(new Date());
+        orderExport.setOrderStatus(MiddleOrderStatus.CONFIRMED.getName());
         orderExport.setFee(4489L);
-        ExportUtil.export(new ExportContext(Collections.singletonList(orderExport)));
+
+        ExportContext context = new ExportContext(Collections.singletonList(orderExport));
+        context.setResultType(ExportContext.ResultType.FILE);
+        ExportUtil.export(context);
     }
 }

@@ -30,7 +30,7 @@ public class SycHkRefundOrderApi {
     @Value("${gateway.hk.host}")
     private String hkGateway;
 
-    public void doSyncRefundOrder(SycHkRefund sycHkRefund, List<SycHkRefundItem> sycHkRefundItems){
+    public String doSyncRefundOrder(SycHkRefund sycHkRefund, List<SycHkRefundItem> sycHkRefundItems){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
@@ -51,6 +51,6 @@ public class SycHkRefundOrderApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

@@ -35,7 +35,7 @@ public class SycHkOrderCancelApi {
      * @param orderId 发货单号或退货单号，根据type
      * @param type 0:发货单  1:退货单
      */
-    public void doCancelOrder(String shopCode, Long orderId, Integer type){
+    public String doCancelOrder(String shopCode, Long orderId, Integer type){
         //0  取消  1 删除
         Integer operationType = 0;
 
@@ -60,6 +60,6 @@ public class SycHkOrderCancelApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

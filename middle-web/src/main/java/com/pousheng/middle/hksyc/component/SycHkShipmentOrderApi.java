@@ -27,7 +27,7 @@ public class SycHkShipmentOrderApi {
     @Value("${gateway.hk.host}")
     private String hkGateway;
 
-    public void doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders){
+    public String doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
@@ -58,6 +58,6 @@ public class SycHkShipmentOrderApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

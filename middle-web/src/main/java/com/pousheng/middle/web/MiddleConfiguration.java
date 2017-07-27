@@ -71,6 +71,7 @@ import java.util.concurrent.Executors;
                 "com.pousheng.middle.advices",
                 "com.pousheng.middle.auth",
                 "com.pousheng.middle.erpsyc",
+                "com.pousheng.middle.hksyc",
                 "com.pousheng.middle.interceptors",
                 "com.pousheng.middle.web"})
 @EnableScheduling

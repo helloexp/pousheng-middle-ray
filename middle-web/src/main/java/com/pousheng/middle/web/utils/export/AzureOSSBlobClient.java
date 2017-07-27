@@ -29,6 +29,13 @@ public class AzureOSSBlobClient {
     @Autowired
     private CloudStorageAccount account;
 
+    /**
+     * 上传至Azure云存储
+     *
+     * @param file local file need to upload
+     * @param path azure container name
+     * @return azure file url
+     */
     public String upload(File file, String path) {
 
         if (!file.exists() || !file.canRead() || file.isDirectory())
@@ -49,6 +56,14 @@ public class AzureOSSBlobClient {
         }
     }
 
+    /**
+     * 上传至Azure云存储
+     *
+     * @param payload content need to upload
+     * @param name    azure file name
+     * @param path    azure container name
+     * @return azure file url
+     */
     public String upload(byte[] payload, String name, String path) {
 
         if (null == payload || payload.length == 0)
@@ -71,6 +86,12 @@ public class AzureOSSBlobClient {
     }
 
 
+    /**
+     * 对container设置允许外部读取
+     *
+     * @param container
+     * @throws StorageException
+     */
     private void setUpContainer(CloudBlobContainer container) throws StorageException {
         if (!container.exists()) {
             container.create();

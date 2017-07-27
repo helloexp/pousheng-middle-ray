@@ -59,8 +59,8 @@ public class StockPusher {
     @Autowired
     public StockPusher(@Value("${index.queue.size: 10000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("search-indexer-%d").build(),
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors()*6, 60L, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-update-%d").build(),
                 new RejectedExecutionHandler() {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         log.error("task {} is rejected", r);

@@ -38,7 +38,7 @@ import java.util.concurrent.Callable;
  */
 @Slf4j
 @RestController
-@RequestMapping("api/**")
+@RequestMapping("api/")
 public class ExportController {
 
 
@@ -54,13 +54,11 @@ public class ExportController {
     private SpuReadService spuReadService;
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
-
-    @RpcConsumer
-    private RefundReadLogic refundReadLogic;
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
 
-
+    @Autowired
+    private RefundReadLogic refundReadLogic;
     @Autowired
     private ExportService exportService;
 

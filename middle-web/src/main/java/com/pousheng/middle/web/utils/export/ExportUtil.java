@@ -1,5 +1,8 @@
 package com.pousheng.middle.web.utils.export;
 
+import com.google.common.base.Throwables;
+import io.terminus.common.exception.ServiceException;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -19,6 +22,7 @@ import java.util.stream.Stream;
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
  */
+@Slf4j
 public class ExportUtil {
 
 
@@ -35,8 +39,9 @@ public class ExportUtil {
 
             executor.execute(wb, sheet);
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.error("export to execl file fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException(e);
         }
     }
 
@@ -70,9 +75,9 @@ public class ExportUtil {
                             Object value = f.get(o);
                             formatterIfNecessary(cell, value, f);
                         } catch (NoSuchFieldException e) {
-
+                            throw new RuntimeException("can not find field:" + fieldName + "in " + o.getClass().getName() + " class", e);
                         } catch (IllegalAccessException e) {
-
+                            throw new RuntimeException("cant not access field:" + fieldName + "in " + o.getClass().getName() + " class", e);
                         }
 
                     }
@@ -86,14 +91,14 @@ public class ExportUtil {
                     wb.write(out);
                     context.setResultFile(file);
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("save export result to file fail", e);
                 }
             } else {
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
                     wb.write(out);
                     context.setResultByteArray(out.toByteArray());
                 } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("save export result to byte array fail", e);
                 }
             }
 
@@ -105,7 +110,7 @@ public class ExportUtil {
 
             List<String> fieldNames = new ArrayList<>();
             if (null != context.getTitleContexts() && !context.getTitleContexts().isEmpty()) {
-
+                log.debug("use title context for export title");
                 for (int i = 0; i < context.getTitleContexts().size(); i++) {
                     ExportTitleContext titleContext = context.getTitleContexts().get(i);
 
@@ -115,20 +120,17 @@ public class ExportUtil {
                 }
 
             } else {
-
+                log.debug("not specify title context use export entity field annotation for export title");
                 //未标注@ExportTitle注解的字段忽略，不导出
                 //根据@ExportOrder的值排序。标注@ExportOrder都在未标注的字段前，未标注@ExportOrder的字段按照定声明顺序导出
                 Stream.of(context.getData().get(0).getClass().getDeclaredFields())
                         .filter(field -> field.isAnnotationPresent(ExportTitle.class))
                         .sorted((f1, f2) -> {
                             if (f1.isAnnotationPresent(ExportOrder.class) && !f2.isAnnotationPresent(ExportOrder.class)) {
-
                                 return -10;
                             } else if (!f1.isAnnotationPresent(ExportOrder.class) && f2.isAnnotationPresent(ExportOrder.class)) {
-
                                 return 10;
                             } else if (f1.isAnnotationPresent(ExportOrder.class) && f2.isAnnotationPresent(ExportOrder.class)) {
-
                                 return f2.getAnnotation(ExportOrder.class).value() - f1.getAnnotation(ExportOrder.class).value();
                             } else
                                 return 0;
@@ -149,9 +151,12 @@ public class ExportUtil {
     private static void formatterIfNecessary(Cell cell, Object value, Field field) {
         if (null != value) {
             if (field.isAnnotationPresent(ExportDateFormat.class) && value instanceof Date) {
+                String dateFormat = field.getAnnotation(ExportDateFormat.class).value();
                 try {
-                    cell.setCellValue(DateFormatUtils.format((Date) value, field.getAnnotation(ExportDateFormat.class).value()));
+                    cell.setCellValue(DateFormatUtils.format((Date) value, dateFormat));
+                    log.debug("use date format [{}] for {}", dateFormat, field.getName());
                 } catch (IllegalArgumentException e) {
+                    log.warn("the data format [{}] is not effective format,transform to string", dateFormat);
                     cell.setCellValue(value.toString());
                 }
             } else

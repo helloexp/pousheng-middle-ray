@@ -30,7 +30,7 @@ public class AzureOSSBlobClient {
     public String upload(File file, String path) {
 
         if (!file.exists() || !file.canRead() || file.isDirectory())
-            throw new RuntimeException("file not exist or can't read or is a directory");
+            throw new RuntimeException("upload to azure fail,file not exist or can't read or is a directory");
 
         CloudBlobClient client = account.createCloudBlobClient();
         try {
@@ -41,19 +41,15 @@ public class AzureOSSBlobClient {
             blob.uploadFromFile(file.getPath());
             return blob.getUri().toString();
 
-        } catch (URISyntaxException e) {
-            throw new RuntimeException();
-        } catch (StorageException e) {
-            throw new RuntimeException();
-        } catch (IOException e) {
-            throw new RuntimeException();
+        } catch (URISyntaxException | StorageException | IOException e) {
+            throw new RuntimeException("upload to azure fail", e);
         }
     }
 
-    public String upload(byte[] playload, String name, String path) {
+    public String upload(byte[] payload, String name, String path) {
 
-        if (null == playload || playload.length == 0)
-            throw new RuntimeException("update content is empty");
+        if (null == payload || payload.length == 0)
+            throw new RuntimeException("upload to azure fail,update content is empty");
 
         CloudBlobClient client = account.createCloudBlobClient();
 
@@ -62,15 +58,11 @@ public class AzureOSSBlobClient {
             setUpContainer(container);
 
             CloudBlockBlob blob = container.getBlockBlobReference(name);
-            blob.uploadFromByteArray(playload, 0, playload.length);
+            blob.uploadFromByteArray(payload, 0, payload.length);
             return blob.getUri().toString();
 
-        } catch (URISyntaxException e) {
-            throw new RuntimeException();
-        } catch (StorageException e) {
-            throw new RuntimeException(e);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (URISyntaxException | StorageException | IOException e) {
+            throw new RuntimeException("upload to azure fail", e);
         }
     }
 

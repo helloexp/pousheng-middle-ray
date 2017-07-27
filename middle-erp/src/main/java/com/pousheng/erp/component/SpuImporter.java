@@ -100,7 +100,7 @@ public class SpuImporter {
             //检查货品是否已经被同步, 如果已经同步, 则直接返回
             SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
             if(exist!=null){
-                log.info("material(id={}) has been synchronized, skip");
+                log.info("material(id={}) has been synchronized, skip",materialId);
                 return exist.getSpuId();
             }
 

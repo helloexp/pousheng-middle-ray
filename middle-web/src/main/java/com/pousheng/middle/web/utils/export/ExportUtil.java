@@ -59,7 +59,7 @@ public class ExportUtil {
             int pos = 1;
             for (Object o : context.getData()) {
 
-                Row row = sheet.createRow(pos);
+                Row row = sheet.createRow(pos++);
                 if (null != fieldNames && !fieldNames.isEmpty()) {
                     int rowPos = 0;
                     for (String fieldName : fieldNames) {

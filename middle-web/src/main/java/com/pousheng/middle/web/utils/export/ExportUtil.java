@@ -41,7 +41,7 @@ public class ExportUtil {
 
         } catch (Exception e) {
             log.error("export to execl file fail,cause:{}", Throwables.getStackTraceAsString(e));
-            throw new ServiceException(e);
+            throw new ServiceException("export.execl.fail");
         }
     }
 

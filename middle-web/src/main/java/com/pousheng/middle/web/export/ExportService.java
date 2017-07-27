@@ -71,14 +71,10 @@ public class ExportService {
 
         String fileName = exportContext.getFilename();
         String url;
-        try {
-            if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
-                url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
-            else
-                url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
-        } catch (Exception e) {
-            throw new ServiceException(e);
-        }
+        if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
+            url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
+        else
+            url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
 
         log.debug("the azure blob url:{}", url);
         jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {

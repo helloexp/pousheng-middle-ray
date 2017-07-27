@@ -1,8 +1,10 @@
 package com.pousheng.middle.web.utils.export;
 
+import com.google.common.base.Throwables;
 import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.*;
+import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +32,7 @@ public class AzureOSSBlobClient {
     public String upload(File file, String path) {
 
         if (!file.exists() || !file.canRead() || file.isDirectory())
-            throw new RuntimeException("upload to azure fail,file not exist or can't read or is a directory");
+            throw new ServiceException("azure.oss.upload.file.empty");
 
         CloudBlobClient client = account.createCloudBlobClient();
         try {
@@ -42,14 +44,15 @@ public class AzureOSSBlobClient {
             return blob.getUri().toString();
 
         } catch (URISyntaxException | StorageException | IOException e) {
-            throw new RuntimeException("upload to azure fail", e);
+            log.error("upload to azure fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("azure.oss.upload.fail");
         }
     }
 
     public String upload(byte[] payload, String name, String path) {
 
         if (null == payload || payload.length == 0)
-            throw new RuntimeException("upload to azure fail,update content is empty");
+            throw new ServiceException("azure.oss.upload.content.empty");
 
         CloudBlobClient client = account.createCloudBlobClient();
 
@@ -62,7 +65,8 @@ public class AzureOSSBlobClient {
             return blob.getUri().toString();
 
         } catch (URISyntaxException | StorageException | IOException e) {
-            throw new RuntimeException("upload to azure fail", e);
+            log.error("upload to azure fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("azure.oss.upload.fail");
         }
     }
 

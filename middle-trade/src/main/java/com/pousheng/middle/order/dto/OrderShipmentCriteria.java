@@ -6,6 +6,7 @@ import org.joda.time.DateTime;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.List;
 
 /**
  * Created by songrenfei on 2017/6/16
@@ -40,6 +41,12 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      * 订单id
      */
     private Long orderId;
+
+
+    /**
+     * 店铺ids，用于控制用户可操作的店铺
+     */
+    private List<Long> shopIds;
 
     /**
      * 售后单id

@@ -10,6 +10,8 @@ import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -73,7 +75,8 @@ public class CreateShipments {
      * @return 订单信息
      */
     @RequestMapping(value = "/api/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<ShipmentPreview> shipPreview(@RequestParam  Long id,
+    @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+    public Response<ShipmentPreview> shipPreview(@RequestParam @PermissionCheckParam Long id,
                                                        @RequestParam("data") String data,
                                                        @RequestParam(value = "warehouseId") Long warehouseId,
                                                        @RequestParam(defaultValue = "1") Integer type){

@@ -31,6 +31,9 @@ import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -60,6 +63,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
+@PermissionCheck(PermissionCheck.PermissionCheckType.SHIPMENT)
 public class Shipments {
 
     @RpcConsumer
@@ -99,7 +103,7 @@ public class Shipments {
     @Autowired
     private StockPusher stockPusher;
     @Autowired
-    private UserManageShopReader userManageShopReader;
+    private PermissionUtil permissionUtil;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -117,7 +121,7 @@ public class Shipments {
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
-        shipmentCriteria.setShopIds(userManageShopReader.findManageShops(UserUtil.getCurrentUser()).stream().map(OpenClientShop::getOpenShopId).collect(Collectors.toList()));
+        shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
 
         Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(shipmentCriteria);
         if (!response.isSuccess()) {
@@ -144,7 +148,7 @@ public class Shipments {
 
     //发货单详情
     @RequestMapping(value = "/api/shipment/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ShipmentDetail findDetail(@PathVariable(value = "id") Long shipmentId) {
+    public ShipmentDetail findDetail(@PathVariable(value = "id") @PermissionCheckParam Long shipmentId) {
 
         return shipmentReadLogic.orderDetail(shipmentId);
     }
@@ -157,7 +161,7 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<OrderShipment> shipments(@PathVariable("id") Long shopOrderId) {
+    public List<OrderShipment> shipments(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         return shipmentReadLogic.findByOrderIdAndType(shopOrderId);
     }
 
@@ -168,14 +172,14 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/refund/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<OrderShipment> changeShipments(@PathVariable("id") Long afterSaleOrderId) {
+    public List<OrderShipment> changeShipments(@PathVariable("id") @PermissionCheckParam Long afterSaleOrderId) {
         return shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
     }
 
 
     //获取发货单商品明细
     @RequestMapping(value = "/api/shipment/{id}/items", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<ShipmentItem> shipmentItems(@PathVariable("id") Long shipmentId) {
+    public List<ShipmentItem> shipmentItems(@PathVariable("id") @PermissionCheckParam Long shipmentId) {
 
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         return shipmentReadLogic.getShipmentItems(shipment);
@@ -193,7 +197,7 @@ public class Shipments {
      * @return 是否有效
      */
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> checkExist(@PathVariable("id") Long shipmentId, @RequestParam Long orderId) {
+    public Response<Boolean> checkExist(@PathVariable("id") @PermissionCheckParam Long shipmentId, @RequestParam Long orderId) {
 
         try {
 
@@ -224,7 +228,7 @@ public class Shipments {
      * @param shopOrderId
      */
     @RequestMapping(value = "api/shipment/{id}/auto/create/shipment", method = RequestMethod.PUT)
-    public void autoCreateSaleShipment(@PathVariable("id") Long shopOrderId) {
+    public void autoCreateSaleShipment(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         shipmentWiteLogic.doAutoCreateShipment(shopOrder);
     }
@@ -242,7 +246,8 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createSalesShipment(@PathVariable("id") Long shopOrderId,
+    @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+    public Long createSalesShipment(@PathVariable("id") @PermissionCheckParam Long shopOrderId,
                                     @RequestParam("data") String data,
                                     @RequestParam(value = "warehouseId") Long warehouseId) {
 
@@ -303,7 +308,8 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createAfterShipment(@PathVariable("id") Long refundId,
+    @PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
+    public Long createAfterShipment(@PathVariable("id") @PermissionCheckParam Long refundId,
                                     @RequestParam("data") String data,
                                     @RequestParam(value = "warehouseId") Long warehouseId) {
 
@@ -352,7 +358,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/sync/hk", method = RequestMethod.PUT)
-    public void syncHkShipment(@PathVariable(value = "id") Long shipmentId) {
+    public void syncHkShipment(@PathVariable(value = "id") @PermissionCheckParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if (!syncRes.isSuccess()) {
@@ -368,7 +374,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/cancel", method = RequestMethod.PUT)
-    public void cancleShipment(@PathVariable(value = "id") Long shipmentId) {
+    public void cancleShipment(@PathVariable(value = "id") @PermissionCheckParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL.toOrderOperation());
         if (!cancelRes.isSuccess()) {
@@ -387,7 +393,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk", method = RequestMethod.PUT)
-    public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId) {
+    public void syncHkCancelShipment(@PathVariable(value = "id") @PermissionCheckParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment);
         if (!syncRes.isSuccess()) {
@@ -613,7 +619,7 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/shipment/{id}/warehouse/company/rule", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public WarehouseCompanyRule findWarehouseCompanyRule(@PathVariable("id") Long shipmentId) {
+    public WarehouseCompanyRule findWarehouseCompanyRule(@PathVariable("id") @PermissionCheckParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Long warehouseId = shipmentExtra.getWarehouseId();

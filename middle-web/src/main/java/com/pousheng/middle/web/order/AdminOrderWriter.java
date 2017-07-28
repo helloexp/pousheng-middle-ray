@@ -5,6 +5,8 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ShopOrder;
@@ -33,7 +35,8 @@ public class AdminOrderWriter {
      * @param shopOrderId
      */
     @RequestMapping(value = "api/order/{id}/sync/ecp",method = RequestMethod.PUT)
-    public void syncOrderInfoToEcp(@PathVariable(value = "id") Long shopOrderId){
+    @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder);
         if(!syncRes.isSuccess()){

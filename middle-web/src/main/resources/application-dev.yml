@@ -67,6 +67,8 @@ gateway:
     host: http://api-test-member.pousheng.com
   uc:
     host: ${USER_CENTER_GATEWAY}
+  hk:
+    host: http://esbt.pousheng.com
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}

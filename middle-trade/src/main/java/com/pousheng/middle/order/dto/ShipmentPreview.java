@@ -29,7 +29,18 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
     //下单店铺编码
     private String erpOrderShopCode;
 
+    //发货单商品总额
+    private Long shipmentItemFee;
+    //发货单运费
+    private Long shipmentShipFee;
+    //订单总的折扣
+    private Long shipmentDiscountFee;
+    //订单总的金额
+    private Long shipmentTotalFee;
+
     //发货商品信息
     List<ShipmentItem> shipmentItems;
+
+
 
 }

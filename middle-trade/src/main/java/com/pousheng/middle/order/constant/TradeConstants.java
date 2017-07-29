@@ -53,6 +53,8 @@ public class TradeConstants {
     public static final String INVOICE_TYPE="type";
     //发票抬头类型
     public static final String INVOICE_TITLE_TYPE="titleType";
+    //sku商品初始价格
+    public static final String SKU_PRICE="skuPrice";
 
     /**
      * 逆向单来源

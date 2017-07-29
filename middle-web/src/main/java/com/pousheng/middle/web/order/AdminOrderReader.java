@@ -9,11 +9,13 @@ import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Mail: F@terminus.io
@@ -68,7 +71,7 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
-        if(middleOrderCriteria.getOutCreatedEndAt()!=null){
+         if(middleOrderCriteria.getOutCreatedEndAt()!=null){
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
@@ -82,10 +85,13 @@ public class AdminOrderReader {
         shopOrders.forEach(shopOrder -> {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
-            shopOrderPagingInfo.setShopOrderOperations(flow.availableOperations(shopOrder.getStatus()));
+            String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
+            shopOrderPagingInfo.setShopOrderOperations(Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.WAIT_SHIP.getValue())
+                    ?flow.availableOperations(shopOrder.getStatus())
+                    :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             pagingInfos.add(shopOrderPagingInfo);
         });
-
+        //撤销时必须保证订单没有发货
         pagingInfoPaging.setData(pagingInfos);
         pagingInfoPaging.setTotal(pagingRes.getResult().getTotal());
 

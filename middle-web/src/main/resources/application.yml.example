@@ -52,3 +52,10 @@ gateway:
 open.api.app.key: terminus
 open.api.secret: anywhere
 open.api.gateway: http://127.0.0.1:8090/api/gateway
+
+azure:
+  oss:
+    defaultEndpointsProtocol: https
+    accountName: devdiag685
+    accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
+    endpointSuffix: core.chinacloudapi.cn

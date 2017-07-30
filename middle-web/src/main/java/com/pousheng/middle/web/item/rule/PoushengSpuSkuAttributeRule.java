@@ -70,6 +70,9 @@ public class PoushengSpuSkuAttributeRule extends RuleExecutor {
         }
 
         result.setSkuAttrs(groupedSkuAttributeWithRules);
+        if(!CollectionUtils.isEmpty(input.getGeneralSkus())) {
+            result.setGeneralSku(input.getGeneralSkus());
+        }
 
     }
 

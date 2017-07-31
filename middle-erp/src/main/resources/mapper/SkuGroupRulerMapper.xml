@@ -48,6 +48,18 @@
         WHERE card_id = #{cardId}
     </select>
 
+    <select id="findByCardIdAndKindId" parameterType="map" resultMap="SkuGroupRuleMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE card_id = #{cardId}
+        <if test="kindId!=null">
+            and kind_id=#{kindId}
+        </if>
+        <if test="kindId == null">
+            and kind_id is null
+        </if>
+    </select>
+
     <select id="count" parameterType="map" resultType="long">
         SELECT COUNT(1)
         FROM

@@ -49,10 +49,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -286,7 +283,7 @@ public class Shipments {
         }
 
         //创建发货单
-        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrderId), OrderLevel.SHOP);
+        Response<Long> createResp = shipmentWriteService.create(shipment, Lists.newArrayList(shopOrderId), OrderLevel.SHOP);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrderId, OrderLevel.SHOP.getValue(), createResp.getError());

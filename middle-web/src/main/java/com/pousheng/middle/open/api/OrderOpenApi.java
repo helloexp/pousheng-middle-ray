@@ -3,12 +3,17 @@ package com.pousheng.middle.open.api;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -23,8 +28,9 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -38,6 +44,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 订单open api

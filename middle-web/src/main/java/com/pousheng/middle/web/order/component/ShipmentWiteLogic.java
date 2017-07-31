@@ -46,6 +46,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -105,7 +106,6 @@ public class ShipmentWiteLogic {
             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
             return Response.fail(updateRes.getError());
         }
-        shipment.setStatus(targetStatus);
         return Response.ok();
 
     }

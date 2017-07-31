@@ -2,6 +2,7 @@ package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -39,6 +40,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -80,16 +82,31 @@ public class OrderOpenApi {
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
 
+
+
     /**
-     * 恒康同步发货完成状态到中台
+     * 恒康同步发货单处理结果
      *
-     * @param shipmentId       中台发货单号
-     * @param hkShipmentId     恒康发货单号
-     * @param shipmentCorpCode 物流公司代码
-     * @param shipmentSerialNo 物流单号
-     * @param shipmentDate     发货时间
+     * @param results 处理结果
      * @return 是否同步成功
      */
+    @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
+        //throw  new OPServerException("sync.fail");
+
+    }
+
+            /**
+             * 恒康同步发货完成状态到中台
+             *
+             * @param shipmentId       中台发货单号
+             * @param hkShipmentId     恒康发货单号
+             * @param shipmentCorpCode 物流公司代码
+             * @param shipmentSerialNo 物流单号
+             * @param shipmentDate     发货时间
+             * @return 是否同步成功
+             */
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
                                                          "shipmentDate","posSerialNo","posType",

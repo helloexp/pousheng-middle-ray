@@ -151,9 +151,11 @@ public class CreateShipments {
         Long shipmentDiscountFee = 0L;
         //发货单总的净价
         Long shipmentTotalFee = 0L;
+        //运费
+        Long shipmentShipFee = 0L;
         if (Objects.equals(1, type)) {
             //运费
-            Long shipmentShipFee = 0L;
+
             //判断运费是否已经加过
             if (!isShipmentFeeCalculated(id)) {
 
@@ -164,13 +166,13 @@ public class CreateShipments {
         }
         List<ShipmentItem> shipmentItems = shipmentPreview.getShipmentItems();
         for (ShipmentItem shipmentItem : shipmentItems) {
-            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
         }
         shipmentPreview.setShipmentItemFee(shipmentItemFee);
         shipmentPreview.setShipmentDiscountFee(shipmentDiscountFee);
-        shipmentPreview.setShipmentTotalFee(shipmentTotalFee);
+        shipmentPreview.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
 
 
         return Response.ok(shipmentPreview);

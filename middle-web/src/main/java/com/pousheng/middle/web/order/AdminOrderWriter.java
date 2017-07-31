@@ -1,14 +1,25 @@
 package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -28,6 +39,12 @@ public class AdminOrderWriter {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
+    @Autowired
+    private ExpressCodeReadService expressCodeReadService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     /**
      * 发货单已发货,同步订单信息到电商
      * @param shopOrderId
@@ -36,7 +53,13 @@ public class AdminOrderWriter {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder);
+        //获取发货单id
+        String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
+        Shipment shipment  = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
+        //同步到电商平台
+        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder,getExpressCode(shopOrder.getShopId(),expressCode),shipment.getId());
         if(!syncRes.isSuccess()){
             log.error("sync shopOrder(id:{}) to ecp fail,error:{}",shopOrderId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -99,5 +122,50 @@ public class AdminOrderWriter {
     public void confirmOrders(@PathVariable("id") Long shopOrderId){
         ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
+    }
+    /**
+     * 快递代码映射,根据店铺id获取
+     * @param shopId
+     * @return
+     */
+    private String getExpressCode(Long shopId,ExpressCode expressCode){
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
+            throw new JsonResponseException("find.openShop.failed");
+        }
+        OpenShop openShop = response.getResult();
+        switch (openShop.getChannel()){
+            case "jd":
+                return expressCode.getJdCode();
+            case "taobao":
+                return expressCode.getTaobaoCode();
+            case "fenqile":
+                return expressCode.getFenqileCode();
+            case "suning":
+                return expressCode.getSuningCode();
+            case "hk":
+                return expressCode.getHkCode();
+            case "official":
+                return expressCode.getPoushengCode();
+            default:
+                log.error("find express code failed");
+                throw new JsonResponseException("find.expressCode.failed");
+        }
+    }
+    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setHkCode(hkExpressCode);
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getData().size() == 0) {
+            log.error("there is not any express info by hkCode:{}", hkExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
+        }
+        ExpressCode expressCode = response.getResult().getData().get(0);
+        return expressCode;
     }
 }

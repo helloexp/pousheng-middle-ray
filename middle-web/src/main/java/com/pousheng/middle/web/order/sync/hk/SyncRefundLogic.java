@@ -213,7 +213,7 @@ public class SyncRefundLogic {
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
         sycHkRefund.setStockId(String.valueOf(refundExtra.getWarehouseId()));
         sycHkRefund.setPerformanceShopId(String.valueOf(refund.getShopId()));
-        sycHkRefund.setRefundOrderAmount((int) (refund.getFee() / 100));
+        sycHkRefund.setRefundOrderAmount((int) (refund.getFee()==null?0:refund.getFee() / 100));
         sycHkRefund.setRefundFreight(0);
         //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
         //中台状态1:售后退款,2:退货退款,恒康状态0:退货退款,1:仅退款
@@ -222,7 +222,7 @@ public class SyncRefundLogic {
         sycHkRefund.setStatus(String.valueOf(4));
         //售后单创建时间
         sycHkRefund.setCreatedDate(formatter.print(refund.getCreatedAt().getTime()));
-        sycHkRefund.setTotalRefund((int) (refund.getFee() / 100));
+        sycHkRefund.setTotalRefund((int) (refund.getFee()==null?0:refund.getFee() / 100));
         //寄回物流单号
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
@@ -255,9 +255,9 @@ public class SyncRefundLogic {
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格
-            item.setSalePrice(refundItem.getSkuPrice() / 100);
+            item.setSalePrice(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice() / 100);
             //商品总净价
-            item.setRefundAmount(refundItem.getCleanFee() / 100);
+            item.setRefundAmount(refundItem.getCleanFee()==null?0:refundItem.getCleanFee() / 100);
             //商品名称
             item.setItemName(refundItem.getSkuName());
             items.add(item);
@@ -333,6 +333,8 @@ public class SyncRefundLogic {
             case ON_SALES_REFUND:
                 return HkRefundType.HK_AFTER_SALES_REFUND;
             case AFTER_SALES_RETURN:
+                return HkRefundType.HK_AFTER_SALES_RETURN;
+            case AFTER_SALES_CHANGE:
                 return HkRefundType.HK_AFTER_SALES_RETURN;
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());

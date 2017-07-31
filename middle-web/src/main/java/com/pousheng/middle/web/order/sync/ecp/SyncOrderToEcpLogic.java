@@ -2,20 +2,14 @@ package com.pousheng.middle.web.order.sync.ecp;
 
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
-import io.terminus.open.client.order.service.OpenClientOrderService;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 
 /**
  * 同步电商发货单逻辑

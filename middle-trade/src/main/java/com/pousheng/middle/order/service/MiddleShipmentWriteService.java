@@ -16,11 +16,4 @@ public interface MiddleShipmentWriteService {
      */
     Response<Long> createForAfterSale(Shipment shipment, Long orderId,Long afterSaleOrderId);
 
-    /**
-     * 生成销售发货单
-     * @param shipment  发货单
-     * @param orderId  订单id
-     * @return  新创建发货单的id
-     */
-    Response<Long> createForSale(Shipment shipment, Long orderId);
 }

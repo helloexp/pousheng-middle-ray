@@ -10,7 +10,6 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
-import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -24,8 +23,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 /**
  * Created by tony on 2017/7/18.

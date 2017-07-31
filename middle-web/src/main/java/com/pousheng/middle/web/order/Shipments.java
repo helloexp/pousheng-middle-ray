@@ -30,9 +30,6 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.taobao.api.domain.Shop;
-import com.taobao.api.domain.Trade;
-import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -286,7 +283,7 @@ public class Shipments {
         }
 
         //创建发货单
-        Response<Long> createResp = middleShipmentWriteService.createForSale(shipment,shopOrderId);
+        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrderId), OrderLevel.SHOP);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrderId, OrderLevel.SHOP.getValue(), createResp.getError());
@@ -343,7 +340,7 @@ public class Shipments {
         //运费
         Long shipmentShipFee =0L;
         for (ShipmentItem shipmentItem : shipmentItems) {
-            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }

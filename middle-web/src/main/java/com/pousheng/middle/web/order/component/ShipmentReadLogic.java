@@ -6,7 +6,6 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -20,8 +19,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.HashMap;
 import java.util.List;

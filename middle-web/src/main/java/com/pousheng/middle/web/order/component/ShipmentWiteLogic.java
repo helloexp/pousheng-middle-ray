@@ -21,7 +21,6 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -246,10 +245,10 @@ public class ShipmentWiteLogic {
         Long shipmentShipFee =0L;
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrder.getId())){
-            shipmentItemFee = Long.valueOf(shopOrder.getShipFee());
+            shipmentShipFee = Long.valueOf(shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
-            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
@@ -261,7 +260,7 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Response<Long> createResp = middleShipmentWriteService.createForSale(shipment, shopOrder.getId());
+        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());

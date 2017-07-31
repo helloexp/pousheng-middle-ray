@@ -88,9 +88,9 @@ public class SyncShipmentLogic {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
-                if (!updateStatusRes.isSuccess()) {
+                if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateStatusRes.getError());
+                    return Response.fail(updateSyncStatusRes.getError());
                 }
                 //冗余恒康发货单号
                 Shipment update = new Shipment();
@@ -106,7 +106,7 @@ public class SyncShipmentLogic {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
-                if (!updateStatusRes.isSuccess()) {
+                if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateStatusRes.getError());
                 }

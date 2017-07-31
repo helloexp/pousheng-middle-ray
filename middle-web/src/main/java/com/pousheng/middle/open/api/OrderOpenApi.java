@@ -15,6 +15,7 @@ import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -22,6 +23,8 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
@@ -76,6 +79,12 @@ public class OrderOpenApi {
     @RpcConsumer
     private OrderShipmentReadService orderShipmentReadService;
     @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
+    @Autowired
+    private SyncOrderToEcpLogic syncOrderToEcpLogic;
+    @Autowired
     private EventBus eventBus;
 
 
@@ -93,8 +102,35 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
-        //throw  new OPServerException("sync.fail");
+        try{
+            HkHandleShipmentResult result = results.get(0);
+            Long shipmentId = result.getEcShipmentId();
+            Boolean handleResult = result.getSuccess();
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            //更新发货单的状态
+            if (handleResult){
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                }
+            }else{
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                }
+            }
 
+        }catch (JsonResponseException | ServiceException e) {
+            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+            throw new OPServerException(200,e.getMessage());
+        }
+        catch (Exception e){
+            log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"sync.fail");
+        }
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
 
             /**
@@ -118,7 +154,7 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate,
                                      @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
                                      @NotNull(message = "pos.type.is.null")Integer posType,
-                                     @NotNull(message = "pos.amt.is.empty")Long posAmt,
+                                     @NotNull(message = "pos.amt.is.empty")String posAmt,
                                      @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
                 "shipmentSerialNo is:{} shipmentDate is:{} posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",
@@ -128,8 +164,7 @@ public class OrderOpenApi {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
-           /* Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-
+           Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
             OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
@@ -154,12 +189,13 @@ public class OrderOpenApi {
             shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
             shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
             //通过恒康代码查找快递名称
-            shipmentExtra.setShipmentCorpName(makeExpressNameByhkCode(shipmentCorpCode));
+            ExpressCode expressCode = makeExpressNameByhkCode(shipmentCorpCode);
+            shipmentExtra.setShipmentCorpName(expressCode.getName());
             shipmentExtra.setShipmentDate(dt.toDate());
             //添加pos单相关信息
             shipmentExtra.setPosSerialNo(posSerialNo);
-            shipmentExtra.setPosType(posType);
-            shipmentExtra.setPosAmt(posAmt);
+            shipmentExtra.setPosType(String.valueOf(posType));
+            shipmentExtra.setPosAmt(String.valueOf(posAmt));
             shipmentExtra.setPosCreatedAt(dPos.toDate());
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
@@ -197,11 +233,13 @@ public class OrderOpenApi {
                     log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response1.getError());
                     throw new ServiceException(response1.getError());
                 }
+                //第一个发货单发货完成之后需要将订单同步
+                syncOrderToEcpLogic.syncOrderToECP(shopOrder,getExpressCode(shopOrder.getShopId(),expressCode),shipmentId);
             }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
             event.setShipment(shipment);
-            eventBus.post(event);*/
+            eventBus.post(event);
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
@@ -214,7 +252,17 @@ public class OrderOpenApi {
         log.info("HK-SYNC-SHIPMENT-STATUS-END");
     }
 
-
+    /**
+     * 恒康将售后单售后结果通知给中台
+     * @param refundOrderId
+     * @param hkRefundOrderId
+     * @param itemInfo
+     * @param receivedDate
+     * @param posSerialNo
+     * @param posType
+     * @param posAmt
+     * @param posCreatedAt
+     */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
                                                                       "receivedDate","posSerialNo","posType",
                                                                       "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
@@ -224,12 +272,12 @@ public class OrderOpenApi {
                                    @NotEmpty(message = "received.date.empty") String receivedDate,
                                    @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
                                    @NotNull(message = "pos.type.is.null")Integer posType,
-                                   @NotNull(message = "pos.amt.is.empty")Long posAmt,
+                                   @NotNull(message = "pos.amt.is.empty")String posAmt,
                                    @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{} " +
                 "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,posSerialNo,posType,posAmt,posCreatedAt);
         try {
-           /* Refund refund = refundReadLogic.findRefundById(refundOrderId);
+           Refund refund = refundReadLogic.findRefundById(refundOrderId);
             if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {
                 log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), refund.getOutId());
                 throw new ServiceException("hk.refund.id.not.matching");
@@ -241,7 +289,7 @@ public class OrderOpenApi {
 
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
-            refundExtra.setHkConfirmItemInfo(itemInfo);
+            //refundExtra.setHkConfirmItemInfo(itemInfo);
 
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
@@ -262,7 +310,7 @@ public class OrderOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
-            }*/
+            }
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync refund confirm to middle fail,error:{}", e.getMessage());
@@ -278,7 +326,7 @@ public class OrderOpenApi {
 
 
 
-    public String makeExpressNameByhkCode(String hkExpressCode) {
+    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
         criteria.setHkCode(hkExpressCode);
         Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
@@ -291,7 +339,7 @@ public class OrderOpenApi {
             throw new JsonResponseException("express.info.is.not.exist");
         }
         ExpressCode expressCode = response.getResult().getData().get(0);
-        return expressCode.getName();
+        return expressCode;
     }
 
 
@@ -316,6 +364,37 @@ public class OrderOpenApi {
                 throw new JsonResponseException("refund.type.invalid");
         }
 
+    }
+
+    /**
+     * 快递代码映射,根据店铺id获取
+     * @param shopId
+     * @return
+     */
+    private String getExpressCode(Long shopId,ExpressCode expressCode){
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
+            throw new ServiceException("find.openShop.failed");
+        }
+        OpenShop openShop = response.getResult();
+        switch (openShop.getChannel()){
+            case "jd":
+                return expressCode.getJdCode();
+            case "taobao":
+                return expressCode.getTaobaoCode();
+            case "fenqile":
+                return expressCode.getFenqileCode();
+            case "suning":
+                return expressCode.getSuningCode();
+            case "hk":
+                return expressCode.getHkCode();
+            case "official":
+                return expressCode.getPoushengCode();
+            default:
+                log.error("find express code failed");
+                throw new ServiceException("find.expressCode.failed");
+        }
     }
 
 }

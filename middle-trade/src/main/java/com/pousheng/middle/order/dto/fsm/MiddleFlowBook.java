@@ -334,34 +334,12 @@ public class MiddleFlowBook {
             //同步退货成功-待退货 -->退货-完成 --> 已退货待同步电商平台
             addTransition(MiddleRefundStatus.RETURN_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.RETURN.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue());
-
-            //已退货待同步电商 -->同步电商 --> 同步电商中
-            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue(),
-                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
-                    MiddleRefundStatus.SYNC_ECP_ING.getValue());
-
-            //同步电商中 -->同步成功 --> 同步电商成功待退款
-            addTransition(MiddleRefundStatus.SYNC_ECP_ING.getValue(),
-                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
 
             //同步电商成功待退款 -->退款 --> 已退款
             addTransition(MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue(),
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleRefundStatus.REFUND.getValue());
-
-            //同步电商中 -->同步失败 --> 同步电商失败
-            addTransition(MiddleRefundStatus.SYNC_ECP_ING.getValue(),
-                    MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
-                    MiddleRefundStatus.SYNC_ECP_FAIL.getValue());
-
-            //同步电商失败 -->同步 --> 同步电商中
-            addTransition(MiddleRefundStatus.SYNC_ECP_FAIL.getValue(),
-                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
-                    MiddleRefundStatus.SYNC_ECP_ING.getValue());
-
-
             //=============== 换货 (全部是手动创建，不用和电商交互)==================
 
 
@@ -423,7 +401,7 @@ public class MiddleFlowBook {
             //取消同步失败 -->退货-完成 --> 已退货待退款
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.RETURN.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_SYNC_ECP.getValue());
+                    MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue());
 
 
             //=============== 换货 ================

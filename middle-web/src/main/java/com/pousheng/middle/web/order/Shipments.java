@@ -266,7 +266,7 @@ public class Shipments {
             shipmentShipFee = Long.valueOf(shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
-            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
@@ -582,12 +582,13 @@ public class Shipments {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
+            SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //原始价格
-            shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/shipmentItem.getQuantity())));
+            shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/originSkuOrder.getQuantity())));
             //积分
             shipmentItem.setIntegral(0);
             //skuDisCount,根据生成发货单的数量与skuOrder的数量按照比例四舍五入计算金额
-            shipmentItem.setSkuDiscount(this.getDiscount(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
+            shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
             //总净价
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             //商品净价

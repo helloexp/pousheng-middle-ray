@@ -1,11 +1,16 @@
 package com.pousheng.middle.open;
 
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
+import io.terminus.open.client.order.dto.OpenClientFullOrder;
+import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
+import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
@@ -24,6 +29,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @RpcConsumer
     private PoushengMiddleSpuService middleSpuService;
+
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
 
     @Override
     protected Item findItemById(Long paranaItemId) {
@@ -66,5 +74,16 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         sku.setImage(skuTemplate.getImage_());
         sku.setAttrs(skuTemplate.getAttrs());
         return sku;
+    }
+
+    protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
+        if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
+            Response<Boolean> updateR = orderWriteService.shopOrderStatusChanged(shopOrder.getId(),
+                    shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
+            if (!updateR.isSuccess()) {
+                log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order, cause:{}",
+                        shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue(), updateR.getError());
+            }
+        }
     }
 }

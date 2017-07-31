@@ -23,6 +23,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.constants.JacksonType;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
@@ -96,42 +97,41 @@ public class OrderOpenApi {
     /**
      * 恒康同步发货单处理结果
      *
-     * @param results 处理结果
+     * @param data 处理结果
      * @return 是否同步成功
      */
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
-    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
-        for (HkHandleShipmentResult result :results){
-            try{
-                Long shipmentId = result.getEcShipmentId();
-                Boolean handleResult = result.getSuccess();
-                Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-                //更新发货单的状态
-                if (handleResult){
-                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                    if (!updateSyncStatusRes.isSuccess()) {
-                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    }
-                }else{
-                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                    if (!updateSyncStatusRes.isSuccess()) {
-                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    }
+    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
+        List<HkHandleShipmentResult> results = null;
+        try{
+            results = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
+            HkHandleShipmentResult result = results.get(0);
+            Long shipmentId = result.getEcShipmentId();
+            Boolean handleResult = result.getSuccess();
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            //更新发货单的状态
+            if (handleResult){
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
+            }else{
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                }
+            }
 
-            }catch (JsonResponseException | ServiceException e) {
-                log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
-                throw new OPServerException(200,e.getMessage());
-            }
-            catch (Exception e){
-                log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
-                throw new OPServerException(200,"sync.fail");
-            }
+        }catch (JsonResponseException | ServiceException e) {
+            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+            throw new OPServerException(200,e.getMessage());
+        }catch (Exception e){
+            log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"sync.fail");
         }
-
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
 

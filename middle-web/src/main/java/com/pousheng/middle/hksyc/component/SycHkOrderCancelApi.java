@@ -2,11 +2,7 @@ package com.pousheng.middle.hksyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.hksyc.dto.HkRequestHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.utils.Numbers;
-import io.swagger.models.auth.In;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -14,7 +10,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 
 /**

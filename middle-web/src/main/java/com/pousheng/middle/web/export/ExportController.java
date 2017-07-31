@@ -24,13 +24,14 @@ import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.Callable;
-import java.util.stream.Stream;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -238,11 +239,9 @@ public class ExportController {
                     });
 
                     export.setApplyQuantity(item.getAlreadyHandleNumber());
-                    if (null != refundExtra.getHkConfirmItemInfos()) {
-                        refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
-                            export.setActualQuantity(hkinfo.getQuantity());
-                        });
-                    }
+                    refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+                        export.setActualQuantity(hkinfo.getQuantity());
+                    });
                     export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
 
                     refundExportData.add(export);
@@ -256,7 +255,7 @@ public class ExportController {
 
 
     @GetMapping("export/files")
-    public Response<Paging<FileRecord>> getExportFiles() {
+    public Response<Paging<FileRecord>> exportFiles() {
 
         List<FileRecord> files = exportService.getExportFiles();
 

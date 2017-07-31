@@ -2,7 +2,6 @@ package com.pousheng.middle.order.service;
 
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.impl.dao.SkuOrderDao;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 

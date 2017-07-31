@@ -1,7 +1,6 @@
 package com.pousheng.middle.order.impl.service;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import io.terminus.common.exception.ServiceException;
@@ -11,7 +10,6 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

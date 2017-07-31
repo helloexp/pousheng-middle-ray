@@ -2,7 +2,6 @@ package com.pousheng.middle.warehouse.impl.dao;
 
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import io.terminus.common.mysql.dao.MyBatisDao;
-
 import org.springframework.stereotype.Repository;
 
 /**

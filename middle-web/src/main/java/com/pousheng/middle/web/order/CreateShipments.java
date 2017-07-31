@@ -2,7 +2,6 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
-import com.jd.open.api.sdk.domain.supplier.AdvertiseJosService.JosAdvertiseApplyDto;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -18,7 +17,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;

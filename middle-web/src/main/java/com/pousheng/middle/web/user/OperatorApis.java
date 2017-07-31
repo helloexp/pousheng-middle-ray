@@ -25,7 +25,6 @@ import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
-import io.terminus.parana.user.model.User;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

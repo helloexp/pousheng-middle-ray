@@ -1,6 +1,5 @@
 package com.pousheng.middle.hksyc.dto.trade;
 
-import io.swagger.models.auth.In;
 import lombok.Data;
 
 import java.io.Serializable;

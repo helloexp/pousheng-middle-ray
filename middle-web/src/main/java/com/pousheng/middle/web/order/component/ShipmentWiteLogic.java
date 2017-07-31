@@ -15,12 +15,12 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
+import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -38,6 +38,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
+import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -45,7 +46,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,7 +80,12 @@ public class ShipmentWiteLogic {
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private WarehouseChooser warehouseChooser;
-
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
+    @Autowired
+    private MiddleShipmentWriteService middleShipmentWriteService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -228,14 +233,33 @@ public class ShipmentWiteLogic {
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         //封装发货信息
-        Shipment shipment = this.makeShipment(shopOrder.getId(), warehouseId);
+        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity);
+        //发货单商品金额
+        Long shipmentItemFee=0L;
+        //发货单总的优惠
+        Long shipmentDiscountFee=0L;
+        //发货单总的净价
+        Long shipmentTotalFee=0L;
+        //运费
+        Long shipmentShipFee =0L;
+        //判断运费是否已经加过
+        if (!isShipmentFeeCalculated(shopOrder.getId())){
+            shipmentItemFee = Long.valueOf(shopOrder.getShipFee());
+        }
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
+            shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
+        }
+
+        Shipment shipment = this.makeShipment(shopOrder.getId(), warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
         Map<String, String> extraMap = shipment.getExtra();
-        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity)));
+        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
+        Response<Long> createResp = middleShipmentWriteService.createForSale(shipment, shopOrder.getId());
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
@@ -302,7 +326,7 @@ public class ShipmentWiteLogic {
      * @param warehouseId
      * @return
      */
-    private Shipment makeShipment(Long shopOrderId,Long warehouseId){
+    private Shipment makeShipment(Long shopOrderId,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
@@ -338,16 +362,13 @@ public class ShipmentWiteLogic {
         shipmentExtra.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
         shipmentExtra.setErpPerformanceShopName(companyRule.getShopName());
 
-        //todo 发货单商品金额
-        shipmentExtra.setShipmentItemFee(33L);
+        shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
-        shipmentExtra.setShipmentShipFee(0L);
-        //发货单运费优惠金额
-        shipmentExtra.setShipmentShipDiscountFee(0L);
+        shipmentExtra.setShipmentShipFee(shipmentShipFee);
         //发货单优惠金额
-        shipmentExtra.setShipmentDiscountFee(0L);
-        //发货单优惠金额
-        shipmentExtra.setShipmentTotalFee(33L);
+        shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
+        //发货单总的净价
+        shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
 
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
 
@@ -420,10 +441,12 @@ public class ShipmentWiteLogic {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
-            shipmentItem.setSkuPrice(2);//todo 计算价格
+            shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/shipmentItem.getQuantity())));
+            //积分
             shipmentItem.setIntegral(0);
-            shipmentItem.setSkuDiscount(0);
-            shipmentItem.setCleanFee(0);
+            shipmentItem.setSkuDiscount(this.getDiscount(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
+            shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
+            shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuCode(skuOrder.getSkuCode());
 
@@ -448,6 +471,67 @@ public class ShipmentWiteLogic {
             throw new JsonResponseException("find.warehouse.address.failed");
         }
         return  warehouseResponse.getResult();
+    }
+
+    /**
+     *
+     * @param skuQuantity  sku订单中商品的数量
+     * @param shipSkuQuantity 发货的sku商品的数量
+     * @param skuDiscount sku订单中商品的折扣
+     * @return 返回四舍五入的计算结果,得到发货单中的sku商品的折扣
+     */
+    private  Integer getDiscount(Integer skuQuantity,Integer shipSkuQuantity,Integer skuDiscount){
+        return Math.round(skuDiscount*shipSkuQuantity/skuQuantity);
+    }
+
+    /**
+     * 计算总净价
+     * @param skuPrice 商品原价
+     * @param discount 发货单中sku商品的折扣
+     * @param shipSkuQuantity 发货单中sku商品的数量
+     * @return
+     */
+    private Integer getCleanFee(Integer skuPrice,Integer discount,Integer shipSkuQuantity){
+
+        return skuPrice*shipSkuQuantity-discount;
+    }
+
+    /**
+     * 计算商品净价
+     * @param cleanFee 商品总净价
+     * @param shipSkuQuantity 发货单中sku商品的数量
+     * @return
+     */
+    private Integer getCleanPrice(Integer cleanFee,Integer shipSkuQuantity){
+        return Math.round(cleanFee/shipSkuQuantity);
+    }
+    /**
+     * 判断是否存在有效的发货单
+     * @param shopOrderId
+     * @return true:已经计算过发货单,false:没有计算过发货单
+     */
+    private boolean isShipmentFeeCalculated(long shopOrderId){
+        Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!response.isSuccess()){
+            log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        //获取有效的销售发货单
+        List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).
+                filter(it->Objects.equals(it.getType(),ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
+        int count =0;
+        for (Shipment shipment:shipments){
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            if (shipmentExtra.getShipmentShipFee()>0){
+                count++;
+            }
+        }
+        //如果已经有发货单计算过运费,返回true
+        if (count>0){
+            return true;
+        }
+        return false;
     }
 
 }

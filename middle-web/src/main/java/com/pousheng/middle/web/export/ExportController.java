@@ -239,9 +239,11 @@ public class ExportController {
                     });
 
                     export.setApplyQuantity(item.getAlreadyHandleNumber());
-                    refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
-                        export.setActualQuantity(hkinfo.getQuantity());
-                    });
+                    if (null != refundExtra.getHkConfirmItemInfos()) {
+                        refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+                            export.setActualQuantity(hkinfo.getQuantity());
+                        });
+                    }
                     export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
 
                     refundExportData.add(export);

@@ -2,11 +2,7 @@ package com.pousheng.middle.hksyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.hksyc.dto.HkRequestHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.utils.Numbers;
-import io.swagger.models.auth.In;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -14,7 +10,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -35,7 +30,7 @@ public class SycHkOrderCancelApi {
      * @param orderId 发货单号或退货单号，根据type
      * @param type 0:发货单  1:退货单
      */
-    public void doCancelOrder(String shopCode, Long orderId, Integer type){
+    public String doCancelOrder(String shopCode, Long orderId, Integer type){
         //0  取消  1 删除
         Integer operationType = 0;
 
@@ -60,6 +55,6 @@ public class SycHkOrderCancelApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

@@ -40,4 +40,23 @@ public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteServic
         }
 
     }
+
+    @Override
+    public Response<Long> createForSale(Shipment shipment, Long orderId) {
+        try {
+            shipment.setStatus(MoreObjects.firstNonNull(shipment.getStatus(), 1));
+            OrderShipment orderShipment = new OrderShipment();
+            orderShipment.setOrderId(orderId);
+            orderShipment.setOrderLevel(OrderLevel.SHOP);
+            orderShipment.setStatus(shipment.getStatus());
+            orderShipment.setType(shipment.getType());
+            orderShipment.setShopId(shipment.getShopId());
+            orderShipment.setShopName(shipment.getShopName());
+            Long shipmentId = middleShipmentManager.create(shipment, orderShipment);
+            return Response.ok(shipmentId);
+        } catch (Exception e) {
+            log.error("failed to create {}, cause:{}", shipment, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.create.fail");
+        }
+    }
 }

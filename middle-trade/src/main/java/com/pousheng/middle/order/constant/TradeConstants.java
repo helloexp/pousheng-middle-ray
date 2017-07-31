@@ -43,8 +43,18 @@ public class TradeConstants {
     public static final String ECP_SHIPMENT_ID ="ecpShipmentId";
     //从电商平台拉取消子单时,子单取消失败,需要将取消失败的子单冗余进总单的extra
     public static final String SKU_CODE_CANCELED="skuCodeCanceled";
-
-
+    //同步恒康响应头
+    public static final String HK_RESPONSE_HEAD ="head";
+    //同步恒康发货单返回的body
+    public static final String HK_SHIPMENT_ORDER_BODY="orderBody";
+    //同步恒康售后单返回的body
+    public static final String SYNC_HK_REFUND_BODY="refundBody";
+    //发票类型
+    public static final String INVOICE_TYPE="type";
+    //发票抬头类型
+    public static final String INVOICE_TITLE_TYPE="titleType";
+    //sku商品初始价格
+    public static final String SKU_PRICE="skuPrice";
 
     /**
      * 逆向单来源

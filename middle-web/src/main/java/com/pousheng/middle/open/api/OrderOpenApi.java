@@ -2,17 +2,13 @@ package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -24,9 +20,8 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
-import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -39,8 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
-import java.util.Map;
-import java.util.Objects;
+import java.util.List;
 
 /**
  * 订单open api
@@ -80,16 +74,31 @@ public class OrderOpenApi {
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
 
+
+
     /**
-     * 恒康同步发货完成状态到中台
+     * 恒康同步发货单处理结果
      *
-     * @param shipmentId       中台发货单号
-     * @param hkShipmentId     恒康发货单号
-     * @param shipmentCorpCode 物流公司代码
-     * @param shipmentSerialNo 物流单号
-     * @param shipmentDate     发货时间
+     * @param results 处理结果
      * @return 是否同步成功
      */
+    @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
+        //throw  new OPServerException("sync.fail");
+
+    }
+
+            /**
+             * 恒康同步发货完成状态到中台
+             *
+             * @param shipmentId       中台发货单号
+             * @param hkShipmentId     恒康发货单号
+             * @param shipmentCorpCode 物流公司代码
+             * @param shipmentSerialNo 物流单号
+             * @param shipmentDate     发货时间
+             * @return 是否同步成功
+             */
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
                                                          "shipmentDate","posSerialNo","posType",

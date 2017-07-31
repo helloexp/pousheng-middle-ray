@@ -117,6 +117,18 @@ public class RefundReadLogic {
         return refundRes.getResult();
     }
 
+
+    public List<Refund> findRefundByIds(List<Long> refundIds){
+        Response<List<Refund>> refundRes = refundReadService.findByIds(refundIds);
+        if(!refundRes.isSuccess()){
+            log.error("find refund by ids:{} fail,error:{}",refundIds,refundRes.getError());
+            throw new JsonResponseException(refundRes.getError());
+        }
+
+        return refundRes.getResult();
+    }
+
+
     public OrderRefund findOrderRefundByRefundId(Long refundId){
         Response<List<OrderRefund>> listRes = refundReadService.findOrderIdsByRefundId(refundId);
         if(!listRes.isSuccess()){

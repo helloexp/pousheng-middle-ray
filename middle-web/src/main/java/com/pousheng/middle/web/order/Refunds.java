@@ -23,16 +23,18 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.dto.RefundCriteria;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderRefund;
+import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -97,6 +99,30 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
     }
+
+
+    /**
+     * 批量标记逆向单为已处理
+     * @param data 逗号隔开的逆向单id拼接
+     */
+    @RequestMapping(value = "/api/refund/batch/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void completeHandle(@RequestParam(value = "refundIds") String data) {
+        List<Long> refundIds = Splitters.splitToLong(data,Splitters.COMMA);
+        List<Refund> refunds = refundReadLogic.findRefundByIds(refundIds);
+        if(!Objects.equals(refundIds.size(),refunds.size())){
+            log.error("find refund by refund ids:{} result size not equal request id size:{}",refundIds,refunds.size(),refundIds.size());
+            throw new JsonResponseException("refund.id.invalid");
+        }
+        refunds.forEach(refund -> {
+            OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
+            Response<Boolean> response = refundWriteLogic.updateStatus(refund,orderOperation);
+            if(!response.isSuccess()){
+                log.error("refund(id:{}) operation:{} fail",refund.getId(),orderOperation);
+                throw new JsonResponseException(response.getError());
+            }
+        });
+    }
+
 
     //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

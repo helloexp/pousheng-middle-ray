@@ -4,7 +4,6 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.dto.HkRequestHead;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderForm;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +26,7 @@ public class SycHkShipmentOrderApi {
     @Value("${gateway.hk.host}")
     private String hkGateway;
 
-    public void doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders){
+    public String doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
@@ -58,6 +57,6 @@ public class SycHkShipmentOrderApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

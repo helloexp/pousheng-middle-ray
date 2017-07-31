@@ -2,11 +2,8 @@ package com.pousheng.middle.hksyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.hksyc.dto.HkRequestHead;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +27,7 @@ public class SycHkRefundOrderApi {
     @Value("${gateway.hk.host}")
     private String hkGateway;
 
-    public void doSyncRefundOrder(SycHkRefund sycHkRefund, List<SycHkRefundItem> sycHkRefundItems){
+    public String doSyncRefundOrder(SycHkRefund sycHkRefund, List<SycHkRefundItem> sycHkRefundItems){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
@@ -51,6 +48,6 @@ public class SycHkRefundOrderApi {
                 .body();
 
         log.info("result:{}",responseBody);
-
+        return responseBody;
     }
 }

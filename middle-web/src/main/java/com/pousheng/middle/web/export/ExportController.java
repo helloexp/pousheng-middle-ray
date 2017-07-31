@@ -31,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Callable;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -238,9 +239,11 @@ public class ExportController {
                     });
 
                     export.setApplyQuantity(item.getAlreadyHandleNumber());
-                    refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
-                        export.setActualQuantity(hkinfo.getQuantity());
-                    });
+                    if (null != refundExtra.getHkConfirmItemInfos()) {
+                        refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+                            export.setActualQuantity(hkinfo.getQuantity());
+                        });
+                    }
                     export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
 
                     refundExportData.add(export);

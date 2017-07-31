@@ -8,6 +8,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -69,7 +70,7 @@ public class ExportService {
     private void save(ExportContext exportContext) {
         ExportUtil.export(exportContext);
 
-        String fileName = exportContext.getFilename();
+        String fileName = StringUtils.isBlank(exportContext.getFilename()) ? (System.nanoTime() + ".xls") : exportContext.getFilename();
         String url;
         if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
             url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
@@ -112,6 +113,21 @@ public class ExportService {
                 });
 
                 return records.stream().sorted((r1, r2) -> r2.getExportAt().compareTo(r1.getExportAt())).collect(Collectors.toList());
+            }
+        });
+    }
+
+    @Deprecated
+    public void deleteExportFile(String name) {
+        Long currentUserID = UserUtil.getUserId();
+        jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
+
+            @Override
+            public Boolean action(Jedis jedis) {
+                jedis.keys("export:" + currentUserID + ":" + name).forEach(key -> {
+                    jedis.del(key);
+                });
+                return true;
             }
         });
     }

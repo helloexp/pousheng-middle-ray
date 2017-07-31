@@ -19,6 +19,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
@@ -91,9 +92,13 @@ public class Refunds {
     }
 
 
-    //完善处理逆向单
+    /**
+     * 批量标记逆向单为已处理
+     * @param data 逗号隔开的逆向单id拼接
+     */
     @RequestMapping(value = "/api/refund/batch/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void completeHandle(@RequestParam(value = "refundIds") List<Long> refundIds) {
+    public void completeHandle(@RequestParam(value = "refundIds") String data) {
+        List<Long> refundIds = Splitters.splitToLong(data,Splitters.COMMA);
         List<Refund> refunds = refundReadLogic.findRefundByIds(refundIds);
         if(!Objects.equals(refundIds.size(),refunds.size())){
             log.error("find refund by refund ids:{} result size not equal request id size:{}",refundIds,refunds.size(),refundIds.size());

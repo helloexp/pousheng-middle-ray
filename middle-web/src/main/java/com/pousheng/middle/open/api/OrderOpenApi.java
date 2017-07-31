@@ -23,6 +23,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.constants.JacksonType;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
@@ -96,13 +97,15 @@ public class OrderOpenApi {
     /**
      * 恒康同步发货单处理结果
      *
-     * @param results 处理结果
+     * @param data 处理结果
      * @return 是否同步成功
      */
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
-    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
+    public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
+        List<HkHandleShipmentResult> results = null;
         try{
+            results = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
             HkHandleShipmentResult result = results.get(0);
             Long shipmentId = result.getEcShipmentId();
             Boolean handleResult = result.getSuccess();
@@ -125,8 +128,7 @@ public class OrderOpenApi {
         }catch (JsonResponseException | ServiceException e) {
             log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
             throw new OPServerException(200,e.getMessage());
-        }
-        catch (Exception e){
+        }catch (Exception e){
             log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"sync.fail");
         }

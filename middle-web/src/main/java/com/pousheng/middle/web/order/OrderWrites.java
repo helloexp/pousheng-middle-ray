@@ -3,6 +3,8 @@ package com.pousheng.middle.web.order;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -17,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 @RestController
 @Slf4j
+@PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
 public class OrderWrites {
 
     @Autowired
@@ -29,7 +32,7 @@ public class OrderWrites {
      * @param shopOrderId 订单id
      */
     @RequestMapping(value = "api/order/{id}/cancel",method = RequestMethod.PUT)
-    public void cancelOrder(@PathVariable(value = "id") Long shopOrderId){
+    public void cancelOrder(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP,MiddleOrderEvent.CANCEL);
     }

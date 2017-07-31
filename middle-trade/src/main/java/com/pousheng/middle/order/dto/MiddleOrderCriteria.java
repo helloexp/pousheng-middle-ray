@@ -14,7 +14,7 @@ import java.util.List;
  * Created by songrenfei on 2017/6/16
  */
 @Data
-public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
+public class MiddleOrderCriteria extends PagingCriteria implements Serializable {
 
     private static final long serialVersionUID = -4118002783835337285L;
 
@@ -30,6 +30,7 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
 
     /**
      * 订单来源
+     *
      * @see com.pousheng.middle.order.enums.OrderSource
      */
     private Integer type;
@@ -60,6 +61,11 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
 
 
     /**
+     * 店铺ids，用于过滤用户可操作的店铺
+     */
+    private List<Long> shopIds;
+
+    /**
      * 状态
      */
     private List<Integer> status;
@@ -70,15 +76,14 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable{
     private String statusStr;
 
 
-
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
     @Override
-    public void formatDate(){
-        if(outCreatedStartAt != null && outCreatedEndAt != null){
-            if(outCreatedStartAt.equals(outCreatedEndAt)){
-                outCreatedEndAt=new DateTime(outCreatedEndAt.getTime()).plusDays(1).minusSeconds(1).toDate();
+    public void formatDate() {
+        if (outCreatedStartAt != null && outCreatedEndAt != null) {
+            if (outCreatedStartAt.equals(outCreatedEndAt)) {
+                outCreatedEndAt = new DateTime(outCreatedEndAt.getTime()).plusDays(1).minusSeconds(1).toDate();
             }
         }
     }

@@ -14,6 +14,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HKInvoiceType;
 import com.pousheng.middle.order.enums.HkPayType;
 import com.pousheng.middle.order.enums.MiddleInvoiceType;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -32,7 +33,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import com.pousheng.middle.order.enums.MiddlePayType;
 
 import java.io.IOException;
 import java.util.List;

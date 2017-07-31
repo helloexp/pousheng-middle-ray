@@ -71,7 +71,7 @@ public enum SkuGroupRuler {
         }
 
         //判断类目id是否匹配(如果存在类目id)
-        if (skuGroupRule.getKindId() != null
+        if (StringUtils.hasText(skuGroupRule.getKindId())
                 && !Objects.equal(skuGroupRule.getKindId(), kindId)) {
             return false;
 

@@ -4,7 +4,6 @@ import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
-import java.util.Map;
 import java.util.List;
 
 /**

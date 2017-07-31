@@ -86,7 +86,7 @@ public class SyncShipmentLogic {
             if (Objects.equals(head.getCode(), 0)) {
                 Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
                 //更新发货单的状态
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
                 if (!updateStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
@@ -104,7 +104,7 @@ public class SyncShipmentLogic {
             } else {
                 Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
                 //更新发货单的状态
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
                 if (!updateStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
@@ -117,7 +117,7 @@ public class SyncShipmentLogic {
             log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
             Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
             //更新发货单的状态
-            OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+            OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
             Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());

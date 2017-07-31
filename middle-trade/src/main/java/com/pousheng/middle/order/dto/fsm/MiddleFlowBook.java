@@ -208,22 +208,30 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.SYNC_HK.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_ING.getValue());
-
-            //同步中 -->同步成功 -> 同步成功，待发货
+            //同步中 --受理成功 ->受理成功
             addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.ACCEPTED.getValue());
+            //同步中->受理失败->受理失败
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue());
+            //受理成功 -->同步成功 -> 同步成功，待发货
+            addTransition(MiddleShipmentsStatus.ACCEPTED.getValue(),
                     MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
                     MiddleShipmentsStatus.WAIT_SHIP.getValue());
-
-            //同步失败 -->同步失败 -> 同步失败
-            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+            //受理成功 -->同步成功 -> 同步失败
+            addTransition(MiddleShipmentsStatus.ACCEPTED.getValue(),
                     MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_FAIL.getValue());
-
+            //受理失败 -->同步 -> 同步中
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                    MiddleOrderEvent.SYNC_HK.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ING.getValue());
             //同步失败 -->同步 -> 同步中
             addTransition(MiddleShipmentsStatus.SYNC_HK_FAIL.getValue(),
                     MiddleOrderEvent.SYNC_HK.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_ING.getValue());
-
             //待发货 -->发货 -> 商家已发货,待同步电商平台
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),

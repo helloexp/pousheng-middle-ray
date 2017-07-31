@@ -561,7 +561,7 @@ public class Shipments {
         //发货单优惠金额
         shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
         //发货单总的净价
-        shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
+        shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
 
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
 

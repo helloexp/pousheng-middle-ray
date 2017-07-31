@@ -44,6 +44,8 @@ public enum MiddleOrderEvent {
     REVOKE_FAIL(24,"revokeFail","seller"),
     REVOKE_SUCCESS(25,"revokeSuccess","seller"),
     CANCEL_SHIP(26,"cancelShip","seller"),
+    SYNC_ACCEPT_SUCCESS(27,"syncAcceptSuccess","hk"),
+    SYNC_ACCEPT_FAIL(27,"syncAcceptFail","hk"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),

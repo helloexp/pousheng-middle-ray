@@ -129,7 +129,7 @@ public class AdminOrderWriter {
         Response<OpenShop> response = openShopReadService.findById(shopId);
         if (!response.isSuccess()){
             log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
-            throw new ServiceException("find.openShop.failed");
+            throw new JsonResponseException("find.openShop.failed");
         }
         OpenShop openShop = response.getResult();
         switch (openShop.getChannel()){
@@ -147,7 +147,7 @@ public class AdminOrderWriter {
                 return expressCode.getPoushengCode();
             default:
                 log.error("find express code failed");
-                throw new ServiceException("find.expressCode.failed");
+                throw new JsonResponseException("find.expressCode.failed");
         }
     }
     public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {

@@ -4,12 +4,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.channel.OpenClientChannel;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.item.service.SkuReadService;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -58,6 +63,9 @@ public class OrderReadLogic {
     private PaymentReadService paymentReadService;
     @RpcConsumer
     private MiddleOrderReadService middleOrderReadService;
+
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
 
@@ -291,6 +299,36 @@ public class OrderReadLogic {
                 return skuOrderResp.getResult();
             default:
                 throw new IllegalArgumentException("unknown.order.type");
+        }
+    }
+
+    /**
+     * 快递代码映射,根据店铺id获取
+     * @param shopId
+     * @return
+     */
+    public String getExpressCode(Long shopId,ExpressCode expressCode){
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
+            throw new JsonResponseException("find.openShop.failed");
+        }
+        OpenShop openShop = response.getResult();
+        MiddleChannel channel =  MiddleChannel.from(openShop.getChannel());
+        switch (channel){
+            case JD:
+                return expressCode.getJdCode();
+            case TAOBAO:
+                return expressCode.getTaobaoCode();
+            case FENQILE:
+                return expressCode.getFenqileCode();
+            case SUNING:
+                return expressCode.getSuningCode();
+            case OFFICIAL:
+                return expressCode.getPoushengCode();
+            default:
+                log.error("find express code failed");
+                throw new JsonResponseException("find.expressCode.failed");
         }
     }
 }

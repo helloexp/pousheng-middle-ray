@@ -3,12 +3,17 @@ package com.pousheng.middle.open.api;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -23,8 +28,9 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -38,6 +44,8 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * 订单open api
@@ -94,34 +102,36 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
-        try{
-            HkHandleShipmentResult result = results.get(0);
-            Long shipmentId = result.getEcShipmentId();
-            Boolean handleResult = result.getSuccess();
-            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            //更新发货单的状态
-            if (handleResult){
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                if (!updateSyncStatusRes.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+        for (HkHandleShipmentResult result :results){
+            try{
+                Long shipmentId = result.getEcShipmentId();
+                Boolean handleResult = result.getSuccess();
+                Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+                //更新发货单的状态
+                if (handleResult){
+                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                    if (!updateSyncStatusRes.isSuccess()) {
+                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    }
+                }else{
+                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                    if (!updateSyncStatusRes.isSuccess()) {
+                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    }
                 }
-            }else{
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                if (!updateSyncStatusRes.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                }
-            }
 
-        }catch (JsonResponseException | ServiceException e) {
-            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
-            throw new OPServerException(200,e.getMessage());
+            }catch (JsonResponseException | ServiceException e) {
+                log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+                throw new OPServerException(200,e.getMessage());
+            }
+            catch (Exception e){
+                log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+                throw new OPServerException(200,"sync.fail");
+            }
         }
-        catch (Exception e){
-            log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"sync.fail");
-        }
+
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
 
@@ -226,7 +236,8 @@ public class OrderOpenApi {
                     throw new ServiceException(response1.getError());
                 }
                 //第一个发货单发货完成之后需要将订单同步
-                syncOrderToEcpLogic.syncOrderToECP(shopOrder,getExpressCode(shopOrder.getShopId(),expressCode),shipmentId);
+                String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
+                syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipmentId);
             }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
@@ -357,36 +368,4 @@ public class OrderOpenApi {
         }
 
     }
-
-    /**
-     * 快递代码映射,根据店铺id获取
-     * @param shopId
-     * @return
-     */
-    private String getExpressCode(Long shopId,ExpressCode expressCode){
-        Response<OpenShop> response = openShopReadService.findById(shopId);
-        if (!response.isSuccess()){
-            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
-            throw new ServiceException("find.openShop.failed");
-        }
-        OpenShop openShop = response.getResult();
-        switch (openShop.getChannel()){
-            case "jd":
-                return expressCode.getJdCode();
-            case "taobao":
-                return expressCode.getTaobaoCode();
-            case "fenqile":
-                return expressCode.getFenqileCode();
-            case "suning":
-                return expressCode.getSuningCode();
-            case "hk":
-                return expressCode.getHkCode();
-            case "official":
-                return expressCode.getPoushengCode();
-            default:
-                log.error("find express code failed");
-                throw new ServiceException("find.expressCode.failed");
-        }
-    }
-
 }

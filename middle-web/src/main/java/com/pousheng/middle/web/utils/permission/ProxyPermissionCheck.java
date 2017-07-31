@@ -65,17 +65,22 @@ public class ProxyPermissionCheck {
                 log.info("permission check for method [{}] is aboard,parameter is null", signature.getMethod().getName());
             } else {
 
-                Long id;
-                if (null != fieldName) {
-                    Field field = pjp.getArgs()[0].getClass().getField(fieldName);
-                    field.setAccessible(true);
-                    id = (Long) field.get(pjp.getArgs()[0]);
-                } else
-                    id = (Long) pjp.getArgs()[permissionCheckParamPos];
-
                 PermissionCheck permissionCheckAnno = signature.getMethod().getAnnotation(PermissionCheck.class);
                 if (null == permissionCheckAnno)
                     permissionCheckAnno = pjp.getTarget().getClass().getAnnotation(PermissionCheck.class);
+
+                Long id;
+                if (null != fieldName) {
+                    try {
+                        Field field = pjp.getArgs()[0].getClass().getField(fieldName);
+                        field.setAccessible(true);
+                        id = (Long) field.get(pjp.getArgs()[0]);
+                    } catch (Exception e) {
+                        return permissionDeny("permission.check.access.field.fail", signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
+                    }
+                } else
+                    id = (Long) pjp.getArgs()[permissionCheckParamPos];
+
 
                 Response<Boolean> permissionCheckResponse;
                 if (permissionCheckAnno.value() == PermissionCheck.PermissionCheckType.SHOP_ORDER) {
@@ -89,19 +94,24 @@ public class ProxyPermissionCheck {
 
                 if (!permissionCheckResponse.isSuccess()) {
 
-                    if (permissionCheckAnno.throwExceptionWhenPermissionDeny())
-                        throw new JsonResponseException(permissionCheckResponse.getError());
-
-
-                    String returnTypeName = signature.getReturnType().getName();
-                    if (returnTypeName.equals(Response.class.getName())) {
-                        return Response.fail(permissionCheckResponse.getError());
-                    } else throw new JsonResponseException(permissionCheckResponse.getError());
+                    return permissionDeny(permissionCheckResponse.getError(), signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
                 }
             }
         }
 
         return pjp.proceed();
+    }
+
+
+    private Response permissionDeny(String error, String returnTypeName, boolean throwExceptionWhenPermissionDeny) {
+        if (throwExceptionWhenPermissionDeny)
+            throw new JsonResponseException(error);
+
+
+//        String returnTypeName = signature.getReturnType().getName();
+        if (returnTypeName.equals(Response.class.getName())) {
+            return Response.fail(error);
+        } else throw new JsonResponseException(error);
     }
 
 }

@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
-@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
+//@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
 public class Refunds {
 
     @Autowired
@@ -155,7 +155,8 @@ public class Refunds {
      * @return 逆向单id
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
+    public Long createRefund(@RequestBody  SubmitRefundInfo submitRefundInfo) {
+        //@PermissionCheckParam("orderId")
 
         return refundWriteLogic.createRefund(submitRefundInfo);
     }

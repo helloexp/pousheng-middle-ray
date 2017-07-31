@@ -1,13 +1,11 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.strategy.ShopOrderStatusStrategy;
 import org.springframework.stereotype.Component;
 
-import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;

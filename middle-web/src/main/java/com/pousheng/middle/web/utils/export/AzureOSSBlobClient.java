@@ -7,18 +7,10 @@ import com.microsoft.azure.storage.blob.*;
 import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.Path;
-import java.security.InvalidKeyException;
-import java.sql.Blob;
-import java.util.Optional;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/24.

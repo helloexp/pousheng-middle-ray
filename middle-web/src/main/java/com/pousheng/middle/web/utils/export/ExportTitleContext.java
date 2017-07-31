@@ -1,9 +1,6 @@
 package com.pousheng.middle.web.utils.export;
 
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.RequiredArgsConstructor;
-import org.apache.ibatis.annotations.ConstructorArgs;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/21.

@@ -16,7 +16,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
-import io.terminus.parana.common.enums.UserStatus;
 import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.RespHelper;

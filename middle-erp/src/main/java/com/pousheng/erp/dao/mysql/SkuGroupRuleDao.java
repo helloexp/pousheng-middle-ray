@@ -1,6 +1,5 @@
 package com.pousheng.erp.dao.mysql;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.model.SkuGroupRule;
 import io.terminus.common.mysql.dao.MyBatisDao;

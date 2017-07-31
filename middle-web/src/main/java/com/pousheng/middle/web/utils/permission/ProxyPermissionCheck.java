@@ -47,8 +47,10 @@ public class ProxyPermissionCheck {
                     PermissionCheckParam checkParam = parameter.getAnnotation(PermissionCheckParam.class);
                     if (StringUtils.isNotBlank(checkParam.value())) {
                         Field field = parameter.getType().getField(checkParam.value());
-                        if (null != field)
+                        if (null != field) {
                             fieldName = fieldName;
+                            hasPermissionCheckParamMarked = true;
+                        }
                     }
                 }
                 break;

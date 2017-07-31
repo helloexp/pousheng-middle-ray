@@ -2,6 +2,7 @@ package com.pousheng.middle.web.utils.permission;
 
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.parana.common.utils.UserUtil;
@@ -103,7 +104,7 @@ public class PermissionUtil {
     public List<Long> getCurrentUserCanOperateShopIDs() {
 
         if (null == UserUtil.getCurrentUser())
-            return Collections.emptyList();
+            throw new JsonResponseException("permission.check.current.user.empty");
 
         return userManageShopReader.findManageShops(UserUtil.getCurrentUser()).stream().map(OpenClientShop::getOpenShopId).collect(Collectors.toList());
     }

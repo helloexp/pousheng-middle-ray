@@ -93,7 +93,7 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") List<HkHandleShipmentResult> results) {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",results);
-        throw  new OPServerException("sync.fail");
+        //throw  new OPServerException("sync.fail");
 
     }
 

@@ -5,10 +5,12 @@ import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
+import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -85,5 +87,14 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                         shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue(), updateR.getError());
             }
         }
+    }
+
+
+
+    protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
+                                        OpenClientFullOrder openClientFullOrder) {
+        RichOrder richOrder = super.makeParanaOrder(openClientShop,openClientFullOrder);
+
+        return richOrder;
     }
 }

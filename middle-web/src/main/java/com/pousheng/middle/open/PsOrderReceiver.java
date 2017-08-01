@@ -115,8 +115,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
-        richSkusByShop.setRichSkus(richSkus);
-        richOrder.setRichSkusByShops(Lists.newArrayList(new RichSkusByShop[]{richSkusByShop}));
         return richOrder;
     }
 }

@@ -59,7 +59,8 @@ public class AdminOrderWriter {
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
         //同步到电商平台
-        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder,getExpressCode(shopOrder.getShopId(),expressCode),shipment.getId());
+        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
+        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipment.getId());
         if(!syncRes.isSuccess()){
             log.error("sync shopOrder(id:{}) to ecp fail,error:{}",shopOrderId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -123,36 +124,7 @@ public class AdminOrderWriter {
         ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
     }
-    /**
-     * 快递代码映射,根据店铺id获取
-     * @param shopId
-     * @return
-     */
-    private String getExpressCode(Long shopId,ExpressCode expressCode){
-        Response<OpenShop> response = openShopReadService.findById(shopId);
-        if (!response.isSuccess()){
-            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
-            throw new JsonResponseException("find.openShop.failed");
-        }
-        OpenShop openShop = response.getResult();
-        switch (openShop.getChannel()){
-            case "jd":
-                return expressCode.getJdCode();
-            case "taobao":
-                return expressCode.getTaobaoCode();
-            case "fenqile":
-                return expressCode.getFenqileCode();
-            case "suning":
-                return expressCode.getSuningCode();
-            case "hk":
-                return expressCode.getHkCode();
-            case "official":
-                return expressCode.getPoushengCode();
-            default:
-                log.error("find express code failed");
-                throw new JsonResponseException("find.expressCode.failed");
-        }
-    }
+
     public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
         criteria.setHkCode(hkExpressCode);

@@ -29,7 +29,7 @@ public class OperationLog implements Serializable {
     /**
      * 操作的实体ID
      */
-    private Long operateId;
+    private String operateId;
     
     /**
      * 操作内容

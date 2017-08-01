@@ -14,6 +14,9 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
+import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
@@ -98,6 +101,7 @@ public class Refunds {
 
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("完善")
     public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
@@ -207,7 +211,8 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel", method = RequestMethod.PUT)
-    public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
+    @OperationLogType("取消")
+    public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam @OperationLogKey Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
         if (!cancelRes.isSuccess()) {

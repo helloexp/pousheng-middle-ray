@@ -155,9 +155,7 @@ public class Refunds {
      * @return 逆向单id
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createRefund(@RequestBody  SubmitRefundInfo submitRefundInfo) {
-        //@PermissionCheckParam("orderId")
-
+    public Long createRefund(@RequestBody  @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
         return refundWriteLogic.createRefund(submitRefundInfo);
     }
 

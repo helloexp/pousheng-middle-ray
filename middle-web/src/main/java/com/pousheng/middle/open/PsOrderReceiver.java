@@ -1,6 +1,7 @@
 package com.pousheng.middle.open;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
@@ -24,6 +25,7 @@ import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -99,19 +101,23 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     }
 
 
-
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop,openClientFullOrder);
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
         Map<String,String> shopOrderExtra = richSkusByShop.getExtra();
-        shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
-        richSkusByShop.setExtra(shopOrderExtra);
+        Map<String,String> newOrderExtra = Maps.newHashMap();
+        newOrderExtra.putAll(shopOrderExtra);
+        newOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
+        richSkusByShop.setExtra(newOrderExtra);
         //初始化店铺子单extra
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         richSkus.forEach(richSku -> {
             Map<String,String> skuExtra = richSku.getExtra();
+            if(CollectionUtils.isEmpty(skuExtra)){
+                skuExtra = Maps.newHashMap();
+            }
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });

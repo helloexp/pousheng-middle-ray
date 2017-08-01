@@ -20,14 +20,12 @@ public enum MiddleRefundStatus {
     REFUND_SYNC_HK_SUCCESS(4, "同步恒康成功待退款(仅退款)"),              //同步恒康成功待退款(仅退款)
     RETURN_SYNC_HK_SUCCESS(5, "同步恒康成功待退货完成(退货)"),            //同步恒康成功待退货完成(退货)
     CHANGE_SYNC_HK_SUCCESS(6, "同步恒康成功待退货完成(换货)"),            //同步恒康成功待退货完成(换货)
-    RETURN_DONE_WAIT_SYNC_ECP(7, "退货完成待同步电商"),                  //退货完成待同步电商
-    SYNC_ECP_ING(8, "同步电商平台中"),                                  //同步电商平台中（此状态前端可不用关心，只是为了后端flow通顺）
-    SYNC_ECP_SUCCESS_WAIT_REFUND(9, "待退款"),                         //待退款
-    RETURN_DONE_WAIT_CREATE_SHIPMENT(10, "退货完成待创建发货"),         //退货完成待创建发货
-    WAIT_SHIP(11, "待发货"),                                           //待发货
-    WAIT_CONFIRM_RECEIVE(12, "待确认收货（所有发货单全部发货完成）"),      //待确认收货（所有发货单全部发货完成）
-    REFUND(13, "已退款(仅退款、退货退款)"),                              //已退款(仅退款、退货退款)
-    DONE(14, "已完成（换货确认收货）"),                                  //已完成（换货确认收货）
+    SYNC_ECP_SUCCESS_WAIT_REFUND(7, "待退款"),                         //待退款
+    RETURN_DONE_WAIT_CREATE_SHIPMENT(8, "退货完成待创建发货"),         //退货完成待创建发货
+    WAIT_SHIP(9, "待发货"),                                           //待发货
+    WAIT_CONFIRM_RECEIVE(10, "待确认收货（所有发货单全部发货完成）"),      //待确认收货（所有发货单全部发货完成）
+    REFUND(11, "已退款(仅退款、退货退款)"),                              //已退款(仅退款、退货退款)
+    DONE(12, "已完成（换货确认收货）"),                                  //已完成（换货确认收货）
     SYNC_HK_FAIL(-1, "同步恒康失败"),                                  //同步恒康失败
     SYNC_HK_CANCEL_ING(-2, "同步恒康取消中"),                          //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     CANCELED(-3, "已取消"),                                           //已取消

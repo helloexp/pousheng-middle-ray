@@ -14,8 +14,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HKInvoiceType;
 import com.pousheng.middle.order.enums.HkPayType;
 import com.pousheng.middle.order.enums.MiddleInvoiceType;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.ServiceException;
@@ -23,6 +25,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
@@ -32,7 +35,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
-import com.pousheng.middle.order.enums.MiddlePayType;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,6 +59,8 @@ public class SyncShipmentLogic {
     private SycHkOrderCancelApi sycHkOrderCancelApi;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -77,56 +81,64 @@ public class SyncShipmentLogic {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
             }
-            //同步恒康
-            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
+
+            Flow flow = flowPicker.pickShipments();
+            Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+            shipment.setStatus(targetStatus);//塞入最新的状态
+            //todo 同步恒康
+/*            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
             SycShipmentOrderResponse response = this.makeSycShipmentOrderResponse(sycHkShipmentOrderApi.doSyncShipmentOrder(list));
-            //解析返回结果
-            HkResponseHead head = response.getHead();
             SycHkShipmentOrderResponseBody orderBody = response.getOrderBody();
-            if (Objects.equals(head.getCode(), 0)) {
-                Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
+            HkResponseHead head = response.getHead();*/
+            //解析返回结果
+            HkResponseHead head = new HkResponseHead();
+            head.setCode("0");
+            if (Objects.equals(head.getCode(), "0")) {
                 //更新发货单的状态
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
-                if (!updateStatusRes.isSuccess()) {
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateStatusRes.getError());
+                    return Response.fail(updateSyncStatusRes.getError());
                 }
-                //冗余恒康发货单号
-                Shipment update = new Shipment();
-                update.setId(shipment.getId());
-                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                shipmentExtra.setOutShipmentId(orderBody.getErpOrderNo());
-                Map<String, String> extraMap = shipment.getExtra();
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
-                update.setExtra(extraMap);
-                shipmentWiteLogic.update(update);
             } else {
-                Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
-                //更新发货单的状态
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
-                if (!updateStatusRes.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateStatusRes.getError());
-                }
+                log.error("sync hk fail, return code :{}",head.getCode());
+                //更新状态为同步失败
+                updateShipmetSyncFail(shipment);
                 return Response.fail("sync.hk.shipment.fail");
             }
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
-            Shipment newStatusShipment = shipmentReadLogic.findShipmentById(shipment.getId());
-            //更新发货单的状态
-            OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(newStatusShipment, syncOrderOperation);
-            if (!updateSyncStatusRes.isSuccess()) {
-                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                return Response.fail(updateSyncStatusRes.getError());
-            }
+            //更新状态为同步失败
+            updateShipmetSyncFail(shipment);
             return Response.fail("sync.hk.shipment.fail");
         }
 
     }
+
+
+    private void updateShipmetSyncFail(Shipment shipment){
+        //更新发货单的状态
+        OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            //这里失败只打印日志即可
+            log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+        }
+    }
+
+
+    private void updateShipmetSyncCancelFail(Shipment shipment){
+        //更新发货单的状态
+        OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            //这里失败只打印日志即可
+            log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+        }
+    }
+
 
     /**
      * 同步发货单取消到恒康
@@ -143,44 +155,40 @@ public class SyncShipmentLogic {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
             }
+
+            Flow flow = flowPicker.pickShipments();
+            Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+            shipment.setStatus(targetStatus);//塞入最新的状态
+
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(), 0);
-            HkResponseHead head = this.makeHkResponseHead(response);
+            //todo 同步恒康取消
+           /* String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(), 0);
+            HkResponseHead head = this.makeHkResponseHead(response);*/
+            HkResponseHead head = new HkResponseHead();
+            head.setCode("0");
             //head返回0代表成功
-            if (Objects.equals(head.getCode(), 0)) {
-                OrderOperation orderOperation1 = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
-                Response<Boolean> updateStatusRes1 = shipmentWiteLogic.updateStatus(shipment, orderOperation1);
-                if (!updateStatusRes1.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation1.getText(), updateStatusRes1.getError());
+            if (Objects.equals(head.getCode(), "0")) {
+                OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                if (!updateStatus.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     return Response.fail(updateStatusRes.getError());
                 }
             } else {
-                OrderOperation orderOperation1 = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
-                Response<Boolean> updateStatusRes1 = shipmentWiteLogic.updateStatus(shipment, orderOperation1);
-                if (!updateStatusRes1.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation1.getText(), updateStatusRes1.getError());
-                    return Response.fail(updateStatusRes1.getError());
-                }
+                //更新状态取消失败
+                updateShipmetSyncCancelFail(shipment);
                 return Response.fail("sync.hk.cancel.shipment.failed");
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {
             log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
-            OrderOperation orderOperation1 = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
-            Response<Boolean> updateStatusRes1 = shipmentWiteLogic.updateStatus(shipment, orderOperation1);
-            if (!updateStatusRes1.isSuccess()) {
-                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation1.getText(), updateStatusRes1.getError());
-                return Response.fail(updateStatusRes1.getError());
-            }
-            return Response.fail("sync.hk.cancel.shipment.failed");
+            //更新状态取消失败
+            updateShipmetSyncCancelFail(shipment);
+            return Response.fail(e1.getMessage());
         } catch (Exception e) {
             log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
-            OrderOperation orderOperation1 = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
-            Response<Boolean> updateStatusRes1 = shipmentWiteLogic.updateStatus(shipment, orderOperation1);
-            if (!updateStatusRes1.isSuccess()) {
-                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation1.getText(), updateStatusRes1.getError());
-                return Response.fail(updateStatusRes1.getError());
-            }
+            //更新状态取消失败
+            updateShipmetSyncCancelFail(shipment);
             return Response.fail("sync.hk.cancel.shipment.failed");
         }
     }
@@ -253,7 +261,8 @@ public class SyncShipmentLogic {
         tradeOrder.setStockId(String.valueOf(shipmentExtra.getWarehouseId()));
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
-        tradeOrder.setItems(items);
+        tradeOrder.setItems(items);      //更新状态取消失败
+        updateShipmetSyncCancelFail(shipment);
         return tradeOrder;
     }
 

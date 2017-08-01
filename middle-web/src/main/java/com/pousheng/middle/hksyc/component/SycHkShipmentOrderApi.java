@@ -4,7 +4,6 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.dto.HkRequestHead;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderForm;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;

@@ -1,19 +1,30 @@
 package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 /**
  * Created by tony on 2017/7/18.
@@ -28,14 +39,28 @@ public class AdminOrderWriter {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
+    @Autowired
+    private ExpressCodeReadService expressCodeReadService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     /**
      * 发货单已发货,同步订单信息到电商
      * @param shopOrderId
      */
     @RequestMapping(value = "api/order/{id}/sync/ecp",method = RequestMethod.PUT)
-    public void syncOrderInfoToEcp(@PathVariable(value = "id") Long shopOrderId){
+    @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder);
+        //获取发货单id
+        String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
+        Shipment shipment  = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
+        //同步到电商平台
+        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
+        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipment.getId());
         if(!syncRes.isSuccess()){
             log.error("sync shopOrder(id:{}) to ecp fail,error:{}",shopOrderId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -98,5 +123,21 @@ public class AdminOrderWriter {
     public void confirmOrders(@PathVariable("id") Long shopOrderId){
         ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
+    }
+
+    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setHkCode(hkExpressCode);
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getData().size() == 0) {
+            log.error("there is not any express info by hkCode:{}", hkExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
+        }
+        ExpressCode expressCode = response.getResult().getData().get(0);
+        return expressCode;
     }
 }

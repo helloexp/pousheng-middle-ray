@@ -2,7 +2,6 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
-import com.jd.open.api.sdk.domain.supplier.AdvertiseJosService.JosAdvertiseApplyDto;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -18,7 +17,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;
@@ -153,9 +151,11 @@ public class CreateShipments {
         Long shipmentDiscountFee = 0L;
         //发货单总的净价
         Long shipmentTotalFee = 0L;
+        //运费
+        Long shipmentShipFee = 0L;
         if (Objects.equals(1, type)) {
             //运费
-            Long shipmentShipFee = 0L;
+
             //判断运费是否已经加过
             if (!isShipmentFeeCalculated(id)) {
 
@@ -166,13 +166,13 @@ public class CreateShipments {
         }
         List<ShipmentItem> shipmentItems = shipmentPreview.getShipmentItems();
         for (ShipmentItem shipmentItem : shipmentItems) {
-            shipmentItemFee = shipmentItem.getSkuPrice() + shipmentItemFee;
+            shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
         }
         shipmentPreview.setShipmentItemFee(shipmentItemFee);
         shipmentPreview.setShipmentDiscountFee(shipmentDiscountFee);
-        shipmentPreview.setShipmentTotalFee(shipmentTotalFee);
+        shipmentPreview.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
 
 
         return Response.ok(shipmentPreview);

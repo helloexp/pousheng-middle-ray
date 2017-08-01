@@ -5,7 +5,10 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
 import com.pousheng.middle.hksyc.dto.HkResponseHead;
-import com.pousheng.middle.hksyc.dto.trade.*;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefundResponseBody;
+import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
@@ -15,6 +18,7 @@ import com.pousheng.middle.order.enums.HkRefundType;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -24,6 +28,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
@@ -59,6 +64,8 @@ public class SyncRefundLogic {
     private SycHkOrderCancelApi sycHkOrderCancelApi;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -79,47 +86,56 @@ public class SyncRefundLogic {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
             }
+
+            Flow flow = flowPicker.pickAfterSales();
+            Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+            refund.setStatus(targetStatus);
+
             //要根据不同步的售后单类型来决定同步成功或失败的状态
-            String reesponse = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
-            SycRefundResponse sycRefundResponse = this.makeSycRefundResponse(reesponse);
-            //获取响应头
+    /*        String response = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
+            SycRefundResponse sycRefundResponse = this.makeSycRefundResponse(response);
             HkResponseHead head = sycRefundResponse.getHead();
-            if (Objects.equals(head.getCode(), 0)) {
-                SycHkRefundResponseBody refundBody = sycRefundResponse.getRefundBody();
+                            SycHkRefundResponseBody refundBody = sycRefundResponse.getRefundBody();
+
+            */
+            //获取响应头
+            HkResponseHead head = new HkResponseHead();
+            head.setCode("0");
+            if (Objects.equals(head.getCode(), "0")) {
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
-                Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
-                OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(newStatusRefund);
-                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+                OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
+                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
                 if (!updateStatusRes.isSuccess()) {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
                 Refund update = new Refund();
                 update.setId(refund.getId());
-                update.setOutId(refundBody.getErpOrderNo());
+                //update.setOutId(refundBody.getErpOrderNo()); todo 塞外部id
+                update.setOutId(refund.getId().toString());
                 return refundWriteLogic.update(update);
             } else {
-                Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
-                OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
-                if (!updateSyncStatusRes.isSuccess()) {
-                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateSyncStatusRes.getError());
-                }
+                //更新同步状态
+                updateRefundSyncFial(refund);
                 return Response.fail("sync.hk.refund.fail");
             }
         } catch (Exception e) {
             log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
-            Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
-            OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
-            if (!updateSyncStatusRes.isSuccess()) {
-                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
-                return Response.fail(updateSyncStatusRes.getError());
-            }
+            //更新同步状态
+            updateRefundSyncFial(refund);
             return Response.fail("sync.hk.refund.fail");
         }
 
+
+    }
+
+
+    private void updateRefundSyncFial(Refund refund){
+        OrderOperation orderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
+        }
 
     }
 
@@ -152,6 +168,7 @@ public class SyncRefundLogic {
      * @param refund 退货单
      * @return 同步结果
      */
+            //todo 同步恒康
     public Response<Boolean> syncRefundCancelToHk(Refund refund) {
         try {
             //更新状态为同步中
@@ -210,7 +227,7 @@ public class SyncRefundLogic {
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
         sycHkRefund.setStockId(String.valueOf(refundExtra.getWarehouseId()));
         sycHkRefund.setPerformanceShopId(String.valueOf(refund.getShopId()));
-        sycHkRefund.setRefundOrderAmount((int) (refund.getFee() / 100));
+        sycHkRefund.setRefundOrderAmount((int) (refund.getFee()==null?0:refund.getFee() / 100));
         sycHkRefund.setRefundFreight(0);
         //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
         //中台状态1:售后退款,2:退货退款,恒康状态0:退货退款,1:仅退款
@@ -219,7 +236,7 @@ public class SyncRefundLogic {
         sycHkRefund.setStatus(String.valueOf(4));
         //售后单创建时间
         sycHkRefund.setCreatedDate(formatter.print(refund.getCreatedAt().getTime()));
-        sycHkRefund.setTotalRefund((int) (refund.getFee() / 100));
+        sycHkRefund.setTotalRefund((int) (refund.getFee()==null?0:refund.getFee() / 100));
         //寄回物流单号
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
@@ -252,9 +269,9 @@ public class SyncRefundLogic {
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格
-            item.setSalePrice(refundItem.getSkuPrice() / 100);
+            item.setSalePrice(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice() / 100);
             //商品总净价
-            item.setRefundAmount(refundItem.getCleanFee() / 100);
+            item.setRefundAmount(refundItem.getCleanFee()==null?0:refundItem.getCleanFee() / 100);
             //商品名称
             item.setItemName(refundItem.getSkuName());
             items.add(item);
@@ -330,6 +347,8 @@ public class SyncRefundLogic {
             case ON_SALES_REFUND:
                 return HkRefundType.HK_AFTER_SALES_REFUND;
             case AFTER_SALES_RETURN:
+                return HkRefundType.HK_AFTER_SALES_RETURN;
+            case AFTER_SALES_CHANGE:
                 return HkRefundType.HK_AFTER_SALES_RETURN;
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());

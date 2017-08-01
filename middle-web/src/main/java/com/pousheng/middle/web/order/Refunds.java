@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
-//@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
+@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
 public class Refunds {
 
     @Autowired

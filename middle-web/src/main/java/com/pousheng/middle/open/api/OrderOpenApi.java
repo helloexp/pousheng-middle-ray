@@ -90,6 +90,7 @@ public class OrderOpenApi {
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
+    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
 
 
@@ -109,7 +110,9 @@ public class OrderOpenApi {
             HkHandleShipmentResult result = results.get(0);
             Long shipmentId = result.getEcShipmentId();
             Boolean handleResult = result.getSuccess();
+            String hkShipmentId = result.getHkShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            //冗余恒康发货单号
             //更新发货单的状态
             if (handleResult){
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
@@ -117,6 +120,15 @@ public class OrderOpenApi {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
+                //更新恒康shipmentId
+                Shipment update = new Shipment();
+                update.setId(shipment.getId());
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                shipmentExtra.setOutShipmentId(hkShipmentId);
+                Map<String, String> extraMap = shipment.getExtra();
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
+                update.setExtra(extraMap);
+                shipmentWiteLogic.update(update);
             }else{
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -236,7 +248,8 @@ public class OrderOpenApi {
                     throw new ServiceException(response1.getError());
                 }
                 //第一个发货单发货完成之后需要将订单同步
-                syncOrderToEcpLogic.syncOrderToECP(shopOrder,getExpressCode(shopOrder.getShopId(),expressCode),shipmentId);
+                String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
+                syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipmentId);
             }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
@@ -367,36 +380,4 @@ public class OrderOpenApi {
         }
 
     }
-
-    /**
-     * 快递代码映射,根据店铺id获取
-     * @param shopId
-     * @return
-     */
-    private String getExpressCode(Long shopId,ExpressCode expressCode){
-        Response<OpenShop> response = openShopReadService.findById(shopId);
-        if (!response.isSuccess()){
-            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
-            throw new ServiceException("find.openShop.failed");
-        }
-        OpenShop openShop = response.getResult();
-        switch (openShop.getChannel()){
-            case "jd":
-                return expressCode.getJdCode();
-            case "taobao":
-                return expressCode.getTaobaoCode();
-            case "fenqile":
-                return expressCode.getFenqileCode();
-            case "suning":
-                return expressCode.getSuningCode();
-            case "hk":
-                return expressCode.getHkCode();
-            case "official":
-                return expressCode.getPoushengCode();
-            default:
-                log.error("find express code failed");
-                throw new ServiceException("find.expressCode.failed");
-        }
-    }
-
 }

@@ -10,12 +10,14 @@ mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
       com.pousheng.erp.model,
-      com.pousheng.middle.warehouse.model,
-      com.pousheng.middle.order.model,
-      io.terminus.parana.(item|category|brand|spu|shop).model,
-      io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
-      io.terminus.open.client.common.(mappings|token|shop).model,
-      io.terminus.open.client.item.model
+      com.pousheng.auth.model,
+            com.pousheng.middle.warehouse.model,
+            com.pousheng.middle.order.model,
+            io.terminus.parana.(item|category|brand|spu|shop).model,
+            io.terminus.parana.auth.model,
+            io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+            io.terminus.open.client.common.(mappings|token|shop).model,
+            io.terminus.open.client.item.model
 
 
 rpc.mode: false
@@ -24,3 +26,5 @@ gateway:
   erp:
     host: http://esbt.pousheng.com
     accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+
+

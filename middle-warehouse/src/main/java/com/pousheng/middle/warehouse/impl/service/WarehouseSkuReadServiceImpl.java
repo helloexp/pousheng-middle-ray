@@ -70,6 +70,23 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
     }
 
     /**
+     * 查询某个sku在各仓库中的分配情况
+     *
+     * @param skuCode sku编码
+     * @return 指定sku在各仓库中的分配情况
+     */
+    @Override
+    public Response<List<WarehouseSkuStock>> findBySkuCode(String skuCode) {
+        try {
+            return Response.ok(warehouseSkuStockDao.findBySkuCode(skuCode));
+        } catch (Exception e) {
+            log.error("failed to find stock for  skuCode={}, cause:{}",
+                    skuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.find.fail");
+        }
+    }
+
+    /**
      * 根据sku编码查找在仓库中的总的可用库存
      *
      * @param skuCode sku编码

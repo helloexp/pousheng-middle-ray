@@ -29,7 +29,9 @@ public @interface OperationLogModule {
 
         REFUND(2, "逆向单", "refund"),
 
-        SHIPMENT(3, "发货单", "shipment");
+        SHIPMENT(3, "发货单", "shipment"),
+
+        WAREHOUSE(4, "仓库", "warehouse");
 
         @Getter
         private int value;

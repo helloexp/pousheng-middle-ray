@@ -11,10 +11,12 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.map.HashedMap;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.After;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Pointcut;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.MethodParameter;
@@ -47,29 +49,35 @@ public class ProxyOperationLog {
     private OperationLogWriteService operationLogWriteService;
 
 
-    @Around("execution(* com.pousheng.middle.web.order.*.*(..))")
-    public Object record(ProceedingJoinPoint pjp) throws Throwable {
+    @Pointcut("execution(* com.pousheng.middle.web.order.*.*(..))")
+    public void orderPointcut() {
+    }
+
+    @Pointcut("execution(* com.pousheng.middle.web.warehouses.*.*(..))")
+    public void warehousePointcut() {
+    }
+
+
+    @After("orderPointcut() || warehousePointcut()")
+    public void record(JoinPoint pjp) throws Throwable {
 
 
         MethodSignature signature = (MethodSignature) pjp.getSignature();
 
         if (!signature.getMethod().isAnnotationPresent(OperationLogType.class)
                 && request.getMethod().equalsIgnoreCase("GET"))
-            return pjp.proceed();
+            return;
 
         if (!signature.getMethod().isAnnotationPresent(RequestMapping.class)
                 && !signature.getMethod().isAnnotationPresent(PostMapping.class)
                 && !signature.getMethod().isAnnotationPresent(PutMapping.class)
                 && !signature.getMethod().isAnnotationPresent(DeleteMapping.class))
-            return pjp.proceed();
+            return;
 
         if (null == UserUtil.getCurrentUser()) {
             log.info("no user login,record operation log abort");
-            return pjp.proceed();
+            return;
         }
-
-        Object result = pjp.proceed();
-
 
         String name = UserUtil.getCurrentUser().getName();
 
@@ -84,8 +92,6 @@ public class ProxyOperationLog {
         log.setOperateId(getKey(signature, pjp.getArgs()).orElse(""));
 
         operationLogWriteService.create(log);
-
-        return result;
     }
 
 

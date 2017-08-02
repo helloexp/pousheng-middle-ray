@@ -1,10 +1,13 @@
 package com.pousheng.middle.order.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.order.dto.OperationLogCriteria;
 import com.pousheng.middle.order.impl.dao.OperationLogDao;
 import com.pousheng.middle.order.model.OperationLog;
 import com.pousheng.middle.order.service.OperationLogReadService;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -31,6 +34,17 @@ public class OperationLogReadServiceImpl implements OperationLogReadService {
             return Response.ok(operationLogDao.findById(Id));
         } catch (Exception e) {
             log.error("find operationLog by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
+            return Response.fail("operation.log.find.fail");
+        }
+    }
+
+    @Override
+    public Response<Paging<OperationLog>> paging(OperationLogCriteria criteria) {
+        try {
+            Paging<OperationLog> paging = operationLogDao.paging(criteria.getOffset(),criteria.getLimit(),criteria.toMap());
+            return Response.ok(paging);
+        } catch (Exception e) {
+            log.error("failed to paging operation log, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
             return Response.fail("operation.log.find.fail");
         }
     }

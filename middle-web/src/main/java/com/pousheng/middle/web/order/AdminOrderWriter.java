@@ -10,6 +10,8 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -32,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.ORDER)
 public class AdminOrderWriter {
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
@@ -45,24 +48,27 @@ public class AdminOrderWriter {
     private ExpressCodeReadService expressCodeReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+
     /**
      * 发货单已发货,同步订单信息到电商
+     *
      * @param shopOrderId
      */
-    @RequestMapping(value = "api/order/{id}/sync/ecp",method = RequestMethod.PUT)
+    @RequestMapping(value = "api/order/{id}/sync/ecp", method = RequestMethod.PUT)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
+    @OperationLogType("同步订单到电商")
+    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取发货单id
-        String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
-        Shipment shipment  = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
+        String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
+        Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
         //同步到电商平台
-        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
-        Response<Boolean> syncRes =syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipment.getId());
-        if(!syncRes.isSuccess()){
-            log.error("sync shopOrder(id:{}) to ecp fail,error:{}",shopOrderId,syncRes.getError());
+        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
+        Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+        if (!syncRes.isSuccess()) {
+            log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
 
@@ -70,58 +76,68 @@ public class AdminOrderWriter {
 
     /**
      * 取消子订单(自动)
+     *
      * @param shopOrderId
      * @param skuCode
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
+    @OperationLogType("取消子订单")
     public void autoCancelSkuOrder(@PathVariable("id") Long shopOrderId, @RequestParam("skuCode") String skuCode) {
-        orderWriteLogic.autoCancelSkuOrder(shopOrderId,skuCode);
+        orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
     }
 
     /**
      * 整单撤销,状态恢复成初始状态
+     *
      * @param shopOrderId
      */
-    @RequestMapping(value = "api/order/{id}/rollback/shop/order",method = RequestMethod.PUT)
-    public void rollbackShopOrder(@PathVariable("id")Long shopOrderId){
-      orderWriteLogic.rollbackShopOrder(shopOrderId);
+    @RequestMapping(value = "api/order/{id}/rollback/shop/order", method = RequestMethod.PUT)
+    @OperationLogType("整单撤销")
+    public void rollbackShopOrder(@PathVariable("id") Long shopOrderId) {
+        orderWriteLogic.rollbackShopOrder(shopOrderId);
     }
 
     /**
      * 订单(包括整单和子单)取消失败,手工操作逻辑
+     *
      * @param shopOrderId
      */
-    @RequestMapping(value="api/order/{id}/cancel/order",method = RequestMethod.PUT)
-    public void cancelShopOrder(@PathVariable("id") Long shopOrderId){
+    @RequestMapping(value = "api/order/{id}/cancel/order", method = RequestMethod.PUT)
+    @OperationLogType("人工取消订单")
+    public void cancelShopOrder(@PathVariable("id") Long shopOrderId) {
         //判断是整单取消还是子单取消
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取是否存在失败的sku记录
-        String skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED,shopOrder);
-        if(StringUtils.isNotEmpty(skuCodeCanceled)){
-            orderWriteLogic.cancelSkuOrder(shopOrderId,skuCodeCanceled);
-        }else{
+        String skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED, shopOrder);
+        if (StringUtils.isNotEmpty(skuCodeCanceled)) {
+            orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+        } else {
             orderWriteLogic.cancelShopOrder(shopOrderId);
         }
 
     }
+
     /**
      * 整单取消,子单整单发货单状态变为已取消(自动)
+     *
      * @param shopOrderId
      */
-    @RequestMapping(value="api/order/{id}/auto/cancel/shop/order",method = RequestMethod.PUT)
-    public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId){
+    @RequestMapping(value = "api/order/{id}/auto/cancel/shop/order", method = RequestMethod.PUT)
+    @OperationLogType("整单取消")
+    public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId) {
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
     }
 
 
-
     /**
      * 电商确认收货,此时通知中台修改shopOrder中ecpOrderStatus状态为已完成
+     *
      * @param shopOrderId
      */
-    @RequestMapping(value = "api/order/{id}/confirm",method = RequestMethod.PUT)
-    public void confirmOrders(@PathVariable("id") Long shopOrderId){
-        ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
+    @RequestMapping(value = "api/order/{id}/confirm", method = RequestMethod.PUT)
+    @OperationLogType("电商确认收货")
+    public void confirmOrders(@PathVariable("id") Long shopOrderId) {
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
     }
 

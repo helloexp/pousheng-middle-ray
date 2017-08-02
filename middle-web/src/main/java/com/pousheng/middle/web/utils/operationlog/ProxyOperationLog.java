@@ -51,10 +51,11 @@ public class ProxyOperationLog {
     public Object record(ProceedingJoinPoint pjp) throws Throwable {
 
 
-        if (request.getMethod().equalsIgnoreCase("GET"))
-            return pjp.proceed();
-
         MethodSignature signature = (MethodSignature) pjp.getSignature();
+
+        if (!signature.getMethod().isAnnotationPresent(OperationLogType.class)
+                && request.getMethod().equalsIgnoreCase("GET"))
+            return pjp.proceed();
 
         if (!signature.getMethod().isAnnotationPresent(RequestMapping.class)
                 && !signature.getMethod().isAnnotationPresent(PostMapping.class)
@@ -67,8 +68,8 @@ public class ProxyOperationLog {
             return pjp.proceed();
         }
 
-
         Object result = pjp.proceed();
+
 
         String name = UserUtil.getCurrentUser().getName();
 
@@ -136,7 +137,7 @@ public class ProxyOperationLog {
         for (Parameter parameter : signature.getMethod().getParameters()) {
             if (parameter.isAnnotationPresent(OperationLogKey.class)) {
                 if (null == args[pos])
-                    return null;
+                    return Optional.ofNullable(null);
                 else return Optional.of(args[pos].toString());
             }
             pos++;
@@ -144,17 +145,18 @@ public class ProxyOperationLog {
 
         log.info("can not find key parameter with OperationLogKey annotation,start automatic match");
         if (args.length == 1 && signature.getParameterNames()[0].toUpperCase().contains("ID")) {
-            return Optional.of(null == args[0] ? null : args[0].toString());
+            return Optional.ofNullable(null == args[0] ? null : args[0].toString());
         }
 
         pos = 0;
         for (String name : signature.getParameterNames()) {
             if (name.equalsIgnoreCase("id")) {
-                return Optional.of(null == args[pos] ? null : args[pos].toString());
+                return Optional.ofNullable(null == args[pos] ? null : args[pos].toString());
             }
             pos++;
         }
-        return null;
+        return Optional.ofNullable(null);
     }
+
 
 }

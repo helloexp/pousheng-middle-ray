@@ -29,7 +29,7 @@ public class ProxyPermissionCheck {
     private PermissionUtil permissionUtil;
 
 
-//    @Around("execution(* com.pousheng.middle.web.order.*.*(..))")
+    @Around("execution(* com.pousheng.middle.web.order.*.*(..))")
     public Object check(ProceedingJoinPoint pjp) throws Throwable {
 
         MethodSignature signature = (MethodSignature) pjp.getSignature();

@@ -4,6 +4,9 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -22,6 +25,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/warehouse")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE)
 public class Warehouses {
 
     @RpcConsumer
@@ -31,6 +35,7 @@ public class Warehouses {
     private WarehouseReadService warehouseReadService;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("新建")
     public Long create(@RequestBody Warehouse warehouse) {
         Response<Long> r = warehouseWriteService.create(warehouse);
         if (!r.isSuccess()) {
@@ -41,6 +46,7 @@ public class Warehouses {
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("更新")
     public Boolean update(@RequestBody Warehouse warehouse) {
         Response<Boolean> r = warehouseWriteService.update(warehouse);
         if (!r.isSuccess()) {

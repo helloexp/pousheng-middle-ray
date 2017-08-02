@@ -78,13 +78,13 @@ public class OperationLogDaoTest extends BaseDaoTest {
         OperationLog operationLog = new OperationLog();
 
         
-        operationLog.setType(7);
+        operationLog.setType(3);
         
-        operationLog.setOperatorName("");
+        operationLog.setOperatorName("张三");
         
-        operationLog.setOperateId(877l);
+        operationLog.setOperateId("12");
         
-        operationLog.setContent("");
+        operationLog.setContent("{\"type\":\"取消\"}");
         
         operationLog.setCreatedAt(new Date());
         

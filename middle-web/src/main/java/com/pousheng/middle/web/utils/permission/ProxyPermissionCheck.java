@@ -6,11 +6,14 @@ import io.terminus.common.model.Response;
 import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
@@ -22,6 +25,7 @@ import java.lang.reflect.Parameter;
 @Slf4j
 @Aspect
 @Component
+@Order(1)//切面最先执行
 public class ProxyPermissionCheck {
 
 
@@ -29,8 +33,8 @@ public class ProxyPermissionCheck {
     private PermissionUtil permissionUtil;
 
 
-    @Around("execution(* com.pousheng.middle.web.order.*.*(..))")
-    public Object check(ProceedingJoinPoint pjp) throws Throwable {
+    @Before("execution(* com.pousheng.middle.web.order.*.*(..))")
+    public void check(JoinPoint pjp) throws Throwable {
 
         MethodSignature signature = (MethodSignature) pjp.getSignature();
 
@@ -70,6 +74,10 @@ public class ProxyPermissionCheck {
                 PermissionCheck permissionCheckAnno = signature.getMethod().getAnnotation(PermissionCheck.class);
                 if (null == permissionCheckAnno)
                     permissionCheckAnno = pjp.getTarget().getClass().getAnnotation(PermissionCheck.class);
+                if (null == permissionCheckAnno) {
+                    log.info("can not find PermissionCheck annotation on method or class,permission check for [{}.{}] abort", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
+                    return;
+                }
 
                 Long id;
                 if (null != fieldName) {
@@ -78,7 +86,8 @@ public class ProxyPermissionCheck {
                         field.setAccessible(true);
                         id = (Long) field.get(pjp.getArgs()[0]);
                     } catch (Exception e) {
-                        return permissionDeny("permission.check.access.field.fail", signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
+                        throw new JsonResponseException("permission.check.access.field.fail");
+//                        return permissionDeny("permission.check.access.field.fail", signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
                     }
                 } else
                     id = (Long) pjp.getArgs()[permissionCheckParamPos];
@@ -95,13 +104,13 @@ public class ProxyPermissionCheck {
                     permissionCheckResponse = permissionUtil.checkByShipmentID(id);
 
                 if (!permissionCheckResponse.isSuccess()) {
-
-                    return permissionDeny(permissionCheckResponse.getError(), signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
+                    throw new JsonResponseException(permissionCheckResponse.getError());
+//                    return permissionDeny(permissionCheckResponse.getError(), signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());
                 }
             }
         }
 
-        return pjp.proceed();
+//        return pjp.proceed();
     }
 
 

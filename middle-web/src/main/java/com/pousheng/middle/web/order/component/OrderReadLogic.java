@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
@@ -23,10 +24,7 @@ import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.service.OrderReadService;
-import io.terminus.parana.order.service.PaymentReadService;
-import io.terminus.parana.order.service.ShopOrderReadService;
-import io.terminus.parana.order.service.SkuOrderReadService;
+import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,6 +32,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Mail: F@terminus.io
@@ -71,6 +70,9 @@ public class OrderReadLogic {
 
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
+
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
 
@@ -356,5 +358,48 @@ public class OrderReadLogic {
         }
         ExpressCode expressCode = response.getResult().getData().get(0);
         return expressCode;
+    }
+
+    /**
+     * 判断子单所属订单是否存在有效的发货单
+     * @param skuId
+     * @return true->没有生成过,false 生成过
+     */
+    public Boolean isShipmentCreated(Long skuId){
+        SkuOrder skuOrder = (SkuOrder) this.findOrder(skuId,OrderLevel.SKU);
+        long shopOrderId = skuOrder.getOrderId();
+        Response<List<Shipment>>  response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!response.isSuccess()){
+            log.error("find shipmemt by shopOrderId (={}) failed,",shopOrderId);
+            throw new JsonResponseException("find.shipnent.failed");
+        }
+        List<Shipment> shipments = response.getResult().stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        if (shipments.size()>0){
+            return Boolean.FALSE;
+        }
+        return Boolean.TRUE;
+    }
+
+
+    /**
+     * 判断订单是否存在有效的发货单
+     * @param shopOrderId 店铺订单主键
+     * @return true->没有生成过,false 生成过
+     */
+    public Boolean isShipmentCreatedForShopOrder(Long shopOrderId){
+        Response<List<Shipment>>  response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!response.isSuccess()){
+            log.error("find shipmemt by shopOrderId (={}) failed,",shopOrderId);
+            throw new JsonResponseException("find.shipnent.failed");
+        }
+        List<Shipment> shipments = response.getResult().stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        if (shipments.size()>0){
+            return Boolean.FALSE;
+        }
+        return Boolean.TRUE;
     }
 }

@@ -2,10 +2,12 @@ package com.pousheng.middle.order.service;
 
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by tony on 2017/7/21.
@@ -30,4 +32,30 @@ public interface MiddleOrderWriteService {
      * @return
      */
     public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder,OrderOperation cancelOperation,OrderOperation waitHandleOperation,String skuCode);
+
+    /**
+     * 更新子单的skuCode and skuId
+     * @param skuId 子单skuId
+     * @param skuCode 子单skuCode
+     * @param id  子单主键(更新条件)
+     * @return
+     */
+    public Response<Boolean> updateSkuOrderCodeAndSkuId(long skuId,String skuCode,long id);
+
+    /**
+     * 更新订单的收货信息
+     * @param shopOrderId 店铺订单主键
+     * @param receiverInfoMap 编辑的收货信息
+     * @param buyerNote 买家备注
+     * @return
+     */
+    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,String> receiverInfoMap,String buyerNote);
+
+    /**
+     * 编辑订单的发票信息
+     * @param shopOrderId 店铺订单主键
+     * @param invoicesMap 编辑的发票信息
+     * @return
+     */
+    public Response<Boolean> updateInvoices(long shopOrderId, Map<String,String> invoicesMap);
 }

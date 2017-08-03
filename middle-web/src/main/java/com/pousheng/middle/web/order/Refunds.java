@@ -267,6 +267,15 @@ public class Refunds {
         }
     }
 
+    /**
+     *  添加中台客服备注,各个状态均可添加
+     * @param id  店铺订单主键
+     * @param customerSerivceNote 客服备注
+     */
+    @RequestMapping(value ="/api/refund/{id}/add/customer/service/note",method = RequestMethod.PUT)
+    public void createCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote){
+        refundWriteLogic.addCustomerServiceNote(id,customerSerivceNote);
+    }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 

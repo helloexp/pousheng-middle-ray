@@ -62,13 +62,13 @@ public class ProxyOperationLog {
         MethodSignature signature = (MethodSignature) pjp.getSignature();
 
         if (signature.getMethod().isAnnotationPresent(OperationLogIgnore.class)) {
-            log.debug("method [{}] annotation OperationLogIgnore,ignore record operation log", signature.getMethod().getName());
+            log.debug("[{}.{}] annotation OperationLogIgnore,ignore record operation log", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
             return;
         }
 
         if (!signature.getMethod().isAnnotationPresent(OperationLogType.class)
                 && request.getMethod().equalsIgnoreCase("GET")) {
-            log.debug("method [{}] not annotation OperationLogType and request by http GET,ignore record operation log", signature.getMethod().getName());
+            log.debug("[{}.{}] not annotation OperationLogType and request by http GET,ignore record operation log", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
             return;
         }
 
@@ -77,7 +77,7 @@ public class ProxyOperationLog {
                 && !signature.getMethod().isAnnotationPresent(PutMapping.class)
                 && !signature.getMethod().isAnnotationPresent(DeleteMapping.class)
                 && !signature.getMethod().isAnnotationPresent(GetMapping.class)) {
-            log.debug("method [{}] not annotation RequestMapping or PostMapping or PutMapping or DeleteMapping or GetMapping,ignore record operation log");
+            log.debug("[{}.{}] not annotation RequestMapping or PostMapping or PutMapping or DeleteMapping or GetMapping,ignore record operation log", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
             return;
         }
 
@@ -96,7 +96,7 @@ public class ProxyOperationLog {
         log.setOperatorName(name);
         log.setContent(getContent(signature.getMethod().getDeclaredAnnotation(OperationLogType.class), signature.getParameterNames(), pjp.getArgs()));
         log.setType(getType(moduleAnno, request.getRequestURI()));
-        log.setOperateId(getKey(signature, pjp.getArgs()).orElse(""));
+        log.setOperateId(getKey(signature, pjp).orElse(""));
 
         operationLogWriteService.create(log);
     }
@@ -147,8 +147,9 @@ public class ProxyOperationLog {
     }
 
 
-    private Optional<String> getKey(MethodSignature signature, Object[] args) {
+    private Optional<String> getKey(MethodSignature signature, JoinPoint pjp) {
 
+        Object[] args=pjp.getArgs();
         int pos = 0;
         for (Parameter parameter : signature.getMethod().getParameters()) {
             if (parameter.isAnnotationPresent(OperationLogKey.class)) {
@@ -159,7 +160,7 @@ public class ProxyOperationLog {
             pos++;
         }
 
-        log.info("can not find key parameter with OperationLogKey annotation,start automatic match");
+        log.info("[{}.{}]can not find key parameter with OperationLogKey annotation,start automatic match",pjp.getTarget().getClass().getName(),signature.getMethod().getName());
         if (args.length == 1 && signature.getParameterNames()[0].toUpperCase().contains("ID")) {
             return Optional.ofNullable(null == args[0] ? null : args[0].toString());
         }

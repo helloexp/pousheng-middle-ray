@@ -1,12 +1,18 @@
 package com.pousheng.middle.web.utils.operationlog;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.model.OperationLog;
 import com.pousheng.middle.order.service.OperationLogWriteService;
 import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.utils.UserUtil;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +29,13 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
+import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Parameter;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 /**
@@ -45,6 +53,14 @@ public class ProxyOperationLog {
     @Autowired
     private OperationLogWriteService operationLogWriteService;
 
+
+    @Autowired
+    private EventBus eventBus;
+
+    @PostConstruct
+    public void init() {
+        eventBus.register(this);
+    }
 
     @Pointcut("execution(* com.pousheng.middle.web.order.*.*(..))")
     public void orderPointcut() {
@@ -98,7 +114,16 @@ public class ProxyOperationLog {
         log.setType(getType(moduleAnno, request.getRequestURI()));
         log.setOperateId(getKey(signature, pjp).orElse(""));
 
-        operationLogWriteService.create(log);
+        eventBus.post(new OperationLogEvent(log));
+    }
+
+
+    @Subscribe
+    public void record(OperationLogEvent event) {
+        Response resp = operationLogWriteService.create(event.getLog());
+        if (!resp.isSuccess())
+            log.error("record operation log fail,{}", resp.getError());
+
     }
 
 
@@ -149,7 +174,7 @@ public class ProxyOperationLog {
 
     private Optional<String> getKey(MethodSignature signature, JoinPoint pjp) {
 
-        Object[] args=pjp.getArgs();
+        Object[] args = pjp.getArgs();
         int pos = 0;
         for (Parameter parameter : signature.getMethod().getParameters()) {
             if (parameter.isAnnotationPresent(OperationLogKey.class)) {
@@ -160,7 +185,7 @@ public class ProxyOperationLog {
             pos++;
         }
 
-        log.info("[{}.{}]can not find key parameter with OperationLogKey annotation,start automatic match",pjp.getTarget().getClass().getName(),signature.getMethod().getName());
+        log.info("[{}.{}]can not find key parameter with OperationLogKey annotation,start automatic match", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
         if (args.length == 1 && signature.getParameterNames()[0].toUpperCase().contains("ID")) {
             return Optional.ofNullable(null == args[0] ? null : args[0].toString());
         }
@@ -176,4 +201,9 @@ public class ProxyOperationLog {
     }
 
 
+    @Data
+    @AllArgsConstructor
+    class OperationLogEvent {
+        private OperationLog log;
+    }
 }

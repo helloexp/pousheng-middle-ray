@@ -150,7 +150,11 @@ public class AdminOrderWriter {
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
         }
-        middleOrderWriteService.updateSkuOrderCodeAndSkuId(Long.parseLong(skuId),skuCode,id);
+        Response<Boolean> response = middleOrderWriteService.updateSkuOrderCodeAndSkuId(Long.parseLong(skuId),skuCode,id);
+        if (!response.isSuccess()){
+            log.error("update skuCode failed,skuCodeId is({})",id);
+            throw new JsonResponseException(response.getError());
+        }
     }
 
     /**
@@ -184,7 +188,7 @@ public class AdminOrderWriter {
         Response<Boolean> response = middleOrderWriteService.updateReceiveInfos(id,receiverInfoMap,buyerNote);
         if (!response.isSuccess()){
             log.error("failed to edit receiver info:{},shopOrderId is(={})",data,id);
-            throw new JsonResponseException("edit.receiver.info.failed");
+            throw new JsonResponseException(response.getError());
         }
     }
 
@@ -208,7 +212,7 @@ public class AdminOrderWriter {
         Response<Boolean> response = middleOrderWriteService.updateInvoices(id,invoiceMap);
         if (!response.isSuccess()){
             log.error("failed to edit invoiceMap:{}",data);
-            throw new JsonResponseException("edit.invoice.failed");
+            throw new JsonResponseException(response.getError());
         }
     }
 

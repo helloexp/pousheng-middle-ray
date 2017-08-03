@@ -115,7 +115,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             return Response.fail(e.getMessage());
         }
         catch (Exception e){
-            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={}),caused by {}",shopOrderId,buyerNote,e.getCause());
+            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
             return Response.fail("receiveInfo.update.fail");
         }
     }

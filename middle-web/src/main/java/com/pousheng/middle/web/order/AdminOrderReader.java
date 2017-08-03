@@ -198,13 +198,13 @@ public class AdminOrderReader {
     }
 
     /**
-     * 根据sku订单id判断是否生成过发货单
-     * @param id  sku订单主键
+     * 根据店铺订单id判断是否生成过发货单
+     * @param id  店铺订单主键
      * @return
      */
     @RequestMapping(value = "",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean isShipmentCreated(@PathVariable("id") Long id){
-        Boolean result = orderReadLogic.isShipmentCreated(id);
+        Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         return result;
     }
  }

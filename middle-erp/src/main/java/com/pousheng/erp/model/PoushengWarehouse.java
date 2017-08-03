@@ -34,6 +34,11 @@ public class PoushengWarehouse implements Serializable {
      */
     private String stock_name;
 
+    /**
+     * 电话
+     */
+    private String telephone;
+
 
     /**
      * 仓库地址

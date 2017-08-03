@@ -32,6 +32,14 @@ public interface WarehouseSkuReadService {
     Response<WarehouseSkuStock> findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode);
 
     /**
+     * 查询某个sku在各仓库中的分配情况
+     *
+     * @param skuCode sku编码
+     * @return 指定sku在各仓库中的分配情况
+     */
+    Response<List<WarehouseSkuStock>> findBySkuCode(String skuCode);
+
+    /**
      * 根据sku编码查找在仓库中的总的可用库存
      *
      * @param skuCode sku编码

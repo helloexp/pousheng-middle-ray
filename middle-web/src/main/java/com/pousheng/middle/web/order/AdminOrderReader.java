@@ -202,7 +202,7 @@ public class AdminOrderReader {
      * @param id  店铺订单主键
      * @return
      */
-    @RequestMapping(value = "",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/order/{id}/is/shipment/created",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean isShipmentCreated(@PathVariable("id") Long id){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         return result;

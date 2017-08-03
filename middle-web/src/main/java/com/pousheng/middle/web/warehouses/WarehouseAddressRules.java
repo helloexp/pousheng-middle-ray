@@ -9,7 +9,7 @@ import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
@@ -60,7 +60,7 @@ public class WarehouseAddressRules {
      */
     @RequestMapping(value="/group/{groupId}",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("根据店铺组ID创建规则适用地址")
-    public Long addAddresses(@PathVariable("groupId") @OperationLogKey Long shopGroupId,
+    public Long addAddresses(@PathVariable("groupId") @OperationLogParam Long shopGroupId,
                        @RequestBody ThinAddress[] addresses) {
         //需要过滤掉本次提交中冗余的地址,如果父节点全选了, 那么子节点就可以过滤掉了
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
@@ -204,7 +204,7 @@ public class WarehouseAddressRules {
      */
     @RequestMapping(value="/{ruleId}/address",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("根据仓库规则ID编辑规则关联发货地址")
-    public Boolean updateAddressByRuleId(@PathVariable @OperationLogKey Long ruleId, @RequestBody ThinAddress[] addresses){
+    public Boolean updateAddressByRuleId(@PathVariable @OperationLogParam Long ruleId, @RequestBody ThinAddress[] addresses){
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         Response<Boolean> r = warehouseAddressRuleWriteService.batchUpdate(ruleId, valid);
         if(!r.isSuccess()){

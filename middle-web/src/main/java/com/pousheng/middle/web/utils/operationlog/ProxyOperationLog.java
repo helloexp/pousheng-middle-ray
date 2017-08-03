@@ -4,39 +4,25 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.model.OperationLog;
 import com.pousheng.middle.order.service.OperationLogWriteService;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
-import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
-import com.pousheng.middle.web.utils.operationlog.OperationLogType;
-import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.map.HashedMap;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.MethodParameter;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.method.HandlerMethod;
-import org.springframework.web.servlet.ModelAndView;
-import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.lang.reflect.Parameter;
 import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/31.
@@ -177,7 +163,7 @@ public class ProxyOperationLog {
         Object[] args = pjp.getArgs();
         int pos = 0;
         for (Parameter parameter : signature.getMethod().getParameters()) {
-            if (parameter.isAnnotationPresent(OperationLogKey.class)) {
+            if (parameter.isAnnotationPresent(OperationLogParam.class)) {
                 if (null == args[pos])
                     return Optional.ofNullable(null);
                 else return Optional.of(args[pos].toString());
@@ -185,7 +171,7 @@ public class ProxyOperationLog {
             pos++;
         }
 
-        log.info("[{}.{}]can not find key parameter with OperationLogKey annotation,start automatic match", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
+        log.info("[{}.{}]can not find key parameter with OperationLogParam annotation,start automatic match", pjp.getTarget().getClass().getName(), signature.getMethod().getName());
         if (args.length == 1 && signature.getParameterNames()[0].toUpperCase().contains("ID")) {
             return Optional.ofNullable(null == args[0] ? null : args[0].toString());
         }

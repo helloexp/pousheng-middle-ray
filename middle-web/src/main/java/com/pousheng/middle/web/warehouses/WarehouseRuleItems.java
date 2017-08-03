@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemWriteService;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -45,7 +45,7 @@ public class WarehouseRuleItems {
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("批量创建")
-    public Boolean save(@PathVariable @OperationLogKey Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems){
+    public Boolean save(@PathVariable @OperationLogParam Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems){
         ArrayList<WarehouseRuleItem> ruleItemArrayList = Lists.newArrayList(warehouseRuleItems);
         Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(ruleId, ruleItemArrayList);
         if(!r.isSuccess()){

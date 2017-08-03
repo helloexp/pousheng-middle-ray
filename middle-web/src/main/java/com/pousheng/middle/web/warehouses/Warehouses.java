@@ -4,7 +4,6 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;

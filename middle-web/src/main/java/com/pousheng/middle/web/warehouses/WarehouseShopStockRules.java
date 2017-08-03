@@ -8,7 +8,6 @@ import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;

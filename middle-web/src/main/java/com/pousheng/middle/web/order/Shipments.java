@@ -30,7 +30,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -237,7 +237,7 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成销售发货单")
-    public Long createSalesShipment(@PathVariable("id") @OperationLogKey Long shopOrderId,
+    public Long createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
 
@@ -319,7 +319,7 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成换货发货单")
-    public Long createAfterShipment(@PathVariable("id") @OperationLogKey Long refundId,
+    public Long createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
 

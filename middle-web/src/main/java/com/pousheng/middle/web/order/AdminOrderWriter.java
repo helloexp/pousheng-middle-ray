@@ -10,16 +10,15 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
@@ -35,6 +34,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @Slf4j
 @OperationLogModule(OperationLogModule.Module.ORDER)
+@PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
 public class AdminOrderWriter {
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
@@ -82,7 +82,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
     @OperationLogType("取消子订单")
-    public void autoCancelSkuOrder(@PathVariable("id") Long shopOrderId, @RequestParam("skuCode") String skuCode) {
+    public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
         orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
     }
 
@@ -93,7 +93,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/rollback/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单撤销")
-    public void rollbackShopOrder(@PathVariable("id") Long shopOrderId) {
+    public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         orderWriteLogic.rollbackShopOrder(shopOrderId);
     }
 
@@ -104,7 +104,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/cancel/order", method = RequestMethod.PUT)
     @OperationLogType("人工取消订单")
-    public void cancelShopOrder(@PathVariable("id") Long shopOrderId) {
+    public void cancelShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         //判断是整单取消还是子单取消
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取是否存在失败的sku记录
@@ -124,7 +124,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单取消")
-    public void autoCancelShopOrder(@PathVariable("id") Long shopOrderId) {
+    public void autoCancelShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
     }
 
@@ -136,7 +136,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/confirm", method = RequestMethod.PUT)
     @OperationLogType("电商确认收货")
-    public void confirmOrders(@PathVariable("id") Long shopOrderId) {
+    public void confirmOrders(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
     }

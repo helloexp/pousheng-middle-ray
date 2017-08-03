@@ -66,15 +66,17 @@ public class Warehouses {
     public Paging<Warehouse> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                         @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                         @RequestParam(required = false, value = "code") String code,
-                                        @RequestParam(required = false, value="codePrefix") String codePrefix,
                                         @RequestParam(required = false, value = "name") String namePrefix) {
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(code)) {
-            params.put("code", code);
+            //params.put("code", code);
+            if(Character.isDigit(code.charAt(0))){
+                params.put("code", code.substring(0,3)+"-"+code);
+            }else{
+                params.put("code", code.substring(0,4)+"-"+code);
+            }
         }
-        if (StringUtils.hasText(codePrefix)) {
-            params.put("codePrefix", codePrefix);
-        }
+
         if (StringUtils.hasText(namePrefix)) {
             params.put("name", namePrefix);
         }

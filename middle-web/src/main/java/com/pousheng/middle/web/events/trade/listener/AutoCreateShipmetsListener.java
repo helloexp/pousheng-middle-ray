@@ -17,7 +17,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 /**
- *
+ * 发货单自动发货的事件
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">zhaoxiaotao</a>
  * Date: 2016-07-31
  */

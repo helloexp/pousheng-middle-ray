@@ -129,4 +129,14 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
                 ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode,
                         "erpStock", erpStock, "updatedAt", updatedAt));
     }
+
+    /**
+     * 根据skuCode查询对应库存分布情况
+     *
+     * @param skuCode sku编码
+     * @return 指定skuCode对应库存分布情况
+     */
+    public List<WarehouseSkuStock> findBySkuCode(String skuCode) {
+        return this.sqlSession.selectList(sqlId("findBySkuCode"), skuCode);
+    }
 }

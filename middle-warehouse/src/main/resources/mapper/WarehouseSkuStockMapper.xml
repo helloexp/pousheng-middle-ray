@@ -41,6 +41,12 @@
         <if test="shopId!=null"> and `shop_id`=#{shopGroupId}</if>
         
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
+
+        <if test="skuCodes !=null"> and `sku_code` in
+            <foreach collection="list" open="(" separator="," close=")"  item="item">
+                #{item}
+            </foreach>
+        </if>
         
         <if test="baseStock != null">and `base_stock` = #{baseStock}</if>
         
@@ -173,6 +179,12 @@
 
     <select id="findAvailStockBySkuCode" parameterType="string" resultMap="WarehouseSkuStockMap">
         select sku_code, sum(avail_stock) as avail_stock
+        from <include refid="tb"/>
+        where sku_code=#{skuCode}
+    </select>
+
+    <select id="findBySkuCode" parameterType="string" resultMap="WarehouseSkuStockMap">
+        select <include refid="cols_all" />
         from <include refid="tb"/>
         where sku_code=#{skuCode}
     </select>

@@ -4,6 +4,9 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogKey;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -21,6 +24,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/warehouse/rule/{ruleId}/rule-item")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE_RULE_ITEM)
 public class WarehouseRuleItems {
 
     @RpcConsumer
@@ -40,7 +44,8 @@ public class WarehouseRuleItems {
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean save(@PathVariable Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems){
+    @OperationLogType("批量创建")
+    public Boolean save(@PathVariable @OperationLogKey Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems){
         ArrayList<WarehouseRuleItem> ruleItemArrayList = Lists.newArrayList(warehouseRuleItems);
         Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(ruleId, ruleItemArrayList);
         if(!r.isSuccess()){

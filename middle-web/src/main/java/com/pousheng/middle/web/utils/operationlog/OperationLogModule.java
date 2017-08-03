@@ -31,7 +31,17 @@ public @interface OperationLogModule {
 
         SHIPMENT(3, "发货单", "shipment"),
 
-        WAREHOUSE(4, "仓库", "warehouse");
+        WAREHOUSE(4, "仓库", "warehouse"),
+
+        WAREHOUSE_RULE(5, "仓库规则", "warehouse/rule"),
+
+        WAREHOUSE_COMPANY_RULE(6, "仓库公司规则", "warehouse/company-rule"),
+
+        WAREHOUSE_RULE_ITEM(7, "仓库与规则关系", "warehouse/company-rule"),
+
+        WAREHOUSE_ADDRESS_RULE(8, "仓库地址规则", "warehouse/address-rule"),
+
+        WAREHOUSE_SHOP_RULE(9, "店铺发货规则", "warehouse/shop-rule");
 
         @Getter
         private int value;

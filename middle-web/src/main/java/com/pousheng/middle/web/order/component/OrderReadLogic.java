@@ -4,8 +4,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -66,6 +68,9 @@ public class OrderReadLogic {
 
     @RpcConsumer
     private OpenShopReadService openShopReadService;
+
+    @Autowired
+    private ExpressCodeReadService expressCodeReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
 
@@ -330,5 +335,26 @@ public class OrderReadLogic {
                 log.error("find express code failed");
                 throw new JsonResponseException("find.expressCode.failed");
         }
+    }
+
+    /**
+     * 根据恒康快递代码获取快递名称
+     * @param hkExpressCode 恒康快递代码
+     * @return  快递管理对象
+     */
+    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setHkCode(hkExpressCode);
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getData().size() == 0) {
+            log.error("there is not any express info by hkCode:{}", hkExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
+        }
+        ExpressCode expressCode = response.getResult().getData().get(0);
+        return expressCode;
     }
 }

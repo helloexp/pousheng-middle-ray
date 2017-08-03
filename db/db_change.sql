@@ -84,3 +84,6 @@ create index idx_spus_spu_code on parana_spus (spu_code) ;
 
 
 ALTER TABLE `pousheng_warehouse_company_rules` change  `shop_id` `shop_id` varchar(32) NOT NULL COMMENT '下单店铺id';
+
+-- 买家名称允许为空
+ALTER TABLE `parana_shop_orders` change  `buyer_name` `buyer_name` VARCHAR(64)  NULL COMMENT '买家名称';

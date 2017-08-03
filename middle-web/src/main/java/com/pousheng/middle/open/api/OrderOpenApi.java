@@ -23,8 +23,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.common.constants.JacksonType;
-import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
@@ -203,7 +201,7 @@ public class OrderOpenApi {
             shipmentExtra.setShipmentSerialNo(shipmentSerialNo);
             shipmentExtra.setShipmentCorpCode(shipmentCorpCode);
             //通过恒康代码查找快递名称
-            ExpressCode expressCode = makeExpressNameByhkCode(shipmentCorpCode);
+            ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentCorpCode);
             shipmentExtra.setShipmentCorpName(expressCode.getName());
             shipmentExtra.setShipmentDate(dt.toDate());
             //添加pos单相关信息
@@ -226,30 +224,6 @@ public class OrderOpenApi {
             if (!updateRes.isSuccess()) {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
-            }
-            //恒康第一个发货单发货完成之后需要将ecpOrderstatus状态从初始的代发货修改为已发货
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
-            long orderShopId = orderShipment.getOrderId();
-            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-            String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-            //判断ecpOrder的状态是否是初始的待发货状态,如果不是,跳过
-            if (Objects.equals(Integer.valueOf(status), EcpOrderStatus.WAIT_SHIP.getValue())) {
-                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
-                if (!response.isSuccess()){
-                    log.error("update shopOrder(id:{}) extraMap fail,error:{}",orderShopId,response.getError());
-                    throw new ServiceException(response.getError());
-                }
-                //冗余shipmentId到extra中
-                Map<String, String> extraMap1 = shopOrder.getExtra();
-                extraMap1.put(TradeConstants.ECP_SHIPMENT_ID, String.valueOf(shipmentId));
-                Response<Boolean> response1 = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP,extraMap1);
-                if (!response1.isSuccess()) {
-                    log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, response1.getError());
-                    throw new ServiceException(response1.getError());
-                }
-                //第一个发货单发货完成之后需要将订单同步
-                String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(),expressCode);
-                syncOrderToEcpLogic.syncOrderToECP(shopOrder,expressCompanyCode,shipmentId);
             }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
@@ -341,21 +315,7 @@ public class OrderOpenApi {
 
 
 
-    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
-        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
-        criteria.setHkCode(hkExpressCode);
-        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
-        if (!response.isSuccess()) {
-            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        if (response.getResult().getData().size() == 0) {
-            log.error("there is not any express info by hkCode:{}", hkExpressCode);
-            throw new JsonResponseException("express.info.is.not.exist");
-        }
-        ExpressCode expressCode = response.getResult().getData().get(0);
-        return expressCode;
-    }
+
 
 
     //获取同步成功事件

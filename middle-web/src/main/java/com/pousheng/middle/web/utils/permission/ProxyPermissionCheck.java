@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
+import java.util.stream.Stream;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/28.
@@ -40,24 +41,27 @@ public class ProxyPermissionCheck {
 
         int permissionCheckParamPos = 0;
         boolean hasPermissionCheckParamMarked = false;
-        String fieldName = null;
+        Field fieldNeedToCheck = null;
         for (Parameter parameter : signature.getMethod().getParameters()) {
             if (parameter.isAnnotationPresent(PermissionCheckParam.class)) {
 
                 if (parameter.getType().getName().equals(Long.class.getName()) ||
-                        parameter.getType().getName().equals(long.class.getName()))
+                        parameter.getType().getName().equals(long.class.getName())) {
                     hasPermissionCheckParamMarked = true;
-                else {
+                    break;
+                } else {
                     PermissionCheckParam checkParam = parameter.getAnnotation(PermissionCheckParam.class);
                     if (StringUtils.isNotBlank(checkParam.value())) {
-                        Field field = parameter.getType().getField(checkParam.value());
-                        if (null != field) {
-                            fieldName = fieldName;
+                        String name = checkParam.value().trim();
+                        try {
+                            fieldNeedToCheck = parameter.getType().getDeclaredField(name);
                             hasPermissionCheckParamMarked = true;
+                            break;
+                        } catch (NoSuchFieldException e) {
+                            log.warn("can not find field [" + name + "] in class [" + parameter.getType().getName() + "],permission check abort");
                         }
                     }
                 }
-                break;
             }
             permissionCheckParamPos++;
         }
@@ -80,11 +84,11 @@ public class ProxyPermissionCheck {
                 }
 
                 Long id;
-                if (null != fieldName) {
+                if (null != fieldNeedToCheck) {
                     try {
-                        Field field = pjp.getArgs()[0].getClass().getField(fieldName);
-                        field.setAccessible(true);
-                        id = (Long) field.get(pjp.getArgs()[0]);
+//                        Field field = pjp.getArgs()[0].getClass().getField(fieldName);
+                        fieldNeedToCheck.setAccessible(true);
+                        id = (Long) fieldNeedToCheck.get(pjp.getArgs()[0]);
                     } catch (Exception e) {
                         throw new JsonResponseException("permission.check.access.field.fail");
 //                        return permissionDeny("permission.check.access.field.fail", signature.getReturnType().getName(), permissionCheckAnno.throwExceptionWhenPermissionDeny());

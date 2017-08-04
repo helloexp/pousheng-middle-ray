@@ -59,12 +59,32 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑")
+    @OperationLogType("创建")
     public Long create(@RequestBody ThinShop[] shops) {
 
         Response<Long> r = warehouseShopRuleWriteService.batchCreate(Lists.newArrayList(shops));
         if (!r.isSuccess()) {
             log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
+
+    /**
+     * 创建规则适用的地址信息, 同时会创建仓库发货优先级规则, 并返回新创建的rule id
+     *
+     * @param shops 勾选的店铺
+     * @return rule id 新生成的规则id
+     */
+    @RequestMapping(value="/{ruleId}",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("编辑")
+    public Boolean update(@PathVariable Long ruleId,  @RequestBody ThinShop[] shops) {
+
+        Response<Boolean> r = warehouseShopRuleWriteService.batchUpdate(ruleId, Lists.newArrayList(shops));
+        if (!r.isSuccess()) {
+            log.error("failed to batch update warehouse rule(id={}) with shops:{}, error code:{}",
+                    ruleId, shops, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();

@@ -121,6 +121,7 @@ public class WarehouseStocks {
                 skuStock.setSkuId(skuTemplate.getId());
                 skuStock.setStock(warehouseSkuStock.getAvailStock());
                 skuStock.setSkuAttrs(skuTemplate.getAttrs());
+                skuStock.setSpuId(skuTemplate.getSpuId());
                 result.add(skuStock);
             }
             return new Paging<>(p.getTotal(), result);

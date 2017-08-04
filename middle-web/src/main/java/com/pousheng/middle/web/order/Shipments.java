@@ -49,6 +49,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
@@ -592,7 +593,9 @@ public class Shipments {
             //原始价格
             shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/originSkuOrder.getQuantity())));
             //积分
-            shipmentItem.setIntegral(0);
+            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            Integer integral = StringUtils.isEmpty(originIntegral)?0: Integer.valueOf(originIntegral);
+            shipmentItem.setIntegral(this.getIntegral(integral,originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
             //skuDisCount,根据生成发货单的数量与skuOrder的数量按照比例四舍五入计算金额
             shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
             //总净价
@@ -753,8 +756,18 @@ public class Shipments {
     }
 
     /**
+     * 计算积分
+     * @param integral sku订单获取的积分
+     * @param skuQuantity sku订单总的数量
+     * @param shipmentSkuQuantity 发货单中该sku订单的数量
+     * @return 获取发货单中sku订单的积分
+     */
+    private Integer getIntegral(Integer integral,Integer skuQuantity,Integer shipmentSkuQuantity){
+        return Math.round(integral*shipmentSkuQuantity/skuQuantity);
+    }
+    /**
      * 判断是否存在有效的发货单
-     * @param shopOrderId
+     * @param shopOrderId 店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
     private boolean isShipmentFeeCalculated(long shopOrderId){

@@ -86,7 +86,6 @@ public class OperatorApis {
 
         Operator toCreateOperator = new Operator();
         toCreateOperator.setUserName(operator.getUsername());
-        toCreateOperator.setPassword(operator.getPassword());
         toCreateOperator.setRoleId(operator.getRoleId());
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));

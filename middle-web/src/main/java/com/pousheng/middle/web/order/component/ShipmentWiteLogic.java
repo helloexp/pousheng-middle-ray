@@ -283,6 +283,16 @@ public class ShipmentWiteLogic {
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
             return false;
         }
+        //4.判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
+        int count = 0;
+        for (SkuOrder skuOrder:skuOrders){
+            if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+                count++;
+            }
+        }
+        if (count>0){
+            return false;
+        }
         return true;
     }
 
@@ -443,7 +453,10 @@ public class ShipmentWiteLogic {
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/shipmentItem.getQuantity())));
             //积分
-            shipmentItem.setIntegral(0);
+            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
+            shipmentItem.setIntegral(this.getIntegral(integral,skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
+
             shipmentItem.setSkuDiscount(this.getDiscount(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
@@ -504,6 +517,17 @@ public class ShipmentWiteLogic {
      */
     private Integer getCleanPrice(Integer cleanFee,Integer shipSkuQuantity){
         return Math.round(cleanFee/shipSkuQuantity);
+    }
+
+    /**
+     * 计算积分
+     * @param integral sku订单获取的积分
+     * @param skuQuantity sku订单总的数量
+     * @param shipmentSkuQuantity 发货单中该sku订单的数量
+     * @return 获取发货单中sku订单的积分
+     */
+    private Integer getIntegral(Integer integral,Integer skuQuantity,Integer shipmentSkuQuantity){
+        return Math.round(integral*shipmentSkuQuantity/skuQuantity);
     }
     /**
      * 判断是否存在有效的发货单

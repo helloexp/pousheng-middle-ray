@@ -16,6 +16,7 @@ import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -118,9 +119,12 @@ public class ShipmentReadLogic {
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setQuantity(skuOrder.getQuantity());
-            //积分
-            shipmentItem.setIntegral(0);
+
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
+            //积分
+            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
+            shipmentItem.setIntegral(this.getIntegral(integral,originSkuOrder.getQuantity(),skuOrder.getQuantity()));
             //获取商品原价
             shipmentItem.setSkuPrice(Integer.valueOf(Math.round(originSkuOrder.getOriginFee()/originSkuOrder.getQuantity())));
             //查看生成发货单的sku商品折扣
@@ -334,6 +338,18 @@ public class ShipmentReadLogic {
     private Integer getCleanPrice(Integer cleanFee,Integer shipSkuQuantity){
         return Math.round(cleanFee/shipSkuQuantity);
     }
+
+    /**
+     * 计算积分
+     * @param integral sku订单获取的积分
+     * @param skuQuantity sku订单总的数量
+     * @param shipmentSkuQuantity 发货单中该sku订单的数量
+     * @return 获取发货单中sku订单的积分
+     */
+    private Integer getIntegral(Integer integral,Integer skuQuantity,Integer shipmentSkuQuantity){
+        return Math.round(integral*shipmentSkuQuantity/skuQuantity);
+    }
+
     /**
      * 判断返货单是否已经计算过运费
      * @param shopOrderId

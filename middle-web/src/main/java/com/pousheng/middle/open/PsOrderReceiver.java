@@ -110,6 +110,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         Map<String,String> shopOrderExtra = richSkusByShop.getExtra();
         if(CollectionUtils.isEmpty(shopOrderExtra)){
             shopOrderExtra = Maps.newHashMap();
+        }else{
+            shopOrderExtra = Maps.newHashMap(shopOrderExtra);
         }
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
@@ -119,6 +121,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             Map<String,String> skuExtra = richSku.getExtra();
             if(CollectionUtils.isEmpty(skuExtra)){
                 skuExtra = Maps.newHashMap();
+            }else{
+                skuExtra =Maps.newHashMap(skuExtra);
             }
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);

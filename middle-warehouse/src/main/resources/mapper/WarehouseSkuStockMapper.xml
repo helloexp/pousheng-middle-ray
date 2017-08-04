@@ -43,7 +43,7 @@
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
 
         <if test="skuCodes !=null"> and `sku_code` in
-            <foreach collection="list" open="(" separator="," close=")"  item="item">
+            <foreach collection="skuCodes" open="(" separator="," close=")"  item="item">
                 #{item}
             </foreach>
         </if>

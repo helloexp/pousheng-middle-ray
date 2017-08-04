@@ -31,12 +31,12 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
                                                              Map<String, Object> criteria) {
         Long total = this.sqlSession.selectOne(this.sqlId("countByDistinctSkuCode"), criteria);
         if (total <= 0L) {
-            return new Paging<WarehouseSkuStock>(0L, Collections.<WarehouseSkuStock>emptyList());
+            return new Paging<>(0L, Collections.<WarehouseSkuStock>emptyList());
         } else {
             criteria.put("offset", offset);
             criteria.put("limit", limit);
             List<WarehouseSkuStock> datas = this.sqlSession.selectList(this.sqlId("pagingByDistinctSkuCode"), criteria);
-            return new Paging<WarehouseSkuStock>(total, datas);
+            return new Paging<>(total, datas);
         }
     }
 

@@ -163,19 +163,15 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
-                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate,
-                                     @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
-                                     @NotNull(message = "pos.type.is.null")Integer posType,
-                                     @NotNull(message = "pos.amt.is.empty")String posAmt,
-                                     @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
+                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate
+                                     ) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
-                "shipmentSerialNo is:{} shipmentDate is:{} posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",
-                shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate,posSerialNo,posType,posAmt,posCreatedAt);
+                "shipmentSerialNo is:{} shipmentDate is:{}",
+                shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
 
         try {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
-            DateTime dPos = DateTime.parse(posCreatedAt, DFT);
            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
@@ -204,11 +200,6 @@ public class OrderOpenApi {
             ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentCorpCode);
             shipmentExtra.setShipmentCorpName(expressCode.getName());
             shipmentExtra.setShipmentDate(dt.toDate());
-            //添加pos单相关信息
-            shipmentExtra.setPosSerialNo(posSerialNo);
-            shipmentExtra.setPosType(String.valueOf(posType));
-            shipmentExtra.setPosAmt(String.valueOf(posAmt));
-            shipmentExtra.setPosCreatedAt(dPos.toDate());
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
 
@@ -247,10 +238,6 @@ public class OrderOpenApi {
      * @param hkRefundOrderId
      * @param itemInfo
      * @param receivedDate
-     * @param posSerialNo
-     * @param posType
-     * @param posAmt
-     * @param posCreatedAt
      */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
                                                                       "receivedDate","posSerialNo","posType",
@@ -258,13 +245,9 @@ public class OrderOpenApi {
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate,
-                                   @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
-                                   @NotNull(message = "pos.type.is.null")Integer posType,
-                                   @NotNull(message = "pos.amt.is.empty")String posAmt,
-                                   @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
-        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{} " +
-                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,posSerialNo,posType,posAmt,posCreatedAt);
+                                   @NotEmpty(message = "received.date.empty") String receivedDate) {
+        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
+                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
            Refund refund = refundReadLogic.findRefundById(refundOrderId);
             if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {

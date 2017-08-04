@@ -57,6 +57,26 @@ public class SyncHkTest {
     }
 
     @Test
+    public void testHkSyncPos(){
+
+        params.put("appKey","pousheng");
+        params.put("pampasCall","hk.pos.api");
+        params.put("orderId","1");
+        params.put("orderType","2");
+        params.put("posSerialNo","88888888");
+        params.put("posType","1");
+        params.put("posAmt","7777");
+        params.put("posCreatedAt","20170625224210");
+        String sign = sign("middle");
+        System.out.println("==============sign: "+sign);
+        params.put("sign",sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));;
+        post(middleUrl());
+
+    }
+
+    @Test
     public void testHkSyncRefund(){
 
         params.put("appKey","pousheng");

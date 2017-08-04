@@ -223,7 +223,7 @@ public class OrderOpenApi {
             Response<Boolean> updateRes = shipmentWriteService.update(update);
             if (!updateRes.isSuccess()) {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                throw new ServiceException(updateStatusRes.getError());
+                throw new ServiceException(updateRes.getError());
             }
             //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
             HkShipmentDoneEvent event = new HkShipmentDoneEvent();
@@ -313,8 +313,79 @@ public class OrderOpenApi {
     }
 
 
+    /**
+     *
+     * @param orderId
+     * @param orderType
+     * @param posSerialNo
+     * @param posType
+     * @param posAmt
+     * @param posCreatedAt
+     */
+    @OpenMethod(key = "hk.pos.api", paramNames = {"orderId", "orderType", "posSerialNo","posType",
+            "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
+    public void syncHkPosStatus(@NotNull(message = "order.id.is.null") Long orderId,
+                                     @NotEmpty(message = "hk.order.type.is.null") String orderType,
+                                     @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
+                                     @NotNull(message = "pos.type.is.null")Integer posType,
+                                     @NotNull(message = "pos.amt.is.empty")String posAmt,
+                                     @NotEmpty(message = "pos.created.time.is.empty")String posCreatedAt) {
+        log.info("HK-SYNC-POS-INFO-START param orderId is:{} orderType is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",orderId,orderType,posSerialNo,posType,posAmt,posCreatedAt);
 
+        try {
 
+            DateTime dPos = DateTime.parse(posCreatedAt, DFT);
+            if (Objects.equals(orderType,"1")){
+                Shipment shipment = shipmentReadLogic.findShipmentById(orderId);
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                //封装更新信息
+                Shipment update = new Shipment();
+                update.setId(shipment.getId());
+                Map<String, String> extraMap = shipment.getExtra();
+                //添加pos单相关信息
+                shipmentExtra.setPosSerialNo(posSerialNo);
+                shipmentExtra.setPosType(String.valueOf(posType));
+                shipmentExtra.setPosAmt(String.valueOf(posAmt));
+                shipmentExtra.setPosCreatedAt(dPos.toDate());
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                update.setExtra(extraMap);
+                //更新基本信息
+                Response<Boolean> updateRes = shipmentWriteService.update(update);
+                if (!updateRes.isSuccess()) {
+                    log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
+                    throw new ServiceException(updateRes.getError());
+                }
+            }else if (Objects.equals(orderType,"2")){
+                Refund refund = refundReadLogic.findRefundById(orderId);
+                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                Refund update = new Refund();
+                update.setId(refund.getId());
+                Map<String, String> extraMap = refund.getExtra();
+                //添加pos单相关信息
+                refundExtra.setPosSerialNo(posSerialNo);
+                refundExtra.setPosType(String.valueOf(posType));
+                refundExtra.setPosAmt(String.valueOf(posAmt));
+                refundExtra.setPosCreatedAt(dPos.toDate());
+                extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+                update.setExtra(extraMap);
+                Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
+                if (!updateExtraRes.isSuccess()) {
+                    log.error("update reFund(id:{}) extra:{} fail,error:{}", orderId, refundExtra, updateExtraRes.getError());
+                    throw new ServiceException(updateExtraRes.getError());
+                }
+            }else{
+                throw new ServiceException("invalid.order.type");
+            }
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, e.getMessage());
+            throw new OPServerException(200,e.getMessage());
+        } catch (Exception e) {
+            log.error("hk sync posInfo(id:{}) fail,orderType is ({})cause:{}", orderId,orderType, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"sync.fail");
+        }
+
+        log.info("HK-SYNC-POS-INFO-END");
+    }
 
 
 

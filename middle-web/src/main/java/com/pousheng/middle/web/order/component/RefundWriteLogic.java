@@ -554,4 +554,18 @@ public class RefundWriteLogic {
         shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
     }
 
+
+    /**
+     * 售后单客服备注
+     * @param refundId 售后单主键
+     * @param customerServiceNote 客服备注
+     */
+    public void addCustomerServiceNote(long refundId,String  customerServiceNote){
+
+        Response<Boolean> response = refundWriteService.updateSellerNote(refundId,customerServiceNote);
+        if (!response.isSuccess()){
+            log.error("refund add customerServiceNote failed,refundId is({}),caused by{}",refundId,response.getError());
+            throw new JsonResponseException("add customer service note fail");
+        }
+    }
 }

@@ -6,6 +6,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -17,14 +18,21 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.model.Invoice;
+import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Created by tony on 2017/7/18.
@@ -45,6 +53,10 @@ public class AdminOrderWriter {
     private ExpressCodeReadService expressCodeReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private MiddleOrderWriteService middleOrderWriteService;
+
+    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     /**
      * 发货单已发货,同步订单信息到电商
      * @param shopOrderId
@@ -125,7 +137,86 @@ public class AdminOrderWriter {
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
     }
 
-    public ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
+    /**
+     *修改skuCode 和skuId
+     * @param id sku订单主键
+     * @param skuCode 中台条码
+     * @param skuId   skuId
+     */
+    @RequestMapping(value ="/api/sku/order/{id}/update/sku/code",method = RequestMethod.PUT)
+    public void  updateSkuOrderCodeAndSkuId(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode,@RequestParam("skuId") String skuId){
+        //判断该订单是否生成过发货单
+        Boolean result = orderReadLogic.isShipmentCreated(id);
+        if (!result){
+            throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
+        }
+        Response<Boolean> response = middleOrderWriteService.updateSkuOrderCodeAndSkuId(Long.parseLong(skuId),skuCode,id);
+        if (!response.isSuccess()){
+            log.error("update skuCode failed,skuCodeId is({})",id);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    /**
+     *  添加中台客服备注,各个状态均可添加
+     * @param id  店铺订单主键
+     * @param customerSerivceNote 客服备注
+     */
+    @RequestMapping(value ="/api/order/{id}/add/customer/service/note",method = RequestMethod.PUT)
+    public void addCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote){
+       orderWriteLogic.addCustomerServiceNote(id,customerSerivceNote);
+    }
+
+    /**
+     * 修改订单的收货信息
+     * @param id 店铺订单主键
+     * @param data 收货信息实体
+     * @param buyerNote 买家备注
+     * @return true (更新成功)or false (更新失败)
+     */
+    @RequestMapping(value = "/api/order/{id}/edit/receiver/info",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam("data")String data,@RequestParam(value = "buyerNote",required = false) String buyerNote){
+        Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
+        if (!result){
+            throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
+        }
+        Map<String,String> receiverInfoMap = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, String.class));
+        if(receiverInfoMap == null) {
+            log.error("failed to parse receiverInfoMap:{}",data);
+            throw new JsonResponseException("receiver.info.map.invalid");
+        }
+        Response<Boolean> response = middleOrderWriteService.updateReceiveInfos(id,receiverInfoMap,buyerNote);
+        if (!response.isSuccess()){
+            log.error("failed to edit receiver info:{},shopOrderId is(={})",data,id);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    /**
+     * 修改订单的发票信息
+     * @param id
+     * @param data
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/edit/invoice",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void editInvoiceInfos(@PathVariable("id")Long id,@RequestParam("data")String data){
+        Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
+        if (!result){
+            throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
+        }
+        Map<String,String> invoiceMap = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, String.class));
+        if(invoiceMap == null) {
+            log.error("failed to parse invoiceMap:{}",data);
+            throw new JsonResponseException("invoice.map.invalid");
+        }
+        Response<Boolean> response = middleOrderWriteService.updateInvoices(id,invoiceMap);
+        if (!response.isSuccess()){
+            log.error("failed to edit invoiceMap:{}",data);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    private ExpressCode makeExpressNameByhkCode(String hkExpressCode) {
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
         criteria.setHkCode(hkExpressCode);
         Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);

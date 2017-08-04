@@ -21,12 +21,11 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
+import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
+import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -67,6 +66,10 @@ public class AdminOrderReader {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
+    @RpcConsumer
+    private SkuOrderReadService skuOrderReadService;
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
 
 
     /**
@@ -193,4 +196,15 @@ public class AdminOrderReader {
 
         return Response.ok(withReceiveInfo);
     }
-}
+
+    /**
+     * 根据店铺订单id判断是否生成过发货单
+     * @param id  店铺订单主键
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/is/shipment/created",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isShipmentCreated(@PathVariable("id") Long id){
+        Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
+        return result;
+    }
+ }

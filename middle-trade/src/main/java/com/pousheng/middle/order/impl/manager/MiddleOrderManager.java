@@ -6,11 +6,14 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
 import io.terminus.parana.order.impl.dao.ShopOrderDao;
 import io.terminus.parana.order.impl.dao.SkuOrderDao;
 import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.OrderReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.OrderWriteService;
@@ -35,7 +38,8 @@ public class MiddleOrderManager {
     private ShopOrderDao shopOrderDao;
     @RpcConsumer
     private OrderWriteService orderWriteService;
-
+    @Autowired
+    private OrderReceiverInfoDao orderReceiverInfoDao;
 
     /**
      * 更新总单与子单的状态,适用于总单的取消和撤销流程
@@ -163,7 +167,28 @@ public class MiddleOrderManager {
         }
     }
 
-
+    /**
+     *更新订单收货信息以及买家备注
+     * @param shopOrderId 店铺订单主键
+     * @param orderReceiverInfo 收货信息
+     * @param buyerNote 买家备注
+     */
+    @Transactional
+    public void updateReceiverInfoAndBuyerNote(long shopOrderId,OrderReceiverInfo orderReceiverInfo,String buyerNote){
+        boolean recevierInfoResult = orderReceiverInfoDao.update(orderReceiverInfo);
+        if (!recevierInfoResult){
+            log.error("failed to update orderReceiveInfo failed,(shopOrderId={}))",shopOrderId);
+            throw new ServiceException("receiveInfo.update.fail");
+        }
+        ShopOrder shopOrder = new ShopOrder();
+        shopOrder.setId(shopOrderId);
+        shopOrder.setBuyerNote(buyerNote);
+        boolean shopOrderResult = shopOrderDao.update(shopOrder);
+        if (!shopOrderResult){
+            log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
+            throw new ServiceException("receiveInfo.update.fail");
+        }
+    }
     public Flow pickOrder() {
         return MiddleFlowBook.orderFlow;
     }

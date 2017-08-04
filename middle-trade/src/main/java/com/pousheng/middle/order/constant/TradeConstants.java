@@ -55,7 +55,10 @@ public class TradeConstants {
     public static final String INVOICE_TITLE_TYPE="titleType";
     //sku商品初始价格
     public static final String SKU_PRICE="skuPrice";
-
+    //积分
+    public static final String SKU_INTEGRAL="integral";
+    //客服备注
+    public static final String CUSTOMER_SERVICE_NOTE="customerServiceNote";
     /**
      * 逆向单来源
      * see RefundSource

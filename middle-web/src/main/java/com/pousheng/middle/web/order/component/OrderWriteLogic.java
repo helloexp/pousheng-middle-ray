@@ -15,6 +15,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -60,6 +61,8 @@ public class OrderWriteLogic {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+
+
 
 
 
@@ -520,6 +523,21 @@ public class OrderWriteLogic {
         return skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).collect(Collectors.toList()).get(0);
     }
 
+    /**
+     * 添加店铺订单客服备注
+     * @param shopOrderId 店铺订单主键
+     * @param customerServiceNote 客服备注
+     */
+    public void addCustomerServiceNote(long shopOrderId,String  customerServiceNote){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        Map<String,String> map = shopOrder.getExtra();
+        map.put(TradeConstants.CUSTOMER_SERVICE_NOTE,customerServiceNote);
+        Response<Boolean> response = orderWriteService.updateOrderExtra(shopOrderId,OrderLevel.SHOP,map);
+        if (!response.isSuccess()){
+            log.error("shopOrder add customerServiceNote failed,shopOrderId is({}),caused by{}",shopOrderId,response.getError());
+            throw new JsonResponseException("add customer service note fail");
+        }
+    }
 
 }
 

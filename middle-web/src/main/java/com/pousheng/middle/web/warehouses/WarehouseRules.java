@@ -9,6 +9,8 @@ import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -31,6 +33,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/warehouse/rule")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE_RULE)
 public class WarehouseRules {
 
     @RpcConsumer
@@ -56,6 +59,7 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("编辑")
     public Long create(@RequestBody ThinShop[] shops) {
 
         Response<Long> r = warehouseShopRuleWriteService.batchCreate(Lists.newArrayList(shops));

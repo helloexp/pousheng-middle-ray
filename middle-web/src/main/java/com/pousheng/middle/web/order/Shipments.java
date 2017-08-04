@@ -30,6 +30,9 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -59,6 +62,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.SHIPMENT)
 public class Shipments {
 
     @RpcConsumer
@@ -233,7 +237,8 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createSalesShipment(@PathVariable("id") Long shopOrderId,
+    @OperationLogType("生成销售发货单")
+    public Long createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
 
@@ -314,7 +319,8 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long createAfterShipment(@PathVariable("id") Long refundId,
+    @OperationLogType("生成换货发货单")
+    public Long createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                @RequestParam("data") String data,
                                @RequestParam(value = "warehouseId") Long warehouseId) {
 
@@ -376,6 +382,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
+    @OperationLogType("同步发货单到恒康")
     public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
@@ -392,6 +399,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/cancel",method = RequestMethod.PUT)
+    @OperationLogType("取消发货单")
     public void cancleShipment(@PathVariable(value = "id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL.toOrderOperation());
@@ -410,6 +418,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk",method = RequestMethod.PUT)
+    @OperationLogType("同步取消状态")
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment);

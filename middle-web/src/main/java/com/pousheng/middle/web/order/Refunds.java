@@ -13,7 +13,9 @@ import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
-import com.pousheng.middle.web.user.component.UserManageShopReader;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
@@ -29,9 +31,6 @@ import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +47,7 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.REFUND)
 @PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
 public class Refunds {
 
@@ -98,7 +98,8 @@ public class Refunds {
 
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
+    @OperationLogType("完善")
+    public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
     }
@@ -106,21 +107,23 @@ public class Refunds {
 
     /**
      * 批量标记逆向单为已处理
+     *
      * @param data 逗号隔开的逆向单id拼接
      */
     @RequestMapping(value = "/api/refund/batch/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("批量处理")
     public void completeHandle(@RequestParam(value = "refundIds") String data) {
-        List<Long> refundIds = Splitters.splitToLong(data,Splitters.COMMA);
+        List<Long> refundIds = Splitters.splitToLong(data, Splitters.COMMA);
         List<Refund> refunds = refundReadLogic.findRefundByIds(refundIds);
-        if(!Objects.equals(refundIds.size(),refunds.size())){
-            log.error("find refund by refund ids:{} result size not equal request id size:{}",refundIds,refunds.size(),refundIds.size());
+        if (!Objects.equals(refundIds.size(), refunds.size())) {
+            log.error("find refund by refund ids:{} result size not equal request id size:{}", refundIds, refunds.size(), refundIds.size());
             throw new JsonResponseException("refund.id.invalid");
         }
         refunds.forEach(refund -> {
             OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
-            Response<Boolean> response = refundWriteLogic.updateStatus(refund,orderOperation);
-            if(!response.isSuccess()){
-                log.error("refund(id:{}) operation:{} fail",refund.getId(),orderOperation);
+            Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+            if (!response.isSuccess()) {
+                log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
                 throw new JsonResponseException(response.getError());
             }
         });
@@ -129,6 +132,7 @@ public class Refunds {
 
     //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("编辑或创建")
     public EditMiddleRefund edit(@RequestParam(required = false) @PermissionCheckParam Long refundId) {
         if (Arguments.isNull(refundId)) {
             EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
@@ -156,7 +160,8 @@ public class Refunds {
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    public Long createRefund(@RequestBody  @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
+    @OperationLogType("创建")
+    public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
         return refundWriteLogic.createRefund(submitRefundInfo);
     }
 
@@ -192,6 +197,7 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/sync/hk", method = RequestMethod.PUT)
+    @OperationLogType("同步售后单到恒康")
     public void syncHkRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
@@ -208,7 +214,8 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel", method = RequestMethod.PUT)
-    public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
+    @OperationLogType("取消")
+    public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
         if (!cancelRes.isSuccess()) {
@@ -226,6 +233,7 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel/sync/hk", method = RequestMethod.PUT)
+    @OperationLogType("同步售后单取消状态")
     public void syncHkCancelRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
@@ -243,6 +251,7 @@ public class Refunds {
      * @param refundId
      */
     @RequestMapping(value = "api/refund/{id}/sync/ecp", method = RequestMethod.PUT)
+    @OperationLogType("通知电商退款")
     public void syncECPRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> syncRes = syncRefundToEcpLogic.syncRefundToECP(refund);
@@ -259,6 +268,7 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/confirm/received", method = RequestMethod.PUT)
+    @OperationLogType("运营商确认收货（换货）")
     public void confirmReceived(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CONFIRM.toOrderOperation());

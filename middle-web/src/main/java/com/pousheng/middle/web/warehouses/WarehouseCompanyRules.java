@@ -13,6 +13,8 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.dto.Company;
 import com.pousheng.middle.web.warehouses.dto.ErpShop;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -40,6 +42,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/warehouse/company-rule")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE_COMPANY_RULE)
 public class WarehouseCompanyRules {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
@@ -58,6 +61,7 @@ public class WarehouseCompanyRules {
 
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("创建")
     public Long create(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
         Warehouse warehouse = warehouseCacher.findById(warehouseId);
@@ -75,6 +79,7 @@ public class WarehouseCompanyRules {
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("更新")
     public Boolean update(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
         Warehouse warehouse = warehouseCacher.findById(warehouseId);

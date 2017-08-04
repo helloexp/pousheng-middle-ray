@@ -7,6 +7,9 @@ import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
+import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -28,6 +31,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/warehouse/shop-rule")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE_SHOP_RULE)
 public class WarehouseShopStockRules {
 
     @RpcConsumer
@@ -49,6 +53,7 @@ public class WarehouseShopStockRules {
      * @return 新创建的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("创建")
     public Long create(@RequestBody WarehouseShopStockRule warehouseShopStockRule){
         authCheck(warehouseShopStockRule.getShopId());
         Response<Long> r = shopStockRuleWriteService.create(warehouseShopStockRule);
@@ -129,6 +134,7 @@ public class WarehouseShopStockRules {
      * @return 是否成功
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("更新")
     public Boolean update(@PathVariable Long id, @RequestBody WarehouseShopStockRule warehouseShopStockRule){
         Response<WarehouseShopStockRule> r = shopStockRuleReadService.findById(id);
         if(!r.isSuccess()){
@@ -173,6 +179,7 @@ public class WarehouseShopStockRules {
      * @return 是否发送请求
      */
     @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogIgnore
     public Boolean push(@RequestParam("shopId")Long shopId){
         eventBus.post(new PushEvent(shopId));
         return Boolean.TRUE;

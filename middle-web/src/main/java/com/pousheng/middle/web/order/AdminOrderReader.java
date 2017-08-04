@@ -15,6 +15,10 @@ import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.permission.PermissionCheck;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -47,6 +51,8 @@ import java.util.stream.Collectors;
  */
 @RestController
 @Slf4j
+@PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+@OperationLogModule(OperationLogModule.Module.ORDER)
 public class AdminOrderReader {
 
 
@@ -66,11 +72,12 @@ public class AdminOrderReader {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
+    @Autowired
+    private PermissionUtil permissionUtil;
     @RpcConsumer
     private SkuOrderReadService skuOrderReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
-
 
     /**
      * 交易订单分页
@@ -82,6 +89,9 @@ public class AdminOrderReader {
          if(middleOrderCriteria.getOutCreatedEndAt()!=null){
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
+
+        middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());
@@ -114,7 +124,7 @@ public class AdminOrderReader {
      * @return 订单详情DTO
      */
     @RequestMapping(value = "/api/order/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<OrderDetail> detail(@PathVariable("id") Long id) {
+    public Response<OrderDetail> detail(@PathVariable("id") @PermissionCheckParam Long id) {
         return orderReadLogic.orderDetail(id);
     }
 
@@ -125,7 +135,7 @@ public class AdminOrderReader {
      * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 下单数量 - 已发货数量 ,waitHandleNumber为skuOrder.extraMap中的一个key，value为待发货数量
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") Long id) {
+    public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long id) {
         List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders){
@@ -147,7 +157,7 @@ public class AdminOrderReader {
      * @return boolean类型 ，true为存在，false为不存在
      */
     @RequestMapping(value = "/api/order/{id}/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean checkExist(@PathVariable("id") Long id) {
+    public Boolean checkExist(@PathVariable("id") @PermissionCheckParam Long id) {
 
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
         if(!shopOrderRes.isSuccess()){
@@ -169,7 +179,7 @@ public class AdminOrderReader {
      * @return 订单信息和收货地址信息封装DTO
      */
     @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") Long id) {
+    public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") @PermissionCheckParam Long id) {
 
 
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);

@@ -6,6 +6,7 @@ import com.pousheng.middle.order.impl.dao.InvoiceExtDao;
 import com.pousheng.middle.order.impl.dao.SkuOrderExtDao;
 import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.model.InvoiceExt;
+import com.pousheng.middle.order.model.SkuOrderExt;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -81,7 +82,11 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     @Override
     public Response<Boolean> updateSkuOrderCodeAndSkuId(long skuId, String skuCode, long id) {
         try{
-            boolean result = skuOrderExtDao.updateSkuCodeAndSkuIdById(skuId,skuCode,id);
+            SkuOrderExt skuOrderExt = new SkuOrderExt();
+            skuOrderExt.setId(id);
+            skuOrderExt.setSkuId(skuId);
+            skuOrderExt.setSkuCode(skuCode);
+            boolean result = skuOrderExtDao.updateSkuCodeAndSkuIdById(skuOrderExt);
             if (!result){
                 log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({})",id,skuId,skuCode);
                 return Response.fail("skuOrder.update.fail");

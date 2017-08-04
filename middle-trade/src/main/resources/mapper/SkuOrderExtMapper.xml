@@ -9,7 +9,7 @@
     <sql id="tb">
         parana_sku_orders
     </sql>
-    <update id="updateSkuCodeAndSkuIdById" parameterType="map">
+    <update id="updateSkuCodeAndSkuIdById" parameterType="SkuOrderExt">
         UPDATE
         <include refid="tb"/>
         SET updated_at=now()

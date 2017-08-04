@@ -14,7 +14,7 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class SkuOrderExtDao extends MyBatisDao<SkuOrderExt> {
 
-    public boolean updateSkuCodeAndSkuIdById(Long skuId,String skuCode,long id){
-        return getSqlSession().update(sqlId("updateSkuCodeAndSkuIdById"),ImmutableMap.of("skuId", skuId, "skuCode", skuCode, "id", id)) == 1;
+    public boolean updateSkuCodeAndSkuIdById(SkuOrderExt skuOrderExt){
+        return getSqlSession().update(sqlId("updateSkuCodeAndSkuIdById"),skuOrderExt) == 1;
     }
 }

@@ -45,6 +45,14 @@ public class RefundExtra implements Serializable{
     //退款时间
     private Date refundAt;
 
+    //pos单号
+    private String posSerialNo;
+    //pos单类型
+    private String posType;
+    //pos单金额
+    private String posAmt;
+    //pos单生成时间
+    private Date posCreatedAt;
 
 
     //恒康确认收到买家退货商品时间

@@ -27,4 +27,9 @@ public class ThinShop implements Serializable {
      * 是否可编辑
      */
     private boolean editable = true;
+
+    /**
+     * 当前是否已选中
+     */
+    private boolean selected = false;
 }

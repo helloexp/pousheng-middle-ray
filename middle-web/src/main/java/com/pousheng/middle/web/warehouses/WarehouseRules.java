@@ -200,6 +200,7 @@ public class WarehouseRules {
             for (ThinShop thinShop : thinShops) {
                 if (Objects.equal(thinShop.getShopId(), shopId)) {
                     thinShop.setEditable(true);
+                    thinShop.setSelected(true);
                 }
             }
         }

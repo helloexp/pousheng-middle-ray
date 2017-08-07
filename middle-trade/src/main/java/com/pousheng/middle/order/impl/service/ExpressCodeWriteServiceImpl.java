@@ -50,6 +50,13 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
                 log.error("exprsssCode id is null");
                 return Response.fail("expressCode.id.null");
             }
+            if (StringUtils.hasText(expressCode.getName())) {
+                ExpressCode exist = expressCodeDao.findByName(expressCode.getName());
+                if (exist != null) {
+                    log.error("duplicated name({}) with existed(name={})", expressCode.getName(), exist.getName());
+                    return Response.fail("expressCode.name.duplicate");
+                }
+            }
             return Response.ok(expressCodeDao.update(expressCode));
         } catch (Exception e) {
             log.error("update expressCode failed, expressCode:{}, cause:{}", expressCode, Throwables.getStackTraceAsString(e));

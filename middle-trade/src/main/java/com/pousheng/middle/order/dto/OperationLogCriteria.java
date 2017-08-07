@@ -28,6 +28,6 @@ public class OperationLogCriteria extends PagingCriteria implements Serializable
     /**
      * 操作的实体ID
      */
-    private String operationId;
+    private String operateId;
 
 }

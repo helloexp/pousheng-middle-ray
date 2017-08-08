@@ -77,7 +77,7 @@ public class WarehouseShopStockRuleReadServiceImpl implements WarehouseShopStock
         }catch (Exception e){
             log.error("failed to paging warehouse shop stock rule by pageNo:{} pageSize:{}, cause:{}",
                     pageNo, pageSize, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.shop.stock.rule.paging.fail");
+            return Response.fail("warehouse.shop.stock.rule.find.fail");
         }
     }
 

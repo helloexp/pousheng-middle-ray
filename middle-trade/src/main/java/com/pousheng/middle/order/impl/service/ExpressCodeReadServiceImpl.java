@@ -29,7 +29,7 @@ public class ExpressCodeReadServiceImpl implements ExpressCodeReadService {
             return Response.ok(paging);
         } catch (Exception e) {
             log.error("failed to paging express code, criteria={}, cause:{}", criteria, Throwables.getStackTraceAsString(e));
-            return Response.fail("Paging expressCode.find.fail");
+            return Response.fail("paging.expressCode.find.fail");
         }
 
     }
@@ -46,7 +46,7 @@ public class ExpressCodeReadServiceImpl implements ExpressCodeReadService {
             return Response.ok(expressCode);
         } catch (Exception e) {
             log.error("failed to paging express code, id={}, cause:{}", id, Throwables.getStackTraceAsString(e));
-            return Response.fail("single expressCode.find.fail");
+            return Response.fail("single.expressCode.find.fail");
         }
     }
 }

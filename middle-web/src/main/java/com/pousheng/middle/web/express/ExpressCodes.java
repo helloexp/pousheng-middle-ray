@@ -67,6 +67,12 @@ public class ExpressCodes {
         {
             criteria.setName(name);
         }
+        if (pageNo!=null){
+            criteria.setPageNo(pageNo);
+        }
+        if (pageSize!=null){
+            criteria.setPageSize(pageSize);
+        }
         Response<Paging<ExpressCode>> r = expressCodeReadService.pagingExpressCode(criteria);
 
         if(!r.isSuccess()){

@@ -82,6 +82,7 @@ public class AdminOrderReader {
          if(middleOrderCriteria.getOutCreatedEndAt()!=null){
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
+        log.info("find shopOrder by middleOrderCriteria(={})",middleOrderCriteria);
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());

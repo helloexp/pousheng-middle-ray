@@ -108,22 +108,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
         Map<String,String> shopOrderExtra = richSkusByShop.getExtra();
-        if(CollectionUtils.isEmpty(shopOrderExtra)){
-            shopOrderExtra = Maps.newHashMap();
-        }else{
-            shopOrderExtra = Maps.newHashMap(shopOrderExtra);
-        }
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
         //初始化店铺子单extra
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         richSkus.forEach(richSku -> {
             Map<String,String> skuExtra = richSku.getExtra();
-            if(CollectionUtils.isEmpty(skuExtra)){
-                skuExtra = Maps.newHashMap();
-            }else{
-                skuExtra =Maps.newHashMap(skuExtra);
-            }
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });

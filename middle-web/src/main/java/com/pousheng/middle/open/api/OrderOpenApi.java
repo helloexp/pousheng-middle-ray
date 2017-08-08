@@ -4,11 +4,9 @@ import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -19,7 +17,6 @@ import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -297,13 +294,13 @@ public class OrderOpenApi {
 
 
     /**
-     *
-     * @param orderId
-     * @param orderType
-     * @param posSerialNo
-     * @param posType
-     * @param posAmt
-     * @param posCreatedAt
+     *恒康同步pos信息到中台
+     * @param orderId  订单id
+     * @param orderType 订单类型1.销售发货单,2.售后订单
+     * @param posSerialNo pos单号
+     * @param posType pos单类型
+     * @param posAmt pos金额
+     * @param posCreatedAt pos单创建时间
      */
     @OpenMethod(key = "hk.pos.api", paramNames = {"orderId", "orderType", "posSerialNo","posType",
             "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)

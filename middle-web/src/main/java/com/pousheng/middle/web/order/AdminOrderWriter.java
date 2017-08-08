@@ -24,13 +24,17 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -56,6 +60,8 @@ public class AdminOrderWriter {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private MiddleOrderWriteService middleOrderWriteService;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     /**
@@ -154,16 +160,23 @@ public class AdminOrderWriter {
      *修改skuCode 和skuId
      * @param id sku订单主键
      * @param skuCode 中台条码
-     * @param skuId   skuId
      */
     @RequestMapping(value ="/api/sku/order/{id}/update/sku/code",method = RequestMethod.PUT)
-    public void  updateSkuOrderCodeAndSkuId(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode,@RequestParam("skuId") String skuId){
+    public void  updateSkuOrderCodeAndSkuId(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode){
         //判断该订单是否生成过发货单
         Boolean result = orderReadLogic.isShipmentCreated(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
         }
-        Response<Boolean> response = middleOrderWriteService.updateSkuOrderCodeAndSkuId(Long.parseLong(skuId),skuCode,id);
+        List<String> skuCodes = Lists.newArrayList();
+        skuCodes.add(skuCode);
+        Response<List<SkuTemplate>> skuResponse = skuTemplateReadService.findBySkuCodes(skuCodes);
+        if (!skuResponse.isSuccess()){
+            log.error("find sku template failed,skuCode is {}",skuCode);
+            throw new JsonResponseException(("find.sku.template.failed"));
+        }
+        SkuTemplate skuTemplate = skuResponse.getResult().get(0);
+        Response<Boolean> response = middleOrderWriteService.updateSkuOrderCodeAndSkuId(skuTemplate.getId(),skuCode,id);
         if (!response.isSuccess()){
             log.error("update skuCode failed,skuCodeId is({})",id);
             throw new JsonResponseException(response.getError());

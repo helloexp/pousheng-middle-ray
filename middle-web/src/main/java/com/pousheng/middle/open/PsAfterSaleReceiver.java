@@ -16,7 +16,7 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;xciu
+import org.springframework.util.StringUtils;
 /**
  * Created by cp on 7/17/17.
  */

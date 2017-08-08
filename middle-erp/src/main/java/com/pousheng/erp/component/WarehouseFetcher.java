@@ -48,7 +48,7 @@ public class WarehouseFetcher {
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
             if(StringUtils.hasText(result)) {
-
+                log.info("got warehouse response:{}", result);
                 return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
                         LIST_OF_WAREHOUSE);
             }

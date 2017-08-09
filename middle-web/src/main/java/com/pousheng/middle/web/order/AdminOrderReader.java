@@ -92,6 +92,7 @@ public class AdminOrderReader {
 
         middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
 
+        log.info("find shopOrder by middleOrderCriteria(={})",middleOrderCriteria);
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());

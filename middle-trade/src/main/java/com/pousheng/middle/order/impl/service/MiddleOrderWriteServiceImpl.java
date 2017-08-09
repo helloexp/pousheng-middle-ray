@@ -89,12 +89,12 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             boolean result = skuOrderExtDao.updateSkuCodeAndSkuIdById(skuOrderExt);
             if (!result){
                 log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({})",id,skuId,skuCode);
-                return Response.fail("skuOrder.update.fail");
+                return Response.fail("update.sku.order.failed");
             }
             return Response.ok();
         }catch (Exception e){
             log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}",id,skuId,skuCode,e.getCause());
-            return Response.fail("skuOrder.update.fail");
+            return Response.fail("update.sku.order.failed");
         }
     }
 

@@ -12,6 +12,7 @@ import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -401,5 +402,14 @@ public class OrderReadLogic {
             return Boolean.FALSE;
         }
         return Boolean.TRUE;
+    }
+
+    public SkuOrder findSkuOrderByShopOrderIdAndSkuCode(long shopOrderId,String skuCode){
+        List<SkuOrder> skuOrders = this.findSkuOrdersByShopOrderId(shopOrderId);
+        List<SkuOrder> skuOrderFilters = skuOrders.stream().filter(Objects::nonNull).filter(skuOrder -> Objects.equals(skuCode,skuOrder.getSkuCode())).collect(Collectors.toList());
+        if (skuOrderFilters.size()==0){
+            throw new ServiceException("find.skuOrder.failed");
+        }
+        return skuOrderFilters.get(0);
     }
 }

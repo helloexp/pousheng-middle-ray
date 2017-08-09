@@ -81,19 +81,25 @@ public class AdminOrderReader {
 
     /**
      * 交易订单分页
+     *
      * @param middleOrderCriteria 查询参数
      * @return 订单分页结果
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
-         if(middleOrderCriteria.getOutCreatedEndAt()!=null){
+        if (middleOrderCriteria.getOutCreatedEndAt() != null) {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
-        middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (middleOrderCriteria.getShopId() == null)
+            middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
+        else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
 
-        Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
-        if(!pagingRes.isSuccess()){
+        Response<Paging<ShopOrder>> pagingRes = middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+        if (!pagingRes.isSuccess()) {
             return Response.fail(pagingRes.getError());
         }
         Flow flow = flowPicker.pickOrder();
@@ -103,10 +109,10 @@ public class AdminOrderReader {
         shopOrders.forEach(shopOrder -> {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
-            String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
+            String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
             shopOrderPagingInfo.setShopOrderOperations(Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.WAIT_SHIP.getValue())
-                    ?flow.availableOperations(shopOrder.getStatus())
-                    :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
+                    ? flow.availableOperations(shopOrder.getStatus())
+                    : flow.availableOperations(shopOrder.getStatus()).stream().filter(it -> it.getValue() != MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             pagingInfos.add(shopOrderPagingInfo);
         });
         //撤销时必须保证订单没有发货
@@ -120,6 +126,7 @@ public class AdminOrderReader {
 
     /**
      * 交易订单详情
+     *
      * @param id 交易订单id
      * @return 订单详情DTO
      */
@@ -131,20 +138,21 @@ public class AdminOrderReader {
 
     /**
      * 交易订单待处理商品列表 for 手动生成发货单流程的选择仓库页面
+     *
      * @param id 交易订单id
      * @return 待发货商品列表 注意：待发货数量(waitHandleNumber) = 下单数量 - 已发货数量 ,waitHandleNumber为skuOrder.extraMap中的一个key，value为待发货数量
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long id) {
-        List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
-        for (SkuOrder skuOrder : skuOrders){
+        for (SkuOrder skuOrder : skuOrders) {
             WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
             waitShipItemInfo.setSkuOrderId(skuOrder.getId());
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());
-            waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
+            waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             waitShipItemInfos.add(waitShipItemInfo);
         }
         return waitShipItemInfos;
@@ -153,6 +161,7 @@ public class AdminOrderReader {
 
     /**
      * 判断交易订单是否存在
+     *
      * @param id 交易订单id
      * @return boolean类型 ，true为存在，false为不存在
      */
@@ -160,9 +169,9 @@ public class AdminOrderReader {
     public Boolean checkExist(@PathVariable("id") @PermissionCheckParam Long id) {
 
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
-        if(!shopOrderRes.isSuccess()){
-            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
-            if(Objects.equals(shopOrderRes.getError(),"order.not.found")){
+        if (!shopOrderRes.isSuccess()) {
+            log.error("find shop order by id:{} fail,error:{}", id, shopOrderRes.getError());
+            if (Objects.equals(shopOrderRes.getError(), "order.not.found")) {
                 return Boolean.FALSE;
             }
             throw new JsonResponseException(shopOrderRes.getError());
@@ -175,6 +184,7 @@ public class AdminOrderReader {
 
     /**
      * 订单信息和收货地址信息封装 for 新建售后订单展示订单信息
+     *
      * @param id 交易订单id
      * @return 订单信息和收货地址信息封装DTO
      */
@@ -183,20 +193,20 @@ public class AdminOrderReader {
 
 
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
-        if(!shopOrderRes.isSuccess()){
-            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
+        if (!shopOrderRes.isSuccess()) {
+            log.error("find shop order by id:{} fail,error:{}", id, shopOrderRes.getError());
             return Response.fail(shopOrderRes.getError());
         }
         ShopOrder shopOrder = shopOrderRes.getResult();
 
         Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(id, OrderLevel.SHOP);
-        if(!response.isSuccess()){
-            log.error("find order receive info by order id:{} fial,error:{}",id,response.getError());
+        if (!response.isSuccess()) {
+            log.error("find order receive info by order id:{} fial,error:{}", id, response.getError());
             return Response.fail(response.getError());
         }
         List<ReceiverInfo> receiverInfos = response.getResult();
-        if(CollectionUtils.isEmpty(receiverInfos)){
-            log.error("not find receive info by order id:{}",id);
+        if (CollectionUtils.isEmpty(receiverInfos)) {
+            log.error("not find receive info by order id:{}", id);
             return Response.fail("order.receive.info.not.exist");
         }
 
@@ -209,12 +219,13 @@ public class AdminOrderReader {
 
     /**
      * 根据店铺订单id判断是否生成过发货单
-     * @param id  店铺订单主键
+     *
+     * @param id 店铺订单主键
      * @return
      */
-    @RequestMapping(value = "/api/order/{id}/is/shipment/created",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean isShipmentCreated(@PathVariable("id") Long id){
+    @RequestMapping(value = "/api/order/{id}/is/shipment/created", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isShipmentCreated(@PathVariable("id") Long id) {
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         return result;
     }
- }
+}

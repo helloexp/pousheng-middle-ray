@@ -78,7 +78,12 @@ public class Refunds {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
-        criteria.setIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (criteria.getShopId() == null)
+            criteria.setShopIds(currentUserCanOperateShopIds);
+        else if (!currentUserCanOperateShopIds.contains(criteria.getShopId()))
+            throw new JsonResponseException("permission.check.query.deny");
+
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
         if (!pagingRes.isSuccess()) {
@@ -279,13 +284,14 @@ public class Refunds {
     }
 
     /**
-     *  添加中台客服备注,各个状态均可添加
-     * @param id  店铺订单主键
+     * 添加中台客服备注,各个状态均可添加
+     *
+     * @param id                  店铺订单主键
      * @param customerSerivceNote 客服备注
      */
-    @RequestMapping(value ="/api/refund/{id}/add/customer/service/note",method = RequestMethod.PUT)
-    public void createCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote){
-        refundWriteLogic.addCustomerServiceNote(id,customerSerivceNote);
+    @RequestMapping(value = "/api/refund/{id}/add/customer/service/note", method = RequestMethod.PUT)
+    public void createCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
+        refundWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
     }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {

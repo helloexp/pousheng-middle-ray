@@ -33,6 +33,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -103,6 +104,8 @@ public class Shipments {
     private ShipmentReadService shipmentReadService;
     @Autowired
     private StockPusher stockPusher;
+    @Autowired
+    private PermissionUtil permissionUtil;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -118,6 +121,10 @@ public class Shipments {
         if(shipmentCriteria.getEndAt()!=null){
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
+
+        shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+
+
         Response<Paging<ShipmentPagingInfo>> response =  orderShipmentReadService.findBy(shipmentCriteria);
         if(!response.isSuccess()){
             log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());

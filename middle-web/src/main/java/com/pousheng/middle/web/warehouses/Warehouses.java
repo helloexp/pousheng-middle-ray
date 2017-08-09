@@ -4,6 +4,8 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -22,6 +24,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/warehouse")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE)
 public class Warehouses {
 
     @RpcConsumer
@@ -31,6 +34,7 @@ public class Warehouses {
     private WarehouseReadService warehouseReadService;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("新建")
     public Long create(@RequestBody Warehouse warehouse) {
         Response<Long> r = warehouseWriteService.create(warehouse);
         if (!r.isSuccess()) {
@@ -41,6 +45,7 @@ public class Warehouses {
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("更新")
     public Boolean update(@RequestBody Warehouse warehouse) {
         Response<Boolean> r = warehouseWriteService.update(warehouse);
         if (!r.isSuccess()) {
@@ -66,6 +71,7 @@ public class Warehouses {
     public Paging<Warehouse> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                         @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                         @RequestParam(required = false, value = "code") String code,
+                                        @RequestParam(required = false, value="codePrefix") String codePrefix,
                                         @RequestParam(required = false, value = "name") String namePrefix) {
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(code)) {
@@ -75,6 +81,9 @@ public class Warehouses {
             }else{
                 params.put("code", code.substring(0,4)+"-"+code);
             }
+        }
+        if (StringUtils.hasText(codePrefix)) {
+            params.put("codePrefix", codePrefix);
         }
 
         if (StringUtils.hasText(namePrefix)) {

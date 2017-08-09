@@ -72,7 +72,7 @@ public class WarehouseImporter {
             log.error("failed to find warehouse(code={}),error code:{}, so skip {}", code, r.getError(), warehouse);
             return;
         }
-        if(  r.getResult().isPresent()){ //已同步过, 则更新
+        if(r.getResult().isPresent()){ //已同步过, 则更新
             Warehouse exist = r.getResult().get();
             w.setId(exist.getId());
             Response<Boolean> ru = warehouseWriteService.update(w);

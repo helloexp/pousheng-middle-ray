@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.service;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseDao;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -49,7 +50,7 @@ public class WarehouseWriteServiceImpl implements WarehouseWriteService {
         try {
             if(StringUtils.hasText(warehouse.getCode())){
                 Warehouse exist = warehouseDao.findByCode(warehouse.getCode());
-                if(exist !=null){
+                if(exist !=null && !Objects.equal(exist.getId(), warehouse.getId() )){
                     log.error("duplicated warehouse code({}) with existed(id={})",warehouse.getCode(), exist.getId());
                     return Response.fail("warehouse.code.duplicate");
                 }

@@ -9,6 +9,8 @@ import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -31,6 +33,7 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/warehouse/rule")
 @Slf4j
+@OperationLogModule(OperationLogModule.Module.WAREHOUSE_RULE)
 public class WarehouseRules {
 
     @RpcConsumer
@@ -56,11 +59,32 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("创建")
     public Long create(@RequestBody ThinShop[] shops) {
 
         Response<Long> r = warehouseShopRuleWriteService.batchCreate(Lists.newArrayList(shops));
         if (!r.isSuccess()) {
             log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
+
+    /**
+     * 创建规则适用的地址信息, 同时会创建仓库发货优先级规则, 并返回新创建的rule id
+     *
+     * @param shops 勾选的店铺
+     * @return rule id 新生成的规则id
+     */
+    @RequestMapping(value="/{ruleId}",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("编辑")
+    public Boolean update(@PathVariable Long ruleId,  @RequestBody ThinShop[] shops) {
+
+        Response<Boolean> r = warehouseShopRuleWriteService.batchUpdate(ruleId, Lists.newArrayList(shops));
+        if (!r.isSuccess()) {
+            log.error("failed to batch update warehouse rule(id={}) with shops:{}, error code:{}",
+                    ruleId, shops, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
@@ -176,6 +200,7 @@ public class WarehouseRules {
             for (ThinShop thinShop : thinShops) {
                 if (Objects.equal(thinShop.getShopId(), shopId)) {
                     thinShop.setEditable(true);
+                    thinShop.setSelected(true);
                 }
             }
         }

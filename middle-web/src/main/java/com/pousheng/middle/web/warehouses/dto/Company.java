@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class Company implements Serializable {
     private static final long serialVersionUID = 5130047977617950411L;
 
-    private String companyId;
+    private String id;
 
     private String companyName;
 }

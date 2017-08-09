@@ -45,7 +45,7 @@ public class MaterialFetcher {
         try {
             String result = this.erpClient.get("common/erp/base/gethkmaterial",
                     start, end, pageNo, pageSize, Maps.newHashMap());
-
+            log.info("got material response:{}", result);
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
                     LIST_OF_MATERIAL);
         } catch (IOException e) {

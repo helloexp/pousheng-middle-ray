@@ -73,7 +73,7 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
             return Response.ok(orderReceiverInfoDao.findByOrderIdAndOrderLevel(orderId, orderLevel));
         }catch (Exception e){
             log.error("find order receiver info by order id:{} order level:{} fai,cause:{}",orderId,orderLevel.getValue(),Throwables.getStackTraceAsString(e));
-            return Response.fail("order.receiver.info.fail.fail");
+            return Response.fail("order.receiver.info.find.fail");
         }
     }
 }

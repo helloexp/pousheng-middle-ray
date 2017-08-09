@@ -322,7 +322,7 @@ public class ShipmentReadLogic {
      * @param skuPrice 商品原价
      * @param discount 发货单中sku商品的折扣
      * @param shipSkuQuantity 发货单中sku商品的数量
-     * @return
+     * @return 总净价
      */
     private Integer getCleanFee(Integer skuPrice,Integer discount,Integer shipSkuQuantity){
 
@@ -333,7 +333,7 @@ public class ShipmentReadLogic {
      * 计算商品净价
      * @param cleanFee 商品总净价
      * @param shipSkuQuantity 发货单中sku商品的数量
-     * @return
+     * @return 商品净价
      */
     private Integer getCleanPrice(Integer cleanFee,Integer shipSkuQuantity){
         return Math.round(cleanFee/shipSkuQuantity);
@@ -352,7 +352,7 @@ public class ShipmentReadLogic {
 
     /**
      * 判断返货单是否已经计算过运费
-     * @param shopOrderId
+     * @param shopOrderId  店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
     private boolean isShipmentFeeCalculated(long shopOrderId){
@@ -373,10 +373,7 @@ public class ShipmentReadLogic {
             }
         }
         //如果已经有发货单计算过运费,返回true
-        if (count>0){
-            return true;
-        }
-        return false;
+        return count > 0;
     }
 
 

@@ -171,7 +171,7 @@ public class AdminOrderWriter {
         List<String> skuCodes = Lists.newArrayList();
         skuCodes.add(skuCode);
         Response<List<SkuTemplate>> skuResponse = skuTemplateReadService.findBySkuCodes(skuCodes);
-        if (!skuResponse.isSuccess()){
+        if (!skuResponse.isSuccess()||skuResponse.getResult().size()==0){
             log.error("find sku template failed,skuCode is {}",skuCode);
             throw new JsonResponseException(("find.sku.template.failed"));
         }

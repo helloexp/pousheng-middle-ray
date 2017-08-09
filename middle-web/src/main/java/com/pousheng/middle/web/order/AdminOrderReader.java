@@ -90,7 +90,12 @@ public class AdminOrderReader {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
-        middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (middleOrderCriteria.getShopId() == null)
+            middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
+        else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
 
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){

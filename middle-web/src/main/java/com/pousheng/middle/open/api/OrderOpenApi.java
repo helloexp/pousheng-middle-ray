@@ -154,8 +154,7 @@ public class OrderOpenApi {
              */
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
-                                                         "shipmentDate","posSerialNo","posType",
-                                                         "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
+                                                         "shipmentDate"}, httpMethods = RequestMethod.POST)
     public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,

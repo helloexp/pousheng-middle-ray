@@ -10,14 +10,13 @@ import io.terminus.open.client.center.job.aftersale.dto.SkuOfRefund;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
-import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
-
 /**
  * Created by cp on 7/17/17.
  */
@@ -49,8 +48,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         SkuTemplate skuTemplate = findR.getResult();
 
-        //TODO 塞到refund extra
-
     }
 
     @Override
@@ -72,7 +69,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     @Override
     protected Integer toParanaRefundStatus(OpenClientAfterSaleStatus status) {
         //TODO 转成中台对应的status
-        return super.toParanaRefundStatus(status);
+        switch (status){
+            case SELLER_AGREE_BUYER:
+                return MiddleRefundStatus.WAIT_HANDLE.getValue();
+            case WAIT_BUYER_RETURN_GOODS:
+                return MiddleRefundStatus.WAIT_HANDLE.getValue();
+        }
+        return null;
     }
 
     protected void updateRefund(Refund refund, OpenClientAfterSale afterSale) {

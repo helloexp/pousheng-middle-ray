@@ -370,7 +370,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue(),
                     MiddleOrderEvent.CONFIRM.toOrderOperation(),
                     MiddleRefundStatus.DONE.getValue());
-
+            //已退货待创建发货->取消换货->已完成
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation(),
+                    MiddleRefundStatus.DONE.getValue());
 
 
             //===========逆向流程

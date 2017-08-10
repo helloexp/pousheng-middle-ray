@@ -294,6 +294,20 @@ public class Refunds {
         refundWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
     }
 
+    /**
+     * 换货改退货取消售后单,必须保证这个状态已经收货
+     * @param id 售后单id
+     */
+    @RequestMapping(value = "/api/refund/{id}/cancel/on/change",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void cancelRefundForChange(@PathVariable("id")Long id){
+        Refund refund = refundReadLogic.findRefundById(id);
+        if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
+            //如果允许取消发货则修改状态
+            refundWriteLogic.updateStatus(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+        }else{
+            throw new JsonResponseException("after.sale.cancel.shipment.status.invalid");
+        }
+    }
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);

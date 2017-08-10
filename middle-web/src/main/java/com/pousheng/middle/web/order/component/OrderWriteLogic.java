@@ -15,7 +15,6 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -198,7 +197,7 @@ public class OrderWriteLogic {
     /**
      * 取消店铺订单,该店铺订单,sku订单状态为已取消(拉取电商取消整单的订单调用)
      * 电商同步专用
-     * @param shopOrderId
+     * @param shopOrderId 店铺订单
      */
     public void autoCancelShopOrder(Long shopOrderId) {
 
@@ -427,8 +426,8 @@ public class OrderWriteLogic {
     /**
      * 判断整单是否有取消的权限(自动取消整单)
      *
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 可以取消(true),不可取消(false)
      */
     private boolean validateAutoCancelShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
@@ -440,8 +439,8 @@ public class OrderWriteLogic {
     /**
      * 判断整单是否有取消的权限(自动取消失败时,手动取消整单)
      *
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 可以取消(true),不可取消(false)
      */
     private boolean validateCancelShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
@@ -453,8 +452,8 @@ public class OrderWriteLogic {
     /**
      * 判断整单是否有取消的权限(给自动取消子单使用)
      *
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 可以取消(true),不可取消(false)
      */
     private boolean validateAutoCancelShopOrder4Sku(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
@@ -466,8 +465,8 @@ public class OrderWriteLogic {
     /**
      * 判断整单是否有取消的权限(给手动取消子单使用)
      *
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 可以取消(true),不可取消(false)
      */
     private boolean validateCancelShopOrder4Sku(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
@@ -480,8 +479,8 @@ public class OrderWriteLogic {
     /**
      * 判断整单是否有撤销的权限
      *
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 可以取消(true),不可取消(false)
      */
     private boolean validateRollbackShopOrder(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
@@ -494,8 +493,8 @@ public class OrderWriteLogic {
     /**
      * 判断子单是否可以取消(自动取消)
      *
-     * @param skuOrder
-     * @return
+     * @param skuOrder 店铺订单
+     * @return  可以取消(true),不可取消(false)
      */
     private boolean validateAutoCancelSkuOrder(SkuOrder skuOrder) {
         Flow orderFlow = flowPicker.pickOrder();

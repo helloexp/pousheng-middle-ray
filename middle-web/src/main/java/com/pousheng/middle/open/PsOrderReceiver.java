@@ -8,10 +8,12 @@ import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
+import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
@@ -26,11 +28,14 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by cp on 7/25/17.
@@ -109,24 +114,58 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
-        RichOrder richOrder = super.makeParanaOrder(openClientShop,openClientFullOrder);
+        RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
-        Map<String,String> shopOrderExtra = richSkusByShop.getExtra();
-        shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
+        Map<String, String> shopOrderExtra = richSkusByShop.getExtra();
+        shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
 
         //初始化店铺子单extra
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         richSkus.forEach(richSku -> {
-            Map<String,String> skuExtra = richSku.getExtra();
-            skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
+            Map<String, String> skuExtra = richSku.getExtra();
+            skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
         //生成发票信息
-      /*  Invoice invoice = new Invoice();
-        invoice.setDetail();
-        invoiceWriteService.createInvoice(invoice);*/
+        Long invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
+        richSkusByShop.setInvoiceId(invoiceId);
         return richOrder;
+    }
+
+    private Long addInvoice(OpenClientOrderInvoice openClientOrderInvoice) {
+        try {
+            //获取发票类型
+            Integer invoiceType = Integer.valueOf(openClientOrderInvoice.getType());
+            //获取抬头
+            String title = openClientOrderInvoice.getTitle();
+            //获取detail
+            Map<String, String> detail = openClientOrderInvoice.getDetail();
+            if (detail != null) {
+                if (Objects.equals(invoiceType, 2)) {
+                    //公司
+                    detail.put("titleType", "2");
+                }
+            } else {
+                detail = Maps.newHashMap();
+                detail.put("type", String.valueOf(invoiceType));
+            }
+
+            Invoice newInvoice = new Invoice();
+            newInvoice.setTitle(title);
+            newInvoice.setStatus(1);
+            newInvoice.setIsDefault(false);
+            newInvoice.setDetail(detail);
+            Response<Long> response = invoiceWriteService.createInvoice(newInvoice);
+            if (!response.isSuccess()){
+                log.error("create invoice failed,caused by {}",response.getError());
+                throw new ServiceException("create.invoice.failed");
+            }
+            return response.getResult();
+        } catch (Exception e) {
+            log.error("create invoice failed,caused by {}",e.getMessage());
+        }
+        return null;
     }
 }

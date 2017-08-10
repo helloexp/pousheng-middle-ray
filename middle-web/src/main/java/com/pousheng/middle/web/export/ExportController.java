@@ -1,9 +1,6 @@
 package com.pousheng.middle.web.export;
 
-import com.pousheng.middle.order.dto.MiddleOrderCriteria;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.RefundPaging;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
@@ -185,7 +182,8 @@ public class ExportController {
     }
 
     @GetMapping("refund/export")
-    public void refundExport(RefundCriteria criteria) {
+    public void refundExport(MiddleRefundCriteria criteria) {
+        criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());

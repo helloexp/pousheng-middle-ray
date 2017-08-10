@@ -7,14 +7,13 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
-import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
@@ -24,13 +23,11 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
-import io.terminus.parana.order.dto.RefundCriteria;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.dto.fsm.OrderOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,8 +53,6 @@ public class Refunds {
     @Autowired
     private RefundWriteLogic refundWriteLogic;
     @Autowired
-    private OrderReadLogic orderReadLogic;
-    @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private WarehouseReadService warehouseReadService;
@@ -68,15 +63,14 @@ public class Refunds {
     @Autowired
     private PermissionUtil permissionUtil;
 
-    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
 
     //逆向单分页
     @RequestMapping(value = "/api/refund/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<RefundPaging> findBy(RefundCriteria criteria) {
+    public Paging<RefundPaging> findBy(MiddleRefundCriteria criteria) {
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
+        criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
         criteria.setIds(permissionUtil.getCurrentUserCanOperateShopIDs());
 

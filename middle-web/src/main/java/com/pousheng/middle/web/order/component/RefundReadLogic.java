@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.RefundPaging;
@@ -14,7 +15,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
@@ -52,7 +52,7 @@ public class RefundReadLogic {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
-    public Response<Paging<RefundPaging>> refundPaging(RefundCriteria criteria) {
+    public Response<Paging<RefundPaging>> refundPaging(MiddleRefundCriteria criteria) {
         Response<Paging<Refund>> refundsR = middleRefundReadService.paging(criteria);
         if (!refundsR.isSuccess()) {
             log.error("paging refund by criteria:{} fail,error:{}",criteria,refundsR.getError());

@@ -9,8 +9,10 @@ import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -42,11 +44,15 @@ public class WarehouseFetcher {
      */
     public List<PoushengWarehouse>  fetch(int pageNo, int pageSize, Date start, Date end){
         try {
-            String result = this.erpClient.get("e-commerce-api/v1/hk-get-stocks",
+            String result = this.erpClient.get("common/erp/base/gethkstocks",
                     start, end, pageNo, pageSize, Maps.newHashMap());
 
-            return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
-                    LIST_OF_WAREHOUSE);
+            if(StringUtils.hasText(result)) {
+                log.info("got warehouse response:{}", result);
+                return JsonMapper.nonEmptyMapper().getMapper().readValue(result,
+                        LIST_OF_WAREHOUSE);
+            }
+            return Collections.emptyList();
         } catch (IOException e) {
             log.error("failed to deserialize json to PoushengWarehouse list, cause:{}",
                     Throwables.getStackTraceAsString(e));

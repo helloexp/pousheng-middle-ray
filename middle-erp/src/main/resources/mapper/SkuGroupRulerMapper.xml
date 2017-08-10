@@ -79,7 +79,7 @@
         </where>
         <include refid="custom_sort"/>
 -->
-        LIMIT #{offset}, #{limit}
+       order by id desc LIMIT #{offset}, #{limit}
     </select>
 
     <update id="update" parameterType="SkuGroupRule">

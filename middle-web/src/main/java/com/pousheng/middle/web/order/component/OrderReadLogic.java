@@ -12,6 +12,7 @@ import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -311,7 +312,7 @@ public class OrderReadLogic {
 
     /**
      * 快递代码映射,根据店铺id获取
-     * @param shopId
+     * @param shopId 店铺主键
      * @return
      */
     public String getExpressCode(Long shopId,ExpressCode expressCode){
@@ -356,13 +357,12 @@ public class OrderReadLogic {
             log.error("there is not any express info by hkCode:{}", hkExpressCode);
             throw new JsonResponseException("express.info.is.not.exist");
         }
-        ExpressCode expressCode = response.getResult().getData().get(0);
-        return expressCode;
+        return response.getResult().getData().get(0);
     }
 
     /**
      * 判断子单所属订单是否存在有效的发货单
-     * @param skuId
+     * @param skuId 子单id
      * @return true->没有生成过,false 生成过
      */
     public Boolean isShipmentCreated(Long skuId){
@@ -401,5 +401,14 @@ public class OrderReadLogic {
             return Boolean.FALSE;
         }
         return Boolean.TRUE;
+    }
+
+    public SkuOrder findSkuOrderByShopOrderIdAndSkuCode(long shopOrderId,String skuCode){
+        List<SkuOrder> skuOrders = this.findSkuOrdersByShopOrderId(shopOrderId);
+        List<SkuOrder> skuOrderFilters = skuOrders.stream().filter(Objects::nonNull).filter(skuOrder -> Objects.equals(skuCode,skuOrder.getSkuCode())).collect(Collectors.toList());
+        if (skuOrderFilters.size()==0){
+            throw new ServiceException("find.skuOrder.failed");
+        }
+        return skuOrderFilters.get(0);
     }
 }

@@ -529,7 +529,7 @@ public class RefundWriteLogic {
 
     /**
      * 售后单取消,删除时回滚发货单中退货数量
-     * @param refund
+     * @param refund 售后单
      */
     public  void rollbackRefundQuantities(Refund refund){
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

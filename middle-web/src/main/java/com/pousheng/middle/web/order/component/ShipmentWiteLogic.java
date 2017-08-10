@@ -133,10 +133,10 @@ public class ShipmentWiteLogic {
     /**
      * 取消发货单逻辑
      *
-     * @param shipment
+     * @param shipment 发货单
      * @return 取消成功 返回返回true,取消失败返回false
      */
-    public boolean cancelShipment(Shipment shipment) {
+    boolean cancelShipment(Shipment shipment) {
         try {
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
@@ -172,7 +172,7 @@ public class ShipmentWiteLogic {
 
     /**
      * 自动创建发货单
-     * @param shopOrder
+     * @param shopOrder 店铺订单
      */
     public void doAutoCreateShipment(ShopOrder shopOrder){
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
@@ -198,7 +198,7 @@ public class ShipmentWiteLogic {
         ReceiverInfo receiverInfo = response.getResult().get(0);
         String cityName = receiverInfo.getCity();
         //获取市一级的地址
-        WarehouseAddress warehouseAddress = this.getWarehouseAddress(cityName,2);
+        WarehouseAddress warehouseAddress = this.getWarehouseAddress(cityName);
 
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(warehouseAddress.getId()),skuCodeAndQuantities);
@@ -213,9 +213,9 @@ public class ShipmentWiteLogic {
 
     /**
      * 创建发货单
-     * @param shopOrder
-     * @param skuOrders
-     * @param warehouseShipment
+     * @param shopOrder 店铺订单
+     * @param skuOrders  子单
+     * @param warehouseShipment 发货仓库信息
      */
     private long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment) {
         //获取该仓库中可发货的skuCode和数量的集合
@@ -255,6 +255,8 @@ public class ShipmentWiteLogic {
         Shipment shipment = this.makeShipment(shopOrder.getId(), warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
+        shipment.setShopId(shopOrder.getShopId());
+        shipment.setShopName(shopOrder.getShopName());
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
@@ -270,8 +272,8 @@ public class ShipmentWiteLogic {
 
     /**
      * 是否满足自动创建发货单的校验
-     * @param shopOrder
-     * @return
+     * @param shopOrder 店铺订单
+     * @return 不可以自动创建发货单(false),可以自动创建发货单(true)
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
@@ -290,10 +292,7 @@ public class ShipmentWiteLogic {
                 count++;
             }
         }
-        if (count>0){
-            return false;
-        }
-        return true;
+        return count <= 0;
     }
 
     /**
@@ -305,36 +304,12 @@ public class ShipmentWiteLogic {
     private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode){
         return skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).collect(Collectors.toList()).get(0);
     }
-    //检查库存是否充足
-    private void checkStockIsEnough(Long warehouseId, Map<String,Integer> skuCodeAndQuantityMap){
-
-
-        List<String> skuCodes = Lists.newArrayListWithCapacity(skuCodeAndQuantityMap.size());
-        skuCodes.addAll(skuCodeAndQuantityMap.keySet());
-        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId,skuCodes);
-        for (String skuCode : warehouseStockInfo.keySet()){
-            if(warehouseStockInfo.get(skuCode)<skuCodeAndQuantityMap.get(skuCode)){
-                log.error("sku code:{} warehouse stock:{} ship applyQuantity:{} stock not enough",skuCode,warehouseStockInfo.get(skuCode),skuCodeAndQuantityMap.get(skuCode));
-                throw new JsonResponseException(skuCode+".stock.not.enough");
-            }
-        }
-    }
-    //获取指定仓库中指定商品的库存信息
-    private Map<String, Integer> findStocksForSkus(Long warehouseId,List<String> skuCodes){
-        Response<Map<String, Integer>> r = warehouseSkuReadService.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
-        if(!r.isSuccess()){
-            log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
-                    warehouseId, skuCodes, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        return r.getResult();
-    }
 
     /**
      * 组装发货单参数
-     * @param shopOrderId
-     * @param warehouseId
-     * @return
+     * @param shopOrderId 店铺订单主键
+     * @param warehouseId 发货仓主键
+     * @return 返回组装的发货单
      */
     private Shipment makeShipment(Long shopOrderId,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
         Shipment shipment = new Shipment();
@@ -386,6 +361,13 @@ public class ShipmentWiteLogic {
 
         return shipment;
     }
+
+    /**
+     * 查找收货人信息
+     * @param orderId 订单主键
+     * @param orderLevel 订单级别 店铺订单or子单
+     * @return 收货人信息的json串
+     */
     private String findReceiverInfos(Long orderId, OrderLevel orderLevel) {
 
         List<ReceiverInfo> receiverInfos = doFindReceiverInfos(orderId, orderLevel);
@@ -405,10 +387,10 @@ public class ShipmentWiteLogic {
     }
 
     /**
-     *
-     * @param orderId
-     * @param orderLevel
-     * @return
+     *查找收货人信息
+     * @param orderId 订单主键
+     * @param orderLevel 订单级别 店铺订单or子单
+     * @return 收货人信息的list集合
      */
     private List<ReceiverInfo> doFindReceiverInfos(Long orderId, OrderLevel orderLevel) {
         Response<List<ReceiverInfo>> receiversResp = receiverInfoReadService.findByOrderId(orderId, orderLevel);
@@ -422,8 +404,8 @@ public class ShipmentWiteLogic {
 
     /**
      * 获取发货仓库信息
-     * @param warehouseId
-     * @return
+     * @param warehouseId 仓库主键
+     * @return  仓库信息
      */
     private Warehouse findWarehouseById(Long warehouseId){
         Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
@@ -437,9 +419,9 @@ public class ShipmentWiteLogic {
 
     /**
      * 发货单中填充sku订单信息
-     * @param skuOrders
-     * @param skuOrderIdAndQuantity
-     * @return
+     * @param skuOrders 子单集合
+     * @param skuOrderIdAndQuantity 子单的主键和数量的集合
+     * @return shipmentItem的集合
      */
     private List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long,Integer> skuOrderIdAndQuantity){
         Map<Long,SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId,it -> it));
@@ -451,7 +433,7 @@ public class ShipmentWiteLogic {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
-            shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/shipmentItem.getQuantity())));
+            shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
             //积分
             String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
@@ -474,13 +456,13 @@ public class ShipmentWiteLogic {
 
     /**
      * 根据市级地址名称获取市级的addressId
-     * @param addressName
-     * @return
+     * @param addressName 地级市的中文名
+     * @return 返回地址信息
      */
-    private WarehouseAddress getWarehouseAddress(String addressName,Integer level){
-        Response<WarehouseAddress> warehouseResponse = warehouseAddressReadService.findByNameAndLevel(addressName,level);
+    private WarehouseAddress getWarehouseAddress(String addressName){
+        Response<WarehouseAddress> warehouseResponse = warehouseAddressReadService.findByNameAndLevel(addressName, 2);
         if (!warehouseResponse.isSuccess()){
-            log.error("find warehouseAddress failed,addressName is(:{}) and level is (:{})",addressName,level);
+            log.error("find warehouseAddress failed,addressName is(:{}) and level is (:{})",addressName, 2);
             throw new JsonResponseException("find.warehouse.address.failed");
         }
         return  warehouseResponse.getResult();
@@ -502,7 +484,7 @@ public class ShipmentWiteLogic {
      * @param skuPrice 商品原价
      * @param discount 发货单中sku商品的折扣
      * @param shipSkuQuantity 发货单中sku商品的数量
-     * @return
+     * @return 返回sku商品总的净价
      */
     private Integer getCleanFee(Integer skuPrice,Integer discount,Integer shipSkuQuantity){
 
@@ -513,7 +495,7 @@ public class ShipmentWiteLogic {
      * 计算商品净价
      * @param cleanFee 商品总净价
      * @param shipSkuQuantity 发货单中sku商品的数量
-     * @return
+     * @return 返回sku商品净价
      */
     private Integer getCleanPrice(Integer cleanFee,Integer shipSkuQuantity){
         return Math.round(cleanFee/shipSkuQuantity);
@@ -531,14 +513,14 @@ public class ShipmentWiteLogic {
     }
     /**
      * 判断是否存在有效的发货单
-     * @param shopOrderId
+     * @param shopOrderId 店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
     private boolean isShipmentFeeCalculated(long shopOrderId){
         Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
-            throw new JsonResponseException("find.shipment.failed");
+            throw new JsonResponseException("shipment.find.fail");
         }
         //获取有效的销售发货单
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
@@ -552,10 +534,7 @@ public class ShipmentWiteLogic {
             }
         }
         //如果已经有发货单计算过运费,返回true
-        if (count>0){
-            return true;
-        }
-        return false;
+        return count > 0;
     }
 
 }

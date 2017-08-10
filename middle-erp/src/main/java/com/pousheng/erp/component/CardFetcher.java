@@ -9,6 +9,7 @@ import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.util.Date;
@@ -44,7 +45,7 @@ public class CardFetcher {
         try {
             String result = this.erpClient.get("common/erp/base/gethkcards",
                     start, end, pageNo, pageSize, Maps.newHashMap());
-
+            log.info("got card response: {}", result);
             return JsonMapper.nonEmptyMapper().getMapper().readValue(result, LIST_OF_CARD);
         } catch (IOException e) {
             log.error("failed to deserialize json to PoushengCard list, cause:{}",

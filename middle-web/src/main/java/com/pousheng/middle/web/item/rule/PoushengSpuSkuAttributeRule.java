@@ -42,34 +42,38 @@ public class PoushengSpuSkuAttributeRule extends RuleExecutor {
         attrMetas.put(AttributeMetaKey.SEARCHABLE, "0");
         attrMetas.put(AttributeMetaKey.USER_DEFINED, "1");
 
+        if(CollectionUtils.isEmpty(groupedSkuAttributes)){
+            result.setSkuAttrs(Collections.emptyList());
+        }else {
+            //校验每个销售属性是否合法
+            for (GroupedSkuAttribute groupedSkuAttribute : groupedSkuAttributes) {
 
-        //校验每个销售属性是否合法
-        for (GroupedSkuAttribute groupedSkuAttribute : groupedSkuAttributes) {
+                List<SkuAttributeRule> skuAttributeRules = Lists.newArrayList();
+                for (SkuAttribute skuAttribute : groupedSkuAttribute.getSkuAttributes()) {
+                    //如果属性值在预设值范围类,或者属性允许自定义, 则为有效的销售属性
+                    String attrVal = skuAttribute.getAttrVal();
 
-            List<SkuAttributeRule> skuAttributeRules = Lists.newArrayList();
-            for (SkuAttribute skuAttribute : groupedSkuAttribute.getSkuAttributes()) {
-                //如果属性值在预设值范围类,或者属性允许自定义, 则为有效的销售属性
-                String attrVal = skuAttribute.getAttrVal();
+                    SkuAttributeRule skuAttributeRule = new SkuAttributeRule();
+                    skuAttributeRule.setAttrMetas(attrMetas);
+                    skuAttributeRule.setAttrVal(attrVal);
+                    skuAttributeRule.setUnit(skuAttribute.getUnit());
+                    skuAttributeRule.setImage(skuAttribute.getImage());
+                    skuAttributeRule.setShowImage(skuAttribute.getShowImage());
+                    skuAttributeRule.setThumbnail(skuAttribute.getThumbnail());
+                    skuAttributeRules.add(skuAttributeRule);
 
-                SkuAttributeRule skuAttributeRule = new SkuAttributeRule();
-                skuAttributeRule.setAttrMetas(attrMetas);
-                skuAttributeRule.setAttrVal(attrVal);
-                skuAttributeRule.setUnit(skuAttribute.getUnit());
-                skuAttributeRule.setImage(skuAttribute.getImage());
-                skuAttributeRule.setShowImage(skuAttribute.getShowImage());
-                skuAttributeRule.setThumbnail(skuAttribute.getThumbnail());
-                skuAttributeRules.add(skuAttributeRule);
-
+                }
+                if (!CollectionUtils.isEmpty(skuAttributeRules)) {
+                    GroupedSkuAttributeWithRule gsaw = new GroupedSkuAttributeWithRule();
+                    gsaw.setAttrKey(groupedSkuAttribute.getAttrKey());
+                    gsaw.setAttributeRules(skuAttributeRules);
+                    groupedSkuAttributeWithRules.add(gsaw);
+                }
             }
-            if (!CollectionUtils.isEmpty(skuAttributeRules)) {
-                GroupedSkuAttributeWithRule gsaw = new GroupedSkuAttributeWithRule();
-                gsaw.setAttrKey(groupedSkuAttribute.getAttrKey());
-                gsaw.setAttributeRules(skuAttributeRules);
-                groupedSkuAttributeWithRules.add(gsaw);
-            }
+
+            result.setSkuAttrs(groupedSkuAttributeWithRules);
         }
 
-        result.setSkuAttrs(groupedSkuAttributeWithRules);
         if(!CollectionUtils.isEmpty(input.getGeneralSkus())) {
             result.setGeneralSku(input.getGeneralSkus());
         }

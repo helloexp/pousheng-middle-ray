@@ -206,7 +206,7 @@ public class WarehouseCompanyRules {
             Set<String> doneCompanyCodes = Sets.newHashSet(rCompanyCodes.getResult());
             List<Company> todoCompanies = Lists.newArrayList();
             for (Company company : all) {
-                if(!doneCompanyCodes.contains(company.getCompanyId())){
+                if(!doneCompanyCodes.contains(company.getId())){
                     todoCompanies.add(company);
                 }
             }

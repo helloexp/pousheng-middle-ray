@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.impl.service;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.order.impl.dao.ExpressCodeDao;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -49,6 +50,13 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
             if (expressCode.getId() == null) {
                 log.error("exprsssCode id is null");
                 return Response.fail("expressCode.id.null");
+            }
+            if (StringUtils.hasText(expressCode.getName())) {
+                ExpressCode exist = expressCodeDao.findByName(expressCode.getName());
+                if (exist != null&& !Objects.equal(expressCode.getId(),exist.getId())) {
+                    log.error("duplicated name({}) with existed(name={})", expressCode.getName(), exist.getName());
+                    return Response.fail("expressCode.name.duplicate");
+                }
             }
             return Response.ok(expressCodeDao.update(expressCode));
         } catch (Exception e) {

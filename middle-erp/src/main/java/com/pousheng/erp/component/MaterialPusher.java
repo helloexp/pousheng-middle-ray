@@ -45,8 +45,10 @@ public class MaterialPusher {
         for (SpuMaterial spuMaterial : spuMaterials) {
             materialIds.add(spuMaterial.getMaterialId());
         }
+        String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds)));
+        log.info("add material to erp, data:{}", json);
         erpClient.postJson("common/erp/base/creatematerialmapper",
-                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds))));
+                json);
     }
 
     /**
@@ -60,8 +62,10 @@ public class MaterialPusher {
         for (SpuMaterial spuMaterial : spuMaterials) {
             materialIds.add(spuMaterial.getMaterialId());
         }
+        String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds)));
+        log.info("remove material from erp, data:{}", json);
         erpClient.postJson("common/erp/base/removematerialmapper",
-                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds))) );
+                json);
     }
 
     @Data

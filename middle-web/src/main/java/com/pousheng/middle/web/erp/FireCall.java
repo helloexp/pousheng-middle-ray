@@ -2,6 +2,7 @@ package com.pousheng.middle.web.erp;
 
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.SpuImporter;
+import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -30,13 +31,17 @@ public class FireCall {
 
     private final BrandImporter brandImporter;
 
+    private final WarehouseImporter warehouseImporter;
+
     private final DateTimeFormatter dft;
 
 
     @Autowired
-    public FireCall(SpuImporter spuImporter, BrandImporter brandImporter) {
+    public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
+                    WarehouseImporter warehouseImporter) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
+        this.warehouseImporter = warehouseImporter;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -48,7 +53,7 @@ public class FireCall {
     public String synchronizeBrand(@RequestParam String start,
                                    @RequestParam(name = "end", required = false) String end){
         Date from = dft.parseDateTime(start).toDate();
-        Date to = null;
+        Date to = new Date();
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }
@@ -63,7 +68,7 @@ public class FireCall {
                                  @RequestParam(name = "end", required = false) String end) {
 
         Date from = dft.parseDateTime(start).toDate();
-        Date to = null;
+        Date to = new Date();
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }
@@ -76,6 +81,20 @@ public class FireCall {
     }
 
 
+    @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeWarehouse(@RequestParam String start,
+                                       @RequestParam(name = "end", required = false) String end){
+        Date from = dft.parseDateTime(start).toDate();
+        Date to = new Date();
+        if (StringUtils.hasText(end)) {
+            to = dft.parseDateTime(end).toDate();
+        }
+        log.info("begin to synchronize warehouse from {} to {}", start, end);
+        int warehouseCount = warehouseImporter.process(from, to);
+        log.info("synchronized {} warehouses", warehouseCount);
+        return "ok";
+
+    }
 
 
 }

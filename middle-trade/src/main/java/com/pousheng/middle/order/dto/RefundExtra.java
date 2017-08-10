@@ -55,6 +55,8 @@ public class RefundExtra implements Serializable{
     private Date posCreatedAt;
     //订单类型,整单还是子单
     private String orderType;
+    //换货取消发货单的标记
+    private String cancelShip;
 
     //恒康确认收到买家退货商品时间
     //private Date hkConfirmAt;

@@ -13,6 +13,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleWriteService;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.dto.Company;
@@ -58,6 +59,8 @@ public class WarehouseCompanyRules {
 
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -216,6 +219,19 @@ public class WarehouseCompanyRules {
             throw new JsonResponseException("company.rule.request.fail");
         }
     }
+
+
+
+    @RequestMapping(value = "/by/warehouse-code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public WarehouseCompanyRule findByWarehouseCode(@RequestParam String warehouseCode){
+        Response<WarehouseCompanyRule> r = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouseCode);
+        if(!r.isSuccess()){
+            log.error("failed to find WarehouseCompanyRule by warehouseCode={}, error code:{}", warehouseCode, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
 
 
 }

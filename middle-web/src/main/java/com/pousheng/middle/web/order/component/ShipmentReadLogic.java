@@ -1,14 +1,19 @@
 package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
+import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.api.FlowPicker;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -50,6 +55,8 @@ public class ShipmentReadLogic {
 
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @Autowired
+    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -257,6 +264,36 @@ public class ShipmentReadLogic {
         return orderShipmentRes.getResult();
     }
 
+
+    /**
+     * 根据仓库编码查询公司规则
+     * @param warehouseCode
+     * @return
+     */
+    public Response<WarehouseCompanyRule> findCompanyRuleByWarehouseCode(String warehouseCode){
+
+        String companyCode;
+        try {
+            //获取公司编码
+            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
+        }catch (Exception e){
+            log.error("analysis warehouse code:{} fail,cause:{}",warehouseCode, Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("analysis.warehouse.code.fail");
+        }
+
+        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        if(!ruleRes.isSuccess()){
+            log.error("find warehouse company rule by company code:{} fail,error:{}",companyCode,ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
+        }
+
+        WarehouseCompanyRule companyRule = ruleRes.getResult();
+        if (Arguments.isNull(companyRule)) {
+            log.error("not find warehouse company rule by company code:{}", companyCode);
+            return Response.fail("warehouse.company.rule.not.exist");
+        }
+        return Response.ok(companyRule);
+    }
 
 
     /**

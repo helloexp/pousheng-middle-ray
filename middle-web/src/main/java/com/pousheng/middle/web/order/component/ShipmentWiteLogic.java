@@ -323,21 +323,9 @@ public class ShipmentWiteLogic {
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
 
-
-        String warehouseCode = warehouse.getCode();
-
-        String companyCode;
-        try {
-            //获取公司编码
-            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
-        }catch (Exception e){
-            log.error("analysis warehouse code:{} fail,cause:{}",warehouseCode, Throwables.getStackTraceAsString(e));
-            throw new JsonResponseException("analysis.warehouse.code.fail");
-        }
-
-        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
-        if(!ruleRes.isSuccess()){
-            log.error("find warehouse company rule by company code:{} fail,error:{}",companyCode,ruleRes.getError());
+        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
+        if (!ruleRes.isSuccess()) {
+            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
             throw new JsonResponseException(ruleRes.getError());
         }
 

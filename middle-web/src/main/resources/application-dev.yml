@@ -62,7 +62,7 @@ rpc.dubbo:
 gateway:
   erp:
     host: http://esbt.pousheng.com
-    accessKey: 58281fefa2dfe674e64a840c5f087a6e3b538a1f
+    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
   member:
     host: http://api-test-member.pousheng.com
   uc:

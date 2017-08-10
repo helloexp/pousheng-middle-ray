@@ -34,6 +34,7 @@ import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -227,6 +228,24 @@ public class AdminOrderReader {
         return result;
     }
 
+    /**
+     * 判断待处理,处理中的子单是否有条码没有关联的
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/is/handle/legal",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isLegalHandleShopOrder(@PathVariable("id") Long id){
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id,
+                MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+        int count = 0;
+        for (SkuOrder skuOrder:skuOrders){
+            if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+                count++;
+            }
+        }
+        return count <= 0;
+
+    }
     /**
      * 根据pid获取下级地址信息
      * @param id

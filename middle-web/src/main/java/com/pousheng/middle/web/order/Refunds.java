@@ -328,7 +328,9 @@ public class Refunds {
         editMiddleRefund.setOrderRefund(orderRefund);
         editMiddleRefund.setRefund(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
+        if (refundExtra.getShipmentId()!=null){
+            editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
+        }
         editMiddleRefund.setRefundExtra(refundExtra);
 
         //如果为换货,则获取换货商品信息

@@ -18,7 +18,9 @@ import io.terminus.parana.item.model.Sku;
 import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
+import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
@@ -45,6 +47,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @RpcConsumer
     private OrderWriteService orderWriteService;
+
+    @RpcConsumer
+    private InvoiceWriteService invoiceWriteService;
 
     @Override
     protected Item findItemById(Long paranaItemId) {
@@ -110,6 +115,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         Map<String,String> shopOrderExtra = richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS,String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
+
         //初始化店铺子单extra
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         richSkus.forEach(richSku -> {
@@ -117,6 +123,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER,String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
+        //生成发票信息
+      /*  Invoice invoice = new Invoice();
+        invoice.setDetail();
+        invoiceWriteService.createInvoice(invoice);*/
         return richOrder;
     }
 }

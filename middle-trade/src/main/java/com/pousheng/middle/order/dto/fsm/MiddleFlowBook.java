@@ -323,7 +323,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleRefundStatus.REFUND.getValue());
-
+            //==================售中退款==================
+            addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.ON_SALE_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.REFUND.getValue());
             //============== 退货 ====================
 
             //同步中 -->同步退货成功 --> 同步退货成功-待退货

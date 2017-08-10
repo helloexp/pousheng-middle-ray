@@ -59,7 +59,8 @@ public enum MiddleOrderEvent {
     CANCEL_RETURN(-13, "cancelReturn", "admin"),
     RETURN_CHANGE(-14, "returnChange", "hk"),
     RETURN_REJECT(-15, "returnReject", "seller"),
-    RETURN_CONFIRM(-16, "returnConfirm", "seller");
+    RETURN_CONFIRM(-16, "returnConfirm", "seller"),
+    ON_SALE_RETURN(-17,"onSaleReturn","seller");
 
 
     @Getter

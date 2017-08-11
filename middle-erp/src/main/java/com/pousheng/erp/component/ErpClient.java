@@ -58,6 +58,8 @@ public class ErpClient {
             params.put("page_size", pageSize.toString());
         }
 
+        log.info("request to {} with params: {}", host + "/" + path, params);
+
         HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .header("verifycode", accessKey)
                 .acceptJson()
@@ -75,6 +77,7 @@ public class ErpClient {
 
 
     public String post(String path, Map<String, String> params){
+        log.info("request to {} with params: {}", host + "/" + path, params);
         HttpRequest r = HttpRequest.post(host+"/"+path, params, true)
                 .header("verifycode", accessKey)
                 .acceptJson()
@@ -105,6 +108,8 @@ public class ErpClient {
     }
 
     public String postJson(String path, String json){
+        log.info("request to {} with params: {}", host + "/" + path, json);
+
         HttpRequest r = HttpRequest.post(host+"/"+path)
                 .header("verifycode", accessKey)
                 .contentType("application/json")

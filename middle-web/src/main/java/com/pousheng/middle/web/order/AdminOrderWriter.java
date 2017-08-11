@@ -225,7 +225,7 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/edit/invoice",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void editInvoiceInfos(@PathVariable("id")Long id,@RequestParam("data")String data){
+    public void editInvoiceInfos(@PathVariable("id")Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
@@ -235,7 +235,7 @@ public class AdminOrderWriter {
             log.error("failed to parse invoiceMap:{}",data);
             throw new JsonResponseException("invoice.map.invalid");
         }
-        Response<Boolean> response = middleOrderWriteService.updateInvoices(id,invoiceMap);
+        Response<Boolean> response = middleOrderWriteService.updateInvoices(id,invoiceMap,title);
         if (!response.isSuccess()){
             log.error("failed to edit invoiceMap:{}",data);
             throw new JsonResponseException(response.getError());

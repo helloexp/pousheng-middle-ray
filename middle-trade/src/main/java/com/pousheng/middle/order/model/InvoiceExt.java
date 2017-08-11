@@ -21,7 +21,7 @@ public class InvoiceExt implements java.io.Serializable{
     @JsonIgnore
     private String detailJson;
     private Map<String, String> detail;
-
+    private String title;
     public InvoiceExt(){
 
     }
@@ -63,4 +63,7 @@ public class InvoiceExt implements java.io.Serializable{
     public void setId(Long id) {
         this.id = id;
     }
+
+    public String getTitle(){return this.title;}
+    public void setTitle(String title){this.title=title;};
 }

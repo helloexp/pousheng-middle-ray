@@ -25,6 +25,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -76,7 +77,7 @@ public class Refunds {
 
     //逆向单分页
     @RequestMapping(value = "/api/refund/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<RefundPaging> findBy(RefundCriteria criteria) {
+    public Paging<RefundPaging> findBy(MiddleRefundCriteria criteria) {
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }

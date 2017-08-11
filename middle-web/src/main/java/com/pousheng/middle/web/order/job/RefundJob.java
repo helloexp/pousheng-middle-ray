@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.job;
 
+import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.RefundPaging;
@@ -51,7 +52,7 @@ public class RefundJob {
         RefundCriteria criteria = new RefundCriteria();
         criteria.setStatus(Arrays.asList(MiddleRefundStatus.WAIT_HANDLE.getValue()));
         criteria.setType(MiddleRefundType.ON_SALES_REFUND.value());
-        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
+        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging((MiddleRefundCriteria) criteria);
         if (!response.isSuccess()) {
             log.error("find  refund paging failed,caused by {}", response.getError());
             throw new ServiceException(response.getError());

@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.RefundPaging;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -203,5 +204,16 @@ public class RefundReadLogic {
         }
 
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_EXTRA_INFO),RefundExtra.class);
+    }
+
+    /**
+     * 判断收货完成的售后换货单是否可以取消发货
+     * @param refund 售后单
+     * @return 可以取消发货(true),不可以取消发货(false)
+     */
+    public boolean isAfterSaleCanCancelShip(Refund refund){
+        Flow afterSaleFlow = flowPicker.pickAfterSales();
+        Integer sourceStatus = refund.getStatus();
+        return afterSaleFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
     }
 }

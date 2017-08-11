@@ -11,6 +11,8 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
+import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
+import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
@@ -21,6 +23,7 @@ import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -31,6 +34,7 @@ import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -78,6 +82,8 @@ public class AdminOrderReader {
     private SkuOrderReadService skuOrderReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @Autowired
+    private WarehouseAddressCacher warehouseAddressCacher;
 
     /**
      * 交易订单分页
@@ -177,7 +183,6 @@ public class AdminOrderReader {
 
     }
 
-
     /**
      * 订单信息和收货地址信息封装 for 新建售后订单展示订单信息
      * @param id 交易订单id
@@ -221,5 +226,44 @@ public class AdminOrderReader {
     public Boolean isShipmentCreated(@PathVariable("id") Long id){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         return result;
+    }
+
+    /**
+     * 判断待处理,处理中的子单是否有条码没有关联的
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/is/handle/legal",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean isLegalHandleShopOrder(@PathVariable("id") Long id){
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id,
+                MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
+        int count = 0;
+        for (SkuOrder skuOrder:skuOrders){
+            if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+                count++;
+            }
+        }
+        return count <= 0;
+
+    }
+    /**
+     * 根据pid获取下级地址信息
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/api/warehouse/address/{id}/children",method = RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
+    public Response<List<WarehouseAddress>> findWarehouseAddressByPid(@PathVariable("id")long id){
+        try{
+            List<WarehouseAddress> warehouseAddress= warehouseAddressCacher.findByPid(id);
+            return Response.ok(warehouseAddress);
+        }catch (ServiceException e){
+            log.error("address.found.failed", e.getMessage());
+            return Response.fail(e.getMessage());
+        }catch (Exception e){
+            log.error("address.found.failed", e.getMessage());
+            return Response.fail(e.getMessage());
+        }
+
+
     }
  }

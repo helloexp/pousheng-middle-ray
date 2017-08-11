@@ -73,6 +73,11 @@
         FROM <include refid="tb" />
         WHERE name = #{name}
     </select>
+    <select id="findByOfficalCode" parameterType="string" resultMap="ExpressCodeMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE offical_code = #{officalCode}
+    </select>
     <update id="update" parameterType="ExpressCode">
         UPDATE
         <include refid="tb"/>

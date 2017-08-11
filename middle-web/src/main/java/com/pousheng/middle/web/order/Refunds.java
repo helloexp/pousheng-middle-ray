@@ -1,12 +1,14 @@
 package com.pousheng.middle.web.order;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -23,7 +25,10 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.order.dto.RefundCriteria;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
@@ -53,6 +58,8 @@ public class Refunds {
     @Autowired
     private RefundWriteLogic refundWriteLogic;
     @Autowired
+    private OrderReadLogic orderReadLogic;
+    @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private WarehouseReadService warehouseReadService;
@@ -61,7 +68,11 @@ public class Refunds {
     @Autowired
     private SyncRefundToEcpLogic syncRefundToEcpLogic;
     @Autowired
+    private MiddleOrderFlowPicker flowPicker;
+    @Autowired
     private PermissionUtil permissionUtil;
+
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
     //逆向单分页
@@ -288,6 +299,30 @@ public class Refunds {
         refundWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
     }
 
+    /**
+     * 换货改退货取消售后单,必须保证这个状态已经收货
+     * @param id 售后单id
+     */
+    @RequestMapping(value = "/api/refund/{id}/cancel/on/change",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void cancelRefundForChange(@PathVariable("id")Long id){
+        Refund refund = refundReadLogic.findRefundById(id);
+        if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
+            //如果允许取消发货则修改状态
+            refundWriteLogic.updateStatus(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+            Flow flow = flowPicker.pickAfterSales();
+            Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+            RefundExtra refundExtra  = refundReadLogic.findRefundExtra(refund);
+            refundExtra.setCancelShip("true");
+            Map<String,String> extraMap =refund.getExtra();
+            extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
+            refund.setStatus(targetStatus);
+            refund.setExtra(extraMap);
+            refundWriteLogic.update(refund);
+
+        }else{
+            throw new JsonResponseException("after.sale.cancel.shipment.status.invalid");
+        }
+    }
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
@@ -322,7 +357,9 @@ public class Refunds {
         editMiddleRefund.setOrderRefund(orderRefund);
         editMiddleRefund.setRefund(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
+        if (refundExtra.getShipmentId()!=null){
+            editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
+        }
         editMiddleRefund.setRefundExtra(refundExtra);
 
         //如果为换货,则获取换货商品信息

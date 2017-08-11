@@ -63,6 +63,18 @@ public class WarehouseAddressCacher {
     }
 
     /**
+     * 根据pid查找地址信息
+     * @param pid
+     * @return
+     */
+    public List<WarehouseAddress> findByPid(Long pid){
+        if (!byPid.containsKey(pid)){
+            log.error("address(id={}) not found", pid);
+            throw new ServiceException("address.not.found");
+        }
+        return (List<WarehouseAddress>) byPid.get(pid);
+    }
+    /**
      * @param maxDepth 构建树的最大深度, 如果深度<=0, 表示不限制深度
      * @return 构建完成的地址树
      */

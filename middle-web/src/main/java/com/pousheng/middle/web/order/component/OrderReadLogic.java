@@ -405,7 +405,8 @@ public class OrderReadLogic {
 
     public SkuOrder findSkuOrderByShopOrderIdAndSkuCode(long shopOrderId,String skuCode){
         List<SkuOrder> skuOrders = this.findSkuOrdersByShopOrderId(shopOrderId);
-        List<SkuOrder> skuOrderFilters = skuOrders.stream().filter(Objects::nonNull).filter(skuOrder -> Objects.equals(skuCode,skuOrder.getSkuCode())).collect(Collectors.toList());
+        List<SkuOrder> skuOrderFilters = skuOrders.stream().filter(Objects::nonNull).
+                filter(skuOrder -> Objects.equals(skuCode,skuOrder.getSkuCode())).collect(Collectors.toList());
         if (skuOrderFilters.size()==0){
             throw new ServiceException("find.skuOrder.failed");
         }

@@ -46,7 +46,7 @@ public class RefundJob {
     /**
      * 每隔9分钟执行一次,拉取中台售中退款的退款单
      */
-    @Scheduled(cron = "0 0/1 * * * ? ")
+    @Scheduled(cron = "0 0/9 * * * ? ")
     public void doneRefund() {
         log.info("START SCHEDULE ON SALE REFUND");
         MiddleRefundCriteria criteria = new MiddleRefundCriteria();

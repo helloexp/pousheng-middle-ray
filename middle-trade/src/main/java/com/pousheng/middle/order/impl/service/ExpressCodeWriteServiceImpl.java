@@ -35,8 +35,8 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
                     return Response.fail("expressCode.name.duplicate");
                 }
                 ExpressCode exist1 = expressCodeDao.findByOfficalCode(expressCode.getOfficalCode());
-                if (exist!=null){
-                    log.error("duplicated offical code ({}) with existed(officalCode={})", expressCode.getOfficalCode(), exist.getOfficalCode());
+                if (exist1!=null){
+                    log.error("duplicated offical code ({}) with existed(officalCode={})", expressCode.getOfficalCode(), exist1.getOfficalCode());
                     return Response.fail("expressCode.officalCode.duplicate");
                 }
             }

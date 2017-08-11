@@ -57,5 +57,5 @@ public interface MiddleOrderWriteService {
      * @param invoicesMap 编辑的发票信息
      * @return
      */
-    public Response<Boolean> updateInvoices(long shopOrderId, Map<String,String> invoicesMap);
+    public Response<Boolean> updateInvoices(long shopOrderId, Map<String,String> invoicesMap,String title);
 }

@@ -126,7 +126,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     }
 
     @Override
-    public Response<Boolean> updateInvoices(long shopOrderId, Map<String, String> invoicesMap) {
+    public Response<Boolean> updateInvoices(long shopOrderId, Map<String, String> invoicesMap,String title) {
         try {
             List<OrderInvoice> orderInvoices = this.orderInvoiceDao.findByOrderIdAndOrderType(shopOrderId, Integer.valueOf(OrderLevel.SHOP.getValue()));
             OrderInvoice orderInvoice = orderInvoices.get(0);
@@ -137,6 +137,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             InvoiceExt invoiceExt = new InvoiceExt();
             invoiceExt.setId(invoice.getId());
             invoiceExt.setDetail(originInvoiceMap);
+            invoiceExt.setTitle(title);
             boolean result = invoiceExtDao.updateInvoiceDetail(invoiceExt);
             if (!result) {
                 log.error("failed to update orderInvoiceInfo failed,(shopOrderId={}))", shopOrderId);

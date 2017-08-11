@@ -49,10 +49,10 @@ public class RefundJob {
     @Scheduled(cron = "0 0/9 * * * ? ")
     public void doneRefund() {
         log.info("START SCHEDULE ON SALE REFUND");
-        RefundCriteria criteria = new RefundCriteria();
+        MiddleRefundCriteria criteria = new MiddleRefundCriteria();
         criteria.setStatus(Arrays.asList(MiddleRefundStatus.WAIT_HANDLE.getValue()));
         criteria.setType(MiddleRefundType.ON_SALES_REFUND.value());
-        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging((MiddleRefundCriteria) criteria);
+        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
         if (!response.isSuccess()) {
             log.error("find  refund paging failed,caused by {}", response.getError());
             throw new ServiceException(response.getError());
@@ -61,27 +61,29 @@ public class RefundJob {
         for (RefundPaging refundPaging : refunds) {
             Refund refund = refundPaging.getRefund();
             OrderRefund orderRefund = refundPaging.getOrderRefund();
-            RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            String orderType = refund.getExtra().get("orderType");
             try {
-                if (Objects.equals(refundExtra.getOrderType(), "1")) {
+                if (Objects.equals(orderType, "1")) {
                     //整单退款,调用整单退款的逻辑
                     orderWriteLogic.autoCancelShopOrder(orderRefund.getOrderId());
-                } else if (Objects.equals(refundExtra.getOrderType(), "2")) {
+                } else if (Objects.equals(orderType, "2")) {
 
                     List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
                     for (RefundItem refundItem : refundItems) {
                         //子单退款,调用子单退款的逻辑
                         orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode());
                     }
+                }else{
+                    throw new ServiceException("error.order.type");
                 }
+                //更新售后单状态为已退款
+                refundWriteLogic.updateStatus(refund, MiddleOrderEvent.ON_SALE_RETURN.toOrderOperation());
             } catch (ServiceException e) {
                 log.error("on sale refund failed,cause by {}",e.getMessage());
             } catch (Exception e) {
                 log.error("on sale refund failed,cause by {}",e.getMessage());
             }
 
-            //更新售后单状态为已退款
-            refundWriteLogic.updateStatus(refund, MiddleOrderEvent.ON_SALE_RETURN.toOrderOperation());
         }
         log.info("END SCHEDULE ON SALE REFUND");
     }

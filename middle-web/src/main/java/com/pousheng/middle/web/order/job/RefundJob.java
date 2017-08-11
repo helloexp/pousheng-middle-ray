@@ -46,13 +46,13 @@ public class RefundJob {
     /**
      * 每隔9分钟执行一次,拉取中台售中退款的退款单
      */
-    @Scheduled(cron = "0 0/9 * * * ? ")
+    @Scheduled(cron = "0 0/1 * * * ? ")
     public void doneRefund() {
         log.info("START SCHEDULE ON SALE REFUND");
-        RefundCriteria criteria = new RefundCriteria();
+        MiddleRefundCriteria criteria = new MiddleRefundCriteria();
         criteria.setStatus(Arrays.asList(MiddleRefundStatus.WAIT_HANDLE.getValue()));
         criteria.setType(MiddleRefundType.ON_SALES_REFUND.value());
-        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging((MiddleRefundCriteria) criteria);
+        Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
         if (!response.isSuccess()) {
             log.error("find  refund paging failed,caused by {}", response.getError());
             throw new ServiceException(response.getError());

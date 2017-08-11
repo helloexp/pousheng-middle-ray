@@ -52,10 +52,19 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
                 return Response.fail("expressCode.id.null");
             }
             if (StringUtils.hasText(expressCode.getName())) {
+                //判断快递名称是否能够改成其他的
                 ExpressCode exist = expressCodeDao.findByName(expressCode.getName());
                 if (exist != null&& !Objects.equal(expressCode.getId(),exist.getId())) {
                     log.error("duplicated name({}) with existed(name={})", expressCode.getName(), exist.getName());
                     return Response.fail("expressCode.name.duplicate");
+                }
+            }
+            //判断官方代码要保持唯一性
+            if (StringUtils.hasText(expressCode.getOfficalCode())){
+                ExpressCode exist = expressCodeDao.findByOfficalCode(expressCode.getOfficalCode());
+                if (exist!=null&& !Objects.equal(expressCode.getId(),exist.getId())){
+                    log.error("duplicated offical code ({}) with existed(officalCode={})", expressCode.getOfficalCode(), exist.getOfficalCode());
+                    return Response.fail("expressCode.officalCode.duplicate");
                 }
             }
             return Response.ok(expressCodeDao.update(expressCode));

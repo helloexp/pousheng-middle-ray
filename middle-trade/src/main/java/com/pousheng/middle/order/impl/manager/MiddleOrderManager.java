@@ -3,6 +3,8 @@ package com.pousheng.middle.order.impl.manager;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleFlowBook;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
+import com.pousheng.middle.order.model.ShopOrderExt;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -40,6 +42,8 @@ public class MiddleOrderManager {
     private OrderWriteService orderWriteService;
     @Autowired
     private OrderReceiverInfoDao orderReceiverInfoDao;
+    @Autowired
+    private ShopOrderExtDao shopOrderExtDao;
 
     /**
      * 更新总单与子单的状态,适用于总单的取消和撤销流程
@@ -180,10 +184,10 @@ public class MiddleOrderManager {
             log.error("failed to update orderReceiveInfo failed,(shopOrderId={}))",shopOrderId);
             throw new ServiceException("receiveInfo.update.fail");
         }
-        ShopOrder shopOrder = new ShopOrder();
-        shopOrder.setId(shopOrderId);
-        shopOrder.setBuyerNote(buyerNote);
-        boolean shopOrderResult = shopOrderDao.update(shopOrder);
+        ShopOrderExt shopOrderExt = new ShopOrderExt();
+        shopOrderExt.setId(shopOrderId);
+        shopOrderExt.setBuyerNote(buyerNote);
+        boolean shopOrderResult = shopOrderExtDao.updateBuyerNoteById(shopOrderExt);
         if (!shopOrderResult){
             log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
             throw new ServiceException("receiveInfo.update.fail");

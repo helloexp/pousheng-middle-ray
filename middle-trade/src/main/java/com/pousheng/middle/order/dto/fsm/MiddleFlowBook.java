@@ -323,7 +323,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.REFUND.toOrderOperation(),
                     MiddleRefundStatus.REFUND.getValue());
-
+            //==================售中退款==================
+            addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.ON_SALE_RETURN.toOrderOperation(),
+                    MiddleRefundStatus.REFUND.getValue());
             //============== 退货 ====================
 
             //同步中 -->同步退货成功 --> 同步退货成功-待退货
@@ -367,7 +370,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue(),
                     MiddleOrderEvent.CONFIRM.toOrderOperation(),
                     MiddleRefundStatus.DONE.getValue());
-
+            //已退货待创建发货->取消换货->已完成
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation(),
+                    MiddleRefundStatus.DONE.getValue());
 
 
             //===========逆向流程

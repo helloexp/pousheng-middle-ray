@@ -79,9 +79,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         SkuTemplate skuTemplate = findR.getResult();
         ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
         SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(),skuOfRefund.getSkuCode());
-        //todo 添加extra
         //查询需要售后的发货单
-        Shipment shipment = this.findShipmentByShopId(shopOrder.getId(),skuOfRefund.getSkuCode());
+        Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(),skuOfRefund.getSkuCode(),skuOrder.getQuantity());
         RefundExtra refundExtra = new RefundExtra();
         refundExtra.setReceiverInfo(receiverInfo);
         if (!Objects.isNull(shipment)){
@@ -103,7 +102,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             refundItem.setSkuDiscount(shipmentItem.getSkuDiscount());
             refundItem.setCleanFee(shipmentItem.getCleanFee());
             refundItem.setCleanPrice(shipmentItem.getCleanPrice());
-            refundItem.setApplyQuantity(shipmentItem.getQuantity());
             refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
             updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(),shipmentItem.getQuantity(),shipmentItems);
             //更新发货单商品中的已退货数量
@@ -117,6 +115,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
+        refundItem.setApplyQuantity(skuOrder.getQuantity());
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
@@ -165,11 +164,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
     /**
      * 获取存在skuCode的发货单
-     * @param shopOrderId
-     * @param skuCode
+     * @param shopOrderId 店铺订单id
+     * @param skuCode 商品条码
+     * @param quantity  申请售后的数量
      * @return
      */
-    private Shipment findShipmentByShopId(long shopOrderId,String skuCode){
+    private Shipment findShipmentByOrderInfo(long shopOrderId,String skuCode,Integer quantity){
         Response<List<Shipment>> response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
@@ -179,7 +179,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 filter(shipment ->Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())).collect(Collectors.toList());;
         for (Shipment shipment:shipments){
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(),skuCode)).collect(Collectors.toList());
+            List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().
+                    filter(Objects::nonNull).filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(),skuCode))
+                    .filter(shipmentItem -> (shipmentItem.getQuantity() >= quantity)).collect(Collectors.toList());
             if (shipmentItemFilters.size()>0){
                 return shipment;
             }

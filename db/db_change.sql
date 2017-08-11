@@ -87,3 +87,6 @@ ALTER TABLE `pousheng_warehouse_company_rules` change  `shop_id` `shop_id` varch
 
 -- 买家名称允许为空
 ALTER TABLE `parana_shop_orders` change  `buyer_name` `buyer_name` VARCHAR(64)  NULL COMMENT '买家名称';
+
+--发票信息中user_id允许为空
+ALTER TABLE `parana_invoices` change  `user_id` `user_id` bigint(20)  NULL COMMENT '用户id';

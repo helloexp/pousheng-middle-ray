@@ -117,28 +117,14 @@ public class CreateShipments {
         Warehouse warehouse = warehouseRes.getResult();
         shipmentPreview.setWarehouseId(warehouse.getId());
         shipmentPreview.setWarehouseName(warehouse.getName());
-        String warehouseCode = warehouse.getCode();
 
-        String companyCode;
-        try {
-            //获取公司编码
-            companyCode = Splitter.on("-").splitToList(warehouseCode).get(0);
-        } catch (Exception e) {
-            log.error("analysis warehouse code:{} fail,cause:{}", warehouseCode, Throwables.getStackTraceAsString(e));
-            return Response.fail("analysis.warehouse.code.fail");
-        }
-
-        Response<WarehouseCompanyRule> ruleRes = warehouseCompanyRuleReadService.findByCompanyCode(companyCode);
+        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
         if (!ruleRes.isSuccess()) {
-            log.error("find warehouse company rule by company code:{} fail,error:{}", companyCode, ruleRes.getError());
+            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
             return Response.fail(ruleRes.getError());
         }
 
         WarehouseCompanyRule companyRule = ruleRes.getResult();
-        if (Arguments.isNull(companyRule)) {
-            log.error("not find warehouse company rule by company code:{}", companyCode);
-            return Response.fail("warehouse.company.rule.not.exist");
-        }
         shipmentPreview.setErpOrderShopCode(companyRule.getShopId());
         shipmentPreview.setErpOrderShopName(companyRule.getShopName());
         shipmentPreview.setErpPerformanceShopCode(companyRule.getShopId());

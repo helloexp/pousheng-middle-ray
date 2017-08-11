@@ -2,7 +2,7 @@ DROP TABLE IF EXISTS `pousheng_sku_group_rules`;
 
 CREATE TABLE `pousheng_sku_group_rules` (
   `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '自增主键' ,
-  `card_id` varchar(20) NOT NULL COMMENT '品牌id',
+  `card_id` varchar(100) NOT NULL COMMENT '品牌id',
   `kind_id` varchar(20) DEFAULT NULL COMMENT '对应的类目id',
   `rule_type` tinyint(4) NOT NULL COMMENT '规则类型, 1为按照分割符来区分色号, 2为按照末尾xx为来区分色号, 3为优先分隔符, 次为index',
   `split_char` char(1) DEFAULT NULL COMMENT '分割符',

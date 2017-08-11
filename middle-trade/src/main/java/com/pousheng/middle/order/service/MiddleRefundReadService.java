@@ -1,8 +1,8 @@
 package com.pousheng.middle.order.service;
 
+import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 
@@ -18,7 +18,7 @@ public interface MiddleRefundReadService {
      * @param criteria 逆向订单查询条件
      * @return 逆向订单集合
      */
-    Response<Paging<Refund>> paging(RefundCriteria criteria);
+    Response<Paging<Refund>> paging(MiddleRefundCriteria criteria);
 
 
     /**

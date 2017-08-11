@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
@@ -37,7 +38,7 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     private OrderRefundDao orderRefundDao;
 
     @Override
-    public Response<Paging<Refund>> paging(RefundCriteria criteria) {
+    public Response<Paging<Refund>> paging(MiddleRefundCriteria criteria) {
         try {
 
             PageInfo pageInfo = new PageInfo(criteria.getPageNo(), criteria.getSize());

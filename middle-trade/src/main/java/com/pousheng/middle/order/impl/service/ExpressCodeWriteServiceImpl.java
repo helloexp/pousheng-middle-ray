@@ -34,6 +34,11 @@ public class ExpressCodeWriteServiceImpl implements ExpressCodeWriteService {
                     log.error("duplicated name({}) with existed(name={})", expressCode.getName(), exist.getName());
                     return Response.fail("expressCode.name.duplicate");
                 }
+                ExpressCode exist1 = expressCodeDao.findByOfficalCode(expressCode.getOfficalCode());
+                if (exist!=null){
+                    log.error("duplicated offical code ({}) with existed(officalCode={})", expressCode.getOfficalCode(), exist.getOfficalCode());
+                    return Response.fail("expressCode.officalCode.duplicate");
+                }
             }
             expressCodeDao.create(expressCode);
             return Response.ok(expressCode.getId());

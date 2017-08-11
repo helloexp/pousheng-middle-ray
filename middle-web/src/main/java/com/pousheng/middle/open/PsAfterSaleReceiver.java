@@ -116,7 +116,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
         refundItem.setApplyQuantity(skuOrder.getQuantity());
-        Map<String,String> extraMap = Maps.newHashMap();
+        Map<String,String> extraMap = refund.getExtra()!=null?refund.getExtra():Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
         refund.setExtra(extraMap);

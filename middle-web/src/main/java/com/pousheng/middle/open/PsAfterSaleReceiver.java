@@ -20,6 +20,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.aftersale.component.DefaultAfterSaleReceiver;
 import io.terminus.open.client.center.job.aftersale.dto.SkuOfRefund;
+import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
@@ -134,20 +135,25 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             case EXCHANGE:
                 return MiddleRefundType.AFTER_SALES_CHANGE.value();
             default:
-                return null;
+                log.error("open client after sale type:{} invalid",type.name());
+                throw new OpenClientException(500,"open.client.after.type.invalid");
         }
     }
 
     @Override
     protected Integer toParanaRefundStatus(OpenClientAfterSaleStatus status) {
-        //TODO 转成中台对应的status
         switch (status){
             case SELLER_AGREE_BUYER:
                 return MiddleRefundStatus.WAIT_HANDLE.getValue();
             case WAIT_BUYER_RETURN_GOODS:
                 return MiddleRefundStatus.WAIT_HANDLE.getValue();
+            case SUCCESS:
+                return MiddleRefundStatus.REFUND.getValue();
+            default:
+                log.error("open client after sale status:{} invalid",status.name());
+                throw new OpenClientException(500,"open.client.after.status.invalid");
+
         }
-        return null;
     }
 
     protected void updateRefund(Refund refund, OpenClientAfterSale afterSale) {

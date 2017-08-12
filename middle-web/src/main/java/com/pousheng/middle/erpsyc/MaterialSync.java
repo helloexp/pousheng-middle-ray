@@ -65,8 +65,7 @@ public class MaterialSync implements CommandLineRunner {
                                     new TypeReference<List<PoushengMaterial>>() {
                                     });
                             for (PoushengMaterial poushengMaterial : poushengMaterials) {
-                                String cardId = poushengMaterial.getCard_id();
-                                Brand brand = brandCacher.findByOuterId(cardId);
+                                Brand brand = brandCacher.findByCardName(poushengMaterial.getCard_name());
                                 spuImporter.doProcess(poushengMaterial, brand);
                             }
                         }

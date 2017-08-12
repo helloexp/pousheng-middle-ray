@@ -25,7 +25,7 @@ CREATE TABLE `pousheng_spu_materials` (
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_psm_spu_id` (spu_id),
-  KEY `idx_psm_material_id` (material_id)
+  UNIQUE KEY `idx_psm_material_id` (material_id)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 后台类目表: parana_back_categories

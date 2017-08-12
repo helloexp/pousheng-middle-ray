@@ -567,7 +567,9 @@ public class Shipments {
         shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
 
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
-
+        //店铺信息塞值
+        shipment.setShopId(Long.valueOf(companyRule.getShopId()));
+        shipment.setShopName(companyRule.getShopName());
         shipment.setExtra(extraMap);
 
         return shipment;

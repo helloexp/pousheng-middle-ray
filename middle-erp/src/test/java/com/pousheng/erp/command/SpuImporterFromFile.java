@@ -12,6 +12,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.brand.model.Brand;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 
 import java.nio.file.DirectoryStream;
@@ -35,15 +36,20 @@ public class SpuImporterFromFile implements CommandLineRunner{
 
     private final ErpBrandCacher brandCacher;
 
+    private final String materialFilePath;
+
     @Autowired
-    public SpuImporterFromFile(SpuImporter spuImporter, ErpBrandCacher brandCacher) {
+    public SpuImporterFromFile(SpuImporter spuImporter,
+                               ErpBrandCacher brandCacher,
+                               @Value("${material.file.path: ./material}")String materialFilePath) {
         this.spuImporter = spuImporter;
         this.brandCacher = brandCacher;
+        this.materialFilePath = materialFilePath;
     }
 
     public void run(String... args) throws Exception {
         try (DirectoryStream<Path> directoryStream = Files.newDirectoryStream(
-                Paths.get("/Users/jlchen/Downloads/product-data/material"))) {
+                Paths.get(materialFilePath))) {
             for (Path path : directoryStream) {
                 if (path.toString().endsWith(".txt")) {
                     log.info("process {}", path.toAbsolutePath());
@@ -59,8 +65,7 @@ public class SpuImporterFromFile implements CommandLineRunner{
                             new TypeReference<List<PoushengMaterial>>() {
                             });
                     for (PoushengMaterial poushengMaterial : poushengMaterials) {
-                        String cardId = poushengMaterial.getCard_id();
-                        Brand brand = brandCacher.findByOuterId(cardId);
+                        Brand brand = brandCacher.findByCardName(poushengMaterial.getCard_name());
                         spuImporter.doProcess(poushengMaterial, brand);
                     }
                 }

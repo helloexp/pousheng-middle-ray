@@ -25,7 +25,7 @@ CREATE TABLE `pousheng_spu_materials` (
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_psm_spu_id` (spu_id),
-  KEY `idx_psm_material_id` (material_id)
+  UNIQUE KEY `idx_psm_material_id` (material_id)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 后台类目表: parana_back_categories
@@ -66,6 +66,7 @@ CREATE TABLE `parana_brands` (
 CREATE INDEX idx_brands_name ON parana_brands (name);
 CREATE INDEX idx_brands_en_name ON `parana_brands` (`en_name`);
 CREATE INDEX idx_brands_unique_name ON `parana_brands` (`unique_name`);
+create unique index idx_pbrands_outer_id on parana_brands(outer_id)
 
 -- 类目属性表: parana_category_attributes
 drop table if exists `parana_category_attributes`;

@@ -74,7 +74,7 @@ public class SpuImporter {
             pageNo = pageNo + 1;
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {
-                Brand brand = brandCacher.findByOuterId(material.getCard_id());//做品牌映射
+                Brand brand = brandCacher.findByCardName(material.getCard_name());//做品牌映射
                 doProcess(material, brand);
             }
             handleCount+=materials.size();
@@ -205,7 +205,13 @@ public class SpuImporter {
      * @return 对应名字的类目
      */
     private BackCategory createBackCategoryIfNotExist(BackCategory parent, String categoryName) {
-        BackCategory backCategory = categoryDao.findChildrenByName(parent.getId(), categoryName);
+        BackCategory backCategory = null;
+        try {
+            backCategory = categoryDao.findChildrenByName(parent.getId(), categoryName);
+        } catch (Exception e) {
+            log.error("duplicated categoryName {} where pid={}", categoryName,parent.getId());
+            throw e;
+        }
         if(backCategory!=null){
             return backCategory;
         }else{

@@ -59,6 +59,8 @@ public class TradeConstants {
     public static final String SKU_INTEGRAL="integral";
     //客服备注
     public static final String CUSTOMER_SERVICE_NOTE="customerServiceNote";
+    //恒康售后单id
+    public static final String HK_REFUND_ID="hkRefundId";
     /**
      * 逆向单来源
      * see RefundSource

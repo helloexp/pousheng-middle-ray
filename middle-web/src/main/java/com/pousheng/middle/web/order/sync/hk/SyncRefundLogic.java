@@ -111,8 +111,10 @@ public class SyncRefundLogic {
                 }
                 Refund update = new Refund();
                 update.setId(refund.getId());
-                //update.setOutId(refundBody.getErpOrderNo()); todo 塞外部id
-                update.setOutId(refund.getId().toString());
+                // todo 塞外部id
+                Map<String,String> extraMap = refund.getExtra();
+                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(refund.getId()));
+                update.setExtra(extraMap);
                 return refundWriteLogic.update(update);
             } else {
                 //更新同步状态

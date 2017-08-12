@@ -18,6 +18,7 @@ import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
@@ -143,11 +144,14 @@ public class HKShipmentDoneListener {
                         throw new JsonResponseException("update.refund.status.error");
                     }
                     //将shipmentExtra的已发货时间塞入值
+                    Flow flow = flowPicker.pickAfterSales();
+                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation());
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
                     refundExtra.setShipAt(new Date());
                     Map<String, String> extrMap = refund.getExtra();
                     extrMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
                     refund.setExtra(extrMap);
+                    refund.setStatus(targetStatus);
                     Response<Boolean> updateRefundRes = refundWriteService.update(refund);
                     if (!updateRefundRes.isSuccess()) {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());

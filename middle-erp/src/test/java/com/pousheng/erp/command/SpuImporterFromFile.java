@@ -14,6 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
@@ -25,8 +27,9 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-06-20
  */
-//@Component
+@Component
 @Slf4j
+@Profile("sync")
 public class SpuImporterFromFile implements CommandLineRunner{
 
     public static final ObjectMapper mapper = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper();

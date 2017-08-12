@@ -66,6 +66,7 @@ CREATE TABLE `parana_brands` (
 CREATE INDEX idx_brands_name ON parana_brands (name);
 CREATE INDEX idx_brands_en_name ON `parana_brands` (`en_name`);
 CREATE INDEX idx_brands_unique_name ON `parana_brands` (`unique_name`);
+create unique index idx_pbrands_outer_id on parana_brands(outer_id)
 
 -- 类目属性表: parana_category_attributes
 drop table if exists `parana_category_attributes`;

@@ -139,6 +139,15 @@ public class SyncHkTest {
     }
 
 
+    @Test
+    public void testEsb2(){
+        String url ="https://esbt.pousheng.com/common-terminus/ec/default/gethelloworld?name=1923311113";
+        String result = HttpRequest.get(url).trustAllHosts().trustAllCerts().header("verifycode","e153ca58197e4931977f6a17a27f0beb").connectTimeout(1000000).readTimeout(1000000).body();
+        System.out.println(result);
+
+    }
+
+
     /**
      * 对参数列表进行签名
      */

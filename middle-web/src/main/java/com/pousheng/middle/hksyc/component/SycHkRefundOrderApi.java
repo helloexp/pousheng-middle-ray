@@ -37,12 +37,13 @@ public class SycHkRefundOrderApi {
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
         log.debug("paramJson:{}",paramJson);
-        String hkGateway ="http://esbt.pousheng.com/commonerp/erp/sal/addrefund";
+        String hkGateway ="https://esbt.pousheng.com/commonerp/erp/sal/addrefund";
         String responseBody = HttpRequest.post(hkGateway)
                 .header("verifycode","646edef40c9c481fb9cd9c61a41dabc1")
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
+                .trustAllHosts().trustAllCerts()
                 .send(paramJson)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();

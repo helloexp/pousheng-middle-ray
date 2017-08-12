@@ -72,9 +72,9 @@ public class FireCall {
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }
-        log.info("synchronize brand first");
-        int cardCount = brandImporter.process(from, to);
-        log.info("synchronized {} brands", cardCount);
+        //log.info("synchronize brand first");
+        //int cardCount = brandImporter.process(from, to);
+        //log.info("synchronized {} brands", cardCount);
         int spuCount =spuImporter.process(from, to);
         log.info("synchronized {} spus", spuCount);
         return "ok";

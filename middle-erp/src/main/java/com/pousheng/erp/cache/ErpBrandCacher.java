@@ -32,10 +32,10 @@ public class ErpBrandCacher {
                 .maximumSize(2000)
                 .build(new CacheLoader<String, Brand>() {
                     @Override
-                    public Brand load(String outerId) throws Exception {
-                        final Brand brand = brandDao.findByOuterId(outerId);
+                    public Brand load(String name) throws Exception {
+                        final Brand brand = brandDao.findByName(name);
                         if (brand == null) {
-                            log.error("pousheng brand(outerId={}) not found", outerId);
+                            log.error("pousheng brand(name={}) not found", name);
                             throw new ServiceException("brand.not.found");
                         }
                         return brand;
@@ -44,17 +44,17 @@ public class ErpBrandCacher {
     }
 
     /**
-     * 根据外部id查找对应的品牌
+     * 根据name查找对应的品牌
      *
-     * @param outerId 外部id
+     * @param name 名称
      * @return 对应的品牌
      */
-    public Brand findByOuterId(String outerId){
+    public Brand findByCardName(String name){
         try {
-            return brandCache.getUnchecked(outerId);
+            return brandCache.getUnchecked(name);
         } catch (Exception e) {
             Throwables.propagateIfPossible(e, ServiceException.class);
-            log.error("failed to find brand by outerId({}), cause:{}", outerId, Throwables.getStackTraceAsString(e));
+            log.error("failed to find brand by name({}), cause:{}", name, Throwables.getStackTraceAsString(e));
             throw new ServiceException(e);
         }
     }

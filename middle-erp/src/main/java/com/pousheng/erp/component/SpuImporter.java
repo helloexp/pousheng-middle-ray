@@ -74,7 +74,7 @@ public class SpuImporter {
             pageNo = pageNo + 1;
             hasNext = Objects.equal(materials.size(), PAGE_SIZE);
             for (PoushengMaterial material : materials) {
-                Brand brand = brandCacher.findByOuterId(material.getCard_id());//做品牌映射
+                Brand brand = brandCacher.findByCardName(material.getCard_name());//做品牌映射
                 doProcess(material, brand);
             }
             handleCount+=materials.size();

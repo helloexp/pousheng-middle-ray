@@ -37,7 +37,7 @@ public class PoushengWarehouse implements Serializable {
     /**
      * 电话
      */
-    private String telephone;
+    private String telphone;
 
 
     /**

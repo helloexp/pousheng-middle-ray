@@ -121,6 +121,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
         refund.setExtra(extraMap);
+        if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
+            //借用tradeNo字段来标记售中退款的逆向单是否已处理
+            refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
+        }
     }
 
     @Override

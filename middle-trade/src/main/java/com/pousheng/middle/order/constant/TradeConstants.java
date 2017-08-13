@@ -68,4 +68,13 @@ public class TradeConstants {
     public static final String REFUND_SOURCE = "refundSource";
 
 
+
+    /**
+     * 售中逆向单 取消 处理结果
+     * 0 待取消 1已取消
+     */
+    public static final String REFUND_WAIT_CANCEL = "0";
+    public static final String REFUND_CANCELED = "1";
+
+
 }

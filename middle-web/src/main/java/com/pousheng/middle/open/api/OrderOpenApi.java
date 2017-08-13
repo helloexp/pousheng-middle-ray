@@ -99,38 +99,39 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
-        List<HkHandleShipmentResult> results = null;
+        List<HkHandleShipmentResult> results = results = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
         try{
-            results = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
-            HkHandleShipmentResult result = results.get(0);
-            Long shipmentId = result.getEcShipmentId();
-            Boolean handleResult = result.getSuccess();
-            String hkShipmentId = result.getHkShipmentId();
-            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            //冗余恒康发货单号
-            //更新发货单的状态
-            if (handleResult){
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                if (!updateSyncStatusRes.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                }
-                //更新恒康shipmentId
-                Shipment update = new Shipment();
-                update.setId(shipment.getId());
-                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                shipmentExtra.setOutShipmentId(hkShipmentId);
-                Map<String, String> extraMap = shipment.getExtra();
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
-                update.setExtra(extraMap);
-                shipmentWiteLogic.update(update);
-            }else{
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                if (!updateSyncStatusRes.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+            for(HkHandleShipmentResult result :results){
+                Long shipmentId = result.getEcShipmentId();
+                Boolean handleResult = result.getSuccess();
+                String hkShipmentId = result.getHkShipmentId();
+                Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+                //冗余恒康发货单号
+                //更新发货单的状态
+                if (handleResult){
+                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                    if (!updateSyncStatusRes.isSuccess()) {
+                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    }
+                    //更新恒康shipmentId
+                    Shipment update = new Shipment();
+                    update.setId(shipment.getId());
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                    shipmentExtra.setOutShipmentId(hkShipmentId);
+                    Map<String, String> extraMap = shipment.getExtra();
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
+                    update.setExtra(extraMap);
+                    shipmentWiteLogic.update(update);
+                }else{
+                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                    if (!updateSyncStatusRes.isSuccess()) {
+                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    }
                 }
             }
+
 
         }catch (JsonResponseException | ServiceException e) {
             log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());

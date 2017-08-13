@@ -1,11 +1,13 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Optional;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.item.api.ParanaItemSeeker;
 import io.terminus.open.client.center.item.dto.ParanaItem;
+import io.terminus.open.client.center.item.dto.ParanaSku;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -21,18 +23,22 @@ public class PsParanaItemSeeker implements ParanaItemSeeker {
     private PoushengMiddleSpuService poushengMiddleSpuService;
 
     @Override
-    public ParanaItem findBySkuCode(String skuCode) {
-        Response<SkuTemplate> finR = poushengMiddleSpuService.findBySkuCode(skuCode);
-        if (!finR.isSuccess()) {
+    public Response<Optional<ParanaSku>> findSkuBySkuCode(String skuCode) {
+        Response<Optional<SkuTemplate>> findR = poushengMiddleSpuService.findBySkuCode(skuCode);
+        if (!findR.isSuccess()) {
             log.error("fail to find sku template by skuCode={},cause:{}",
-                    skuCode, finR.getError());
-            throw new ServiceException(finR.getError());
+                    skuCode, findR.getError());
+            return Response.fail(findR.getError());
         }
-        SkuTemplate skuTemplate = finR.getResult();
+        Optional<SkuTemplate> skuTemplateOptional = findR.getResult();
 
-        ParanaItem paranaItem = new ParanaItem();
-        paranaItem.setItemId(skuTemplate.getSpuId());
-        //TODO 设置其他信息
-        return paranaItem;
+        if (skuTemplateOptional.isPresent()) {
+            SkuTemplate skuTemplate = skuTemplateOptional.get();
+            ParanaSku paranaSku = new ParanaSku();
+            paranaSku.setItemId(skuTemplate.getSpuId());
+            //TODO 设置其他信息
+            return Response.ok(Optional.of(paranaSku));
+        }
+        return Response.ok(Optional.absent());
     }
 }

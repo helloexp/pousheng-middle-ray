@@ -1,5 +1,6 @@
 package com.pousheng.middle.spu.service;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
@@ -48,14 +49,14 @@ public class PoushengMiddleSpuService {
         }
     }
 
-    public Response<SkuTemplate> findBySkuCode(String skuCode) {
+    public Response<Optional<SkuTemplate>> findBySkuCode(String skuCode) {
         try {
             List<SkuTemplate> skuTemplates = skuTemplateDao.findBySkuCode(skuCode);
             if (CollectionUtils.isEmpty(skuTemplates)) {
-                log.error("sku template not found where skuCode={}", skuCode);
-                return Response.fail("sku.template.not.found");
+                log.warn("sku template not found where skuCode={}", skuCode);
+                return Response.ok(Optional.absent());
             }
-            return Response.ok(skuTemplates.get(0));
+            return Response.ok(Optional.of(skuTemplates.get(0)));
         } catch (Exception e) {
             log.error("fail to find sku template by skuCode={},cause:{}",
                     skuCode, Throwables.getStackTraceAsString(e));

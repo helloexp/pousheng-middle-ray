@@ -1,5 +1,6 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -77,13 +78,17 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected Sku findSkuByCode(String skuCode) {
         //TODO use cache
-        Response<SkuTemplate> findR = middleSpuService.findBySkuCode(skuCode);
+        Response<Optional<SkuTemplate>> findR = middleSpuService.findBySkuCode(skuCode);
         if (!findR.isSuccess()) {
             log.error("fail to find sku template by code={},cause:{}",
                     skuCode, findR.getError());
             return null;
         }
-        SkuTemplate skuTemplate = findR.getResult();
+        Optional<SkuTemplate> skuTemplateOptional = findR.getResult();
+        if (!skuTemplateOptional.isPresent()) {
+            return null;
+        }
+        SkuTemplate skuTemplate = skuTemplateOptional.get();
 
         Sku sku = new Sku();
         sku.setId(skuTemplate.getId());
@@ -158,13 +163,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             newInvoice.setIsDefault(false);
             newInvoice.setDetail(detail);
             Response<Long> response = invoiceWriteService.createInvoice(newInvoice);
-            if (!response.isSuccess()){
-                log.error("create invoice failed,caused by {}",response.getError());
+            if (!response.isSuccess()) {
+                log.error("create invoice failed,caused by {}", response.getError());
                 throw new ServiceException("create.invoice.failed");
             }
             return response.getResult();
         } catch (Exception e) {
-            log.error("create invoice failed,caused by {}",e.getMessage());
+            log.error("create invoice failed,caused by {}", e.getMessage());
         }
         return null;
     }

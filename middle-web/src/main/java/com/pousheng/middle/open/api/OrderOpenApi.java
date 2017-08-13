@@ -245,9 +245,11 @@ public class OrderOpenApi {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
                 "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
-           Refund refund = refundReadLogic.findRefundById(refundOrderId);
-            if (!Objects.equals(hkRefundOrderId, refund.getOutId())) {
-                log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), refund.getOutId());
+            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+            Map<String,String> extraMap = refund.getExtra();
+            String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
+            if (!Objects.equals(hkRefundOrderId, hkRefundId)) {
+                log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), hkRefundId);
                 throw new ServiceException("hk.refund.id.not.matching");
             }
 
@@ -270,9 +272,9 @@ public class OrderOpenApi {
             //更新扩展信息
             Refund update = new Refund();
             update.setId(refundOrderId);
-            Map<String, String> extraMap = refund.getExtra();
-            extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-            update.setExtra(extraMap);
+            Map<String, String> extra = refund.getExtra();
+            extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+            update.setExtra(extra);
 
             Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
             if (!updateExtraRes.isSuccess()) {

@@ -96,7 +96,7 @@ public class WarehouseImporter {
         w.setType(pw.getStock_type());
         Map<String, String>  extra = Maps.newHashMap();
         extra.put("outCode", pw.getStock_code());
-        extra.put("telephone", pw.getTelephone());
+        extra.put("telephone", pw.getTelphone());
         w.setExtra(extra);
         return w;
     }

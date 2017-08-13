@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.hk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.hksyc.component.SycHkShipmentOrderApi;
@@ -37,6 +38,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,7 +67,6 @@ public class SyncShipmentLogic {
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-
     /**
      * 同步发货单到恒康
      *
@@ -86,13 +87,13 @@ public class SyncShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
             //todo 同步恒康
-/*            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
-            SycShipmentOrderResponse response = this.makeSycShipmentOrderResponse(sycHkShipmentOrderApi.doSyncShipmentOrder(list));
-            SycHkShipmentOrderResponseBody orderBody = response.getOrderBody();
-            HkResponseHead head = response.getHead();*/
+            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
+            SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
+            //SycHkShipmentOrderResponseBody orderBody = response.getOrderBody();
+            HkResponseHead head = response.getHead();
             //解析返回结果
-            HkResponseHead head = new HkResponseHead();
-            head.setCode("0");
+           // HkResponseHead head = new HkResponseHead();
+            //head.setCode("0");
             if (Objects.equals(head.getCode(), "0")) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
@@ -162,10 +163,10 @@ public class SyncShipmentLogic {
 
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //todo 同步恒康取消
-           /* String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(), 0);
-            HkResponseHead head = this.makeHkResponseHead(response);*/
-            HkResponseHead head = new HkResponseHead();
-            head.setCode("0");
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(), 0);
+            HkResponseHead head = JsonMapper.nonEmptyMapper().fromJson(response,HkResponseHead.class);
+            //HkResponseHead head = new HkResponseHead();
+            //head.setCode("0");
             //head返回0代表成功
             if (Objects.equals(head.getCode(), "0")) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
@@ -229,11 +230,11 @@ public class SyncShipmentLogic {
         //会员账号昵称
         tradeOrder.setBuyerNick(shipmentDetail.getReceiverInfo().getReceiveUserName());
         //订单总金额
-        tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentItemFee()));
+        tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentItemFee())/100);
         //订单总运费
-        tradeOrder.setFeeMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentShipFee()));
+        tradeOrder.setFeeMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentShipFee()/100));
         //买家应付金额
-        tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee()));
+        tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());
         //第三方支付流水号-可以不传
@@ -258,11 +259,17 @@ public class SyncShipmentLogic {
         //绩效店铺编码
         tradeOrder.setPerformanceShopId(shipmentExtra.getErpPerformanceShopCode());
         //todo 发货仓库id
-        tradeOrder.setStockId(String.valueOf(shipmentExtra.getWarehouseId()));
+        Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
+        if (!response.isSuccess()){
+            log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
+            throw new ServiceException(response.getError());
+        }
+        Warehouse warehouse = response.getResult();
+        tradeOrder.setStockId(warehouse.getInnerCode());
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
         tradeOrder.setItems(items);      //更新状态取消失败
-        updateShipmetSyncCancelFail(shipment);
+        //updateShipmetSyncCancelFail(shipment);
         return tradeOrder;
     }
 
@@ -283,7 +290,7 @@ public class SyncShipmentLogic {
             //(恒康:中台子订单号),这里拼接了发货单id与skuId
             item.setOrderSubNo(String.valueOf(shipment.getId()) + "-" + String.valueOf(shipmentItem.getSkuOrderId()));
             //中台skuCode
-            item.setBarcode(shipmentItem.getOutSkuCode());
+            item.setBarcode(shipmentItem.getSkuCode());
             //购买数量--对应中台发货单sku发货数量
             item.setNum(shipmentItem.getQuantity());
             //优惠金额--中台折扣/100
@@ -339,9 +346,8 @@ public class SyncShipmentLogic {
      */
     private SycShipmentOrderResponse makeSycShipmentOrderResponse(String response) throws IOException {
         SycShipmentOrderResponse sycShipmentOrderResponse = new SycShipmentOrderResponse();
-
-        Map<String, String> responnseMap = (Map) objectMapper.readValue(response, JacksonType.MAP_OF_STRING);
-
+        Map<String,String> responnseMap = mapper.fromJson(response, mapper.createCollectionType(HashMap.class, String.class, String.class));
+        //Map<String, String> responnseMap = (Map) objectMapper.readValue(response, JacksonType.MAP_OF_STRING);
         if (CollectionUtils.isEmpty(responnseMap)) {
             log.error("sync hk and shipmentResponseMap is null");
             throw new ServiceException("shipment.responseMap.is.null");
@@ -436,7 +442,7 @@ public class SyncShipmentLogic {
         }
     }
     /**
-     * 获取恒康
+     * 获取恒康Code
      * @param warehouseId
      * @return
      */

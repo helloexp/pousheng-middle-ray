@@ -266,6 +266,8 @@ public class SyncShipmentLogic {
         }
         Warehouse warehouse = response.getResult();
         tradeOrder.setStockId(warehouse.getInnerCode());
+        //京东快递,自选快递
+        tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
         tradeOrder.setItems(items);      //更新状态取消失败

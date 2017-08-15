@@ -252,7 +252,7 @@ public class ShipmentWiteLogic {
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
 
-        Shipment shipment = this.makeShipment(shopOrder.getId(), warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
+        Shipment shipment = this.makeShipment(shopOrder, warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setShopId(shopOrder.getShopId());
@@ -307,14 +307,14 @@ public class ShipmentWiteLogic {
 
     /**
      * 组装发货单参数
-     * @param shopOrderId 店铺订单主键
+     * @param shopOrder 店铺订单
      * @param warehouseId 发货仓主键
      * @return 返回组装的发货单
      */
-    private Shipment makeShipment(Long shopOrderId,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
+    private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
-        shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
+        shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
 
         //发货仓库信息
         Warehouse warehouse = findWarehouseById(warehouseId);
@@ -342,7 +342,13 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
         //发货单总的净价
         shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
-
+        //添加物流编码
+        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
+            shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
+        }else{
+            shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+        }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
 
         shipment.setExtra(extraMap);

@@ -5,10 +5,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
 import com.pousheng.middle.hksyc.dto.HkResponseHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
-import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
-import com.pousheng.middle.hksyc.dto.trade.SycHkRefundResponseBody;
-import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
+import com.pousheng.middle.hksyc.dto.trade.*;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
@@ -92,15 +89,9 @@ public class SyncRefundLogic {
             refund.setStatus(targetStatus);
 
             //要根据不同步的售后单类型来决定同步成功或失败的状态
-    /*        String response = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
-            SycRefundResponse sycRefundResponse = this.makeSycRefundResponse(response);
+            String response = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
+            SycRefundResponse sycRefundResponse =JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
             HkResponseHead head = sycRefundResponse.getHead();
-                            SycHkRefundResponseBody refundBody = sycRefundResponse.getRefundBody();
-
-            */
-            //获取响应头
-            HkResponseHead head = new HkResponseHead();
-            head.setCode("0");
             if (Objects.equals(head.getCode(), "0")) {
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
                 OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
@@ -112,8 +103,9 @@ public class SyncRefundLogic {
                 Refund update = new Refund();
                 update.setId(refund.getId());
                 // todo 塞外部id
+                SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
                 Map<String,String> extraMap = refund.getExtra();
-                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(refund.getId()));
+                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getRefundNo()));
                 update.setExtra(extraMap);
                 return refundWriteLogic.update(update);
             } else {

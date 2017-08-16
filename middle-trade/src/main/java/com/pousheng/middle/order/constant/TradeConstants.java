@@ -61,6 +61,10 @@ public class TradeConstants {
     public static final String CUSTOMER_SERVICE_NOTE="customerServiceNote";
     //恒康售后单id
     public static final String HK_REFUND_ID="hkRefundId";
+    //京东物流编码
+    public static final String JD_VEND_CUST_ID="0000000000004547";
+    //自选物流编码
+    public static final String OPTIONAL_VEND_CUST_ID="00000000012489";
     /**
      * 逆向单来源
      * see RefundSource

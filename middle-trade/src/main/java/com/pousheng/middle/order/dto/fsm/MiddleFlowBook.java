@@ -246,7 +246,9 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
-
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                    MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
             //待发货 -->取消恒康 -> 取消同步中
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),

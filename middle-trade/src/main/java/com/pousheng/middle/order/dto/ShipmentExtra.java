@@ -57,5 +57,6 @@ public class ShipmentExtra implements Serializable{
     private String posAmt;
     //pos单生成时间
     private Date posCreatedAt;
-
+    //物流编码
+    private String vendCustID;
 }

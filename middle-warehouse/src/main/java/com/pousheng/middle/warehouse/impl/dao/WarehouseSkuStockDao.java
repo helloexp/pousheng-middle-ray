@@ -133,6 +133,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
             wss.setBaseStock(erpStock.longValue());
             wss.setWarehouseId(warehouseId);
             wss.setSkuCode(skuCode);
+            wss.setSyncAt(updatedAt);
             this.create(wss);
         }else {
             this.sqlSession.update(sqlId("syncStock"),

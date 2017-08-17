@@ -130,7 +130,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
         try {
             List<OrderInvoice> orderInvoices = this.orderInvoiceDao.findByOrderIdAndOrderType(shopOrderId, Integer.valueOf(OrderLevel.SHOP.getValue()));
             OrderInvoice orderInvoice = orderInvoices.get(0);
-            Invoice invoice = invoiceDao.findById(orderInvoice.getId());
+            Invoice invoice = invoiceDao.findById(orderInvoice.getInvoiceId());
             Map<String, String> originInvoiceMap = invoice.getDetail();
             originInvoiceMap.putAll(invoicesMap);
             //更新操作

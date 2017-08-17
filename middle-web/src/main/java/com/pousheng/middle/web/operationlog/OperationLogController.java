@@ -7,6 +7,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,6 +28,11 @@ public class OperationLogController {
     public Response<Paging<OperationLog>> findBy(OperationLogCriteria criteria) {
 
         return operationLogReadService.paging(criteria);
+    }
+
+    @GetMapping("{id}")
+    public Response<OperationLog> detail(@PathVariable Long id) {
+        return operationLogReadService.findById(id);
     }
 
 }

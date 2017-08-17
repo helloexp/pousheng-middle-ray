@@ -122,7 +122,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
-        Map<String, String> shopOrderExtra = richSkusByShop.getExtra();
+        Map<String, String> shopOrderExtra = richSkusByShop.getExtra()==null?Maps.newHashMap():richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
 

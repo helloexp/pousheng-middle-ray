@@ -12,9 +12,7 @@ import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -280,9 +278,8 @@ public class Shipments {
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
-        Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
+        Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.SALES_SHIP.value());
         shipment.setSkuInfos(skuOrderIdAndQuantity);
-        shipment.setType(ShipmentType.SALES_SHIP.value());
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
@@ -358,8 +355,7 @@ public class Shipments {
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
-        Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
-        shipment.setType(ShipmentType.EXCHANGE_SHIP.value());
+        Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value());
         Map<String,String> extraMap = shipment.getExtra();
 
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
@@ -409,7 +405,7 @@ public class Shipments {
     @OperationLogType("取消发货单")
     public void cancleShipment(@PathVariable(value = "id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL.toOrderOperation());
+        Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
         if(!cancelRes.isSuccess()){
             log.error("cancel shipment(id:{}) fail,error:{}",shipmentId,cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
@@ -534,7 +530,7 @@ public class Shipments {
 
 
 
-    private Shipment makeShipment(Long shopOrderId,Long warehouseId, Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
+    private Shipment makeShipment(Long shopOrderId,Long warehouseId, Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee,Integer shipType){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
@@ -565,13 +561,20 @@ public class Shipments {
         shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
         //发货单总的净价
         shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
-
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        //物流编码
+        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){
+            shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
+        }else{
+            shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+        }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
         //店铺信息塞值
         shipment.setShopId(Long.valueOf(companyRule.getShopId()));
         shipment.setShopName(companyRule.getShopName());
         shipment.setExtra(extraMap);
-
+        shipment.setType(shipType);
         return shipment;
     }
 

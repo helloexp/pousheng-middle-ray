@@ -51,6 +51,10 @@ public class WarehouseShopStockRuleReadServiceImpl implements WarehouseShopStock
     public Response<WarehouseShopStockRule> findByShopId(Long shopId) {
         try{
             WarehouseShopStockRule byShopId = warehouseShopStockRuleDao.findByShopId(shopId);
+            if(byShopId == null){
+                log.error("failed to find shop stock rule for shop(id={})", shopId);
+                return Response.fail("shop.stock.rule.not.found");
+            }
             return Response.ok(byShopId);
         }catch (Exception e){
             log.error("failed to find warehouse shop stock rule by shopId:{}, cause:{}",

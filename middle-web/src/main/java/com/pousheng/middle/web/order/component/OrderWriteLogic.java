@@ -222,7 +222,7 @@ public class OrderWriteLogic {
         //取消发货单
         int count=0;//判断是否存在取消失败的发货单
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment))
+            if (!shipmentWiteLogic.cancelShipment(shipment,0))
             {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
@@ -263,7 +263,7 @@ public class OrderWriteLogic {
         //取消发货单
         int count=0;//判断是否存在取消失败的发货单
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment))
+            if (!shipmentWiteLogic.cancelShipment(shipment,0))
             {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
@@ -315,7 +315,7 @@ public class OrderWriteLogic {
 
         int count=0;//计数器用来记录是否有发货单取消失败
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment))
+            if (!shipmentWiteLogic.cancelShipment(shipment,0))
             {
                 count++;
             }
@@ -364,7 +364,7 @@ public class OrderWriteLogic {
         List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getId(),skuOrder.getId())).collect(Collectors.toList());
         int count=0;//计数器用来记录是否有发货单取消失败
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment))
+            if (!shipmentWiteLogic.cancelShipment(shipment,0))
             {
                 count++;
             }
@@ -407,7 +407,7 @@ public class OrderWriteLogic {
         //取消发货单
         int count= 0 ;//计数器用来记录是否有发货单取消失败的
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment))
+            if (!shipmentWiteLogic.cancelShipment(shipment,1))
             {
                 count++;
             }

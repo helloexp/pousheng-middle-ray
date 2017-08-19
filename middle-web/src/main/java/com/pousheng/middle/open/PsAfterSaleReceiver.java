@@ -119,6 +119,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
 
         refundItem.setSkuCode(skuOrder.getSkuCode());
+        refundItem.setSkuOrderId(skuOrder.getId());
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());

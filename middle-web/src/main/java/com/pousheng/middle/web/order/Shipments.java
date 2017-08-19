@@ -268,17 +268,24 @@ public class Shipments {
         Long shipmentTotalFee=0L;
         //运费
         Long shipmentShipFee=0L;
+        //运费优惠
+        Long shipmentShipDiscountFee=0L;
+
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrderId)){
-
-            shipmentShipFee = Long.valueOf(shopOrder.getShipFee());
+            shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee());
+            shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
-        Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.SALES_SHIP.value());
+        //订单总金额
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
+
+        Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee
+                ,shipmentShipFee,ShipmentType.SALES_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
@@ -350,12 +357,19 @@ public class Shipments {
         Long shipmentTotalFee=0L;
         //运费
         Long shipmentShipFee =0L;
+        //运费优惠
+        Long shipmentShipDiscountFee=0L;
+        //运费优惠
+        //订单总金额
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
-        Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value());
+        //发货单中订单总金额
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
+        Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
+                shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
         Map<String,String> extraMap = shipment.getExtra();
 
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
@@ -424,7 +438,7 @@ public class Shipments {
     @OperationLogType("同步取消状态")
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment);
+        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,0);
         if(!syncRes.isSuccess()){
             log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -530,7 +544,10 @@ public class Shipments {
 
 
 
-    private Shipment makeShipment(Long shopOrderId,Long warehouseId, Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee,Integer shipType){
+    private Shipment makeShipment(Long shopOrderId,Long warehouseId, Long shipmentItemFee
+            ,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee,Integer shipType,
+                                  Long shipmentShipDiscountFee,
+                                          Long shipmentTotalPrice){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
@@ -557,10 +574,14 @@ public class Shipments {
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
         shipmentExtra.setShipmentShipFee(shipmentShipFee);
+        //运费优惠
+        shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         //发货单优惠金额
         shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
         //发货单总的净价
-        shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
+        shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
+        //发货单的订单总金额
+        shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //物流编码
         if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())

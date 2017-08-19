@@ -139,6 +139,8 @@ public class CreateShipments {
         Long shipmentTotalFee = 0L;
         //运费
         Long shipmentShipFee = 0L;
+        //运费优惠
+        Long shipmentShipDiscountFee = 0L;
         if (Objects.equals(1, type)) {
             //运费
 
@@ -146,20 +148,24 @@ public class CreateShipments {
             if (!isShipmentFeeCalculated(id)) {
 
                 ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
-                shipmentShipFee = Long.valueOf(shopOrder.getShipFee());
+                shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee());
+                shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
             }
             shipmentPreview.setShipmentShipFee(shipmentShipFee);
         }
+        //发货单总金额(商品总净价+运费-运费优惠)
         List<ShipmentItem> shipmentItems = shipmentPreview.getShipmentItems();
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
         }
+        Long shipmentTotalPrice= shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
         shipmentPreview.setShipmentItemFee(shipmentItemFee);
         shipmentPreview.setShipmentDiscountFee(shipmentDiscountFee);
-        shipmentPreview.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
-
+        shipmentPreview.setShipmentTotalFee(shipmentTotalFee);
+        shipmentPreview.setShipmentShipDiscountFee(shipmentShipDiscountFee);
+        shipmentPreview.setShipmentTotalPrice(shipmentTotalPrice);
 
         return Response.ok(shipmentPreview);
     }

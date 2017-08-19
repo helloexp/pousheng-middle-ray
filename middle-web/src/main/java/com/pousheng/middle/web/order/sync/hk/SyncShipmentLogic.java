@@ -143,11 +143,11 @@ public class SyncShipmentLogic {
 
     /**
      * 同步发货单取消到恒康
-     *
      * @param shipment 发货单
+     * @param operationType 0 取消 1 删除
      * @return 同步结果, 同步成功true, 同步失败false
      */
-    public Response<Boolean> syncShipmentCancelToHk(Shipment shipment) {
+    public Response<Boolean> syncShipmentCancelToHk(Shipment shipment,Integer operationType) {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
@@ -163,11 +163,9 @@ public class SyncShipmentLogic {
 
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //todo 同步恒康取消
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(), 0);
-            HkResponseHead head = JsonMapper.nonEmptyMapper().fromJson(response,HkResponseHead.class);
-            //HkResponseHead head = new HkResponseHead();
-            //head.setCode("0");
-            //head返回0代表成功
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(),operationType,0);
+            SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
+            HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
@@ -250,7 +248,7 @@ public class SyncShipmentLogic {
         //发票类型(中台1:普通发票,2:增值税发票3:电子发票),恒康(1:普通发票,2.电子发票,3.增值税发票)
         tradeOrder.setInvoiceType(String.valueOf(this.getHkInvoiceType(shipmentDetail).getValue()));
         //发票抬头
-        tradeOrder.setInvoice(shipmentDetail.getInvoices().get(0).getTitle());
+        tradeOrder.setInvoice(shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0).getTitle():"");
         //TODO 税号
         tradeOrder.setTaxNo("");
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
@@ -258,7 +256,6 @@ public class SyncShipmentLogic {
         tradeOrder.setShopId(shipmentExtra.getErpOrderShopCode());
         //绩效店铺编码
         tradeOrder.setPerformanceShopId(shipmentExtra.getErpPerformanceShopCode());
-        //todo 发货仓库id
         Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
         if (!response.isSuccess()){
             log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
@@ -266,12 +263,12 @@ public class SyncShipmentLogic {
         }
         Warehouse warehouse = response.getResult();
         tradeOrder.setStockId(warehouse.getInnerCode());
-        //京东快递,自选快递
-        tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
+        //京东快递,自选快递24400000012
+        //tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
+        tradeOrder.setVendCustID("24400000012");
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
-        tradeOrder.setItems(items);      //更新状态取消失败
-        //updateShipmetSyncCancelFail(shipment);
+        tradeOrder.setItems(items);
         return tradeOrder;
     }
 
@@ -424,24 +421,29 @@ public class SyncShipmentLogic {
      * @return
      */
     private HKInvoiceType getHkInvoiceType(ShipmentDetail shipmentDetail) {
-        Map<String, String> invoiceTypeMap = shipmentDetail.getInvoices().get(0).getDetail();
-        if (!invoiceTypeMap.containsKey(TradeConstants.INVOICE_TYPE)) {
-            log.error("can not find invoice type,shipmentId is({})", shipmentDetail.getShipment().getId());
-            throw new ServiceException("find.invoice.failed");
+        if (shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0){
+            Map<String, String> invoiceTypeMap = shipmentDetail.getInvoices().get(0).getDetail();
+            if (!invoiceTypeMap.containsKey(TradeConstants.INVOICE_TYPE)) {
+                log.error("can not find invoice type,shipmentId is({})", shipmentDetail.getShipment().getId());
+                throw new ServiceException("find.invoice.failed");
+            }
+            Integer invoiceType = Integer.valueOf(invoiceTypeMap.get(TradeConstants.INVOICE_TYPE));
+            MiddleInvoiceType middleInvoiceType = MiddleInvoiceType.fromInt(invoiceType);
+            switch (middleInvoiceType) {
+                case PLAIN_INVOICE:
+                    return HKInvoiceType.PLAIN_INVOICE;
+                case VALUE_ADDED_TAX_INVOICE:
+                    return HKInvoiceType.VALUE_ADDED_TAX_INVOICE;
+                case ELECTRONIC_INVOCE:
+                    return HKInvoiceType.ELECTRONIC_INVOCE;
+                default:
+                    log.error("shippment(id:{}) invalid", shipmentDetail.getShipment().getId());
+                    throw new ServiceException("shoporder.invoice.invalid");
+            }
+        }else{
+            return HKInvoiceType.PLAIN_INVOICE;
         }
-        Integer invoiceType = Integer.valueOf(invoiceTypeMap.get(TradeConstants.INVOICE_TYPE));
-        MiddleInvoiceType middleInvoiceType = MiddleInvoiceType.fromInt(invoiceType);
-        switch (middleInvoiceType) {
-            case PLAIN_INVOICE:
-                return HKInvoiceType.PLAIN_INVOICE;
-            case VALUE_ADDED_TAX_INVOICE:
-                return HKInvoiceType.VALUE_ADDED_TAX_INVOICE;
-            case ELECTRONIC_INVOCE:
-                return HKInvoiceType.ELECTRONIC_INVOCE;
-            default:
-                log.error("shippment(id:{}) invalid", shipmentDetail.getShipment().getId());
-                throw new ServiceException("shoporder.invoice.invalid");
-        }
+
     }
     /**
      * 获取恒康Code

@@ -37,6 +37,10 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
     private Long shipmentDiscountFee;
     //订单总的金额
     private Long shipmentTotalFee;
+    //发货单运费优惠金额
+    private Long shipmentShipDiscountFee;
+    //发货单订单总额
+    private Long shipmentTotalPrice;
 
     //发货商品信息
     List<ShipmentItem> shipmentItems;

@@ -131,12 +131,13 @@ public class ShipmentWiteLogic {
     }
 
     /**
-     * 取消发货单逻辑
+     * 取消/删除发货单逻辑(撤销订单的时候通知恒康删除发货单,电商取消订单的时候取消发货单)
      *
      * @param shipment 发货单
+     * @param type 0 取消 1 删除
      * @return 取消成功 返回返回true,取消失败返回false
      */
-    boolean cancelShipment(Shipment shipment) {
+    boolean cancelShipment(Shipment shipment,Integer type) {
         try {
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
@@ -153,7 +154,7 @@ public class ShipmentWiteLogic {
             }
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment);
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,type);
                 if(!syncRes.isSuccess()){
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipment.getId(),syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());
@@ -242,17 +243,23 @@ public class ShipmentWiteLogic {
         Long shipmentTotalFee=0L;
         //运费
         Long shipmentShipFee =0L;
+        //运费优惠
+        Long shipmentShipDiscountFee=0L;
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrder.getId())){
-            shipmentShipFee = Long.valueOf(shopOrder.getShipFee());
+            shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee());
+            shipmentShipDiscountFee = shipmentShipFee  - Long.valueOf(shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
             shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
+        //订单总金额
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
 
-        Shipment shipment = this.makeShipment(shopOrder, warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee);
+        Shipment shipment = this.makeShipment(shopOrder, warehouseId,shipmentItemFee
+                ,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,shipmentShipDiscountFee,shipmentTotalPrice);
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setShopId(shopOrder.getShopId());
@@ -311,7 +318,9 @@ public class ShipmentWiteLogic {
      * @param warehouseId 发货仓主键
      * @return 返回组装的发货单
      */
-    private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee){
+    private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee,
+                                  Long shipmentTotalFee,Long shipmentShipFee,Long shipmentShipDiscountFee,
+                                  Long shipmentTotalPrice){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
@@ -341,7 +350,9 @@ public class ShipmentWiteLogic {
         //发货单优惠金额
         shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
         //发货单总的净价
-        shipmentExtra.setShipmentTotalFee(shipmentTotalFee+shipmentShipFee);
+        shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
+        shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
+        shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         //添加物流编码
         if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){

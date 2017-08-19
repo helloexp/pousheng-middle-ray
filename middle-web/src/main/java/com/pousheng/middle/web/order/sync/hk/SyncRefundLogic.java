@@ -172,8 +172,11 @@ public class SyncRefundLogic {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
             }
+            RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
-            String response = sycHkOrderCancelApi.doCancelOrder(String.valueOf(refund.getShopId()), refund.getId(), 0,1);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), refund.getId(), 0,1);
             SycRefundResponse sycRefundResponse  = JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
             HkResponseHead head = sycRefundResponse.getHead();
             if (Objects.equals(head.getCode(),"0")) {
@@ -271,10 +274,10 @@ public class SyncRefundLogic {
         List<SycHkRefundItem> items = Lists.newArrayList();
         for (RefundItem refundItem : refundItems) {
             SycHkRefundItem item = new SycHkRefundItem();
-            //中台退换货子单号,用refunId与skuId拼接
-            item.setRefundSubNo(refund.getId() + "-" + refundItem.getSkuOrderId());
+            //中台退换货子单号,用refunId与skuCode拼接
+            item.setRefundSubNo(refund.getId() + "-" + refundItem.getSkuCode());
             //原销售来源子单号
-            item.setOrderSubNo(refundExtra.getShipmentId() + "-" + refundItem.getSkuOrderId());
+            item.setOrderSubNo(refundExtra.getShipmentId() + "-" + refundItem.getSkuCode());
             //恒康商品条码
             item.setBarCode(refundItem.getSkuCode());
             //商品数量

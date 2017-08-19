@@ -374,7 +374,8 @@ public class Shipments {
 
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
-
+        shipment.setShopId(refund.getShopId());
+        shipment.setShopName(refund.getShopName());
         //锁定库存
         Response<Boolean> lockStockRlt = lockStock(shipment);
         if (!lockStockRlt.isSuccess()){

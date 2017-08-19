@@ -286,8 +286,8 @@ public class SyncShipmentLogic {
             SycHkShipmentItem item = new SycHkShipmentItem();
             //发货单id(恒康:中台主订单号)
             item.setOrderNo(String.valueOf(shipment.getId()));
-            //(恒康:中台子订单号),这里拼接了发货单id与skuId
-            item.setOrderSubNo(String.valueOf(shipment.getId()) + "-" + String.valueOf(shipmentItem.getSkuOrderId()));
+            //(恒康:中台子订单号),这里拼接了发货单id与skuCode
+            item.setOrderSubNo(String.valueOf(shipment.getId()) + "-" + String.valueOf(shipmentItem.getSkuCode()));
             //中台skuCode
             item.setBarcode(shipmentItem.getSkuCode());
             //购买数量--对应中台发货单sku发货数量

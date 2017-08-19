@@ -449,7 +449,10 @@ public class ShipmentWiteLogic {
             shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuCode(skuOrder.getSkuCode());
-
+            //商品id
+            shipmentItem.setItemId(skuOrder.getItemId());
+            //商品属性
+            shipmentItem.setAttrs(skuOrder.getSkuAttrs());
 
             shipmentItems.add(shipmentItem);
 

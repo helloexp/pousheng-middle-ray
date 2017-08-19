@@ -627,7 +627,10 @@ public class Shipments {
 
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuCode(skuOrder.getSkuCode());
-
+            //商品id
+            shipmentItem.setItemId(skuOrder.getItemId());
+            //商品属性
+            shipmentItem.setAttrs(skuOrder.getSkuAttrs());
 
             shipmentItems.add(shipmentItem);
 
@@ -658,7 +661,10 @@ public class Shipments {
             shipmentItem.setCleanPrice(refundItem.getCleanPrice());
             shipmentItem.setSkuCode(refundItem.getSkuCode());
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
-
+            //商品id
+            shipmentItem.setItemId(refundItem.getItemId());
+            //商品属性
+            shipmentItem.setAttrs(refundItem.getAttrs());
             shipmentItems.add(shipmentItem);
         }
 

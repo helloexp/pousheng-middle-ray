@@ -1,11 +1,14 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,8 @@ public class SyncOrderToEcpLogic {
     private OrderWriteLogic orderWriteLogic;
     @Autowired
     private OrderServiceCenter orderServiceCenter;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     /**
      * 同步发货单到电商
@@ -35,12 +40,16 @@ public class SyncOrderToEcpLogic {
     {
         //更新状态为同步中
         try {
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
             OpenClientOrderShipment orderShipment = new OpenClientOrderShipment();
             orderShipment.setOuterOrderId(shopOrder.getOutId());
             orderShipment.setLogisticsCompany(expressCompayCode);
-            orderShipment.setWaybill(String.valueOf(shipmentId));
+            //填写运单号
+            orderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
+
             Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), orderShipment);
             if (response.isSuccess()) {
                 //同步成功

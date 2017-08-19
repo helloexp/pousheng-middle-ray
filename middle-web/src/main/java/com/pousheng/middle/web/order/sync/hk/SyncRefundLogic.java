@@ -174,8 +174,9 @@ public class SyncRefundLogic {
             }
 
             String response = sycHkOrderCancelApi.doCancelOrder(String.valueOf(refund.getShopId()), refund.getId(), 0,1);
-            HkResponseHead head = this.makeHkResponseHead(response);
-            if (Objects.equals(head.getCode(), 0)) {
+            SycRefundResponse sycRefundResponse  = JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
+            HkResponseHead head = sycRefundResponse.getHead();
+            if (Objects.equals(head.getCode(),"0")) {
                 //同步调用成功后，更新售后单的状态
                 Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
                 OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
@@ -189,14 +190,22 @@ public class SyncRefundLogic {
                 Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
                 OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
-                if (!updateStatusRes.isSuccess()) {
-                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
                 return Response.fail("sync.hk.cancel.refund.failed");
             }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
+            //同步调用成功后，更新售后单的状态
+            Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
+            OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
+            Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+            if (!updateSyncStatusRes.isSuccess()) {
+                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
+                return Response.fail(updateSyncStatusRes.getError());
+            }
             log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
             return Response.fail("sync.hk.refund.fail");
         }

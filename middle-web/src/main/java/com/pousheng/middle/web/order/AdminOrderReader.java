@@ -155,6 +155,8 @@ public class AdminOrderReader {
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());
+            waitShipItemInfo.setItemId(skuOrder.getItemId());
+            waitShipItemInfo.setSkuAttrs(skuOrder.getSkuAttrs());
             waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
             waitShipItemInfos.add(waitShipItemInfo);
         }

@@ -452,6 +452,8 @@ public class RefundWriteLogic {
         changeRefundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
         changeRefundItem.setAlreadyHandleNumber(0);
         changeRefundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
+        changeRefundItem.setItemId(refundItem.getItemId());
+        changeRefundItem.setAttrs(refundItem.getAttrs());
         return changeRefundItem;
 
     }

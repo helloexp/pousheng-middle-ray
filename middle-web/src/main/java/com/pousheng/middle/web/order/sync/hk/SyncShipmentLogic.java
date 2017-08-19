@@ -228,11 +228,11 @@ public class SyncShipmentLogic {
         //会员账号昵称
         tradeOrder.setBuyerNick(shipmentDetail.getReceiverInfo().getReceiveUserName());
         //订单总金额
-        tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentItemFee())/100);
+        tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
         //订单总运费
-        tradeOrder.setFeeMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentShipFee()/100));
+        tradeOrder.setFeeMon(Math.toIntExact((shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee())/100));
         //买家应付金额
-        tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
+        tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalPrice())/100);
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());
         //第三方支付流水号-可以不传

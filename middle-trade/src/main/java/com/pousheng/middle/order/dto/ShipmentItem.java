@@ -1,8 +1,10 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by songrenfei on 2017/6/22
@@ -24,8 +26,6 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
     private Integer skuPrice;
     //商品优惠
     private Integer skuDiscount;
-
-
-
-
+    //商品id
+    private Long itemId;
 }

@@ -347,7 +347,7 @@ public class OrderOpenApi {
                 //添加pos单相关信息
                 refundExtra.setPosSerialNo(posSerialNo);
                 refundExtra.setPosType(String.valueOf(posType));
-                refundExtra.setPosAmt(String.valueOf(posAmt));
+                refundExtra.setPosAmt(String.valueOf(Double.valueOf(posAmt)*100));
                 refundExtra.setPosCreatedAt(dPos.toDate());
                 extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
                 update.setExtra(extraMap);

@@ -148,7 +148,7 @@ public class CreateShipments {
             if (!isShipmentFeeCalculated(id)) {
 
                 ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
-                shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee());
+                shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                 shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
             }
             shipmentPreview.setShipmentShipFee(shipmentShipFee);

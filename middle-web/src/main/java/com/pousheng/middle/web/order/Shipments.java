@@ -273,7 +273,7 @@ public class Shipments {
 
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrderId)){
-            shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee());
+            shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
             shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {

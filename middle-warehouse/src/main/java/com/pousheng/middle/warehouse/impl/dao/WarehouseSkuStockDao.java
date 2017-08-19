@@ -125,9 +125,21 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      * @param updatedAt   库存的变化发生时间
      */
     public void syncStock(Long warehouseId, String skuCode, Integer erpStock, Date updatedAt) {
-        this.sqlSession.update(sqlId("syncStock"),
-                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode,
-                        "erpStock", erpStock, "updatedAt", updatedAt));
+        WarehouseSkuStock exist = findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+        if(exist ==null){
+            WarehouseSkuStock wss = new WarehouseSkuStock();
+            wss.setAvailStock(erpStock.longValue());
+            wss.setLockedStock(0L);
+            wss.setBaseStock(erpStock.longValue());
+            wss.setWarehouseId(warehouseId);
+            wss.setSkuCode(skuCode);
+            wss.setSyncAt(updatedAt);
+            this.create(wss);
+        }else {
+            this.sqlSession.update(sqlId("syncStock"),
+                    ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode,
+                            "erpStock", erpStock, "updatedAt", updatedAt));
+        }
     }
 
     /**

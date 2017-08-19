@@ -132,7 +132,7 @@ public class ErpSpuManager {
         }
 
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
-        createSkuTemplatesIfNotExist(spuId, material.getMaterial_name(),skus);
+        createSkuTemplatesIfNotExist(spuId, spu.getName(),skus);
         return spuId;
     }
 

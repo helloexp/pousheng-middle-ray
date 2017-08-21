@@ -103,7 +103,9 @@ public class PushedItemMaker implements ParanaFullItemMaker {
                 for (SkuAttribute skuAttribute : skuAttributes) {
                     ParanaSkuAttribute paranaSkuAttribute = new ParanaSkuAttribute();
                     paranaSkuAttribute.setAttributeKeyId(skuAttribute.getAttrKey());
+                    paranaSkuAttribute.setAttributeKey(skuAttribute.getAttrKey());
                     paranaSkuAttribute.setAttributeValueId(skuAttribute.getAttrVal());
+                    paranaSkuAttribute.setAttributeValue(skuAttribute.getAttrVal());
                     paranaSkuAttributes.add(paranaSkuAttribute);
                 }
                 paranaSku.setSkuAttributes(paranaSkuAttributes);

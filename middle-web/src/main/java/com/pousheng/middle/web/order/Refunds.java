@@ -195,6 +195,8 @@ public class Refunds {
             waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
             waitShipItemInfo.setSkuName(refundItem.getSkuName());
             waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity() - refundItem.getAlreadyHandleNumber());
+            waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
+            waitShipItemInfo.setItemId(refundItem.getItemId());
             waitShipItemInfos.add(waitShipItemInfo);
         }
         return waitShipItemInfos;
@@ -387,6 +389,10 @@ public class Refunds {
             ShipmentItem shipmentItem = shipmentItemMap.get(refundItem.getSkuCode());
             editRefundItem.setQuantity(shipmentItem.getQuantity());
             editRefundItem.setRefundQuantity(shipmentItem.getRefundQuantity());
+            //商品id
+            editRefundItem.setItemId(shipmentItem.getItemId());
+            //商品属性
+            editRefundItem.setAttrs(shipmentItem.getAttrs());
             editRefundItems.add(editRefundItem);
         }
 

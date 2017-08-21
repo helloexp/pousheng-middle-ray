@@ -140,7 +140,10 @@ public class ShipmentReadLogic {
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             //查看sku商品净价
             shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
-
+            //商品id--itemId
+            shipmentItem.setItemId(skuOrder.getItemId());
+            //商品属性
+            shipmentItem.setAttrs(skuOrder.getSkuAttrs());
             shipmentItems.add(shipmentItem);
         }
         shipmentPreview.setShipmentItems(shipmentItems);
@@ -184,6 +187,8 @@ public class ShipmentReadLogic {
             shipmentItem.setCleanFee(refundItem.getCleanFee());
             shipmentItem.setSkuPrice(refundItem.getSkuPrice());
             shipmentItem.setSkuDiscount(refundItem.getSkuDiscount());
+            shipmentItem.setItemId(refundItem.getItemId());
+            shipmentItem.setAttrs(refundItem.getAttrs());
             shipmentItems.add(shipmentItem);
         }
         shipmentPreview.setShipmentItems(shipmentItems);

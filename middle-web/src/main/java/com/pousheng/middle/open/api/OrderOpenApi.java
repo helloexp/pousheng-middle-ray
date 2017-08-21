@@ -249,10 +249,11 @@ public class OrderOpenApi {
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
             String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
-            if (!Objects.equals(hkRefundOrderId, hkRefundId)) {
+            //仅退款是没有hkRefundOrderId,所以放开这边的校验
+           /* if (!Objects.equals(hkRefundOrderId, hkRefundId)) {
                 log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), hkRefundId);
                 throw new ServiceException("hk.refund.id.not.matching");
-            }
+            }*/
 
             //todo 恒康返回的商品信息如何处理
 
@@ -346,7 +347,7 @@ public class OrderOpenApi {
                 //添加pos单相关信息
                 refundExtra.setPosSerialNo(posSerialNo);
                 refundExtra.setPosType(String.valueOf(posType));
-                refundExtra.setPosAmt(String.valueOf(posAmt));
+                refundExtra.setPosAmt(String.valueOf(Double.valueOf(posAmt)*100));
                 refundExtra.setPosCreatedAt(dPos.toDate());
                 extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
                 update.setExtra(extraMap);

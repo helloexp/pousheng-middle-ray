@@ -1,8 +1,10 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * 待发货商品信息封装 for 销售发货 和 售后发货
@@ -20,7 +22,10 @@ public class WaitShipItemInfo extends BasicItemInfo implements Serializable{
     //子单号
     private Long skuOrderId;
 
-
+    //商品id
+    private Long itemId;
+    //skuAttrs
+    List<SkuAttribute> skuAttrs;
 
 
 

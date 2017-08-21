@@ -32,6 +32,8 @@ public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteServic
             orderShipment.setOrderLevel(OrderLevel.SHOP);
             orderShipment.setStatus(shipment.getStatus());
             orderShipment.setType(shipment.getType());
+            orderShipment.setShopId(shipment.getShopId());
+            orderShipment.setShopName(shipment.getShopName());
             Long shipmentId = middleShipmentManager.create(shipment, orderShipment);
             return Response.ok(shipmentId);
         } catch (Exception e) {

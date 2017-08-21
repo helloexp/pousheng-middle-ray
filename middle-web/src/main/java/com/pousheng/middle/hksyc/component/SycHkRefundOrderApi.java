@@ -36,7 +36,7 @@ public class SycHkRefundOrderApi {
         params.put("tradeRefundItems",sycHkRefundItems);
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
-        log.debug("paramJson:{}",paramJson);
+        log.info("paramJson:{}",paramJson);
         String hkGateway ="https://esbt.pousheng.com/commonerp/erp/sal/addrefund";
         String responseBody = HttpRequest.post(hkGateway)
                 .header("verifycode","646edef40c9c481fb9cd9c61a41dabc1")

@@ -37,8 +37,10 @@ public class ShipmentExtra implements Serializable{
     private Long shipmentShipDiscountFee;
     //发货单优惠金额
     private Long shipmentDiscountFee;
-    //发货单优惠金额
+    //发货单净价
     private Long shipmentTotalFee;
+    //发货单订单总额
+    private Long shipmentTotalPrice;
     //ERP发货单号
     private String outShipmentId;
     //物流公司代码

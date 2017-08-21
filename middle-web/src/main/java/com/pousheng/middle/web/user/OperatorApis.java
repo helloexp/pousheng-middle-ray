@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
-import com.pousheng.auth.model.OperatorExt;
 import com.pousheng.auth.service.MiddleOperatorReadService;
 import com.pousheng.auth.service.UserReadService;
 import com.pousheng.auth.service.UserWriteService;
@@ -261,7 +260,7 @@ public class OperatorApis {
     }
 
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Paging<OperatorExt>> pagingOperator(@RequestParam(required = false) Long roleId,
+    public Response<Paging<Operator>> pagingOperator(@RequestParam(required = false) Long roleId,
                                                         @RequestParam(required = false)Long userId,
                                                         @RequestParam(required = false) String roleName,
                                                         @RequestParam(required = false) String userName,

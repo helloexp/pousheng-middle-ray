@@ -32,8 +32,8 @@ CREATE TABLE `pousheng_spu_materials` (
 
 
 -- 修改字段长度
-ALTER TABLE `parana_shipments` CHANGE `extra_json` `extra_json` VARCHAR(2048);
-ALTER TABLE `parana_refunds` CHANGE `extra_json` `extra_json` VARCHAR(2048);
+ALTER TABLE `parana_shipments` CHANGE `extra_json` `extra_json` VARCHAR(4096);
+ALTER TABLE `parana_refunds` CHANGE `extra_json` `extra_json` VARCHAR(4096);
 
 
 drop table if exists `pousheng_warehouses`;

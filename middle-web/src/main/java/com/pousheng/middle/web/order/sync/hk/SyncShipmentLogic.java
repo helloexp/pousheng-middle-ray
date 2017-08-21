@@ -86,14 +86,10 @@ public class SyncShipmentLogic {
             Flow flow = flowPicker.pickShipments();
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
-            //todo 同步恒康
             List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
             SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
-            //SycHkShipmentOrderResponseBody orderBody = response.getOrderBody();
             HkResponseHead head = response.getHead();
             //解析返回结果
-           // HkResponseHead head = new HkResponseHead();
-            //head.setCode("0");
             if (Objects.equals(head.getCode(), "0")) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
@@ -265,6 +261,7 @@ public class SyncShipmentLogic {
         tradeOrder.setStockId(warehouse.getInnerCode());
         //京东快递,自选快递24400000012
         //tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
+        //todo 到时需要删除
         tradeOrder.setVendCustID("24400000012");
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);

@@ -42,7 +42,7 @@ public class SycHkOrderCancelApi {
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
-        log.info("paramJson:{}",paramJson);
+        log.debug("paramJson:{}",paramJson);
         String hkGateway ="https://esbt.pousheng.com/commonerp/erp/sal/updateordercancelstatus";
         String responseBody = HttpRequest.post(hkGateway)
                 .header("verifycode","646edef40c9c481fb9cd9c61a41dabc1")

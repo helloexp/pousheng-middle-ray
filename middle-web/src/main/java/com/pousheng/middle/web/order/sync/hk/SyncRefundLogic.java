@@ -240,7 +240,6 @@ public class SyncRefundLogic {
             }
             Warehouse warehouse = response.getResult();
             sycHkRefund.setStockId(warehouse.getInnerCode());
-            //sycHkRefund.setStockId(String.valueOf(refundExtra.getWarehouseId()));
         }
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
         sycHkRefund.setRefundOrderAmount((int) (refund.getFee()==null?0:refund.getFee() / 100));

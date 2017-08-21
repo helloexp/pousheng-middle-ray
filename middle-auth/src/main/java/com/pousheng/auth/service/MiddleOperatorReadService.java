@@ -18,15 +18,17 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class MiddleOperatorReadService {
     @Autowired
-    private  OperatorDao operatorDao;
+    private OperatorDao operatorDao;
 
-    public Response<Paging<Operator>> pagination(Long roleId, Long userId,Integer status, Integer pageNo, Integer size) {
+    public Response<Paging<Operator>> pagination(Long roleId, Long userId,String userName,String roleName,Integer status, Integer pageNo, Integer size) {
         try {
             PageInfo page = new PageInfo(pageNo, size);
             Operator criteria = new Operator();
             criteria.setStatus(status);
             criteria.setRoleId(roleId);
             criteria.setUserId(userId);
+            criteria.setUserName(userName);
+            criteria.setRoleName(roleName);
             return Response.ok(this.operatorDao.paging(page.getOffset(), page.getLimit(), criteria));
         } catch (Exception var7) {
             log.error("paging operator by roleId={}, status={}, pageNo={} size={} failed, cause:{}", new Object[]{roleId, status, pageNo, size, Throwables.getStackTraceAsString(var7)});

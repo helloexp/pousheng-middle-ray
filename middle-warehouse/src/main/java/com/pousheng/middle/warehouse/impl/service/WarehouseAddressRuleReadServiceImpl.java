@@ -200,7 +200,7 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
             List<WarehouseAddressRule> rules = warehouseAddressRuleDao.findByShopGroupIdAndAddressId(shopGroupId, addressId);
             for (WarehouseAddressRule rule : rules) {
                 //找到对应的规则细则
-                List<WarehouseRuleItem> wris = warehouseRuleItemDao.findByRuleId(rule.getId());
+                List<WarehouseRuleItem> wris = warehouseRuleItemDao.findByRuleId(rule.getRuleId());
                 if(CollectionUtils.isEmpty(wris)){
                     continue;
                 }

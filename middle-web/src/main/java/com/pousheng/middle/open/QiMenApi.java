@@ -3,9 +3,10 @@ package com.pousheng.middle.open;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * 奇门api实现
@@ -16,10 +17,11 @@ import org.springframework.web.bind.annotation.RestController;
 @Slf4j
 public class QiMenApi {
 
-    @PostMapping(value = "/delivery-order")
-    public void createDeliveryOrder(@RequestBody DeliveryOrderRequest request) {
-        log.info("receive create delivery order request:{}", request);
+    @PostMapping
+    public String gateway(HttpServletRequest request) {
+        log.info("receive request:{}", request);
         //TODO 校验签名
+        return "<response> <flag>success</flag> <code>0</code> <message>invalid appkey</message> <createTime>2016-07-06 12:00:00</createTime> <deliveryOrderId>W1234</deliveryOrderId> <warehouseCode>W1345</warehouseCode> <logisticsCode>P2345</logisticsCode> <deliveryOrders> <deliveryOrder> <deliveryOrderId>C1234</deliveryOrderId> <warehouseCode>W789</warehouseCode> <logisticsCode>SF</logisticsCode> <orderLines> <orderLine> <orderLineNo>11</orderLineNo> <itemCode>I234</itemCode> <itemId>W234</itemId> <quantity>1</quantity> </orderLine> </orderLines> <createTime>2016-06-18 12:00:00</createTime> </deliveryOrder> </deliveryOrders> </response>";
     }
 
     @Data

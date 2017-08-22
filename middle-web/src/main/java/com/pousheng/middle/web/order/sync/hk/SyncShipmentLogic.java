@@ -226,8 +226,8 @@ public class SyncShipmentLogic {
         //订单总金额
         tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
         //订单总运费
-        tradeOrder.setFeeMon(Math.toIntExact((shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee())/100));
-        //买家应付金额
+        tradeOrder.setFeeMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentShipFee()/100));
+        //买家应付金额=订单总金额+运费
         tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalPrice())/100);
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());

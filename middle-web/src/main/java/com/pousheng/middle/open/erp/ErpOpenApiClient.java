@@ -30,6 +30,7 @@ public class ErpOpenApiClient {
         Map<String, Object> context = Maps.newTreeMap();
         context.putAll(params);
         context.put("appKey", token.getAppKey());
+        context.put("pampasCall",method);
         context.put("sign", generateSign(context));
 
         HttpRequest request = HttpRequest.post(token.getGateway()).form(context, "UTF-8");

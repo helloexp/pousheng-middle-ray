@@ -85,4 +85,4 @@ azure:
 erp.token:
   appKey: terminus-erp
   secret: anywhere-erp
-  gateway: http://127.0.0.1:8080
+  gateway: http://127.0.0.1:8080/api/gateway

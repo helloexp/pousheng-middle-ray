@@ -28,6 +28,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -226,7 +227,7 @@ public class SyncShipmentLogic {
         //订单总金额
         tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
         //订单总运费
-        tradeOrder.setFeeMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentShipFee()/100));
+        tradeOrder.setFeeMon(Math.toIntExact((shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee())/100));
         //买家应付金额=订单总金额+运费
         tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalPrice())/100);
         //买家留言
@@ -244,9 +245,11 @@ public class SyncShipmentLogic {
         //发票类型(中台1:普通发票,2:增值税发票3:电子发票),恒康(1:普通发票,2.电子发票,3.增值税发票)
         tradeOrder.setInvoiceType(String.valueOf(this.getHkInvoiceType(shipmentDetail).getValue()));
         //发票抬头
-        tradeOrder.setInvoice(shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0).getTitle():"");
-        //TODO 税号
-        tradeOrder.setTaxNo("");
+        Invoice invoice = shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0):null;
+        Map<String,String> invoiceDetail = invoice.getDetail();
+        tradeOrder.setInvoice(invoice!=null?invoice.getTitle():"");
+        tradeOrder.setTaxNo(invoiceDetail!=null&&invoiceDetail.get("taxRegisterNo")!=null?invoiceDetail.get("taxRegisterNo"):"");
+
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         //下单店铺编码
         tradeOrder.setShopId(shipmentExtra.getErpOrderShopCode());

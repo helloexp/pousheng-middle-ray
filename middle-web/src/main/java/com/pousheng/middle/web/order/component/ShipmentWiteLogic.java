@@ -256,7 +256,7 @@ public class ShipmentWiteLogic {
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //订单总金额(运费优惠已经包含在子单折扣中)=商品总净价+运费
-        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee;
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
 
         Shipment shipment = this.makeShipment(shopOrder, warehouseId,shipmentItemFee
                 ,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,shipmentShipDiscountFee,shipmentTotalPrice);

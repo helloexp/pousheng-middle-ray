@@ -246,7 +246,7 @@ public class SyncShipmentLogic {
         tradeOrder.setInvoiceType(String.valueOf(this.getHkInvoiceType(shipmentDetail).getValue()));
         //发票抬头
         Invoice invoice = shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0):null;
-        Map<String,String> invoiceDetail = invoice.getDetail();
+        Map<String,String> invoiceDetail = invoice!=null?invoice.getDetail():null;
         tradeOrder.setInvoice(invoice!=null?invoice.getTitle():"");
         tradeOrder.setTaxNo(invoiceDetail!=null&&invoiceDetail.get("taxRegisterNo")!=null?invoiceDetail.get("taxRegisterNo"):"");
 

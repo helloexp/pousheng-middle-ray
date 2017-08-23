@@ -30,4 +30,12 @@ public class QimenResponse implements Serializable {
         return response;
     }
 
+    public static QimenResponse fail(String msg) {
+        QimenResponse response = new QimenResponse();
+        response.setFlag("fail");
+        response.setCode("-1");
+        response.setMessage(msg);
+        return response;
+    }
+
 }

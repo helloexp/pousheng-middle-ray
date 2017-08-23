@@ -2,7 +2,7 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
+import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.common.model.Response;
@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 
 /**
- * 售后发货单自动同步恒康
+ * 销售发货单自动同步恒康
  * Created by tony on 2017/8/23.
  * pousheng-middle
  */
@@ -34,8 +34,8 @@ public class AutoSyncHKSaleShipmentListener {
     }
 
     @Subscribe
-    public void autoSyncHkSaleShipment(RefundShipmentEvent refundShipmentEvent) {
-        Long shipmentId = refundShipmentEvent.getShipmentId();
+    public void autoSyncHkSaleShipment(OrderShipmentEvent orderShipmentEvent) {
+        Long shipmentId = orderShipmentEvent.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if (!syncRes.isSuccess()) {

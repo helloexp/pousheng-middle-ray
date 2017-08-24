@@ -171,8 +171,11 @@
             <artifactId>azure-storage</artifactId>
         </dependency>
 
-
-
+        <dependency>
+            <groupId>com.thoughtworks.xstream</groupId>
+            <artifactId>xstream</artifactId>
+            <version>1.4.8</version>
+        </dependency>
 
     </dependencies>
 

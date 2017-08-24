@@ -1,8 +1,10 @@
 package com.pousheng.middle.open;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -14,6 +16,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
+import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
@@ -34,10 +37,9 @@ import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +65,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+
+    @Autowired
+    private ErpOpenApiClient erpOpenApiClient;
 
     @Override
     protected Item findItemById(Long paranaItemId) {
@@ -132,7 +137,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
-        Map<String, String> shopOrderExtra = richSkusByShop.getExtra()==null?Maps.newHashMap():richSkusByShop.getExtra();
+        Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);
 
@@ -183,4 +188,27 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
         return null;
     }
+
+    @Override
+    protected void saveParanaOrder(RichOrder richOrder) {
+        super.saveParanaOrder(richOrder);
+
+        for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
+            //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
+            if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
+                syncReceiverInfo(richSkusByShop);
+            }
+        }
+    }
+
+    private void syncReceiverInfo(RichSkusByShop richSkusByShop) {
+        try {
+            erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                    richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));
+        }
+    }
+
 }

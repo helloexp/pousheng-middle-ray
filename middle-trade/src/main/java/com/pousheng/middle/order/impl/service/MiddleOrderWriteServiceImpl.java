@@ -19,6 +19,7 @@ import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -148,6 +149,29 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
         } catch (Exception e) {
             log.error("failed to update orderInvoiceInfo failed,(shopOrderId={}))");
             return Response.fail("invoice.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo) {
+        try {
+            List<OrderReceiverInfo> receiverInfos = orderReceiverInfoDao.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
+            if (CollectionUtils.isEmpty(receiverInfos)) {
+                log.error("receiver info not found where shopOrderId={}", shopOrderId);
+                return Response.fail("receiver.info.not.found");
+            }
+            OrderReceiverInfo oldReceiverInfo = receiverInfos.get(0);
+
+            OrderReceiverInfo orderReceiverInfo = new OrderReceiverInfo();
+            orderReceiverInfo.setId(oldReceiverInfo.getId());
+            orderReceiverInfo.setReceiverInfo(receiverInfo);
+            orderReceiverInfoDao.update(orderReceiverInfo);
+
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("fail to update order(shopOrderId={}) receiverInfo to {},cause:{}",
+                    shopOrderId, receiverInfo, Throwables.getStackTraceAsString(e));
+            return Response.fail("receiver.info.update.fail");
         }
     }
 

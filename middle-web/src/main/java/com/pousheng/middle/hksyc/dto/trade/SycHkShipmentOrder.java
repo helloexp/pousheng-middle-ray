@@ -30,8 +30,8 @@ public class SycHkShipmentOrder implements Serializable {
     private String shopId;
     private String performanceShopId;
     private String stockId;
-    @JsonProperty(value = "VendCustID")
-    private String VendCustID="";
+    @JsonProperty(value = "VendCustCode")
+    private String VendCustCode="";
     private List<SycHkShipmentItem> items;
 
     public String getOrderNo() {
@@ -169,13 +169,14 @@ public class SycHkShipmentOrder implements Serializable {
     public void setStockId(String stockId) {
         this.stockId = stockId;
     }
+
     @JsonIgnore
-    public String getVendCustID() {
-        return VendCustID;
+    public String getVendCustCode() {
+        return VendCustCode;
     }
     @JsonIgnore
-    public void setVendCustID(String vendCustID) {
-        VendCustID = vendCustID;
+    public void setVendCustCode(String vendCustCode) {
+        VendCustCode = vendCustCode;
     }
 
     public List<SycHkShipmentItem> getItems() {

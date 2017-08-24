@@ -262,10 +262,9 @@ public class SyncShipmentLogic {
         }
         Warehouse warehouse = response.getResult();
         tradeOrder.setStockId(warehouse.getInnerCode());
-        //京东快递,自选快递24400000012
-        //tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
-        //todo 到时需要删除
-        tradeOrder.setVendCustID("24400000012");
+        //京东快递,自选快递
+        tradeOrder.setVendCustCode(shipmentExtra.getVendCustID());
+
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
         tradeOrder.setItems(items);

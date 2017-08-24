@@ -324,5 +324,3 @@ public class OperatorApis {
 
     }
 
-    findByOutId
-}

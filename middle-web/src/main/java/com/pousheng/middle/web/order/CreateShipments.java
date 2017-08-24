@@ -160,7 +160,7 @@ public class CreateShipments {
             shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
         }
         //发货单总金额(商品总净价+运费)
-        Long shipmentTotalPrice= shipmentTotalFee+shipmentShipFee;
+        Long shipmentTotalPrice= shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
         shipmentPreview.setShipmentItemFee(shipmentItemFee);
         shipmentPreview.setShipmentDiscountFee(shipmentDiscountFee);
         shipmentPreview.setShipmentTotalFee(shipmentTotalFee);

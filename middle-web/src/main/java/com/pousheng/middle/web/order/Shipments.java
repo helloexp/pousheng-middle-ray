@@ -282,7 +282,7 @@ public class Shipments {
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //订单总金额(运费优惠已经包含在子单折扣中)=商品总净价+运费
-        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee;
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
 
         Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee
                 ,shipmentShipFee,ShipmentType.SALES_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
@@ -367,7 +367,7 @@ public class Shipments {
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //发货单中订单总金额
-        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee;
+        Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
                 shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
         Map<String,String> extraMap = shipment.getExtra();

@@ -93,10 +93,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (!Objects.isNull(shipment)) {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             refundExtra.setShipmentId(shipment.getId());
-            refundExtra.setPosAmt(shipmentExtra.getPosAmt());
-            refundExtra.setPosType(shipmentExtra.getPosType());
-            refundExtra.setPosSerialNo(shipmentExtra.getPosSerialNo());
-            refundExtra.setPosCreatedAt(shipmentExtra.getPosCreatedAt());
         }
         RefundItem refundItem = new RefundItem();
         if (!Objects.isNull(shipment)) {

@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.user;
 
 import com.google.common.base.CharMatcher;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
@@ -97,6 +98,7 @@ public class OperatorApis {
         Long outUserId ;
         if(isBindingUser(operator)){
             outUserId = operator.getUserId();
+            checkUserExist(outUserId);
         }else {
             //调用用户中心创建用户
             Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(),operator.getPassword());
@@ -305,4 +307,22 @@ public class OperatorApis {
 
 
     }
+
+    private void checkUserExist(Long outId){
+
+        Response<Optional<MiddleUser>> middleUserRes = userReadService.findByOutId(outId);
+        if(!middleUserRes.isSuccess()){
+            log.error("find middle user by outId:{} fail ,error:{}",outId,middleUserRes.getError());
+            throw new JsonResponseException(middleUserRes.getError());
+        }
+
+        if(middleUserRes.getResult().isPresent()){
+            log.error("user name:{} is exist");
+            throw new JsonResponseException("user.already.exist");
+        }
+
+
+    }
+
+    findByOutId
 }

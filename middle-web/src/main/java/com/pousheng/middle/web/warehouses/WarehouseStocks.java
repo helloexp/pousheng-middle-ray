@@ -81,6 +81,8 @@ public class WarehouseStocks {
             }
             if (!CollectionUtils.isEmpty(skuCodes)) {
                 params.put("skuCodes", skuCodes);
+            }else{
+                return Paging.empty();
             }
         }
         Response<Paging<WarehouseSkuStock>> r = warehouseSkuReadService.findBy(pageNo, pageSize, params);

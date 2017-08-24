@@ -14,7 +14,7 @@ import com.google.common.base.Objects;
  */
 public enum MiddleRefundStatus {
 
-    WAIT_HANDLE(1, "待处理"),                                          //待处理
+    WAIT_HANDLE(1, "待完善"),                                          //待处理
     WAIT_SYNC_HK(2, "待同步恒康(整单)"),                                //待同步恒康(整单)
     SYNC_HK_ING(3, "同步恒康中"),                                       //同步恒康中（此状态前端可不用关心，只是为了后端flow通顺）
     REFUND_SYNC_HK_SUCCESS(4, "同步恒康成功待退款(仅退款)"),              //同步恒康成功待退款(仅退款)

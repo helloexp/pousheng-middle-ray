@@ -58,4 +58,13 @@ public interface MiddleOrderWriteService {
      * @return
      */
     public Response<Boolean> updateInvoices(long shopOrderId, Map<String,String> invoicesMap,String title);
+
+    /**
+     * 更新订单的售后地址信息
+     *
+     * @param shopOrderId  店铺订单id
+     * @param receiverInfo 新的收货地址信息
+     * @return 是否更新成功
+     */
+    Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo);
 }

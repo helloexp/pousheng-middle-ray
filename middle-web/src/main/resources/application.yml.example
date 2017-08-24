@@ -59,3 +59,8 @@ azure:
     accountName: devdiag685
     accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
     endpointSuffix: core.chinacloudapi.cn
+
+erp.token:
+  appKey: terminus-erp
+  secret: anywhere-erp
+  gateway: http://127.0.0.1:8080/api/gateway

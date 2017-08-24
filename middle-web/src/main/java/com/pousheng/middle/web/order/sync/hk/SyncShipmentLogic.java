@@ -28,6 +28,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -227,7 +228,7 @@ public class SyncShipmentLogic {
         tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
         //订单总运费
         tradeOrder.setFeeMon(Math.toIntExact((shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee())/100));
-        //买家应付金额
+        //买家应付金额=订单总金额+运费
         tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalPrice())/100);
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());
@@ -244,9 +245,11 @@ public class SyncShipmentLogic {
         //发票类型(中台1:普通发票,2:增值税发票3:电子发票),恒康(1:普通发票,2.电子发票,3.增值税发票)
         tradeOrder.setInvoiceType(String.valueOf(this.getHkInvoiceType(shipmentDetail).getValue()));
         //发票抬头
-        tradeOrder.setInvoice(shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0).getTitle():"");
-        //TODO 税号
-        tradeOrder.setTaxNo("");
+        Invoice invoice = shipmentDetail.getInvoices()!=null&&shipmentDetail.getInvoices().size()>0?shipmentDetail.getInvoices().get(0):null;
+        Map<String,String> invoiceDetail = invoice!=null?invoice.getDetail():null;
+        tradeOrder.setInvoice(invoice!=null?invoice.getTitle():"");
+        tradeOrder.setTaxNo(invoiceDetail!=null&&invoiceDetail.get("taxRegisterNo")!=null?invoiceDetail.get("taxRegisterNo"):"");
+
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         //下单店铺编码
         tradeOrder.setShopId(shipmentExtra.getErpOrderShopCode());
@@ -259,10 +262,9 @@ public class SyncShipmentLogic {
         }
         Warehouse warehouse = response.getResult();
         tradeOrder.setStockId(warehouse.getInnerCode());
-        //京东快递,自选快递24400000012
-        //tradeOrder.setVendCustID(shipmentExtra.getVendCustID());
-        //todo 到时需要删除
-        tradeOrder.setVendCustID("24400000012");
+        //京东快递,自选快递
+        tradeOrder.setVendCustCode(shipmentExtra.getVendCustID());
+
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
         tradeOrder.setItems(items);

@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -161,7 +162,9 @@ public class WarehouseChooser {
                 warehouseShipment.setWarehouseId(candidateWarehouseId);
                 warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getName());
                 List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
-                for (String skuCode : current.elementSet()) {
+                Iterator<String> currentIterator = current.iterator();
+                if (currentIterator.hasNext()){
+                    String skuCode= currentIterator.next();
                     int required = current.count(skuCode);
                     int stock = widskucode2stock.get(candidateWarehouseId, skuCode);
                     int actual = stock > required ? required : stock;

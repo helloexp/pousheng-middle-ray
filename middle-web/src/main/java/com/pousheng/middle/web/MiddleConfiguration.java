@@ -10,6 +10,7 @@ import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
+import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
@@ -27,6 +28,7 @@ import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.rule.RuleExecutorRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -75,6 +77,7 @@ import java.util.concurrent.Executors;
                 "com.pousheng.middle.interceptors",
                 "com.pousheng.middle.web"})
 @EnableScheduling
+@EnableConfigurationProperties({ErpOpenApiToken.class})
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
 

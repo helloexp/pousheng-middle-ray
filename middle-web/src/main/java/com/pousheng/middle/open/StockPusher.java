@@ -137,6 +137,8 @@ public class StockPusher {
                             log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
                                     skuCode, shopId, rP.getError());
                         }
+                        log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
+                                stock.intValue(),skuCode, shopId);
                         //更新上次推送的可用库存
                         WarehouseShopStockRule u = new WarehouseShopStockRule();
                         u.setId(shopStockRule.getId());

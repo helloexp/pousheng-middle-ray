@@ -76,7 +76,7 @@ public class OperatorApis {
             throw new JsonResponseException("operator.username.can.not.be.null");
         }
 
-        if(!isBindingUser(operator)){
+        if (!isBindingUser(operator)) {
             String pw = Params.trimToNull(operator.getPassword());
             if (pw == null) {
                 log.warn("create operator failed, no password specified");
@@ -91,19 +91,19 @@ public class OperatorApis {
         Operator toCreateOperator = new Operator();
         toCreateOperator.setUserName(operator.getUsername());
         toCreateOperator.setRoleId(operator.getRoleId());
-        Map<String,String> extraMap = Maps.newHashMap();
+        Map<String, String> extraMap = Maps.newHashMap();
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
         toCreateOperator.setExtra(extraMap);
 
-        Long outUserId ;
-        if(isBindingUser(operator)){
+        Long outUserId;
+        if (isBindingUser(operator)) {
             outUserId = operator.getUserId();
             checkUserExist(outUserId);
-        }else {
+        } else {
             //调用用户中心创建用户
-            Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(),operator.getPassword());
-            if(!ucUserInfoRes.isSuccess()){
-                log.error("create middleUser center middleUser(name:{}) fail,error:{}",operator.getUsername(),ucUserInfoRes.getError());
+            Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(), operator.getPassword());
+            if (!ucUserInfoRes.isSuccess()) {
+                log.error("create middleUser center middleUser(name:{}) fail,error:{}", operator.getUsername(), ucUserInfoRes.getError());
                 throw new JsonResponseException(ucUserInfoRes.getError());
             }
             UcUserInfo ucUserInfo = ucUserInfoRes.getResult();
@@ -134,8 +134,8 @@ public class OperatorApis {
     public Boolean updateOperator(@PathVariable Long userId, @RequestBody OperatorPost operator) {
 
         Response<MiddleUser> userRes = userReadService.findById(userId);
-        if(!userRes.isSuccess()){
-            log.error("find user(id:{}) fail,error:{}",userId,userRes.getError());
+        if (!userRes.isSuccess()) {
+            log.error("find user(id:{}) fail,error:{}", userId, userRes.getError());
             throw new JsonResponseException(userRes.getError());
         }
         MiddleUser existMiddleUser = userRes.getResult();
@@ -163,9 +163,9 @@ public class OperatorApis {
         }
 
         //更新用户中心用户信息
-        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(existMiddleUser.getOutId(),operator.getUsername(),operator.getPassword());
-        if(!ucUserInfoRes.isSuccess()){
-            log.error("update user center user(id:{}) fail,error:{}", existMiddleUser.getOutId(),ucUserInfoRes.getError());
+        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(existMiddleUser.getOutId(), operator.getUsername(), operator.getPassword());
+        if (!ucUserInfoRes.isSuccess()) {
+            log.error("update user center user(id:{}) fail,error:{}", existMiddleUser.getOutId(), ucUserInfoRes.getError());
             throw new JsonResponseException(ucUserInfoRes.getError());
         }
 
@@ -179,7 +179,7 @@ public class OperatorApis {
         toUpdateOperator.setId(existOp.getId());
         toUpdateOperator.setUserName(toUpdateMiddleUser.getName());
         toUpdateOperator.setRoleId(operator.getRoleId());
-        Map<String,String> extraMap = existOp.getExtra();//这里就不判断extra是否为空了，创建时会塞入管理店铺id，所以这里一定不会为空
+        Map<String, String> extraMap = existOp.getExtra();//这里就不判断extra是否为空了，创建时会塞入管理店铺id，所以这里一定不会为空
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
         toUpdateOperator.setExtra(extraMap);
 
@@ -204,14 +204,14 @@ public class OperatorApis {
         }
     }
 
-    private List<Long> handleManageShopIds(List<Long> manageShopIds){
-        if(CollectionUtils.isEmpty(manageShopIds)){
+    private List<Long> handleManageShopIds(List<Long> manageShopIds) {
+        if (CollectionUtils.isEmpty(manageShopIds)) {
             manageShopIds = Lists.newArrayList();
         }
         return manageShopIds;
     }
 
-    private Boolean isBindingUser(OperatorPost operatorPost){
+    private Boolean isBindingUser(OperatorPost operatorPost) {
         return !Arguments.isNull(operatorPost.getUserId());
     }
 
@@ -263,12 +263,12 @@ public class OperatorApis {
 
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<Operator>> pagingOperator(@RequestParam(required = false) Long roleId,
-                                                        @RequestParam(required = false)Long userId,
-                                                        @RequestParam(required = false) String roleName,
-                                                        @RequestParam(required = false) String userName,
-                                                            @RequestParam(required = false) Integer pageNo,
-                                                        @RequestParam(required = false) Integer pageSize) {
-        return middleOperatorReadService.pagination(roleId, userId,userName,roleName,null, pageNo, pageSize);
+                                                     @RequestParam(required = false) Long userId,
+                                                     @RequestParam(required = false) String roleName,
+                                                     @RequestParam(required = false) String userName,
+                                                     @RequestParam(required = false) Integer pageNo,
+                                                     @RequestParam(required = false) Integer pageSize) {
+        return middleOperatorReadService.pagination(roleId, userId, userName, roleName, null, pageNo, pageSize);
     }
 
     @RequestMapping(value = "/manage/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -292,15 +292,15 @@ public class OperatorApis {
     }
 
 
-    private void checkUserExist(String name){
+    private void checkUserExist(String name) {
 
         Response<MiddleUser> middleUserRes = userReadService.findByName(name);
-        if(!middleUserRes.isSuccess()){
-            log.error("find middle user by name:{} fail ,error:{}",name,middleUserRes.getError());
+        if (!middleUserRes.isSuccess()) {
+            log.error("find middle user by name:{} fail ,error:{}", name, middleUserRes.getError());
             throw new JsonResponseException(middleUserRes.getError());
         }
 
-        if(!Arguments.isNull(middleUserRes.getResult())){
+        if (!Arguments.isNull(middleUserRes.getResult())) {
             log.error("user name:{} is exist");
             throw new JsonResponseException("user.name.already.exist");
         }
@@ -308,15 +308,15 @@ public class OperatorApis {
 
     }
 
-    private void checkUserExist(Long outId){
+    private void checkUserExist(Long outId) {
 
         Response<Optional<MiddleUser>> middleUserRes = userReadService.findByOutId(outId);
-        if(!middleUserRes.isSuccess()){
-            log.error("find middle user by outId:{} fail ,error:{}",outId,middleUserRes.getError());
+        if (!middleUserRes.isSuccess()) {
+            log.error("find middle user by outId:{} fail ,error:{}", outId, middleUserRes.getError());
             throw new JsonResponseException(middleUserRes.getError());
         }
 
-        if(middleUserRes.getResult().isPresent()){
+        if (middleUserRes.getResult().isPresent()) {
             log.error("user name:{} is exist");
             throw new JsonResponseException("user.already.exist");
         }
@@ -324,3 +324,4 @@ public class OperatorApis {
 
     }
 
+}

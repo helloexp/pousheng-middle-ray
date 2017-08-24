@@ -242,6 +242,7 @@ public class SyncRefundLogic {
             sycHkRefund.setStockId(warehouse.getInnerCode());
         }
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
+        //退款金额为页面上申请的退款金额
         sycHkRefund.setRefundOrderAmount((int) (refund.getFee()==null?0:refund.getFee() / 100));
         sycHkRefund.setRefundFreight(0);
         //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
@@ -280,13 +281,13 @@ public class SyncRefundLogic {
             //恒康商品条码
             item.setBarCode(refundItem.getSkuCode());
             //商品数量
-            item.setItemNum(refundItem.getApplyQuantity());
+            item.setItemNum(refundItem.getAlreadyHandleNumber());
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格
             item.setSalePrice(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice() / 100);
             //商品总净价
-            item.setRefundAmount(refundItem.getCleanFee()==null?0:refundItem.getCleanFee() / 100);
+            item.setRefundAmount(refundItem.getFee()==null?0: (int) (refundItem.getFee() / 100));
             //商品名称
             item.setItemName(refundItem.getSkuName());
             items.add(item);

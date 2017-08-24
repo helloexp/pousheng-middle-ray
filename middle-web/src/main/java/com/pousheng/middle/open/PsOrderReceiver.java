@@ -6,9 +6,12 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -23,6 +26,7 @@ import io.terminus.parana.item.model.Sku;
 import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.InvoiceWriteService;
@@ -31,6 +35,8 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.codehaus.jackson.map.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -56,6 +62,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @RpcConsumer
     private InvoiceWriteService invoiceWriteService;
+
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
 
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
@@ -116,6 +125,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order, cause:{}",
                         shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue(), updateR.getError());
             }
+            //更新同步电商状态为已确认收货
+            OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
+            orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
         }
     }
 

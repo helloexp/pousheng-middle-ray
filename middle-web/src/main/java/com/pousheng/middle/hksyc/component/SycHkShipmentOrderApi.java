@@ -45,7 +45,7 @@ public class SycHkShipmentOrderApi {
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderBody);
-        log.debug("paramJson:{}",paramJson);
+        log.info("paramJson:{}",paramJson);
         String hkGateway ="https://esbt.pousheng.com/commonerp/erp/sal/addorder";
         String responseBody = HttpRequest.post(hkGateway)
                 .header("verifycode","646edef40c9c481fb9cd9c61a41dabc1")

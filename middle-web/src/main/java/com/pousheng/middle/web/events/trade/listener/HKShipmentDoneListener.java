@@ -104,7 +104,7 @@ public class HKShipmentDoneListener {
                             throw new JsonResponseException("update.sku.order.status.error");
                         }
                     }
-                    //此时判断EcpOrderStatus的状态,如果ecpOrderStatus是已收货,直接将订单表状态更新为已经完成
+                    /*//此时判断EcpOrderStatus的状态,如果ecpOrderStatus是已收货,直接将订单表状态更新为已经完成----超鹏已经实现了这一段的逻辑(详见:PsOrderReceiver)
                     String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
                     if (Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.CONFIRMED.getValue())) {
                         Response<Boolean> updateRes = orderWriteService.shopOrderStatusChanged(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
@@ -112,7 +112,7 @@ public class HKShipmentDoneListener {
                             log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
                             throw new JsonResponseException("update.shop.order.status.error");
                         }
-                    }
+                    }*/
 
                 }
             }

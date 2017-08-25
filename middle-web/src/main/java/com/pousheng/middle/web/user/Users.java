@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.user;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
@@ -10,12 +11,16 @@ import com.pousheng.auth.service.UserReadService;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import com.pousheng.middle.web.events.user.LoginEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.auth.api.Role;
 import io.terminus.parana.auth.api.RoleContent;
 import io.terminus.parana.auth.api.UserRoleLoader;
+import io.terminus.parana.auth.model.Operator;
+import io.terminus.parana.auth.service.OperatorReadService;
+import io.terminus.parana.common.enums.UserType;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
@@ -49,6 +54,8 @@ public class Users {
     private UcUserOperationLogic operationLogic;
     @Autowired
     private UserRoleLoader userRoleLoader;
+    @RpcConsumer
+    private OperatorReadService operatorReadService;
 
 
     private static final DateTimeFormatter DTF = DateTimeFormat.forPattern("yyyy-MM-dd");
@@ -108,15 +115,15 @@ public class Users {
     }
 
     private ParanaUser buildParanaUser(MiddleUser middleUser) {
-  /*      if (Objects.equal(middleUser.getStatus(), UserStatus.DELETED.value())) {
-            throw new JsonResponseException("middleUser.not.found");
+        if (Objects.equal(middleUser.getType(), UserType.OPERATOR.value())) {
+            Operator operator = RespHelper.or500(operatorReadService.findByUserId(middleUser.getId()));
+            if (operator == null) {
+                throw new JsonResponseException("operator.not.exist");
+            }
+            if (Objects.equal(operator.getStatus(), 0)) {
+                throw new JsonResponseException("user.status.locked");
+            }
         }
-        if (Objects.equal(middleUser.getStatus(), UserStatus.FROZEN.value())) {
-            throw new JsonResponseException("middleUser.status.frozen");
-        }
-        if (Objects.equal(middleUser.getStatus(), UserStatus.LOCKED.value())) {
-            throw new JsonResponseException("middleUser.status.locked");
-        }*/
 
         return ParanaUserMaker.from(middleUser);
     }

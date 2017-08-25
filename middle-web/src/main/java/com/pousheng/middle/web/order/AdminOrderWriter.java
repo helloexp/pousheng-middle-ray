@@ -123,7 +123,13 @@ public class AdminOrderWriter {
         //判断是整单取消还是子单取消
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取是否存在失败的sku记录
-        String skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED, shopOrder);
+        String skuCodeCanceled="";
+        try{
+            skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED, shopOrder);
+        }catch (Exception e)
+        {
+            log.info("skuCode is not exist");
+        }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
         } else {

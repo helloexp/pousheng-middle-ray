@@ -90,10 +90,10 @@ public class SyncShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
             List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
-            /*SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
-            HkResponseHead head = response.getHead();*/
+            SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
+            HkResponseHead head = response.getHead();
             //解析返回结果
-            if (true) {
+            if (Objects.equals(head.getCode(),"0")) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -102,10 +102,10 @@ public class SyncShipmentLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
             } else {
-              /*log.error("sync hk fail, return code :{}",head.getCode());
+                log.error("sync hk fail, return code :{},return message:{}",head.getCode(),head.getMessage());
                 //更新状态为同步失败
                 updateShipmetSyncFail(shipment);
-                return Response.fail("sync.hk.shipment.fail");*/
+                return Response.fail(head.getMessage());
             }
             return Response.ok();
         } catch (Exception e) {

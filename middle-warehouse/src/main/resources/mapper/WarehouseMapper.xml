@@ -107,6 +107,7 @@
             <if test="status != null">`status` = #{status},</if>
             <if test="type!=null">`type`=#{type},</if>
             <if test="name != null">name = #{name},</if>
+            <if test="address!=null">address=#{address},</if>
             <if test="ownerId != null">owner_id = #{ownerId},</if>
             <if test="isDefault != null">is_default = #{isDefault},</if>
             <if test="extraJson != null">extra_json = #{extraJson},</if>

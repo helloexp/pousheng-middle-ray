@@ -143,16 +143,16 @@ public class OrderOpenApi {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
 
-            /**
-             * 恒康同步发货完成状态到中台
-             *
-             * @param shipmentId       中台发货单号
-             * @param hkShipmentId     恒康发货单号
-             * @param shipmentCorpCode 物流公司代码
-             * @param shipmentSerialNo 物流单号
-             * @param shipmentDate     发货时间
-             * @return 是否同步成功
-             */
+    /**
+     * 恒康同步发货完成状态到中台
+     *
+     * @param shipmentId       中台发货单号
+     * @param hkShipmentId     恒康发货单号
+     * @param shipmentCorpCode 物流公司代码
+     * @param shipmentSerialNo 物流单号
+     * @param shipmentDate     发货时间
+     * @return 是否同步成功
+     */
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
                                                          "shipmentDate"}, httpMethods = RequestMethod.POST)
@@ -297,7 +297,7 @@ public class OrderOpenApi {
 
 
     /**
-     *恒康同步pos信息到中台
+     * 恒康同步pos信息到中台
      * @param orderId  订单id
      * @param orderType 订单类型1.销售发货单,2.售后订单
      * @param posSerialNo pos单号

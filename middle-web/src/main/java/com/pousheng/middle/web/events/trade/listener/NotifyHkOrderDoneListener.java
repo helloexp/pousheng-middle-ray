@@ -38,7 +38,7 @@ public class NotifyHkOrderDoneListener {
     }
 
     @Subscribe
-    public void updateEcpOrderInitialStatus(NotifyHkOrderDoneEvent event) {
+    public void notifyHkOrderConfirmed(NotifyHkOrderDoneEvent event) {
         Long shopOrderId = event.getShopOrderId();
         List<OrderShipment> orderShipments =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         //获取已发货的发货单

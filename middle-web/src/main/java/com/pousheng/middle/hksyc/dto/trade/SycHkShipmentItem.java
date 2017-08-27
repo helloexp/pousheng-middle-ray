@@ -17,9 +17,9 @@ public class SycHkShipmentItem implements Serializable{
     private String orderNo;
     private String orderSubNo;
     private String barcode;
-    private Integer num = 1;
+    private Integer num;
     private BigDecimal preferentialMon;
     private BigDecimal salePrice;
     private BigDecimal totalPrice;
-    private Integer isGifts = 0;
+    private Integer isGifts;
 }

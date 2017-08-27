@@ -135,7 +135,8 @@ public class ShipmentReadLogic {
             //获取商品原价
             shipmentItem.setSkuPrice(Integer.valueOf(Math.round(originSkuOrder.getOriginFee()/originSkuOrder.getQuantity())));
             //查看生成发货单的sku商品折扣
-            shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrder.getQuantity(), Math.toIntExact(originSkuOrder.getDiscount())));
+            Long disCount = skuOrder.getDiscount()+Long.valueOf(this.getShareDiscount(skuOrder));
+            shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrder.getQuantity(), Math.toIntExact(disCount)));
             //查看sku商品的总的净价
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             //查看sku商品净价
@@ -418,6 +419,9 @@ public class ShipmentReadLogic {
         return count > 0;
     }
 
+    private String getShareDiscount(SkuOrder skuOrder){
+        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+    }
 
 
 }

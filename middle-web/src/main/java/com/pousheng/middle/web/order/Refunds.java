@@ -111,7 +111,19 @@ public class Refunds {
     @OperationLogType("完善")
     public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
-        refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
+        try{
+            refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
+            //完善之后同步售后单到恒康
+            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+            if (!syncRes.isSuccess()) {
+                log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                throw new JsonResponseException(syncRes.getError());
+            }
+        }catch (JsonResponseException e1){
+            throw new JsonResponseException(e1.getMessage());
+        }catch (Exception e){
+            throw new JsonResponseException("complete.refund.failed");
+        }
     }
 
 
@@ -135,6 +147,13 @@ public class Refunds {
             if (!response.isSuccess()) {
                 log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
                 throw new JsonResponseException(response.getError());
+            }else{
+                //审核之后同步售后单到恒康
+                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
+                }
             }
         });
     }

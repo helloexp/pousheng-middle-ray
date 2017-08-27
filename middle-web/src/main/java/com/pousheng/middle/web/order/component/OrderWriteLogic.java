@@ -13,6 +13,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
@@ -326,8 +327,14 @@ public class OrderWriteLogic {
                     MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),skuCode);
         }else{
             //子单取消成功
-            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,skuOrder,
+            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,skuOrder,
                     MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation(),"");
+            if (response.isSuccess()){
+                //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
+                OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
+                eventBus.post(event);
+            }
+
         }
     }
 
@@ -374,8 +381,14 @@ public class OrderWriteLogic {
                     skuOrder,MiddleOrderEvent.CANCEL.toOrderOperation(),MiddleOrderEvent.CANCEL.toOrderOperation(),skuCode);
 
         }else{
-           middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,
+            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,
                    skuOrder,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(),"");
+            if (response.isSuccess()){
+                //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
+                OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
+                eventBus.post(event);
+            }
+
         }
     }
 

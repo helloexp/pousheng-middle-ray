@@ -4,12 +4,14 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -69,6 +71,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
 
+    @Autowired
+    private EventBus eventBus;
+
     @Override
     protected Item findItemById(Long paranaItemId) {
         //TODO use cache
@@ -124,10 +129,17 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             if (!updateR.isSuccess()) {
                 log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order, cause:{}",
                         shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue(), updateR.getError());
+            }else {
+                //更新同步电商状态为已确认收货
+                OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
+                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                if (response.isSuccess()) {
+                    //通知恒康发货单收货时间
+                    NotifyHkOrderDoneEvent event  = new NotifyHkOrderDoneEvent();
+                    event.setShopOrderId(shopOrder.getId());
+                    eventBus.post(event);
+                }
             }
-            //更新同步电商状态为已确认收货
-            OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
-            orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
         }
     }
 

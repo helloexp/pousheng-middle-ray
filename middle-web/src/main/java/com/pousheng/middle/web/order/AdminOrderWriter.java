@@ -128,7 +128,7 @@ public class AdminOrderWriter {
             skuCodeCanceled = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.SKU_CODE_CANCELED, shopOrder);
         }catch (Exception e)
         {
-            log.info("skuCode is not exist");
+            log.info("skuCode is not exist,because of not cancel sku order");
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);

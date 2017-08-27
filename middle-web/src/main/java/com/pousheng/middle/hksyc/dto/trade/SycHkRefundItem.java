@@ -3,6 +3,7 @@ package com.pousheng.middle.hksyc.dto.trade;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 
 /**
  * Created by songrenfei on 2017/7/19
@@ -18,7 +19,7 @@ public class SycHkRefundItem implements Serializable {
     private String barCode;
     private Integer itemNum;
     private String reason;
-    private Integer salePrice;
-    private Integer refundAmount;
+    private BigDecimal salePrice;
+    private BigDecimal refundAmount;
     private String itemName;
 }

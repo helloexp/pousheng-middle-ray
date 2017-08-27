@@ -443,8 +443,8 @@ public class ShipmentWiteLogic {
             String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
-
-            shipmentItem.setSkuDiscount(this.getDiscount(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
+            Long disCount = skuOrder.getDiscount()+Long.valueOf(this.getShareDiscount(skuOrder));
+            shipmentItem.setSkuDiscount(this.getDiscount(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(disCount)));
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
@@ -544,5 +544,7 @@ public class ShipmentWiteLogic {
         //如果已经有发货单计算过运费,返回true
         return count > 0;
     }
-
+    private String getShareDiscount(SkuOrder skuOrder){
+        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+    }
 }

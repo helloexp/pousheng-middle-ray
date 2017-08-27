@@ -65,6 +65,8 @@ public class TradeConstants {
     public static final String JD_VEND_CUST_ID="JDCOD";
     //自选物流编码
     public static final String OPTIONAL_VEND_CUST_ID="ZX000001";
+    //子单分拆优惠
+    public static final String SKU_SHARE_DISCOUNT="shareDiscount";
     /**
      * 逆向单来源
      * see RefundSource

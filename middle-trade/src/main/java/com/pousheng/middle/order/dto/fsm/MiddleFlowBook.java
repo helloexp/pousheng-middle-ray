@@ -236,6 +236,22 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.SHIPPED.getValue());
+            //已发货 -->确认收货成功-恒康确认收货成功
+            addTransition(MiddleShipmentsStatus.SHIPPED.getValue(),
+                    MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue());
+            //已发货 -->自动确认收货失败---恒康确认收货失败
+            addTransition(MiddleShipmentsStatus.SHIPPED.getValue(),
+                    MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMED_FAIL.getValue());
+            //恒康确认收货失败 -->确认收货失败---恒康确认收货失败
+            addTransition(MiddleShipmentsStatus.CONFIRMED_FAIL.getValue(),
+                    MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMED_FAIL.getValue());
+            //恒康确认收货失败 -->确认收货成功---恒康确认收货成功
+            addTransition(MiddleShipmentsStatus.CONFIRMED_FAIL.getValue(),
+                    MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue());
 
             //===========逆向流程
 
@@ -249,6 +265,10 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
+            //已受理 -->取消恒康 -> 取消同步中
+            addTransition(MiddleShipmentsStatus.ACCEPTED.getValue(),
+                    MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
             //待发货 -->取消恒康 -> 取消同步中
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),

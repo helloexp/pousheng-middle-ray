@@ -3,6 +3,7 @@ package com.pousheng.middle.hksyc.dto.trade;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -15,9 +16,9 @@ public class SycHkShipmentOrder implements Serializable {
 
     private String orderNo;
     private String buyerNick;
-    private Integer orderMon;
-    private Integer feeMon;
-    private Integer realMon;
+    private BigDecimal orderMon;
+    private BigDecimal feeMon;
+    private BigDecimal realMon;
     private String buyerRemark;
     private String paymentSerialNo;
     private String orderStatus;
@@ -50,27 +51,27 @@ public class SycHkShipmentOrder implements Serializable {
         this.buyerNick = buyerNick;
     }
 
-    public Integer getOrderMon() {
+    public BigDecimal getOrderMon() {
         return orderMon;
     }
 
-    public void setOrderMon(Integer orderMon) {
+    public void setOrderMon(BigDecimal orderMon) {
         this.orderMon = orderMon;
     }
 
-    public Integer getFeeMon() {
+    public BigDecimal getFeeMon() {
         return feeMon;
     }
 
-    public void setFeeMon(Integer feeMon) {
+    public void setFeeMon(BigDecimal feeMon) {
         this.feeMon = feeMon;
     }
 
-    public Integer getRealMon() {
+    public BigDecimal getRealMon() {
         return realMon;
     }
 
-    public void setRealMon(Integer realMon) {
+    public void setRealMon(BigDecimal realMon) {
         this.realMon = realMon;
     }
 

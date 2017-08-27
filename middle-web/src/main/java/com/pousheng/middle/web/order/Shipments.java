@@ -450,6 +450,20 @@ public class Shipments {
         unLockStockEvent.setShipment(shipment);
         eventBus.post(unLockStockEvent);
     }
+    /**
+     * 发货单确认收货失败通知恒康
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/done/sync/hk",method = RequestMethod.PUT)
+    public void syncShipmentDoneToHk(@PathVariable(value="id") Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentDoneToHk(shipment,2,MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());
+        if(!syncRes.isSuccess()){
+            log.error("sync  shipment(id:{}) done to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
 
     private String findReceiverInfos(Long orderId, OrderLevel orderLevel) {
 
@@ -620,7 +634,8 @@ public class Shipments {
             Integer integral = StringUtils.isEmpty(originIntegral)?0: Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
             //skuDisCount,根据生成发货单的数量与skuOrder的数量按照比例四舍五入计算金额
-            shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(skuOrder.getDiscount())));
+            Long disCount = skuOrder.getDiscount()+Long.valueOf(this.getShareDiscount(skuOrder));
+            shipmentItem.setSkuDiscount(this.getDiscount(originSkuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId), Math.toIntExact(disCount)));
             //总净价
             shipmentItem.setCleanFee(this.getCleanFee(shipmentItem.getSkuPrice(),shipmentItem.getSkuDiscount(),shipmentItem.getQuantity()));
             //商品净价
@@ -812,5 +827,8 @@ public class Shipments {
             return true;
         }
         return false;
+    }
+    private String getShareDiscount(SkuOrder skuOrder){
+        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
     }
 }

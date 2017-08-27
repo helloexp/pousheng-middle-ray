@@ -39,6 +39,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +93,7 @@ public class SyncShipmentLogic {
             SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
             HkResponseHead head = response.getHead();
             //解析返回结果
-            if (Objects.equals(head.getCode(), "0")) {
+            if (Objects.equals(head.getCode(),"0")) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -100,10 +102,10 @@ public class SyncShipmentLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
             } else {
-                log.error("sync hk fail, return code :{}",head.getCode());
+                log.error("sync hk fail, return code :{},return message:{}",head.getCode(),head.getMessage());
                 //更新状态为同步失败
                 updateShipmetSyncFail(shipment);
-                return Response.fail("sync.hk.shipment.fail");
+                return Response.fail(head.getMessage());
             }
             return Response.ok();
         } catch (Exception e) {
@@ -137,11 +139,18 @@ public class SyncShipmentLogic {
         }
     }
 
+    private void updateShipmetDoneToHkFail(Shipment shipment,OrderOperation syncOrderOperation){
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            //这里失败只打印日志即可
+            log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+        }
+    }
 
     /**
      * 同步发货单取消到恒康
      * @param shipment 发货单
-     * @param operationType 0 取消 1 删除
+     * @param operationType 0 取消 1 删除 2 收货状态更新
      * @return 同步结果, 同步成功true, 同步失败false
      */
     public Response<Boolean> syncShipmentCancelToHk(Shipment shipment,Integer operationType) {
@@ -189,6 +198,46 @@ public class SyncShipmentLogic {
         }
     }
 
+
+
+    /**
+     * 自动同步发货单收货信息到恒康
+     * @param shipment 发货单
+     * @param operationType 0 取消 1 删除 2 收货状态更新
+     * @param syncOrderOperation 同步失败的动作(手动和自动略有不同)
+     * @return 同步结果, 同步成功true, 同步失败false
+     */
+    public Response<Boolean> syncShipmentDoneToHk(Shipment shipment,Integer operationType,OrderOperation syncOrderOperation) {
+        try {
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(),operationType,0);
+            SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
+            HkResponseHead head = syncShipmentOrderResponse.getHead();
+            if (Objects.equals(head.getCode(), "0")) {
+                OrderOperation operation = MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation();
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                if (!updateStatus.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
+                    return Response.fail(updateStatus.getError());
+                }
+            } else {
+                //更新状态取消失败
+                updateShipmetDoneToHkFail(shipment,MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+                return Response.fail("sync.hk.cancel.shipment.failed");
+            }
+            return Response.ok(Boolean.TRUE);
+        } catch (ServiceException e1) {
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
+            //更新状态取消失败
+            updateShipmetDoneToHkFail(shipment,syncOrderOperation);
+            return Response.fail(e1.getMessage());
+        } catch (Exception e) {
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            //更新状态取消失败
+            updateShipmetDoneToHkFail(shipment,syncOrderOperation);
+            return Response.fail("sync.hk.cancel.shipment.failed");
+        }
+    }
     /**
      * 发货单同步恒康参数组装
      *
@@ -225,11 +274,11 @@ public class SyncShipmentLogic {
         //会员账号昵称
         tradeOrder.setBuyerNick(shipmentDetail.getReceiverInfo().getReceiveUserName());
         //订单总金额
-        tradeOrder.setOrderMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalFee())/100);
+        tradeOrder.setOrderMon(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN));
         //订单总运费
-        tradeOrder.setFeeMon(Math.toIntExact((shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee())/100));
+        tradeOrder.setFeeMon(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //买家应付金额=订单总金额+运费
-        tradeOrder.setRealMon(Math.toIntExact(shipmentDetail.getShipmentExtra().getShipmentTotalPrice())/100);
+        tradeOrder.setRealMon(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());
         //第三方支付流水号-可以不传
@@ -291,12 +340,12 @@ public class SyncShipmentLogic {
             item.setBarcode(shipmentItem.getSkuCode());
             //购买数量--对应中台发货单sku发货数量
             item.setNum(shipmentItem.getQuantity());
-            //优惠金额--中台折扣/100
-            item.setPreferentialMon(shipmentItem.getSkuDiscount() / 100);
+            //优惠金额--中台折扣/10
+            item.setPreferentialMon(new BigDecimal(shipmentItem.getSkuDiscount()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //销售单价(减去所有的优惠(优惠需要按比例计算))
-            item.setSalePrice((shipmentItem.getCleanPrice()) / 100);
+            item.setSalePrice(new BigDecimal(shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //总价(销售价格*数量)
-            item.setTotalPrice((shipmentItem.getCleanFee()) / 100);
+            item.setTotalPrice(new BigDecimal(shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //赠品(1),非赠品(2)默认填写非赠品
             item.setIsGifts(2);
             items.add(item);

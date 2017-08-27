@@ -33,6 +33,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 一旦订单或者售后单下面的发货单已经全部发货,更新订单或者发货单的状态为已经发货
@@ -82,19 +83,28 @@ public class HKShipmentDoneListener {
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             if (shopOrder.getStatus() == MiddleOrderStatus.WAIT_SHIP.getValue()) {
+                //获取该订单下所有的orderShipment信息
                 List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(orderShopId);
-                List<Integer> orderShipMentStatusList = Lists.transform(orderShipments, new Function<OrderShipment, Integer>() {
+                //过滤掉已经取消的发货单
+                List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
+                        .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+                //获取发货单的状态
+                List<Integer> orderShipMentStatusList = Lists.transform(orderShipmentsFilter, new Function<OrderShipment, Integer>() {
                     @Nullable
                     @Override
                     public Integer apply(@Nullable OrderShipment orderShipment) {
                         return orderShipment.getStatus();
                     }
                 });
-
-                //判断此时是否还有处于待发货,待通知恒康,通知恒康中的发货单;如果没有,则此时店铺订单状态应该更新为已发货,sku订单更新状态时应该考虑排除已取消订单状态的更新
-                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
-                        && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
-                        !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
+                //判断订单是否已经全部发货了
+                int count=0;
+                for (Integer status:orderShipMentStatusList){
+                    if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
+                        count++;
+                    }
+                }
+                //count==0代表所有的发货单已经发货
+                if (count==0) {
                     //待发货--商家已经发货
                     List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue());
                     for (SkuOrder skuOrder : skuOrders) {
@@ -104,16 +114,6 @@ public class HKShipmentDoneListener {
                             throw new JsonResponseException("update.sku.order.status.error");
                         }
                     }
-                    /*//此时判断EcpOrderStatus的状态,如果ecpOrderStatus是已收货,直接将订单表状态更新为已经完成----超鹏已经实现了这一段的逻辑(详见:PsOrderReceiver)
-                    String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-                    if (Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.CONFIRMED.getValue())) {
-                        Response<Boolean> updateRes = orderWriteService.shopOrderStatusChanged(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
-                        if (!updateRes.getResult()) {
-                            log.error("update shopOrder status error (id:{}),original status is {}", shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
-                            throw new JsonResponseException("update.shop.order.status.error");
-                        }
-                    }*/
-
                 }
             }
 

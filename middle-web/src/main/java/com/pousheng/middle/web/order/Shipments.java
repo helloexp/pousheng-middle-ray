@@ -206,8 +206,8 @@ public class Shipments {
                 return Response.fail("shipment.not.belong.to.order");
             }
 
-            //发货单状态是否为已发货
-            if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue())){
+            //发货单状态是否为恒康已经确认收货
+            if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())){
                 log.error("shipment(id:{}) current status:{} can not apply after sale",shipmentId,orderShipment.getStatus());
                 return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }

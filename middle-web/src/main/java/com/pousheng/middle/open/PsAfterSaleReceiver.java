@@ -192,7 +192,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             throw new ServiceException("find.shipment.failed");
         }
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(shipment -> Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())).collect(Collectors.toList());
+                filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
         for (Shipment shipment : shipments) {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().

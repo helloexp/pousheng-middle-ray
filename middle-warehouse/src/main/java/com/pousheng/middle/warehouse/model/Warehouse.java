@@ -128,9 +128,9 @@ public class Warehouse implements Serializable {
     }
 
     /**
-     * 获取公司内码
+     * 获取仓库内码
      *
-     * @return 公司内码
+     * @return 仓库内码
      */
     public String getInnerCode() {
         if (StringUtils.hasText(code)) {

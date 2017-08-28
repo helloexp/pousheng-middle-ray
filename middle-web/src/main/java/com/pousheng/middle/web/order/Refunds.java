@@ -113,7 +113,7 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
             refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
-            if (Objects.equals(editSubmitRefundInfo.getOperationType(),"2")) {
+            if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
                 //完善之后同步售后单到恒康
                 Flow flow = flowPicker.pickAfterSales();
                 Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());

@@ -19,18 +19,18 @@ import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Invoice;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -64,6 +64,8 @@ public class SyncShipmentLogic {
     private SycHkOrderCancelApi sycHkOrderCancelApi;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
 
@@ -282,7 +284,9 @@ public class SyncShipmentLogic {
         //买家留言
         tradeOrder.setBuyerRemark(shipmentDetail.getShopOrder().getBuyerNote());
         //第三方支付流水号-可以不传
-        tradeOrder.setPaymentSerialNo("");
+        ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        OpenClientPaymentInfo paymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
+        tradeOrder.setPaymentSerialNo(paymentInfo!=null?paymentInfo.getPaySerialNo():"");
         // 订单状态默认为处理中
         tradeOrder.setOrderStatus(String.valueOf(2));
         //订单创建时间

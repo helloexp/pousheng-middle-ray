@@ -67,6 +67,8 @@ public class TradeConstants {
     public static final String OPTIONAL_VEND_CUST_ID="ZX000001";
     //子单分拆优惠
     public static final String SKU_SHARE_DISCOUNT="shareDiscount";
+    //订单支付信息
+    public static final String ORDER_PAYMENT_INFO="paymentInfo";
     /**
      * 逆向单来源
      * see RefundSource

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -19,6 +20,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.item.service.SkuReadService;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -76,6 +78,7 @@ public class OrderReadLogic {
     private ShipmentReadService shipmentReadService;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
 
@@ -411,5 +414,21 @@ public class OrderReadLogic {
             throw new ServiceException("find.skuOrder.failed");
         }
         return skuOrderFilters.get(0);
+    }
+
+    public OpenClientPaymentInfo getOpenClientPaymentInfo(ShopOrder shopOrder){
+        Map<String,String> extraMap = shopOrder.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("shopOrder(id:{}) extra field is null",shopOrder.getId());
+            throw new JsonResponseException("shopOrder.extra.is.null");
+        }
+        if(!extraMap.containsKey(TradeConstants.ORDER_PAYMENT_INFO)){
+            log.info("shopOrder(id:{}) extra not contain key:{}",shopOrder.getId(),TradeConstants.ORDER_PAYMENT_INFO);
+            return null;
+        }
+
+        return mapper.fromJson(extraMap.get(TradeConstants.ORDER_PAYMENT_INFO),OpenClientPaymentInfo.class);
+
+
     }
 }

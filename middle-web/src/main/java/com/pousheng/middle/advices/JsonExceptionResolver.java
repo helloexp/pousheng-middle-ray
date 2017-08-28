@@ -36,8 +36,11 @@ public class JsonExceptionResolver {
     @ExceptionHandler(value = {JsonResponseException.class})
     public void OPErrorHandler(JsonResponseException e, HttpServletRequest request, HttpServletResponse response) throws IOException {
         Locale locale = LocaleContextHolder.getLocale();
-        log.info("JsonResponseException happened,locale={}, cause={}",locale, Throwables.getStackTraceAsString(e));
+        log.debug("JsonResponseException happened,locale={}, cause={}",locale, Throwables.getStackTraceAsString(e));
         String message = messageSource.getMessage(e.getMessage(), null, e.getMessage(), locale);
         response.sendError(e.getStatus(), message);
     }
 }
+
+
+

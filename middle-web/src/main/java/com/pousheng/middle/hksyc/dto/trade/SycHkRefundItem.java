@@ -19,7 +19,7 @@ public class SycHkRefundItem implements Serializable {
     private String barCode;
     private Integer itemNum;
     private String reason;
-    private BigDecimal salePrice;
-    private BigDecimal refundAmount;
+    private String salePrice;
+    private String refundAmount;
     private String itemName;
 }

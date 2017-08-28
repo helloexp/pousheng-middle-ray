@@ -18,12 +18,12 @@ public class SycHkRefund implements Serializable{
     private String shopId;
     private String stockId;
     private String performanceShopId;
-    private BigDecimal refundOrderAmount;
+    private String refundOrderAmount;
     private Integer refundFreight;
     private String type;
     private String status;
     private String createdDate;
-    private BigDecimal totalRefund;
+    private String totalRefund;
     private String logisticsCompany;
     private String logisticsCode;
     private String memo;

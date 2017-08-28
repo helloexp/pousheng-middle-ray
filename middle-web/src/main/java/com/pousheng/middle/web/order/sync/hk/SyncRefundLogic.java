@@ -245,7 +245,7 @@ public class SyncRefundLogic {
         }
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
         //退款金额为页面上申请的退款金额
-        sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN));
+        sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());
         sycHkRefund.setRefundFreight(0);
         //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
         //中台状态1:售后退款,2:退货退款,恒康状态0:退货退款,1:仅退款
@@ -254,7 +254,7 @@ public class SyncRefundLogic {
         sycHkRefund.setStatus(String.valueOf(4));
         //售后单创建时间
         sycHkRefund.setCreatedDate(formatter.print(refund.getCreatedAt().getTime()));
-        sycHkRefund.setTotalRefund(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        sycHkRefund.setTotalRefund(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
         //寄回物流单号
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
@@ -287,9 +287,9 @@ public class SyncRefundLogic {
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格
-            item.setSalePrice(new BigDecimal(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setSalePrice(new BigDecimal(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //商品总净价
-            item.setRefundAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setRefundAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //商品名称
             item.setItemName(refundItem.getSkuName());
             items.add(item);

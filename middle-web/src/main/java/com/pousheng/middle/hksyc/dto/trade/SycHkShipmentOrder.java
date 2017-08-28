@@ -16,9 +16,9 @@ public class SycHkShipmentOrder implements Serializable {
 
     private String orderNo;
     private String buyerNick;
-    private BigDecimal orderMon;
-    private BigDecimal feeMon;
-    private BigDecimal realMon;
+    private String orderMon;
+    private String feeMon;
+    private String realMon;
     private String buyerRemark;
     private String paymentSerialNo;
     private String orderStatus;
@@ -51,27 +51,27 @@ public class SycHkShipmentOrder implements Serializable {
         this.buyerNick = buyerNick;
     }
 
-    public BigDecimal getOrderMon() {
+    public String getOrderMon() {
         return orderMon;
     }
 
-    public void setOrderMon(BigDecimal orderMon) {
+    public void setOrderMon(String orderMon) {
         this.orderMon = orderMon;
     }
 
-    public BigDecimal getFeeMon() {
+    public String getFeeMon() {
         return feeMon;
     }
 
-    public void setFeeMon(BigDecimal feeMon) {
+    public void setFeeMon(String feeMon) {
         this.feeMon = feeMon;
     }
 
-    public BigDecimal getRealMon() {
+    public String getRealMon() {
         return realMon;
     }
 
-    public void setRealMon(BigDecimal realMon) {
+    public void setRealMon(String realMon) {
         this.realMon = realMon;
     }
 

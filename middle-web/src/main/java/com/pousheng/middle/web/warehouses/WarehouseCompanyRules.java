@@ -145,7 +145,6 @@ public class WarehouseCompanyRules {
             Long warehosueId = crd.getWarehouseId();
             Warehouse warehouse = warehouseCacher.findById(warehosueId);
             crd.setWarehouseCode(warehouse.getInnerCode());
-            crd.setWarehouseName(warehouse.getName());
             crds.add(crd);
         }
         result.setData(crds);

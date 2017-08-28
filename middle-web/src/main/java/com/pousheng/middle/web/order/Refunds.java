@@ -113,11 +113,14 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
             refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
-            //完善之后同步售后单到恒康
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
-            if (!syncRes.isSuccess()) {
-                log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
-                throw new JsonResponseException(syncRes.getError());
+            if (Objects.equals(editSubmitRefundInfo.getOperationType(),"2")) {
+                //完善之后同步售后单到恒康
+                Flow flow = flowPicker.pickAfterSales();
+                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                }
             }
         }catch (JsonResponseException e1){
             throw new JsonResponseException(e1.getMessage());
@@ -149,10 +152,12 @@ public class Refunds {
                 throw new JsonResponseException(response.getError());
             }else{
                 //审核之后同步售后单到恒康
+                Flow flow = flowPicker.pickAfterSales();
+                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                refund.setStatus(targetStatus);
                 Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
                 if (!syncRes.isSuccess()) {
                     log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
-                    throw new JsonResponseException(syncRes.getError());
                 }
             }
         });

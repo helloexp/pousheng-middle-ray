@@ -212,7 +212,7 @@ public class AdminOrderWriter {
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
         }
-        Map<String,String> receiverInfoMap = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, String.class));
+        Map<String,Object> receiverInfoMap = JSON_MAPPER.fromJson(data, JSON_MAPPER.createCollectionType(HashMap.class, String.class, Object.class));
         if(receiverInfoMap == null) {
             log.error("failed to parse receiverInfoMap:{}",data);
             throw new JsonResponseException("receiver.info.map.invalid");

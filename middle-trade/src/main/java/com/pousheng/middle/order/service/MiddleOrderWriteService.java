@@ -49,7 +49,7 @@ public interface MiddleOrderWriteService {
      * @param buyerNote 买家备注
      * @return
      */
-    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,String> receiverInfoMap,String buyerNote);
+    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,Object> receiverInfoMap,String buyerNote);
 
     /**
      * 编辑订单的发票信息

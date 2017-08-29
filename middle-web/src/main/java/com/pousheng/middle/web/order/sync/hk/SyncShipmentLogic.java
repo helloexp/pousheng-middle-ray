@@ -184,7 +184,7 @@ public class SyncShipmentLogic {
             } else {
                 //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("sync.hk.cancel.shipment.failed");
+                return Response.fail(head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {
@@ -225,7 +225,7 @@ public class SyncShipmentLogic {
             } else {
                 //更新状态取消失败
                 updateShipmetDoneToHkFail(shipment,MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
-                return Response.fail("sync.hk.cancel.shipment.failed");
+                return Response.fail(head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {

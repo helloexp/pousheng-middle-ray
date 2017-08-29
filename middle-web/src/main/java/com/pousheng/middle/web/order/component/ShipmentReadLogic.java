@@ -142,7 +142,14 @@ public class ShipmentReadLogic {
             //查看sku商品净价
             shipmentItem.setCleanPrice(this.getCleanPrice(shipmentItem.getCleanFee(),shipmentItem.getQuantity()));
             //商品id--itemId
-            shipmentItem.setItemId(skuOrder.getItemId());
+            //商品id
+            String outItemId="";
+            try{
+                outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
+            }catch (Exception e){
+                log.info("outItemmId is not exist");
+            }
+            shipmentItem.setItemId(outItemId);
             //商品属性
             shipmentItem.setAttrs(skuOrder.getSkuAttrs());
             shipmentItems.add(shipmentItem);

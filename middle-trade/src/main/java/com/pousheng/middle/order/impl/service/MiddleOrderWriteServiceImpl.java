@@ -100,14 +100,14 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     }
 
     @Override
-    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,String> receiverInfoMap,String buyerNote) {
+    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,Object> receiverInfoMap,String buyerNote) {
         try{
             List<OrderReceiverInfo> receiverInfos = orderReceiverInfoDao.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
             OrderReceiverInfo orderReceiverInfo = receiverInfos.get(0);
             //获取初始的receviceInfo的json信息
             String receiverInfoJson = orderReceiverInfo.getReceiverInfoJson();
             //将初始的json转成map
-            Map<String, String> originReceiverMap = JSON_MAPPER.fromJson(receiverInfoJson, JSON_MAPPER.createCollectionType(HashMap.class, String.class, String.class));
+            Map<String, Object> originReceiverMap = JSON_MAPPER.fromJson(receiverInfoJson, JSON_MAPPER.createCollectionType(HashMap.class, String.class, Object.class));
             //合并传入的map信息
             originReceiverMap.putAll(receiverInfoMap);
             //将合并的map转化为json

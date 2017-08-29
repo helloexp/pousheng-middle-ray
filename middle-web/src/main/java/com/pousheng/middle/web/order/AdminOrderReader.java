@@ -155,7 +155,13 @@ public class AdminOrderReader {
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());
-            waitShipItemInfo.setItemId(skuOrder.getItemId());
+            String outItemId="";
+            try{
+                outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
+            }catch (Exception e){
+                log.info("outItemmId is not exist");
+            }
+            waitShipItemInfo.setItemId(outItemId);
             waitShipItemInfo.setSkuAttrs(skuOrder.getSkuAttrs());
             waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
             waitShipItemInfos.add(waitShipItemInfo);

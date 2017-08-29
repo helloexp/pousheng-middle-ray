@@ -28,5 +28,5 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     //已处理数量（换货的发货）
     private Integer alreadyHandleNumber;
     //商品id
-    private Long itemId;
+    private String itemId;
 }

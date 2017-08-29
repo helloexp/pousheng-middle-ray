@@ -23,7 +23,7 @@ public class WaitShipItemInfo extends BasicItemInfo implements Serializable{
     private Long skuOrderId;
 
     //商品id
-    private Long itemId;
+    private String itemId;
     //skuAttrs
     List<SkuAttribute> skuAttrs;
 

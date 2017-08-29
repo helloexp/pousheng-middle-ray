@@ -69,6 +69,9 @@ public class TradeConstants {
     public static final String SKU_SHARE_DISCOUNT="shareDiscount";
     //订单支付信息
     public static final String ORDER_PAYMENT_INFO="paymentInfo";
+    //外部电商商品id
+    public static final String MIDDLE_OUT_ITEM_ID="outItemId";
+
     /**
      * 逆向单来源
      * see RefundSource

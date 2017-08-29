@@ -65,14 +65,15 @@ rpc.dubbo:
 
 gateway:
   erp:
-    host: http://esbt.pousheng.com
-    accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+    host: ${ERP_HOST}
+    accessKey: ${ERP_ACCESS_KEY}
   member:
     host: http://api-test-member.pousheng.com
   uc:
     host: ${USER_CENTER_GATEWAY}
   hk:
-    host: http://esbt.pousheng.com
+    host: ${HK_HOST}
+    accessKey: ${HK_ACCESS_KEY}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}

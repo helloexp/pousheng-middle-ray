@@ -113,7 +113,7 @@ public class SyncRefundLogic {
             } else {
                 //更新同步状态
                 updateRefundSyncFial(refund);
-                return Response.fail("sync.hk.refund.fail");
+                return Response.fail(head.getMessage());
             }
         } catch (Exception e) {
             log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());

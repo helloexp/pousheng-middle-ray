@@ -17,11 +17,13 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.dto.Company;
+import com.pousheng.middle.web.warehouses.dto.CompanyRuleDto;
 import com.pousheng.middle.web.warehouses.dto.ErpShop;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
@@ -120,9 +122,9 @@ public class WarehouseCompanyRules {
     }
 
     @RequestMapping(value = "/paging",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<WarehouseCompanyRule> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
-                                                   @RequestParam(required = false, value = "pageSize") Integer pageSize,
-                                                   @RequestParam(required = false, value="companyCode")String companyCode){
+    public Paging<CompanyRuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                             @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                             @RequestParam(required = false, value="companyCode")String companyCode){
         Map<String, Object> params = Maps.newHashMapWithExpectedSize(3);
         if(StringUtils.hasText(companyCode)){
             params.put("companyCode", companyCode);
@@ -132,7 +134,21 @@ public class WarehouseCompanyRules {
             log.error("failed to pagination WarehouseCompanyRule, params:{}, error code:{}", params, r.getError());
             throw new JsonResponseException(r.getError());
         }
-        return r.getResult();
+
+        Paging<CompanyRuleDto> result = new Paging<>();
+        Paging<WarehouseCompanyRule> rules = r.getResult();
+        result.setTotal(rules.getTotal());
+        List<CompanyRuleDto> crds = Lists.newArrayList();
+        for (WarehouseCompanyRule warehouseCompanyRule : rules.getData()) {
+            CompanyRuleDto crd = new CompanyRuleDto();
+            BeanMapper.copy(warehouseCompanyRule, crd);
+            Long warehosueId = crd.getWarehouseId();
+            Warehouse warehouse = warehouseCacher.findById(warehosueId);
+            crd.setWarehouseCode(warehouse.getInnerCode());
+            crds.add(crd);
+        }
+        result.setData(crds);
+        return result;
     }
 
     /**

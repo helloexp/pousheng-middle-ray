@@ -32,6 +32,7 @@ import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -197,12 +198,14 @@ public class ShipmentWiteLogic {
             return;
         }
         ReceiverInfo receiverInfo = response.getResult().get(0);
-        String cityName = receiverInfo.getCity();
-        //获取市一级的地址
-        WarehouseAddress warehouseAddress = this.getWarehouseAddress(cityName);
+        if(Arguments.isNull(receiverInfo.getCityId())){
+            log.error("receive info:{} city id is null,so skip auto create shipment",receiverInfo);
+            return;
+        }
+
 
         //选择发货仓库
-        List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(warehouseAddress.getId()),skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(receiverInfo.getCityId()),skuCodeAndQuantities);
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){
 
@@ -462,19 +465,6 @@ public class ShipmentWiteLogic {
         return shipmentItems;
     }
 
-    /**
-     * 根据市级地址名称获取市级的addressId
-     * @param addressName 地级市的中文名
-     * @return 返回地址信息
-     */
-    private WarehouseAddress getWarehouseAddress(String addressName){
-        Response<WarehouseAddress> warehouseResponse = warehouseAddressReadService.findByNameAndLevel(addressName, 2);
-        if (!warehouseResponse.isSuccess()){
-            log.error("find warehouseAddress failed,addressName is(:{}) and level is (:{})",addressName, 2);
-            throw new JsonResponseException("find.warehouse.address.failed");
-        }
-        return  warehouseResponse.getResult();
-    }
 
     /**
      *

@@ -13,6 +13,10 @@ spring:
     url: jdbc:mysql://${POUSHENG_MIDDLE_MYSQL_HOST}:${POUSHENG_MIDDLE_MYSQL_PORT}/${POUSHENG_MIDDLE_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8
     username: ${POUSHENG_MIDDLE_MYSQL_USERNAME}
     password: ${POUSHENG_MIDDLE_MYSQL_PASSWORD}
+  application:
+    name: pousheng-middle
+  messages:
+    basename: middle_messages
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml

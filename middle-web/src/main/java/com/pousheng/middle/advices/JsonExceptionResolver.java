@@ -41,3 +41,6 @@ public class JsonExceptionResolver {
         response.sendError(e.getStatus(), message);
     }
 }
+
+
+

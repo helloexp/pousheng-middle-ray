@@ -453,7 +453,13 @@ public class ShipmentWiteLogic {
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuCode(skuOrder.getSkuCode());
             //商品id
-            shipmentItem.setItemId(skuOrder.getItemId());
+            String outItemId="";
+            try{
+                outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
+            }catch (Exception e){
+                log.info("outItemmId is not exist");
+            }
+            shipmentItem.setItemId(outItemId);
             //商品属性
             shipmentItem.setAttrs(skuOrder.getSkuAttrs());
 

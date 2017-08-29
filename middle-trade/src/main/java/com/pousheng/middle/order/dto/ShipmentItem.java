@@ -27,5 +27,5 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
     //商品优惠
     private Integer skuDiscount;
     //商品id
-    private Long itemId;
+    private String itemId;
 }

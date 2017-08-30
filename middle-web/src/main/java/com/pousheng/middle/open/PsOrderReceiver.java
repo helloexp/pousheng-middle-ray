@@ -134,6 +134,16 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         return sku;
     }
 
+    @Override
+    protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
+        return OpenClientOrderStatus.PAID.getValue();
+    }
+
+    @Override
+    protected Integer toParanaOrderStatusForSkuOrder(OpenClientOrderStatus clientOrderStatus) {
+        return OpenClientOrderStatus.PAID.getValue();
+    }
+
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
             Response<Boolean> updateR = orderWriteService.shopOrderStatusChanged(shopOrder.getId(),

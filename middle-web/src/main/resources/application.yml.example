@@ -48,6 +48,7 @@ gateway:
     host: http://devt-account.pousheng.com
   hk:
     host: http://esbt.pousheng.com
+    accessKey: 646edef40c9c481fb9cd9c61a41dabc1
 
 open.api.app.key: terminus
 open.api.secret: anywhere

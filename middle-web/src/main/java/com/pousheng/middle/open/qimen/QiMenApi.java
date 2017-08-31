@@ -1,15 +1,19 @@
 package com.pousheng.middle.open.qimen;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.utils.XmlUtils;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -18,6 +22,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Map;
 
 /**
  * 奇门api实现
@@ -30,15 +35,26 @@ public class QiMenApi {
 
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
+
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+
+    private static final String WMS_APP_KEY = "terminus-wms";
+
+    private static final String WMS_APP_SECRET = "anywhere-wms";
 
     @PostMapping(value = "/wms")
     public String gatewayOfWms(HttpServletRequest request) {
         String body = retrievePayload(request);
         log.info("wms receive request,method={},body:{}", request.getParameter("method"), body);
-        //TODO 校验签名
         DeliveryOrderCreateRequest deliveryOrderCreateRequest = XmlUtils.toPojo(body, DeliveryOrderCreateRequest.class);
+
+        try {
+            checkSign(deliveryOrderCreateRequest);
+        } catch (OpenClientException e) {
+            return XmlUtils.toXml(QimenResponse.fail(e.getBody()));
+        }
+
         final String outerOrderId = deliveryOrderCreateRequest.getDeliveryOrder().getDeliveryOrderCode();
 
         Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId, OpenClientChannel.TAOBAO.name());
@@ -86,6 +102,51 @@ public class QiMenApi {
             //ignore
         }
         return sb.toString();
+    }
+
+    private void checkSign(DeliveryOrderCreateRequest request) {
+        Map<String, Object> extendProps = request.getExtendProps();
+        if (CollectionUtils.isEmpty(extendProps)) {
+            log.error("extend props is empty for request:{}", request);
+            throw new OpenClientException(400, "extend.props.empty");
+        }
+
+        if (!extendProps.containsKey("wmsAppKey")) {
+            log.error("extend props not provide appKey for request:{}", request);
+            throw new OpenClientException(400, "app.key.miss");
+        }
+
+        Object appKey = extendProps.get("wmsAppKey");
+        if (!Objects.equal(WMS_APP_KEY, appKey)) {
+            log.error("unknown app key:{}", appKey);
+            throw new OpenClientException(400, "invalid.app.key");
+        }
+
+        if (!extendProps.containsKey("wmsSign")) {
+            log.error("extend props not provide sign for request:{}", request);
+            throw new OpenClientException(400, "sign.miss");
+        }
+        Object sign = extendProps.get("wmsSign");
+        String expectedSign = generateSign(request);
+        if (!Objects.equal(sign, expectedSign)) {
+            log.error("sign({}) not match,expected sign is:{}", expectedSign);
+            throw new OpenClientException(400, "sign.not.match");
+        }
+    }
+
+    private String generateSign(DeliveryOrderCreateRequest request) {
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey", WMS_APP_KEY);
+        params.put("deliveryOrderCode", request.getDeliveryOrder().getDeliveryOrderCode());
+
+        DeliveryOrderCreateRequest.ReceiverInfo receiverInfo = request.getDeliveryOrder().getReceiverInfo();
+        params.put("name", receiverInfo.getName());
+        params.put("mobile", receiverInfo.getMobile());
+        params.put("province", receiverInfo.getProvince());
+        params.put("city", receiverInfo.getCity());
+        params.put("area", receiverInfo.getArea());
+        params.put("detailAddress", receiverInfo.getDetailAddress());
+        return WmsSignUtils.generateSign(WMS_APP_SECRET, params);
     }
 
     private ReceiverInfo toParanaReceiverInfo(DeliveryOrderCreateRequest.ReceiverInfo receiverInfo) {

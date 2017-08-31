@@ -16,7 +16,7 @@ public class DeliveryOrderCreateRequest {
     private DeliveryOrder deliveryOrder;
 
     @XStreamAlias("extendProps")
-    private Map<String,Object> extendProps;
+    private ExtendProps extendProps;
 
     @Data
     public static class DeliveryOrder {
@@ -63,6 +63,17 @@ public class DeliveryOrderCreateRequest {
 
         @XStreamAlias("detailAddress")
         private String detailAddress;
+    }
+
+    @Data
+    public static class ExtendProps{
+
+        @XStreamAlias("wmsAppKey")
+        private String wmsAppKey;
+
+        @XStreamAlias("wmsSign")
+        private String wmsSign;
+
     }
 
 }

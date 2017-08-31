@@ -13,7 +13,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -105,31 +105,29 @@ public class QiMenApi {
     }
 
     private void checkSign(DeliveryOrderCreateRequest request) {
-        Map<String, Object> extendProps = request.getExtendProps();
-        if (CollectionUtils.isEmpty(extendProps)) {
+        DeliveryOrderCreateRequest.ExtendProps extendProps = request.getExtendProps();
+        if (extendProps == null) {
             log.error("extend props is empty for request:{}", request);
             throw new OpenClientException(400, "extend.props.empty");
         }
 
-        if (!extendProps.containsKey("wmsAppKey")) {
+        if (!StringUtils.hasText(extendProps.getWmsAppKey())) {
             log.error("extend props not provide appKey for request:{}", request);
             throw new OpenClientException(400, "app.key.miss");
         }
 
-        Object appKey = extendProps.get("wmsAppKey");
-        if (!Objects.equal(WMS_APP_KEY, appKey)) {
-            log.error("unknown app key:{}", appKey);
+        if (!Objects.equal(WMS_APP_KEY, extendProps.getWmsAppKey())) {
+            log.error("unknown app key:{}", extendProps.getWmsAppKey());
             throw new OpenClientException(400, "invalid.app.key");
         }
 
-        if (!extendProps.containsKey("wmsSign")) {
+        if (!StringUtils.hasText(extendProps.getWmsSign())) {
             log.error("extend props not provide sign for request:{}", request);
             throw new OpenClientException(400, "sign.miss");
         }
-        Object sign = extendProps.get("wmsSign");
         String expectedSign = generateSign(request);
-        if (!Objects.equal(sign, expectedSign)) {
-            log.error("sign({}) not match,expected sign is:{}", expectedSign);
+        if (!Objects.equal(extendProps.getWmsSign(), expectedSign)) {
+            log.error("sign({}) not match for request:{},expected sign is:{}",request, expectedSign);
             throw new OpenClientException(400, "sign.not.match");
         }
     }

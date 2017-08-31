@@ -3,7 +3,7 @@ package com.pousheng.middle.order.enums;
 import com.google.common.base.Objects;
 
 /**
- * 中台支付类型
+ * 中台电商平台
  * Created by tony on 2017/7/25.
  * pousheng-middle
  */
@@ -26,6 +26,6 @@ public enum MiddleChannel {
                 return middleChannel;
             }
         }
-        throw new IllegalArgumentException("unknown payment type: "+value);
+        throw new IllegalArgumentException("unknown middle channel type: "+value);
     }
 }

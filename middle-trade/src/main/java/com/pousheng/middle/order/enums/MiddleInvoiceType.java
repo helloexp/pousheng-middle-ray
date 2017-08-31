@@ -24,6 +24,6 @@ public enum MiddleInvoiceType {
                 return payType;
             }
         }
-        throw new IllegalArgumentException("unknown invo type: "+value);
+        throw new IllegalArgumentException("unknown invoice type: "+value);
     }
 }

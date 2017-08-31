@@ -144,6 +144,16 @@ public class Refunds {
             log.error("find refund by refund ids:{} result size not equal request id size:{}", refundIds, refunds.size(), refundIds.size());
             throw new JsonResponseException("refund.id.invalid");
         }
+        int count=0;
+        for (Refund refund:refunds){
+            Map<String,String> refundExtraMap = refund.getExtra();
+            if (!refundExtraMap.containsKey(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG)){
+                count++;
+            }
+        }
+        if (count>0){
+            throw new JsonResponseException("uncomplete.refund.can.not.pass.check");
+        }
         refunds.forEach(refund -> {
             OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
             Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);

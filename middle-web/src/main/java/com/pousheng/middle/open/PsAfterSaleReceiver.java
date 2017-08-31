@@ -12,6 +12,10 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
+import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -58,6 +62,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private WarehouseReadService warehouseReadService;
+    @Autowired
+    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -93,6 +101,26 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (!Objects.isNull(shipment)) {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             refundExtra.setShipmentId(shipment.getId());
+            //添加售后仓库
+            try{
+                Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
+                if (!response.isSuccess()){
+                    log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
+                    throw new ServiceException(response.getError());
+                }
+                Warehouse warehouse = response.getResult();
+                Response<WarehouseCompanyRule> warehouseCompanyRuleResponse = warehouseCompanyRuleReadService.findByCompanyCode(warehouse.getCompanyCode());
+                if (!warehouseCompanyRuleResponse.isSuccess()){
+                    log.error("find WarehouseCompanyRule by companyCode :{} failed,  cause:{}",
+                            warehouse.getCompanyCode(), warehouseCompanyRuleResponse.getError());
+                    throw new ServiceException(warehouseCompanyRuleResponse.getError());
+                }
+                WarehouseCompanyRule warehouseCompanyRule  = warehouseCompanyRuleResponse.getResult();
+                refundExtra.setWarehouseId(warehouseCompanyRule.getWarehouseId());
+                refundExtra.setWarehouseName(warehouseCompanyRule.getWarehouseName());
+            }catch (ServiceException e){
+                log.error("find warehouse info failed,caused by {}",e.getMessage());
+            }
         }
         RefundItem refundItem = new RefundItem();
         if (!Objects.isNull(shipment)) {
@@ -125,6 +153,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
+        if (refundExtra.getShipmentId()!=null){
+            extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
+        }
         refund.setExtra(extraMap);
         if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
             //借用tradeNo字段来标记售中退款的逆向单是否已处理

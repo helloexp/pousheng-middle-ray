@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
@@ -149,10 +150,11 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
-        refundItem.setApplyQuantity(skuOrder.getQuantity());
+        refundItem.setApplyQuantity(0);
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
+        extraMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
         /*if (refundExtra.getShipmentId()!=null){
             extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
         }*/

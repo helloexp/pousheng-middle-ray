@@ -283,7 +283,7 @@ public class SyncRefundLogic {
             //恒康商品条码
             item.setBarCode(refundItem.getSkuCode());
             //商品数量
-            item.setItemNum(refundItem.getAlreadyHandleNumber());
+            item.setItemNum(refundItem.getApplyQuantity());
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格

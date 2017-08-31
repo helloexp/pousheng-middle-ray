@@ -333,6 +333,8 @@ public class RefundWriteLogic {
                 extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(existChangeItem)));
             }
         }
+        //表明售后单的信息已经全部完善
+        extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
 
         updateRefund.setExtra(extraMap);
         Response<Boolean> updateRes = refundWriteService.update(updateRefund);

@@ -71,7 +71,8 @@ public class TradeConstants {
     public static final String ORDER_PAYMENT_INFO="paymentInfo";
     //外部电商商品id
     public static final String MIDDLE_OUT_ITEM_ID="outItemId";
-
+    //判断售后单是否完善的标记位(有这个标记位则说明可以自动审核,默认0)
+    public static final String MIDDLE_REFUND_COMPLETE_FLAG="refundCompleteFlag";
     /**
      * 逆向单来源
      * see RefundSource

@@ -52,9 +52,9 @@ public class RefundJob {
     private RefundReadService refundReadService;
 
     /**
-     * 每隔9分钟执行一次,拉取中台售中退款的退款单
+     * 每隔5分钟执行一次,拉取中台售中退款的退款单
      */
-    @Scheduled(cron = "0 0/9 * * * ? ")
+    @Scheduled(cron = "0 0/5 * * * ? ")
     public void doneRefund() {
         log.info("START SCHEDULE ON SALE REFUND");
         Response<List<Refund>> response = refundReadService.findByTradeNo(TradeConstants.REFUND_WAIT_CANCEL);

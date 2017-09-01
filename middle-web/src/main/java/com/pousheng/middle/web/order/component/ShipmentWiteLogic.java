@@ -212,9 +212,11 @@ public class ShipmentWiteLogic {
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){
 
-            long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
+            Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             //抛出一个事件,修改子单和总单的状态,待处理数量,并同步恒康
-            eventBus.post(new OrderShipmentEvent(shipmentId));
+            if (shipmentId!=null){
+                eventBus.post(new OrderShipmentEvent(shipmentId));
+            }
         }
     }
 
@@ -224,7 +226,7 @@ public class ShipmentWiteLogic {
      * @param skuOrders  子单
      * @param warehouseShipment 发货仓库信息
      */
-    private long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment) {
+    private Long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment) {
         //获取该仓库中可发货的skuCode和数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantitiesChooser = warehouseShipment.getSkuCodeAndQuantities();
         //获取仓库的id
@@ -233,7 +235,13 @@ public class ShipmentWiteLogic {
         Map<Long, Integer> skuOrderIdAndQuantity = Maps.newHashMap();
 
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantitiesChooser) {
+            if (skuCodeAndQuantity.getQuantity()==0){
+                continue;
+            }
             skuOrderIdAndQuantity.put(this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode()).getId(), skuCodeAndQuantity.getQuantity());
+        }
+        if (skuOrderIdAndQuantity.size()==0){
+            return null;
         }
         //获取该发货单中涉及到的sku订单
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());

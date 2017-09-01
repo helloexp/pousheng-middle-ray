@@ -117,6 +117,7 @@ public class Refunds {
                 //完善之后同步售后单到恒康
                 Flow flow = flowPicker.pickAfterSales();
                 Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                refund.setStatus(targetStatus);
                 Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
                 if (!syncRes.isSuccess()) {
                     log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());

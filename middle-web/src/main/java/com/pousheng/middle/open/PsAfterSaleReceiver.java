@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
@@ -136,11 +137,11 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
             refundItem.setAttrs(shipmentItem.getAttrs());
             refundItem.setItemId(shipmentItem.getItemId());
-            updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
+            /*updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
             //更新发货单商品中的已退货数量
             Map<String, String> shipmentExtraMap = shipment.getExtra();
             shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);*/
 
         }
 
@@ -149,13 +150,14 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
-        refundItem.setApplyQuantity(skuOrder.getQuantity());
+        refundItem.setApplyQuantity(0);
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
-        if (refundExtra.getShipmentId()!=null){
+        extraMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
+        /*if (refundExtra.getShipmentId()!=null){
             extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
-        }
+        }*/
         refund.setExtra(extraMap);
         if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
             //借用tradeNo字段来标记售中退款的逆向单是否已处理

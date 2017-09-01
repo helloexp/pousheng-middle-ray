@@ -179,6 +179,9 @@ public class ShipmentWiteLogic {
     public void doAutoCreateShipment(ShopOrder shopOrder){
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
                 MiddleOrderStatus.WAIT_HANDLE.getValue());
+        if (skuOrders.size()==0){
+            return;
+        }
         //判断是否满足自动生成发货单
         if(!commValidateOfOrder(shopOrder,skuOrders)){
             return;

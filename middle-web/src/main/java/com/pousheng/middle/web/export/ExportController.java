@@ -115,7 +115,7 @@ public class ExportController {
 
 
                 Optional<Shipment> shipment = shipmentResponse.getResult().stream().filter(
-                        s -> s.getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())).findFirst();
+                        s -> s.getStatus().equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())).findFirst();
 
                 Optional<Payment> payment = paymentResponse.getResult().stream().filter(p -> (p.getStatus().equals(3))).findAny();
 

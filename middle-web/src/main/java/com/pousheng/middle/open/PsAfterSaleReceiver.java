@@ -154,11 +154,11 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
-        extraMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
-        /*if (refundExtra.getShipmentId()!=null){
-            extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
-        }*/
+        Map<String,String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();
+        tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
+
         refund.setExtra(extraMap);
+        refund.setTags(tagMap);
         if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
             //借用tradeNo字段来标记售中退款的逆向单是否已处理
             refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);

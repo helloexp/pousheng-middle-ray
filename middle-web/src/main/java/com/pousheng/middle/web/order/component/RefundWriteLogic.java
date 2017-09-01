@@ -478,13 +478,13 @@ public class RefundWriteLogic {
     private RefundItem checkRefundQuantity(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
         for (ShipmentItem shipmentItem : shipmentItems){
             if(Objects.equals(submitRefundInfo.getRefundSkuCode(),shipmentItem.getSkuCode())){
-                Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();
+                /*Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();*/
                 if(submitRefundInfo.getRefundQuantity()<=0){
                     log.error("refund applyQuantity:{} invalid",submitRefundInfo.getRefundQuantity());
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
-                if(submitRefundInfo.getRefundQuantity()>availableQuantity){
-                    log.error("refund applyQuantity:{} gt available applyQuantity:{}",submitRefundInfo.getRefundQuantity(),availableQuantity);
+                if(submitRefundInfo.getRefundQuantity()>shipmentItem.getQuantity()){
+                    log.error("refund applyQuantity:{} gt available applyQuantity:{}",submitRefundInfo.getRefundQuantity(),shipmentItem.getQuantity());
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();

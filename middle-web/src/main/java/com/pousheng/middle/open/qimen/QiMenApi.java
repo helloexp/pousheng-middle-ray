@@ -3,6 +3,7 @@ package com.pousheng.middle.open.qimen;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.utils.XmlUtils;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -13,6 +14,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,6 +40,9 @@ public class QiMenApi {
 
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+
+    @Autowired
+    private ReceiverInfoCompleter receiverInfoCompleter;
 
     private static final String WMS_APP_KEY = "terminus-wms";
 
@@ -156,7 +161,8 @@ public class QiMenApi {
         r.setMobile(receiverInfo.getMobile());
         r.setPhone(receiverInfo.getTel());
         r.setPostcode(receiverInfo.getZipCode());
-        //TODO 查询地址的id
+        
+        receiverInfoCompleter.complete(r);
         return r;
     }
 

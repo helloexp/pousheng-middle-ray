@@ -1,0 +1,93 @@
+package com.pousheng.middle.open;
+
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
+import com.pousheng.middle.warehouse.model.WarehouseAddress;
+import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.ReceiverInfo;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Created by cp on 9/4/17.
+ */
+@Component
+@Slf4j
+public class ReceiverInfoCompleter {
+
+    @RpcConsumer
+    private WarehouseAddressReadService warehouseAddressReadService;
+
+    public void complete(ReceiverInfo receiverInfo){
+        ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
+        handleResult.setSuccess(Boolean.TRUE);
+        List<String> errors = Lists.newArrayList();
+
+        Long provinceId = queryAddressId(receiverInfo.getProvince());
+        if(Arguments.notNull(provinceId)){
+            receiverInfo.setProvinceId(Integer.valueOf(provinceId.toString()));
+        }else {
+            handleResult.setSuccess(Boolean.FALSE);
+            errors.add("第三方渠道省："+receiverInfo.getProvince()+"未匹配到中台的省");
+        }
+
+        Long cityId = queryAddressId(receiverInfo.getCity());
+        if(Arguments.notNull(cityId)){
+            receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
+        }else {
+            handleResult.setSuccess(Boolean.FALSE);
+            errors.add("第三方渠道市："+receiverInfo.getProvince()+"未匹配到中台的市");
+        }
+
+        Long regionId = queryAddressId(receiverInfo.getRegion());
+        if(Arguments.notNull(regionId)){
+            receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
+        }else {
+            handleResult.setSuccess(Boolean.FALSE);
+            errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
+        }
+
+        handleResult.setErrors(errors);
+        Map<String,String> extraMap = Maps.newHashMap();
+        extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
+        receiverInfo.setExtra(extraMap);
+    }
+
+    private Long queryAddressId(String name){
+        Optional<WarehouseAddress> wo1 = findWarehouseAddressByName(name);
+        if(wo1.isPresent()){
+            return wo1.get().getId();
+        }
+
+        String splitName = name.substring(0,2);
+        Optional<WarehouseAddress> wo2 = findWarehouseAddressByName(splitName);
+        if(wo2.isPresent()){
+            return wo2.get().getId();
+        }
+
+        return null;
+    }
+
+    /**
+     * 根据名称获取addressId
+     * @param addressName 中文名
+     * @return 返回地址信息
+     */
+    private Optional<WarehouseAddress> findWarehouseAddressByName(String addressName){
+        Response<Optional<WarehouseAddress>> warehouseResponse = warehouseAddressReadService.findByName(addressName);
+        if (!warehouseResponse.isSuccess()){
+            log.error("find warehouseAddress failed,addressName is(:{}) error:{}",addressName, warehouseResponse.getError());
+        }
+        return  warehouseResponse.getResult();
+    }
+
+}

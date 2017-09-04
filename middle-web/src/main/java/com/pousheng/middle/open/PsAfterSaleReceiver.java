@@ -138,7 +138,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             refundItem.setAttrs(shipmentItem.getAttrs());
             refundItem.setItemId(shipmentItem.getItemId());
             refundItem.setApplyQuantity(shipmentItem.getQuantity());
-            updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), 0, shipmentItems);
+            updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
             //更新发货单商品中的已退货数量
             Map<String, String> shipmentExtraMap = shipment.getExtra();
             shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));

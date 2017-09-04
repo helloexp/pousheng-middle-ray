@@ -48,6 +48,8 @@
         <if test="ownerId != null">and `owner_id` = #{ownerId}</if>
 
         <if test="isDefault != null">and `is_default` = #{isDefault}</if>
+
+        <if test="outCode!=null"> and `extra_json` like concat('%',#{outCode}, '%') </if>
     </sql>
 
     <sql id="order">

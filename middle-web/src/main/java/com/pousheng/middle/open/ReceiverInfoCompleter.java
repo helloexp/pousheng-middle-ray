@@ -6,9 +6,6 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
-import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -26,8 +23,6 @@ import java.util.Map;
 @Slf4j
 public class ReceiverInfoCompleter {
 
-    @RpcConsumer
-    private WarehouseAddressReadService warehouseAddressReadService;
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
 
@@ -86,18 +81,5 @@ public class ReceiverInfoCompleter {
         return null;
     }
 
-    /**
-     * 根据名称获取addressId
-     * @param pid 父id
-     * @param addressName 中文名
-     * @return 返回地址信息
-     */
-    private Optional<WarehouseAddress> findWarehouseAddressByPidAndName(Long pid,String addressName){
-        Response<Optional<WarehouseAddress>> warehouseResponse = warehouseAddressReadService.findByName(addressName);
-        if (!warehouseResponse.isSuccess()){
-            log.error("find warehouseAddress failed,addressName is(:{}) error:{}",addressName, warehouseResponse.getError());
-        }
-        return  warehouseResponse.getResult();
-    }
 
 }

@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.cache;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -10,6 +11,7 @@ import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
+import io.terminus.common.utils.Joiners;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -29,6 +31,9 @@ public class WarehouseAddressCacher {
 
     private final Map<Long, WarehouseAddress> byId = Maps.newHashMapWithExpectedSize(5000);
 
+    //pid和name用:拼接
+    private final Map<String, WarehouseAddress> byPidAndName = Maps.newHashMapWithExpectedSize(10000);
+
     @Autowired
     public WarehouseAddressCacher(final WarehouseAddressDao warehouseAddressDao) {
         int offset = 0;
@@ -40,6 +45,10 @@ public class WarehouseAddressCacher {
             for (WarehouseAddress datum : data) {
                 byPid.put(datum.getPid(), datum);
                 byId.put(datum.getId(), datum);
+                byPidAndName.put(Joiners.COLON.join(datum.getPid(),datum.getName()),datum);
+                //取地址名称的前两位，避免上海市 、上海直辖市这样的不一致
+                String splitName = datum.getName().substring(0,2);
+                byPidAndName.put(Joiners.COLON.join(datum.getPid(),splitName),datum);
             }
             if (data.size() < pageSize) {
                 break;
@@ -61,6 +70,22 @@ public class WarehouseAddressCacher {
         }
         return byId.get(id);
     }
+
+    /**
+     * 根据pid 和名称 查找对应的地址信息
+     *
+     * @param pid 地址pid
+     * @param name 名称
+     * @return 对应的地址信息
+     */
+    public Optional<WarehouseAddress> findByPidAndName(Long pid, String name){
+        String pidAndName = Joiners.COLON.join(pid,name);
+        if(!byPidAndName.containsKey(pidAndName)){
+            log.warn("address(pid={} , name:{}) not found", pid,name);
+        }
+        return Optional.fromNullable(byPidAndName.get(pidAndName));
+    }
+
 
     /**
      * 根据pid查找地址信息

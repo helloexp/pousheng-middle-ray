@@ -169,7 +169,9 @@ public class WarehouseChooser {
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
                     scaq.setSkuCode(skuCode);
                     scaq.setQuantity(actual);
-                    scaqs.add(scaq);
+                    if (actual!=0){
+                        scaqs.add(scaq);
+                    }
 
                     //减少库存需求
                     current.remove(skuCode, actual);

@@ -137,6 +137,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
             refundItem.setAttrs(shipmentItem.getAttrs());
             refundItem.setItemId(shipmentItem.getItemId());
+            refundItem.setApplyQuantity(shipmentItem.getQuantity());
             updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
             //更新发货单商品中的已退货数量
             Map<String, String> shipmentExtraMap = shipment.getExtra();
@@ -150,7 +151,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
-        refundItem.setApplyQuantity(0);
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
@@ -242,7 +242,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
             if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
-                shipmentItem.setRefundQuantity(0);
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()!=null?shipmentItem.getRefundQuantity():0 + refundQuantity);
             }
         }
     }

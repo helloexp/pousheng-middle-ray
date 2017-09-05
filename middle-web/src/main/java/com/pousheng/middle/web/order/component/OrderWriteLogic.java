@@ -550,6 +550,5 @@ public class OrderWriteLogic {
             throw new JsonResponseException("add customer service note fail");
         }
     }
-
 }
 

@@ -4,6 +4,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -36,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by tony on 2017/7/18.
@@ -74,17 +76,25 @@ public class AdminOrderWriter {
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        //获取发货单id
-        String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
-        Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-        ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
-        //同步到电商平台
-        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-        Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
-        if (!syncRes.isSuccess()) {
-            log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
-            throw new JsonResponseException(syncRes.getError());
+        if (!Objects.equals(shopOrder.getType(), OrderSource.TMALL.value())){
+            //获取发货单id
+            String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
+            Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
+            //同步到电商平台
+            String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
+            Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+            if (!syncRes.isSuccess()) {
+                log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
+                throw new JsonResponseException(syncRes.getError());
+            }
+        }else{
+            Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToTaobao(shopOrder);
+            if (!syncRes.isSuccess()) {
+                log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
+                throw new JsonResponseException(syncRes.getError());
+            }
         }
 
     }

@@ -3,6 +3,7 @@ package com.pousheng.middle.order.dto.fsm;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.SyncTaobaoStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 
 /**
@@ -11,7 +12,28 @@ import io.terminus.parana.order.dto.fsm.Flow;
 public class MiddleFlowBook {
 
 
+    public static final Flow syncTaobaoFlow = new Flow("syncTaobaoFlow") {
+        @Override
+        protected void configure() {
+            //待同步淘宝--同步成功--同步淘宝成功
+            addTransition(SyncTaobaoStatus.WAIT_SYNC_TAOBAO.getValue(),
+                    MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation(),
+                    SyncTaobaoStatus.SYNC_TAOBAO_SUCCESS.getValue());
+            //待同步淘宝-同步失败--同步淘宝失败
+            addTransition(SyncTaobaoStatus.WAIT_SYNC_TAOBAO.getValue(),
+                    MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation(),
+                    SyncTaobaoStatus.SYNC_TAOBAO_FAIL.getValue());
 
+            //同步淘宝失败-同步成功-同步淘宝成功
+            addTransition(SyncTaobaoStatus.SYNC_TAOBAO_FAIL.getValue(),
+                    MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation(),
+                    SyncTaobaoStatus.SYNC_TAOBAO_SUCCESS.getValue());
+            //同步淘宝失败-同步失败-同步淘宝失败
+            addTransition(SyncTaobaoStatus.SYNC_TAOBAO_FAIL.getValue(),
+                    MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation(),
+                    SyncTaobaoStatus.SYNC_TAOBAO_FAIL.getValue());
+        }
+    };
     /**
      * 电商订单流程
      */

@@ -49,6 +49,8 @@ public enum MiddleOrderEvent {
     HK_CONFIRMD_SUCCESS(29,"hkConfirmedSuccess","hk"),
     AUTO_HK_CONFIRME_FAILED(30,"AutoHkConfirmedFail","hk"),
     HK_CONFIRME_FAILED(31,"hkConfirmedFail","admin"),
+    SYNC_TAOBAO_SUCCESS(32,"syncTaobaoSuccess","hk"),
+    SYNC_TAOBAO_FAIL(33,"syncTaobaofail","hk"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),

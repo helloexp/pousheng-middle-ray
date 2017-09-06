@@ -1,9 +1,6 @@
 package com.pousheng.erp.manager;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
+import com.google.common.collect.*;
 import com.pousheng.erp.dao.mysql.ErpSpuDao;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.PoushengSku;
@@ -30,7 +27,7 @@ import java.util.Map;
 
 /**
  * 导入宝胜的商品信息
- *
+ * <p>
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2017-05-31
  */
@@ -64,30 +61,30 @@ public class ErpSpuManager {
     /**
      * 如果不存在对应的spu, 则创建spu, 否则返回对应已存在的spu, 根据prd的要求, spu一旦创建, 就不再会因为导入而引发更新
      *
-     * @param leafId 叶子类目id
-     * @param brand 品牌
-     * @param spuCode spu 编码
+     * @param leafId   叶子类目id
+     * @param brand    品牌
+     * @param spuCode  spu 编码
      * @param material 货品信息
      * @return 对应的spu id
      */
     @Transactional
-    public Long createSpuRelatedIfNotExist(Long leafId, Brand brand,
-                                            String spuCode,
-                                           PoushengMaterial material,
-                                           List<PoushengSku> skus) {
+    public Long createOrUpdateSpuRelated(Long leafId, Brand brand,
+                                         String spuCode,
+                                         PoushengMaterial material,
+                                         List<PoushengSku> skus) {
         //因为不同leafId下, 即使spuCode一样, 也视为不同的spu
         Spu spu = erpSpuDao.findByCategoryIdAndCode(leafId, spuCode);
         Long spuId;
-        if(spu!=null){ //已经存在对应的spu
-            spuId =  spu.getId();
-        }else{
+        if (spu != null) { //已经存在对应的spu
+            spuId = spu.getId();
+        } else {
             spu = new Spu();
             spu.setCategoryId(leafId);
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
             String name = material.getMaterial_name();
-            if(StringUtils.isEmpty(name)){
+            if (StringUtils.isEmpty(name)) {
                 name = spuCode;
             }
             spu.setName(name);
@@ -98,10 +95,10 @@ public class ErpSpuManager {
             int lowPrice = Integer.MAX_VALUE;
             for (PoushengSku poushengSku : skus) {
                 int price = priceFen(poushengSku);
-                if(lowPrice>price){
+                if (lowPrice > price) {
                     lowPrice = price;
                 }
-                if(highPrice<price){
+                if (highPrice < price) {
                     highPrice = price;
                 }
             }
@@ -132,7 +129,7 @@ public class ErpSpuManager {
         }
 
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
-        createSkuTemplatesIfNotExist(spuId, spu.getName(),skus);
+        createOrUpdateSkuTemplates(spuId, spu.getName(), skus);
         return spuId;
     }
 
@@ -145,37 +142,37 @@ public class ErpSpuManager {
      */
     private List<OtherAttribute> makeOtherAttributes(PoushengMaterial material) {
         List<OtherAttribute> otherAttributes = Lists.newArrayList();
-        if(StringUtils.hasText(material.getForeign_name())) {
+        if (StringUtils.hasText(material.getForeign_name())) {
             OtherAttribute foreignName = new OtherAttribute();
             foreignName.setAttrKey("外文名称");
             foreignName.setAttrVal(material.getForeign_name());
             otherAttributes.add(foreignName);
         }
-        if(StringUtils.hasText(material.getStuff())){
+        if (StringUtils.hasText(material.getStuff())) {
             OtherAttribute stuff = new OtherAttribute();
             stuff.setAttrKey("面料");
             stuff.setAttrKey(material.getStuff());
             otherAttributes.add(stuff);
         }
-        if(StringUtils.hasText(material.getTexture())){
+        if (StringUtils.hasText(material.getTexture())) {
             OtherAttribute texture = new OtherAttribute();
             texture.setAttrKey("材质说明");
             texture.setAttrVal(material.getTexture());
             otherAttributes.add(texture);
         }
-        if(StringUtils.hasText(material.getSex())){
+        if (StringUtils.hasText(material.getSex())) {
             OtherAttribute sex = new OtherAttribute();
             sex.setAttrKey("性别");
             sex.setAttrVal(material.getSex());
             otherAttributes.add(sex);
         }
-        if(material.getYear_no()!=null){
+        if (material.getYear_no() != null) {
             OtherAttribute yearNo = new OtherAttribute();
             yearNo.setAttrKey("年份");
             yearNo.setAttrVal(material.getYear_no().toString());
             otherAttributes.add(yearNo);
         }
-        if(StringUtils.hasText(material.getInv_spec())){
+        if (StringUtils.hasText(material.getInv_spec())) {
             OtherAttribute invSpec = new OtherAttribute();
             invSpec.setAttrKey("规格");
             invSpec.setAttrVal(material.getInv_spec());
@@ -183,18 +180,18 @@ public class ErpSpuManager {
         }
         OtherAttribute always = new OtherAttribute();
         always.setAttrKey("长青");
-        if(material.getSeason5()!=null && material.getSeason5()){
+        if (material.getSeason5() != null && material.getSeason5()) {
             always.setAttrVal("是");
-        }else{
+        } else {
             always.setAttrVal("否");
         }
         otherAttributes.add(always);
 
         OtherAttribute cont = new OtherAttribute();
         cont.setAttrKey("延续");
-        if(material.getSeason6()!=null && material.getSeason6()){
+        if (material.getSeason6() != null && material.getSeason6()) {
             cont.setAttrVal("是");
-        }else{
+        } else {
             cont.setAttrVal("否");
         }
         otherAttributes.add(cont);
@@ -248,21 +245,25 @@ public class ErpSpuManager {
     /**
      * 根据需要创建对应的skuTemplate
      *
-     * @param spuId  spu id
+     * @param spuId spu id
      * @param name  对应的货品名称
      * @param skus  sku列表
      */
-    private void createSkuTemplatesIfNotExist(Long spuId, String name, List<PoushengSku> skus) {
-        //通过spuId及skuCode来确定
-        for (PoushengSku poushengSku : skus) {
-            String skuCode = poushengSku.getBarCode();
-            SkuTemplate skuTemplate = skuTemplateDao.findBySpuIdAndSkuCode(spuId, skuCode);
-            if(skuTemplate!=null){
-                continue;
+    private void createOrUpdateSkuTemplates(Long spuId, String name, List<PoushengSku> skus) {
+        
+        //根据materialId及sizeId来确定对应的skuTemplate
+        List<SkuTemplate> skuTemplates = skuTemplateDao.findBySpuId(spuId);
+        Table<String, String, SkuTemplate> stts = HashBasedTable.create();
+        for (SkuTemplate skuTemplate : skuTemplates) {
+            Map<String, String> extra = skuTemplate.getExtra();
+            if (extra.containsKey("materialId")) {
+                stts.put(extra.get("materialId"), extra.get("sizeId"), skuTemplate);
             }
-            skuTemplate = new SkuTemplate();
+        }
+        for (PoushengSku poushengSku : skus) {
+            SkuTemplate skuTemplate = new SkuTemplate();
             skuTemplate.setSpuId(spuId);
-            skuTemplate.setSkuCode(skuCode);
+            skuTemplate.setSkuCode(poushengSku.getBarCode());
             skuTemplate.setName(name);
 
             SkuAttribute color = new SkuAttribute();
@@ -274,7 +275,7 @@ public class ErpSpuManager {
             size.setAttrKey("尺码");
             size.setAttrVal(poushengSku.getSizeName());
             size.setShowImage(false);
-            skuTemplate.setAttrs(Lists.newArrayList(color,size));
+            skuTemplate.setAttrs(Lists.newArrayList(color, size));
             int priceFen = priceFen(poushengSku);
             skuTemplate.setPrice(priceFen);
             skuTemplate.setStatus(1);
@@ -282,10 +283,16 @@ public class ErpSpuManager {
 
             Map<String, String> extra = Maps.newHashMap();
             extra.put("colorId", poushengSku.getColorId());
-            extra.put("size_id", poushengSku.getSizeId());
+            extra.put("sizeId", poushengSku.getSizeId());
+            extra.put("materialId", poushengSku.getMaterialId());
             skuTemplate.setExtra(extra);
-
-            skuTemplateDao.create(skuTemplate);
+            //通过materialId及sizeId来确定sku是否已经存在对应的skuTemplate,如果存在, 则更新, 否则新建
+            if (stts.contains(poushengSku.getMaterialId(), poushengSku.getSizeId())) {
+                skuTemplate.setId(stts.get(poushengSku.getMaterialId(), poushengSku.getSizeId()).getId());
+                skuTemplateDao.update(skuTemplate);
+            } else {
+                skuTemplateDao.create(skuTemplate);
+            }
         }
 
         //视需要添加spuAttribute中的skuAttribute

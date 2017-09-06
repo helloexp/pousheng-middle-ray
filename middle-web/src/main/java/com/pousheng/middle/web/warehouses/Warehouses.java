@@ -72,7 +72,8 @@ public class Warehouses {
                                         @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                         @RequestParam(required = false, value = "code") String code,
                                         @RequestParam(required = false, value="codePrefix") String codePrefix,
-                                        @RequestParam(required = false, value = "name") String namePrefix) {
+                                        @RequestParam(required = false, value = "name") String namePrefix,
+                                        @RequestParam(required = false, value="outCode") String outCode) {
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(code)) {
             //params.put("code", code);
@@ -88,6 +89,10 @@ public class Warehouses {
 
         if (StringUtils.hasText(namePrefix)) {
             params.put("name", namePrefix);
+        }
+
+        if(StringUtils.hasText(outCode)){
+            params.put("outCode", outCode);
         }
         Response<Paging<Warehouse>> r = warehouseReadService.pagination(pageNo, pageSize, params);
         if(!r.isSuccess()){

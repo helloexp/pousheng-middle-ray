@@ -8,7 +8,7 @@ import com.google.common.base.Objects;
  * pousheng-middle
  */
 public enum MiddleChannel {
-    JD("jd"), //京东
+    JD("jingdong"), //京东
     TAOBAO("taobao"), //淘宝
     SUNING("suning"),//苏宁
     FENQILE("fenqile"),//分期乐

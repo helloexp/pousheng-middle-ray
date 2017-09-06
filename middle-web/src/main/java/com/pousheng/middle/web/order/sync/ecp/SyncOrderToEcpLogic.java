@@ -111,6 +111,10 @@ public class SyncOrderToEcpLogic {
                     //获取当前同步淘宝的状态
                     Integer syncTaobaoStatus = shipmentExtra.getSyncTaobaoStatus()==null? SyncTaobaoStatus.WAIT_SYNC_TAOBAO.getValue()
                             :shipmentExtra.getSyncTaobaoStatus();
+                    //如果存在已经同步淘宝成功的发货单,则跳过
+                    if (Objects.equals(syncTaobaoStatus,SyncTaobaoStatus.SYNC_TAOBAO_SUCCESS.getValue())){
+                        continue;
+                    }
                     //获取快递信息
                     ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                     String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);

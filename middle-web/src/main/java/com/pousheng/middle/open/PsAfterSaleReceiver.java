@@ -242,7 +242,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
         for (ShipmentItem shipmentItem : shipmentItems) {
             if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()!=null?shipmentItem.getRefundQuantity():0 + refundQuantity);
+                shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity()==null?0:shipmentItem.getRefundQuantity()) + refundQuantity);
             }
         }
     }

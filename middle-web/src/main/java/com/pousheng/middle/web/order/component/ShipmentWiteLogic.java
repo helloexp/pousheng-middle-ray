@@ -31,6 +31,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -88,6 +89,8 @@ public class ShipmentWiteLogic {
     private MiddleShipmentWriteService middleShipmentWriteService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -215,7 +218,22 @@ public class ShipmentWiteLogic {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             //抛出一个事件,修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId!=null){
-                eventBus.post(new OrderShipmentEvent(shipmentId));
+                //修改状态
+                Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+                if (!shipmentRes.isSuccess()) {
+                    log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+                    return;
+                }
+                try{
+                    orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+                }catch (ServiceException e){
+                    log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
+                }
+                //同步恒康
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                }
             }
         }
     }

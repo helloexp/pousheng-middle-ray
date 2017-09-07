@@ -34,6 +34,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -310,7 +311,20 @@ public class Shipments {
 
         Long shipmentId = createResp.getResult();
 
-        eventBus.post(new OrderShipmentEvent(shipmentId));
+        Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+        if (!shipmentRes.isSuccess()) {
+            log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+        }
+        try{
+            orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+        }catch (ServiceException e){
+            log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
+        }
+        //同步恒康
+        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+        if (!syncRes.isSuccess()) {
+            log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+        }
 
         return shipmentId;
 

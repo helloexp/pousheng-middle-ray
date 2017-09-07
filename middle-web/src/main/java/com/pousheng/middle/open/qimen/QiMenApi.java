@@ -144,10 +144,14 @@ public class QiMenApi {
 
         DeliveryOrderCreateRequest.ReceiverInfo receiverInfo = request.getDeliveryOrder().getReceiverInfo();
         params.put("name", receiverInfo.getName());
-        params.put("mobile", receiverInfo.getMobile());
+        if (StringUtils.hasText(receiverInfo.getMobile())){
+            params.put("mobile", receiverInfo.getMobile());
+        }
         params.put("province", receiverInfo.getProvince());
         params.put("city", receiverInfo.getCity());
-        params.put("area", receiverInfo.getArea());
+        if (StringUtils.hasText(receiverInfo.getArea())){
+            params.put("area", receiverInfo.getArea());
+        }
         params.put("detailAddress", receiverInfo.getDetailAddress());
         return WmsSignUtils.generateSign(WMS_APP_SECRET, params);
     }

@@ -96,16 +96,12 @@ public class SpuImporter {
         try {
             log.info("begin to doProcess material(id={},code={})", materialId, materialCode);
 
-            Long spuId = null;
             Long leafId = null;
             //检查货品是否已经被同步, 如果已经同步, 则直接返回
             SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
             if (exist != null) {
                 log.info("material(id={}) has been synchronized, ", materialId);
-                spuId =  exist.getSpuId();
-            }
-
-            if(spuId == null) {
+            }else {
                 String kind_name = material.getKind_name();//类别
                 String series_name = material.getSeries_name(); //系列
                 String model_name = material.getModel_name(); //款型
@@ -118,7 +114,7 @@ public class SpuImporter {
             String spuCode = refineCode(materialCode, material.getCard_name(), material.getKind_name());
 
             List<PoushengSku> poushengSkus = createSkuFromMaterial(material);
-            spuId = spuManager.createOrUpdateSpuRelated(leafId, brand, spuCode, material, poushengSkus);
+            Long spuId = spuManager.createOrUpdateSpuRelated(leafId, brand, spuCode, material, poushengSkus);
 
             if(exist == null) { //创建货品id与spu的映射关系
                 SpuMaterial spuMaterial = new SpuMaterial();

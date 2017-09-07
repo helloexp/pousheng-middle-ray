@@ -149,6 +149,7 @@ public class SpuImporter {
             PoushengSku poushengSku = new PoushengSku();
             poushengSku.setBarCode(poushengSize.getBarcode());
             poushengSku.setMaterialId(material.getMaterial_id());
+            poushengSku.setMaterialCode(material.getMaterial_code());
             poushengSku.setColorId(colorId);
             poushengSku.setColorName(colorName);
             poushengSku.setSizeId(poushengSize.getSize_id());

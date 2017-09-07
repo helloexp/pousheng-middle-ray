@@ -25,4 +25,6 @@ public class PoushengSku implements Serializable{
     private String marketPrice; //市场价
 
     private String materialId; //物料id
+
+    private String materialCode; //物料编码
 }

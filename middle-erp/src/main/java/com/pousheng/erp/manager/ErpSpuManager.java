@@ -285,6 +285,7 @@ public class ErpSpuManager {
             extra.put("colorId", poushengSku.getColorId());
             extra.put("sizeId", poushengSku.getSizeId());
             extra.put("materialId", poushengSku.getMaterialId());
+            extra.put("materialCode", poushengSku.getMaterialCode());
             skuTemplate.setExtra(extra);
             //通过materialId及sizeId来确定sku是否已经存在对应的skuTemplate,如果存在, 则更新, 否则新建
             if (stts.contains(poushengSku.getMaterialId(), poushengSku.getSizeId())) {

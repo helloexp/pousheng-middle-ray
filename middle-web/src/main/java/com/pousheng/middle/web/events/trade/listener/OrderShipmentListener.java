@@ -27,7 +27,7 @@ import javax.annotation.PostConstruct;
 @Component
 public class OrderShipmentListener {
 
-    @RpcConsumer
+  /*  @RpcConsumer
     private ShipmentReadService shipmentReadService;
 
     @Autowired
@@ -52,5 +52,5 @@ public class OrderShipmentListener {
 
         orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
 
-    }
+    }*/
 }

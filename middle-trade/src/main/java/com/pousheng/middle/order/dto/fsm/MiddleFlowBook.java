@@ -144,6 +144,10 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),
                     MiddleOrderStatus.CANCEL_FAILED.getValue());
+            //取消失败-取消失败-取消失败
+            addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
+                    MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),
+                    MiddleOrderStatus.CANCEL_FAILED.getValue());
             //取消失败->取消->取消成功
             addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
                     MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),

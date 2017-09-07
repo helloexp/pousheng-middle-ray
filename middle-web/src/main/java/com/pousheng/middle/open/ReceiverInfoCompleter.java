@@ -12,6 +12,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -48,14 +49,16 @@ public class ReceiverInfoCompleter {
             errors.add("第三方渠道市："+receiverInfo.getProvince()+"未匹配到中台的市");
         }
 
-        Long regionId = queryAddressId(cityId,receiverInfo.getRegion());
-        if(Arguments.notNull(regionId)){
-            receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
-        }else {
-            handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
+        if (StringUtils.hasText(receiverInfo.getRegion())){
+            Long regionId = queryAddressId(cityId,receiverInfo.getRegion());
+            if(Arguments.notNull(regionId)){
+                receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
+            }else {
+                handleResult.setSuccess(Boolean.FALSE);
+                errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
+            }
         }
-
+        
         handleResult.setErrors(errors);
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));

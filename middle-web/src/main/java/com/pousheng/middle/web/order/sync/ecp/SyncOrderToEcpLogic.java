@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.sync.ecp;
 
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
@@ -19,6 +20,7 @@ import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -107,6 +109,7 @@ public class SyncOrderToEcpLogic {
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));
                 ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
                 try{
                     //获取当前同步淘宝的状态
                     Integer syncTaobaoStatus = shipmentExtra.getSyncTaobaoStatus()==null? SyncTaobaoStatus.WAIT_SYNC_TAOBAO.getValue()
@@ -122,6 +125,12 @@ public class SyncOrderToEcpLogic {
                     OpenClientOrderShipment openClientOrderShipment = new OpenClientOrderShipment();
                     openClientOrderShipment.setOuterOrderId(shopOrder.getOutId());
                     openClientOrderShipment.setLogisticsCompany(expressCompanyCode);
+                    List<String> outerItemOrderIds = Lists.newArrayList();
+                    //添加外部子订单的id
+                    for (ShipmentItem shipmentItem:shipmentItems){
+                        outerItemOrderIds.add(shipmentItem.getSkuOutId());
+                    }
+                    openClientOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
                     //填写运单号
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
                     Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);

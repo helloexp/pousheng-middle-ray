@@ -59,7 +59,7 @@ public class StockPusher {
     @Autowired
     public StockPusher(@Value("${index.queue.size: 10000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors()*6, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-update-%d").build(),
                 new RejectedExecutionHandler() {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
@@ -97,7 +97,8 @@ public class StockPusher {
                 //找到对应的店铺id, 这些店铺需要进行库存推送
                 Response<List<Long>> r = pushedItemReadService.findPushedOpenShopIdsOfItem(spuId);
                 if (!r.isSuccess()) {
-                    log.error("failed to find out shops for spu(id={}), error code:{}", spuId, r.getError());
+                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
+                            spuId, skuCode, r.getError());
                     return;
                 }
 
@@ -115,7 +116,7 @@ public class StockPusher {
                         }
                         //和安全库存进行比较, 确定推送库存数量
                         WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
-                        if(shopStockRule.getStatus()<0){//非启用状态
+                        if (shopStockRule.getStatus() < 0) {//非启用状态
                             return;
                         }
 
@@ -141,7 +142,7 @@ public class StockPusher {
                                     skuCode, shopId, rP.getError());
                         }
                         log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-                                stock.intValue(),skuCode, shopId);
+                                stock.intValue(), skuCode, shopId);
                         //更新上次推送的可用库存
                         WarehouseShopStockRule u = new WarehouseShopStockRule();
                         u.setId(shopStockRule.getId());

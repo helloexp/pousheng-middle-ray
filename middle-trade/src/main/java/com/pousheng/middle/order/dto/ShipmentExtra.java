@@ -61,4 +61,6 @@ public class ShipmentExtra implements Serializable{
     private Date posCreatedAt;
     //物流编码--外码
     private String vendCustID;
+    //同步淘宝的状态,仅限于淘宝使用
+    private Integer syncTaobaoStatus;
 }

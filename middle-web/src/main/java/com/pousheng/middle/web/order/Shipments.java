@@ -640,6 +640,7 @@ public class Shipments {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setSkuOutId(skuOrder.getOutId());
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //原始价格
             shipmentItem.setSkuPrice(Integer.valueOf(Math.round(skuOrder.getOriginFee()/originSkuOrder.getQuantity())));

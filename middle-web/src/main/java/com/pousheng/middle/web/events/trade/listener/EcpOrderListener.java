@@ -10,6 +10,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -133,7 +134,11 @@ public class EcpOrderListener {
             ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //最后一个发货单发货完成之后需要将订单同步到电商
             String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+            if (!Objects.equals(shopOrder.getType(), OrderSource.TMALL.value())){
+                syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+            }else{
+                syncOrderToEcpLogic.syncOrderToTaobao(shopOrder);
+            }
         }
     }
 

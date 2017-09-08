@@ -29,6 +29,7 @@ import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
+import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -470,6 +471,7 @@ public class ShipmentWiteLogic {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setSkuOutId(skuOrder.getOutId());
             shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
             //积分
             String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
@@ -571,5 +573,32 @@ public class ShipmentWiteLogic {
     }
     private String getShareDiscount(SkuOrder skuOrder){
         return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+    }
+
+    /**
+     * 更新发货单同步淘宝的状态
+     * @param shipment 发货单
+     * @param orderOperation 可用的操作
+     * @return
+     */
+    public Response<Boolean> updateShipmentSyncTaobaoStatus(Shipment shipment,OrderOperation orderOperation){
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Flow flow = flowPicker.pickSyncTaobao();;
+        //判断当前状态是否可以操作
+        if (!flow.operationAllowed(shipmentExtra.getSyncTaobaoStatus(),orderOperation)){
+            log.error("shipment(id:{}) current status:{} not allow operation:{}",shipment.getId(),shipmentExtra.getSyncTaobaoStatus(),orderOperation.getText());
+            return Response.fail("sync.taobao.status.not.allow.current.operation");
+        }
+        //获取下一步状态
+        Integer targetStatus = flow.target(shipmentExtra.getSyncTaobaoStatus(),orderOperation);
+        shipmentExtra.setSyncTaobaoStatus(targetStatus);
+        Map<String,String> extraMap = shipment.getExtra();
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+        Response<Boolean> updateRes = shipmentWriteService.update(shipment);
+        if (!updateRes.isSuccess()) {
+            log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        return Response.ok();
     }
 }

@@ -474,7 +474,12 @@ public class ShipmentWiteLogic {
             shipmentItem.setSkuOutId(skuOrder.getOutId());
             shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
             //积分
-            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            String originIntegral = "";
+            try{
+                originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            }catch (JsonResponseException e){
+                log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_INTEGRAL);
+            }
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
             Long disCount = skuOrder.getDiscount()+Long.valueOf(this.getShareDiscount(skuOrder));
@@ -572,7 +577,13 @@ public class ShipmentWiteLogic {
         return count > 0;
     }
     private String getShareDiscount(SkuOrder skuOrder){
-        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        String skuShareDiscount="";
+        try{
+            skuShareDiscount = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
+        }
+        return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
     }
 
     /**

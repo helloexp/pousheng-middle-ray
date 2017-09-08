@@ -120,11 +120,12 @@ public class StockPusher {
                         }
 
                         if (shopStockRule.getSafeStock() >= stock) {
-                            log.warn("shop(id={}) has reached safe stock({}), current stock is:{}",
-                                    shopId, shopStockRule.getSafeStock(), stock);
+                            log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
+                                    shopId, shopStockRule.getSafeStock(), skuCode, stock);
                             Long lastPushStock = shopStockRule.getLastPushStock();
                             if (lastPushStock != null && lastPushStock <= shopStockRule.getSafeStock()) {
-                                log.info("skip to rePush stock to shop(id={}), since it has already reach safe stock before", shopId);
+                                log.info("skip to rePush stock to shop(id={}) for sku(code={}), " +
+                                        "since it has already reach safe stock before", shopId, skuCode);
                                 return;
                             } else {//如果本次可用库存低于安全库存, 则推送0
                                 stock = 0L;
@@ -147,7 +148,8 @@ public class StockPusher {
                         u.setLastPushStock(stock);
                         Response<Boolean> rRule = warehouseShopStockRuleWriteService.update(u);
                         if (!rRule.isSuccess()) {
-                            log.error("failed to update lastPushStock to {} for {}, error code:{}", stock, u);
+                            log.error("failed to update lastPushStock for sku(code={}) to {} for {}, error code:{}",
+                                    skuCode, stock, u);
                         }
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",

@@ -3,7 +3,6 @@ package com.pousheng.middle.web.order;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -23,13 +22,12 @@ import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -53,7 +51,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**

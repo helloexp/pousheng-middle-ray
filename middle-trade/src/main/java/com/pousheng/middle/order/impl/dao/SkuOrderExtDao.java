@@ -1,10 +1,8 @@
 package com.pousheng.middle.order.impl.dao;
 
 
-import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.order.model.SkuOrderExt;
 import io.terminus.common.mysql.dao.MyBatisDao;
-import io.terminus.parana.order.model.SkuOrder;
 import org.springframework.stereotype.Repository;
 
 /**

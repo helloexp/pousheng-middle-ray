@@ -118,8 +118,7 @@ public class StockPusher {
                         if(shopStockRule.getStatus()<0){//非启用状态
                             return;
                         }
-                        //按照设定的比例确定推送数量
-                        stock = stock * shopStockRule.getRatio() / 100;
+
                         if (shopStockRule.getSafeStock() >= stock) {
                             log.warn("shop(id={}) has reached safe stock({}), current stock is:{}",
                                     shopId, shopStockRule.getSafeStock(), stock);
@@ -131,6 +130,9 @@ public class StockPusher {
                                 stock = 0L;
                             }
                         }
+
+                        //按照设定的比例确定推送数量
+                        stock = stock * shopStockRule.getRatio() / 100;
                         //库存推送
                         Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
                         if (!rP.isSuccess()) {

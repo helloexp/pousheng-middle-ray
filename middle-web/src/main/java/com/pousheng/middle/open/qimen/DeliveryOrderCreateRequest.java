@@ -3,8 +3,6 @@ package com.pousheng.middle.open.qimen;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import lombok.Data;
 
-import java.util.Map;
-
 /**
  * Created by cp on 8/22/17.
  */

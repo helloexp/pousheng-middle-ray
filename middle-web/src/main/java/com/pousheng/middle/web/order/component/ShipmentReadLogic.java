@@ -129,7 +129,12 @@ public class ShipmentReadLogic {
 
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //积分
-            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            String originIntegral = "";
+            try{
+                originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            }catch (JsonResponseException e){
+                log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_INTEGRAL);
+            }
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,originSkuOrder.getQuantity(),skuOrder.getQuantity()));
             //获取商品原价
@@ -427,7 +432,13 @@ public class ShipmentReadLogic {
     }
 
     private String getShareDiscount(SkuOrder skuOrder){
-        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        String skuShareDiscount="";
+        try{
+            skuShareDiscount = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
+        }
+        return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
     }
 
 

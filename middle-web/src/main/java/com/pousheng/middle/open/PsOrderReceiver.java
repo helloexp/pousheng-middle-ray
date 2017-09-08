@@ -3,26 +3,20 @@ package com.pousheng.middle.open;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -44,10 +38,7 @@ import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
-import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.codehaus.jackson.map.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -85,6 +76,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private WarehouseAddressReadService warehouseAddressReadService;
+
+    @Autowired
+    private ReceiverInfoCompleter receiverInfoCompleter;
 
     @Override
     protected Item findItemById(Long paranaItemId) {
@@ -132,6 +126,16 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         sku.setImage(skuTemplate.getImage_());
         sku.setAttrs(skuTemplate.getAttrs());
         return sku;
+    }
+
+    @Override
+    protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
+        return OpenClientOrderStatus.PAID.getValue();
+    }
+
+    @Override
+    protected Integer toParanaOrderStatusForSkuOrder(OpenClientOrderStatus clientOrderStatus) {
+        return OpenClientOrderStatus.PAID.getValue();
     }
 
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
@@ -228,61 +232,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected ReceiverInfo toReceiverInfo(OpenClientOrderConsignee consignee) {
-
-        ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
-        handleResult.setSuccess(Boolean.TRUE);
-        List<String> errors = Lists.newArrayList();
-
-        ReceiverInfo receiverInfo = new ReceiverInfo();
-        receiverInfo.setMobile(consignee.getMobile());
-        receiverInfo.setPhone(consignee.getTelephone());
-        receiverInfo.setReceiveUserName(consignee.getName());
-        receiverInfo.setProvince(consignee.getProvince());
-        Long provinceId = queryAddressId(receiverInfo.getProvince());
-        if(Arguments.notNull(provinceId)){
-            receiverInfo.setProvinceId(Integer.valueOf(provinceId.toString()));
-        }else {
-            handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道省："+receiverInfo.getProvince()+"未匹配到中台的省");
-        }
-        receiverInfo.setCity(consignee.getCity());
-        Long cityId = queryAddressId(receiverInfo.getCity());
-        if(Arguments.notNull(cityId)){
-            receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
-        }else {
-            handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道市："+receiverInfo.getProvince()+"未匹配到中台的市");
-        }
-        receiverInfo.setRegion(consignee.getRegion());
-        Long regionId = queryAddressId(receiverInfo.getRegion());
-        if(Arguments.notNull(regionId)){
-            receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
-        }else {
-            handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
-        }
-        handleResult.setErrors(errors);
-        receiverInfo.setDetail(consignee.getDetail());
-        Map<String,String> extraMap = Maps.newHashMap();
-        extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
-        receiverInfo.setExtra(extraMap);
+        ReceiverInfo receiverInfo = super.toReceiverInfo(consignee);
+        receiverInfoCompleter.complete(receiverInfo);
         return receiverInfo;
-    }
-
-
-    private Long queryAddressId(String name){
-        Optional<WarehouseAddress> wo1 = findWarehouseAddressByName(name);
-        if(wo1.isPresent()){
-            return wo1.get().getId();
-        }
-
-        String splitName = name.substring(0,2);
-        Optional<WarehouseAddress> wo2 = findWarehouseAddressByName(splitName);
-        if(wo2.isPresent()){
-            return wo2.get().getId();
-        }
-
-        return null;
     }
 
     private void syncReceiverInfo(RichSkusByShop richSkusByShop) {
@@ -293,21 +245,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                     richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));
         }
-    }
-
-
-    /**
-     * 根据名称获取addressId
-     * @param addressName 中文名
-     * @return 返回地址信息
-     */
-    private Optional<WarehouseAddress> findWarehouseAddressByName(String addressName){
-        Response<Optional<WarehouseAddress>> warehouseResponse = warehouseAddressReadService.findByName(addressName);
-        if (!warehouseResponse.isSuccess()){
-            log.error("find warehouseAddress failed,addressName is(:{}) error:{}",addressName, warehouseResponse.getError());
-            throw new ServiceException("find.warehouse.address.failed");
-        }
-        return  warehouseResponse.getResult();
     }
 
 }

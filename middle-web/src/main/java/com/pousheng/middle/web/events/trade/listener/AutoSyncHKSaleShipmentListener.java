@@ -21,7 +21,7 @@ import javax.annotation.PostConstruct;
 @Slf4j
 @Component
 public class AutoSyncHKSaleShipmentListener {
-    @Autowired
+  /*  @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
@@ -35,11 +35,11 @@ public class AutoSyncHKSaleShipmentListener {
 
     @Subscribe
     public void autoSyncHkSaleShipment(OrderShipmentEvent orderShipmentEvent) {
-        Long shipmentId = orderShipmentEvent.getShipmentId();
+       *//* Long shipmentId = orderShipmentEvent.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if (!syncRes.isSuccess()) {
             log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-        }
-    }
+        }*//*
+    }*/
 }

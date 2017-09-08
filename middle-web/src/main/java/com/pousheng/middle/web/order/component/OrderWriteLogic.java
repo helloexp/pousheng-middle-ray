@@ -331,8 +331,7 @@ public class OrderWriteLogic {
                     MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE.toOrderOperation(),"");
             if (response.isSuccess()){
                 //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
-                OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
-                eventBus.post(event);
+                shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
 
         }
@@ -385,8 +384,7 @@ public class OrderWriteLogic {
                    skuOrder,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(),MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(),"");
             if (response.isSuccess()){
                 //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
-                OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
-                eventBus.post(event);
+                shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
 
         }

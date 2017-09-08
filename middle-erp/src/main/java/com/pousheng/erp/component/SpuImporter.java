@@ -61,7 +61,7 @@ public class SpuImporter {
         this.materialFetcher = materialFetcher;
     }
 
-    public int process(Date start, Date end){
+    public int process(Date start, Date end) {
         if (start == null) {
             log.error("no start date specified when import material");
             throw new IllegalArgumentException("start.date.miss");
@@ -77,7 +77,7 @@ public class SpuImporter {
                 Brand brand = brandCacher.findByCardName(material.getCard_name());//做品牌映射
                 doProcess(material, brand);
             }
-            handleCount+=materials.size();
+            handleCount += materials.size();
         }
         return handleCount;
     }
@@ -86,8 +86,7 @@ public class SpuImporter {
      * 处理单个货品信息
      *
      * @param material 货品
-     * @param brand 品牌
-     *
+     * @param brand    品牌
      * @return spu id
      */
     public Long doProcess(PoushengMaterial material, Brand brand) {
@@ -95,38 +94,37 @@ public class SpuImporter {
         String materialCode = material.getMaterial_code(); //条码
 
         try {
-            log.info("begin to doProcess material(code={})", materialCode);
+            log.info("begin to doProcess material(id={},code={})", materialId, materialCode);
 
+            Long leafId = null;
             //检查货品是否已经被同步, 如果已经同步, 则直接返回
             SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
-            if(exist!=null){
-                log.info("material(id={}) has been synchronized, skip",materialId);
-                return exist.getSpuId();
+            if (exist != null) {
+                log.info("material(id={}) has been synchronized, ", materialId);
+            }else {
+                String kind_name = material.getKind_name();//类别
+                String series_name = material.getSeries_name(); //系列
+                String model_name = material.getModel_name(); //款型
+                String item_name = material.getItem_name(); //项目
+
+                //寻找或者创建(如果没有对应的类目存在)后台类目, 获取叶子类目id, 作为spu的categoryId
+                leafId = createBackCategoryTreeIfNotExist(kind_name, series_name, model_name, item_name);
             }
-
-            String kind_name = material.getKind_name();//类别
-            String series_name = material.getSeries_name(); //系列
-            String model_name = material.getModel_name(); //款型
-            String item_name = material.getItem_name(); //项目
-
-            //寻找或者创建(如果没有对应的类目存在)后台类目, 获取叶子类目id, 作为spu的categoryId
-            Long leafId = createBackCategoryTreeIfNotExist(kind_name, series_name, model_name, item_name);
-
             //根据归组规则, 生成spuCode
             String spuCode = refineCode(materialCode, material.getCard_name(), material.getKind_name());
 
-            //判断spuCode是否已经存在, 如果存在, 直接返回对应spuId, 如果不存在, 则生成相应的spu信息, 并返回spuId
             List<PoushengSku> poushengSkus = createSkuFromMaterial(material);
-            Long spuId = spuManager.createSpuRelatedIfNotExist(leafId, brand, spuCode,  material, poushengSkus);
+            Long spuId = spuManager.createOrUpdateSpuRelated(leafId, brand, spuCode, material, poushengSkus);
 
-            //创建货品id与spu的映射关系
-            SpuMaterial spuMaterial = new SpuMaterial();
-            spuMaterial.setSpuId(spuId);
-            spuMaterial.setMaterialId(materialId);
-            spuMaterial.setMaterialCode(materialCode);
-            spuMaterialDao.create(spuMaterial);
+            if(exist == null) { //创建货品id与spu的映射关系
+                SpuMaterial spuMaterial = new SpuMaterial();
+                spuMaterial.setSpuId(spuId);
+                spuMaterial.setMaterialId(materialId);
+                spuMaterial.setMaterialCode(materialCode);
+                spuMaterialDao.create(spuMaterial);
+            }
 
-            log.info("doProcess material(code={}) succeed", materialCode);
+            log.info("doProcess material(id={}, code={}) succeed", materialId, materialCode);
             return spuId;
         } catch (Exception e) {
             log.error("failed to doProcess material(code={}), cause:{}",
@@ -137,7 +135,7 @@ public class SpuImporter {
     }
 
     private List<PoushengSku> createSkuFromMaterial(PoushengMaterial material) {
-        if(CollectionUtils.isEmpty(material.getSize())){
+        if (CollectionUtils.isEmpty(material.getSize())) {
             return Collections.emptyList();
         }
         List<PoushengSku> r = Lists.newArrayListWithCapacity(material.getSize().size());
@@ -146,6 +144,8 @@ public class SpuImporter {
         for (PoushengSize poushengSize : material.getSize()) {
             PoushengSku poushengSku = new PoushengSku();
             poushengSku.setBarCode(poushengSize.getBarcode());
+            poushengSku.setMaterialId(material.getMaterial_id());
+            poushengSku.setMaterialCode(material.getMaterial_code());
             poushengSku.setColorId(colorId);
             poushengSku.setColorName(colorName);
             poushengSku.setSizeId(poushengSize.getSize_id());
@@ -160,15 +160,15 @@ public class SpuImporter {
      * 根据分组规则处理货号
      *
      * @param materialCode 货号
-     * @param card_name 品牌
-     * @param kind_name 分类
+     * @param card_name    品牌
+     * @param kind_name    分类
      * @return 如果找到对应的处理规则, 则返回对应的处理结果, 否则返回materialCode
      */
     private String refineCode(String materialCode, String card_name, String kind_name) {
         List<SkuGroupRule> skuGroupRules = skuGroupRuleDao.findByCardId(card_name);
         for (SkuGroupRule skuGroupRule : skuGroupRules) {
             SkuGroupRuler skuGroupRuler = SkuGroupRuler.from(skuGroupRule.getRuleType());
-            if(skuGroupRuler.support(skuGroupRule, card_name,kind_name)){
+            if (skuGroupRuler.support(skuGroupRule, card_name, kind_name)) {
                 return skuGroupRuler.spuCode(skuGroupRule, materialCode);
             }
         }
@@ -181,11 +181,11 @@ public class SpuImporter {
     /**
      * 根据需要创建类目树
      *
-     * @param kind_name 类别id
-     * @param series_name  系列id
+     * @param kind_name   类别id
+     * @param series_name 系列id
      * @param model_name  款型id
-     * @param item_name 项目id
-     * @return  叶子类目id
+     * @param item_name   项目id
+     * @return 叶子类目id
      */
     private Long createBackCategoryTreeIfNotExist(String kind_name, String series_name, String model_name, String item_name) {
         List<String> categoryNames = ImmutableList.of(kind_name, series_name, model_name, item_name);
@@ -200,30 +200,31 @@ public class SpuImporter {
 
     /**
      * 如果不存在则创建对应的类目, 否则返回已存在的类目
-     * @param parent  父类目
-     * @param categoryName  类目名称
+     *
+     * @param parent       父类目
+     * @param categoryName 类目名称
      * @return 对应名字的类目
      */
     private BackCategory createBackCategoryIfNotExist(BackCategory parent, String categoryName) {
-        BackCategory backCategory = null;
+        BackCategory backCategory;
         try {
             backCategory = categoryDao.findChildrenByName(parent.getId(), categoryName);
         } catch (Exception e) {
-            log.error("duplicated categoryName {} where pid={}", categoryName,parent.getId());
+            log.error("duplicated categoryName {} where pid={}", categoryName, parent.getId());
             throw e;
         }
-        if(backCategory!=null){
+        if (backCategory != null) {
             return backCategory;
-        }else{
+        } else {
             BackCategory child = new BackCategory();
-            child.setLevel(parent.getLevel()+1);
+            child.setLevel(parent.getLevel() + 1);
             child.setPid(parent.getId());
             child.setName(categoryName);
             child.setStatus(1);
-            if(Objects.equal(child.getLevel(),4) ){ //宝胜导入数据的时候, 一定有4级类目
+            if (Objects.equal(child.getLevel(), 4)) { //宝胜导入数据的时候, 一定有4级类目
                 child.setHasSpu(true);
                 child.setHasChildren(false);
-            }else{
+            } else {
                 child.setHasSpu(false);
                 child.setHasChildren(true);
             }

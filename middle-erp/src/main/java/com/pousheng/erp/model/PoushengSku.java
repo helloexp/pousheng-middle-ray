@@ -23,4 +23,8 @@ public class PoushengSku implements Serializable{
     private String colorName; //颜色名称
 
     private String marketPrice; //市场价
+
+    private String materialId; //物料id
+
+    private String materialCode; //物料编码
 }

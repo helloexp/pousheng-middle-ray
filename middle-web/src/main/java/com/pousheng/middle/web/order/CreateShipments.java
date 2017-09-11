@@ -101,7 +101,7 @@ public class CreateShipments {
         }
 
         if (!response.isSuccess()) {
-            return Response.fail(response.getError());
+            throw new JsonResponseException(response.getError());
         }
 
         //封装发货仓及下单店铺信息
@@ -111,7 +111,7 @@ public class CreateShipments {
         Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
-            return Response.fail(warehouseRes.getError());
+            throw new JsonResponseException(warehouseRes.getError());
         }
 
         Warehouse warehouse = warehouseRes.getResult();
@@ -121,7 +121,7 @@ public class CreateShipments {
         Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
         if (!ruleRes.isSuccess()) {
             log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
-            return Response.fail(ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
         }
 
         WarehouseCompanyRule companyRule = ruleRes.getResult();

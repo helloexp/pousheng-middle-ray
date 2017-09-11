@@ -36,6 +36,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -292,7 +293,7 @@ public class ShipmentWiteLogic {
         Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
 
         Shipment shipment = this.makeShipment(shopOrder, warehouseId,shipmentItemFee
-                ,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,shipmentShipDiscountFee,shipmentTotalPrice);
+                ,shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,shipmentShipDiscountFee,shipmentTotalPrice,shopOrder.getShopId());
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setShopId(shopOrder.getShopId());
@@ -353,7 +354,7 @@ public class ShipmentWiteLogic {
      */
     private Shipment makeShipment(ShopOrder shopOrder,Long warehouseId,Long shipmentItemFee,Long shipmentDiscountFee,
                                   Long shipmentTotalFee,Long shipmentShipFee,Long shipmentShipDiscountFee,
-                                  Long shipmentTotalPrice){
+                                  Long shipmentTotalPrice,Long shopId){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
@@ -374,8 +375,10 @@ public class ShipmentWiteLogic {
         WarehouseCompanyRule companyRule = ruleRes.getResult();
         shipmentExtra.setErpOrderShopCode(String.valueOf(companyRule.getShopId()));
         shipmentExtra.setErpOrderShopName(companyRule.getShopName());
-        shipmentExtra.setErpPerformanceShopCode(String.valueOf(companyRule.getShopId()));
-        shipmentExtra.setErpPerformanceShopName(companyRule.getShopName());
+        //绩效店铺代码
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
+        shipmentExtra.setErpPerformanceShopCode(orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop));
+        shipmentExtra.setErpPerformanceShopName(orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop));
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额

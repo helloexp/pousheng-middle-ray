@@ -13,6 +13,7 @@ import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -33,6 +34,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -67,6 +69,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
@@ -140,11 +145,21 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
-            Response<Boolean> updateR = orderWriteService.shopOrderStatusChanged(shopOrder.getId(),
-                    shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
-            if (!updateR.isSuccess()) {
-                log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order, cause:{}",
-                        shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue(), updateR.getError());
+            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
+            if (skuOrders.size()==0){
+                return;
+            }
+            for (SkuOrder skuOrder : skuOrders) {
+                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
+                if (!updateRlt.getResult()) {
+                    log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                }
+            }
+            //判断订单的状态是否是已完成
+            ShopOrder shopOrder1 = orderReadLogic.findShopOrderById(shopOrder.getId());
+            if (!Objects.equals(shopOrder1.getStatus(),MiddleOrderStatus.CONFIRMED.getValue())) {
+                log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order",
+                        shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
             }else {
                 //更新同步电商状态为已确认收货
                 OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();

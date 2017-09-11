@@ -23,7 +23,7 @@ public class SkuStockDetail implements Serializable{
 
         private Long id;
 
-        private String warehouseInnerCode;
+        private String code;
 
         private String warehouseName;
 

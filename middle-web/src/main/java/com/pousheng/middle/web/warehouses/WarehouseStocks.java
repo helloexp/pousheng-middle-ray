@@ -175,7 +175,7 @@ public class WarehouseStocks {
             siw.setId(stock.getId());
             siw.setQuantity(stock.getAvailStock());
             Warehouse warehouse = warehouseCacher.findById(stock.getWarehouseId());
-            siw.setWarehouseInnerCode(warehouse.getExtra().get("outCode"));
+            siw.setCode(warehouse.getCode());
             siw.setWarehouseName(warehouse.getName());
             details.add(siw);
         }

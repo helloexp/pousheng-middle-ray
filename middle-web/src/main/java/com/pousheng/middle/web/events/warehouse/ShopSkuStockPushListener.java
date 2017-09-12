@@ -42,6 +42,7 @@ public class ShopSkuStockPushListener {
     @Subscribe
     public void onPushEvent(PushEvent event){
         Long shopId = event.getShopId();
+        log.info("begin to push stock for shop(id={})", shopId);
         int pageNo = 1;
         int pageSize = 100;
         while(true) {
@@ -53,6 +54,7 @@ public class ShopSkuStockPushListener {
             Paging<ItemMapping> p = r.getResult();
             List<ItemMapping> data = p.getData();
             for (ItemMapping datum : data) {
+                log.info("trying to push stock of sku(code={})", datum.getSkuCode());
                 stockPusher.submit(datum.getSkuCode());
             }
             pageNo++;

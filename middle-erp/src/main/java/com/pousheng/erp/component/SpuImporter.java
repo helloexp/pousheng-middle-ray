@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.pousheng.erp.cache.ErpBrandCacher;
+import com.pousheng.erp.cache.ErpSpuCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.manager.ErpSpuManager;
@@ -13,6 +14,7 @@ import com.pousheng.erp.rules.SkuGroupRuler;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.category.impl.dao.BackCategoryDao;
 import io.terminus.parana.category.model.BackCategory;
+import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -35,6 +37,8 @@ public class SpuImporter {
 
     private final ErpBrandCacher brandCacher;
 
+    private final ErpSpuCacher spuCacher;
+
     private final SkuGroupRuleDao skuGroupRuleDao;
 
     private final BackCategoryDao categoryDao;
@@ -48,12 +52,14 @@ public class SpuImporter {
 
     @Autowired
     public SpuImporter(ErpBrandCacher brandCacher,
+                       ErpSpuCacher spuCacher,
                        SkuGroupRuleDao skuGroupRuleDao,
                        BackCategoryDao categoryDao,
                        ErpSpuManager spuManager,
                        SpuMaterialDao spuMaterialDao,
                        MaterialFetcher materialFetcher) {
         this.brandCacher = brandCacher;
+        this.spuCacher = spuCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;
         this.spuManager = spuManager;
@@ -97,10 +103,14 @@ public class SpuImporter {
             log.info("begin to doProcess material(id={},code={})", materialId, materialCode);
 
             Long leafId = null;
-            //检查货品是否已经被同步, 如果已经同步, 则直接返回
+            //检查货品是否已经被同步
             SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
             if (exist != null) {
                 log.info("material(id={}) has been synchronized, ", materialId);
+                Long spuId = exist.getSpuId();
+                Spu spu = spuCacher.findById(spuId);
+                leafId = spu.getCategoryId();
+
             }else {
                 String kind_name = material.getKind_name();//类别
                 String series_name = material.getSeries_name(); //系列

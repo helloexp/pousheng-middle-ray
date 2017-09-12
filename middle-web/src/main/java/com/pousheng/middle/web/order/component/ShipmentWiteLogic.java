@@ -281,7 +281,7 @@ public class ShipmentWiteLogic {
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrder.getId())){
             shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
-            shipmentShipDiscountFee = shipmentShipFee  - Long.valueOf(shopOrder.getShipFee());
+            shipmentShipDiscountFee = shipmentShipFee  - Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;

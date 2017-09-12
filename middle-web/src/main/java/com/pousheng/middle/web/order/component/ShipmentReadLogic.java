@@ -369,7 +369,7 @@ public class ShipmentReadLogic {
      * @return 返回四舍五入的计算结果,得到发货单中的sku商品的折扣
      */
     private  Integer getDiscount(Integer skuQuantity,Integer shipSkuQuantity,Integer skuDiscount){
-        return Math.round(skuDiscount*shipSkuQuantity/skuQuantity);
+        return Math.round(Long.valueOf(skuDiscount)*Long.valueOf(shipSkuQuantity)/Long.valueOf(skuQuantity));
     }
 
     /**

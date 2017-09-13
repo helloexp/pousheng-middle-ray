@@ -258,7 +258,8 @@ public class Shipments {
                 .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));
         //检查库存是否充足
         checkStockIsEnough(warehouseId,skuCodeAndQuantityMap);
-
+        //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常
+        checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
         //封装发货信息
         List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrders,skuOrderIdAndQuantity);
         //发货单商品金额
@@ -537,6 +538,18 @@ public class Shipments {
         }
     }
 
+    //检查子单是否是全部发货
+    private void checkSkuCodeAndQuantityLegal(Map<Long, Integer> skuOrderIdAndQuantity){
+        List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
+        skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
+        for (Long skuOrderId:skuOrderIds){
+            SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId,OrderLevel.SKU);
+            if (!Objects.equals(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId))){
+               log.error("sku order id:{} data quantity {} not equal sku quantity {}",skuOrderId,skuOrderIdAndQuantity.get(skuOrderId),skuOrder.getQuantity());
+               throw new JsonResponseException("sku.order.create.shipment.must.be.full");
+            }
+        }
+    }
 
 
     private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){

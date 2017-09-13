@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -17,10 +18,10 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -30,6 +31,7 @@ import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -67,6 +69,16 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private SyncRefundLogic syncRefundLogic;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
+
+
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -191,6 +203,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 return MiddleRefundStatus.WAIT_HANDLE.getValue();
             case SUCCESS:
                 return MiddleRefundStatus.REFUND.getValue();
+            case RETURN_CLOSED:
+                return MiddleRefundStatus.CANCELED.getValue();
             default:
                 log.error("open client after sale status:{} invalid", status.name());
                 throw new OpenClientException(500, "open.client.after.status.invalid");
@@ -199,10 +213,39 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     }
 
     protected void updateRefund(Refund refund, OpenClientAfterSale afterSale) {
+        //如果这个时候拉取过来的售后单是用户自己取消且为退货类型的可以更新售后单的状态
+        if (afterSale.getStatus()==OpenClientAfterSaleStatus.RETURN_CLOSED
+                && Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //判断售后单状态
+            Flow flow = flowPicker.pickAfterSales();
+            //这个时候的状态可能为待完善,待同步恒康,同步恒康失败
+            if (flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation())
+                    || flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.SYNC_HK.toOrderOperation())){
+                //直接售后单的状态为已取消即可
+                Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(),MiddleRefundStatus.CANCELED.getValue());
+                if (!updateR.isSuccess()) {
+                    log.error("fail to update refund(id={}) status to {}cause:{}",
+                            refund.getId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
+                    //回滚发货单的数量
+                    refundWriteLogic.rollbackRefundQuantities(refund);
+                }
+                return;
+            }
+            //已经同步恒康
+            if (flow.operationAllowed(refund.getStatus(),MiddleOrderEvent.CANCEL_HK.toOrderOperation())){
+                Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync cancel refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                }else{
+                    //回滚发货单的数量
+                    refundWriteLogic.rollbackRefundQuantities(refund);
+                }
+                return;
+            }
+        }
         if (afterSale.getStatus() != OpenClientAfterSaleStatus.SUCCESS) {
             return;
         }
-
         Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.REFUND.getValue());
         if (!updateR.isSuccess()) {
             log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",

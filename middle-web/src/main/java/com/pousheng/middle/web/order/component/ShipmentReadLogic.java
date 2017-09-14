@@ -410,7 +410,7 @@ public class ShipmentReadLogic {
      * @param shopOrderId  店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
-    private boolean isShipmentFeeCalculated(long shopOrderId){
+    public boolean isShipmentFeeCalculated(long shopOrderId){
         Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);

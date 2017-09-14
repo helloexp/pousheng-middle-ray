@@ -275,7 +275,7 @@ public class Shipments {
         Long shipmentShipDiscountFee=0L;
 
         //判断运费是否已经加过
-        if (!isShipmentFeeCalculated(shopOrderId)){
+        if (!shipmentReadLogic.isShipmentFeeCalculated(shopOrderId)){
             shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
             shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
         }
@@ -840,34 +840,7 @@ public class Shipments {
     private Integer getIntegral(Integer integral,Integer skuQuantity,Integer shipmentSkuQuantity){
         return Math.round(integral*shipmentSkuQuantity/skuQuantity);
     }
-    /**
-     * 判断是否存在有效的发货单
-     * @param shopOrderId 店铺订单主键
-     * @return true:已经计算过发货单,false:没有计算过发货单
-     */
-    private boolean isShipmentFeeCalculated(long shopOrderId){
-        Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
-        if (!response.isSuccess()){
-            log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
-            throw new JsonResponseException("find.shipment.failed");
-        }
-        //获取有效的销售发货单
-        List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).
-                filter(it->Objects.equals(it.getType(),ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
-        int count =0;
-        for (Shipment shipment:shipments){
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if (shipmentExtra.getShipmentShipFee()>0){
-                count++;
-            }
-        }
-        //如果已经有发货单计算过运费,返回true
-        if (count>0){
-            return true;
-        }
-        return false;
-    }
+
     private String getShareDiscount(SkuOrder skuOrder){
         String skuShareDiscount="";
         try{

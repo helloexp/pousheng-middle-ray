@@ -118,6 +118,7 @@ public class SyncOrderToEcpLogic {
                     if (Objects.equals(syncTaobaoStatus,SyncTaobaoStatus.SYNC_TAOBAO_SUCCESS.getValue())){
                         continue;
                     }
+                    shipmentExtra.setSyncTaobaoStatus(syncTaobaoStatus);
                     //获取快递信息
                     ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                     String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);

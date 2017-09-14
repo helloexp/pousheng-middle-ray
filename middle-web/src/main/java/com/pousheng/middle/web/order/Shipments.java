@@ -627,7 +627,7 @@ public class Shipments {
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //物流编码
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{

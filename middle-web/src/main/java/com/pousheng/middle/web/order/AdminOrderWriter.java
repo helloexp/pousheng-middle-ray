@@ -4,6 +4,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -76,7 +77,7 @@ public class AdminOrderWriter {
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        if (!Objects.equals(shopOrder.getType(), OrderSource.TMALL.value())){
+        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));

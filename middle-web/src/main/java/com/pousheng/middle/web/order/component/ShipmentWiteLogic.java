@@ -10,6 +10,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
@@ -312,7 +313,7 @@ public class ShipmentWiteLogic {
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             return false;
         }
@@ -382,7 +383,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         //添加物流编码
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{

@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.sync.ecp;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -59,6 +60,7 @@ public class SyncOrderToEcpLogic {
         try {
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
             OpenClientOrderShipment orderShipment = new OpenClientOrderShipment();
@@ -66,7 +68,14 @@ public class SyncOrderToEcpLogic {
             orderShipment.setLogisticsCompany(expressCompayCode);
             //填写运单号
             orderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
-
+            //目前苏宁需要传入商品编码
+            List<String> outSkuCodes = Lists.newArrayList();
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())){
+                for (ShipmentItem shipmentItem:shipmentItems){
+                    outSkuCodes.add(shipmentItem.getOutSkuCode());
+                }
+                orderShipment.setOuterSkuCodes(outSkuCodes);
+            }
             Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), orderShipment);
             if (response.isSuccess()) {
                 //同步成功

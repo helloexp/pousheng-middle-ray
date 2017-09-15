@@ -91,3 +91,11 @@ erp.token:
   appKey: terminus-erp
   secret: anywhere-erp
   gateway: http://erp-api.terminus.io/api/gateway
+
+ych.token:
+  appKey: 68757056
+  secret: 2jodLU2IMIwn0cH8kcIY
+  gateway: http://account.ose.aliyun.com
+
+taobao.token:
+  appKey: 24581672

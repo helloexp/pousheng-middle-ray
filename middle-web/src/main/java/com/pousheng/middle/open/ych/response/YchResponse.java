@@ -19,5 +19,4 @@ public class YchResponse implements Serializable {
     public boolean isSuccess() {
         return "success".equals(result);
     }
-
 }

@@ -6,8 +6,6 @@ import com.google.common.base.Throwables;
 import com.pousheng.middle.open.ych.token.YchToken;
 import io.terminus.common.exception.JsonResponseException;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 
 import java.security.MessageDigest;
 import java.util.Date;
@@ -15,13 +13,11 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
-@Component
 @Slf4j
 public class YchClient {
 
     private final YchToken token;
 
-    @Autowired
     public YchClient(YchToken token) {
         this.token = token;
     }

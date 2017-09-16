@@ -72,4 +72,5 @@ ych.token:
   gateway: http://account.ose.aliyun.com
 
 taobao.token:
-  appKey: xxxx
+  appKey: xxx
+  appName: 端点中台

@@ -16,4 +16,6 @@ public class TaobaoToken implements Serializable {
     private static final long serialVersionUID = 1175258157993328052L;
 
     private String appKey;
+
+    private String appName;
 }

@@ -11,8 +11,6 @@ import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
-import com.pousheng.middle.open.ych.token.TaobaoToken;
-import com.pousheng.middle.open.ych.token.YchToken;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
@@ -83,9 +81,7 @@ import java.util.concurrent.Executors;
                 "com.pousheng.middle.web"})
 @EnableScheduling
 @EnableConfigurationProperties({
-        ErpOpenApiToken.class,
-        YchToken.class,
-        TaobaoToken.class
+        ErpOpenApiToken.class
 })
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 

@@ -14,4 +14,8 @@ public class VerifyPassedResponse extends YchResponse implements Serializable {
 
     private String verifyResult;
 
+    public boolean verifyOk() {
+        return "success".equals(verifyResult);
+    }
+
 }

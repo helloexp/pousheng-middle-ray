@@ -53,7 +53,7 @@ public class YchApiTest {
         params.put("sessionId", String.valueOf(System.currentTimeMillis()));
         params.put("mobile", "18969973054");
         params.put("redirectURL", "http://devt.pousheng.com/api/callback/jd");
-        String url = ychApi.getVerifyUrl(params);
+        String url = ychApi.getVerifyUrl(params).getResult();
         System.out.println("url:" + url);
     }
 
@@ -61,7 +61,7 @@ public class YchApiTest {
     public void testVerifyPassed() {
         TreeMap<String, String> params = Maps.newTreeMap();
         params.put("token", "55277D16748855476ADA6EB75084BB68");
-        Assert.assertTrue(ychApi.isVerifyPassed(params));
+        Assert.assertTrue(ychApi.isVerifyPassed(params).getResult());
     }
 
 }

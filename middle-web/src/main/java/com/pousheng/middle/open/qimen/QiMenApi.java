@@ -165,7 +165,7 @@ public class QiMenApi {
         r.setMobile(receiverInfo.getMobile());
         r.setPhone(receiverInfo.getTel());
         r.setPostcode(receiverInfo.getZipCode());
-        
+        r.setDetail(receiverInfo.getDetailAddress());
         receiverInfoCompleter.complete(r);
         return r;
     }

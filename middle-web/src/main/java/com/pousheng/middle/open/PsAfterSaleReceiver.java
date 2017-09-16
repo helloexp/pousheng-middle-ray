@@ -226,6 +226,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 if (!updateR.isSuccess()) {
                     log.error("fail to update refund(id={}) status to {}cause:{}",
                             refund.getId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
+                }else{
                     //回滚发货单的数量
                     refundWriteLogic.rollbackRefundQuantities(refund);
                 }

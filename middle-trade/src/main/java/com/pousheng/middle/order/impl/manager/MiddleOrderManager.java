@@ -186,7 +186,7 @@ public class MiddleOrderManager {
         ShopOrderExt shopOrderExt = new ShopOrderExt();
         shopOrderExt.setId(shopOrderId);
         shopOrderExt.setBuyerNote(buyerNote);
-        boolean shopOrderResult = shopOrderExtDao.updateBuyerNoteById(shopOrderExt);
+        boolean shopOrderResult = shopOrderExtDao.update(shopOrderExt);
         if (!shopOrderResult){
             log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
             throw new ServiceException("receiveInfo.update.fail");

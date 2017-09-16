@@ -67,4 +67,13 @@ public interface MiddleOrderWriteService {
      * @return 是否更新成功
      */
     Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo);
+
+    /**
+     * 更新店铺订单的买家名称
+     *
+     * @param shopOrderId 店铺订单id
+     * @param buyerName   新的买家名称
+     * @return 是否更新成功
+     */
+    Response<Boolean> updateBuyerNameOfShopOrder(Long shopOrderId, String buyerName);
 }

@@ -10,7 +10,5 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class ShopOrderExtDao extends MyBatisDao<ShopOrderExt> {
-    public boolean updateBuyerNoteById(ShopOrderExt shopOrderExt){
-        return getSqlSession().update(sqlId("updateBuyerNoteById"),shopOrderExt) == 1;
-    }
+
 }

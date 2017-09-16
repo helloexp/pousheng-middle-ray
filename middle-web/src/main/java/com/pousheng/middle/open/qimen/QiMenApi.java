@@ -83,6 +83,17 @@ public class QiMenApi {
                     shopOrder.getId(), receiverInfo, updateR.getError());
             return XmlUtils.toXml(QimenResponse.fail(updateR.getError()));
         }
+
+        String buyerName = deliveryOrderCreateRequest.getDeliveryOrder().getBuyerNick();
+        if (StringUtils.hasText(buyerName)) {
+            Response<Boolean> updateBuyerNameR = middleOrderWriteService.updateBuyerNameOfShopOrder(shopOrder.getId(), buyerName);
+            if (!updateBuyerNameR.isSuccess()) {
+                log.error("fail to update buyerName to {} for shopOrder(id={}),cause:{}",
+                        buyerName, shopOrder.getId(), updateBuyerNameR.getError());
+                return XmlUtils.toXml(QimenResponse.fail(updateBuyerNameR.getError()));
+            }
+        }
+
         return XmlUtils.toXml(QimenResponse.ok());
     }
 
@@ -132,7 +143,7 @@ public class QiMenApi {
         }
         String expectedSign = generateSign(request);
         if (!Objects.equal(extendProps.getWmsSign(), expectedSign)) {
-            log.error("sign({}) not match for request:{},expected sign is:{}",request, expectedSign);
+            log.error("sign({}) not match for request:{},expected sign is:{}", request, expectedSign);
             throw new OpenClientException(400, "sign.not.match");
         }
     }
@@ -142,14 +153,18 @@ public class QiMenApi {
         params.put("appKey", WMS_APP_KEY);
         params.put("deliveryOrderCode", request.getDeliveryOrder().getDeliveryOrderCode());
 
+        if (StringUtils.hasText(request.getDeliveryOrder().getBuyerNick())) {
+            params.put("buyerNick", request.getDeliveryOrder().getBuyerNick());
+        }
+
         DeliveryOrderCreateRequest.ReceiverInfo receiverInfo = request.getDeliveryOrder().getReceiverInfo();
         params.put("name", receiverInfo.getName());
-        if (StringUtils.hasText(receiverInfo.getMobile())){
+        if (StringUtils.hasText(receiverInfo.getMobile())) {
             params.put("mobile", receiverInfo.getMobile());
         }
         params.put("province", receiverInfo.getProvince());
         params.put("city", receiverInfo.getCity());
-        if (StringUtils.hasText(receiverInfo.getArea())){
+        if (StringUtils.hasText(receiverInfo.getArea())) {
             params.put("area", receiverInfo.getArea());
         }
         params.put("detailAddress", receiverInfo.getDetailAddress());

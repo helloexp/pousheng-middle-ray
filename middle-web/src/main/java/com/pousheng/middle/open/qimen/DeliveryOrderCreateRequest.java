@@ -26,6 +26,12 @@ public class DeliveryOrderCreateRequest {
         private String deliveryOrderCode;
 
         /**
+         * 买家昵称
+         */
+        @XStreamAlias("buyerNick")
+        private String buyerNick;
+
+        /**
          * 收件人信息
          */
         @XStreamAlias("receiverInfo")

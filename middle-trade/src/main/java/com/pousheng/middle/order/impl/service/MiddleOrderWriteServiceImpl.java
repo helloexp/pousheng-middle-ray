@@ -3,9 +3,11 @@ package com.pousheng.middle.order.impl.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.order.impl.dao.InvoiceExtDao;
+import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
 import com.pousheng.middle.order.impl.dao.SkuOrderExtDao;
 import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.model.InvoiceExt;
+import com.pousheng.middle.order.model.ShopOrderExt;
 import com.pousheng.middle.order.model.SkuOrderExt;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import io.terminus.common.exception.ServiceException;
@@ -44,6 +46,8 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     private InvoiceDao invoiceDao;
     @Autowired
     private InvoiceExtDao invoiceExtDao;
+    @Autowired
+    private ShopOrderExtDao shopOrderExtDao;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -172,6 +176,20 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             log.error("fail to update order(shopOrderId={}) receiverInfo to {},cause:{}",
                     shopOrderId, receiverInfo, Throwables.getStackTraceAsString(e));
             return Response.fail("receiver.info.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateBuyerNameOfShopOrder(Long shopOrderId, String buyerName) {
+        try {
+            ShopOrderExt shopOrderExt = new ShopOrderExt();
+            shopOrderExt.setId(shopOrderId);
+            shopOrderExt.setBuyerName(buyerName);
+            return Response.ok(shopOrderExtDao.update(shopOrderExt));
+        } catch (Exception e) {
+            log.error("fail to update buyerName to {} for shopOrder(id={}),cause:{}",
+                    buyerName, shopOrderId, Throwables.getStackTraceAsString(e));
+            return Response.fail("buyer.name.update.fail");
         }
     }
 

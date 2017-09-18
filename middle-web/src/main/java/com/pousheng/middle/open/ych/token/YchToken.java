@@ -21,4 +21,8 @@ public class YchToken implements Serializable {
 
     private String gateway;
 
+    private String gatewayOfLog;
+
+    private String clientIp;
+
 }

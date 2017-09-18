@@ -2,6 +2,8 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.ych.logger.events.OrderOpEvent;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.ShopOrderPagingInfo;
@@ -26,6 +28,8 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.channel.OpenClientChannel;
+import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.OrderLevel;
@@ -47,6 +51,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
+import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -87,6 +92,8 @@ public class AdminOrderReader {
     private ShipmentReadService shipmentReadService;
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
+    @Autowired
+    private EventBus eventBus;
 
     /**
      * 交易订单分页
@@ -138,8 +145,11 @@ public class AdminOrderReader {
      * @return 订单详情DTO
      */
     @RequestMapping(value = "/api/order/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<OrderDetail> detail(@PathVariable("id") @PermissionCheckParam Long id) {
-        return orderReadLogic.orderDetail(id);
+    public Response<OrderDetail> detail(@PathVariable("id") @PermissionCheckParam Long id,
+                                        HttpServletRequest request) {
+        Response<OrderDetail> response=  orderReadLogic.orderDetail(id);
+        sendLogForTaobao(response,request);
+        return response;
     }
 
 
@@ -274,7 +284,15 @@ public class AdminOrderReader {
             log.error("address.found.failed", e.getMessage());
             return Response.fail(e.getMessage());
         }
+    }
 
-
+    private void sendLogForTaobao(Response<OrderDetail> response, HttpServletRequest request) {
+        if (!response.isSuccess()) {
+            return;
+        }
+        ShopOrder shopOrder = response.getResult().getShopOrder();
+        if (OpenClientChannel.from(shopOrder.getOutFrom()) == OpenClientChannel.TAOBAO) {
+            eventBus.post(new OrderOpEvent(request, UserUtil.getCurrentUser(), shopOrder, "查看订单"));
+        }
     }
  }

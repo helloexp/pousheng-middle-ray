@@ -2,14 +2,12 @@ package com.pousheng.middle.open.ych;
 
 
 import com.github.kevinsawicki.http.HttpRequest;
-import com.google.common.base.Throwables;
 import com.pousheng.middle.open.ych.token.YchToken;
+import com.pousheng.middle.open.ych.utils.YchSignUtils;
 import io.terminus.common.exception.JsonResponseException;
 import lombok.extern.slf4j.Slf4j;
 
-import java.security.MessageDigest;
 import java.util.Date;
-import java.util.Map;
 import java.util.Map.Entry;
 import java.util.TreeMap;
 
@@ -34,7 +32,7 @@ public class YchClient {
             query.append("&");
         }
 
-        String sign = getSignature(token.getSecret(), params);
+        String sign = YchSignUtils.getSignature(token.getSecret(), params);
         query.append("sign=");
         query.append(sign);
         return doPost(normalize(path), query.toString());
@@ -58,48 +56,6 @@ public class YchClient {
         } else {
             log.error("fail to request ych,url={},content={},cause:{}", url, content, r.body());
             throw new JsonResponseException("ych.request.fail");
-        }
-    }
-
-    private String getSignature(String appSecret, Map<String, String> params) {
-        try {
-            StringBuilder combineString = new StringBuilder();
-            combineString.append(appSecret);
-            for (Entry<String, String> entry : params.entrySet()) {
-                combineString.append(entry.getKey() + entry.getValue());
-            }
-            combineString.append(appSecret);
-
-            byte[] bytesOfMessage = combineString.toString().getBytes("UTF-8");
-            MessageDigest md = MessageDigest.getInstance("MD5");
-            return bytesToHexString(md.digest(bytesOfMessage));
-        } catch (Exception e) {
-            log.error("fail to generate signature for params:{},cause:{}",
-                    params, Throwables.getStackTraceAsString(e));
-            throw new RuntimeException(e);
-        }
-    }
-
-    private String bytesToHexString(byte[] src) {
-        try {
-            if (src == null || src.length <= 0) {
-                return null;
-            }
-
-            StringBuilder stringBuilder = new StringBuilder("");
-            for (int i = 0; i < src.length; i++) {
-                int v = src[i] & 0xFF;
-                String hv = Integer.toHexString(v);
-                if (hv.length() < 2) {
-                    stringBuilder.append(0);
-                }
-                stringBuilder.append(hv);
-            }
-            return stringBuilder.toString();
-        } catch (Exception e) {
-            log.error("fail to transfer bytes:{} to hex string,cause:{}",
-                    src, Throwables.getStackTraceAsString(e));
-            throw new RuntimeException(e);
         }
     }
 }

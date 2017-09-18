@@ -1,6 +1,8 @@
 package com.pousheng.middle.open.ych;
 
 import com.pousheng.middle.open.ych.events.YchLoginListener;
+import com.pousheng.middle.open.ych.logger.LogSender;
+import com.pousheng.middle.open.ych.logger.events.LogListener;
 import com.pousheng.middle.open.ych.token.TaobaoToken;
 import com.pousheng.middle.open.ych.token.YchToken;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -34,6 +36,16 @@ public class YchConfiguration {
     @Bean
     public YchLoginListener ychLoginListener() {
         return new YchLoginListener();
+    }
+
+    @Bean
+    public LogSender ychLogSender(YchToken token){
+        return new LogSender(token);
+    }
+
+    @Bean
+    public LogListener ychLogListener(){
+        return new LogListener();
     }
 
 }

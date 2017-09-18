@@ -96,6 +96,8 @@ ych.token:
   appKey: 68757056
   secret: 2jodLU2IMIwn0cH8kcIY
   gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
 
 taobao.token:
   appKey: 24581672

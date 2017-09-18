@@ -178,6 +178,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
+        //这里先把buyer改为#***，因为数据加密后长度很长，会导致数据库长度不够
+        richOrder.getBuyer().setName("#****");
+
         //初始化店铺订单的extra
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();

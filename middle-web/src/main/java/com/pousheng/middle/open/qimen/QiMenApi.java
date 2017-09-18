@@ -86,7 +86,7 @@ public class QiMenApi {
 
         String buyerName = deliveryOrderCreateRequest.getDeliveryOrder().getBuyerNick();
         if (StringUtils.hasText(buyerName)) {
-            Response<Boolean> updateBuyerNameR = middleOrderWriteService.updateBuyerNameOfShopOrder(shopOrder.getId(), buyerName);
+            Response<Boolean> updateBuyerNameR = middleOrderWriteService.updateBuyerNameOfOrder(shopOrder.getId(), buyerName);
             if (!updateBuyerNameR.isSuccess()) {
                 log.error("fail to update buyerName to {} for shopOrder(id={}),cause:{}",
                         buyerName, shopOrder.getId(), updateBuyerNameR.getError());

@@ -1,5 +1,6 @@
 package com.pousheng.middle.open.ych.events;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.ych.YchApi;
@@ -47,14 +48,15 @@ public class YchLoginListener {
         }
 
         final ParanaUser user = loginEvent.getUser();
-        sendLoginLog(user.getId(), ip, ati);
-        computeRisk(user.getId(), ip, ati);
+        String userId = "宝胜:" + MoreObjects.firstNonNull(user.getName(), "admin");
+        sendLoginLog(userId, ip, ati);
+        computeRisk(userId, ip, ati);
     }
 
-    private void sendLoginLog(Long userId, String userIp, String ati) {
+    private void sendLoginLog(String userId, String userIp, String ati) {
         TreeMap<String, String> params = YchReqParamsBuilder.newBuilder()
                 .put(userId, userIp, ati)
-                .put("tid", "胜道运动旗舰店")
+                .put("tid", "pony官方旗舰店")
                 .put("loginResult", "success")
                 .put("loginMessage", "登录成功")
                 .build();
@@ -65,7 +67,7 @@ public class YchLoginListener {
         }
     }
 
-    private void computeRisk(Long userId, String userIp, String ati) {
+    private void computeRisk(String userId, String userIp, String ati) {
         TreeMap<String, String> params = YchReqParamsBuilder.newBuilder()
                 .put(userId, userIp, ati)
                 .build();

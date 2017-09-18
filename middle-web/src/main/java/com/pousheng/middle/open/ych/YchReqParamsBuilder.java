@@ -19,8 +19,8 @@ public class YchReqParamsBuilder {
         return new YchReqParamsBuilder(Maps.newTreeMap());
     }
 
-    public YchReqParamsBuilder put(Long userId, String userIp, String ati) {
-        params.put("userId", String.valueOf(userId));
+    public YchReqParamsBuilder put(String userId, String userIp, String ati) {
+        params.put("userId", userId);
         params.put("userIp", userIp);
         params.put("ati", ati);
         return this;

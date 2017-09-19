@@ -10,4 +10,5 @@ import lombok.Data;
 public class ShopOrderExt implements java.io.Serializable{
     private Long id;
     private String buyerNote;
+    private String buyerName;
 }

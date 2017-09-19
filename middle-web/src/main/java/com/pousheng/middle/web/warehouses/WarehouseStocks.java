@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -28,6 +30,7 @@ import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 库存管理部分
@@ -102,10 +105,11 @@ public class WarehouseStocks {
                 log.error("failed to find skuTemplates by skuCodes:{}, error code:{}", skuCodes, rST.getError());
                 throw new JsonResponseException(rST.getError());
             }
-            Map<String, SkuTemplate> bySkuCode = Maps.uniqueIndex(rST.getResult(), new Function<SkuTemplate, String>() {
+            Map<String, SkuTemplate> bySkuCode = Maps.uniqueIndex(rST.getResult().stream().filter(input -> input.getStatus() >= 0).collect(Collectors.toList()),
+                    new Function<SkuTemplate, String>() {
                 @Nullable
                 @Override
-                public String apply(@Nullable SkuTemplate input) {
+                public String apply(SkuTemplate input) {
                     return input.getSkuCode();
                 }
             });
@@ -175,7 +179,7 @@ public class WarehouseStocks {
             siw.setId(stock.getId());
             siw.setQuantity(stock.getAvailStock());
             Warehouse warehouse = warehouseCacher.findById(stock.getWarehouseId());
-            siw.setWarehouseInnerCode(warehouse.getExtra().get("outCode"));
+            siw.setCode(warehouse.getCode());
             siw.setWarehouseName(warehouse.getName());
             details.add(siw);
         }

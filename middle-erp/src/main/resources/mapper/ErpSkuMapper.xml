@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2016. 杭州端点网络科技有限公司.  All rights reserved.
+  -->
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="SkuTemplate">
+
+    <update id="logicDeleteBySkuCode" parameterType="string">
+        update
+        <include refid="tb"/>
+        set status=-3
+        WHERE sku_code=#{skuCode}
+    </update>
+</mapper>

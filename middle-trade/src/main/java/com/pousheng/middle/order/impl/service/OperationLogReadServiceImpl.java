@@ -7,7 +7,6 @@ import com.pousheng.middle.order.model.OperationLog;
 import com.pousheng.middle.order.service.OperationLogReadService;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;

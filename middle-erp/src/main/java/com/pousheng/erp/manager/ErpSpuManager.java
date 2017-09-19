@@ -1,6 +1,7 @@
 package com.pousheng.erp.manager;
 
 import com.google.common.collect.*;
+import com.pousheng.erp.dao.mysql.ErpSkuTemplateDao;
 import com.pousheng.erp.dao.mysql.ErpSpuDao;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.erp.model.PoushengSku;
@@ -38,6 +39,8 @@ public class ErpSpuManager {
 
     private final ErpSpuDao erpSpuDao;
 
+    private final ErpSkuTemplateDao erpSkuTemplateDao;
+
     private final SkuTemplateDao skuTemplateDao;
 
     private final SpuDetailDao spuDetailDao;
@@ -47,11 +50,13 @@ public class ErpSpuManager {
     @Autowired
     public ErpSpuManager(SpuDao spuDao,
                          ErpSpuDao erpSpuDao,
+                         ErpSkuTemplateDao erpSkuTemplateDao,
                          SkuTemplateDao skuTemplateDao,
                          SpuDetailDao spuDetailDao,
                          SpuAttributeDao spuAttributeDao) {
         this.spuDao = spuDao;
         this.erpSpuDao = erpSpuDao;
+        this.erpSkuTemplateDao = erpSkuTemplateDao;
         this.skuTemplateDao = skuTemplateDao;
         this.spuDetailDao = spuDetailDao;
         this.spuAttributeDao = spuAttributeDao;
@@ -288,6 +293,8 @@ public class ErpSpuManager {
             extra.put("materialCode", poushengSku.getMaterialCode());
             skuTemplate.setExtra(extra);
             //通过materialId及sizeId来确定sku是否已经存在对应的skuTemplate,如果存在, 则更新, 否则新建
+            //逻辑删除原来相同skuCode的skuTemplate
+            erpSkuTemplateDao.logicDeleteBySkuCode(skuTemplate.getSkuCode());
             if (stts.contains(poushengSku.getMaterialId(), poushengSku.getSizeId())) {
                 skuTemplate.setId(stts.get(poushengSku.getMaterialId(), poushengSku.getSizeId()).getId());
                 skuTemplateDao.update(skuTemplate);

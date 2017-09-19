@@ -8,6 +8,7 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
+import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -15,7 +16,9 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -51,6 +55,8 @@ public class ExportController {
     private ReceiverInfoReadService receiverInfoReadService;
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
 
     @Autowired
     private RefundReadLogic refundReadLogic;
@@ -121,12 +127,18 @@ public class ExportController {
 
                 skuOrderResponse.getResult().forEach(skuOrder -> {
 
-                    Response<Spu> spuResponse = spuReadService.findById(skuOrder.getItemId());
+                    Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));
+                    if (!skuTemplateResponse.isSuccess()) {
+                        log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                        throw new JsonResponseException(skuTemplateResponse.getError());
+                    }
+                    if (skuTemplateResponse.getResult().isEmpty())
+                        throw new JsonResponseException("sku.template.not.found");
+                    Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
                     if (!spuResponse.isSuccess()) {
                         log.error("get item fail,error:{}", spuResponse.getError());
                         throw new JsonResponseException(spuResponse.getError());
                     }
-
 
                     OrderExportEntity export = new OrderExportEntity();
                     export.setOrderID(skuOrder.getOrderId());
@@ -176,7 +188,8 @@ public class ExportController {
             });
         }
 
-        exportService.saveToCloud(new ExportContext(orderExportData));
+        ExportUtil.export(new ExportContext(orderExportData));
+//        exportService.saveToCloud(new ExportContext(orderExportData));
     }
 
     @GetMapping("refund/export")
@@ -207,7 +220,19 @@ public class ExportController {
                 RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
                 refundItems.forEach(item -> {
-                    Response<Spu> spuResponse = spuReadService.findById(item.getSkuOrderId());
+//                    Response<Spu> spuResponse = spuReadService.findById(item.getSkuOrderId());
+//                    if (!spuResponse.isSuccess()) {
+//                        log.error("get item fail,error:{}", spuResponse.getError());
+//                        throw new JsonResponseException(spuResponse.getError());
+//                    }
+                    Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
+                    if (!skuTemplateResponse.isSuccess()) {
+                        log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                        throw new JsonResponseException(skuTemplateResponse.getError());
+                    }
+                    if (skuTemplateResponse.getResult().isEmpty())
+                        throw new JsonResponseException("sku.template.not.found");
+                    Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
                     if (!spuResponse.isSuccess()) {
                         log.error("get item fail,error:{}", spuResponse.getError());
                         throw new JsonResponseException(spuResponse.getError());

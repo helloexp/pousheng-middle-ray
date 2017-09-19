@@ -21,6 +21,7 @@ import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -127,18 +128,6 @@ public class ExportController {
 
                 skuOrderResponse.getResult().forEach(skuOrder -> {
 
-                    Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));
-                    if (!skuTemplateResponse.isSuccess()) {
-                        log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
-                        throw new JsonResponseException(skuTemplateResponse.getError());
-                    }
-                    if (skuTemplateResponse.getResult().isEmpty())
-                        throw new JsonResponseException("sku.template.not.found");
-                    Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
-                    if (!spuResponse.isSuccess()) {
-                        log.error("get item fail,error:{}", spuResponse.getError());
-                        throw new JsonResponseException(spuResponse.getError());
-                    }
 
                     OrderExportEntity export = new OrderExportEntity();
                     export.setOrderID(skuOrder.getOrderId());
@@ -152,9 +141,9 @@ public class ExportController {
                             export.setReciverName(receiver.getReceiveUserName());
                             export.setPhone(receiver.getPhone());
                         });
-//                    export.setReciverName(s.getExtra().get(""));
-//                    export.setReciverAddress(s.getExtra().get(""));
-//                    export.setPhone(s.getExtra().get(""));
+                        //                    export.setReciverName(s.getExtra().get(""));
+                        //                    export.setReciverAddress(s.getExtra().get(""));
+                        //                    export.setPhone(s.getExtra().get(""));
                     });
 
                     //TODO paytype enum
@@ -179,7 +168,23 @@ public class ExportController {
                         }
                     });
 
-                    export.setBrandName(spuResponse.getResult().getBrandName());
+                    if (StringUtils.isNotBlank(skuOrder.getSkuCode())) {
+                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));
+                        if (!skuTemplateResponse.isSuccess()) {
+                            log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                            throw new JsonResponseException(skuTemplateResponse.getError());
+                        }
+//                        if (skuTemplateResponse.getResult().isEmpty())
+//                            throw new JsonResponseException("sku.template.not.found");
+                        if (!skuTemplateResponse.getResult().isEmpty()) {
+                            Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
+                            if (!spuResponse.isSuccess()) {
+                                log.error("get item fail,error:{}", spuResponse.getError());
+                                throw new JsonResponseException(spuResponse.getError());
+                            }
+                            export.setBrandName(spuResponse.getResult().getBrandName());
+                        }
+                    }
                     export.setSkuQuantity(skuOrder.getQuantity());
                     export.setFee(skuOrder.getFee());
                     orderExportData.add(export);
@@ -225,18 +230,7 @@ public class ExportController {
 //                        log.error("get item fail,error:{}", spuResponse.getError());
 //                        throw new JsonResponseException(spuResponse.getError());
 //                    }
-                    Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
-                    if (!skuTemplateResponse.isSuccess()) {
-                        log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
-                        throw new JsonResponseException(skuTemplateResponse.getError());
-                    }
-                    if (skuTemplateResponse.getResult().isEmpty())
-                        throw new JsonResponseException("sku.template.not.found");
-                    Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
-                    if (!spuResponse.isSuccess()) {
-                        log.error("get item fail,error:{}", spuResponse.getError());
-                        throw new JsonResponseException(spuResponse.getError());
-                    }
+
 
                     RefundExportEntity export = new RefundExportEntity();
                     export.setOrderID(refundInfo.getOrderRefund().getOrderId());
@@ -246,18 +240,35 @@ public class ExportController {
                     export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                     export.setAmt(item.getFee());
-                    //TODO 货号
-                    export.setBrand(spuResponse.getResult().getBrandName());
-                    item.getAttrs().forEach(attr -> {
-                        switch (attr.getAttrKey()) {
-                            case "颜色":
-                                export.setColor(attr.getAttrVal());
-                                break;
-                            case "尺码":
-                                export.setSize(attr.getAttrVal());
-                                break;
+
+                    if (StringUtils.isNotBlank(item.getSkuCode())) {
+                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
+                        if (!skuTemplateResponse.isSuccess()) {
+                            log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                            throw new JsonResponseException(skuTemplateResponse.getError());
                         }
-                    });
+//                        if (skuTemplateResponse.getResult().isEmpty())
+//                            throw new JsonResponseException("sku.template.not.found");
+                        if (!skuTemplateResponse.getResult().isEmpty()) {
+                            Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
+                            if (!spuResponse.isSuccess()) {
+                                log.error("get item fail,error:{}", spuResponse.getError());
+                                throw new JsonResponseException(spuResponse.getError());
+                            }
+                            //TODO 货号
+                            export.setBrand(spuResponse.getResult().getBrandName());
+                            item.getAttrs().forEach(attr -> {
+                                switch (attr.getAttrKey()) {
+                                    case "颜色":
+                                        export.setColor(attr.getAttrVal());
+                                        break;
+                                    case "尺码":
+                                        export.setSize(attr.getAttrVal());
+                                        break;
+                                }
+                            });
+                        }
+                    }
 
                     export.setApplyQuantity(item.getAlreadyHandleNumber());
                     if (null != refundExtra.getHkConfirmItemInfos()) {

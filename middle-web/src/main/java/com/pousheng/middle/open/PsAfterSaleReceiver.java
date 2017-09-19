@@ -154,7 +154,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             //更新发货单商品中的已退货数量
             Map<String, String> shipmentExtraMap = shipment.getExtra();
             shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+            //如果拉取下来的售后单是已取消，则不需要更新已退货数量
+            if (!Objects.equals(refund.getStatus(),MiddleRefundStatus.CANCELED.getValue())){
+                shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+            }
 
         }
 

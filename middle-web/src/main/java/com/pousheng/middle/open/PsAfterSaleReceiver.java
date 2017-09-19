@@ -111,6 +111,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
         RefundExtra refundExtra = new RefundExtra();
         refundExtra.setReceiverInfo(receiverInfo);
+
+        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
+
         if (!Objects.isNull(shipment)) {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             refundExtra.setShipmentId(shipment.getId());
@@ -131,6 +134,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 WarehouseCompanyRule warehouseCompanyRule  = warehouseCompanyRuleResponse.getResult();
                 refundExtra.setWarehouseId(warehouseCompanyRule.getWarehouseId());
                 refundExtra.setWarehouseName(warehouseCompanyRule.getWarehouseName());
+                //表明售后单的信息已经全部完善
+                extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
             }catch (ServiceException e){
                 log.error("find warehouse info failed,caused by {}",e.getMessage());
             }
@@ -158,7 +163,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             if (!Objects.equals(refund.getStatus(),MiddleRefundStatus.CANCELED.getValue())){
                 shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
             }
-
         }
 
         refundItem.setSkuCode(skuOrder.getSkuCode());
@@ -166,7 +170,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundItem.setOutSkuCode(skuOrder.getOutSkuId());
         refundItem.setAttrs(skuTemplate.getAttrs());
         refundItem.setSkuName(skuOrder.getItemName());
-        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
+
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
         Map<String,String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();

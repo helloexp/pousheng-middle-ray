@@ -193,8 +193,7 @@ public class ExportController {
             });
         }
 
-        ExportUtil.export(new ExportContext(orderExportData));
-//        exportService.saveToCloud(new ExportContext(orderExportData));
+        exportService.saveToCloud(new ExportContext(orderExportData));
     }
 
     @GetMapping("refund/export")

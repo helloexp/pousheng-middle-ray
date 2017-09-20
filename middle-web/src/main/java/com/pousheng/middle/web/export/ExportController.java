@@ -8,17 +8,20 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
+import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,9 +29,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.Callable;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -53,6 +56,8 @@ public class ExportController {
     private ReceiverInfoReadService receiverInfoReadService;
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
 
     @Autowired
     private RefundReadLogic refundReadLogic;
@@ -115,19 +120,13 @@ public class ExportController {
 
 
                 Optional<Shipment> shipment = shipmentResponse.getResult().stream().filter(
-                        s -> s.getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())).findFirst();
+                        s -> s.getStatus().equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())).findFirst();
 
                 Optional<Payment> payment = paymentResponse.getResult().stream().filter(p -> (p.getStatus().equals(3))).findAny();
 
                 Optional<ReceiverInfo> receiverInfo = receiverResponse.getResult().stream().findFirst();
 
                 skuOrderResponse.getResult().forEach(skuOrder -> {
-
-                    Response<Spu> spuResponse = spuReadService.findById(skuOrder.getItemId());
-                    if (!spuResponse.isSuccess()) {
-                        log.error("get item fail,error:{}", spuResponse.getError());
-                        throw new JsonResponseException(spuResponse.getError());
-                    }
 
 
                     OrderExportEntity export = new OrderExportEntity();
@@ -142,9 +141,9 @@ public class ExportController {
                             export.setReciverName(receiver.getReceiveUserName());
                             export.setPhone(receiver.getPhone());
                         });
-//                    export.setReciverName(s.getExtra().get(""));
-//                    export.setReciverAddress(s.getExtra().get(""));
-//                    export.setPhone(s.getExtra().get(""));
+                        //                    export.setReciverName(s.getExtra().get(""));
+                        //                    export.setReciverAddress(s.getExtra().get(""));
+                        //                    export.setPhone(s.getExtra().get(""));
                     });
 
                     //TODO paytype enum
@@ -169,7 +168,23 @@ public class ExportController {
                         }
                     });
 
-                    export.setBrandName(spuResponse.getResult().getBrandName());
+                    if (StringUtils.isNotBlank(skuOrder.getSkuCode())) {
+                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));
+                        if (!skuTemplateResponse.isSuccess()) {
+                            log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                            throw new JsonResponseException(skuTemplateResponse.getError());
+                        }
+//                        if (skuTemplateResponse.getResult().isEmpty())
+//                            throw new JsonResponseException("sku.template.not.found");
+                        if (!skuTemplateResponse.getResult().isEmpty()) {
+                            Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
+                            if (!spuResponse.isSuccess()) {
+                                log.error("get item fail,error:{}", spuResponse.getError());
+                                throw new JsonResponseException(spuResponse.getError());
+                            }
+                            export.setBrandName(spuResponse.getResult().getBrandName());
+                        }
+                    }
                     export.setSkuQuantity(skuOrder.getQuantity());
                     export.setFee(skuOrder.getFee());
                     orderExportData.add(export);
@@ -178,7 +193,8 @@ public class ExportController {
             });
         }
 
-        exportService.saveToCloud(new ExportContext(orderExportData));
+        ExportUtil.export(new ExportContext(orderExportData));
+//        exportService.saveToCloud(new ExportContext(orderExportData));
     }
 
     @GetMapping("refund/export")
@@ -209,11 +225,12 @@ public class ExportController {
                 RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
                 refundItems.forEach(item -> {
-                    Response<Spu> spuResponse = spuReadService.findById(item.getSkuOrderId());
-                    if (!spuResponse.isSuccess()) {
-                        log.error("get item fail,error:{}", spuResponse.getError());
-                        throw new JsonResponseException(spuResponse.getError());
-                    }
+//                    Response<Spu> spuResponse = spuReadService.findById(item.getSkuOrderId());
+//                    if (!spuResponse.isSuccess()) {
+//                        log.error("get item fail,error:{}", spuResponse.getError());
+//                        throw new JsonResponseException(spuResponse.getError());
+//                    }
+
 
                     RefundExportEntity export = new RefundExportEntity();
                     export.setOrderID(refundInfo.getOrderRefund().getOrderId());
@@ -223,18 +240,35 @@ public class ExportController {
                     export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                     export.setAmt(item.getFee());
-                    //TODO 货号
-                    export.setBrand(spuResponse.getResult().getBrandName());
-                    item.getAttrs().forEach(attr -> {
-                        switch (attr.getAttrKey()) {
-                            case "颜色":
-                                export.setColor(attr.getAttrVal());
-                                break;
-                            case "尺码":
-                                export.setSize(attr.getAttrVal());
-                                break;
+
+                    if (StringUtils.isNotBlank(item.getSkuCode())) {
+                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
+                        if (!skuTemplateResponse.isSuccess()) {
+                            log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                            throw new JsonResponseException(skuTemplateResponse.getError());
                         }
-                    });
+//                        if (skuTemplateResponse.getResult().isEmpty())
+//                            throw new JsonResponseException("sku.template.not.found");
+                        if (!skuTemplateResponse.getResult().isEmpty()) {
+                            Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
+                            if (!spuResponse.isSuccess()) {
+                                log.error("get item fail,error:{}", spuResponse.getError());
+                                throw new JsonResponseException(spuResponse.getError());
+                            }
+                            //TODO 货号
+                            export.setBrand(spuResponse.getResult().getBrandName());
+                            item.getAttrs().forEach(attr -> {
+                                switch (attr.getAttrKey()) {
+                                    case "颜色":
+                                        export.setColor(attr.getAttrVal());
+                                        break;
+                                    case "尺码":
+                                        export.setSize(attr.getAttrVal());
+                                        break;
+                                }
+                            });
+                        }
+                    }
 
                     export.setApplyQuantity(item.getAlreadyHandleNumber());
                     if (null != refundExtra.getHkConfirmItemInfos()) {

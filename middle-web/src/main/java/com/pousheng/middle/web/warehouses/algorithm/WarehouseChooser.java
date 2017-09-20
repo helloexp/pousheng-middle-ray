@@ -143,7 +143,7 @@ public class WarehouseChooser {
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
                     int stock = widskucode2stock.get(warehouseId, skuCode);
-                    int actual = stock > required ? required : stock;
+                    int actual = stock > required ? required : 0;
                     count += actual;
                 }
                 if (count > affordCount) {
@@ -164,12 +164,14 @@ public class WarehouseChooser {
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
                     int stock = widskucode2stock.get(candidateWarehouseId, skuCode);
-                    int actual = stock > required ? required : stock;
+                    int actual = stock > required ? required : 0;
 
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
                     scaq.setSkuCode(skuCode);
                     scaq.setQuantity(actual);
-                    scaqs.add(scaq);
+                    if (actual!=0){
+                        scaqs.add(scaq);
+                    }
 
                     //减少库存需求
                     current.remove(skuCode, actual);

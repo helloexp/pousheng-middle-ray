@@ -12,6 +12,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.item.service.PushedItemReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -37,7 +38,7 @@ public class StockPusher {
     private final ExecutorService executorService;
 
     @RpcConsumer
-    private PushedItemReadService pushedItemReadService;
+    private MappingReadService mappingReadService;
 
     @RpcConsumer
     private ItemServiceCenter itemServiceCenter;
@@ -59,8 +60,8 @@ public class StockPusher {
     @Autowired
     public StockPusher(@Value("${index.queue.size: 10000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors()*6, 60L, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-update-%d").build(),
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         log.error("task {} is rejected", r);
@@ -95,9 +96,10 @@ public class StockPusher {
             public void run() {
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
                 //找到对应的店铺id, 这些店铺需要进行库存推送
-                Response<List<Long>> r = pushedItemReadService.findPushedOpenShopIdsOfItem(spuId);
+                Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
                 if (!r.isSuccess()) {
-                    log.error("failed to find out shops for spu(id={}), error code:{}", spuId, r.getError());
+                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
+                            spuId, skuCode, r.getError());
                     return;
                 }
 
@@ -115,22 +117,25 @@ public class StockPusher {
                         }
                         //和安全库存进行比较, 确定推送库存数量
                         WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
-                        if(shopStockRule.getStatus()<0){//非启用状态
+                        if (shopStockRule.getStatus() < 0) {//非启用状态
                             return;
                         }
-                        //按照设定的比例确定推送数量
-                        stock = stock * shopStockRule.getRatio() / 100;
+
                         if (shopStockRule.getSafeStock() >= stock) {
-                            log.warn("shop(id={}) has reached safe stock({}), current stock is:{}",
-                                    shopId, shopStockRule.getSafeStock(), stock);
+                            log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
+                                    shopId, shopStockRule.getSafeStock(), skuCode, stock);
                             Long lastPushStock = shopStockRule.getLastPushStock();
                             if (lastPushStock != null && lastPushStock <= shopStockRule.getSafeStock()) {
-                                log.info("skip to rePush stock to shop(id={}), since it has already reach safe stock before", shopId);
+                                log.info("skip to rePush stock to shop(id={}) for sku(code={}), " +
+                                        "since it has already reach safe stock before", shopId, skuCode);
                                 return;
                             } else {//如果本次可用库存低于安全库存, 则推送0
                                 stock = 0L;
                             }
                         }
+
+                        //按照设定的比例确定推送数量
+                        stock = stock * shopStockRule.getRatio() / 100;
                         //库存推送
                         Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
                         if (!rP.isSuccess()) {
@@ -138,14 +143,15 @@ public class StockPusher {
                                     skuCode, shopId, rP.getError());
                         }
                         log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-                                stock.intValue(),skuCode, shopId);
+                                stock.intValue(), skuCode, shopId);
                         //更新上次推送的可用库存
                         WarehouseShopStockRule u = new WarehouseShopStockRule();
                         u.setId(shopStockRule.getId());
                         u.setLastPushStock(stock);
                         Response<Boolean> rRule = warehouseShopStockRuleWriteService.update(u);
                         if (!rRule.isSuccess()) {
-                            log.error("failed to update lastPushStock to {} for {}, error code:{}", stock, u);
+                            log.error("failed to update lastPushStock for sku(code={}) to {} for {}, error code:{}",
+                                    skuCode, stock, u);
                         }
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",

@@ -39,4 +39,10 @@ public class MiddleOrderFlowPicker {
      * @return
      */
     public Flow pickEcpOrder(){ return MiddleFlowBook.ecpOrderFlow;}
+
+    /**
+     * 获取发货单同步淘宝流程
+     * @return
+     */
+    public Flow pickSyncTaobao(){ return MiddleFlowBook.syncTaobaoFlow;}
 }

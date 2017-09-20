@@ -129,7 +129,12 @@ public class ShipmentReadLogic {
 
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //积分
-            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            String originIntegral = "";
+            try{
+                originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            }catch (JsonResponseException e){
+                log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_INTEGRAL);
+            }
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,originSkuOrder.getQuantity(),skuOrder.getQuantity()));
             //获取商品原价
@@ -364,7 +369,7 @@ public class ShipmentReadLogic {
      * @return 返回四舍五入的计算结果,得到发货单中的sku商品的折扣
      */
     private  Integer getDiscount(Integer skuQuantity,Integer shipSkuQuantity,Integer skuDiscount){
-        return Math.round(skuDiscount*shipSkuQuantity/skuQuantity);
+        return Math.round(Long.valueOf(skuDiscount)*Long.valueOf(shipSkuQuantity)/Long.valueOf(skuQuantity));
     }
 
     /**
@@ -405,7 +410,7 @@ public class ShipmentReadLogic {
      * @param shopOrderId  店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
-    private boolean isShipmentFeeCalculated(long shopOrderId){
+    public boolean isShipmentFeeCalculated(long shopOrderId){
         Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
@@ -427,7 +432,13 @@ public class ShipmentReadLogic {
     }
 
     private String getShareDiscount(SkuOrder skuOrder){
-        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        String skuShareDiscount="";
+        try{
+            skuShareDiscount = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
+        }
+        return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
     }
 
 

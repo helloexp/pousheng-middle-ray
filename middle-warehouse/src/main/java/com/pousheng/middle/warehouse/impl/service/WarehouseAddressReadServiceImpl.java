@@ -5,7 +5,6 @@ import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressDao;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

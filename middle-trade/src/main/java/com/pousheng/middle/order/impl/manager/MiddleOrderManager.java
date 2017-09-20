@@ -8,7 +8,6 @@ import com.pousheng.middle.order.model.ShopOrderExt;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
@@ -187,7 +186,7 @@ public class MiddleOrderManager {
         ShopOrderExt shopOrderExt = new ShopOrderExt();
         shopOrderExt.setId(shopOrderId);
         shopOrderExt.setBuyerNote(buyerNote);
-        boolean shopOrderResult = shopOrderExtDao.updateBuyerNoteById(shopOrderExt);
+        boolean shopOrderResult = shopOrderExtDao.update(shopOrderExt);
         if (!shopOrderResult){
             log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
             throw new ServiceException("receiveInfo.update.fail");

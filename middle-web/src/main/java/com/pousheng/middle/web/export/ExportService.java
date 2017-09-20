@@ -4,6 +4,7 @@ import com.pousheng.middle.web.utils.export.AzureOSSBlobClient;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -67,29 +68,38 @@ public class ExportService {
 
 
     private void save(ExportContext exportContext) {
-        ExportUtil.export(exportContext);
 
-        String fileName = StringUtils.isBlank(exportContext.getFilename()) ? (System.nanoTime() + ".xls") : exportContext.getFilename();
-        String url;
-        if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
-            url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
-        else
-            url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
-
-        log.debug("the azure blob url:{}", url);
-        jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
-            @Override
-            public Boolean action(Jedis jedis) {
-                String realName = fileName;
-                if (fileName.contains(File.separator)) {
-                    realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
-                }
-                Long currentUserID = UserUtil.getUserId();
-                jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
-                log.debug("save user:{}'s export file azure url to redis", currentUserID);
-                return true;
+        try {
+            if (null == exportContext.getData() || exportContext.getData().isEmpty()) {
+                throw new JsonResponseException("export.data.empty");
             }
-        });
+
+            ExportUtil.export(exportContext);
+
+            String fileName = StringUtils.isBlank(exportContext.getFilename()) ? (System.nanoTime() + ".xls") : exportContext.getFilename();
+            String url;
+            if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
+                url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
+            else
+                url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
+
+            log.debug("the azure blob url:{}", url);
+            jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
+                @Override
+                public Boolean action(Jedis jedis) {
+                    String realName = fileName;
+                    if (fileName.contains(File.separator)) {
+                        realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                    }
+                    Long currentUserID = UserUtil.getUserId();
+                    jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
+                    log.debug("save user:{}'s export file azure url to redis", currentUserID);
+                    return true;
+                }
+            });
+        } catch (Exception e) {
+            throw new JsonResponseException(e.getMessage());
+        }
     }
 
 

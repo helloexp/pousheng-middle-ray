@@ -1,22 +1,16 @@
 package com.pousheng.middle.web.order.job;
 
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.MiddleRefundCriteria;
-import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.RefundPaging;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.ShopOrder;
@@ -27,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -46,6 +39,8 @@ public class RefundJob {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
     @Autowired
     private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
@@ -87,6 +82,7 @@ public class RefundJob {
                 continue;
             }
             try {
+                int count =0;
                 if (Objects.equals(orderType, "1")) {
                     //整单退款,调用整单退款的逻辑
                     orderWriteLogic.autoCancelShopOrder(orderRefund.getOrderId());
@@ -95,17 +91,25 @@ public class RefundJob {
                     List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
                     for (RefundItem refundItem : refundItems) {
                         //子单退款,调用子单退款的逻辑
+                        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                        //判断该店铺订单是否存在取消失败的子单
+                        if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CANCEL_FAILED.getValue())){
+                            count++;
+                            continue;
+                        }
                         orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode());
                     }
                 }else{
                     throw new ServiceException("error.order.type");
                 }
-                Refund updateRefund = new Refund();
-                updateRefund.setId(refund.getId());
-                updateRefund.setTradeNo(TradeConstants.REFUND_CANCELED);//借用tradeNo字段来标记售中退款的逆向单是否已处理
-                Response<Boolean> updateRes = refundWriteLogic.update(updateRefund);
-                if(!updateRes.isSuccess()){
-                    log.error("update refund:{} fail,error:{}",updateRefund,updateRes.getError());
+                if (count==0){ //表明该店铺订单中没有取消失败的发货单
+                    Refund updateRefund = new Refund();
+                    updateRefund.setId(refund.getId());
+                    updateRefund.setTradeNo(TradeConstants.REFUND_CANCELED);//借用tradeNo字段来标记售中退款的逆向单是否已处理
+                    Response<Boolean> updateRes = refundWriteLogic.update(updateRefund);
+                    if(!updateRes.isSuccess()){
+                        log.error("update refund:{} fail,error:{}",updateRefund,updateRes.getError());
+                    }
                 }
             } catch (Exception e) {
                 log.error("on sale refund failed,cause by {}",e.getMessage());

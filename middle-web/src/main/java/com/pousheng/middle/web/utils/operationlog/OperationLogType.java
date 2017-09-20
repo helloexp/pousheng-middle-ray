@@ -1,7 +1,5 @@
 package com.pousheng.middle.web.utils.operationlog;
 
-import lombok.Getter;
-
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

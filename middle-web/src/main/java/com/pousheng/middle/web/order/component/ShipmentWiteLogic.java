@@ -2,8 +2,6 @@ package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -12,6 +10,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
@@ -19,18 +18,17 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
-import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -88,6 +86,8 @@ public class ShipmentWiteLogic {
     private MiddleShipmentWriteService middleShipmentWriteService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -215,7 +215,22 @@ public class ShipmentWiteLogic {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             //抛出一个事件,修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId!=null){
-                eventBus.post(new OrderShipmentEvent(shipmentId));
+                //修改状态
+                Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+                if (!shipmentRes.isSuccess()) {
+                    log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+                    return;
+                }
+                try{
+                    orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+                }catch (ServiceException e){
+                    log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
+                }
+                //同步恒康
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                }
             }
         }
     }
@@ -262,7 +277,7 @@ public class ShipmentWiteLogic {
         //判断运费是否已经加过
         if (!isShipmentFeeCalculated(shopOrder.getId())){
             shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
-            shipmentShipDiscountFee = shipmentShipFee  - Long.valueOf(shopOrder.getShipFee());
+            shipmentShipDiscountFee = shipmentShipFee  - Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
@@ -298,7 +313,7 @@ public class ShipmentWiteLogic {
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             return false;
         }
@@ -368,7 +383,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         //添加物流编码
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{
@@ -452,9 +467,15 @@ public class ShipmentWiteLogic {
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
+            shipmentItem.setSkuOutId(skuOrder.getOutId());
             shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
             //积分
-            String originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            String originIntegral = "";
+            try{
+                originIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_INTEGRAL,skuOrder);
+            }catch (JsonResponseException e){
+                log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_INTEGRAL);
+            }
             Integer integral = StringUtils.isEmpty(originIntegral)?0:Integer.valueOf(originIntegral);
             shipmentItem.setIntegral(this.getIntegral(integral,skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId)));
             Long disCount = skuOrder.getDiscount()+Long.valueOf(this.getShareDiscount(skuOrder));
@@ -552,6 +573,39 @@ public class ShipmentWiteLogic {
         return count > 0;
     }
     private String getShareDiscount(SkuOrder skuOrder){
-        return orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        String skuShareDiscount="";
+        try{
+            skuShareDiscount = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_SHARE_DISCOUNT,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
+        }
+        return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
+    }
+
+    /**
+     * 更新发货单同步淘宝的状态
+     * @param shipment 发货单
+     * @param orderOperation 可用的操作
+     * @return
+     */
+    public Response<Boolean> updateShipmentSyncTaobaoStatus(Shipment shipment,OrderOperation orderOperation){
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Flow flow = flowPicker.pickSyncTaobao();;
+        //判断当前状态是否可以操作
+        if (!flow.operationAllowed(shipmentExtra.getSyncTaobaoStatus(),orderOperation)){
+            log.error("shipment(id:{}) current status:{} not allow operation:{}",shipment.getId(),shipmentExtra.getSyncTaobaoStatus(),orderOperation.getText());
+            return Response.fail("sync.taobao.status.not.allow.current.operation");
+        }
+        //获取下一步状态
+        Integer targetStatus = flow.target(shipmentExtra.getSyncTaobaoStatus(),orderOperation);
+        shipmentExtra.setSyncTaobaoStatus(targetStatus);
+        Map<String,String> extraMap = shipment.getExtra();
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+        Response<Boolean> updateRes = shipmentWriteService.update(shipment);
+        if (!updateRes.isSuccess()) {
+            log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        return Response.ok();
     }
 }

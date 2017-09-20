@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.impl.dao;
 
-import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.order.model.InvoiceExt;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;

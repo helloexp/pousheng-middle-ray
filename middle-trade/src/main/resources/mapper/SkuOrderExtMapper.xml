@@ -18,4 +18,12 @@
         WHERE id=#{id}
     </update>
 
+    <update id="updateBuyerNameByOrderId" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET updated_at=now()
+        ,`buyer_name` = #{buyerName}
+        WHERE order_id=#{orderId}
+    </update>
+
 </mapper>

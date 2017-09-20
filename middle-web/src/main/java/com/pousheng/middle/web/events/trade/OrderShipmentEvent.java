@@ -4,8 +4,6 @@
 
 package com.pousheng.middle.web.events.trade;
 
-import lombok.Getter;
-
 import java.io.Serializable;
 
 /**
@@ -17,10 +15,10 @@ public class OrderShipmentEvent implements Serializable {
 
     private static final long serialVersionUID = 2969280492730054880L;
 
-    @Getter
+   /* @Getter
     private final Long shipmentId;
 
-    public OrderShipmentEvent(Long shipmentId) {
+    *//*public OrderShipmentEvent(Long shipmentId) {
         this.shipmentId = shipmentId;
-    }
+    }*/
 }

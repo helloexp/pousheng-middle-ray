@@ -1,16 +1,21 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemWriteService;
-import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import com.pousheng.middle.web.warehouses.dto.WarehouseRuleItemDto;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.BeanMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
@@ -33,14 +38,27 @@ public class WarehouseRuleItems {
     @RpcConsumer
     private WarehouseRuleItemWriteService warehouseRuleItemWriteService;
 
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WarehouseRuleItem> findByRuleId(@PathVariable Long ruleId){
+    public List<WarehouseRuleItemDto> findByRuleId(@PathVariable Long ruleId){
         Response<List<WarehouseRuleItem>> r = warehouseRuleItemReadService.findByRuleId(ruleId);
         if(!r.isSuccess()){
             log.error("failed to find warehouse rule items for rule(id={}), error code:{}", ruleId, r.getError());
             throw new JsonResponseException(r.getError());
         }
-        return r.getResult();
+        List<WarehouseRuleItem> ruleItems =  r.getResult();
+        List<WarehouseRuleItemDto> result = Lists.newArrayListWithCapacity(ruleItems.size());
+        for (WarehouseRuleItem ruleItem : ruleItems) {
+            Long warehouseId = ruleItem.getWarehouseId();
+            Warehouse warehouse = warehouseCacher.findById(warehouseId);
+            WarehouseRuleItemDto ruleItemDto = new WarehouseRuleItemDto();
+            BeanMapper.copy(ruleItem, ruleItemDto);
+            ruleItemDto.setCompanyCode(warehouse.getCompanyCode());
+            result.add(ruleItemDto);
+        }
+        return result;
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)

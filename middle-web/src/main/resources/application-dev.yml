@@ -90,4 +90,15 @@ azure:
 erp.token:
   appKey: terminus-erp
   secret: anywhere-erp
-  gateway: http://127.0.0.1:8080/api/gateway
+  gateway: http://erp-api.terminus.io/api/gateway
+
+ych.token:
+  appKey: 68757056
+  secret: 2jodLU2IMIwn0cH8kcIY
+  gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
+
+taobao.token:
+  appKey: 24581672
+  appName: 端点中台

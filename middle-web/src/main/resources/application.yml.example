@@ -65,3 +65,15 @@ erp.token:
   appKey: terminus-erp
   secret: anywhere-erp
   gateway: http://127.0.0.1:8080/api/gateway
+
+ych.token:
+  appKey: xxx
+  secret: yyy
+  gateway: http://account.ose.aliyun.com
+  gatewayOfLog: http://gw.ose.aliyun.com/event
+  clientIp: 42.159.144.178
+
+
+taobao.token:
+  appKey: xxx
+  appName: 端点中台

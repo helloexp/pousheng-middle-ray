@@ -3,7 +3,6 @@ package com.pousheng.middle.web.order;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -23,13 +22,12 @@ import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -54,7 +52,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -209,7 +210,8 @@ public class Shipments {
             }
 
             //发货单状态是否为恒康已经确认收货
-            if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())){
+            if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
+                    && !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue())){
                 log.error("shipment(id:{}) current status:{} can not apply after sale",shipmentId,orderShipment.getStatus());
                 return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }
@@ -259,7 +261,8 @@ public class Shipments {
                 .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));
         //检查库存是否充足
         checkStockIsEnough(warehouseId,skuCodeAndQuantityMap);
-
+        //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常
+        checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
         //封装发货信息
         List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrders,skuOrderIdAndQuantity);
         //发货单商品金额
@@ -274,9 +277,9 @@ public class Shipments {
         Long shipmentShipDiscountFee=0L;
 
         //判断运费是否已经加过
-        if (!isShipmentFeeCalculated(shopOrderId)){
+        if (!shipmentReadLogic.isShipmentFeeCalculated(shopOrderId)){
             shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
-            shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
+            shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
@@ -538,6 +541,18 @@ public class Shipments {
         }
     }
 
+    //检查子单是否是全部发货
+    private void checkSkuCodeAndQuantityLegal(Map<Long, Integer> skuOrderIdAndQuantity){
+        List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
+        skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
+        for (Long skuOrderId:skuOrderIds){
+            SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId,OrderLevel.SKU);
+            if (!Objects.equals(skuOrder.getQuantity(),skuOrderIdAndQuantity.get(skuOrderId))){
+               log.error("sku order id:{} data quantity {} not equal sku quantity {}",skuOrderId,skuOrderIdAndQuantity.get(skuOrderId),skuOrder.getQuantity());
+               throw new JsonResponseException("sku.order.create.shipment.must.be.full");
+            }
+        }
+    }
 
 
     private Map<Long, Integer> analysisSkuOrderIdAndQuantity(String data){
@@ -615,7 +630,7 @@ public class Shipments {
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //物流编码
-        if (Objects.equals(shopOrder.getType(), OrderSource.JD.value())
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{
@@ -828,34 +843,7 @@ public class Shipments {
     private Integer getIntegral(Integer integral,Integer skuQuantity,Integer shipmentSkuQuantity){
         return Math.round(integral*shipmentSkuQuantity/skuQuantity);
     }
-    /**
-     * 判断是否存在有效的发货单
-     * @param shopOrderId 店铺订单主键
-     * @return true:已经计算过发货单,false:没有计算过发货单
-     */
-    private boolean isShipmentFeeCalculated(long shopOrderId){
-        Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
-        if (!response.isSuccess()){
-            log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
-            throw new JsonResponseException("find.shipment.failed");
-        }
-        //获取有效的销售发货单
-        List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).
-                filter(it->Objects.equals(it.getType(),ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
-        int count =0;
-        for (Shipment shipment:shipments){
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if (shipmentExtra.getShipmentShipFee()>0){
-                count++;
-            }
-        }
-        //如果已经有发货单计算过运费,返回true
-        if (count>0){
-            return true;
-        }
-        return false;
-    }
+
     private String getShareDiscount(SkuOrder skuOrder){
         String skuShareDiscount="";
         try{

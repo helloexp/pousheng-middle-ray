@@ -1,7 +1,5 @@
 package com.pousheng.middle.web.order;
 
-import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -16,7 +14,6 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;
@@ -101,7 +98,7 @@ public class CreateShipments {
         }
 
         if (!response.isSuccess()) {
-            return Response.fail(response.getError());
+            throw new JsonResponseException(response.getError());
         }
 
         //封装发货仓及下单店铺信息
@@ -111,7 +108,7 @@ public class CreateShipments {
         Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
-            return Response.fail(warehouseRes.getError());
+            throw new JsonResponseException(warehouseRes.getError());
         }
 
         Warehouse warehouse = warehouseRes.getResult();
@@ -121,7 +118,7 @@ public class CreateShipments {
         Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
         if (!ruleRes.isSuccess()) {
             log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
-            return Response.fail(ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
         }
 
         WarehouseCompanyRule companyRule = ruleRes.getResult();
@@ -145,11 +142,11 @@ public class CreateShipments {
             //运费
 
             //判断运费是否已经加过
-            if (!isShipmentFeeCalculated(id)) {
+            if (!shipmentReadLogic.isShipmentFeeCalculated(id)) {
 
                 ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
                 shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
-                shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee());
+                shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
             }
             shipmentPreview.setShipmentShipFee(shipmentShipFee);
         }
@@ -169,37 +166,5 @@ public class CreateShipments {
 
         return Response.ok(shipmentPreview);
     }
-
-
-    /**
-     * 判断是否存在有效的发货单
-     *
-     * @param shopOrderId
-     * @return true:已经计算过发货单,false:没有计算过发货单
-     */
-    private boolean isShipmentFeeCalculated(long shopOrderId) {
-        Response<List<Shipment>> response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
-        if (!response.isSuccess()) {
-            log.error("find shipment failed,shopOrderId is ({})", shopOrderId);
-            throw new JsonResponseException("find.shipment.failed");
-        }
-        //获取有效的销售发货单
-        List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(it -> !Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).
-                filter(it -> Objects.equals(it.getType(), ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
-        int count = 0;
-        for (Shipment shipment : shipments) {
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if (shipmentExtra.getShipmentShipFee() > 0) {
-                count++;
-            }
-        }
-        //如果已经有发货单计算过运费,返回true
-        if (count > 0) {
-            return true;
-        }
-        return false;
-    }
-
 
 }

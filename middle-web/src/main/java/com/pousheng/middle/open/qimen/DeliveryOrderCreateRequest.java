@@ -3,8 +3,6 @@ package com.pousheng.middle.open.qimen;
 import com.thoughtworks.xstream.annotations.XStreamAlias;
 import lombok.Data;
 
-import java.util.Map;
-
 /**
  * Created by cp on 8/22/17.
  */
@@ -26,6 +24,12 @@ public class DeliveryOrderCreateRequest {
          */
         @XStreamAlias("deliveryOrderCode")
         private String deliveryOrderCode;
+
+        /**
+         * 买家昵称
+         */
+        @XStreamAlias("buyerNick")
+        private String buyerNick;
 
         /**
          * 收件人信息

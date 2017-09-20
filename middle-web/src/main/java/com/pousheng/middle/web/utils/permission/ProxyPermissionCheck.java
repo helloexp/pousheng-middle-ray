@@ -1,14 +1,10 @@
 package com.pousheng.middle.web.utils.permission;
 
-import ch.qos.logback.core.joran.conditional.ElseAction;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
-import lombok.Singular;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.ProceedingJoinPoint;
-import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.aspectj.lang.reflect.MethodSignature;
@@ -18,7 +14,6 @@ import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Parameter;
-import java.util.stream.Stream;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/28.

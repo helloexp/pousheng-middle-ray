@@ -369,7 +369,7 @@ public class ShipmentReadLogic {
      * @return 返回四舍五入的计算结果,得到发货单中的sku商品的折扣
      */
     private  Integer getDiscount(Integer skuQuantity,Integer shipSkuQuantity,Integer skuDiscount){
-        return Math.round(skuDiscount*shipSkuQuantity/skuQuantity);
+        return Math.round(Long.valueOf(skuDiscount)*Long.valueOf(shipSkuQuantity)/Long.valueOf(skuQuantity));
     }
 
     /**
@@ -410,7 +410,7 @@ public class ShipmentReadLogic {
      * @param shopOrderId  店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
-    private boolean isShipmentFeeCalculated(long shopOrderId){
+    public boolean isShipmentFeeCalculated(long shopOrderId){
         Response<List<Shipment>> response =shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
         if (!response.isSuccess()){
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);

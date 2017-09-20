@@ -4,19 +4,8 @@
 
 package com.pousheng.middle.web.events.trade.listener;
 
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.web.events.trade.OrderShipmentEvent;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.model.Response;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-import javax.annotation.PostConstruct;
 
 /**
  * 更新子单商品待处理数量

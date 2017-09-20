@@ -3,7 +3,6 @@ package com.pousheng.middle.hksyc.dto.trade;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 
 /**
  * Created by songrenfei on 2017/7/19

@@ -9,11 +9,13 @@
     <sql id="tb">
         parana_shop_orders
     </sql>
-    <update id="updateBuyerNoteById" parameterType="ShopOrderExt">
+
+    <update id="update" parameterType="ShopOrderExt">
         UPDATE
         <include refid="tb"/>
         SET updated_at=now()
         <if test="buyerNote != null">,`buyer_note` = #{buyerNote}</if>
+        <if test="buyerName != null">,`buyer_name` = #{buyerName}</if>
         WHERE id=#{id}
     </update>
 

@@ -4,8 +4,6 @@
 
 package com.pousheng.middle.web.events.trade;
 
-import lombok.Getter;
-
 import java.io.Serializable;
 
 /**

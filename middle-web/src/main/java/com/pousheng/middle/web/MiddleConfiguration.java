@@ -80,7 +80,9 @@ import java.util.concurrent.Executors;
                 "com.pousheng.middle.interceptors",
                 "com.pousheng.middle.web"})
 @EnableScheduling
-@EnableConfigurationProperties({ErpOpenApiToken.class})
+@EnableConfigurationProperties({
+        ErpOpenApiToken.class
+})
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
 

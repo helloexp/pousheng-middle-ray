@@ -1,17 +1,16 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
@@ -27,7 +26,6 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
-import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
@@ -360,6 +358,57 @@ public class Refunds {
             throw new JsonResponseException("after.sale.cancel.shipment.status.invalid");
         }
     }
+
+    /**
+     * 人工确认已经退款
+     * @param refundId 退款单id
+     */
+    @RequestMapping(value = "/api/refund/{id}/manual/confirm/refund",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void confirmRefund(@PathVariable("id") Long refundId){
+       Refund refund =  refundReadLogic.findRefundById(refundId);
+       String outId = refund.getOutId();
+       String outFrom = Splitter.on("_").omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(0);
+       if (!Objects.equals(outFrom, MiddleChannel.JD.getValue())){
+           throw new JsonResponseException("only.channel.jd.can.manual.confirm.refund");
+       }
+       Integer sourceStatus = refund.getStatus();
+       Flow flow = flowPicker.pickAfterSales();
+       if (!flow.operationAllowed(sourceStatus, MiddleOrderEvent.REFUND.toOrderOperation())){
+           log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), MiddleOrderEvent.REFUND.toOrderOperation().getText());
+           throw new JsonResponseException("order.status.invalid");
+       }
+       Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.REFUND.toOrderOperation());
+       if(!updateStatusRes.isSuccess()){
+            log.error("refund(id:{}) operation :{} fail,error:{}",refund.getId(),MiddleOrderEvent.REFUND.toOrderOperation().getText(),updateStatusRes.getError());
+            throw new JsonResponseException("update.refund.error");
+       }
+    }
+
+    /**
+     * 人工确认已经退货
+     * @param refundId
+     */
+    @RequestMapping(value = "/api/refund/{id}/manual/confirm/return",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void confirmReturn(@PathVariable("id") Long refundId){
+        Refund refund =  refundReadLogic.findRefundById(refundId);
+        String outId = refund.getOutId();
+        String outFrom = Splitter.on("_").omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(0);
+        if (!Objects.equals(outFrom, MiddleChannel.JD.getValue())){
+            throw new JsonResponseException("only.channel.jd.can.manual.confirm.return");
+        }
+        Integer sourceStatus = refund.getStatus();
+        Flow flow = flowPicker.pickAfterSales();
+        if (!flow.operationAllowed(sourceStatus, MiddleOrderEvent.RETURN.toOrderOperation())){
+            log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), MiddleOrderEvent.RETURN.toOrderOperation().getText());
+            throw new JsonResponseException("order.status.invalid");
+        }
+        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.RETURN.toOrderOperation());
+        if(!updateStatusRes.isSuccess()){
+            log.error("refund(id:{}) operation :{} fail,error:{}",refund.getId(),MiddleOrderEvent.RETURN.toOrderOperation().getText(),updateStatusRes.getError());
+            throw new JsonResponseException("update.refund.error");
+        }
+    }
+
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);

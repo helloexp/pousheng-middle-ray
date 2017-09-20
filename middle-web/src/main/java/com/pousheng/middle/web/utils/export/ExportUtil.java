@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 @Slf4j
 public class ExportUtil {
 
+    private static final int MAX_ROW_PER_SHEET = 65536; //单个sheet可容纳最大数量
 
     public static void export(ExportContext context) {
 
@@ -43,8 +44,8 @@ public class ExportUtil {
             executor.execute(wb, sheet);
 
         } catch (Exception e) {
-            log.error("export to execl file fail,cause:{}", Throwables.getStackTraceAsString(e));
-            throw new ServiceException("export.execl.fail");
+            log.error("export to excel file fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("export.excel.fail");
         }
     }
 
@@ -58,6 +59,8 @@ public class ExportUtil {
         public DefaultExportExecutor(ExportContext context) {
             if (null == context.getData() || context.getData().isEmpty())
                 throw new ServiceException("export.data.empty");
+            if (context.getData().size() > MAX_ROW_PER_SHEET)
+                throw new ServiceException("export.data.too.many");
             this.context = context;
         }
 

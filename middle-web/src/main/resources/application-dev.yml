@@ -83,8 +83,8 @@ open.api.gateway: ${OPEN_API_GATEWAY}
 azure:
   oss:
     defaultEndpointsProtocol: https
-    accountName: devdiag685
-    accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
+    accountName: f2wossfilehdd
+    accountKey: GiDg58DcAx8fLBQYqhjnMmKiOgHntWlexP1ZIDwCIdOEQr/IuAl6NQiy6m7Zl+rSU6ynxUJXufAEGYG3+NB2MQ==
     endpointSuffix: core.chinacloudapi.cn
 
 erp.token:

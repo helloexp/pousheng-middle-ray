@@ -603,19 +603,15 @@ public class Shipments {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
-        if (!ruleRes.isSuccess()) {
-            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
-            throw new JsonResponseException(ruleRes.getError());
-        }
 
-        WarehouseCompanyRule companyRule = ruleRes.getResult();
-        shipmentExtra.setErpOrderShopCode(companyRule.getShopId());
-        shipmentExtra.setErpOrderShopName(companyRule.getShopName());
-        //绩效店铺代码
+
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
-        shipmentExtra.setErpPerformanceShopCode(orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop));
-        shipmentExtra.setErpPerformanceShopName(orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop));
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        shipmentExtra.setErpOrderShopCode(shopCode);
+        shipmentExtra.setErpOrderShopName(shopName);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
@@ -638,8 +634,8 @@ public class Shipments {
         }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
         //店铺信息塞值
-        shipment.setShopId(Long.valueOf(companyRule.getShopId()));
-        shipment.setShopName(companyRule.getShopName());
+        shipment.setShopId(Long.valueOf(openShop.getId()));
+        shipment.setShopName(openShop.getShopName());
         shipment.setExtra(extraMap);
         shipment.setType(shipType);
         return shipment;

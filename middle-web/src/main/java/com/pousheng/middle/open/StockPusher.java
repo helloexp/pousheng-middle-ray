@@ -13,7 +13,6 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
-import io.terminus.open.client.item.service.PushedItemReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;

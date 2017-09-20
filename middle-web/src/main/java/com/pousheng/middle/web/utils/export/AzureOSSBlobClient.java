@@ -20,6 +20,8 @@ public class AzureOSSBlobClient {
 
     @Autowired
     private CloudStorageAccount account;
+    @Autowired
+    private AzureOSSAutoConfiguration.AzureOSSProperties ossProperties;
 
     /**
      * 上传至Azure云存储
@@ -34,6 +36,8 @@ public class AzureOSSBlobClient {
             throw new ServiceException("azure.oss.upload.file.empty");
 
         CloudBlobClient client = account.createCloudBlobClient();
+        if (null != ossProperties.getTimeout())
+            client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
         try {
             CloudBlobContainer container = client.getContainerReference(path);
             setUpContainer(container);
@@ -62,9 +66,11 @@ public class AzureOSSBlobClient {
             throw new ServiceException("azure.oss.upload.content.empty");
 
         CloudBlobClient client = account.createCloudBlobClient();
-
+        if (null != ossProperties.getTimeout())
+            client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
         try {
             CloudBlobContainer container = client.getContainerReference(path);
+
             setUpContainer(container);
 
             CloudBlockBlob blob = container.getBlockBlobReference(name);

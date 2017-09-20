@@ -72,5 +72,6 @@ public class AzureOSSAutoConfiguration {
         private String accountName;
         private String accountKey;
         private String endpointSuffix;
+        private Integer timeout;
     }
 }

@@ -60,6 +60,7 @@ azure:
     accountName: devdiag685
     accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
     endpointSuffix: core.chinacloudapi.cn
+    timeout: 8000
 
 erp.token:
   appKey: terminus-erp

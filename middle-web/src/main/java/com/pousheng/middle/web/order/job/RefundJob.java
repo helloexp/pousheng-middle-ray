@@ -51,6 +51,13 @@ public class RefundJob {
      */
     @Scheduled(cron = "0 0/5 * * * ? ")
     public void doneRefund() {
+
+
+        if(!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+
         log.info("START SCHEDULE ON SALE REFUND");
         Response<List<Refund>> response = refundReadService.findByTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
         if (!response.isSuccess()) {

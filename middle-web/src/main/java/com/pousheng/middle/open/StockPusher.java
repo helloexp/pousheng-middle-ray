@@ -12,7 +12,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
-import io.terminus.open.client.item.service.PushedItemReadService;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -37,7 +37,7 @@ public class StockPusher {
     private final ExecutorService executorService;
 
     @RpcConsumer
-    private PushedItemReadService pushedItemReadService;
+    private MappingReadService mappingReadService;
 
     @RpcConsumer
     private ItemServiceCenter itemServiceCenter;
@@ -95,7 +95,7 @@ public class StockPusher {
             public void run() {
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
                 //找到对应的店铺id, 这些店铺需要进行库存推送
-                Response<List<Long>> r = pushedItemReadService.findPushedOpenShopIdsOfItem(spuId);
+                Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
                 if (!r.isSuccess()) {
                     log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
                             spuId, skuCode, r.getError());

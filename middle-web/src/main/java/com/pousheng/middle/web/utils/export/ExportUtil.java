@@ -56,6 +56,8 @@ public class ExportUtil {
 
 
         public DefaultExportExecutor(ExportContext context) {
+            if (null == context.getData() || context.getData().isEmpty())
+                throw new ServiceException("export.data.empty");
             this.context = context;
         }
 

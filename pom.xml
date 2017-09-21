@@ -109,6 +109,11 @@
                 <version>${apache-poi.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.apache.poi</groupId>
+                <artifactId>poi-ooxml</artifactId>
+                <version>${apache-poi.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>com.microsoft.azure</groupId>
                 <artifactId>azure-storage</artifactId>
                 <version>${azure-storage.version}</version>

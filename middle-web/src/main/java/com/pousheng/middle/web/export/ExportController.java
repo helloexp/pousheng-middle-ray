@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by sunbo@terminus.io on 2017/7/20.
@@ -203,8 +204,6 @@ public class ExportController {
         if (criteria.getRefundEndAt() != null) {
             criteria.setRefundEndAt(new DateTime(criteria.getRefundEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
-
-
         List<RefundExportEntity> refundExportData = new ArrayList<>();
 
         int pageNO = 1;
@@ -214,71 +213,72 @@ public class ExportController {
             if (!pagingResponse.isSuccess()) {
                 throw new JsonResponseException(pagingResponse.getError());
             }
-
             if (pagingResponse.getResult().isEmpty())
                 break;
 
             pagingResponse.getResult().getData().forEach(refundInfo -> {
 
-                List<RefundItem> refundItems = refundReadLogic.findRefundItems(refundInfo.getRefund());
-                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
+                boolean dirtyData = false;
+                List<RefundItem> refundItems = null;
+                try {
+                    refundItems = refundReadLogic.findRefundItems(refundInfo.getRefund());
+                } catch (JsonResponseException e) {
+                    if (e.getMessage().equals("refund.exit.not.contain.item.info"))
+                        dirtyData = true;
+                }
+                if (!dirtyData) {
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
-                refundItems.forEach(item -> {
-//                    Response<Spu> spuResponse = spuReadService.findById(item.getSkuOrderId());
-//                    if (!spuResponse.isSuccess()) {
-//                        log.error("get item fail,error:{}", spuResponse.getError());
-//                        throw new JsonResponseException(spuResponse.getError());
-//                    }
+                    refundItems.forEach(item -> {
+                        RefundExportEntity export = new RefundExportEntity();
+                        export.setOrderID(refundInfo.getOrderRefund().getOrderId());
+                        export.setShopName(refundInfo.getRefund().getShopName());
+                        export.setMemo(refundInfo.getRefund().getBuyerNote());
+                        export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
+                        export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
+                        export.setAmt(item.getFee());
 
-                    RefundExportEntity export = new RefundExportEntity();
-                    export.setOrderID(refundInfo.getOrderRefund().getOrderId());
-                    export.setShopName(refundInfo.getRefund().getShopName());
-                    export.setMemo(refundInfo.getRefund().getBuyerNote());
-                    export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
-                    export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
-
-                    export.setAmt(item.getFee());
-
-                    if (StringUtils.isNotBlank(item.getSkuCode())) {
-                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
-                        if (!skuTemplateResponse.isSuccess()) {
-                            log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
-                            throw new JsonResponseException(skuTemplateResponse.getError());
-                        }
-//                        if (skuTemplateResponse.getResult().isEmpty())
-//                            throw new JsonResponseException("sku.template.not.found");
-                        if (!skuTemplateResponse.getResult().isEmpty()) {
-                            Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
-                            if (!spuResponse.isSuccess()) {
-                                log.error("get item fail,error:{}", spuResponse.getError());
-                                throw new JsonResponseException(spuResponse.getError());
+                        if (StringUtils.isNotBlank(item.getSkuCode())) {
+                            Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(item.getSkuCode()));
+                            if (!skuTemplateResponse.isSuccess()) {
+                                log.error("get sku template fail,error:{}", skuTemplateResponse.getError());
+                                throw new JsonResponseException(skuTemplateResponse.getError());
                             }
-                            //TODO 货号
-                            export.setBrand(spuResponse.getResult().getBrandName());
-                            item.getAttrs().forEach(attr -> {
-                                switch (attr.getAttrKey()) {
-                                    case "颜色":
-                                        export.setColor(attr.getAttrVal());
-                                        break;
-                                    case "尺码":
-                                        export.setSize(attr.getAttrVal());
-                                        break;
+                            if (!skuTemplateResponse.getResult().isEmpty()) {
+                                Response<Spu> spuResponse = spuReadService.findById(skuTemplateResponse.getResult().get(0).getSpuId());
+                                if (!spuResponse.isSuccess()) {
+                                    log.error("get item fail,error:{}", spuResponse.getError());
+                                    throw new JsonResponseException(spuResponse.getError());
                                 }
+                                //TODO 货号
+                                export.setBrand(spuResponse.getResult().getBrandName());
+                                item.getAttrs().forEach(attr -> {
+                                    switch (attr.getAttrKey()) {
+                                        case "颜色":
+                                            export.setColor(attr.getAttrVal());
+                                            break;
+                                        case "尺码":
+                                            export.setSize(attr.getAttrVal());
+                                            break;
+                                    }
+                                });
+                            }
+                        }
+
+                        export.setApplyQuantity(item.getAlreadyHandleNumber());
+                        if (null != refundExtra.getHkConfirmItemInfos()) {
+                            refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+                                export.setActualQuantity(hkinfo.getQuantity());
                             });
                         }
-                    }
+                        export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
 
-                    export.setApplyQuantity(item.getAlreadyHandleNumber());
-                    if (null != refundExtra.getHkConfirmItemInfos()) {
-                        refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
-                            export.setActualQuantity(hkinfo.getQuantity());
-                        });
-                    }
-                    export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
+                        refundExportData.add(export);
+                    });
 
-                    refundExportData.add(export);
-                });
+                }
+
             });
 
         }

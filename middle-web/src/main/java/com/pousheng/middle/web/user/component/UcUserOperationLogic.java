@@ -122,7 +122,7 @@ public class UcUserOperationLogic {
 
         }catch (Exception e){
             log.error("create uc user name:{} fail,cause:{}",name, Throwables.getStackTraceAsString(e));
-            return Response.fail("create.uc.user.fail");
+            return Response.fail("update.uc.user.fail");
 
         }
 

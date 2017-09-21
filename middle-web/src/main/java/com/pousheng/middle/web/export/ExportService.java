@@ -162,6 +162,10 @@ public class ExportService {
                 return true;
             }
         });
+
+        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+            exportContext.getResultFile().deleteOnExit();
+        }
     }
 
 

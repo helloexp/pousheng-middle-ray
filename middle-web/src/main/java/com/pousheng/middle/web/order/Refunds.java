@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -444,7 +445,10 @@ public class Refunds {
         if (isChangeRefund(refund) && refund.getStatus() > MiddleRefundStatus.WAIT_SHIP.getValue()) {
             refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
         }
-
+        //添加可用操作类型
+        Flow flow = flowPicker.pickAfterSales();
+        Set<OrderOperation> operations = flow.availableOperations(refund.getStatus());
+        refundDetail.setOperations(operations);
         return refundDetail;
 
     }

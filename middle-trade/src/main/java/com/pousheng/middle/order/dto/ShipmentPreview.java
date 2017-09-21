@@ -45,6 +45,6 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
     //发货商品信息
     List<ShipmentItem> shipmentItems;
 
-
-
+    //中台店铺id
+    private Long shopId;
 }

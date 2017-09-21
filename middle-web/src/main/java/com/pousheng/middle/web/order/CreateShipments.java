@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -14,6 +15,7 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;
@@ -115,17 +117,13 @@ public class CreateShipments {
         shipmentPreview.setWarehouseId(warehouse.getId());
         shipmentPreview.setWarehouseName(warehouse.getName());
 
-        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
-        if (!ruleRes.isSuccess()) {
-            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
-            throw new JsonResponseException(ruleRes.getError());
-        }
-
-        WarehouseCompanyRule companyRule = ruleRes.getResult();
-        shipmentPreview.setErpOrderShopCode(companyRule.getShopId());
-        shipmentPreview.setErpOrderShopName(companyRule.getShopName());
-        shipmentPreview.setErpPerformanceShopCode(companyRule.getShopId());
-        shipmentPreview.setErpPerformanceShopName(companyRule.getShopName());
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        shipmentPreview.setErpOrderShopCode(shopCode);
+        shipmentPreview.setErpOrderShopName(shopName);
+        shipmentPreview.setErpPerformanceShopCode(shopCode);
+        shipmentPreview.setErpPerformanceShopName(shopName);
 
         //计算金额
         //发货单商品金额

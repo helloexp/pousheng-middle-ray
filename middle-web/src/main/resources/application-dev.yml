@@ -102,3 +102,8 @@ ych.token:
 taobao.token:
   appKey: 24581672
   appName: 端点中台
+
+
+curator:
+  zk.host: ${POUSHENG_ZK_HOST}
+  zk.port: ${POUSHENG_ZK_PORT}

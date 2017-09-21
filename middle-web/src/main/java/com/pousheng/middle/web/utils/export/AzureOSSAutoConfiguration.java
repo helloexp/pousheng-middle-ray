@@ -73,5 +73,7 @@ public class AzureOSSAutoConfiguration {
         private String accountKey;
         private String endpointSuffix;
         private Integer timeout;
+        private Integer multiThreadingUploadThreshold;
+
     }
 }

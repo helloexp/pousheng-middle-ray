@@ -91,6 +91,23 @@ public class ExportUtil {
 
 
             if (context.getResultType() == ExportContext.ResultType.FILE) {
+                if (StringUtils.isNotBlank(context.getPath())) {
+                    File parent = new File(context.getPath());
+                    if (parent.isFile()) {
+                        log.info("file location is a file,ignore this path");
+                        context.setPath(null);
+                    }
+
+                    if (!parent.exists()) {
+                        if (!parent.mkdirs()) {
+                            log.info("file location not exist,create it but failed,ignore this path");
+                            context.setPath(null);
+                        }
+                    } else if (!parent.canRead() || !parent.canWrite()) {
+                        log.info("file location can't read or can't write,ignore this path");
+                        context.setPath(null);
+                    }
+                }
                 File file = new File(context.getPath(), StringUtils.isBlank(context.getFilename()) ? (DateTime.now().toString("yyyyMMddHHmmss") + ".xls") : context.getFilename());
                 try (FileOutputStream out = new FileOutputStream(file)) {
                     wb.write(out);

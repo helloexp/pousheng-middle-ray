@@ -5,6 +5,7 @@ import com.microsoft.azure.storage.CloudStorageAccount;
 import com.microsoft.azure.storage.StorageException;
 import com.microsoft.azure.storage.blob.*;
 import io.terminus.common.exception.ServiceException;
+import jodd.io.FileUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -35,20 +36,14 @@ public class AzureOSSBlobClient {
         if (!file.exists() || !file.canRead() || file.isDirectory())
             throw new ServiceException("azure.oss.upload.file.empty");
 
-        CloudBlobClient client = account.createCloudBlobClient();
-        if (null != ossProperties.getTimeout())
-            client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
         try {
-            CloudBlobContainer container = client.getContainerReference(path);
-            setUpContainer(container);
-
-            CloudBlockBlob blob = container.getBlockBlobReference(file.getName());
+            CloudBlockBlob blob = getBlob(path, file.getName());
             blob.uploadFromFile(file.getPath());
+//            return upload(FileUtil.readBytes(file), file.getName(), path);
             return blob.getUri().toString();
-
         } catch (URISyntaxException | StorageException | IOException e) {
-            log.error("upload to azure fail,cause:{}", Throwables.getStackTraceAsString(e));
-            throw new ServiceException("azure.oss.upload.fail");
+            log.error("read file fail,file:{},cause:{}", file.getPath(), Throwables.getStackTraceAsString(e));
+            throw new ServiceException("export.read.temp.file.fail");
         }
     }
 
@@ -65,16 +60,12 @@ public class AzureOSSBlobClient {
         if (null == payload || payload.length == 0)
             throw new ServiceException("azure.oss.upload.content.empty");
 
-        CloudBlobClient client = account.createCloudBlobClient();
-        if (null != ossProperties.getTimeout())
-            client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
         try {
-            CloudBlobContainer container = client.getContainerReference(path);
 
-            setUpContainer(container);
+            CloudBlockBlob blob = getBlob(path, name);
 
-            CloudBlockBlob blob = container.getBlockBlobReference(name);
-            blob.uploadFromByteArray(payload, 0, payload.length);
+            upload(payload, blob);
+//            blob.uploadFromByteArray(payload, 0, payload.length);
             return blob.getUri().toString();
 
         } catch (URISyntaxException | StorageException | IOException e) {
@@ -83,6 +74,24 @@ public class AzureOSSBlobClient {
         }
     }
 
+    private CloudBlockBlob getBlob(String containerName, String blobName) throws URISyntaxException, StorageException {
+        CloudBlobClient client = account.createCloudBlobClient();
+        if (null != ossProperties.getTimeout())
+            client.getDefaultRequestOptions().setMaximumExecutionTimeInMs(ossProperties.getTimeout());
+        CloudBlobContainer container = client.getContainerReference(containerName);
+
+        setUpContainer(container);
+
+        return container.getBlockBlobReference(blobName);
+    }
+
+    private void upload(byte[] payload, CloudBlockBlob blob) throws IOException, StorageException {
+        if (ossProperties.getMultiThreadingUploadThreshold() != null
+                && payload.length > ossProperties.getMultiThreadingUploadThreshold().intValue()) {
+
+        } else
+            blob.uploadFromByteArray(payload, 0, payload.length);
+    }
 
     /**
      * 对container设置允许外部读取

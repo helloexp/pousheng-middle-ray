@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 
@@ -41,6 +42,10 @@ public class ExportService {
      */
     private static final int FILE_RECORD_EXPIRE_TIME = 172800;
 
+
+    @Value("${export.local.temp.file.location:}")
+    private String localFileLocation;
+
     @Autowired
     private AzureOSSBlobClient azureOssBlobClient;
 
@@ -49,6 +54,7 @@ public class ExportService {
 
     @Autowired
     private EventBus eventBus;
+
 
     @PostConstruct
     public void init() {
@@ -75,6 +81,9 @@ public class ExportService {
     public void saveToDiskAndCloud(ExportContext exportContext) {
         log.debug("save export content to local disk and azure");
         exportContext.setResultType(ExportContext.ResultType.FILE);
+        if (StringUtils.isNotBlank(localFileLocation)) {
+            exportContext.setPath(localFileLocation);
+        }
         save(exportContext);
     }
 
@@ -163,9 +172,11 @@ public class ExportService {
             }
         });
 
-        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
-            exportContext.getResultFile().deleteOnExit();
-        }
+//        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+//            log.info("delete local file:{}", exportContext.getResultFile().getPath());
+//            if (!exportContext.getResultFile().delete())
+//                log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
+//        }
     }
 
 

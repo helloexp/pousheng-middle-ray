@@ -1,10 +1,13 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Function;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -24,6 +27,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -35,10 +39,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by tony on 2017/7/18.
@@ -77,6 +83,29 @@ public class AdminOrderWriter {
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+
+        List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
+                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+        //判断该订单下所有发货单的状态
+        List<Integer> orderShipMentStatusList = com.google.common.collect.Lists.transform(orderShipmentsFilter, new Function<OrderShipment, Integer>() {
+            @Nullable
+            @Override
+            public Integer apply(@Nullable OrderShipment orderShipment) {
+                return orderShipment.getStatus();
+            }
+        });
+        //判断订单是否已经全部发货了
+        int count=0;
+        for (Integer status:orderShipMentStatusList){
+            if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
+                count++;
+            }
+        }
+        //必须所有的发货单发货完成之后才能通知电商
+        if (count>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
+            throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
+        }
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);

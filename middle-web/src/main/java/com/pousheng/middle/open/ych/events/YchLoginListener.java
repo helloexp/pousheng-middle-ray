@@ -40,6 +40,11 @@ public class YchLoginListener {
             log.warn("can not get client ip");
             return;
         }
+        log.info("login ip is :{}", ip);
+        if ("127.0.0.1".equals(ip)) {
+            log.warn("catch localhost ip");
+            return;
+        }
 
         String ati = WebUtil.findCookieValue(loginEvent.getRequest(), "_ati");
         if (!StringUtils.hasText(ati)) {

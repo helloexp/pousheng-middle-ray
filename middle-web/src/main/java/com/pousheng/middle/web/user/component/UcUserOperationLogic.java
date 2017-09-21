@@ -113,7 +113,7 @@ public class UcUserOperationLogic {
 
             String result = HttpRequest.put(userCenterGateway+"/v1/users/"+userId).contentType("application/json").send(userInfoJson).body();
             log.info("update uc user name:{} result:{}",name,result);
-            checkResult(result);
+            //checkResult(result);
             return Response.ok(JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(result,UcUserInfo.class));
 
         }catch (ServiceException e){
@@ -122,7 +122,7 @@ public class UcUserOperationLogic {
 
         }catch (Exception e){
             log.error("create uc user name:{} fail,cause:{}",name, Throwables.getStackTraceAsString(e));
-            return Response.fail("create.uc.user.fail");
+            return Response.fail("update.uc.user.fail");
 
         }
 

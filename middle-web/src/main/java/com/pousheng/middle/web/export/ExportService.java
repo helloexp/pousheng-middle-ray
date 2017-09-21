@@ -172,11 +172,11 @@ public class ExportService {
             }
         });
 
-//        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
-//            log.info("delete local file:{}", exportContext.getResultFile().getPath());
-//            if (!exportContext.getResultFile().delete())
-//                log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
-//        }
+        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+            log.info("delete local file:{}", exportContext.getResultFile().getPath());
+            if (!exportContext.getResultFile().delete())
+                log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
+        }
     }
 
 

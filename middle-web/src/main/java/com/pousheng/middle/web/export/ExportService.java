@@ -96,7 +96,7 @@ public class ExportService {
             }
 
             ExportUtil.export(exportContext);
-            eventBus.post(new AzureOSSUploadEvent(exportContext));
+            eventBus.post(new AzureOSSUploadEvent(exportContext, UserUtil.getUserId()));
 
         } catch (Exception e) {
             throw new JsonResponseException(e.getMessage());
@@ -158,21 +158,29 @@ public class ExportService {
             url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
 
         log.info("the azure blob url:{}", url);
-        jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
+        boolean isStoreToRedisFileInfoSuccess = jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
             @Override
             public Boolean action(Jedis jedis) {
-                String realName = fileName;
-                if (fileName.contains(File.separator)) {
-                    realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                try {
+                    String realName = fileName;
+                    if (fileName.contains(File.separator)) {
+                        realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                    }
+                    Long currentUserID = event.getCurrentUserID();
+                    if (null == currentUserID) {
+                        log.error("cant't get current login user");
+                        return false;
+                    }
+                    jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
+                    log.info("save user:{}'s export file azure url to redis", currentUserID);
+                    return true;
+                } catch (Exception e) {
+                    return false;
                 }
-                Long currentUserID = UserUtil.getUserId();
-                jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
-                log.info("save user:{}'s export file azure url to redis", currentUserID);
-                return true;
             }
         });
 
-        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+        if (isStoreToRedisFileInfoSuccess && exportContext.getResultType() == ExportContext.ResultType.FILE) {
             log.info("delete local file:{}", exportContext.getResultFile().getPath());
             if (!exportContext.getResultFile().delete())
                 log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
@@ -183,9 +191,12 @@ public class ExportService {
     class AzureOSSUploadEvent {
         @Getter
         private ExportContext exportContext;
+        @Getter
+        private Long currentUserID;
 
-        public AzureOSSUploadEvent(ExportContext exportContext) {
+        public AzureOSSUploadEvent(ExportContext exportContext, Long currentUserID) {
             this.exportContext = exportContext;
+            this.currentUserID = currentUserID;
         }
     }
 }

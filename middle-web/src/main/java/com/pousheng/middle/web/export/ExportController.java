@@ -191,16 +191,18 @@ public class ExportController {
                     //TODO 货号可能是其他字段
                     export.setItemID(skuOrder.getItemId());
 
-                    skuOrder.getSkuAttrs().forEach(attr -> {
-                        switch (attr.getAttrKey()) {
-                            case "颜色":
-                                export.setColor(attr.getAttrVal());
-                                break;
-                            case "尺码":
-                                export.setSize(attr.getAttrVal());
-                                break;
-                        }
-                    });
+                    if(null!=skuOrder.getSkuAttrs()) {
+                        skuOrder.getSkuAttrs().forEach(attr -> {
+                            switch (attr.getAttrKey()) {
+                                case "颜色":
+                                    export.setColor(attr.getAttrVal());
+                                    break;
+                                case "尺码":
+                                    export.setSize(attr.getAttrVal());
+                                    break;
+                            }
+                        });
+                    }
 
 //                    if (StringUtils.isNotBlank(skuOrder.getSkuCode())) {
 //                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));

@@ -112,8 +112,12 @@ public class ExportController {
             final Map<Long/*ShopOrderId*/, List<SkuOrder>> skuOrders = skuOrderResponse.getResult().stream().collect(Collectors.groupingBy(SkuOrder::getOrderId));
 
 
-            pagingRes.getResult().getData().forEach(shopOrder -> {
+            for (ShopOrder shopOrder : pagingRes.getResult().getData()) {
+
                 Long orderID = shopOrder.getId();
+
+                if (!skuOrders.containsKey(orderID))
+                    continue;
 //                Response<List<SkuOrder>> skuOrderResponse = skuOrderReadService.findByShopOrderId(orderID);
 //                if (!skuOrderResponse.isSuccess()) {
 //                    log.error("get sku order fail,error:{}", skuOrderResponse.getError());
@@ -140,6 +144,7 @@ public class ExportController {
                 Optional<Payment> payment = paymentResponse.getResult().stream().filter(p -> (p.getStatus().equals(3))).findAny();
 
                 Optional<ReceiverInfo> receiverInfo = receiverResponse.getResult().stream().findFirst();
+
 
                 Map<String, Spu> spus = new HashMap<>();
                 List<String> skuCodes = skuOrders.get(orderID).stream().map(SkuOrder::getSkuCode).collect(Collectors.toList());
@@ -226,7 +231,7 @@ public class ExportController {
                     orderExportData.add(export);
                 });
 
-            });
+            }
         }
 
         exportService.saveToDiskAndCloud(new ExportContext(orderExportData));

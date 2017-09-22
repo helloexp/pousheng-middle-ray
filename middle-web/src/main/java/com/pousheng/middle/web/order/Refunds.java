@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -283,10 +284,20 @@ public class Refunds {
     @OperationLogType("同步售后单取消状态")
     public void syncHkCancelRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
-        Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
-        if (!syncRes.isSuccess()) {
-            log.error("sync cancel refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
-            throw new JsonResponseException(syncRes.getError());
+        //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
+        if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){
+            OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
+            Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+            if (!updateSyncStatusRes.isSuccess()) {
+                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
+                throw new JsonResponseException(updateSyncStatusRes.getError());
+            }
+        }else{
+            Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+            if (!syncRes.isSuccess()) {
+                log.error("sync cancel refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                throw new JsonResponseException(syncRes.getError());
+            }
         }
         //回滚发货单的数量
         refundWriteLogic.rollbackRefundQuantities(refund);
@@ -444,7 +455,10 @@ public class Refunds {
         if (isChangeRefund(refund) && refund.getStatus() > MiddleRefundStatus.WAIT_SHIP.getValue()) {
             refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
         }
-
+        //添加可用操作类型
+        Flow flow = flowPicker.pickAfterSales();
+        Set<OrderOperation> operations = flow.availableOperations(refund.getStatus());
+        refundDetail.setOperations(operations);
         return refundDetail;
 
     }

@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.export;
 
+import com.google.common.eventbus.EventBus;
+import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.utils.export.AzureOSSBlobClient;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
@@ -7,13 +9,16 @@ import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.common.utils.UserUtil;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 
+import javax.annotation.PostConstruct;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
@@ -37,11 +42,24 @@ public class ExportService {
      */
     private static final int FILE_RECORD_EXPIRE_TIME = 172800;
 
+
+    @Value("${export.local.temp.file.location:}")
+    private String localFileLocation;
+
     @Autowired
     private AzureOSSBlobClient azureOssBlobClient;
 
     @Autowired
     private JedisTemplate jedisTemplate;
+
+    @Autowired
+    private EventBus eventBus;
+
+
+    @PostConstruct
+    public void init() {
+        eventBus.register(this);
+    }
 
 
     /**
@@ -63,6 +81,9 @@ public class ExportService {
     public void saveToDiskAndCloud(ExportContext exportContext) {
         log.debug("save export content to local disk and azure");
         exportContext.setResultType(ExportContext.ResultType.FILE);
+        if (StringUtils.isNotBlank(localFileLocation)) {
+            exportContext.setPath(localFileLocation);
+        }
         save(exportContext);
     }
 
@@ -75,28 +96,8 @@ public class ExportService {
             }
 
             ExportUtil.export(exportContext);
+            eventBus.post(new AzureOSSUploadEvent(exportContext));
 
-            String fileName = StringUtils.isBlank(exportContext.getFilename()) ? (System.nanoTime() + ".xls") : exportContext.getFilename();
-            String url;
-            if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
-                url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
-            else
-                url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
-
-            log.debug("the azure blob url:{}", url);
-            jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
-                @Override
-                public Boolean action(Jedis jedis) {
-                    String realName = fileName;
-                    if (fileName.contains(File.separator)) {
-                        realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
-                    }
-                    Long currentUserID = UserUtil.getUserId();
-                    jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
-                    log.debug("save user:{}'s export file azure url to redis", currentUserID);
-                    return true;
-                }
-            });
         } catch (Exception e) {
             throw new JsonResponseException(e.getMessage());
         }
@@ -143,5 +144,48 @@ public class ExportService {
 
     private String key(Long userId, String fileName) {
         return DEFAULT_CLOUD_PATH + ":" + userId + ":" + fileName + "~" + DateTime.now().toDate().getTime();
+    }
+
+    @Subscribe
+    public void uploadToAzureOSS(AzureOSSUploadEvent event) {
+
+        ExportContext exportContext = event.getExportContext();
+        String fileName = StringUtils.isBlank(exportContext.getFilename()) ? (System.nanoTime() + ".xls") : exportContext.getFilename();
+        String url;
+        if (exportContext.getResultType() == ExportContext.ResultType.BYTE_ARRAY)
+            url = azureOssBlobClient.upload(exportContext.getResultByteArray(), fileName, DEFAULT_CLOUD_PATH);
+        else
+            url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
+
+        log.debug("the azure blob url:{}", url);
+        jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
+            @Override
+            public Boolean action(Jedis jedis) {
+                String realName = fileName;
+                if (fileName.contains(File.separator)) {
+                    realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                }
+                Long currentUserID = UserUtil.getUserId();
+                jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
+                log.debug("save user:{}'s export file azure url to redis", currentUserID);
+                return true;
+            }
+        });
+
+        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+            log.info("delete local file:{}", exportContext.getResultFile().getPath());
+            if (!exportContext.getResultFile().delete())
+                log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
+        }
+    }
+
+
+    class AzureOSSUploadEvent {
+        @Getter
+        private ExportContext exportContext;
+
+        public AzureOSSUploadEvent(ExportContext exportContext) {
+            this.exportContext = exportContext;
+        }
     }
 }

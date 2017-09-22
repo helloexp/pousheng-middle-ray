@@ -60,6 +60,10 @@ azure:
     accountName: devdiag685
     accountKey: ibH/7kzCiXTXAN+tEI4TGKc8xwpXQtGYTb3b3Pv1xE0SVct5apwwKbKCwybSWnY1Grp8ioh8N1VGjhlzvvf/dA==
     endpointSuffix: core.chinacloudapi.cn
+    #timeout: 8000 #不配置不启用
+
+export:
+  local.temp.file.location: /var/local/dd/rr #导出时生成的临时文件目录，不存在自动创建，不指定默认项目所在路径
 
 erp.token:
   appKey: terminus-erp

@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Refund;
@@ -7,6 +8,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Created by songrenfei on 2017/7/5
@@ -24,4 +26,5 @@ public class RichMiddleRefund implements Serializable{
     //发货信息
     private List<OrderShipment> orderShipments;
 
+    private Set<OrderOperation> operations;
 }

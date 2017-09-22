@@ -107,3 +107,6 @@ taobao.token:
 curator:
   zk.host: ${POUSHENG_ZK_HOST}
   zk.port: ${POUSHENG_ZK_PORT}
+
+## 这个是开启写入订单和售后单，供roger进行压测，压测后去掉这个配置
+open.client.import.enable: true

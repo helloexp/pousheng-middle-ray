@@ -10,6 +10,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.joda.time.DateTime;
 
 import java.io.ByteArrayOutputStream;
@@ -28,7 +29,6 @@ import java.util.stream.Stream;
 @Slf4j
 public class ExportUtil {
 
-
     public static void export(ExportContext context) {
 
         export(new DefaultExportExecutor(context));
@@ -36,15 +36,15 @@ public class ExportUtil {
 
     public static void export(ExportExecutor executor) {
 
-        try (Workbook wb = new HSSFWorkbook()) {
+        try (Workbook wb = new XSSFWorkbook()) {
 
             Sheet sheet = wb.createSheet();
 
             executor.execute(wb, sheet);
 
         } catch (Exception e) {
-            log.error("export to execl file fail,cause:{}", Throwables.getStackTraceAsString(e));
-            throw new ServiceException("export.execl.fail");
+            log.error("export to excel file fail,cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("export.excel.fail");
         }
     }
 
@@ -56,6 +56,8 @@ public class ExportUtil {
 
 
         public DefaultExportExecutor(ExportContext context) {
+            if (null == context.getData() || context.getData().isEmpty())
+                throw new ServiceException("export.data.empty");
             this.context = context;
         }
 
@@ -89,6 +91,23 @@ public class ExportUtil {
 
 
             if (context.getResultType() == ExportContext.ResultType.FILE) {
+                if (StringUtils.isNotBlank(context.getPath())) {
+                    File parent = new File(context.getPath());
+                    if (parent.isFile()) {
+                        log.info("file location is a file,ignore this path");
+                        context.setPath(null);
+                    }
+
+                    if (!parent.exists()) {
+                        if (!parent.mkdirs()) {
+                            log.info("file location not exist,create it but failed,ignore this path");
+                            context.setPath(null);
+                        }
+                    } else if (!parent.canRead() || !parent.canWrite()) {
+                        log.info("file location can't read or can't write,ignore this path");
+                        context.setPath(null);
+                    }
+                }
                 File file = new File(context.getPath(), StringUtils.isBlank(context.getFilename()) ? (DateTime.now().toString("yyyyMMddHHmmss") + ".xls") : context.getFilename());
                 try (FileOutputStream out = new FileOutputStream(file)) {
                     wb.write(out);

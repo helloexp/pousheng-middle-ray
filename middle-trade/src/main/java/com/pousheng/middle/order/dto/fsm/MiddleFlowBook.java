@@ -476,10 +476,10 @@ public class MiddleFlowBook {
 
 
 
-            //同步售后单失败 -->取消 --> 同步恒康取消中
+            //同步售后单失败 -->取消 --> 已取消(不用通知恒康)
             addTransition(MiddleRefundStatus.SYNC_HK_FAIL.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
-                    MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue());
+                    MiddleRefundStatus.CANCELED.getValue());
 
 
             //同步取消退货中 -->取消成功--> 已取消

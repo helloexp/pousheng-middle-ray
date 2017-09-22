@@ -73,6 +73,10 @@ public class TradeConstants {
     public static final String MIDDLE_OUT_ITEM_ID="outItemId";
     //判断售后单是否完善的标记位(有这个标记位则说明可以自动审核,默认0)
     public static final String MIDDLE_REFUND_COMPLETE_FLAG="refundCompleteFlag";
+    //hk绩效店铺名称
+    public static final String HK_PERFORMANCE_SHOP_NAME="hkPerformanceShopName";
+    //hk绩效店铺代码
+    public static final String HK_PERFORMANCE_SHOP_CODE="hkPerformanceShopCode";
     /**
      * 逆向单来源
      * see RefundSource

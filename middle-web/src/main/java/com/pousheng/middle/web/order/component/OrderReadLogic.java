@@ -69,7 +69,6 @@ public class OrderReadLogic {
 
     @RpcConsumer
     private OpenShopReadService openShopReadService;
-
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
 
@@ -427,7 +426,41 @@ public class OrderReadLogic {
         }
 
         return mapper.fromJson(extraMap.get(TradeConstants.ORDER_PAYMENT_INFO),OpenClientPaymentInfo.class);
+    }
+
+    /**
+     * 获取openShop中extra内容
+     * @param key   extra中的键值
+     * @param openShop 中台店铺
+     * @return
+     */
+    public String getOpenShopExtraMapValueByKey(String key,OpenShop openShop){
 
 
+        Map<String,String> extraMap = openShop.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("open shop (id:{}) extra map is empty",openShop.getId());
+            throw new JsonResponseException("open.shop.extra.is.null");
+        }
+        if(!extraMap.containsKey(key)){
+            log.error("open shop (id:{}) extra map not contains key:{}",openShop.getId(),key);
+            throw new JsonResponseException("open.shop.extra.not.contains.valid.key");
+        }
+        return extraMap.get(key);
+
+    }
+
+    /**
+     * 查询店铺
+     * @param shopId 店铺主键
+     * @return
+     */
+    public OpenShop findOpenShopByShopId(Long shopId){
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
+            throw new JsonResponseException("find.openShop.failed");
+        }
+        return response.getResult();
     }
 }

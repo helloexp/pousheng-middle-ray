@@ -12,6 +12,7 @@ import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -60,6 +61,8 @@ public class RefundWriteLogic {
     private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private SyncRefundLogic syncRefundLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -263,7 +266,13 @@ public class RefundWriteLogic {
         Map<String,String> shipmentExtraMap = shipment.getExtra();
         shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
         shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
-
+        //如果是手工创建的售后单是点击的提交，直接同步恒康
+        if(Objects.equals(submitRefundInfo.getOperationType(),2)){
+            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+            if (!syncRes.isSuccess()) {
+                log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+            }
+        }
         return rRefundRes.getResult();
     }
 
@@ -503,7 +512,7 @@ public class RefundWriteLogic {
     private void updateShipmentItemRefundQuantity(String skuCode,Integer refundQuantity,List<ShipmentItem> shipmentItems){
         for (ShipmentItem shipmentItem: shipmentItems){
             if(Objects.equals(skuCode,shipmentItem.getSkuCode())){
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()+refundQuantity);
+                shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity()==null?0:shipmentItem.getRefundQuantity())+refundQuantity);
             }
         }
     }
@@ -525,7 +534,7 @@ public class RefundWriteLogic {
             throw new JsonResponseException(skuTemplateRes.getError());
         }
 
-        Map<String,SkuTemplate> skuCodeAndTemplateMap =  skuTemplateRes.getResult().stream().filter(Objects::nonNull)
+        Map<String,SkuTemplate> skuCodeAndTemplateMap =  skuTemplateRes.getResult().stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getStatus(),-3))
                 .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
 
         refundItems.forEach(it -> {

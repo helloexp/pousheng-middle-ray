@@ -68,7 +68,7 @@ gateway:
     host: ${ERP_HOST}
     accessKey: ${ERP_ACCESS_KEY}
   member:
-    host: http://api-test-member.pousheng.com
+    host: ${MEMBER_CENTER_GATEWAY}
   uc:
     host: ${USER_CENTER_GATEWAY}
   hk:

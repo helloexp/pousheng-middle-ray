@@ -103,20 +103,12 @@ public class ShipmentReadLogic {
 
         //封装发货预览基本信息
         ShipmentPreview shipmentPreview  = new ShipmentPreview();
-
-        //todo 绩效店铺名称
-        shipmentPreview.setErpPerformanceShopName("绩效店铺");
-        //绩效店铺编码
-        shipmentPreview.setErpPerformanceShopCode("TEST001");
-        //下单店铺名称
-        shipmentPreview.setErpOrderShopName("下单店铺");
-        //下单店铺编码
-        shipmentPreview.setErpOrderShopCode("TEST002");
         shipmentPreview.setInvoices(orderDetail.getInvoices());
         shipmentPreview.setPayment(orderDetail.getPayment());
         List<OrderReceiverInfo> orderReceiverInfos = orderDetail.getOrderReceiverInfos();
         shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
         shipmentPreview.setShopOrder(orderDetail.getShopOrder());
+        shipmentPreview.setShopId(orderDetail.getShopOrder().getShopId());
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
         for (SkuOrder skuOrder : currentSkuOrders){
@@ -188,6 +180,7 @@ public class ShipmentReadLogic {
         }
         shipmentPreview.setReceiverInfo(receiverInfo);
         shipmentPreview.setShopOrder(shopOrder);
+        shipmentPreview.setShopId(refund.getShopId());
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(refundChangeItems.size());
         for (RefundItem refundItem : refundChangeItems){

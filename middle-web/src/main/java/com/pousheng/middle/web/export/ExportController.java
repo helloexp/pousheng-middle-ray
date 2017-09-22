@@ -191,7 +191,7 @@ public class ExportController {
                     //TODO 货号可能是其他字段
                     export.setItemID(skuOrder.getItemId());
 
-                    if(null!=skuOrder.getSkuAttrs()) {
+                    if (null != skuOrder.getSkuAttrs()) {
                         skuOrder.getSkuAttrs().forEach(attr -> {
                             switch (attr.getAttrKey()) {
                                 case "颜色":
@@ -267,8 +267,12 @@ public class ExportController {
                         dirtyData = true;
                 }
                 if (!dirtyData) {
-                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
+                    if (null == refundInfo.getRefund())
+                        throw new JsonResponseException("order.refund.find.fail");
+                    if (null == refundInfo.getOrderRefund())
+                        throw new JsonResponseException("order.refund.find.fail");
 
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
                     Map<String, Spu> spus = new HashMap<>();
                     List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
@@ -305,16 +309,18 @@ public class ExportController {
                             //TODO 货号
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
                         }
-                        item.getAttrs().forEach(attr -> {
-                            switch (attr.getAttrKey()) {
-                                case "颜色":
-                                    export.setColor(attr.getAttrVal());
-                                    break;
-                                case "尺码":
-                                    export.setSize(attr.getAttrVal());
-                                    break;
-                            }
-                        });
+                        if (null != item.getAttrs()) {
+                            item.getAttrs().forEach(attr -> {
+                                switch (attr.getAttrKey()) {
+                                    case "颜色":
+                                        export.setColor(attr.getAttrVal());
+                                        break;
+                                    case "尺码":
+                                        export.setSize(attr.getAttrVal());
+                                        break;
+                                }
+                            });
+                        }
                         export.setApplyQuantity(item.getAlreadyHandleNumber());
                         if (null != refundExtra.getHkConfirmItemInfos()) {
                             refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {

@@ -124,13 +124,14 @@ public class StockPusher {
                             log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
                                     shopId, shopStockRule.getSafeStock(), skuCode, stock);
                             Long lastPushStock = shopStockRule.getLastPushStock();
-                            if (lastPushStock != null && lastPushStock <= shopStockRule.getSafeStock()) {
+                           /* if (lastPushStock != null && lastPushStock <= shopStockRule.getSafeStock()) {
                                 log.info("skip to rePush stock to shop(id={}) for sku(code={}), " +
                                         "since it has already reach safe stock before", shopId, skuCode);
                                 return;
                             } else {//如果本次可用库存低于安全库存, 则推送0
                                 stock = 0L;
-                            }
+                            }*/
+                            stock = 0L;
                         }
 
                         //按照设定的比例确定推送数量

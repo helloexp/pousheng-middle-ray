@@ -39,6 +39,7 @@ public class UcUserOperationLogic {
     public LoginTokenInfo getUserToken(String userName, String password){
         Map<String, String> params = Maps.newHashMap();
 
+
         String url = userCenterGateway+"/oauth/token";
 
         params.put("client_id","c3");
@@ -48,6 +49,8 @@ public class UcUserOperationLogic {
         params.put("username", userName);
         params.put("password", password);
 
+        log.debug("[USER-CENTER] start get user center token,url:{} params:{}",url,params);
+
         String resultJson = HttpRequest.post(url)
                 //.basic("c3", "secret")
                 .contentType("application/x-www-form-urlencoded")
@@ -55,6 +58,8 @@ public class UcUserOperationLogic {
                 .readTimeout(1000000)
                 .form(params)
                 .body();
+
+        log.debug("[USER-CENTER] get user center token result:{} ",resultJson);
 
         return JsonMapper.nonDefaultMapper().fromJson(resultJson,LoginTokenInfo.class);
 

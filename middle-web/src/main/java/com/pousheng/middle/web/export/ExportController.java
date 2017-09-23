@@ -112,8 +112,12 @@ public class ExportController {
             final Map<Long/*ShopOrderId*/, List<SkuOrder>> skuOrders = skuOrderResponse.getResult().stream().collect(Collectors.groupingBy(SkuOrder::getOrderId));
 
 
-            pagingRes.getResult().getData().forEach(shopOrder -> {
+            for (ShopOrder shopOrder : pagingRes.getResult().getData()) {
+
                 Long orderID = shopOrder.getId();
+
+                if (!skuOrders.containsKey(orderID))
+                    continue;
 //                Response<List<SkuOrder>> skuOrderResponse = skuOrderReadService.findByShopOrderId(orderID);
 //                if (!skuOrderResponse.isSuccess()) {
 //                    log.error("get sku order fail,error:{}", skuOrderResponse.getError());
@@ -140,6 +144,7 @@ public class ExportController {
                 Optional<Payment> payment = paymentResponse.getResult().stream().filter(p -> (p.getStatus().equals(3))).findAny();
 
                 Optional<ReceiverInfo> receiverInfo = receiverResponse.getResult().stream().findFirst();
+
 
                 Map<String, Spu> spus = new HashMap<>();
                 List<String> skuCodes = skuOrders.get(orderID).stream().map(SkuOrder::getSkuCode).collect(Collectors.toList());
@@ -191,16 +196,18 @@ public class ExportController {
                     //TODO 货号可能是其他字段
                     export.setItemID(skuOrder.getItemId());
 
-                    skuOrder.getSkuAttrs().forEach(attr -> {
-                        switch (attr.getAttrKey()) {
-                            case "颜色":
-                                export.setColor(attr.getAttrVal());
-                                break;
-                            case "尺码":
-                                export.setSize(attr.getAttrVal());
-                                break;
-                        }
-                    });
+                    if (null != skuOrder.getSkuAttrs()) {
+                        skuOrder.getSkuAttrs().forEach(attr -> {
+                            switch (attr.getAttrKey()) {
+                                case "颜色":
+                                    export.setColor(attr.getAttrVal());
+                                    break;
+                                case "尺码":
+                                    export.setSize(attr.getAttrVal());
+                                    break;
+                            }
+                        });
+                    }
 
 //                    if (StringUtils.isNotBlank(skuOrder.getSkuCode())) {
 //                        Response<List<SkuTemplate>> skuTemplateResponse = skuTemplateReadService.findBySkuCodes(Collections.singletonList(skuOrder.getSkuCode()));
@@ -224,7 +231,7 @@ public class ExportController {
                     orderExportData.add(export);
                 });
 
-            });
+            }
         }
 
         exportService.saveToDiskAndCloud(new ExportContext(orderExportData));
@@ -265,8 +272,12 @@ public class ExportController {
                         dirtyData = true;
                 }
                 if (!dirtyData) {
-                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
+                    if (null == refundInfo.getRefund())
+                        throw new JsonResponseException("order.refund.find.fail");
+                    if (null == refundInfo.getOrderRefund())
+                        throw new JsonResponseException("order.refund.find.fail");
 
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refundInfo.getRefund());
 
                     Map<String, Spu> spus = new HashMap<>();
                     List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
@@ -303,16 +314,18 @@ public class ExportController {
                             //TODO 货号
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
                         }
-                        item.getAttrs().forEach(attr -> {
-                            switch (attr.getAttrKey()) {
-                                case "颜色":
-                                    export.setColor(attr.getAttrVal());
-                                    break;
-                                case "尺码":
-                                    export.setSize(attr.getAttrVal());
-                                    break;
-                            }
-                        });
+                        if (null != item.getAttrs()) {
+                            item.getAttrs().forEach(attr -> {
+                                switch (attr.getAttrKey()) {
+                                    case "颜色":
+                                        export.setColor(attr.getAttrVal());
+                                        break;
+                                    case "尺码":
+                                        export.setSize(attr.getAttrVal());
+                                        break;
+                                }
+                            });
+                        }
                         export.setApplyQuantity(item.getAlreadyHandleNumber());
                         if (null != refundExtra.getHkConfirmItemInfos()) {
                             refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {

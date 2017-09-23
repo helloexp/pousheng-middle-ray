@@ -36,6 +36,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -289,7 +290,7 @@ public class Shipments {
         Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;
 
         Shipment shipment = makeShipment(shopOrderId,warehouseId,shipmentItemFee,shipmentDiscountFee,shipmentTotalFee
-                ,shipmentShipFee,ShipmentType.SALES_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
+                ,shipmentShipFee,ShipmentType.SALES_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice,shopOrder.getShopId());
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
@@ -386,7 +387,7 @@ public class Shipments {
         //发货单中订单总金额
         Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
-                shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice);
+                shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice,refund.getShopId());
         Map<String,String> extraMap = shipment.getExtra();
 
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
@@ -591,7 +592,7 @@ public class Shipments {
     private Shipment makeShipment(Long shopOrderId,Long warehouseId, Long shipmentItemFee
             ,Long shipmentDiscountFee, Long shipmentTotalFee,Long shipmentShipFee,Integer shipType,
                                   Long shipmentShipDiscountFee,
-                                          Long shipmentTotalPrice){
+                                          Long shipmentTotalPrice,Long shopId){
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
@@ -602,18 +603,15 @@ public class Shipments {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
-        if (!ruleRes.isSuccess()) {
-            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
-            throw new JsonResponseException(ruleRes.getError());
-        }
 
-        WarehouseCompanyRule companyRule = ruleRes.getResult();
-        shipmentExtra.setErpOrderShopCode(companyRule.getShopId());
-        shipmentExtra.setErpOrderShopName(companyRule.getShopName());
-        shipmentExtra.setErpPerformanceShopCode(companyRule.getShopId());
-        shipmentExtra.setErpPerformanceShopName(companyRule.getShopName());
 
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        shipmentExtra.setErpOrderShopCode(shopCode);
+        shipmentExtra.setErpOrderShopName(shopName);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
@@ -636,8 +634,8 @@ public class Shipments {
         }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
         //店铺信息塞值
-        shipment.setShopId(Long.valueOf(companyRule.getShopId()));
-        shipment.setShopName(companyRule.getShopName());
+        shipment.setShopId(Long.valueOf(openShop.getId()));
+        shipment.setShopName(openShop.getShopName());
         shipment.setExtra(extraMap);
         shipment.setType(shipType);
         return shipment;

@@ -68,7 +68,7 @@ public class ExportService {
      * @param exportContext
      */
     public void saveToCloud(ExportContext exportContext) {
-        log.debug("just save export content to azure");
+        log.info("just save export content to azure");
         exportContext.setResultType(ExportContext.ResultType.BYTE_ARRAY);
         save(exportContext);
     }
@@ -79,7 +79,7 @@ public class ExportService {
      * @param exportContext
      */
     public void saveToDiskAndCloud(ExportContext exportContext) {
-        log.debug("save export content to local disk and azure");
+        log.info("save export content to local disk and azure");
         exportContext.setResultType(ExportContext.ResultType.FILE);
         if (StringUtils.isNotBlank(localFileLocation)) {
             exportContext.setPath(localFileLocation);
@@ -96,7 +96,7 @@ public class ExportService {
             }
 
             ExportUtil.export(exportContext);
-            eventBus.post(new AzureOSSUploadEvent(exportContext));
+            eventBus.post(new AzureOSSUploadEvent(exportContext, UserUtil.getUserId()));
 
         } catch (Exception e) {
             throw new JsonResponseException(e.getMessage());
@@ -157,22 +157,30 @@ public class ExportService {
         else
             url = azureOssBlobClient.upload(exportContext.getResultFile(), DEFAULT_CLOUD_PATH);
 
-        log.debug("the azure blob url:{}", url);
-        jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
+        log.info("the azure blob url:{}", url);
+        boolean isStoreToRedisFileInfoSuccess = jedisTemplate.execute(new JedisTemplate.JedisAction<Boolean>() {
             @Override
             public Boolean action(Jedis jedis) {
-                String realName = fileName;
-                if (fileName.contains(File.separator)) {
-                    realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                try {
+                    String realName = fileName;
+                    if (fileName.contains(File.separator)) {
+                        realName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
+                    }
+                    Long currentUserID = event.getCurrentUserID();
+                    if (null == currentUserID) {
+                        log.error("cant't get current login user");
+                        return false;
+                    }
+                    jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
+                    log.info("save user:{}'s export file azure url to redis", currentUserID);
+                    return true;
+                } catch (Exception e) {
+                    return false;
                 }
-                Long currentUserID = UserUtil.getUserId();
-                jedis.setex(key(currentUserID, realName), FILE_RECORD_EXPIRE_TIME, url);
-                log.debug("save user:{}'s export file azure url to redis", currentUserID);
-                return true;
             }
         });
 
-        if (exportContext.getResultType() == ExportContext.ResultType.FILE) {
+        if (isStoreToRedisFileInfoSuccess && exportContext.getResultType() == ExportContext.ResultType.FILE) {
             log.info("delete local file:{}", exportContext.getResultFile().getPath());
             if (!exportContext.getResultFile().delete())
                 log.warn("delete local file fail:{}", exportContext.getResultFile().getPath());
@@ -183,9 +191,12 @@ public class ExportService {
     class AzureOSSUploadEvent {
         @Getter
         private ExportContext exportContext;
+        @Getter
+        private Long currentUserID;
 
-        public AzureOSSUploadEvent(ExportContext exportContext) {
+        public AzureOSSUploadEvent(ExportContext exportContext, Long currentUserID) {
             this.exportContext = exportContext;
+            this.currentUserID = currentUserID;
         }
     }
 }

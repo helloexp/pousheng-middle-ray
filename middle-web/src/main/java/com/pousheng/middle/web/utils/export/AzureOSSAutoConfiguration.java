@@ -4,6 +4,7 @@ import com.microsoft.azure.storage.CloudStorageAccount;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Created by sunbo@terminus.io on 2017/7/26.
  */
+@Slf4j
 @Configuration
 @EnableConfigurationProperties(AzureOSSAutoConfiguration.AzureOSSProperties.class)
 @ConditionalOnClass(name = "com.microsoft.azure.storage.CloudStorageAccount")
@@ -24,6 +26,13 @@ public class AzureOSSAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public AzureOSSAccountFactory azureOSSClientFactory(AzureOSSProperties properties) {
+
+        log.debug("initialize azure oss account");
+        log.debug("accountName:[{}]", properties.getAccountName());
+        log.debug("accountKey:[{}]", properties.getAccountKey());
+        log.debug("endpointSuffix:[{}]", properties.getEndpointSuffix());
+        log.debug("defaultEndpointsProtocol:[{}]", properties.getDefaultEndpointsProtocol());
+
         AzureOSSAccountFactory factory = new AzureOSSAccountFactory();
         factory.setProperties(properties);
         return factory;
@@ -36,7 +45,8 @@ public class AzureOSSAutoConfiguration {
     }
 
 
-    class AzureOSSAccountFactory implements FactoryBean<CloudStorageAccount> {
+    @Slf4j
+    static class AzureOSSAccountFactory implements FactoryBean<CloudStorageAccount> {
 
         @Getter
         @Setter
@@ -44,6 +54,7 @@ public class AzureOSSAutoConfiguration {
 
         @Override
         public CloudStorageAccount getObject() throws Exception {
+
             return CloudStorageAccount.parse("DefaultEndpointsProtocol="
                     + properties.getDefaultEndpointsProtocol()
                     + ";AccountName="

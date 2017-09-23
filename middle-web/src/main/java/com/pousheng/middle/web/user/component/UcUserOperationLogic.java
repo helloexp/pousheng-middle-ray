@@ -49,7 +49,7 @@ public class UcUserOperationLogic {
         params.put("username", userName);
         params.put("password", password);
 
-        log.debug("[USER-CENTER] start get user center token,url:{} params:{}",url,params);
+        log.info("[USER-CENTER] start get user center token,url:{} params:{}",url,params);
 
         String resultJson = HttpRequest.post(url)
                 //.basic("c3", "secret")
@@ -59,7 +59,7 @@ public class UcUserOperationLogic {
                 .form(params)
                 .body();
 
-        log.debug("[USER-CENTER] get user center token result:{} ",resultJson);
+        log.info("[USER-CENTER] get user center token result:{} ",resultJson);
 
         return JsonMapper.nonDefaultMapper().fromJson(resultJson,LoginTokenInfo.class);
 

@@ -30,6 +30,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -138,6 +139,13 @@ public class ExportController {
                     log.error("get receiver fail,error:{}", receiverResponse.getError());
                     throw new JsonResponseException(receiverResponse.getError());
                 }
+//                Response<List<Invoice>> invoiceResponse = middleOrderReadService.findInvoiceInfo(orderID, OrderLevel.SHOP);
+//                if (!invoiceResponse.isSuccess()) {
+//                    log.error("get invoice fail,error:{}", invoiceResponse.getError());
+//                    throw new JsonResponseException(invoiceResponse.getError());
+//                }
+
+
                 Optional<Shipment> shipment = shipmentResponse.getResult().stream().filter(
                         s -> s.getStatus().equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())).findFirst();
 
@@ -190,7 +198,8 @@ public class ExportController {
                     payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
-                    export.setShipFee(skuOrder.getShipFee());
+//                    export.setShipFee(skuOrder.getShipFee());
+                    export.setShipFee(null == shopOrder.getShipFee() ? null : shopOrder.getShipFee().longValue());
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
@@ -227,7 +236,8 @@ public class ExportController {
                     if (spus.containsKey(skuOrder.getSkuCode()))
                         export.setBrandName(spus.get(skuOrder.getSkuCode()).getBrandName());
                     export.setSkuQuantity(skuOrder.getQuantity());
-                    export.setFee(skuOrder.getFee());
+                    if (null != skuOrder.getFee())
+                        export.setFee(new BigDecimal(skuOrder.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).longValue());//从分转换成元
                     orderExportData.add(export);
                 });
 

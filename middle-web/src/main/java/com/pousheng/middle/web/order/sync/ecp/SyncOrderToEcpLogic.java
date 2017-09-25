@@ -85,12 +85,13 @@ public class SyncOrderToEcpLogic {
                 //同步失败
                 OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-                return Response.fail("sync.ecp.fail");
+                return Response.fail(response.getError());
             }
         }catch (Exception e) {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
+            return Response.fail("sync.ecp.failed");
         }
 
         return Response.ok();

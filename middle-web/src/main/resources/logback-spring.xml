@@ -19,13 +19,13 @@
         </rollingPolicy>
     </appender>
 
-    <root level="INFO">
-        <appender-ref ref="FILE"/>
+    <root level="debug">
+        <!--<appender-ref ref="FILE"/>-->
         <appender-ref ref="CONSOLE"/>
     </root>
 
     <logger name="org.springframework.web" level="INFO"/>
     <logger name="io.terminus" level="INFO"/>
-    <logger name="com.pousheng" level="INFO"/>
+    <logger name="com.pousheng" level="debug"/>
 </configuration>
 

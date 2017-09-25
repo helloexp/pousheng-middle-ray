@@ -4,15 +4,14 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.RefundSource;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
@@ -23,6 +22,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.aftersale.component.DefaultAfterSaleReceiver;
@@ -37,6 +37,7 @@ import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -77,6 +78,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private SyncRefundLogic syncRefundLogic;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @Autowired
+    private ExpressCodeReadService expressCodeReadService;
+
 
 
 
@@ -182,6 +186,41 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             //借用tradeNo字段来标记售中退款的逆向单是否已处理
             refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
         }
+    }
+
+
+    @Override
+    protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode, String shipmentCorpName) {
+
+        if(Strings.isNullOrEmpty(shipmentSerialNo)){
+            return;
+        }
+
+        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
+
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        refundExtra.setShipmentSerialNo(shipmentSerialNo);
+        //转换为中台的物流信息
+
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setPoushengCode(shipmentCorpCode);
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            return;
+        }
+        if (response.getResult().getData().size() == 0) {
+            log.error("there is not any express info by poushengCode:{}", shipmentCorpCode);
+            return;
+        }
+        ExpressCode expressCode = response.getResult().getData().get(0);
+        refundExtra.setShipmentCorpName(expressCode.getName());
+        refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
+
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+
+        refund.setExtra(extraMap);
+
     }
 
     @Override
@@ -297,4 +336,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             }
         }
     }
+
+
 }

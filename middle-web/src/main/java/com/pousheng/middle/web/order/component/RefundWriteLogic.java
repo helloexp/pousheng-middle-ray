@@ -268,7 +268,8 @@ public class RefundWriteLogic {
         shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
         //如果是手工创建的售后单是点击的提交，直接同步恒康
         if(Objects.equals(submitRefundInfo.getOperationType(),2)){
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+            Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(newRefund);
             if (!syncRes.isSuccess()) {
                 log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
             }

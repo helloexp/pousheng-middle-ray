@@ -452,7 +452,7 @@ public class Refunds {
         }
 
         //如果为换货,切已经生成过发货单，则封装发货信息（换货的发货单）
-        if (isChangeRefund(refund) && refund.getStatus() > MiddleRefundStatus.WAIT_SHIP.getValue()) {
+        if (isChangeRefund(refund) && refund.getStatus() >= MiddleRefundStatus.WAIT_SHIP.getValue()) {
             refundDetail.setOrderShipments(shipmentReadLogic.findByAfterOrderIdAndType(refundId));
         }
         //添加可用操作类型

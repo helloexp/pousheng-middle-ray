@@ -44,8 +44,6 @@ gateway:
     accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
   member:
     host: http://api-test-member.pousheng.com
-  uc:
-    host: http://devt-account.pousheng.com
   hk:
     host: http://esbt.pousheng.com
     accessKey: 646edef40c9c481fb9cd9c61a41dabc1

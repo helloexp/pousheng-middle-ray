@@ -110,7 +110,9 @@ public class Users {
 
 
         ParanaUser paranaUser= buildParanaUser(userOptional.get());
+        log.info("LOGIN SUCCESS user name:{}",paranaUser.getName());
         eventBus.post(new LoginEvent(request,response,paranaUser));
+        log.info("PUSH LOGIN EVENT SUCCESS");
         return paranaUser;
     }
 

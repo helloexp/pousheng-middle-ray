@@ -125,7 +125,11 @@ public class Shipments {
 
         shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
 
-
+        //判断查询的发货单类型
+        if (Objects.equals(shipmentCriteria.getType(),ShipmentType.EXCHANGE_SHIP.value())){
+            shipmentCriteria.setAfterSaleOrderId(shipmentCriteria.getOrderId());
+            shipmentCriteria.setOrderId(null);
+        }
         Response<Paging<ShipmentPagingInfo>> response =  orderShipmentReadService.findBy(shipmentCriteria);
         if(!response.isSuccess()){
             log.error("find shipment by criteria:{} fail,error:{}",shipmentCriteria,response.getError());

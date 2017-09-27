@@ -10,7 +10,7 @@ CREATE TABLE `pousheng_sku_group_rules` (
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '修改时间',
   PRIMARY KEY (`id`)
-)COMMENT='' ENGINE=InnoDB DEFAULT CHARSET=utf8;
+)COMMENT='sku归组规则表' ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 create index idx_sgr_card_id on pousheng_sku_group_rules(`card_id`);
 
@@ -26,7 +26,7 @@ CREATE TABLE `pousheng_spu_materials` (
   PRIMARY KEY (`id`),
   KEY `idx_psm_spu_id` (spu_id),
   UNIQUE KEY `idx_psm_material_id` (material_id)
-) COMMENT='' ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) COMMENT='SPU与material关联表' ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- 后台类目表: parana_back_categories
 drop table if exists `parana_back_categories`;

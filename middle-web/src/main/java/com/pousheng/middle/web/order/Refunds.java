@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -39,10 +40,7 @@ import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -329,10 +327,21 @@ public class Refunds {
     @OperationLogType("运营商确认收货（换货）")
     public void confirmReceived(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
-        Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CONFIRM.toOrderOperation());
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        //塞入确认收货时间
+        refundExtra.setConfirmReceivedAt(new Date());
+        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+        refund.setExtra(extraMap);
+        Response<Boolean> cancelRes = refundWriteLogic.update(refund);
         if (!cancelRes.isSuccess()) {
             log.error("confirm refund(id:{}) fail,error:{}", refundId, cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
+        }
+        Response<Boolean> cancelRes1 = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.CONFIRM.toOrderOperation());
+        if (!cancelRes1.isSuccess()) {
+            log.error("confirm refund(id:{}) fail,error:{}", refundId, cancelRes1.getError());
+            throw new JsonResponseException(cancelRes1.getError());
         }
     }
 

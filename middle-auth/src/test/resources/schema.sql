@@ -39,7 +39,7 @@ CREATE TABLE `parana_user_operators` (
   `user_name`  VARCHAR(64)     NULL COMMENT '用户名 (登录名, 冗余)',
   `role_id`    BIGINT          NULL COMMENT '运营角色 ID',
   `role_name`  VARCHAR(32)     NULL COMMENT '角色名 (冗余)',
-  `status`     TINYINT         NOT NULL COMMENT '运营状态',
+  `status`     TINYINT         NOT NULL COMMENT '运营状态 0.已冻结,1.正常',
   `extra_json` VARCHAR(4096)   NULL COMMENT '运营额外信息, 建议json字符串',
   `created_at` DATETIME        NOT NULL,
   `updated_at` DATETIME        NOT NULL,

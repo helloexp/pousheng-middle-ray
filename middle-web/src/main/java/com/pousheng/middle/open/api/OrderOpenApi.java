@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -238,14 +240,16 @@ public class OrderOpenApi {
      * @param receivedDate
      */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
-                                                                      "receivedDate","posSerialNo","posType",
-                                                                      "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
+                                                                      "receivedDate","itemCode","quantity"
+                                                                      }, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate) {
-        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} " +
-                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
+                                   @NotEmpty(message = "received.date.empty") String receivedDate,
+                                   String itemCode,String quantity
+                                   ) {
+        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} itemCode is:{} quantity is:{}" +
+                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,itemCode,quantity);
         try {
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
@@ -262,7 +266,12 @@ public class OrderOpenApi {
 
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
-            //refundExtra.setHkConfirmItemInfo(itemInfo);
+            List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = new ArrayList<>();
+            HkConfirmReturnItemInfo hkConfirmReturnItemInfo = new HkConfirmReturnItemInfo();
+            hkConfirmReturnItemInfo.setItemCode(itemCode);
+            hkConfirmReturnItemInfo.setQuantity(Integer.valueOf(quantity));
+            hkConfirmReturnItemInfos.add(hkConfirmReturnItemInfo);
+            refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
 
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);

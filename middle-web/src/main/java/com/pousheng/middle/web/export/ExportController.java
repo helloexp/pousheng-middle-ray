@@ -343,7 +343,7 @@ public class ExportController {
                                 export.setActualQuantity(hkinfo.getQuantity());
                             });
                         }
-                        export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
+                        export.setWarehousingDate(refundExtra.getHkReturnDoneAt());
 
                         refundExportData.add(export);
                     });

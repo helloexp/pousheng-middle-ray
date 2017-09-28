@@ -245,11 +245,10 @@ public class OrderOpenApi {
     public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate,
-                                   String itemCode,String quantity
+                                   @NotEmpty(message = "received.date.empty") String receivedDate
                                    ) {
-        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} itemCode is:{} quantity is:{}" +
-                "shipmentDate is:{}", refundOrderId, hkRefundOrderId, itemInfo, receivedDate,itemCode,quantity);
+        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+                refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
@@ -263,13 +262,10 @@ public class OrderOpenApi {
             //todo 恒康返回的商品信息如何处理
 
             DateTime dt = DateTime.parse(receivedDate, DFT);
-
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
             List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = new ArrayList<>();
-            HkConfirmReturnItemInfo hkConfirmReturnItemInfo = new HkConfirmReturnItemInfo();
-            hkConfirmReturnItemInfo.setItemCode(itemCode);
-            hkConfirmReturnItemInfo.setQuantity(Integer.valueOf(quantity));
+            HkConfirmReturnItemInfo hkConfirmReturnItemInfo =JsonMapper.nonEmptyMapper().fromJson(itemInfo,HkConfirmReturnItemInfo.class);
             hkConfirmReturnItemInfos.add(hkConfirmReturnItemInfo);
             refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
 

@@ -286,11 +286,17 @@ public class AdminOrderReader {
             return Response.fail(e.getMessage());
         }
     }
+
+    /**
+     * 根据店铺订单id获取所关联的发货单id(不包括已取消)
+     * @param shopOrderId 店铺订单id
+     * @return
+     */
     @RequestMapping(value = "/api/order/shipment/{id}/list",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id")Long shopOrderId){
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).map(it->it.getShipmentId()).collect(Collectors.toList());;
+                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
         return  Response.ok(shipmentIds);
     }
 

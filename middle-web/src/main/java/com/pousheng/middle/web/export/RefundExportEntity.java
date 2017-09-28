@@ -32,7 +32,7 @@ public class RefundExportEntity {
     private String refundType;
 
     @ExportTitle("退款金额")
-    private Long amt;
+    private Double amt;
 
     @ExportTitle("状态")
     private String status;

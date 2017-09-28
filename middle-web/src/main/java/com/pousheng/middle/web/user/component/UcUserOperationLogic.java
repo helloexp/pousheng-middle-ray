@@ -26,7 +26,7 @@ import java.util.Map;
 public class UcUserOperationLogic {
 
 
-    @Value("${gateway.uc.host}")
+    @Value("${gateway.member.host}")
     private String userCenterGateway;
 
 

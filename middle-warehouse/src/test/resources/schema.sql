@@ -2,14 +2,14 @@ CREATE TABLE IF NOT EXISTS `warehouse_addresses` (
   `id` bigint(20) NOT NULL,
   `pid` bigint(20) DEFAULT NULL COMMENT '父级ID',
   `name` varchar(50) DEFAULT NULL COMMENT '名称',
-  `level` int(11) DEFAULT NULL COMMENT '级别',
+  `level` int(11) DEFAULT NULL COMMENT '级别 1.省级,2.市级,3.县区级',
   `pinyin` varchar(100) DEFAULT NULL COMMENT '拼音',
   `english_name` varchar(100) DEFAULT NULL COMMENT '英文名',
   `unicode_code` varchar(200) DEFAULT NULL COMMENT 'ASCII码',
   `order_no` varchar(32) DEFAULT NULL COMMENT '排序号',
   PRIMARY KEY (`id`),
   KEY `idx_warehouse_addresses_pid` (`pid`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+)COMMENT='仓库地址表' ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 drop table if exists `pousheng_warehouses`;
 

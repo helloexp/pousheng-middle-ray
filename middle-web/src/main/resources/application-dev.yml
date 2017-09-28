@@ -69,8 +69,6 @@ gateway:
     accessKey: ${ERP_ACCESS_KEY}
   member:
     host: ${MEMBER_CENTER_GATEWAY}
-  uc:
-    host: ${USER_CENTER_GATEWAY}
   hk:
     host: ${HK_HOST}
     accessKey: ${HK_ACCESS_KEY}

@@ -12,12 +12,14 @@ import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
@@ -32,10 +34,7 @@ import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
@@ -90,6 +89,8 @@ public class AdminOrderReader {
     private SkuOrderReadService skuOrderReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
     @Autowired
@@ -284,6 +285,13 @@ public class AdminOrderReader {
             log.error("address.found.failed", e.getMessage());
             return Response.fail(e.getMessage());
         }
+    }
+    @RequestMapping(value = "/api/order/shipment/{id}/list",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id")Long shopOrderId){
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+        List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
+                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).map(it->it.getShipmentId()).collect(Collectors.toList());;
+        return  Response.ok(shipmentIds);
     }
 
     private void sendLogForTaobao(Response<OrderDetail> response, HttpServletRequest request) {

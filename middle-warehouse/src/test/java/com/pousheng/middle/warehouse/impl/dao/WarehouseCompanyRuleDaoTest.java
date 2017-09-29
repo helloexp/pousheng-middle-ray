@@ -68,7 +68,7 @@ public class WarehouseCompanyRuleDaoTest extends BaseDaoTest {
     @Test
     public void paging() {
         Map<String, Object> params = new HashMap<>();
-        params.put("shopId", warehouseCompanyRule.getShopId());
+       // params.put("shopId", warehouseCompanyRule.getShopId());
         Paging<WarehouseCompanyRule> warehouseShopReturnPaging = warehouseCompanyRuleDao.paging(0, 20, params);
 
         assertThat(warehouseShopReturnPaging.getTotal(), is(1L));
@@ -80,8 +80,8 @@ public class WarehouseCompanyRuleDaoTest extends BaseDaoTest {
 
         warehouseCompanyRule.setCompanyCode("001");
         warehouseCompanyRule.setCompanyName("company1");
-        warehouseCompanyRule.setShopId("12");
-        warehouseCompanyRule.setShopName("shop12");
+        //warehouseCompanyRule.setShopId("12");
+        //warehouseCompanyRule.setShopName("shop12");
         
         warehouseCompanyRule.setWarehouseId(23L);
         

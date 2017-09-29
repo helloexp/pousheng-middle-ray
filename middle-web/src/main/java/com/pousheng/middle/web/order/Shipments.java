@@ -167,8 +167,13 @@ public class Shipments {
      * @return 发货单
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<OrderShipment> shipments(@PathVariable("id") Long shopOrderId) {
-        return shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+    public List<Shipment> shipments(@PathVariable("id") Long shopOrderId) {
+        Response<List<Shipment>> response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!response.isSuccess()){
+            log.error("find shipment by shopOrderId ({}) failed,caused by ({})",shopOrderId,response.getError());
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        return response.getResult();
     }
 
     /**

@@ -11,8 +11,8 @@ CREATE TABLE `parana_shop_orders` (
   `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
   `buyer_id`  BIGINT NOT NULL COMMENT '买家id',
   `fee`  BIGINT(20) NOT NULL COMMENT '实付金额',
-  `status` SMALLINT NOT NULL COMMENT '状态',
-  `type` tinyint NULL COMMENT '订单类型',
+  `status` SMALLINT NOT NULL COMMENT '状态,1.已支付待处理,2.处理中，待全部处理完成,3.待发货,4.待收货,5.已完成,-4.已取消,-5.取消失败,-6.撤销失败',
+  `type` tinyint NULL COMMENT '订单类型(暂时没有用到)',
   `buyer_name` VARCHAR(64) NOT NULL COMMENT '买家名称',
   `out_buyer_id`  VARCHAR(64)  NULL COMMENT '买家外部id',
   `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
@@ -26,7 +26,7 @@ CREATE TABLE `parana_shop_orders` (
   `origin_ship_fee`  BIGINT(20)  NULL COMMENT '运费原始金额',
   `integral`  INT NULL COMMENT '积分减免金额',
   `balance` INT NULL COMMENT '余额减免金额',
-  `shipment_type`  SMALLINT NULL COMMENT '配送方式',
+  `shipment_type`  SMALLINT NULL COMMENT '配送方式(暂时没有用到)',
   `pay_type`  SMALLINT NOT NULL COMMENT '支付类型, 1-在线支付 2-货到付款',
   `channel` SMALLINT NOT NULL COMMENT '订单渠道 1-手机 2-pc',
   `has_refund` tinyint NULL COMMENT '是否申请过逆向流程',
@@ -35,7 +35,7 @@ CREATE TABLE `parana_shop_orders` (
   `extra_json` VARCHAR(2048)  NULL COMMENT '子订单额外信息,json表示',
   `tags_json` VARCHAR(2048) NULL COMMENT '子订单tag信息, json表示',
   `out_id` VARCHAR(64) NULL COMMENT '外部订单id',
-  `out_from` VARCHAR(64) NULL COMMENT '外部订单来源',
+  `out_from` VARCHAR(64) NULL COMMENT '外部订单来源,jingdong:京东,suning:苏宁,taobao:天猫,official:官网',
   `commission_rate` INT default 0 COMMENT '电商平台佣金费率, 万分之一',
   `distribution_rate` INT default 0 COMMENT '分销抽佣费率, 万分之一',
   `diff_fee`  INT NULL COMMENT '改价金额',
@@ -56,7 +56,7 @@ CREATE TABLE `parana_sku_orders` (
   `sku_id`  BIGINT(20)  NOT NULL COMMENT 'sku id',
   `quantity`  BIGINT(20) NOT NULL COMMENT 'sku数量',
   `fee`  BIGINT(20) NOT NULL COMMENT '实付金额',
-  `status` SMALLINT NOT NULL COMMENT '子订单状态',
+  `status` SMALLINT NOT NULL COMMENT '子订单状态,1.已支付待处理,2.处理中，待全部处理完成,3.待发货,4.待收货,5.已完成,-4.已取消,-5.取消失败,-6.撤销失败',
   `order_id`  BIGINT(20)  NOT NULL COMMENT '订单id',
   `buyer_id`  BIGINT(20)  NOT NULL COMMENT '买家id',
   `out_id`  VARCHAR(64)  NULL COMMENT '外部自订单id',
@@ -108,8 +108,8 @@ DROP TABLE IF EXISTS `parana_shipments`;
 
 CREATE TABLE `parana_shipments` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `status`  SMALLINT NOT NULL COMMENT '0: 待发货, 1:已发货, 2: 已收货, -1: 已删除',
-  `type` tinyint NULL COMMENT '发货单类型',
+  `status`  SMALLINT NOT NULL COMMENT '1: 待同步恒康, 2:同步恒康中, 3: 已受理, 4:待发货,5:已发货,6:恒康确认收货,-1:恒康受理失败,-2:同步恒康失败,-3:同步恒康取消中,-4:同步取消恒康失败,-5:已取消,-6:恒康确认收货失败',
+  `type` tinyint NULL COMMENT '发货单类型,1.销售发货单,2.售后发货单',
   `shop_id` BIGINT(20) NOT NULL COMMENT '店铺id',
   `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
   `shipment_serial_no`  VARCHAR(32)  NULL COMMENT '物流单号',
@@ -138,8 +138,8 @@ CREATE TABLE `parana_order_shipments` (
   `after_sale_order_id`  BIGINT(20)  NULL COMMENT '(子)售后单id',
   `order_id`  BIGINT(20) NOT NULL COMMENT '(子)订单id',
   `order_type`  SMALLINT NOT NULL COMMENT '发货订单类型 1: 店铺订单发货, 2: 子订单发货',
-  `status`  SMALLINT NOT NULL COMMENT '0: 待发货, 1: 已发货, -1:已删除',
-  `type` tinyint NULL COMMENT '发货单类型',
+  `status`  SMALLINT NOT NULL COMMENT '1: 待同步恒康, 2:同步恒康中, 3: 已受理, 4:待发货,5:已发货,6:恒康确认收货,-1:恒康受理失败,-2:同步恒康失败,-3:同步恒康取消中,-4:同步取消恒康失败,-5:已取消,-6:恒康确认收货失败',
+  `type` tinyint NULL COMMENT '发货单类型:1.销售发货单,2.售后发货单',
   `created_at`  DATETIME  NULL COMMENT '创建时间',
   `updated_at`  DATETIME  NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
@@ -201,7 +201,7 @@ DROP TABLE IF EXISTS `parana_refunds`;
 CREATE TABLE `parana_refunds` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `after_sale_id` BIGINT(20) NOT NULL COMMENT '售后单id',
-  `refund_type`  SMALLINT NOT  NULL COMMENT '0: 售中退款, 1: 售后退款',
+  `refund_type`  SMALLINT NOT  NULL COMMENT '1:售后退款,2:售后退货,3.售后换货,4.售中仅退款',
   `fee`  BIGINT(20)  NULL COMMENT '实际退款金额',
   `diff_fee`  INT NULL COMMENT '改价金额',
   `shop_id` BIGINT(20) NOT NULL COMMENT '店铺id',
@@ -211,7 +211,7 @@ CREATE TABLE `parana_refunds` (
   `out_id`  VARCHAR(512)  NULL COMMENT '外部业务id',
   `integral`  BIGINT(20)  NULL COMMENT '要退的积分',
   `balance`  BIGINT(20)  NULL COMMENT '要退的余额',
-  `status`  BIGINT(20)  NULL COMMENT '状态',
+  `status`  BIGINT(20)  NULL COMMENT '状态,1.待完善,2.待同步恒康,3.同步恒康中,4.待退款(仅退款类型),5.待退货(退货退款类型),6.待退货(换货类型),7.待退款,8.退货完成待创建发货,9.待发货,10.待确认收货,11.已退款,12.已完成,-1.同步恒康失败,-2.同步恒康取消中,-3.已取消,-4.同步恒康取消失败,-6.已删除',
   `refund_serial_no`  VARCHAR(512)  NULL COMMENT '退款流水号',
   `payment_id` BIGINT(20) NULL COMMENT '对应的支付单id',
   `trade_no`  VARCHAR(512)  NULL COMMENT '对应支付单的电商平台交易流水号',
@@ -238,7 +238,7 @@ CREATE TABLE `parana_order_refunds` (
   `refund_id`  BIGINT(20)  NOT NULL COMMENT '退款单id',
   `order_id`  BIGINT(20) NOT NULL COMMENT '(子)订单id',
   `order_type`  SMALLINT NOT  NULL COMMENT '1: 店铺订单, 2: 子订单',
-  `status`  BIGINT(20)   NULL COMMENT '状态 0:待退款, 1:已退款, -1:删除',
+  `status`  BIGINT(20)   NULL COMMENT '状态,1.待完善,2.待同步恒康,3.同步恒康中,4.待退款(仅退款类型),5.待退货(退货退款类型),6.待退货(换货类型),7.待退款,8.退货完成待创建发货,9.待发货,10.待确认收货,11.已退款,12.已完成,-1.同步恒康失败,-2.同步恒康取消中,-3.已取消,-4.同步恒康取消失败,-6.已删除',
   `created_at`  DATETIME  NULL COMMENT '创建时间',
   `updated_at`  DATETIME  NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
@@ -264,7 +264,7 @@ CREATE TABLE `pousheng_trade_express_code`
  `updated_at` datetime NOT NULL,
   PRIMARY KEY(`id`),
   KEY `idx_express_code_name` (`name`)
-)COMMENT='快递商代码';
+)COMMENT='快递管理表';
 
 drop table if exists `pousheng_operation_logs`;
 CREATE TABLE `pousheng_operation_logs`

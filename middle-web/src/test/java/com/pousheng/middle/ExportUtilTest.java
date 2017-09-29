@@ -59,7 +59,7 @@ public class ExportUtilTest {
         orderExport.setShopName("shangzhaer");
         orderExport.setPaymentDate(new Date());
         orderExport.setOrderStatus(MiddleOrderStatus.CONFIRMED.getName());
-        orderExport.setFee(4489L);
+        orderExport.setFee(448.9);
 
         ExportContext context = new ExportContext(Collections.singletonList(orderExport));
         context.setResultType(ExportContext.ResultType.FILE);

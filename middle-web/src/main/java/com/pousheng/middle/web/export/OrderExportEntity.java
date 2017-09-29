@@ -76,7 +76,7 @@ public class OrderExportEntity {
      * 运费
      */
     @ExportTitle("运费")
-    private Long shipFee;
+    private Double shipFee;
 
 
     /**
@@ -116,5 +116,5 @@ public class OrderExportEntity {
      * 金额
      */
     @ExportTitle("金额")
-    private Long fee;
+    private Double fee;
 }

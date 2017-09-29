@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.export;
 
+import com.pousheng.middle.web.utils.export.ExportDateFormat;
 import com.pousheng.middle.web.utils.export.ExportTitle;
 import lombok.Data;
 
@@ -31,7 +32,7 @@ public class RefundExportEntity {
     private String refundType;
 
     @ExportTitle("退款金额")
-    private Long amt;
+    private Double amt;
 
     @ExportTitle("状态")
     private String status;
@@ -55,5 +56,6 @@ public class RefundExportEntity {
     private Integer actualQuantity;
 
     @ExportTitle("入库时间")
+    @ExportDateFormat("yyyy-MM-dd HH:mm:ss")
     private Date warehousingDate;
 }

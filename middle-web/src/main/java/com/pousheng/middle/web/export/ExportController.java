@@ -200,7 +200,7 @@ public class ExportController {
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
 //                    export.setShipFee(skuOrder.getShipFee());
-                    export.setShipFee(null == shopOrder.getShipFee() ? null : shopOrder.getShipFee().longValue());
+                    export.setShipFee(null == shopOrder.getShipFee() ? null : new BigDecimal(shopOrder.getShipFee()).divide(new BigDecimal(100),2,BigDecimal.ROUND_HALF_UP).doubleValue());
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
@@ -238,7 +238,7 @@ public class ExportController {
                         export.setBrandName(spus.get(skuOrder.getSkuCode()).getBrandName());
                     export.setSkuQuantity(skuOrder.getQuantity());
                     if (null != skuOrder.getFee())
-                        export.setFee(new BigDecimal(skuOrder.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).longValue());//从分转换成元
+                        export.setFee(new BigDecimal(skuOrder.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());//从分转换成元
                     orderExportData.add(export);
                 });
 
@@ -319,7 +319,7 @@ public class ExportController {
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
                         export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
-                        export.setAmt(item.getFee());
+                        export.setAmt(item.getFee()==null?null:new BigDecimal(item.getFee()).divide(new BigDecimal(100),2,BigDecimal.ROUND_HALF_UP).doubleValue());
 
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             //TODO 货号
@@ -343,7 +343,7 @@ public class ExportController {
                                 export.setActualQuantity(hkinfo.getQuantity());
                             });
                         }
-                        export.setWarehousingDate(refundExtra.getConfirmReceivedAt());
+                        export.setWarehousingDate(refundExtra.getHkReturnDoneAt());
 
                         refundExportData.add(export);
                     });

@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.TreeMap;
 
 /**
@@ -41,8 +43,8 @@ public class YchLoginListener {
             return;
         }
         log.info("login ip is :{}", ip);
-        if ("127.0.0.1".equals(ip)) {
-            log.warn("catch localhost ip");
+        if (isPrivateIPAddress(ip)) {
+            log.warn("catch private ip,skip to send log to ych");
             return;
         }
 
@@ -85,6 +87,19 @@ public class YchLoginListener {
 
         log.info("risk is {} where userId={},userIp={},ati={}",
                 response.getResult(), userId, userId, ati);
+    }
+
+    private boolean isPrivateIPAddress(String ipAddress) {
+        InetAddress ia;
+        try {
+            InetAddress ad = InetAddress.getByName(ipAddress);
+            byte[] ip = ad.getAddress();
+            ia = InetAddress.getByAddress(ip);
+        } catch (UnknownHostException e) {
+            log.error("invalid ip address:{}", ipAddress, e);
+            return false;
+        }
+        return ia.isLoopbackAddress() || ia.isSiteLocalAddress();
     }
 
 }

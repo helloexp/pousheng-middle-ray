@@ -285,7 +285,7 @@ public class RefundWriteLogic {
         RefundItem currentRefundItem = existRefundItem;//当前编辑情况下的退货商品
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //发货单信息
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId()==null?submitRefundInfo.getShipmentId():refundExtra.getShipmentId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
 

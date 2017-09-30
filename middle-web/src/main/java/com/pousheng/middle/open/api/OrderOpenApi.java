@@ -264,9 +264,8 @@ public class OrderOpenApi {
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
-            List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = new ArrayList<>();
-            HkConfirmReturnItemInfo hkConfirmReturnItemInfo =JsonMapper.nonEmptyMapper().fromJson(itemInfo,HkConfirmReturnItemInfo.class);
-            hkConfirmReturnItemInfos.add(hkConfirmReturnItemInfo);
+            List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkConfirmReturnItemInfo.class));
+
             refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
 
             //更新状态

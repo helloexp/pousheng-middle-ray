@@ -110,6 +110,8 @@ public class Users {
             throw new JsonResponseException("authorize.fail");
         }
 
+        log.info("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
+
 
         ParanaUser paranaUser= buildParanaUser(userOptional.get());
         log.info("LOGIN SUCCESS user name:{}",paranaUser.getName());

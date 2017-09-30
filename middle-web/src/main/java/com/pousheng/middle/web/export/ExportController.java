@@ -7,6 +7,7 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;
@@ -65,6 +66,8 @@ public class ExportController {
 
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private ExportService exportService;
 
@@ -150,6 +153,7 @@ public class ExportController {
                         s -> s.getStatus().equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
                                 || s.getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())).findFirst();
 
+
                 Optional<Payment> payment = paymentResponse.getResult().stream().filter(p -> (p.getStatus().equals(3))).findAny();
 
                 Optional<ReceiverInfo> receiverInfo = receiverResponse.getResult().stream().findFirst();
@@ -181,8 +185,9 @@ public class ExportController {
                     export.setOrderID(skuOrder.getOrderId());
                     export.setShopName(skuOrder.getShopName());
                     shipment.ifPresent(s -> {
-                        export.setShipmentCorpName(s.getShipmentCorpName());
-                        export.setCarrNo(s.getShipmentSerialNo());
+                        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(s);
+                        export.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
+                        export.setCarrNo(shipmentExtra.getShipmentSerialNo());
                         //TODO 收货人信息待完善
                         receiverInfo.ifPresent(receiver -> {
                             export.setReciverAddress(receiver.getDetail());
@@ -196,11 +201,13 @@ public class ExportController {
 
                     //TODO paytype enum
                     export.setPayType("在线支付");
-                    payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
+
+//                    payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
+                    export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
 //                    export.setShipFee(skuOrder.getShipFee());
-                    export.setShipFee(null == shopOrder.getShipFee() ? null : new BigDecimal(shopOrder.getShipFee()).divide(new BigDecimal(100),2,BigDecimal.ROUND_HALF_UP).doubleValue());
+                    export.setShipFee(null == shopOrder.getShipFee() ? null : new BigDecimal(shopOrder.getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
@@ -319,7 +326,7 @@ public class ExportController {
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
                         export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
-                        export.setAmt(item.getFee()==null?null:new BigDecimal(item.getFee()).divide(new BigDecimal(100),2,BigDecimal.ROUND_HALF_UP).doubleValue());
+                        export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             //TODO 货号

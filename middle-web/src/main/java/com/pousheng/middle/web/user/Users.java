@@ -96,6 +96,8 @@ public class Users {
 
         UcUserInfo ucUserInfo = operationLogic.authGetUserInfo(tokenInfo.getAccessToken());
 
+        log.info("[MIDDLE] get uc user info:{}",ucUserInfo);
+
 
         val userResp = userReadService.findByOutId(ucUserInfo.getUserId());
         if (!userResp.isSuccess()) {

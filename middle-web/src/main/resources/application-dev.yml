@@ -36,7 +36,8 @@ session:
   cookie-context-path: /
   cookie-domain: pousheng.com
   cookie-name: msid
-  cookie-max-age: 1800
+  cookie-max-age: 604800
+  max-inactive-interval: 604800
   source: redis
   serialize-type: json
   redis-host: ${POUSHENG_REDIS_HOST}

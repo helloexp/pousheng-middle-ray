@@ -68,16 +68,11 @@ public class UcUserOperationLogic {
 
     public UcUserInfo authGetUserInfo(String token){
 
-        log.info("[USER-CENTER] get user info token:{} ",token);
-
-
         String resultJson = HttpRequest.get(userCenterGateway+"/userinfo")
                 .authorization("Bearer " + token)
                 .connectTimeout(1000000)
                 .readTimeout(1000000)
                 .body();
-
-        log.info("[USER-CENTER] get user info result:{} ",resultJson);
 
         return JsonMapper.nonDefaultMapper().fromJson(resultJson,UcUserInfo.class);
 

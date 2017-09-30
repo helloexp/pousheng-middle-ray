@@ -96,6 +96,8 @@ public class Users {
 
         UcUserInfo ucUserInfo = operationLogic.authGetUserInfo(tokenInfo.getAccessToken());
 
+        log.info("[MIDDLE] get uc user info:{}",ucUserInfo);
+
 
         val userResp = userReadService.findByOutId(ucUserInfo.getUserId());
         if (!userResp.isSuccess()) {
@@ -107,6 +109,8 @@ public class Users {
             log.error("user(name:{}) not belong to current system",ucUserInfo.getUsername());
             throw new JsonResponseException("authorize.fail");
         }
+
+        log.info("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
 
 
         ParanaUser paranaUser= buildParanaUser(userOptional.get());

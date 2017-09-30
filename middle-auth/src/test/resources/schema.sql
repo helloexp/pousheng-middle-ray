@@ -13,6 +13,7 @@ CREATE TABLE `pousheng_users` (
   PRIMARY KEY (`id`),
   KEY `idx_psu_out_id` (out_id)
 ) COMMENT='用户基本信息表' ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE INDEX idx_pousheng_users_out_id ON `pousheng_users` (`out_id`);
 
 
 

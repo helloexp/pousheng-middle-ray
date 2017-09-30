@@ -29,16 +29,7 @@ public class WarehouseCompanyRule implements Serializable {
      * 公司名称
      */
     private String companyName;
-    
-    /**
-     * 店铺id
-     */
-    private String shopId;
 
-    /**
-     * 店铺名称
-     */
-    private String shopName;
     
     /**
      * 仓库id

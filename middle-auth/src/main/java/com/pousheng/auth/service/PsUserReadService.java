@@ -7,6 +7,7 @@ import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 /**
@@ -15,13 +16,13 @@ import org.springframework.stereotype.Service;
  * Date: 2017-06-23
  */
 @Slf4j
-@Service
-public class UserReadService {
+@Component
+public class PsUserReadService {
 
     private final UserDao userDao;
 
     @Autowired
-    public UserReadService(UserDao userDao) {
+    public PsUserReadService(UserDao userDao) {
         this.userDao = userDao;
     }
 

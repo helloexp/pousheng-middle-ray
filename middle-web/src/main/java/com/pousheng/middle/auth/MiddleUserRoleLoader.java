@@ -2,7 +2,7 @@ package com.pousheng.middle.auth;
 
 import com.google.common.base.Throwables;
 import com.pousheng.auth.model.MiddleUser;
-import com.pousheng.auth.service.UserReadService;
+import com.pousheng.auth.service.PsUserReadService;
 import io.terminus.common.model.Response;
 import io.terminus.parana.auth.api.*;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +24,7 @@ import java.util.List;
 public class MiddleUserRoleLoader implements UserRoleLoader {
 
     @Autowired
-    private UserReadService userReadService;
+    private PsUserReadService userReadService;
 
     @Autowired
     private RoleProviderRegistry roleProviderRegistry;

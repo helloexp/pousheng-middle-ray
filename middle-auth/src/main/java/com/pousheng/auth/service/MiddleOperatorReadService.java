@@ -8,13 +8,14 @@ import io.terminus.parana.auth.impl.dao.OperatorDao;
 import io.terminus.parana.auth.model.Operator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 
 /**
  * Created by tony on 2017/8/12.
  * pousheng-middle
  */
-@Service
+@Component
 @Slf4j
 public class MiddleOperatorReadService {
     @Autowired

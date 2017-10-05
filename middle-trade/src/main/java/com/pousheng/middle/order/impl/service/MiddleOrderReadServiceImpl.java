@@ -4,8 +4,6 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
-import com.pousheng.middle.order.model.MiddleShopOrder;
-import com.pousheng.middle.order.impl.dao.MiddleShopOrderDao;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
@@ -33,8 +31,6 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
     @Autowired
     private ShopOrderDao shopOrderDao;
     @Autowired
-    private MiddleShopOrderDao middleShopOrderDao;
-    @Autowired
     private OrderInvoiceDao orderInvoiceDao;
     @Autowired
     private InvoiceDao invoiceDao;
@@ -53,16 +49,6 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
         }
     }
 
-    @Override
-    public Response<Paging<MiddleShopOrder>> pagingMiddleShopOrder(MiddleOrderCriteria criteria) {
-        try {
-            Paging<MiddleShopOrder> paging = middleShopOrderDao.pagingAlias(criteria.getOffset(),criteria.getLimit(),criteria.toMap());
-            return Response.ok(paging);
-        } catch (Exception e) {
-            log.error("failed to paging shop order, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
-            return Response.fail("shop.order.find.fail");
-        }
-    }
 
     @Override
     public Response<List<Invoice>> findInvoiceInfo(Long orderId, OrderLevel orderLevel) {

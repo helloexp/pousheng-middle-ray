@@ -40,6 +40,7 @@ import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -111,19 +112,42 @@ public class AdminOrderReader {
         else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
-
-        Response<Paging<MiddleShopOrder>> pagingRes =  middleOrderReadService.pagingMiddleShopOrder(middleOrderCriteria);
-        if(!pagingRes.isSuccess()){
-            return Response.fail(pagingRes.getError());
+        Response<Paging<ShopOrder>> pagingRes = new Response<>();
+        //判断是否填写了手机号
+        if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
+            Response<Paging<OrderReceiverInfo>> receiversResponse = receiverInfoReadService.paging(middleOrderCriteria.getPageNo(),middleOrderCriteria.getPageSize(),middleOrderCriteria.getMobile());
+            if(!receiversResponse.isSuccess()){
+                return Response.fail(receiversResponse.getError());
+            }
+            List<OrderReceiverInfo> orderReceiverInfos = receiversResponse.getResult().getData();
+            List<Long> shopOrderIds = orderReceiverInfos.stream().filter(Objects::nonNull).map(it->it.getOrderId()).collect(Collectors.toList());
+            Response<List<ShopOrder>> response =  shopOrderReadService.findByIds(shopOrderIds);
+            if(!response.isSuccess()){
+                return Response.fail(response.getError());
+            }
+            Paging<ShopOrder> shopOrderPaging = Paging.empty();
+            shopOrderPaging.setData(response.getResult());
+            shopOrderPaging.setTotal(receiversResponse.getResult().getTotal());
+            pagingRes.setResult(shopOrderPaging);
+        }else{
+            pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+            if(!pagingRes.isSuccess()){
+                return Response.fail(pagingRes.getError());
+            }
         }
-        Flow flow = flowPicker.pickOrder();
-        List<MiddleShopOrder> shopOrders = pagingRes.getResult().getData();
 
+        Flow flow = flowPicker.pickOrder();
+        List<ShopOrder> shopOrders = pagingRes.getResult().getData();
         Paging<ShopOrderPagingInfo> pagingInfoPaging = Paging.empty();
         List<ShopOrderPagingInfo> pagingInfos = Lists.newArrayListWithCapacity(shopOrders.size());
         shopOrders.forEach(shopOrder -> {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
-            shopOrderPagingInfo.setShopOrder(shopOrder);
+            Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(shopOrder.getId(),OrderLevel.SHOP);
+            ReceiverInfo receiverInfo = response.getResult().get(0);
+            MiddleShopOrder middleShopOrder  = new MiddleShopOrder();
+            BeanUtils.copyProperties(shopOrder,middleShopOrder);
+            middleShopOrder.setMobile(receiverInfo.getMobile());
+            shopOrderPagingInfo.setShopOrder(middleShopOrder);
             String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
             shopOrderPagingInfo.setShopOrderOperations(Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.WAIT_SHIP.getValue())
                     ?flow.availableOperations(shopOrder.getStatus())

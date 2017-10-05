@@ -79,7 +79,10 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      */
     private String mobile;
 
-
+    /**
+     * 订单id集合
+     */
+    private List<Long> ids;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

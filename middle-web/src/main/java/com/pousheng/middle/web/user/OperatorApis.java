@@ -7,8 +7,8 @@ import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.MiddleOperatorReadService;
-import com.pousheng.auth.service.UserReadService;
-import com.pousheng.auth.service.UserWriteService;
+import com.pousheng.auth.service.PsUserReadService;
+import com.pousheng.auth.service.PsUserWriteService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
@@ -47,9 +47,9 @@ import java.util.Objects;
 public class OperatorApis {
 
     @Autowired
-    private UserWriteService userWriteService;
+    private PsUserWriteService userWriteService;
     @Autowired
-    private UserReadService userReadService;
+    private PsUserReadService userReadService;
     @RpcConsumer
     private OperatorReadService operatorReadService;
     @RpcConsumer

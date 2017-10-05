@@ -7,7 +7,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
-import com.pousheng.auth.service.UserReadService;
+import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import com.pousheng.middle.web.events.user.LoginEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
@@ -49,7 +49,7 @@ public class Users {
     private EventBus eventBus;
 
     @Autowired
-    private UserReadService userReadService;
+    private PsUserReadService userReadService;
     @Autowired
     private UcUserOperationLogic operationLogic;
     @Autowired

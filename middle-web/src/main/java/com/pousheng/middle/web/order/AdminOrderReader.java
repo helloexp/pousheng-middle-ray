@@ -5,14 +5,12 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ych.logger.events.OrderOpEvent;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.MiddleOrderCriteria;
-import com.pousheng.middle.order.dto.ShopOrderPagingInfo;
-import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
-import com.pousheng.middle.order.dto.WaitShipItemInfo;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.model.MiddleShopOrder;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
@@ -77,8 +75,6 @@ public class AdminOrderReader {
     private MiddleOrderReadService middleOrderReadService;
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
-    @RpcConsumer
-    private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
@@ -89,6 +85,8 @@ public class AdminOrderReader {
     private SkuOrderReadService skuOrderReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @RpcConsumer
+    private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
@@ -113,13 +111,15 @@ public class AdminOrderReader {
         else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
+        //如果收货人手机号不为空
 
-        Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
+        Response<Paging<MiddleShopOrder>> pagingRes =  middleOrderReadService.pagingMiddleShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());
         }
         Flow flow = flowPicker.pickOrder();
-        List<ShopOrder> shopOrders = pagingRes.getResult().getData();
+        List<MiddleShopOrder> shopOrders = pagingRes.getResult().getData();
+
         Paging<ShopOrderPagingInfo> pagingInfoPaging = Paging.empty();
         List<ShopOrderPagingInfo> pagingInfos = Lists.newArrayListWithCapacity(shopOrders.size());
         shopOrders.forEach(shopOrder -> {

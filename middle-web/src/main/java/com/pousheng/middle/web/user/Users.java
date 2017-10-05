@@ -100,6 +100,8 @@ public class Users {
 
 
         val userResp = userReadService.findByOutId(ucUserInfo.getUserId());
+        log.info("end find middle user by outer id:{}",ucUserInfo.getUserId());
+
         if (!userResp.isSuccess()) {
             log.warn("find  user failed, outId={}, error={}", ucUserInfo.getUserId(), userResp.getError());
             throw new JsonResponseException(userResp.getError());

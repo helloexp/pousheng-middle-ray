@@ -111,7 +111,6 @@ public class AdminOrderReader {
         else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
-        //如果收货人手机号不为空
 
         Response<Paging<MiddleShopOrder>> pagingRes =  middleOrderReadService.pagingMiddleShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){

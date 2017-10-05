@@ -16,7 +16,7 @@ spring:
     initialize: false
     continue-on-error: false
     hikari:
-      maximum-pool-size: 300
+      maximum-pool-size: 400
       minimum-idle: 5
   application:
     name: pousheng-middle

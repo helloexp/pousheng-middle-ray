@@ -43,6 +43,7 @@ import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -84,6 +85,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+
+    /**
+     * 天猫加密字段占位符
+     */
+    private static final String ENCRYPTED_FIELD_PLACE_HOLDER = "#****";
 
     @Override
     protected Item findItemById(Long paranaItemId) {
@@ -146,7 +152,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
-            if (skuOrders.size()==0){
+            if (skuOrders.size() == 0) {
                 return;
             }
             for (SkuOrder skuOrder : skuOrders) {
@@ -157,16 +163,16 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
             //判断订单的状态是否是已完成
             ShopOrder shopOrder1 = orderReadLogic.findShopOrderById(shopOrder.getId());
-            if (!Objects.equals(shopOrder1.getStatus(),MiddleOrderStatus.CONFIRMED.getValue())) {
+            if (!Objects.equals(shopOrder1.getStatus(), MiddleOrderStatus.CONFIRMED.getValue())) {
                 log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order",
                         shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
-            }else {
+            } else {
                 //更新同步电商状态为已确认收货
                 OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
                 Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
                 if (response.isSuccess()) {
                     //通知恒康发货单收货时间
-                    NotifyHkOrderDoneEvent event  = new NotifyHkOrderDoneEvent();
+                    NotifyHkOrderDoneEvent event = new NotifyHkOrderDoneEvent();
                     event.setShopOrderId(shopOrder.getId());
                     eventBus.post(event);
                 }
@@ -178,13 +184,19 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
+        RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
+
         if (OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO) {
-            //这里先把buyer改为#***，因为数据加密后长度很长，会导致数据库长度不够
-            richOrder.getBuyer().setName("#****");
+            //这里先把buyer和mobile改为占位符，因为数据加密后长度很长，会导致数据库长度不够
+            richOrder.getBuyer().setName(ENCRYPTED_FIELD_PLACE_HOLDER);
+            if (richSkusByShop.getReceiverInfo() != null) {
+                if (StringUtils.hasText(richSkusByShop.getReceiverInfo().getMobile())) {
+                    richSkusByShop.getReceiverInfo().setMobile(ENCRYPTED_FIELD_PLACE_HOLDER);
+                }
+            }
         }
 
         //初始化店铺订单的extra
-        RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         richSkusByShop.setExtra(shopOrderExtra);

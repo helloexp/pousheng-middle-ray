@@ -10,7 +10,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.model.MiddleShopOrder;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
@@ -40,7 +39,6 @@ import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -116,7 +114,6 @@ public class AdminOrderReader {
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());
         }
-
         Flow flow = flowPicker.pickOrder();
         List<ShopOrder> shopOrders = pagingRes.getResult().getData();
         Paging<ShopOrderPagingInfo> pagingInfoPaging = Paging.empty();

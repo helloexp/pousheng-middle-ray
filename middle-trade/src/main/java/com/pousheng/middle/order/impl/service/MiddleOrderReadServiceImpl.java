@@ -49,7 +49,6 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
         }
     }
 
-
     @Override
     public Response<List<Invoice>> findInvoiceInfo(Long orderId, OrderLevel orderLevel) {
         try {

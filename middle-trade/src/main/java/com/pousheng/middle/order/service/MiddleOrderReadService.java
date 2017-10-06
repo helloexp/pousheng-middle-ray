@@ -50,7 +50,4 @@ public interface MiddleOrderReadService {
      * @return 发票信息
      */
     Response<List<OrderReceiverInfo>> findOrderReceiverInfo(Long orderId, OrderLevel orderLevel);
-
-
-
 }

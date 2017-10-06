@@ -75,6 +75,7 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      */
     private String statusStr;
 
+
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

@@ -1,7 +1,6 @@
 package com.pousheng.middle.order.service;
 
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
-import com.pousheng.middle.order.model.MiddleShopOrder;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Invoice;

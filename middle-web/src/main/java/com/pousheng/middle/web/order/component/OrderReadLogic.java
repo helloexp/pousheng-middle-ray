@@ -501,7 +501,7 @@ public class OrderReadLogic {
             log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());
         }
-        String innerCode = warehouseRes.getResult().getCompanyCode();
-        return Objects.equals(innerCode,comanyCode);
+        String currentCompanyCode = warehouseRes.getResult().getCompanyCode();
+        return Objects.equals(currentCompanyCode,comanyCode);
     }
 }

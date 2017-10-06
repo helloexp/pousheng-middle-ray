@@ -11,6 +11,8 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -71,7 +73,8 @@ public class OrderReadLogic {
     private OpenShopReadService openShopReadService;
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
-
+    @Autowired
+    private WarehouseReadService warehouseReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
 
@@ -462,5 +465,43 @@ public class OrderReadLogic {
             throw new JsonResponseException("find.openShop.failed");
         }
         return response.getResult();
+    }
+
+    /**
+     * 查询店铺
+     * @param shopIds 店铺主键集合
+     * @return
+     */
+    public List<OpenShop> findOpenShopByShopIds(List<Long> shopIds){
+        Response<List<OpenShop>> response = openShopReadService.findByIds(shopIds);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopIds are {},caused by {}",shopIds,response.getError());
+            throw new JsonResponseException("find.openShop.failed");
+        }
+        return response.getResult();
+    }
+
+    /**
+     * 判断所选择的发货仓库是否属于下单店铺的账套
+     * @param warehouseId
+     * @param shopId
+     * @return
+     */
+    public boolean validateCompanyCode(Long warehouseId,Long shopId){
+        Response<OpenShop> response = openShopReadService.findById(shopId);
+        if (!response.isSuccess()){
+            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
+            throw new JsonResponseException("find.openShop.failed");
+        }
+        //获取openShop表中维护的账套
+        String comanyCode = this.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,response.getResult());
+
+        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        if(!warehouseRes.isSuccess()){
+            log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());
+            throw new JsonResponseException(warehouseRes.getError());
+        }
+        String innerCode = warehouseRes.getResult().getCompanyCode();
+        return Objects.equals(innerCode,comanyCode);
     }
 }

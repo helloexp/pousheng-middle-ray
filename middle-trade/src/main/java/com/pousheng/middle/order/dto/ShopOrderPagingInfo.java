@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dto;
 
 import com.pousheng.middle.order.model.MiddleShopOrder;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -13,7 +14,7 @@ import java.util.Set;
 @Data
 public class ShopOrderPagingInfo implements Serializable{
 
-    MiddleShopOrder shopOrder;
+    ShopOrder shopOrder;
 
     /**
      * 操作

@@ -90,6 +90,7 @@ public class CreateShipments {
                                                  @RequestParam("data") String data,
                                                  @RequestParam(value = "warehouseId") Long warehouseId,
                                                  @RequestParam(defaultValue = "1") Integer type) {
+
         Response<ShipmentPreview> response;
         if (Objects.equals(1, type)) {
             response = shipmentReadLogic.orderShipPreview(id, data);
@@ -116,7 +117,10 @@ public class CreateShipments {
         Warehouse warehouse = warehouseRes.getResult();
         shipmentPreview.setWarehouseId(warehouse.getId());
         shipmentPreview.setWarehouseName(warehouse.getName());
-
+        //判断所选仓库是否数据下单店铺的账套
+        if (!orderReadLogic.validateCompanyCode(warehouseId,shipmentPreview.getShopId())){
+            throw new JsonResponseException("warehouse.must.be.in.one.company");
+        }
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);

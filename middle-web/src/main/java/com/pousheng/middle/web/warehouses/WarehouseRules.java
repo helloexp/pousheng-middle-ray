@@ -2,13 +2,16 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.warehouse.dto.RuleGroup;
 import com.pousheng.middle.warehouse.dto.ThinShop;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -18,11 +21,14 @@ import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 店铺规则
@@ -50,6 +56,8 @@ public class WarehouseRules {
 
     @RpcConsumer
     private WarehouseShopGroupReadService warehouseShopGroupReadService;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
 
     /**
@@ -61,8 +69,19 @@ public class WarehouseRules {
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建")
     public Long create(@RequestBody ThinShop[] shops) {
-
-        Response<Long> r = warehouseShopRuleWriteService.batchCreate(Lists.newArrayList(shops));
+        //判断所选店铺是否属于同一账套
+        List<ThinShop> thinShops = Lists.newArrayList(shops);
+        List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
+        List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
+        Set<String> companyCodes = new HashSet<>();
+        openShops.forEach(openShop -> {
+            String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+            companyCodes.add(companyCode);
+        });
+        if (companyCodes.size()>1){
+            throw new JsonResponseException("shop.must.be.in.one.company");
+        }
+        Response<Long> r = warehouseShopRuleWriteService.batchCreate(thinShops);
         if (!r.isSuccess()) {
             log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());
             throw new JsonResponseException(r.getError());
@@ -80,7 +99,18 @@ public class WarehouseRules {
     @RequestMapping(value="/{ruleId}",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("编辑")
     public Boolean update(@PathVariable Long ruleId,  @RequestBody ThinShop[] shops) {
-
+        //判断所选店铺是否属于同一账套
+        List<ThinShop> thinShops = Lists.newArrayList(shops);
+        List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
+        List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
+        Set<String> companyCodes = new HashSet<>();
+        openShops.forEach(openShop -> {
+            String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+            companyCodes.add(companyCode);
+        });
+        if (companyCodes.size()>1){
+            throw new JsonResponseException("shop.must.be.in.one.company");
+        }
         Response<Boolean> r = warehouseShopRuleWriteService.batchUpdate(ruleId, Lists.newArrayList(shops));
         if (!r.isSuccess()) {
             log.error("failed to batch update warehouse rule(id={}) with shops:{}, error code:{}",
@@ -149,6 +179,32 @@ public class WarehouseRules {
             enableCurrentRuleShops(groupId, thinShops);
         }
         return thinShops;
+    }
+
+    /**
+     * 根据ruleId获取公司码
+     * @param ruleId
+     * @return
+     */
+    @RequestMapping(value = "/{ruleId}/companyCode",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public String getCompanyCode(@PathVariable Long ruleId){
+        Response<WarehouseRule> r = warehouseRuleReadService.findById(ruleId);
+        if (!r.isSuccess()){
+            log.error("failed to query warehouse rule (ruleId={}), error code:{}", ruleId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        WarehouseRule warehouseRule = r.getResult();
+        Long shopGroupId = warehouseRule.getShopGroupId();
+        Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
+        if (!rwsrs.isSuccess()) {
+            log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", shopGroupId, rwsrs.getError());
+            throw new JsonResponseException(rwsrs.getError());
+        }
+        List<WarehouseShopGroup> shopGroups = rwsrs.getResult();
+        WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
+        String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+        return companyCode;
     }
 
     private List<ThinShop> findAllCandidateShops() {

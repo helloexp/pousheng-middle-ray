@@ -74,15 +74,7 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 状态,用,分割
      */
     private String statusStr;
-    /**
-     * 手机号码
-     */
-    private String mobile;
 
-    /**
-     * 订单id集合
-     */
-    private List<Long> ids;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

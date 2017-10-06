@@ -116,7 +116,7 @@ public class SyncRefundLogic {
             } else {
                 //更新同步状态
                 updateRefundSyncFial(refund);
-                return Response.fail(head.getMessage());
+                return Response.fail("恒康返回信息:"+head.getMessage());
             }
         } catch (Exception e) {
             log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
@@ -202,7 +202,7 @@ public class SyncRefundLogic {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
-                return Response.fail(head.getMessage());
+                return Response.fail("恒康返回信息:"+head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {

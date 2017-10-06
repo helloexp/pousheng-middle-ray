@@ -77,6 +77,8 @@ public class TradeConstants {
     public static final String HK_PERFORMANCE_SHOP_NAME="hkPerformanceShopName";
     //hk绩效店铺代码
     public static final String HK_PERFORMANCE_SHOP_CODE="hkPerformanceShopCode";
+    //公司代码(账套)
+    public static final String HK_COMPANY_CODE="companyCode";
     /**
      * 逆向单来源
      * see RefundSource

@@ -295,6 +295,9 @@ public class RefundWriteLogic {
         completeWareHoseAndExpressInfo(refund.getRefundType(),refundExtra,submitRefundInfo);
         //添加处理完成时间
         refundExtra.setHandleDoneAt(new Date());
+        if (refundExtra.getShipmentId()==null){
+            refundExtra.setShipmentId(submitRefundInfo.getShipmentId());
+        }
         Refund updateRefund = new Refund();
         updateRefund.setId(refund.getId());
         updateRefund.setBuyerNote(submitRefundInfo.getBuyerNote());
@@ -418,7 +421,7 @@ public class RefundWriteLogic {
         }else {
             //改变了商品
             updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),editSubmitRefundInfo.getRefundQuantity(),shipmentItems);
-            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-refundItem.getApplyQuantity(),shipmentItems);
+            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-(refundItem.getApplyQuantity()==null?0:refundItem.getApplyQuantity()),shipmentItems);
 
         }
 

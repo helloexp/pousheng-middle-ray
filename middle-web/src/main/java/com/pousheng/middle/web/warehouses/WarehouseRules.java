@@ -186,7 +186,7 @@ public class WarehouseRules {
      * @param ruleId
      * @return
      */
-    @RequestMapping(value = "/{ruleId}/companyCode",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{ruleId}/company/code",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public String getCompanyCode(@PathVariable Long ruleId){
         Response<WarehouseRule> r = warehouseRuleReadService.findById(ruleId);
         if (!r.isSuccess()){

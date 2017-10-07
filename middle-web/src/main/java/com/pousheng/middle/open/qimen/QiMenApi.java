@@ -2,11 +2,15 @@ package com.pousheng.middle.open.qimen;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
+import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.utils.XmlUtils;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.channel.OpenClientChannel;
@@ -16,9 +20,7 @@ import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
@@ -43,6 +45,9 @@ public class QiMenApi {
 
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+
+    @Autowired
+    private ErpOpenApiClient erpOpenApiClient;
 
     private static final String WMS_APP_KEY = "terminus-wms";
 
@@ -101,6 +106,38 @@ public class QiMenApi {
     public String gatewayOfErp(HttpServletRequest request) {
         log.info("erp receive request:{}", request);
         return XmlUtils.toXml(QimenResponse.ok());
+    }
+
+    /**
+     * 手动触发同步收货人信息
+     *
+     * @param shopOrderId 中台店铺订单id
+     */
+    @GetMapping(value = "/sync-order-receiver")
+    public String syncOrderReceiver(@RequestParam("orderId") Long shopOrderId) {
+        Response<ShopOrder> findR = shopOrderReadService.findById(shopOrderId);
+        if (!findR.isSuccess()) {
+            log.error("fail to find shop order by id={},cause:{}",
+                    shopOrderId, findR.getError());
+            throw new JsonResponseException(findR.getError());
+        }
+        ShopOrder shopOrder = findR.getResult();
+
+        if ("taobao".equalsIgnoreCase(shopOrder.getOutFrom())) {
+            log.warn("shop order(id={}) is not taobao order,so skip to sync order receiver",
+                    shopOrderId);
+            return "is.not.taobao.order";
+        }
+        try {
+            erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", shopOrder.getShopId(), "orderId", shopOrder.getOutId()));
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                    shopOrder.getOutId(), shopOrder.getShopId(), Throwables.getStackTraceAsString(e));
+            return "fail";
+        }
+
+        return "ok";
     }
 
     private String retrievePayload(HttpServletRequest request) {

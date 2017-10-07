@@ -123,7 +123,7 @@ public class QiMenApi {
         }
         ShopOrder shopOrder = findR.getResult();
 
-        if ("taobao".equalsIgnoreCase(shopOrder.getOutFrom())) {
+        if (!"taobao".equalsIgnoreCase(shopOrder.getOutFrom())) {
             log.warn("shop order(id={}) is not taobao order,so skip to sync order receiver",
                     shopOrderId);
             return "is.not.taobao.order";

@@ -16,6 +16,8 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import java.util.TreeMap;
 
+import static com.pousheng.middle.open.ych.utils.IpUtils.isPrivateIPAddress;
+
 /**
  * Created by cp on 9/13/17.
  */
@@ -62,15 +64,20 @@ public class LogListener {
             return;
         }
 
+        if (isPrivateIPAddress(ip)) {
+            log.warn("catch private ip,skip to send order operation log");
+            return;
+        }
+
         String ati = WebUtil.findCookieValue(request, "_ati");
         if (!StringUtils.hasText(ati)) {
             log.warn("can not get ych ati");
             return;
         }
-        log.info("ati is :{}", ati);
+        log.debug("ati is :{}", ati);
 
         String url = request.getRequestURI();
-        log.info("url is :{}", url);
+        log.debug("url is :{}", url);
 
         TreeMap<String, String> params = Maps.newTreeMap();
         params.put("userId", "宝胜:" + MoreObjects.firstNonNull(orderOpEvent.getUser().getName(), "admin"));

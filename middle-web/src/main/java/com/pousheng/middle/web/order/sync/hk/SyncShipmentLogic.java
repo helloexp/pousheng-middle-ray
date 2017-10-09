@@ -109,7 +109,7 @@ public class SyncShipmentLogic {
                 log.error("sync hk fail, return code :{},return message:{}",head.getCode(),head.getMessage());
                 //更新状态为同步失败
                 updateShipmetSyncFail(shipment);
-                return Response.fail(head.getMessage());
+                return Response.fail("恒康返回信息:"+head.getMessage());
             }
             return Response.ok();
         } catch (Exception e) {
@@ -186,7 +186,7 @@ public class SyncShipmentLogic {
             } else {
                 //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail(head.getMessage());
+                return Response.fail("恒康返回信息:"+head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {
@@ -227,7 +227,7 @@ public class SyncShipmentLogic {
             } else {
                 //更新状态取消失败
                 updateShipmetDoneToHkFail(shipment,MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
-                return Response.fail(head.getMessage());
+                return Response.fail("恒康返回信息:"+head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {

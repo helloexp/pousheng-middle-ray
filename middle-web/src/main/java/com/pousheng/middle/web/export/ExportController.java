@@ -188,15 +188,11 @@ public class ExportController {
                         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(s);
                         export.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                         export.setCarrNo(shipmentExtra.getShipmentSerialNo());
-                        //TODO 收货人信息待完善
                         receiverInfo.ifPresent(receiver -> {
                             export.setReciverAddress(receiver.getDetail());
                             export.setReciverName(receiver.getReceiveUserName());
-                            export.setPhone(receiver.getPhone());
+                            export.setPhone(receiver.getMobile());
                         });
-                        //                    export.setReciverName(s.getExtra().get(""));
-                        //                    export.setReciverAddress(s.getExtra().get(""));
-                        //                    export.setPhone(s.getExtra().get(""));
                     });
 
                     //TODO paytype enum
@@ -330,6 +326,7 @@ public class ExportController {
 
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             //TODO 货号
+
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
                         }
                         if (null != item.getAttrs()) {

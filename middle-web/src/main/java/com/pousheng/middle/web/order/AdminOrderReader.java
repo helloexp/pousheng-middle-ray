@@ -1,11 +1,13 @@
 package com.pousheng.middle.web.order;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ych.logger.events.OrderOpEvent;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
+import com.pousheng.middle.order.dto.ShopOrderPagingInfo;
+import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
+import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
@@ -15,9 +17,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
@@ -33,9 +33,7 @@ import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
-import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
-import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -63,13 +61,8 @@ import java.util.stream.Collectors;
 @OperationLogModule(OperationLogModule.Module.ORDER)
 public class AdminOrderReader {
 
-
-    @Autowired
-    private ObjectMapper objectMapper;
     @Autowired
     private OrderReadLogic orderReadLogic;
-    @Autowired
-    private OrderWriteLogic orderWriteLogic;
     @RpcConsumer
     private MiddleOrderReadService middleOrderReadService;
     @RpcConsumer
@@ -77,13 +70,7 @@ public class AdminOrderReader {
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
-    private SyncOrderToEcpLogic syncOrderToEcpLogic;
-    @Autowired
     private PermissionUtil permissionUtil;
-    @RpcConsumer
-    private SkuOrderReadService skuOrderReadService;
-    @RpcConsumer
-    private ShipmentReadService shipmentReadService;
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired

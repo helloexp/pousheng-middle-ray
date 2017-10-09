@@ -1,26 +1,17 @@
 package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.parana.order.enums.ShipmentType;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,7 +22,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 销售发货  和 换货发货 合并api
@@ -49,10 +39,6 @@ public class CreateShipments {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private WarehouseReadService warehouseReadService;
-    @Autowired
-    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
-    @RpcConsumer
-    private ShipmentReadService shipmentReadService;
     @Autowired
     private OrderReadLogic orderReadLogic;
 

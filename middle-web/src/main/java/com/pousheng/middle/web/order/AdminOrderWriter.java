@@ -8,7 +8,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -26,7 +25,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
@@ -61,8 +59,6 @@ public class AdminOrderWriter {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
     @Autowired

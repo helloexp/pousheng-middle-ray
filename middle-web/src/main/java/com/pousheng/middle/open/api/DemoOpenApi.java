@@ -17,8 +17,8 @@ import javax.validation.constraints.NotNull;
 public class DemoOpenApi {
 
 
-    @OpenMethod(key = "hk.hello.world.api", paramNames = {"name"}, httpMethods = RequestMethod.GET)
-    public String helloWord(@NotEmpty(message = "name.empty") String name) {
+    @OpenMethod(key = "hk.hello.world.api", paramNames = {"name","domain"}, httpMethods = RequestMethod.GET)
+    public String helloWord(@NotEmpty(message = "name.empty") String name,String domain) {
         log.info("HK-HELLER-WORLD-START param name is:{} ", name);
 
         log.info("HK-HELLER-WORLD-END");

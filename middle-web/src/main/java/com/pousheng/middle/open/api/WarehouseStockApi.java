@@ -72,15 +72,19 @@ public class WarehouseStockApi {
     private List<StockDto> make(List<ErpStock> erpStocks) {
         List<StockDto> result = Lists.newArrayListWithCapacity(erpStocks.size());
         for (ErpStock erpStock : erpStocks) {
-            StockDto stockDto = new StockDto();
-            stockDto.setSkuCode(erpStock.getBarcode());
-            stockDto.setQuantity(erpStock.getQuantity());
-            stockDto.setUpdatedAt(dft.parseDateTime(erpStock.getModify_time()).toDate());
+            try {
+                StockDto stockDto = new StockDto();
+                stockDto.setSkuCode(erpStock.getBarcode());
+                stockDto.setQuantity(erpStock.getQuantity());
+                stockDto.setUpdatedAt(dft.parseDateTime(erpStock.getModify_time()).toDate());
 
-            String warehouseCode = erpStock.getCompany_id()+"-"+erpStock.getStock_id();
-            Warehouse warehouse = warehouseCacher.findByCode(warehouseCode);
-            stockDto.setWarehouseId(warehouse.getId());
-            result.add(stockDto);
+                String warehouseCode = erpStock.getCompany_id()+"-"+erpStock.getStock_id();
+                Warehouse warehouse = warehouseCacher.findByCode(warehouseCode);
+                stockDto.setWarehouseId(warehouse.getId());
+                result.add(stockDto);
+            } catch (Exception e) {
+                log.error("failed to sync {}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
+            }
         }
         return result;
     }

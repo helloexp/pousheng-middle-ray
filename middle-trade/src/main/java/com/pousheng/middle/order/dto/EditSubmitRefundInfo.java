@@ -34,7 +34,8 @@ public class EditSubmitRefundInfo implements Serializable {
     private String shipmentCorpName;
     //物流单号
     private String shipmentSerialNo;
-
+    //发货单id
+    private Long shipmentId;
 
 
     //操作类型 1：保存 2：提交

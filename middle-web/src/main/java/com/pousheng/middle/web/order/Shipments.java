@@ -262,6 +262,9 @@ public class Shipments {
 
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
         ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
+        if (!orderReadLogic.validateCompanyCode(warehouseId,shopOrder.getShopId())){
+            throw new JsonResponseException("warehouse.must.be.in.one.company");
+        }
         //获取子单商品
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
@@ -364,6 +367,9 @@ public class Shipments {
 
         Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);
+        if (!orderReadLogic.validateCompanyCode(warehouseId,refund.getShopId())){
+            throw new JsonResponseException("warehouse.must.be.in.one.company");
+        }
         //只有售后类型是换货的,并且处理状态为待发货的售后单才能创建发货单
         if (!validateCreateShipment4Refund(refund)) {
             log.error("can not create shipment becacuse of not right refundtype ({}) or status({}) ", refund.getRefundType(), refund.getStatus());

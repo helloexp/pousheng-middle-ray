@@ -9,7 +9,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.pousheng.auth.model.MiddleUser;
-import com.pousheng.auth.service.UserReadService;
+import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -42,7 +42,7 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
     private LoadingCache<Long, Response<MiddleUser>> userCache;
 
     @Autowired
-    private UserReadService userReadService;
+    private PsUserReadService userReadService;
     @RpcConsumer
     private OperatorReadService operatorReadService;
 

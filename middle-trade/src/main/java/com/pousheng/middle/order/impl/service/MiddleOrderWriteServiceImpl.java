@@ -168,6 +168,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
 
             OrderReceiverInfo orderReceiverInfo = new OrderReceiverInfo();
             orderReceiverInfo.setId(oldReceiverInfo.getId());
+            orderReceiverInfo.setMobile(receiverInfo.getMobile());
             orderReceiverInfo.setReceiverInfo(receiverInfo);
             orderReceiverInfoDao.update(orderReceiverInfo);
 

@@ -7,7 +7,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.auth.model.MiddleUser;
-import com.pousheng.auth.service.UserReadService;
+import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import com.pousheng.middle.web.events.user.LoginEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
@@ -49,7 +49,7 @@ public class Users {
     private EventBus eventBus;
 
     @Autowired
-    private UserReadService userReadService;
+    private PsUserReadService userReadService;
     @Autowired
     private UcUserOperationLogic operationLogic;
     @Autowired
@@ -100,6 +100,8 @@ public class Users {
 
 
         val userResp = userReadService.findByOutId(ucUserInfo.getUserId());
+        log.info("end find middle user by outer id:{}",ucUserInfo.getUserId());
+
         if (!userResp.isSuccess()) {
             log.warn("find  user failed, outId={}, error={}", ucUserInfo.getUserId(), userResp.getError());
             throw new JsonResponseException(userResp.getError());

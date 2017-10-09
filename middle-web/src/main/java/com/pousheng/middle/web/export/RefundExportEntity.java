@@ -37,7 +37,7 @@ public class RefundExportEntity {
     @ExportTitle("状态")
     private String status;
 
-    @ExportTitle("货号")
+    @ExportTitle("货品条码")
     private String itemNo;
 
     @ExportTitle("尺码")

@@ -323,10 +323,8 @@ public class ExportController {
                         export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                         export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
-
+                        export.setItemNo(item.getSkuCode());
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
-                            //TODO 货号
-
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
                         }
                         if (null != item.getAttrs()) {

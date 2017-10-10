@@ -9,6 +9,8 @@ import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.RefundPaging;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -18,6 +20,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.service.RefundReadService;
@@ -215,5 +218,35 @@ public class RefundReadLogic {
         Flow afterSaleFlow = flowPicker.pickAfterSales();
         Integer sourceStatus = refund.getStatus();
         return afterSaleFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+    }
+
+    /**
+     * 计算已经退款的当前订单当前商品已经退款的金额
+     * @param orderId 订单id
+     * @param refundId 退货单id
+     * @param skuCode 条码
+     * @return
+     */
+    public Long getAlreadyRefundFee(Long orderId,Long refundId,String skuCode){
+        Response<List<Refund>> rltRes = refundReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
+        if (!rltRes.isSuccess()){
+            log.error("find Refund failed,order id is ({}),caused by {}",orderId,rltRes.getError());
+            throw new JsonResponseException(rltRes.getError());
+        }
+        //获取不是订单号关联的其他售后单，过滤掉换货的，已经取消的，当前传入的需要计算的售后单
+        List<Refund> refunds = rltRes.getResult().stream().filter(Objects::nonNull)
+                .filter(refund->!Objects.equals(refund.getId(),refundId))
+                .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value()))
+                .filter(refund -> !Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        Long alreadyRefundFee = 0L;
+        for (Refund refund:refunds){
+            List<RefundItem> refundItems = this.findRefundItems(refund);
+            List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
+            if (skuCodes.contains(skuCode)){
+                alreadyRefundFee+= refund.getFee();
+            }
+        }
+        return alreadyRefundFee;
     }
 }

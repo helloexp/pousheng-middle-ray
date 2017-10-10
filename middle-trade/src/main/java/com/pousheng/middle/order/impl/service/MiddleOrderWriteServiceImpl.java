@@ -17,6 +17,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.impl.dao.InvoiceDao;
 import io.terminus.parana.order.impl.dao.OrderInvoiceDao;
 import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
+import io.terminus.parana.order.impl.dao.ShopOrderDao;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,6 +49,8 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     private InvoiceExtDao invoiceExtDao;
     @Autowired
     private ShopOrderExtDao shopOrderExtDao;
+    @Autowired
+    private ShopOrderDao shopOrderDao;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -194,6 +197,21 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
         } catch (Exception e) {
             log.error("fail to update buyerName to {} for shopOrder(id={}),cause:{}",
                     buyerName, shopOrderId, Throwables.getStackTraceAsString(e));
+            return Response.fail("buyer.name.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateMobileByShopOrderId(Long shopOrderId, String outBuyerId) {
+        try{
+            ShopOrder shopOrder = new ShopOrder();
+            shopOrder.setId(shopOrderId);
+            shopOrder.setOutBuyerId(outBuyerId);
+            shopOrderDao.update(shopOrder);
+            return Response.ok(Boolean.TRUE);
+        }catch (Exception e){
+            log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
+                    outBuyerId, shopOrderId, Throwables.getStackTraceAsString(e));
             return Response.fail("buyer.name.update.fail");
         }
     }

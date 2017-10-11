@@ -18,7 +18,6 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
@@ -97,8 +96,6 @@ public class Shipments {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
-    @Autowired
-    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
     @RpcConsumer

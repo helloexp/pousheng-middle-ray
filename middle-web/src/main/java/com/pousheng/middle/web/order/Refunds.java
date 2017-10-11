@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -37,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -443,6 +441,16 @@ public class Refunds {
         return Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue());
     }
 
+    /**
+     * 计算申请售后的商品已经退款的金额
+     * @param refundId 售后单id
+     * @param skuCode 商品条码
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam(required = false) Long refundId,@RequestParam("skuCode") String skuCode){
+        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,skuCode);
+    }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 

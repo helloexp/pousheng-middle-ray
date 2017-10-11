@@ -13,13 +13,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
-import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -45,18 +43,13 @@ public class OrderWriteLogic {
     @RpcConsumer
     private OrderWriteService orderWriteService;
     @RpcConsumer
-    private SkuOrderReadService skuOrderReadService;
-    @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
-    private OrderWriteLogic orderWriteLogic;
-    @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
-
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired

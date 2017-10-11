@@ -10,6 +10,7 @@ import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
+import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
@@ -23,8 +24,10 @@ import io.terminus.parana.cache.BackCategoryCacher;
 import io.terminus.parana.cache.CategoryAttributeCacher;
 import io.terminus.parana.cache.SpuCacher;
 import io.terminus.parana.component.attribute.CategoryAttributeNoCacher;
+import io.terminus.parana.order.api.AbstractPersistedOrderMaker;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
+import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.rule.RuleExecutorRegistry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -172,7 +175,10 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return localeResolver;
     }
 
-
+    @Bean
+    public AbstractPersistedOrderMaker orderMaker(){
+        return new PsPersistedOrderMaker(OrderLevel.SHOP,OrderLevel.SHOP);
+    }
     @Bean
     public MessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();

@@ -208,6 +208,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
+
         //生成发票信息
         Long invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
         richSkusByShop.setInvoiceId(invoiceId);

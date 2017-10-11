@@ -13,16 +13,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.OrderSource;
-import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
-import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
@@ -68,23 +62,15 @@ public class ShipmentWiteLogic {
     @Autowired
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
-    private WarehouseSkuReadService warehouseSkuReadService;
-    @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
-    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
-    @Autowired
     private WarehouseReadService warehouseReadService;
-    @Autowired
-    private WarehouseAddressReadService warehouseAddressReadService;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private WarehouseChooser warehouseChooser;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
-    @Autowired
-    private MiddleShipmentWriteService middleShipmentWriteService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired

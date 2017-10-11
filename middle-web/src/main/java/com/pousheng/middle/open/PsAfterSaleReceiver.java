@@ -150,7 +150,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             ShipmentItem shipmentItem = shipmentItems
                     .stream().filter(shipmentItem1 ->
                             Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
+            //获取已经退款金额
+            Long alreadyRefundFee = refundReadLogic.getAlreadyRefundFee(shopOrder.getId(),null,skuOfRefund.getSkuCode());
+            //计算最大可退款金额
+            Long returnableRefundFee = Long.valueOf(shipmentItem.getCleanFee())-alreadyRefundFee;
             refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
+            refund.setFee(returnableRefundFee);
             refundItem.setSkuPrice(shipmentItem.getSkuPrice());
             refundItem.setSkuDiscount(shipmentItem.getSkuDiscount());
             refundItem.setCleanFee(shipmentItem.getCleanFee());

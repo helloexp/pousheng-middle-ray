@@ -238,7 +238,7 @@ public class OrderOpenApi {
                 throw new ServiceException("hk.refund.id.not.matching");
             }*/
 
-            //todo 恒康返回的商品信息如何处理
+
 
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

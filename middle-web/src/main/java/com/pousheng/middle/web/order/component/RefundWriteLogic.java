@@ -464,7 +464,7 @@ public class RefundWriteLogic {
 
     private RefundItem makeChangeItemInfo(RefundItem refundItem,EditSubmitRefundInfo submitRefundInfo){
 
-        //todo 封装换货商品信息
+
         RefundItem changeRefundItem = new RefundItem();
         BeanMapper.copy(refundItem,changeRefundItem);
         changeRefundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());

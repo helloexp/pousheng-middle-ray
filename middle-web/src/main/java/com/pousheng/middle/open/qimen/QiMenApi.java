@@ -85,12 +85,13 @@ public class QiMenApi {
         }
 
         String buyerName = deliveryOrderCreateRequest.getDeliveryOrder().getBuyerNick();
-        if (StringUtils.hasText(buyerName)) {
-            Response<Boolean> updateBuyerNameR = middleOrderWriteService.updateBuyerNameOfOrder(shopOrder.getId(), buyerName);
-            if (!updateBuyerNameR.isSuccess()) {
-                log.error("fail to update buyerName to {} for shopOrder(id={}),cause:{}",
-                        buyerName, shopOrder.getId(), updateBuyerNameR.getError());
-                return XmlUtils.toXml(QimenResponse.fail(updateBuyerNameR.getError()));
+        String outBuyerId = receiverInfo.getMobile();
+        if (StringUtils.hasText(buyerName)||StringUtils.hasText(outBuyerId)) {
+            Response<Boolean> updateBuyerInfoR = middleOrderWriteService.updateBuyerInfoOfOrder(shopOrder.getId(), buyerName,outBuyerId);
+            if (!updateBuyerInfoR.isSuccess()) {
+                log.error("fail to update buyerName to {} and outOrderId to {} for shopOrder(id={}),cause:{}",
+                        buyerName,outBuyerId, shopOrder.getId(), updateBuyerInfoR.getError());
+                return XmlUtils.toXml(QimenResponse.fail(updateBuyerInfoR.getError()));
             }
         }
 

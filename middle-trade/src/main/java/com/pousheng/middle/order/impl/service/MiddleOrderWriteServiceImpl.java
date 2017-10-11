@@ -184,11 +184,12 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     }
 
     @Override
-    public Response<Boolean> updateBuyerNameOfOrder(Long shopOrderId, String buyerName) {
+    public Response<Boolean> updateBuyerInfoOfOrder(Long shopOrderId, String buyerName,String outBuyerId) {
         try {
             ShopOrderExt shopOrderExt = new ShopOrderExt();
             shopOrderExt.setId(shopOrderId);
             shopOrderExt.setBuyerName(buyerName);
+            shopOrderExt.setOutBuyerId(outBuyerId);
             shopOrderExtDao.update(shopOrderExt);
 
             skuOrderExtDao.updateBuyerNameByOrderId(shopOrderId, buyerName);

@@ -16,6 +16,7 @@
         SET updated_at=now()
         <if test="buyerNote != null">,`buyer_note` = #{buyerNote}</if>
         <if test="buyerName != null">,`buyer_name` = #{buyerName}</if>
+        <if test="outBuyerId != null">,`out_buyer_id` = #{outBuyerId}</if>
         WHERE id=#{id}
     </update>
 

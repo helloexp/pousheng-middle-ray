@@ -78,6 +78,7 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 该字段用于存放手机号
      */
     private String outBuyerId;
+    private String mobile;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

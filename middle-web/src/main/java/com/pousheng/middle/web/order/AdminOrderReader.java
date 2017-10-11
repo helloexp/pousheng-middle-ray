@@ -87,7 +87,7 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
-         if(middleOrderCriteria.getOutCreatedEndAt()!=null){
+        if(middleOrderCriteria.getOutCreatedEndAt()!=null){
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
@@ -96,6 +96,9 @@ public class AdminOrderReader {
             middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
         else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
+        }
+        if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
+          middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
         }
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){

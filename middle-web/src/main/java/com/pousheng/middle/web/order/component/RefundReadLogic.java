@@ -4,10 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.MiddleRefundCriteria;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.RefundPaging;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
@@ -23,6 +20,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.RefundReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,10 +28,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -49,6 +44,8 @@ public class RefundReadLogic {
     private MiddleRefundReadService middleRefundReadService;
     @RpcConsumer
     private RefundReadService refundReadService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
@@ -221,13 +218,15 @@ public class RefundReadLogic {
     }
 
     /**
-     * 计算已经退款的当前订单当前商品已经退款的金额
+     * 返回最多可退金额
      * @param orderId 订单id
      * @param refundId 退货单id
+     * @param shipmentId 发货单id
      * @param skuCode 条码
+     * @param applyQuantity
      * @return
      */
-    public Long getAlreadyRefundFee(Long orderId,Long refundId,String skuCode){
+    public int getAlreadyRefundFee(Long orderId,Long refundId,Long shipmentId,String skuCode,Integer applyQuantity){
         Response<List<Refund>> rltRes = refundReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
         if (!rltRes.isSuccess()){
             log.error("find Refund failed,order id is ({}),caused by {}",orderId,rltRes.getError());
@@ -247,6 +246,15 @@ public class RefundReadLogic {
                 alreadyRefundFee+= refund.getFee();
             }
         }
-        return alreadyRefundFee;
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        Optional<ShipmentItem> shipmentItemOpt = shipmentItems.stream().filter(Objects::nonNull).
+                filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(),skuCode)).findFirst();
+        ShipmentItem shipmentItem = shipmentItemOpt.get();
+        //获取商品总净价
+        Integer cleanFee = (shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice())*applyQuantity;
+        //未退款金额
+        Integer unReturnedFee = Math.toIntExact((shipmentItem.getCleanFee() == null ? 0 : shipmentItem.getCleanFee()) - alreadyRefundFee);
+        return cleanFee>unReturnedFee?unReturnedFee:cleanFee;
     }
 }

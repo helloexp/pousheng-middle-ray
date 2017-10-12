@@ -442,14 +442,15 @@ public class Refunds {
     }
 
     /**
-     * 计算申请售后的商品已经退款的金额
+     *  计算最多可退金额
      * @param refundId 售后单id
      * @param skuCode 商品条码
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam(required = false) Long refundId,@RequestParam("skuCode") String skuCode){
-        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,skuCode);
+    public int getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam("shipmentId") Long shipmentId,@RequestParam(required = false) Long refundId,
+                                    @RequestParam("skuCode") String skuCode,@RequestParam("applyQuantity") Integer applyQuantity){
+        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,skuCode,applyQuantity);
     }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {

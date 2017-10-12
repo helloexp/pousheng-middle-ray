@@ -70,13 +70,14 @@ public interface MiddleOrderWriteService {
     Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo);
 
     /**
-     * 更新订单的买家名称
+     * 更新订单的买家信息
      *
      * @param shopOrderId 店铺订单id
      * @param buyerName   新的买家名称
+     * @param outBuyerId  宝胜项目用作手机号
      * @return 是否更新成功
      */
-    Response<Boolean> updateBuyerNameOfOrder(Long shopOrderId, String buyerName);
+    Response<Boolean> updateBuyerInfoOfOrder(Long shopOrderId, String buyerName,String outBuyerId);
 
     /**
      * 修改手机号

@@ -11,4 +11,5 @@ public class ShopOrderExt implements java.io.Serializable{
     private Long id;
     private String buyerNote;
     private String buyerName;
+    private String outBuyerId;
 }

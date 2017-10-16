@@ -42,6 +42,22 @@ public enum SkuGroupRuler {
                 return INDEX.spuCode(skuGroupRule, materialCode);
             }
         }
+    },
+    LIVES(4){//针对第4种规则进行拼接,例如：7-1-10-9（如果第7位含有1则取前10位,如果没有1则取前9位）
+        @Override
+        public String spuCode(SkuGroupRule skuGroupRule, String materialCode) {
+            String details = String.valueOf(skuGroupRule.getRuleDetail());//类型4有4位数字，第一位是位置,第二位是判断条件，第三位是满足判断条件的取值，第四位是不满足判断条件的取值
+            List<String> parts = Splitter.on("-").omitEmptyStrings().trimResults().splitToList(details);
+            String first = parts.get(0);
+            String second = parts.get(1);
+            String third = parts.get(2);
+            String fourth = parts.get(3);
+            if (Objects.equal(String.valueOf(materialCode.charAt(Integer.valueOf(first)-1)),second)){
+                return materialCode.substring(0,Integer.valueOf(third));
+            }else{
+                return materialCode.substring(0,Integer.valueOf(fourth));
+            }
+        }
     };
 
     public final int value;

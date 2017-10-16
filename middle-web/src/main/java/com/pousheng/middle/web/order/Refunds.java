@@ -442,9 +442,12 @@ public class Refunds {
     }
 
     /**
-     *  计算最多可退金额
-     * @param refundId 售后单id
+     * 计算最多可退金额
+     * @param orderId 订单主键
+     * @param shipmentId 发货单主键
+     * @param refundId 退货单主键
      * @param skuCode 商品条码
+     * @param applyQuantity 申请退货的数量
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)

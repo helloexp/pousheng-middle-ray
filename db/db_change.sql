@@ -91,3 +91,5 @@ ALTER TABLE `parana_shop_orders` change  `buyer_name` `buyer_name` VARCHAR(64)  
 
 -- 发票信息中user_id允许为空
 ALTER TABLE `parana_invoices` change  `user_id` `user_id` bigint(20)  NULL COMMENT '用户id';
+-- spu归组规则新增字段rule_detail(规则详情)
+ALTER TABLE `pousheng_sku_group_rules` ADD COLUMN `rule_detail` VARCHAR(20) COMMENT '规则详情' AFTER `last_start`;

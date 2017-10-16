@@ -90,8 +90,7 @@ public class ErpSpuManager {
             spu.setSpuCode(spuCode);
 
             //(中英文品牌）+(中英文系列)+（性别）+(项目)+（货号)
-            StringBuffer nameBuffer = new StringBuffer();
-            this.getSpuName(material, nameBuffer);
+            StringBuffer nameBuffer = this.getSpuName(material);
             String name =nameBuffer.toString();
             spu.setName(name);
             spu.setType(1);
@@ -139,7 +138,8 @@ public class ErpSpuManager {
         return spuId;
     }
 
-    private void getSpuName(PoushengMaterial material, StringBuffer nameBuffer) {
+    private StringBuffer getSpuName(PoushengMaterial material) {
+        StringBuffer nameBuffer = new StringBuffer();
         if (!StringUtils.isEmpty(material.getCard_name())){
             nameBuffer.append(material.getCard_name());
         }
@@ -155,6 +155,7 @@ public class ErpSpuManager {
         if (!StringUtils.isEmpty(material.getMaterial_code())){
             nameBuffer.append(material.getMaterial_code());
         }
+        return nameBuffer;
     }
 
 

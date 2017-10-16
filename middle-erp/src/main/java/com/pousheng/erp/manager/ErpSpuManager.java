@@ -89,8 +89,10 @@ public class ErpSpuManager {
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
 
-            //(中英文品牌）+(中英文系列)+（性别）+(项目)+（货号)。
-            String name = material.getCard_name()+material.getSeries_name()+material.getSex()+material.getItem_name()+material.getMaterial_code();
+            //(中英文品牌）+(中英文系列)+（性别）+(项目)+（货号)
+            StringBuffer nameBuffer = new StringBuffer();
+            this.getSpuName(material, nameBuffer);
+            String name =nameBuffer.toString();
             spu.setName(name);
             spu.setType(1);
             spu.setStatus(1);
@@ -135,6 +137,24 @@ public class ErpSpuManager {
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
         createOrUpdateSkuTemplates(spuId, spu.getName(), skus);
         return spuId;
+    }
+
+    private void getSpuName(PoushengMaterial material, StringBuffer nameBuffer) {
+        if (!StringUtils.isEmpty(material.getCard_name())){
+            nameBuffer.append(material.getCard_name());
+        }
+        if (!StringUtils.isEmpty(material.getSeries_name())){
+            nameBuffer.append(material.getSeries_name());
+        }
+        if (!StringUtils.isEmpty(material.getSex())){
+            nameBuffer.append(material.getSex());
+        }
+        if (!StringUtils.isEmpty(material.getItem_name())){
+            nameBuffer.append(material.getItem_name());
+        }
+        if (!StringUtils.isEmpty(material.getMaterial_code())){
+            nameBuffer.append(material.getMaterial_code());
+        }
     }
 
 

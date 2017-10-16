@@ -302,7 +302,6 @@ public class ErpSpuManager {
             size.setShowImage(false);
             skuTemplate.setAttrs(Lists.newArrayList(color, size));
             int priceFen = priceFen(poushengSku);
-            skuTemplate.setPrice(priceFen);
             Map<String, Integer> extraPrice = Maps.newHashMap();
             extraPrice.put("originPrice",priceFen);
             skuTemplate.setExtraPrice(extraPrice);

@@ -143,7 +143,7 @@ public class WarehouseChooser {
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
                     int stock = widskucode2stock.get(warehouseId, skuCode);
-                    int actual = stock > required ? required : 0;
+                    int actual = stock >= required ? required : 0;
                     count += actual;
                 }
                 if (count > affordCount) {
@@ -164,7 +164,7 @@ public class WarehouseChooser {
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
                     int stock = widskucode2stock.get(candidateWarehouseId, skuCode);
-                    int actual = stock > required ? required : 0;
+                    int actual = stock >= required ? required : 0;
 
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
                     scaq.setSkuCode(skuCode);

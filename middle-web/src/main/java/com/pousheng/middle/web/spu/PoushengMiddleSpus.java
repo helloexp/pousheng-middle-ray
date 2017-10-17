@@ -1,9 +1,12 @@
 package com.pousheng.middle.web.spu;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.model.SpuMaterial;
+import com.pousheng.erp.service.SpuMaterialReadService;
 import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -36,11 +39,15 @@ public class PoushengMiddleSpus {
     private PoushengMiddleSpuService poushengMiddleSpuService;
     @RpcConsumer
     private SpuReadService spuReadService;
+    @Autowired
+    private SpuMaterialReadService spuMaterialReadService;
 
     @RequestMapping(value = "/api/pousheng-spus/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<Spu> findBy(@RequestParam(required = false) String name,
                               @RequestParam(required = false) Long brandId,
                               @RequestParam(required = false) Long id,
+                              @RequestParam(required = false) String specification,
+                              @RequestParam(required = false) String materialCode,
                               @RequestParam(required = false) Integer type,
                               @RequestParam(required = false) Integer pageNo,
                               @RequestParam(required = false) Integer pageSize){
@@ -54,7 +61,24 @@ public class PoushengMiddleSpus {
         if(type!=null){
             params.put("type", type);
         }
-
+        //货号
+        if (StringUtils.hasText(materialCode)){
+            Response<Optional<SpuMaterial>> spuMaterialResponse = spuMaterialReadService.findbyMaterialCode(materialCode);
+            if (!spuMaterialResponse.isSuccess()){
+                log.error("failed to find spuMaterial by materialCode={}, error code:{}", materialCode, spuMaterialResponse.getError());
+            }
+            Optional<SpuMaterial> spuMaterialOptional = spuMaterialResponse.getResult();
+            if(spuMaterialOptional.isPresent()){
+                SpuMaterial spuMaterial = spuMaterialOptional.get();
+                params.put("id",spuMaterial.getId());
+            }else{
+                return Paging.empty();
+            }
+        }
+        //型号
+        if (StringUtils.hasText(specification)){
+            params.put("specification",specification);
+        }
         if(Arguments.notNull(id)){
             return pagingById(id);
         }

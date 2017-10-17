@@ -24,6 +24,17 @@ public class SpuMaterialDao extends MyBatisDao<SpuMaterial> {
         return getSqlSession().selectOne(sqlId("findByMaterialId"), materialId);
     }
 
+
+    /**
+     * 根据materialCode查找对应的映射关系
+     *
+     * @param materialCode 货号
+     * @return 是否存在
+     */
+    public SpuMaterial findByMaterialCode(String materialCode) {
+        return getSqlSession().selectOne(sqlId("findByMaterialCode"), materialCode);
+    }
+
     /**
      * 根据spuId查找对应的映射关系, 一个spuId可能对应多个货品id(归组)
      *

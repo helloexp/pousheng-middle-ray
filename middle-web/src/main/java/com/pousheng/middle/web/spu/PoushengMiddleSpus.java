@@ -70,7 +70,7 @@ public class PoushengMiddleSpus {
             Optional<SpuMaterial> spuMaterialOptional = spuMaterialResponse.getResult();
             if(spuMaterialOptional.isPresent()){
                 SpuMaterial spuMaterial = spuMaterialOptional.get();
-                params.put("id",spuMaterial.getId());
+                params.put("id",spuMaterial.getSpuId());
             }else{
                 return Paging.empty();
             }

@@ -147,8 +147,8 @@ public class ErpSpuManager {
         if (!StringUtils.isEmpty(material.getSeries_name())){
             nameBuffer.append(material.getSeries_name());
         }
-        if (!StringUtils.isEmpty(material.getSex())){
-            nameBuffer.append(material.getSex());
+        if (!StringUtils.isEmpty(material.getSex_name())){
+            nameBuffer.append(material.getSex_name());
         }
         if (!StringUtils.isEmpty(material.getItem_name())){
             nameBuffer.append(material.getItem_name());
@@ -186,10 +186,10 @@ public class ErpSpuManager {
             texture.setAttrVal(material.getTexture());
             otherAttributes.add(texture);
         }
-        if (StringUtils.hasText(material.getSex())) {
+        if (StringUtils.hasText(material.getSex_name())) {
             OtherAttribute sex = new OtherAttribute();
             sex.setAttrKey("性别");
-            sex.setAttrVal(material.getSex());
+            sex.setAttrVal(material.getSex_name());
             otherAttributes.add(sex);
         }
         if (material.getYear_no() != null) {

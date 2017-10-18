@@ -32,7 +32,7 @@ public class SpuImporterTest extends BaseServiceTest{
         m.setModel_name("modelId");
         m.setStuff("stuff");
         m.setTexture("texture");
-        m.setSex("男");
+        m.setSex_name("男");
         m.setYear_no(2017);
         m.setInv_spec("inv_spec");
         m.setSeason5(true);

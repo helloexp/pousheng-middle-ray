@@ -62,6 +62,7 @@ public class StockPusher {
         this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
+                    @Override
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         log.error("task {} is rejected", r);
                     }

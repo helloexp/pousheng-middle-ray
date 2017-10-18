@@ -88,6 +88,7 @@ public class ErpSpuManager {
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
+            spu.setSpecification(spuCode);
 
             //(中英文品牌）+(中英文系列)+（性别）+(项目)+（货号)
             StringBuffer nameBuffer = this.getSpuName(material);

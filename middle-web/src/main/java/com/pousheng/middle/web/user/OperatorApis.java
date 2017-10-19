@@ -130,6 +130,7 @@ public class OperatorApis {
         return RespHelper.or500(operatorWriteService.create(toCreateOperator));
     }
 
+
     @RequestMapping(value = "/{userId}", method = RequestMethod.PUT)
     public Boolean updateOperator(@PathVariable Long userId, @RequestBody OperatorPost operator) {
 

@@ -32,6 +32,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import javax.print.attribute.standard.JobSheets;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
@@ -53,6 +54,8 @@ public class Users {
     @Autowired
     private UcUserOperationLogic operationLogic;
     @Autowired
+    private PsUserReadService psUserReadService;
+    @Autowired
     private UserRoleLoader userRoleLoader;
     @RpcConsumer
     private OperatorReadService operatorReadService;
@@ -73,7 +76,9 @@ public class Users {
     }
 
 
-
+    /**
+     * @return ParanaUser ，id为会员中心的id（特殊处理过）
+     */
     @RequestMapping(value = "/login", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ParanaUser login(@RequestParam String username,
                             @RequestParam String password,
@@ -137,14 +142,26 @@ public class Users {
         return ParanaUserMaker.from(middleUser);
     }
 
+    /**
+     * 查询userid 对应的role
+     * @param userId out user id
+     * @return RoleContent
+     */
     @RequestMapping(value = "/{userId}/roles", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<RoleContent> getUserRolesByUserId(@PathVariable Long userId) {
-        return userRoleLoader.hardLoadRoles(userId);
+        MiddleUser middleUser = findMiddleUserByOutId(userId);
+        return userRoleLoader.hardLoadRoles(middleUser.getId());
     }
 
+    /**
+     * 查询userid 对应的role
+     * @param userId out user id
+     * @return Role
+     */
     @GetMapping("/{userId}/role-names")
     public List<String> getRoleNamesOfUserId(@PathVariable Long userId) {
-        RoleContent content = RespHelper.or500(userRoleLoader.hardLoadRoles(userId));
+        MiddleUser middleUser = findMiddleUserByOutId(userId);
+        RoleContent content = RespHelper.or500(userRoleLoader.hardLoadRoles(middleUser.getId()));
         List<String> result = new ArrayList<>();
         if (content != null) {
             for (Role role : content.getRoles()) {
@@ -173,6 +190,20 @@ public class Users {
         }
 
         return listRes.getResult();
+    }
+
+    private MiddleUser findMiddleUserByOutId(Long outId){
+        Response<Optional<MiddleUser>>  response =  psUserReadService.findByOutId(outId);
+        if(!response.isSuccess()){
+            log.error("find middle user by out id:{} fail,error:{}",outId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if(!response.getResult().isPresent()){
+            log.error("not find middle user by out id:{}");
+            throw new JsonResponseException("user.not.exist");
+        }
+
+        return response.getResult().get();
     }
 
 }

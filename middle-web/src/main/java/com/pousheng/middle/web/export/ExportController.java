@@ -439,10 +439,13 @@ public class ExportController {
 //                    entity.setInvoice("");
                     entity.setPaymentDate(shopOrderResponse.getResult().getOutCreatedAt());
                     entity.setSkuQuantity(item.getQuantity());
-                    entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                    if (null == item.getCleanFee())
+                        entity.setFee(0D);
+                    else
+                        entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
-                    entity.setOrderStatus(MiddleOrderStatus.fromInt(shipmentContext.getOrderShipment().getStatus()).getName());
+                    entity.setOrderStatus(MiddleOrderStatus.fromInt(shopOrderResponse.getResult().getStatus()).getName());
                     shipmentExportEntities.add(entity);
 
                 });

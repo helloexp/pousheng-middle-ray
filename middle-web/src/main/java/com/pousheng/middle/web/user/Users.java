@@ -150,7 +150,7 @@ public class Users {
 
     /**
      * 查询userid 对应的role
-     * @param userId out user id
+     * @param userId 用户id
      * @return RoleContent
      */
     @RequestMapping(value = "/{userId}/roles", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -160,7 +160,7 @@ public class Users {
 
     /**
      * 查询userid 对应的role
-     * @param userId out user id
+     * @param userId  用户id
      * @return Role
      */
     @GetMapping("/{userId}/role-names")

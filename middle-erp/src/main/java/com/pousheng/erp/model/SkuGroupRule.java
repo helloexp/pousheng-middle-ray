@@ -45,6 +45,10 @@ public class SkuGroupRule implements Serializable {
      */
     private Integer lastStart;
 
+    /**
+     * 针对第4种规则进行拼接,例如：7-1-10-9（如果第7位含有1则取前10位,如果没有1则取前9位）
+     */
+    private String ruleDetail;
 
     /**
      * 创建时间

@@ -88,10 +88,11 @@ public class ErpSpuManager {
             spu.setBrandId(brand.getId());
             spu.setBrandName(brand.getName());
             spu.setSpuCode(spuCode);
-            String name = material.getMaterial_name();
-            if (StringUtils.isEmpty(name)) {
-                name = spuCode;
-            }
+            spu.setSpecification(spuCode);
+
+            //(中英文品牌）+(中英文系列)+（性别）+(项目)+（货号)
+            StringBuffer nameBuffer = this.getSpuName(material);
+            String name =nameBuffer.toString();
             spu.setName(name);
             spu.setType(1);
             spu.setStatus(1);
@@ -138,6 +139,26 @@ public class ErpSpuManager {
         return spuId;
     }
 
+    private StringBuffer getSpuName(PoushengMaterial material) {
+        StringBuffer nameBuffer = new StringBuffer();
+        if (!StringUtils.isEmpty(material.getCard_name())){
+            nameBuffer.append(material.getCard_name());
+        }
+        if (!StringUtils.isEmpty(material.getSeries_name())){
+            nameBuffer.append(material.getSeries_name());
+        }
+        if (!StringUtils.isEmpty(material.getSex_name())){
+            nameBuffer.append(material.getSex_name());
+        }
+        if (!StringUtils.isEmpty(material.getItem_name())){
+            nameBuffer.append(material.getItem_name());
+        }
+        if (!StringUtils.isEmpty(material.getMaterial_code())){
+            nameBuffer.append(material.getMaterial_code());
+        }
+        return nameBuffer;
+    }
+
 
     /**
      * 根据material的信息生成spu属性信息
@@ -165,10 +186,10 @@ public class ErpSpuManager {
             texture.setAttrVal(material.getTexture());
             otherAttributes.add(texture);
         }
-        if (StringUtils.hasText(material.getSex())) {
+        if (StringUtils.hasText(material.getSex_name())) {
             OtherAttribute sex = new OtherAttribute();
             sex.setAttrKey("性别");
-            sex.setAttrVal(material.getSex());
+            sex.setAttrVal(material.getSex_name());
             otherAttributes.add(sex);
         }
         if (material.getYear_no() != null) {
@@ -282,7 +303,9 @@ public class ErpSpuManager {
             size.setShowImage(false);
             skuTemplate.setAttrs(Lists.newArrayList(color, size));
             int priceFen = priceFen(poushengSku);
-            skuTemplate.setPrice(priceFen);
+            Map<String, Integer> extraPrice = Maps.newHashMap();
+            extraPrice.put("originPrice",priceFen);
+            skuTemplate.setExtraPrice(extraPrice);
             skuTemplate.setStatus(1);
             skuTemplate.setStockType(1);
 

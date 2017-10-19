@@ -172,7 +172,6 @@ public class SyncShipmentLogic {
             shipment.setStatus(targetStatus);//塞入最新的状态
 
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            //todo 同步恒康取消
             String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(),operationType,0);
             SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
             HkResponseHead head = syncShipmentOrderResponse.getHead();

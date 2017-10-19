@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order;
 
 import com.google.common.base.Function;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -8,10 +9,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.web.events.trade.ModifyMobileEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -26,7 +27,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
@@ -61,8 +61,6 @@ public class AdminOrderWriter {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
     @Autowired
@@ -71,6 +69,8 @@ public class AdminOrderWriter {
     private MiddleOrderWriteService middleOrderWriteService;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @Autowired
+    private EventBus eventBus;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     /**
@@ -262,6 +262,10 @@ public class AdminOrderWriter {
             log.error("failed to edit receiver info:{},shopOrderId is(={})",data,id);
             throw new JsonResponseException(response.getError());
         }
+        //抛出一个事件用来修改手机号
+        ModifyMobileEvent event = new ModifyMobileEvent();
+        event.setShopOrderId(id);
+        eventBus.post(event);
     }
 
     /**

@@ -10,6 +10,7 @@
         <result column="rule_type" property="ruleType"/>
         <result column="split_char" property="splitChar"/>
         <result column="last_start" property="lastStart"/>
+        <result column="rule_detail" property="ruleDetail"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -23,11 +24,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        card_id, kind_id, rule_type, split_char, last_start, created_at, updated_at
+        card_id, kind_id, rule_type, split_char, last_start,rule_detail, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{cardId}, #{kindId}, #{ruleType}, #{splitChar}, #{lastStart}, now(),now()
+        #{cardId}, #{kindId}, #{ruleType}, #{splitChar}, #{lastStart},#{ruleDetail}, now(),now()
     </sql>
 
     <insert id="create" parameterType="SkuGroupRule" keyProperty="id" useGeneratedKeys="true">
@@ -90,6 +91,7 @@
             <if test="ruleType != null">rule_type = #{ruleType},</if>
             <if test="splitChar != null">split_char = #{splitChar},</if>
             <if test="lastStart != null">last_start = #{lastStart},</if>
+            <if test="ruleDetail != null">rule_detail = #{ruleDetail},</if>
             updated_at = now()
         </set>
         WHERE id = #{id}

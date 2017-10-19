@@ -107,7 +107,6 @@ public class SyncRefundLogic {
                 }
                 Refund update = new Refund();
                 update.setId(refund.getId());
-                // todo 塞外部id
                 SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
                 Map<String,String> extraMap = refund.getExtra();
                 extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
@@ -167,7 +166,6 @@ public class SyncRefundLogic {
      * @param refund 退货单
      * @return 同步结果
      */
-            //todo 同步恒康
     public Response<Boolean> syncRefundCancelToHk(Refund refund) {
         try {
             //更新状态为同步中

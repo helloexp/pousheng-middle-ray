@@ -10,7 +10,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
-import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -208,6 +208,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
+
         //生成发票信息
         Long invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
         richSkusByShop.setInvoiceId(invoiceId);

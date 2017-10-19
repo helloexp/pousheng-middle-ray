@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -22,14 +21,12 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
-import io.terminus.parana.item.service.SkuReadService;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
-import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -50,20 +47,12 @@ public class OrderReadLogic {
     @RpcConsumer
     private OrderReadService orderReadService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
     @RpcConsumer
     private ShopOrderReadService shopOrderReadService;
 
     @RpcConsumer
     private SkuOrderReadService skuOrderReadService;
 
-    @RpcConsumer
-    private ShopReadService shopReadService;
-
-    @RpcConsumer
-    private SkuReadService skuReadService;
     @RpcConsumer
     private PaymentReadService paymentReadService;
     @RpcConsumer

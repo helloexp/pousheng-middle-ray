@@ -12,7 +12,7 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
-import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
@@ -197,8 +197,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
 
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
-
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        RefundExtra refundExtra = null;
+        try{
+            refundExtra = refundReadLogic.findRefundExtra(refund);
+        }catch (JsonResponseException e){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_EXTRA_INFO);
+            return;
+        }
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
         //转换为中台的物流信息
 

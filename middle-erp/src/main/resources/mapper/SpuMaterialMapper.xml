@@ -68,6 +68,12 @@
         WHERE material_id = #{materialId}
     </select>
 
+    <select id="findByMaterialCode" parameterType="string" resultMap="SpuMaterialMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE material_code = #{materialCode}
+    </select>
+
     <select id="findBySpuId" parameterType="long" resultMap="SpuMaterialMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />

@@ -16,8 +16,12 @@ spring:
     initialize: false
     continue-on-error: false
     hikari:
-      maximum-pool-size: 400
-      minimum-idle: 5
+      maximum-pool-size: 50
+      minimum-idle: 10
+      idle-timeout: 30000
+      max-lifetime: 30000
+      connection-timeout: 30000
+      validation-timeout: 15000
   application:
     name: pousheng-middle
   messages:

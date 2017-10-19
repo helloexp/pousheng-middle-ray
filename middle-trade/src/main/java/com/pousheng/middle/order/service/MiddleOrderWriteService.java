@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.service;
 
+import com.sun.org.apache.regexp.internal.RE;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -69,11 +70,20 @@ public interface MiddleOrderWriteService {
     Response<Boolean> updateReceiveInfo(Long shopOrderId, ReceiverInfo receiverInfo);
 
     /**
-     * 更新订单的买家名称
+     * 更新订单的买家信息
      *
      * @param shopOrderId 店铺订单id
      * @param buyerName   新的买家名称
+     * @param outBuyerId  宝胜项目用作手机号
      * @return 是否更新成功
      */
-    Response<Boolean> updateBuyerNameOfOrder(Long shopOrderId, String buyerName);
+    Response<Boolean> updateBuyerInfoOfOrder(Long shopOrderId, String buyerName,String outBuyerId);
+
+    /**
+     * 修改手机号
+     * @param shopOrderId 店铺订单主键
+     * @param outBuyerId 手机号
+     * @return
+     */
+    Response<Boolean> updateMobileByShopOrderId(Long shopOrderId,String outBuyerId);
 }

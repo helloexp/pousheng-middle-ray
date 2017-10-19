@@ -1,7 +1,7 @@
 package com.pousheng.middle.open;
 
 import com.google.common.base.Optional;
-import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.item.api.ParanaItemSeeker;

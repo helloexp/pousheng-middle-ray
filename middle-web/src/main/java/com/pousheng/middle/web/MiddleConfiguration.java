@@ -6,10 +6,12 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AsyncEventBus;
 import com.google.common.eventbus.EventBus;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
 import com.pousheng.middle.interceptors.LoginInterceptor;
+import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
@@ -23,10 +25,13 @@ import io.terminus.parana.cache.BackCategoryCacher;
 import io.terminus.parana.cache.CategoryAttributeCacher;
 import io.terminus.parana.cache.SpuCacher;
 import io.terminus.parana.component.attribute.CategoryAttributeNoCacher;
+import io.terminus.parana.order.api.AbstractPersistedOrderMaker;
 import io.terminus.parana.order.api.DeliveryFeeCharger;
 import io.terminus.parana.order.dto.RichSkusByShop;
+import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.rule.RuleExecutorRegistry;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.MessageSource;
@@ -51,7 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 /**
  * Description: add something here
@@ -83,6 +88,7 @@ import java.util.concurrent.Executors;
 @EnableConfigurationProperties({
         ErpOpenApiToken.class
 })
+@Slf4j
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
 
@@ -131,7 +137,14 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     public EventBus eventBus() {
         return new AsyncEventBus(
-                Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() * 2));
+                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*4, Runtime.getRuntime().availableProcessors() * 8, 5, TimeUnit.MINUTES,
+                        new ArrayBlockingQueue<>(10000), (new ThreadFactoryBuilder()).setNameFormat("event-bus-%d").build(),
+                        new RejectedExecutionHandler() {
+                            @Override
+                            public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+                                log.error("event {} is rejected", r);
+                            }
+                        }));
     }
 
     @Override
@@ -172,7 +185,10 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return localeResolver;
     }
 
-
+    @Bean
+    public AbstractPersistedOrderMaker orderMaker(){
+        return new PsPersistedOrderMaker(OrderLevel.SHOP,OrderLevel.SHOP);
+    }
     @Bean
     public MessageSource messageSource() {
         ResourceBundleMessageSource messageSource = new ResourceBundleMessageSource();

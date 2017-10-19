@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -37,7 +36,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -443,6 +441,20 @@ public class Refunds {
         return Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue());
     }
 
+    /**
+     * 计算最多可退金额
+     * @param orderId 订单主键
+     * @param shipmentId 发货单主键
+     * @param refundId 退货单主键
+     * @param skuCode 商品条码
+     * @param applyQuantity 申请退货的数量
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public int getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam("shipmentId") Long shipmentId,@RequestParam(required = false) Long refundId,
+                                    @RequestParam("skuCode") String skuCode,@RequestParam("applyQuantity") Integer applyQuantity){
+        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,skuCode,applyQuantity);
+    }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
 

@@ -44,7 +44,9 @@ public class PoushengMaterial implements Serializable {
 
     private String texture; //材质说明
 
-    private String sex; //性别
+    private String sex_id;//性别id
+
+    private String sex_name; //性别
 
     private Integer year_no; //年份
 

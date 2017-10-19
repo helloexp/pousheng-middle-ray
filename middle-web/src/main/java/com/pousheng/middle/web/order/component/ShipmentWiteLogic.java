@@ -166,6 +166,7 @@ public class ShipmentWiteLogic {
     public void doAutoCreateShipment(ShopOrder shopOrder){
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
                 MiddleOrderStatus.WAIT_HANDLE.getValue());
+        log.info("auto create shipment,step two");
         if (skuOrders.size()==0){
             return;
         }
@@ -187,6 +188,7 @@ public class ShipmentWiteLogic {
             log.error("find ReceiverInfo failed,shopOrderId is(:{})",shopOrder.getId());
             return;
         }
+        log.info("auto create shipment,step three");
         ReceiverInfo receiverInfo = response.getResult().get(0);
         if(Arguments.isNull(receiverInfo.getCityId())){
             log.error("receive info:{} city id is null,so skip auto create shipment",receiverInfo);
@@ -196,6 +198,7 @@ public class ShipmentWiteLogic {
 
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(receiverInfo.getCityId()),skuCodeAndQuantities);
+        log.info("auto create shipment,step three+");
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){
 
@@ -204,17 +207,20 @@ public class ShipmentWiteLogic {
             if (shipmentId!=null){
                 //修改状态
                 Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+                log.info("auto create shipment,step x");
                 if (!shipmentRes.isSuccess()) {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                     return;
                 }
                 try{
                     orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+                    log.info("auto create shipment,step xx");
                 }catch (ServiceException e){
                     log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
                 }
                 //同步恒康
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                log.info("auto create shipment,step xxx");
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
@@ -249,6 +255,7 @@ public class ShipmentWiteLogic {
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        log.info("auto create shipment,step four");
         //封装发货信息
         List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity);
         //发货单商品金额
@@ -285,6 +292,7 @@ public class ShipmentWiteLogic {
         shipment.setExtra(extraMap);
         //创建发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
+        log.info("auto create shipment,step eight");
         if (!createResp.isSuccess()) {
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
@@ -351,6 +359,7 @@ public class ShipmentWiteLogic {
 
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
+        log.info("auto create shipment,step seven");
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
         shipmentExtra.setErpOrderShopCode(shopCode);
@@ -473,6 +482,7 @@ public class ShipmentWiteLogic {
             String outItemId="";
             try{
                 outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
+                log.info("auto create shipment,step five");
             }catch (Exception e){
                 log.info("outItemmId is not exist");
             }
@@ -543,6 +553,7 @@ public class ShipmentWiteLogic {
             log.error("find shipment failed,shopOrderId is ({})",shopOrderId);
             throw new JsonResponseException("shipment.find.fail");
         }
+        log.info("auto create shipment,step six");
         //获取有效的销售发货单
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
                 filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).

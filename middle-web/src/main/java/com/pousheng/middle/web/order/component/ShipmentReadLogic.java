@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.component;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -15,7 +14,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.api.FlowPicker;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -42,13 +40,9 @@ import java.util.stream.Collectors;
 public class ShipmentReadLogic {
 
     @Autowired
-    private FlowPicker flowPicker;
-    @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
     private RefundReadLogic refundReadLogic;
-    @Autowired
-    private ObjectMapper objectMapper;
 
     @RpcConsumer
     private OrderShipmentReadService orderShipmentReadService;

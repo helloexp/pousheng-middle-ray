@@ -10,18 +10,14 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.order.service.ExpressCodeReadService;
-import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
@@ -29,8 +25,6 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.service.OrderWriteService;
-import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -41,7 +35,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -62,27 +55,13 @@ public class OrderOpenApi {
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @RpcConsumer
-    private ExpressCodeReadService expressCodeReadService;
-    @RpcConsumer
-    private OrderWriteLogic orderWriteLogic;
-    @RpcConsumer
-    private OrderWriteService orderWriteService;
-    @RpcConsumer
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
     private RefundReadLogic refundReadLogic;
-    @RpcConsumer
-    private RefundWriteService refundWriteService;
-    @RpcConsumer
-    private OrderShipmentReadService orderShipmentReadService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
-    @Autowired
-    private SyncOrderToEcpLogic syncOrderToEcpLogic;
     @Autowired
     private EventBus eventBus;
 
@@ -259,7 +238,7 @@ public class OrderOpenApi {
                 throw new ServiceException("hk.refund.id.not.matching");
             }*/
 
-            //todo 恒康返回的商品信息如何处理
+
 
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

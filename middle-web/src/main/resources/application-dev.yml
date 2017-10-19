@@ -1,6 +1,11 @@
 logging:
-  file: /var/logs/pousheng/middle.log
-  level.*: INFO
+  level:
+    root: INFO
+    org.springframework: INFO
+    io.terminus.session: ERROR
+    com.alibaba.dubbo: ERROR
+    com.pousheng: DEBUG
+  path: /var/logs/pousheng
 
 
 server:

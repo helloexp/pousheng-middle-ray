@@ -12,4 +12,21 @@
         <include refid="tb"/>
         WHERE category_id=#{categoryId} AND spu_code=#{spuCode}
     </select>
+
+
+
+    <select id="erpPaging" parameterType="map" resultMap="SpuMap">
+        SELECT
+        <include refid="cols_all"/>
+        FROM
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+        order by `updated_at` desc
+        LIMIT #{offset}, #{limit}
+    </select>
+
 </mapper>
+
+

@@ -7,6 +7,7 @@ package com.pousheng.middle.web.spu;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
+import com.pousheng.erp.service.ErpSpuReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -40,6 +41,9 @@ import java.util.Map;
 public class Spus {
 
     @RpcConsumer
+    private ErpSpuReadService erpSpuReadService;
+
+    @RpcConsumer
     private SpuReadService spuReadService;
 
     @RpcConsumer
@@ -70,7 +74,7 @@ public class Spus {
                                         @RequestParam(name = "pageSize", defaultValue = "10")Integer pageSize){
 
 
-        Response<Paging<Spu>> rSpu = spuReadService.findByCategoryId(categoryId,keyword,pageNo, pageSize);
+        Response<Paging<Spu>> rSpu = erpSpuReadService.findByCategoryId(categoryId,keyword,pageNo, pageSize);
         if(!rSpu.isSuccess()){
             log.error("failed to find spu by category(id={}) spu(id:{}) keyword:{},error code:{}", categoryId, spuId,keyword,rSpu.getError());
             throw new JsonResponseException(rSpu.getError());

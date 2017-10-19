@@ -72,12 +72,7 @@ public class Users {
     @RequestMapping(value = "/{userId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ParanaUser> findUserById(@PathVariable Long userId) {
         MiddleUser middleUser = findMiddleUserByOutId(userId);
-        val userResp = userReadService.findById(middleUser.getId());
-        if (!userResp.isSuccess()) {
-            log.warn("find user by id={} failed, error={}", userId, userResp.getError());
-            return Response.fail(userResp.getError());
-        }
-        return Response.ok(buildParanaUser(userResp.getResult()));
+        return Response.ok(buildParanaUser(middleUser));
     }
 
 

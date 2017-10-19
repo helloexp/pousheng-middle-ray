@@ -85,6 +85,9 @@ public class UcUserOperationLogic {
             UserInfoWithPassword up = new UserInfoWithPassword();
             up.setPassword(password);
             up.setUsername(name);
+            Map<String, Object> metadata = Maps.newHashMap();
+            metadata.put("rolesJson","[\\\"OPERATOR\\\"]");
+            up.setMetadata(metadata);
             String userInfoJson = JsonMapper.nonDefaultMapper().toJson(up);
 
             String result = HttpRequest.post(userCenterGateway+"/v1/users").contentType("application/json").send(userInfoJson).body();

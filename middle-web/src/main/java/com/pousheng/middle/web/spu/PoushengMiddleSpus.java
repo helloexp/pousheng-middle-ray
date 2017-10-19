@@ -7,7 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.model.SpuMaterial;
 import com.pousheng.erp.service.SpuMaterialReadService;
-import com.pousheng.middle.spu.service.PoushengMiddleSpuService;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;

@@ -1,7 +1,8 @@
-package com.pousheng.middle.spu.service;
+package com.pousheng.erp.service;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.pousheng.erp.dao.mysql.ErpSpuDao;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -25,7 +26,7 @@ import java.util.Map;
 public class PoushengMiddleSpuService {
 
     @Autowired
-    private SpuDao spuDao;
+    private ErpSpuDao erpSpuDao;
 
     @Autowired
     private SkuTemplateDao skuTemplateDao;
@@ -41,7 +42,7 @@ public class PoushengMiddleSpuService {
     public Response<Paging<Spu>> findBy(Integer pageNo, Integer pageSize, Map<String, Object> params) {
         try {
             PageInfo pi = new PageInfo(pageNo, pageSize);
-            Paging<Spu> r = spuDao.paging(pi.getOffset(), pi.getLimit(), params);
+            Paging<Spu> r = erpSpuDao.erPpaging(pi.getOffset(), pi.getLimit(), params);
             return Response.ok(r);
         } catch (Exception e) {
             log.error("failed to find spus by {}, cause:{}", params, Throwables.getStackTraceAsString(e));

@@ -6,16 +6,19 @@ import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;
+import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.common.exception.InvalidException;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -71,6 +74,11 @@ public class ExportController {
     @Autowired
     private ExportService exportService;
 
+    @RpcConsumer
+    private OrderShipmentReadService orderShipmentReadService;
+
+    @Autowired
+    private PermissionUtil permissionUtil;
 
     /**
      * 导出订单
@@ -359,6 +367,95 @@ public class ExportController {
         exportService.saveToDiskAndCloud(new ExportContext(refundExportData));
     }
 
+
+    /**
+     * 发货单导出
+     */
+    @GetMapping("shipment/export")
+    public void shipmentExport(OrderShipmentCriteria criteria) {
+        if (criteria.getEndAt() != null) {
+            criteria.setEndAt(new DateTime(criteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
+
+        criteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+
+        //判断查询的发货单类型
+        if (Objects.equals(criteria.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
+            criteria.setAfterSaleOrderId(criteria.getOrderId());
+            criteria.setOrderId(null);
+        }
+
+        List<ShipmentExportEntity> shipmentExportEntities = new ArrayList<>();
+
+        int pageNo = 1;
+
+        while (true) {
+
+            criteria.setPageNo(pageNo++);
+
+            Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(criteria);
+            if (!response.isSuccess()) {
+                log.error("find shipment by criteria:{} fail,error:{}", criteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            if (response.getResult().getTotal() == 0)
+                throw new JsonResponseException("export.data.empty");
+
+            if (response.getResult().getData().isEmpty())
+                break;
+
+
+            response.getResult().getData().forEach(shipmentContext -> {
+
+                Response<ShopOrder> shopOrderResponse = shopOrderReadService.findById(shipmentContext.getOrderShipment().getOrderId());
+                if (!shopOrderResponse.isSuccess())
+                    throw new JsonResponseException(shopOrderResponse.getError());
+
+                Response<List<ReceiverInfo>> receiverResponse = receiverInfoReadService.findByOrderId(shipmentContext.getOrderShipment().getOrderId(), OrderLevel.SHOP);
+                if (!receiverResponse.isSuccess()) {
+                    log.error("get receiver fail,error:{}", receiverResponse.getError());
+                    throw new JsonResponseException(receiverResponse.getError());
+                }
+
+                shipmentReadLogic.getShipmentItems(shipmentContext.getShipment()).forEach(item -> {
+                    ShipmentExportEntity entity = new ShipmentExportEntity();
+
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipmentContext.getShipment());
+
+                    entity.setShopName(shipmentContext.getOrderShipment().getShopName());
+                    entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
+                    entity.setItemNo(item.getSkuCode());
+
+                    entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
+                    entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
+                    if (!receiverResponse.getResult().isEmpty()) {
+                        entity.setReciverName(receiverResponse.getResult().get(0).getReceiveUserName());
+                        entity.setReciverAddress(receiverResponse.getResult().get(0).getDetail());
+                        entity.setPhone(receiverResponse.getResult().get(0).getMobile());
+                    }
+                    //TODO 销售类型
+//                entity.setSaleType(shipmentContext.getOrderShipment().getType());
+                    entity.setPayType("在线支付");
+//                    entity.setInvoice("");
+                    entity.setPaymentDate(shopOrderResponse.getResult().getOutCreatedAt());
+                    entity.setSkuQuantity(item.getQuantity());
+                    if (null == item.getCleanFee())
+                        entity.setFee(0D);
+                    else
+                        entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+//                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                    entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
+                    entity.setOrderStatus(MiddleOrderStatus.fromInt(shopOrderResponse.getResult().getStatus()).getName());
+                    shipmentExportEntities.add(entity);
+
+                });
+
+
+            });
+        }
+        exportService.saveToDiskAndCloud(new ExportContext(shipmentExportEntities));
+
+    }
 
     @GetMapping("export/files")
     public Response<Paging<FileRecord>> exportFiles() {

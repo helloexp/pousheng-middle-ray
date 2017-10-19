@@ -106,11 +106,11 @@ public class Users {
 
         UcUserInfo ucUserInfo = operationLogic.authGetUserInfo(tokenInfo.getAccessToken());
 
-        log.info("[MIDDLE] get uc user info:{}",ucUserInfo);
+        log.debug("[MIDDLE] get uc user info:{}",ucUserInfo);
 
 
         val userResp = userReadService.findByOutId(ucUserInfo.getUserId());
-        log.info("end find middle user by outer id:{}",ucUserInfo.getUserId());
+        log.debug("end find middle user by outer id:{}",ucUserInfo.getUserId());
 
         if (!userResp.isSuccess()) {
             log.warn("find  user failed, outId={}, error={}", ucUserInfo.getUserId(), userResp.getError());
@@ -122,15 +122,12 @@ public class Users {
             throw new JsonResponseException("authorize.fail");
         }
 
-        log.info("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
+        log.debug("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
 
-        MiddleUser middleUser = userOptional.get();
-        middleUser.setId(middleUser.getOutId());
-
-        ParanaUser paranaUser = buildParanaUser(middleUser);
-        log.info("LOGIN SUCCESS user name:{}",paranaUser.getName());
+        ParanaUser paranaUser = buildParanaUserForLogin(userOptional.get());
+        log.debug("LOGIN SUCCESS user name:{}",paranaUser.getName());
         eventBus.post(new LoginEvent(request,response,paranaUser));
-        log.info("PUSH LOGIN EVENT SUCCESS");
+        log.debug("PUSH LOGIN EVENT SUCCESS");
         return paranaUser;
     }
 
@@ -147,6 +144,14 @@ public class Users {
 
         return ParanaUserMaker.from(middleUser);
     }
+
+
+    private ParanaUser buildParanaUserForLogin(MiddleUser middleUser) {
+        ParanaUser paranaUser= buildParanaUser(middleUser);
+        paranaUser.setId(middleUser.getOutId());
+        return paranaUser;
+    }
+
 
     /**
      * 查询userid 对应的role

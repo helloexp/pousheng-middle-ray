@@ -115,7 +115,7 @@ public class Users {
         log.info("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
 
 
-        ParanaUser paranaUser= buildParanaUser(userOptional.get());
+        ParanaUser paranaUser = buildParanaUser(userOptional.get());
         log.info("LOGIN SUCCESS user name:{}",paranaUser.getName());
         eventBus.post(new LoginEvent(request,response,paranaUser));
         log.info("PUSH LOGIN EVENT SUCCESS");
@@ -133,6 +133,7 @@ public class Users {
             }
         }
 
+        middleUser.setId(middleUser.getOutId());
         return ParanaUserMaker.from(middleUser);
     }
 

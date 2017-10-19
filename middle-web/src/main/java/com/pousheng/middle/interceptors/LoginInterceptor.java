@@ -5,6 +5,7 @@
 package com.pousheng.middle.interceptors;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -21,6 +22,7 @@ import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.Op;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
@@ -39,7 +41,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class LoginInterceptor extends HandlerInterceptorAdapter {
 
-    private LoadingCache<Long, Response<MiddleUser>> userCache;
+    private LoadingCache<Long, Response<Optional<MiddleUser>>> userCache;
 
     @Autowired
     private PsUserReadService userReadService;
@@ -48,10 +50,10 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
 
     @PostConstruct
     public void init() {
-        userCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(new CacheLoader<Long, Response<MiddleUser>>() {
+        userCache = CacheBuilder.newBuilder().expireAfterWrite(30, TimeUnit.MINUTES).build(new CacheLoader<Long, Response<Optional<MiddleUser>>>() {
             @Override
-            public Response<MiddleUser> load(Long userId) throws Exception {
-                return userReadService.findById(userId);
+            public Response<Optional<MiddleUser>> load(Long userId) throws Exception {
+                return userReadService.findByOutId(userId);
             }
         });
     }
@@ -64,14 +66,14 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
             if (userIdInSession != null) {
 
                 final Long userId = Long.valueOf(userIdInSession.toString());
-                Response<? extends MiddleUser> result = userCache.getUnchecked(userId);
-                if (!result.isSuccess()) {
-                    log.warn("failed to find middleUser where id={},error code:{}", userId, result.getError());
+                Response<Optional<MiddleUser>> resultRes = userCache.getUnchecked(userId);
+                if (!resultRes.isSuccess()) {
+                    log.warn("failed to find middleUser where id={},error code:{}", userId, resultRes.getError());
                     return false;
                 }
-                MiddleUser middleUser = result.getResult();
-                if (middleUser != null) {
-
+                Optional<MiddleUser> middleUserOptional = resultRes.getResult();
+                if (middleUserOptional.isPresent()) {
+                    MiddleUser middleUser = middleUserOptional.get();
                     if (!Objects.equal(middleUser.getType(), UserType.ADMIN.value()) && !Objects.equal(middleUser.getType(), UserType.OPERATOR.value())) {
                         log.warn("middleUser(id={})'s is not admin or operator, its type is {}", userId, middleUser.getType());
                         session.invalidate();
@@ -86,6 +88,9 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
                     }
                     ParanaUser paranaUser = ParanaUserMaker.from(middleUser);
                     UserUtil.putCurrentUser(paranaUser);
+                }else {
+                    log.error("not find middle user by out id:{}",userId);
+                    return Boolean.FALSE;
                 }
             }
         }

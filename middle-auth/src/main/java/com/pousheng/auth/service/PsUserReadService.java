@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.pousheng.auth.dao.UserDao;
 import com.pousheng.auth.model.MiddleUser;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,12 @@ public class PsUserReadService {
 
     public Response<MiddleUser> findById(Long Id) {
         try {
-            return Response.ok(userDao.findById(Id));
+            MiddleUser middleUser = userDao.findById(Id);
+            if(Arguments.isNull(middleUser)){
+                log.error("not find middle by id:{}",Id);
+                return Response.fail("middle.user.not.exist");
+            }
+            return Response.ok(middleUser);
         } catch (Exception e) {
             log.error("find user by id :{} failed,  cause:{}", Id, Throwables.getStackTraceAsString(e));
             return Response.fail("user.find.fail");

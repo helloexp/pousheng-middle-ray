@@ -64,10 +64,15 @@ public class Users {
     private static final DateTimeFormatter DTF = DateTimeFormat.forPattern("yyyy-MM-dd");
 
 
-
+    /**
+     * 根据用户id获取用户信息
+     * @param userId id为会员中心的id（特殊处理过）
+     * @return
+     */
     @RequestMapping(value = "/{userId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ParanaUser> findUserById(@PathVariable Long userId) {
-        val userResp = userReadService.findById(userId);
+        MiddleUser middleUser = findMiddleUserByOutId(userId);
+        val userResp = userReadService.findById(middleUser.getId());
         if (!userResp.isSuccess()) {
             log.warn("find user by id={} failed, error={}", userId, userResp.getError());
             return Response.fail(userResp.getError());
@@ -119,8 +124,10 @@ public class Users {
 
         log.info("[MIDDLE] find pousheng user by outer id:{}",ucUserInfo.getUserId());
 
+        MiddleUser middleUser = userOptional.get();
+        middleUser.setId(middleUser.getOutId());
 
-        ParanaUser paranaUser = buildParanaUser(userOptional.get());
+        ParanaUser paranaUser = buildParanaUser(middleUser);
         log.info("LOGIN SUCCESS user name:{}",paranaUser.getName());
         eventBus.post(new LoginEvent(request,response,paranaUser));
         log.info("PUSH LOGIN EVENT SUCCESS");
@@ -138,7 +145,6 @@ public class Users {
             }
         }
 
-        middleUser.setId(middleUser.getOutId());
         return ParanaUserMaker.from(middleUser);
     }
 
@@ -149,8 +155,7 @@ public class Users {
      */
     @RequestMapping(value = "/{userId}/roles", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<RoleContent> getUserRolesByUserId(@PathVariable Long userId) {
-        MiddleUser middleUser = findMiddleUserByOutId(userId);
-        return userRoleLoader.hardLoadRoles(middleUser.getId());
+        return userRoleLoader.hardLoadRoles(userId);
     }
 
     /**
@@ -160,8 +165,7 @@ public class Users {
      */
     @GetMapping("/{userId}/role-names")
     public List<String> getRoleNamesOfUserId(@PathVariable Long userId) {
-        MiddleUser middleUser = findMiddleUserByOutId(userId);
-        RoleContent content = RespHelper.or500(userRoleLoader.hardLoadRoles(middleUser.getId()));
+        RoleContent content = RespHelper.or500(userRoleLoader.hardLoadRoles(userId));
         List<String> result = new ArrayList<>();
         if (content != null) {
             for (Role role : content.getRoles()) {

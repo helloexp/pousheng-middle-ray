@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 创建和更新spu相关的接口
@@ -168,7 +169,8 @@ public class Spus {
         spu.setStockType(rSpu.getResult().getStockType());
         //避免重复计算默认值啥的
         extractInfoFromSkus(spu, fullSpu.getSkuTemplates());
-
+        List<SkuTemplate> skuTemplates = fullSpu.getSkuTemplates().stream().filter(it->!Objects.equal(it.getSkuCode(),"0")).collect(Collectors.toList());
+        fullSpu.setSkuTemplates(skuTemplates);
         Response<Boolean> rUpdate = spuWriter.update(fullSpu);
         if (!rUpdate.isSuccess()) {
             log.error("failed to update {}, error code:{}", fullSpu, rUpdate.getError());

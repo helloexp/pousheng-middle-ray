@@ -86,7 +86,8 @@ public class UcUserOperationLogic {
             up.setPassword(password);
             up.setUsername(name);
             Map<String, Object> metadata = Maps.newHashMap();
-            metadata.put("rolesJson","[\\\"OPERATOR\\\"]");
+            metadata.put("rolesJson","[\"OPERATOR\"]");
+            up.setType(3);
             up.setMetadata(metadata);
             String userInfoJson = JsonMapper.nonDefaultMapper().toJson(up);
 
@@ -171,6 +172,7 @@ public class UcUserOperationLogic {
     private static class UserInfoWithPassword extends UcUserInfo {
 
         private String password;
+        private Integer type;
     }
 
 

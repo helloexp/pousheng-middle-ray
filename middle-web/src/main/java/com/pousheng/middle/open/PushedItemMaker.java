@@ -62,6 +62,8 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         paranaItem.setName(spu.getName());
         paranaItem.setMainImage(spu.getMainImage());
         paranaItem.setCategoryId(spu.getCategoryId());
+        //添加型号
+        paranaItem.setSpecification(spu.getSpecification());
         if (Arguments.notNull(spuDetail.getImages())) {
             paranaItem.setImages(spuDetail.getImages().stream().filter(Objects::nonNull)
                     .map(ImageInfo::getUrl).collect(Collectors.toList()));

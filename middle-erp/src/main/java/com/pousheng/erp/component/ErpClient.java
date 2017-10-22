@@ -119,6 +119,7 @@ public class ErpClient {
 
         if(r.ok()){
             String body = r.body();
+            log.debug("call esb success,request return body:{}",body);
             try {
                 JsonNode root = mapper.readTree(body);
                 boolean success = root.findPath("retCode").asInt() == 0;

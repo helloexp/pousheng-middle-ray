@@ -108,6 +108,9 @@ public class PushedItemMaker implements ParanaFullItemMaker {
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());
             paranaSku.setSkuCode(skuTemplate.getSkuCode());
+            Map<String, String> skuExtra = Maps.newHashMap();
+            skuExtra.put("unitQuantity","1");
+            paranaSku.setExtra(skuExtra);
 
             final List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
             if (!CollectionUtils.isEmpty(skuAttributes)) {

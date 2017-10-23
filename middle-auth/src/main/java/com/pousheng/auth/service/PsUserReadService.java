@@ -54,8 +54,11 @@ public class PsUserReadService {
 
     public Response<Optional<MiddleUser>> findByOutId(Long outId){
         try {
-            log.info("start find middle user by outer id:{}",outId);
-            return Response.ok(Optional.fromNullable(userDao.findByOutId(outId)));
+            log.debug("[DAO]start find middle user by outer id:{}",outId);
+            MiddleUser exist = userDao.findByOutId(outId);
+            log.debug("[DAO]end find middle user by outer id:{},middle user:{}",outId,exist);
+            return Response.ok(Optional.fromNullable(exist));
+
         } catch (Exception e) {
             log.error("find user by out id :{} failed,  cause:{}", outId, Throwables.getStackTraceAsString(e));
             return Response.fail("user.find.fail");

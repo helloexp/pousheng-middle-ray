@@ -4,6 +4,7 @@ logging:
     org.springframework: INFO
     io.terminus.session: ERROR
     com.alibaba.dubbo: ERROR
+    MiddleUser: DEBUG
     com.pousheng: DEBUG
   path: /var/logs/pousheng
 

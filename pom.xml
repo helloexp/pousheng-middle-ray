@@ -25,7 +25,7 @@
         <parana.version>4.8.8.BUILD-SNAPSHOT</parana.version>
         <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
         <open-client.version>1.0-SNAPSHOT</open-client.version>
-        <guava.version>22.0</guava.version>
+        <guava.version>19.0</guava.version>
         <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
         <apache-poi.version>3.16</apache-poi.version>
         <azure-storage.version>5.4.0</azure-storage.version>

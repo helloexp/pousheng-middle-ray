@@ -1,6 +1,7 @@
 package com.pousheng.middle.open;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -69,6 +71,14 @@ public class PushedItemMaker implements ParanaFullItemMaker {
                     .map(ImageInfo::getUrl).collect(Collectors.toList()));
         }
         paranaItem.setDetail(spuDetail.getDetail());
+
+        Map<String, String> extra = Maps.newHashMap();
+        extra.put("unit","件");
+        extra.put("selfPlatformLink","");
+        extra.put("unitQuantity","1");
+        paranaItem.setExtra(extra);
+
+
 
         final List<GroupedOtherAttribute> groupedOtherAttributes = fullSpu.getGroupedOtherAttributes();
         if (!CollectionUtils.isEmpty(groupedOtherAttributes)) {

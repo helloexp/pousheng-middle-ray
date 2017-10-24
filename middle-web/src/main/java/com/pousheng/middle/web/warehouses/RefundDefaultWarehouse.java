@@ -28,7 +28,7 @@ import java.util.Map;
  * pousheng-middle
  */
 @RestController
-@RequestMapping("/api/refund/default")
+@RequestMapping("/api/refund/default/warehouse")
 @Slf4j
 public class RefundDefaultWarehouse {
     @RpcConsumer
@@ -40,7 +40,7 @@ public class RefundDefaultWarehouse {
     @RpcConsumer
     private MiddleRefundWarehouseWriteService middleRefundWarehouseWriteServie;
 
-    @RequestMapping(value = "{id}/warehouse",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "{id}/edit",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName){
         Response<OpenShop> openShopResponse = openShopReadService.findById(openShopId);
         if (!openShopResponse.isSuccess()){

@@ -26,11 +26,12 @@ public class WarehouseStockApi {
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
-        log.info("ERPSTOCK -- begin to handle erp stock:{} , total:{}", data,total);
+        log.info("ERPSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
         BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
         syncStockEvent.setTotal(total);
         syncStockEvent.setData(data);
         eventBus.post(syncStockEvent);
+        log.info("ERPSTOCK -- end to handle erp stock , ", total,data);
 
     }
 

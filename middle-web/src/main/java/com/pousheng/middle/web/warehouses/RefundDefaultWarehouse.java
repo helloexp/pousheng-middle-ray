@@ -86,6 +86,18 @@ public class RefundDefaultWarehouse {
     }
 
 
+
+
+    @RequestMapping(value = "{id}/single",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<MiddleOpenShop>  queryOpenShopById(@PathVariable("id") Long id){
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(id);
+        MiddleOpenShop middleOpenShop =new MiddleOpenShop();
+        BeanUtils.copyProperties(openShop,middleOpenShop);
+        return Response.ok(middleOpenShop);
+    }
+
+
+
     @RequestMapping(value = "{id}/openshop",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<MiddleOpenShop>  queryOpenShop(@PathVariable("id") Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);

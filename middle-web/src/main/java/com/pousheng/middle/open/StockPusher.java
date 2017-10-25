@@ -146,14 +146,14 @@ public class StockPusher {
                         log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                                 stock.intValue(), skuCode, shopId);
                         //更新上次推送的可用库存
-                       /* WarehouseShopStockRule u = new WarehouseShopStockRule();
+                        WarehouseShopStockRule u = new WarehouseShopStockRule();
                         u.setId(shopStockRule.getId());
                         u.setLastPushStock(stock);
                         Response<Boolean> rRule = warehouseShopStockRuleWriteService.update(u);
                         if (!rRule.isSuccess()) {
                             log.error("failed to update lastPushStock for sku(code={}) to {} for {}, error code:{}",
                                     skuCode, stock, u);
-                        }*/
+                        }
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));

@@ -75,7 +75,7 @@ public class BatchSyncStockListener {
 
         Integer total = event.getTotal();
         String data = event.getData();
-        log.debug("batch sync stock to middle start ,total:{} data:{}",total,data);
+        log.debug("batch sync stock to middle start ,total:{}",total);
 
         try {
             List<ErpStock> erpStocks = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(data, LIST_OF_ERP_STOCK);

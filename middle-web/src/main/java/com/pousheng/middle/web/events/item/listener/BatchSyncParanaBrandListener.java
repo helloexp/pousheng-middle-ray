@@ -55,7 +55,7 @@ public class BatchSyncParanaBrandListener {
     @Subscribe
     public void onBatchSyncBrand(BatchSyncParanaBrandEvent event){
 
-        log.info("batch sync brand to parana start");
+        log.debug("batch sync brand to parana start");
         String taskId = event.getTaskId();
 
         List<Brand> brands = findByIds(event.getBrandIds());
@@ -70,7 +70,7 @@ public class BatchSyncParanaBrandListener {
         }
 
         handResult(errorDatas,taskId);
-        log.info("batch sync brand to parana end");
+        log.debug("batch sync brand to parana end");
 
     }
 
@@ -81,7 +81,7 @@ public class BatchSyncParanaBrandListener {
     @Subscribe
     public void onDumpSyncBrand(DumpSyncParanaBrandEvent event){
 
-        log.info("dump sync brand to parana start");
+        log.debug("dump sync brand to parana start");
         String taskId = event.getTaskId();
 
         List<SyncErrorData> syncErrorDatas = handleAll();
@@ -89,7 +89,7 @@ public class BatchSyncParanaBrandListener {
         handResult(syncErrorDatas,taskId);
 
 
-        log.info("dump sync brand to parana end");
+        log.debug("dump sync brand to parana end");
 
     }
 

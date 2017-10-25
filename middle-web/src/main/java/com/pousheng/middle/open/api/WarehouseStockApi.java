@@ -1,28 +1,13 @@
 package com.pousheng.middle.open.api;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.pousheng.middle.open.StockPusher;
-import com.pousheng.middle.open.api.dto.ErpStock;
-import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.StockDto;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
+import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.web.events.item.BatchSyncStockEvent;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
-import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-
-import java.util.List;
 
 /**
  * 恒康主动推sku的库存过来
@@ -34,58 +19,19 @@ import java.util.List;
 @Slf4j
 public class WarehouseStockApi {
 
-    private static final TypeReference<List<ErpStock>> LIST_OF_ERP_STOCK = new TypeReference<List<ErpStock>>() {
-    };
-
-    private static final DateTimeFormatter dft = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
-    @Autowired
-    private WarehouseCacher warehouseCacher;
-
-    @RpcConsumer
-    private WarehouseSkuWriteService warehouseSkuWriteService;
 
     @Autowired
-    private StockPusher stockPusher;
+    private EventBus eventBus;
+
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
-        log.info("ERPSTOCK -- begin to handle erp stock:{}", data);
-        try {
-            List<ErpStock> erpStocks = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(data, LIST_OF_ERP_STOCK);
-            List<StockDto> stockDtos = make(erpStocks);
-            Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
-            if(!r.isSuccess()){
-                log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
-                throw new OPServerException(200,r.getError());
-            }
-            //触发库存推送
-            for (StockDto stockDto : stockDtos) {
-                stockPusher.submit(stockDto.getSkuCode());
-            }
-        } catch (Exception e) {
-            log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"stock.data.invalid");
-        }
+        log.info("ERPSTOCK -- begin to handle erp stock:{} , total:{}", data,total);
+        BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
+        syncStockEvent.setTotal(total);
+        syncStockEvent.setData(data);
+        eventBus.post(syncStockEvent);
 
     }
 
-    private List<StockDto> make(List<ErpStock> erpStocks) {
-        List<StockDto> result = Lists.newArrayListWithCapacity(erpStocks.size());
-        for (ErpStock erpStock : erpStocks) {
-            try {
-                StockDto stockDto = new StockDto();
-                stockDto.setSkuCode(erpStock.getBarcode());
-                stockDto.setQuantity(erpStock.getQuantity());
-                stockDto.setUpdatedAt(dft.parseDateTime(erpStock.getModify_time()).toDate());
-
-                String warehouseCode = erpStock.getCompany_id()+"-"+erpStock.getStock_id();
-                Warehouse warehouse = warehouseCacher.findByCode(warehouseCode);
-                stockDto.setWarehouseId(warehouse.getId());
-                result.add(stockDto);
-            } catch (Exception e) {
-                log.error("failed to sync {}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
-            }
-        }
-        return result;
-    }
 }

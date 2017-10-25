@@ -59,7 +59,7 @@ public class StockPusher {
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors(), Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*2, Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     @Override

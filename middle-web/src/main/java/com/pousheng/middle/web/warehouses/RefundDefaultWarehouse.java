@@ -40,6 +40,14 @@ public class RefundDefaultWarehouse {
     @RpcConsumer
     private MiddleRefundWarehouseWriteService middleRefundWarehouseWriteServie;
 
+
+    /**
+     * 编辑店铺的默认退货仓
+     * @param openShopId 店铺主键
+     * @param warehouseId 退货仓id
+     * @param warehouseName 退货仓名
+     * @return
+     */
     @RequestMapping(value = "{id}/edit",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName){
         Response<OpenShop> openShopResponse = openShopReadService.findById(openShopId);
@@ -60,7 +68,7 @@ public class RefundDefaultWarehouse {
     }
 
     /**
-     * 分页查询
+     * 分页查询各个店铺的退货仓
      * @param pageNo 每页记录数
      * @param pageSize 页码
      * @return
@@ -86,8 +94,11 @@ public class RefundDefaultWarehouse {
     }
 
 
-
-
+    /**
+     * 根据店铺id查询默认退货仓
+     * @param id
+     * @return
+     */
     @RequestMapping(value = "{id}/single",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<MiddleOpenShop>  queryOpenShopById(@PathVariable("id") Long id){
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(id);
@@ -97,7 +108,11 @@ public class RefundDefaultWarehouse {
     }
 
 
-
+    /**
+     * 根据店铺id查询默认退货仓
+     * @param shopOrderId
+     * @return
+     */
     @RequestMapping(value = "{id}/openshop",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<MiddleOpenShop>  queryOpenShop(@PathVariable("id") Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);

@@ -1,6 +1,7 @@
 package com.pousheng.middle.open;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -23,6 +24,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -70,6 +72,14 @@ public class PushedItemMaker implements ParanaFullItemMaker {
         }
         paranaItem.setDetail(spuDetail.getDetail());
 
+        Map<String, String> extra = Maps.newHashMap();
+        extra.put("unit","件");
+        extra.put("selfPlatformLink","");
+        extra.put("unitQuantity","1");
+        paranaItem.setExtra(extra);
+
+
+
         final List<GroupedOtherAttribute> groupedOtherAttributes = fullSpu.getGroupedOtherAttributes();
         if (!CollectionUtils.isEmpty(groupedOtherAttributes)) {
             List<ParanaItemAttribute> paranaItemAttributes = Lists.newArrayList();
@@ -98,6 +108,9 @@ public class PushedItemMaker implements ParanaFullItemMaker {
             paranaSku.setStockQuantity(0);
             paranaSku.setImage(skuTemplate.getImage());
             paranaSku.setSkuCode(skuTemplate.getSkuCode());
+            Map<String, String> skuExtra = Maps.newHashMap();
+            skuExtra.put("unitQuantity","1");
+            paranaSku.setExtra(skuExtra);
 
             final List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
             if (!CollectionUtils.isEmpty(skuAttributes)) {

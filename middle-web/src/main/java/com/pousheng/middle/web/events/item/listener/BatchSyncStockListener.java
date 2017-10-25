@@ -3,6 +3,7 @@ package com.pousheng.middle.web.events.item.listener;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.StockPusher;
@@ -69,6 +70,7 @@ public class BatchSyncStockListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void onBatchSyncStockEvent(BatchSyncStockEvent event){
 
         Integer total = event.getTotal();

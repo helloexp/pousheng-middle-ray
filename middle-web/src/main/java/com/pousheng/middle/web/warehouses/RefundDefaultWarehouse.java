@@ -64,7 +64,7 @@ public class RefundDefaultWarehouse {
         if (!updateRlt.isSuccess()){
             log.error("update openShop failed,openShopId is {},caused by {}",openShop.getId(),updateRlt.getError());
         }
-        return Response.ok();
+        return updateRlt;
     }
 
     /**

@@ -52,7 +52,7 @@ public class BatchSyncParanaCategoryListener {
     @Subscribe
     public void onSyncCategory(BatchSyncParanaCategoryEvent event){
 
-        log.info("dump sync category to parana start");
+        log.debug("dump sync category to parana start");
         String taskId = event.getTaskId();
 
         List<BackCategory> allCategories = Lists.newArrayList();
@@ -90,7 +90,7 @@ public class BatchSyncParanaCategoryListener {
         }
 
 
-        log.info("dump sync category to parana end");
+        log.debug("dump sync category to parana end");
 
     }
 

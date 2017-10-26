@@ -137,7 +137,7 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     public EventBus eventBus() {
         return new AsyncEventBus(
-                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*4, Runtime.getRuntime().availableProcessors() * 8, 5, TimeUnit.MINUTES,
+                new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*5, Runtime.getRuntime().availableProcessors() * 8, 5, TimeUnit.MINUTES,
                         new ArrayBlockingQueue<>(100000), (new ThreadFactoryBuilder()).setNameFormat("event-bus-%d").build(),
                         new RejectedExecutionHandler() {
                             @Override

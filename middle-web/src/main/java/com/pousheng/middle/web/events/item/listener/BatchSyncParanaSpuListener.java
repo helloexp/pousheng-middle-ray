@@ -59,7 +59,7 @@ public class BatchSyncParanaSpuListener {
     @Subscribe
     public void onSyncSpu(BatchSyncParanaSpuEvent event){
 
-        log.info("batch sync spu to parana start");
+        log.debug("batch sync spu to parana start");
         String taskId = event.getTaskId();
         List<Long> spuIds = event.getSpuIds();
 
@@ -68,7 +68,7 @@ public class BatchSyncParanaSpuListener {
         batchSync(spuIds,errorDatas);
         handleResult(taskId,errorDatas);
 
-        log.info("batch sync spu to parana end");
+        log.debug("batch sync spu to parana end");
 
     }
 

@@ -540,7 +540,9 @@ public class RefundWriteLogic {
 
         Map<String,SkuTemplate> skuCodeAndTemplateMap =  skuTemplateRes.getResult().stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getStatus(),-3))
                 .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
-
+        if (skuCodeAndTemplateMap.size()==0){
+            throw new JsonResponseException("sku.may.be.deleted");
+        }
         refundItems.forEach(it -> {
             SkuTemplate skuTemplate = skuCodeAndTemplateMap.get(it.getSkuCode());
             it.setAttrs(skuTemplate.getAttrs());

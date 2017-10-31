@@ -178,6 +178,7 @@ public class ShipmentWiteLogic {
         String shipmentNote = "";
         //判断是否满足自动生成发货单
         if(!commValidateOfOrder(shopOrder,skuOrders,shipmentNote)){
+            this.updateShipmentNote(shopOrder, shipmentNote);
             return;
         }
         //获取skuCode,数量的集合
@@ -235,6 +236,12 @@ public class ShipmentWiteLogic {
                 }
             }
         }
+        //添加备注
+        this.updateShipmentNote(shopOrder, shipmentNote);
+
+    }
+
+    private void updateShipmentNote(ShopOrder shopOrder, String shipmentNote) {
         //添加备注
         if(StringUtils.isNotEmpty(shipmentNote)){
             //shopOrderextra中添加字段

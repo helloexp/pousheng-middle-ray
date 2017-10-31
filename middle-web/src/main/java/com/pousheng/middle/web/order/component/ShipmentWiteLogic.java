@@ -175,7 +175,7 @@ public class ShipmentWiteLogic {
             return;
         }
         //如果不自动生成发货单，则添加备注
-        String shipmentNote = "";
+        StringBuffer shipmentNote = new StringBuffer();
         //判断是否满足自动生成发货单
         if(!commValidateOfOrder(shopOrder,skuOrders,shipmentNote)){
             this.updateShipmentNote(shopOrder, shipmentNote);
@@ -206,7 +206,7 @@ public class ShipmentWiteLogic {
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(receiverInfo.getCityId()),skuCodeAndQuantities);
         if(warehouseShipments.size()==0||warehouseShipments==null){
-          shipmentNote = "发货仓库存不满足自动生成发货单";
+          shipmentNote.append("发货仓库存不满足自动生成发货单");
         }
         log.info("auto create shipment,step three+");
         //遍历不同的发货仓生成相应的发货单
@@ -241,13 +241,13 @@ public class ShipmentWiteLogic {
 
     }
 
-    private void updateShipmentNote(ShopOrder shopOrder, String shipmentNote) {
+    private void updateShipmentNote(ShopOrder shopOrder, StringBuffer shipmentNote) {
         //添加备注
-        if(StringUtils.isNotEmpty(shipmentNote)){
+        if(StringUtils.isNotEmpty(shipmentNote.toString())){
             //shopOrderextra中添加字段
             ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
             Map<String, String> extraMap = order.getExtra();
-            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, shipmentNote);
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, shipmentNote.toString());
             Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
             if (!rltRes.isSuccess()) {
                 log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
@@ -336,23 +336,23 @@ public class ShipmentWiteLogic {
      * @param shipmentNote 不自动生成发货单的说明
      * @return 不可以自动创建发货单(false),可以自动创建发货单(true)
      */
-    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders,String shipmentNote){
+    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders,StringBuffer shipmentNote){
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
-            shipmentNote = "京东货到付款不自动生成发货单";
+            shipmentNote.append("京东货到付款不自动生成发货单");
             return false;
         }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
-            shipmentNote = "订单有备注不自动生成发货单";
+            shipmentNote.append("订单有备注不自动生成发货单");
             return false;
         }
         //4.判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
         int count = 0;
         for (SkuOrder skuOrder:skuOrders){
             if (StringUtils.isEmpty(skuOrder.getSkuCode())){
-                shipmentNote= "货品条码为空不自动生成发货单";
+                shipmentNote.append("货品条码为空不自动生成发货单");
                 count++;
             }
         }

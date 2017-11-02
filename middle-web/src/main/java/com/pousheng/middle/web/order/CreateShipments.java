@@ -89,6 +89,7 @@ public class CreateShipments {
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
 
         //封装发货仓及下单店铺信息
         ShipmentPreview shipmentPreview = response.getResult();
@@ -112,7 +113,14 @@ public class CreateShipments {
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
         shipmentPreview.setErpOrderShopCode(shopCode);
         shipmentPreview.setErpOrderShopName(shopName);
-        shipmentPreview.setErpPerformanceShopCode(shopCode);
+        //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码
+        String performanceShopCode = "";
+        try{
+            performanceShopCode = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder);
+        }catch (Exception e){
+            log.warn("can not find performance shop code");
+        }
+        shipmentPreview.setErpPerformanceShopCode(org.apache.commons.lang3.StringUtils.isEmpty(performanceShopCode)?shopCode:performanceShopCode);
         shipmentPreview.setErpPerformanceShopName(shopName);
 
         //计算金额
@@ -132,7 +140,7 @@ public class CreateShipments {
             //判断运费是否已经加过
             if (!shipmentReadLogic.isShipmentFeeCalculated(id)) {
 
-                ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+
                 shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                 shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
             }

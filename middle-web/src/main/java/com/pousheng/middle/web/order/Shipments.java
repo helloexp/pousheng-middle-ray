@@ -635,14 +635,8 @@ public class Shipments {
         //发货单的订单总金额
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码
-        String performanceShopCode = "";
-        try{
-            performanceShopCode = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder);
-        }catch (Exception e){
-            log.warn("can not find performance shop code");
-        }
-        shipmentExtra.setErpPerformanceShopCode(org.apache.commons.lang3.StringUtils.isEmpty(performanceShopCode)?shopCode:performanceShopCode);
+
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
         //物流编码
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())

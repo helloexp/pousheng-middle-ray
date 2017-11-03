@@ -397,14 +397,7 @@ public class ShipmentWiteLogic {
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
-        //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码
-        String performanceShopCode = "";
-        try{
-            performanceShopCode = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder);
-        }catch (Exception e){
-            log.warn("can not find performance shop code");
-        }
-        shipmentExtra.setErpPerformanceShopCode(StringUtils.isEmpty(performanceShopCode)?shopCode:performanceShopCode);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);

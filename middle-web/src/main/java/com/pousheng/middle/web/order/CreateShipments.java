@@ -114,13 +114,8 @@ public class CreateShipments {
         shipmentPreview.setErpOrderShopCode(shopCode);
         shipmentPreview.setErpOrderShopName(shopName);
         //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码
-        String performanceShopCode = "";
-        try{
-            performanceShopCode = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,shopOrder);
-        }catch (Exception e){
-            log.warn("can not find performance shop code");
-        }
-        shipmentPreview.setErpPerformanceShopCode(org.apache.commons.lang3.StringUtils.isEmpty(performanceShopCode)?shopCode:performanceShopCode);
+
+        shipmentPreview.setErpPerformanceShopCode(shopCode);
         shipmentPreview.setErpPerformanceShopName(shopName);
 
         //计算金额

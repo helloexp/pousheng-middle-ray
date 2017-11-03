@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.export;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
@@ -205,7 +206,12 @@ public class ExportController {
 
                     //TODO paytype enum
                     export.setPayType("在线支付");
-
+                    //恒康的绩效店铺代码
+                    if (shopOrder.getExtra()!=null){
+                        export.setPerformanceShopCode(shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE)!=null?shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE):"");
+                    }else{
+                        export.setPerformanceShopCode("");
+                    }
 //                    payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());

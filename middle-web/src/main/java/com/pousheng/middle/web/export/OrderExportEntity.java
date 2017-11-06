@@ -117,4 +117,7 @@ public class OrderExportEntity {
      */
     @ExportTitle("金额")
     private Double fee;
+
+    @ExportTitle("绩效店铺码")
+    private String performanceShopCode;
 }

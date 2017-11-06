@@ -82,10 +82,11 @@ public class Refunds {
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
         List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-        if (criteria.getShopId() == null)
+        if (criteria.getShopId() == null) {
             criteria.setShopIds(currentUserCanOperateShopIds);
-        else if (!currentUserCanOperateShopIds.contains(criteria.getShopId()))
+        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
+        }
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
@@ -492,7 +493,7 @@ public class Refunds {
      */
     @RequestMapping(value = "/api/refund/{id}/edit/receiver/info",method = RequestMethod.PUT)
     public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody ReceiverInfo receiverInfo){
-        middleRefundWriteService.updateReceiveInfos(id,receiverInfo);
+        middleRefundWriteService.updateReceiveInfos(id,buyerName,receiverInfo);
     }
 
 

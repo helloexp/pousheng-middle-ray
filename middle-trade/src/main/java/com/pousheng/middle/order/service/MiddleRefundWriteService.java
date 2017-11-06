@@ -2,9 +2,11 @@ package com.pousheng.middle.order.service;
 
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Refund;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/6/26
@@ -22,5 +24,14 @@ public interface MiddleRefundWriteService {
      */
     Response<Long> create(Refund refund, List<Long> orderIds, OrderLevel orderLevel);
 
+
+    /**
+     * 更新订单的收货信息
+     * @param refundId 店铺订单主键
+     * @param buyerName 用户名
+     * @param receiverInfo 编辑的收货信息
+     * @return
+     */
+    public Response<Boolean> updateReceiveInfos(long refundId,String buyerName, ReceiverInfo receiverInfo);
 
 }

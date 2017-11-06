@@ -400,8 +400,9 @@ public class Shipments {
         Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
                 shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice,refund.getShopId());
+        //换货
+        shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
         Map<String,String> extraMap = shipment.getExtra();
-
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         shipment.setShopId(refund.getShopId());
@@ -512,6 +513,18 @@ public class Shipments {
             return null;
         }
     }
+
+    private String findRefundReceiverInfo(Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        ReceiverInfo receiverInfo = refundExtra.getReceiverInfo();
+        try {
+            return objectMapper.writeValueAsString(receiverInfo);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
 
     private List<ReceiverInfo> doFindReceiverInfos(Long orderId, OrderLevel orderLevel) {
         Response<List<ReceiverInfo>> receiversResp = receiverInfoReadService.findByOrderId(orderId, orderLevel);

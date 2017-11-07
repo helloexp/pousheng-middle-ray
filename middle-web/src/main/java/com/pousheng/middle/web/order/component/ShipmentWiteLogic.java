@@ -31,6 +31,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -77,6 +78,9 @@ public class ShipmentWiteLogic {
     private OrderWriteLogic orderWriteLogic;
     @Autowired
     private ObjectMapper objectMapper;
+
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -170,8 +174,11 @@ public class ShipmentWiteLogic {
         if (skuOrders.size()==0){
             return;
         }
+        //如果不自动生成发货单，则添加备注
+        StringBuffer shipmentNote = new StringBuffer();
         //判断是否满足自动生成发货单
-        if(!commValidateOfOrder(shopOrder,skuOrders)){
+        if(!commValidateOfOrder(shopOrder,skuOrders,shipmentNote)){
+            this.updateShipmentNote(shopOrder, shipmentNote);
             return;
         }
         //获取skuCode,数量的集合
@@ -198,6 +205,9 @@ public class ShipmentWiteLogic {
 
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(receiverInfo.getCityId()),skuCodeAndQuantities);
+        if(warehouseShipments.size()==0||warehouseShipments==null){
+          shipmentNote.append("发货仓库存不满足自动生成发货单");
+        }
         log.info("auto create shipment,step three+");
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){
@@ -224,6 +234,24 @@ public class ShipmentWiteLogic {
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
+            }
+        }
+        //添加备注
+        this.updateShipmentNote(shopOrder, shipmentNote);
+
+    }
+
+    private void updateShipmentNote(ShopOrder shopOrder, StringBuffer shipmentNote) {
+        //添加备注
+        if(StringUtils.isNotEmpty(shipmentNote.toString())){
+            //shopOrderextra中添加字段
+            ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
+            Map<String, String> extraMap = order.getExtra();
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, shipmentNote.toString());
+            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+            if (!rltRes.isSuccess()) {
+                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
+
             }
         }
     }
@@ -304,22 +332,27 @@ public class ShipmentWiteLogic {
     /**
      * 是否满足自动创建发货单的校验
      * @param shopOrder 店铺订单
+     * @param skuOrders 子单
+     * @param shipmentNote 不自动生成发货单的说明
      * @return 不可以自动创建发货单(false),可以自动创建发货单(true)
      */
-    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
+    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders,StringBuffer shipmentNote){
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
+            shipmentNote.append("京东货到付款不自动生成发货单");
             return false;
         }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
+            shipmentNote.append("订单有备注不自动生成发货单");
             return false;
         }
         //4.判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
         int count = 0;
         for (SkuOrder skuOrder:skuOrders){
             if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+                shipmentNote.append("货品条码为空不自动生成发货单");
                 count++;
             }
         }

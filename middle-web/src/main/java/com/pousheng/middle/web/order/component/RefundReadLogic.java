@@ -150,12 +150,12 @@ public class RefundReadLogic {
     public List<RefundItem> findRefundItems(Refund refund){
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
-            log.error("refund(id:{}) extra field is null",refund.getId());
-            throw new JsonResponseException("refund.extra.is.empty");
+            log.warn("refund(id:{}) extra field is null",refund.getId());
+            return Lists.newArrayList(new RefundItem());
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_ITEM_INFO)){
-            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_ITEM_INFO);
-            throw new JsonResponseException("refund.exit.not.contain.item.info");
+            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_ITEM_INFO);
+            return Lists.newArrayList(new RefundItem());
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
     }
@@ -196,11 +196,11 @@ public class RefundReadLogic {
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("refund(id:{}) extra field is null",refund.getId());
-            throw new JsonResponseException("refund.extra.is.empty");
+            return new RefundExtra();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
             log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_EXTRA_INFO);
-            throw new JsonResponseException("refund.exit.not.contain.extra.info");
+            return new RefundExtra();
         }
 
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_EXTRA_INFO),RefundExtra.class);

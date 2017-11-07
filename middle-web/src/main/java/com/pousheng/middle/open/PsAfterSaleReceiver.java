@@ -93,6 +93,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
     @Override
     protected void fillSkuInfo(ShopOrder shopOrder, Refund refund, SkuOfRefund skuOfRefund) {
+        log.info("psAfterSaleReceiver skuCode is ({})",skuOfRefund.getSkuCode());
+        log.info("psAfterSaleReceiver shopOrderId is ({})",shopOrder.getId());
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }

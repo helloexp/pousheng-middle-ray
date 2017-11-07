@@ -199,6 +199,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //初始化店铺订单的extra
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
+        //添加绩效店铺编码,通过openClient获取
+        shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
         richSkusByShop.setExtra(shopOrderExtra);
 
         //初始化店铺子单extra

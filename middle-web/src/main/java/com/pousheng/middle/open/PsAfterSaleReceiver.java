@@ -112,11 +112,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         SkuTemplate skuTemplate = skuTemplateOptional.get();
 
         ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
+        //塞入地址信息
+        RefundExtra refundExtra = new RefundExtra();
+        refundExtra.setReceiverInfo(receiverInfo);
+
         SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
         //查询需要售后的发货单
         Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
-        RefundExtra refundExtra = new RefundExtra();
-        refundExtra.setReceiverInfo(receiverInfo);
 
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 

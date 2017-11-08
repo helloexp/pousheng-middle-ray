@@ -96,6 +96,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     protected void fillSkuInfo(ShopOrder shopOrder, Refund refund, SkuOfRefund skuOfRefund) {
         log.info("psAfterSaleReceiver skuCode is ({})",skuOfRefund.getSkuCode());
         log.info("psAfterSaleReceiver shopOrderId is ({})",shopOrder.getId());
+
+        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
+        //塞入地址信息
+        RefundExtra refundExtra = new RefundExtra();
+        refundExtra.setReceiverInfo(receiverInfo);
+
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }
@@ -111,11 +117,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             return;
         }
         SkuTemplate skuTemplate = skuTemplateOptional.get();
-
-        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
-        //塞入地址信息
-        RefundExtra refundExtra = new RefundExtra();
-        refundExtra.setReceiverInfo(receiverInfo);
 
         SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
         //查询需要售后的发货单

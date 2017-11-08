@@ -516,10 +516,9 @@ public class Shipments {
 
     private String findRefundReceiverInfo(Long refundId){
         Refund refund = refundReadLogic.findRefundById(refundId);
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        ReceiverInfo receiverInfo = refundExtra.getReceiverInfo();
+        MiddleChangeReceiveInfo receiveInfo = refundReadLogic.findMiddleChangeReceiveInfo(refund);
         try {
-            return objectMapper.writeValueAsString(receiverInfo);
+            return objectMapper.writeValueAsString(receiveInfo);
         } catch (JsonProcessingException e) {
             return null;
         }

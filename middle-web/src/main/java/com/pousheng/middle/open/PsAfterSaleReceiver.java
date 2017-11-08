@@ -28,6 +28,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.aftersale.component.DefaultAfterSaleReceiver;
 import io.terminus.open.client.center.job.aftersale.dto.SkuOfRefund;
 import io.terminus.open.client.common.OpenClientException;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
@@ -127,21 +128,11 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             refundExtra.setShipmentId(shipment.getId());
             //添加售后仓库
             try{
-                Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
-                if (!response.isSuccess()){
-                    log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
-                    throw new ServiceException(response.getError());
-                }
-                Warehouse warehouse = response.getResult();
-                Response<WarehouseCompanyRule> warehouseCompanyRuleResponse = warehouseCompanyRuleReadService.findByCompanyCode(warehouse.getCompanyCode());
-                if (!warehouseCompanyRuleResponse.isSuccess()){
-                    log.error("find WarehouseCompanyRule by companyCode :{} failed,  cause:{}",
-                            warehouse.getCompanyCode(), warehouseCompanyRuleResponse.getError());
-                    throw new ServiceException(warehouseCompanyRuleResponse.getError());
-                }
-                WarehouseCompanyRule warehouseCompanyRule  = warehouseCompanyRuleResponse.getResult();
-                refundExtra.setWarehouseId(warehouseCompanyRule.getWarehouseId());
-                refundExtra.setWarehouseName(warehouseCompanyRule.getWarehouseName());
+                OpenShop openShop=orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
+                String warehouseId=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,openShop);
+                String warehouseName=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,openShop);
+                refundExtra.setWarehouseId(Long.valueOf(warehouseId));
+                refundExtra.setWarehouseName(warehouseName);
                 //表明售后单的信息已经全部完善
                 extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
             }catch (ServiceException e){
@@ -267,6 +258,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
     }
 
+    @Override
     protected void updateRefund(Refund refund, OpenClientAfterSale afterSale) {
         //如果这个时候拉取过来的售后单是用户自己取消且为退货类型的可以更新售后单的状态
         if (afterSale.getStatus()==OpenClientAfterSaleStatus.RETURN_CLOSED

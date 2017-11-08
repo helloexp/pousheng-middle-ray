@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.service;
 
+import com.pousheng.middle.order.dto.MiddleChangeReceiveInfo;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -28,10 +29,9 @@ public interface MiddleRefundWriteService {
     /**
      * 更新订单的收货信息
      * @param refundId 店铺订单主键
-     * @param buyerName 用户名
-     * @param receiverInfo 编辑的收货信息
+     * @param middleChangeReceiveInfo 编辑的收货信息
      * @return
      */
-    public Response<Boolean> updateReceiveInfos(long refundId,String buyerName, ReceiverInfo receiverInfo);
+    public Response<Boolean> updateReceiveInfos(long refundId, MiddleChangeReceiveInfo middleChangeReceiveInfo);
 
 }

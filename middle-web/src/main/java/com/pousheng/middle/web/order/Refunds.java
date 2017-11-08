@@ -489,11 +489,11 @@ public class Refunds {
     /**
      * 修改订单的收货信息
      * @param id 售后单主键
-     * @param receiverInfo 售后单
+     * @param middleChangeReceiveInfo
      */
     @RequestMapping(value = "/api/refund/{id}/edit/receiver/info",method = RequestMethod.PUT)
-    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody ReceiverInfo receiverInfo){
-        middleRefundWriteService.updateReceiveInfos(id,buyerName,receiverInfo);
+    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
+        middleRefundWriteService.updateReceiveInfos(id,middleChangeReceiveInfo);
     }
 
 

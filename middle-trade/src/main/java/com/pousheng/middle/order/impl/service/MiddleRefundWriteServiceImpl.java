@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.MiddleChangeReceiveInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.impl.manager.MiddleRefundManager;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
@@ -67,56 +68,50 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
     }
 
     @Override
-    public Response<Boolean> updateReceiveInfos(long refundId,String buyerName, ReceiverInfo receiverInfo) {
+    public Response<Boolean> updateReceiveInfos(long refundId, MiddleChangeReceiveInfo middleChangeReceiveInfo) {
         Refund refund = refundDao.findById(refundId);
         Map<String,String> extraMap = refund.getExtra()!=null?refund.getExtra():Maps.newHashMap();
-        RefundExtra refundExtra = null;
-        if(!extraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
-            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_EXTRA_INFO);
-            refundExtra = new RefundExtra();
+        MiddleChangeReceiveInfo originReceiverInfo = null;
+        if(!extraMap.containsKey(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO)){
+            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO);
+            originReceiverInfo = new MiddleChangeReceiveInfo();
         }else{
-            refundExtra =  mapper.fromJson(extraMap.get(TradeConstants.REFUND_EXTRA_INFO),RefundExtra.class);
+            originReceiverInfo =  mapper.fromJson(extraMap.get(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO),MiddleChangeReceiveInfo.class);
         }
-        ReceiverInfo originReceiverInfo = null;
-        if (refundExtra.getReceiverInfo()==null){
-            originReceiverInfo = receiverInfo;
-        }else{
-            originReceiverInfo  = refundExtra.getReceiverInfo();
-            if (!StringUtils.isEmpty(receiverInfo.getReceiveUserName())){
-                originReceiverInfo.setReceiveUserName(receiverInfo.getReceiveUserName());
-            }
-            if (!StringUtils.isEmpty(receiverInfo.getMobile())){
-                originReceiverInfo.setMobile(receiverInfo.getMobile());
-            }
-            if(!StringUtils.isEmpty(receiverInfo.getProvince())){
-                originReceiverInfo.setProvince(receiverInfo.getProvince());
-            }
-            if (receiverInfo.getProvinceId()!=null){
-                originReceiverInfo.setProvinceId(receiverInfo.getProvinceId());
-            }
-            if (!StringUtils.isEmpty(receiverInfo.getCity())){
-                originReceiverInfo.setCity(receiverInfo.getCity());
-            }
-            if (receiverInfo.getCityId()!= null){
-                originReceiverInfo.setCityId(receiverInfo.getCityId());
-            }
-            if (!StringUtils.isEmpty(receiverInfo.getRegion())){
-                originReceiverInfo.setRegion(receiverInfo.getRegion());
-            }
-            if (receiverInfo.getRegionId()!=null){
-                originReceiverInfo.setRegionId(receiverInfo.getRegionId());
-            }
-            if (!StringUtils.isEmpty(receiverInfo.getDetail())){
-                originReceiverInfo.setDetail(receiverInfo.getDetail());
-            }
-            if (!StringUtils.isEmpty(receiverInfo.getPostcode())){
-                originReceiverInfo.setPostcode(receiverInfo.getPostcode());
-            }
+
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getReceiveUserName())){
+            originReceiverInfo.setReceiveUserName(middleChangeReceiveInfo.getReceiveUserName());
         }
-        refundExtra.setReceiverInfo(originReceiverInfo);
-        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getMobile())){
+            originReceiverInfo.setMobile(middleChangeReceiveInfo.getMobile());
+        }
+        if(!StringUtils.isEmpty(middleChangeReceiveInfo.getProvince())){
+            originReceiverInfo.setProvince(middleChangeReceiveInfo.getProvince());
+        }
+        if (middleChangeReceiveInfo.getProvinceId()!=null){
+            originReceiverInfo.setProvinceId(middleChangeReceiveInfo.getProvinceId());
+        }
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getCity())){
+            originReceiverInfo.setCity(middleChangeReceiveInfo.getCity());
+        }
+        if (middleChangeReceiveInfo.getCityId()!= null){
+            originReceiverInfo.setCityId(middleChangeReceiveInfo.getCityId());
+        }
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getRegion())){
+            originReceiverInfo.setRegion(middleChangeReceiveInfo.getRegion());
+        }
+        if (middleChangeReceiveInfo.getRegionId()!=null){
+            originReceiverInfo.setRegionId(middleChangeReceiveInfo.getRegionId());
+        }
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getDetail())){
+            originReceiverInfo.setDetail(middleChangeReceiveInfo.getDetail());
+        }
+        if (!StringUtils.isEmpty(middleChangeReceiveInfo.getPostcode())){
+            originReceiverInfo.setPostcode(middleChangeReceiveInfo.getPostcode());
+        }
+
+        extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO, mapper.toJson(originReceiverInfo));
         refund.setExtra(extraMap);
-        refund.setBuyerName(buyerName);
         Boolean result = refundDao.update(refund);
         return Response.ok(result);
     }

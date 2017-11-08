@@ -472,6 +472,8 @@ public class Refunds {
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            //获取换货的收货人地址
+            refundDetail.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         }
 
         //如果为换货,切已经生成过发货单，则封装发货信息（换货的发货单）
@@ -515,6 +517,7 @@ public class Refunds {
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         }
 
         return editMiddleRefund;

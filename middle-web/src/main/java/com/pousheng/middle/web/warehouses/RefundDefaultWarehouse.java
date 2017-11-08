@@ -46,10 +46,11 @@ public class RefundDefaultWarehouse {
      * @param openShopId 店铺主键
      * @param warehouseId 退货仓id
      * @param warehouseName 退货仓名
+     * @param outCode 仓库外码
      * @return
      */
     @RequestMapping(value = "{id}/edit",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName){
+    public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName,String outCode){
         Response<OpenShop> openShopResponse = openShopReadService.findById(openShopId);
         if (!openShopResponse.isSuccess()){
             log.error("find open shop failed,open shop id is({}),caused by {}",openShopId,openShopResponse.getError());
@@ -59,6 +60,7 @@ public class RefundDefaultWarehouse {
         Map<String, String> extraMap= openShop.getExtra();
         extraMap.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,String.valueOf(warehouseId));
         extraMap.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,warehouseName);
+        extraMap.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,outCode);
         openShop.setExtra(extraMap);
         Response<Boolean> updateRlt = middleRefundWarehouseWriteServie.update(openShop);
         if (!updateRlt.isSuccess()){

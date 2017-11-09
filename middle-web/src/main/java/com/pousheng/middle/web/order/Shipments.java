@@ -469,6 +469,7 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步取消状态")
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
+        log.info("try to auto cancel shipment,shipment id is {},operationType is {}",shipmentId,0);
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,0);
         if(!syncRes.isSuccess()){

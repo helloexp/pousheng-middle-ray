@@ -89,7 +89,7 @@ public class CreateShipments {
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+
 
         //封装发货仓及下单店铺信息
         ShipmentPreview shipmentPreview = response.getResult();
@@ -135,7 +135,7 @@ public class CreateShipments {
             //判断运费是否已经加过
             if (!shipmentReadLogic.isShipmentFeeCalculated(id)) {
 
-
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
                 shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                 shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
             }

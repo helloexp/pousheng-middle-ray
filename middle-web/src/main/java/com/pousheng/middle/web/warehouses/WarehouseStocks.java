@@ -79,6 +79,7 @@ public class WarehouseStocks {
         if (StringUtils.hasText(skuCode)) {
             params.put("skuCode", skuCode);
         }
+        Long originSpuId = null;
         if (!StringUtils.isEmpty(materialCode)){
             Response<Optional<SpuMaterial>>  spuMaterialResOptional=  spuMaterialReadService.findbyMaterialCode(materialCode);
             if (!spuMaterialResOptional.isSuccess()){
@@ -86,10 +87,17 @@ public class WarehouseStocks {
             }
             if (spuMaterialResOptional.getResult().isPresent()){
                 SpuMaterial spuMaterial = spuMaterialResOptional.getResult().get();
-                spuId = spuMaterial.getSpuId();
+                originSpuId = spuMaterial.getSpuId();
             }
         }
         if (spuId != null) {
+            if (originSpuId!=null&&originSpuId.equals(spuId)){
+                spuId = originSpuId;
+            }
+            //如果materialcode获取到spuId与spuId不相等，则返回空
+            if (originSpuId!=null&&!originSpuId.equals(spuId)){
+                return Paging.empty();
+            }
             Response<List<SkuTemplate>> rST = skuTemplateReadService.findBySpuId(spuId);
             if (!rST.isSuccess()) {
                 log.error("failed to find skuTemplates by spuId={}, error code:{}", spuId, rST.getError());

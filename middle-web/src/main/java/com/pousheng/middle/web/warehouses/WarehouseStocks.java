@@ -88,6 +88,9 @@ public class WarehouseStocks {
             if (spuMaterialResOptional.getResult().isPresent()){
                 SpuMaterial spuMaterial = spuMaterialResOptional.getResult().get();
                 originSpuId = spuMaterial.getSpuId();
+                if (spuId==null){
+                    spuId=originSpuId;
+                }
             }
         }
         if (spuId != null) {

@@ -5,9 +5,11 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
+import com.pousheng.middle.web.events.warehouse.StockPushLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -53,6 +55,9 @@ public class StockPusher {
 
     @RpcConsumer
     private WarehouseShopStockRuleWriteService warehouseShopStockRuleWriteService;
+
+    @RpcConsumer
+    private StockPushLogic stockPushLogic;
 
     private LoadingCache<String, Long> skuCodeCacher;
 
@@ -145,6 +150,15 @@ public class StockPusher {
                         }
                         log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                                 stock.intValue(), skuCode, shopId);
+                        //异步生成库存推送日志
+                        StockPushLog stockPushLog = new StockPushLog();
+                        stockPushLog.setShopId(shopId);
+                        stockPushLog.setShopName(shopStockRule.getShopName());
+                        stockPushLog.setSkuCode(skuCode);
+                        stockPushLog.setQuantity((long) stock.intValue());
+                        stockPushLog.setStatus(rP.isSuccess()?1:2);
+                        stockPushLog.setCause(rP.isSuccess()?"": rP.getError());
+                        stockPushLogic.insertstockPushLog(stockPushLog);
                         //更新上次推送的可用库存
                /*         WarehouseShopStockRule u = new WarehouseShopStockRule();
                         u.setId(shopStockRule.getId());

@@ -47,4 +47,7 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
 
     //中台店铺id
     private Long shopId;
+
+    //换货收货人信息
+    private  MiddleChangeReceiveInfo middleChangeReceiveInfo;
 }

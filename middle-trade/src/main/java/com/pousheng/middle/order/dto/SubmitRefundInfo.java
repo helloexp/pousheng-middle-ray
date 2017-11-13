@@ -20,7 +20,7 @@ public class SubmitRefundInfo extends EditSubmitRefundInfo {
     //发货单id
     private Long shipmentId;
 
-
+    private MiddleChangeReceiveInfo middleChangeReceiveInfo;
 
 
 

@@ -192,7 +192,7 @@ public class ShipmentReadLogic {
             shipmentItems.add(shipmentItem);
         }
         shipmentPreview.setShipmentItems(shipmentItems);
-        //添加换货发货人信息
+        //添加换货收货人信息
         shipmentPreview.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         return Response.ok(shipmentPreview);
     }

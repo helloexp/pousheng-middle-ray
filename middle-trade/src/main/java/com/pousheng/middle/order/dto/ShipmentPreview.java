@@ -50,4 +50,5 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
 
     //换货收货人信息
     private  MiddleChangeReceiveInfo middleChangeReceiveInfo;
+
 }

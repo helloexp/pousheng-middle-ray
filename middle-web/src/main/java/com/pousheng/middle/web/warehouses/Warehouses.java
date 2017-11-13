@@ -137,7 +137,7 @@ public class Warehouses {
                                    @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                    @RequestParam(required = false,value = "skuCode") String skuCode,
                                    @RequestParam(required = false,value = "shopId")Long shopId,
-                                   @RequestParam(required = false,value = "shopName")String shopName){
+                                   @RequestParam(required = false,value = "shopName")String shopName,@RequestParam(required = false) Integer status){
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(skuCode)){
             params.put("skuCode",skuCode);
@@ -147,6 +147,9 @@ public class Warehouses {
         }
         if (StringUtils.hasText(shopName)){
             params.put("shopName",shopName);
+        }
+        if(status!=null){
+            params.put("status",status);
         }
         Response<Paging<StockPushLog>>  r = middleStockPushLogReadSerive.pagination(pageNo,pageSize,params);
         if(!r.isSuccess()){

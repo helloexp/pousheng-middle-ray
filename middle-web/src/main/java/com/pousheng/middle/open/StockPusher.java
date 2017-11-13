@@ -1,5 +1,6 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -19,6 +20,9 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -60,7 +64,7 @@ public class StockPusher {
     private StockPushLogic stockPushLogic;
 
     private LoadingCache<String, Long> skuCodeCacher;
-
+    private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
@@ -99,6 +103,8 @@ public class StockPusher {
         this.executorService.submit(new Runnable() {
             @Override
             public void run() {
+                Stopwatch stopwatch = Stopwatch.createStarted();
+                log.debug("[SYNC-STOCK-1] sync stock  to begin {} skuCode {}", DFT.print(DateTime.now()),skuCode);
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
                 //找到对应的店铺id, 这些店铺需要进行库存推送
                 Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
@@ -107,13 +113,23 @@ public class StockPusher {
                             spuId, skuCode, r.getError());
                     return;
                 }
-
+                stopwatch.stop();
+                log.debug("[SYNC-STOCK-1] sync stock to done at {} skuCode{} cost {} ms", DFT.print(DateTime.now()),skuCode, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 //计算库存分配并将库存推送到每个外部店铺去
                 List<Long> shopIds = r.getResult();
+                Stopwatch stopwatch1 = Stopwatch.createStarted();
+                log.debug("[SYNC-STOCK-SUM] sync stock  to begin {} skuCode {}", DFT.print(DateTime.now()),skuCode);
                 for (Long shopId : shopIds) {
                     try {
                         //计算每个店铺的可用库存
+                        stopwatch.start();
+                        log.debug("[SYNC-STOCK-2] sync stock  to begin {} skuCode {}", DFT.print(DateTime.now()),skuCode);
                         Long stock = availableStockCalc.availableStock(shopId, skuCode);
+                        stopwatch.stop();
+                        log.debug("[SYNC-STOCK-2] sync stock to done at {} skuCode{} cost {} ms", DFT.print(DateTime.now()),skuCode, stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+                        stopwatch.start();
+                        log.debug("[SYNC-STOCK-3] sync stock  to begin {} skuCode {}", DFT.print(DateTime.now()),skuCode);
                         Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
                         if (!rShopStockRule.isSuccess()) {
                             log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
@@ -142,6 +158,8 @@ public class StockPusher {
 
                         //按照设定的比例确定推送数量
                         stock = stock * shopStockRule.getRatio() / 100;
+                        stopwatch.stop();
+                        log.debug("[SYNC-STOCK-3] sync stock to done at {} skuCode{} cost {} ms", DFT.print(DateTime.now()),skuCode, stopwatch.elapsed(TimeUnit.MILLISECONDS));
                         //库存推送
                         Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
                         if (!rP.isSuccess()) {
@@ -173,6 +191,9 @@ public class StockPusher {
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));
                     }
                 }
+
+                stopwatch1.stop();
+                log.debug("[SYNC-STOCK-SUM] sync stock to done at {} skuCode{} cost {} ms", DFT.print(DateTime.now()),skuCode, stopwatch1.elapsed(TimeUnit.MILLISECONDS));
             }
         });
     }

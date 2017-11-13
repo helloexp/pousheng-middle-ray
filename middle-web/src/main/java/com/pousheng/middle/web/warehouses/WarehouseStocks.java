@@ -156,7 +156,7 @@ public class WarehouseStocks {
                 skuStock.setSkuAttrs(skuTemplate.getAttrs());
                 skuStock.setSpuId(skuTemplate.getSpuId());
                 try{
-                    Response<java.util.Optional<SpuMaterial>> spuMaterialResOptional = spuMaterialReadService.findBySpuId(spuId);
+                    Response<java.util.Optional<SpuMaterial>> spuMaterialResOptional = spuMaterialReadService.findBySpuId(skuTemplate.getSpuId());
                     if (!spuMaterialResOptional.isSuccess()){
                         log.error("find spuMaterial failed,spuId=({}),caused by {}",skuTemplate.getSpuId(),spuMaterialResOptional.getError());
                     }

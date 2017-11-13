@@ -104,6 +104,7 @@ public class StockPusher {
             @Override
             public void run() {
                 Stopwatch stopwatch = Stopwatch.createStarted();
+                log.debug("*************************************************** {}",Runtime.getRuntime().availableProcessors());
                 log.debug("[SYNC-STOCK-1] sync stock  to begin {} skuCode {}", DFT.print(DateTime.now()),skuCode);
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
                 //找到对应的店铺id, 这些店铺需要进行库存推送

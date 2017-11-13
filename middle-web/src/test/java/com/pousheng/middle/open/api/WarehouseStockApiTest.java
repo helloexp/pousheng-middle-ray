@@ -10,6 +10,8 @@ import io.terminus.common.utils.JsonMapper;
 import org.assertj.core.util.Lists;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,24 +22,29 @@ public class WarehouseStockApiTest {
 
     @Test
     public void onStockChanged() throws Exception {
-        Map<String, String> params = Maps.newTreeMap();
-        params.put("appKey","pousheng");
-        params.put("pampasCall","hk.stock.api");
-        params.put("total", "1");
+        for (int k = 0;k < 100000;k++){
+            Map<String, String> params = Maps.newTreeMap();
+            params.put("appKey","pousheng");
+            params.put("pampasCall","hk.stock.api");
+            params.put("total", "1");
+            List<ErpStock> stocks = new ArrayList<>();
+            for (int i = 0;i <1;i++){
+                ErpStock erpStock = new ErpStock();
+                erpStock.setBarcode("48602NB0225F");
+                erpStock.setCompany_id("301");
+                erpStock.setStock_id("301011047");
+                erpStock.setQuantity(1000+i);
+                erpStock.setModify_time("2017-07-19 15:19:20");
+                stocks.add(erpStock);
+            }
+            params.put("data", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stocks));
 
-        ErpStock erpStock = new ErpStock();
-        erpStock.setBarcode("xxxx");
-        erpStock.setCompany_id("200");
-        erpStock.setStock_id("200000003");
-        erpStock.setQuantity(10);
-        erpStock.setModify_time("2017-07-19 15:19:20");
-        params.put("data", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(erpStock)));
+            params.put("sign", sign(params, "6a0e@93204aefe45d47f6e488"));
 
-        params.put("sign", sign(params, "middle"));
-
-        HttpRequest r = HttpRequest.post("http://localhost:8080/api/gateway", params, true);
-
-        System.out.println(r.body());
+            HttpRequest r = HttpRequest.post("http://middle-api-prepub.pousheng.com/api/gateway", params, true);
+            //HttpRequest r = HttpRequest.post("http://127.0.0.1:8095/api/gateway", params, true);
+            System.out.println(r.body());
+        }
     }
 
     /**

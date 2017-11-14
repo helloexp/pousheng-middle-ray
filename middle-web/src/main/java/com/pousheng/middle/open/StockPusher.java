@@ -19,6 +19,7 @@ import com.pousheng.middle.web.events.warehouse.StockPushLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -200,23 +201,38 @@ public class StockPusher {
                         }
                     }
                 }
-
                 //官网批量推送
-
-                Map<Long,List<MiddleSkuStock>> shopSkuStockMapList =Maps.newHashMap();
                 Map<Long,Map<String,Integer>> shopSkuStockMap = shopSkuStock.rowMap();
-                shopSkuStockMap.forEach((k,v)->{
-                    List<MiddleSkuStock> middleSkuStocks = Lists.emptyList();
-                    for (String sku:v.keySet()){
-                        MiddleSkuStock middleSkuStock = new MiddleSkuStock();
-                        middleSkuStock.setSkuCode(sku);
-                        middleSkuStock.setStock(v.get(sku));
-                        middleSkuStocks.add(middleSkuStock);
+                for (Long shopId:shopSkuStockMap.keySet()){
+                    List<ParanaSkuStock> paranaSkuStocks = Lists.newArrayList();
+                    Map<String,Integer> skuStockMap = shopSkuStockMap.get(shopId);
+                    for (String skuCode:skuStockMap.keySet()){
+                        ParanaSkuStock paranaSkuStock = new ParanaSkuStock();
+                        paranaSkuStock.setSkuCode(skuCode);
+                        paranaSkuStock.setStock(skuStockMap.get(skuCode));
+                        paranaSkuStocks.add(paranaSkuStock);
                     }
-                    shopSkuStockMapList.put(k,middleSkuStocks);
+                    Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId,paranaSkuStocks);
+                    if (!r.isSuccess()) {
+                        log.error("failed to push stocks {} to shop(id={}), error code{}",
+                                paranaSkuStocks, shopId, r.getError());
+                    }
+                }
+               /* shopSkuStockMap.forEach((shopId,v)->{
+                    List<ParanaSkuStock> paranaSkuStocks = Lists.emptyList();
+                    for (String sku:v.keySet()){
+                        ParanaSkuStock paranaSkuStock = new ParanaSkuStock();
+                        paranaSkuStock.setSkuCode(sku);
+                        paranaSkuStock.setStock(v.get(sku));
+                        paranaSkuStocks.add(paranaSkuStock);
+                    }
+                    Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId,paranaSkuStocks);
+                    if (!r.isSuccess()) {
+                        log.error("failed to push stocks {} to shop(id={}), error code{}",
+                                paranaSkuStocks, shopId, r.getError());
+                    }
                 });
-
-
+*/
             }
         });
     }

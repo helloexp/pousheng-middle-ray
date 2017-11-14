@@ -1,10 +1,13 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.model.SpuMaterial;
+import com.pousheng.erp.service.SpuMaterialReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
@@ -51,6 +54,8 @@ public class WarehouseStocks {
 
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
+    private SpuMaterialReadService  spuMaterialReadService;
 
     @Autowired
     private WarehouseCacher warehouseCacher;
@@ -67,13 +72,35 @@ public class WarehouseStocks {
     public Paging<SkuStock> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                    @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                    @RequestParam(required = false, value = "skuCode") String skuCode,
-                                   @RequestParam(required = false, value = "spuId") Long spuId) {
+                                   @RequestParam(required = false, value = "spuId") Long spuId,
+                                   @RequestParam(required = false,value = "materialCode") String materialCode) {
 
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(skuCode)) {
             params.put("skuCode", skuCode);
         }
+        Long originSpuId = null;
+        if (!StringUtils.isEmpty(materialCode)){
+            Response<Optional<SpuMaterial>>  spuMaterialResOptional=  spuMaterialReadService.findbyMaterialCode(materialCode);
+            if (!spuMaterialResOptional.isSuccess()){
+                log.error("failed to find spuMaterial by materialCode={}, error code:{}", materialCode, spuMaterialResOptional.getError());
+            }
+            if (spuMaterialResOptional.getResult().isPresent()){
+                SpuMaterial spuMaterial = spuMaterialResOptional.getResult().get();
+                originSpuId = spuMaterial.getSpuId();
+                if (spuId==null){
+                    spuId=originSpuId;
+                }
+            }
+        }
         if (spuId != null) {
+            if (originSpuId!=null&&originSpuId.equals(spuId)){
+                spuId = originSpuId;
+            }
+            //如果materialcode获取到spuId与spuId不相等，则返回空
+            if (originSpuId!=null&&!originSpuId.equals(spuId)){
+                return Paging.empty();
+            }
             Response<List<SkuTemplate>> rST = skuTemplateReadService.findBySpuId(spuId);
             if (!rST.isSuccess()) {
                 log.error("failed to find skuTemplates by spuId={}, error code:{}", spuId, rST.getError());
@@ -128,6 +155,17 @@ public class WarehouseStocks {
                 skuStock.setStock(warehouseSkuStock.getAvailStock());
                 skuStock.setSkuAttrs(skuTemplate.getAttrs());
                 skuStock.setSpuId(skuTemplate.getSpuId());
+                try{
+                    Response<java.util.Optional<SpuMaterial>> spuMaterialResOptional = spuMaterialReadService.findBySpuId(skuTemplate.getSpuId());
+                    if (!spuMaterialResOptional.isSuccess()){
+                        log.error("find spuMaterial failed,spuId=({}),caused by {}",skuTemplate.getSpuId(),spuMaterialResOptional.getError());
+                    }
+                    if (spuMaterialResOptional.getResult().isPresent()){
+                        skuStock.setMaterialCode(spuMaterialResOptional.getResult().get().getMaterialCode());
+                    }
+                }catch (Exception e){
+                    log.error("find spuMaterial failed,spuId=({}),caused by {}",skuTemplate.getSpuId(),e.getMessage());
+                }
                 result.add(skuStock);
             }
             return new Paging<>(p.getTotal(), result);

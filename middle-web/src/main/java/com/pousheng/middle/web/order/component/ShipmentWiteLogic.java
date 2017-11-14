@@ -131,6 +131,7 @@ public class ShipmentWiteLogic {
      */
     boolean cancelShipment(Shipment shipment,Integer type) {
         try {
+            log.info("try to auto cancel shipment,shipment id is {},operationType is {}",shipment.getId(),type);
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {

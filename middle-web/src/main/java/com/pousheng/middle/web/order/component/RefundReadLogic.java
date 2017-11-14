@@ -206,6 +206,19 @@ public class RefundReadLogic {
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_EXTRA_INFO),RefundExtra.class);
     }
 
+    public MiddleChangeReceiveInfo findMiddleChangeReceiveInfo(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("refund(id:{}) extra field is null",refund.getId());
+            return new MiddleChangeReceiveInfo();
+        }
+        if(!extraMap.containsKey(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO)){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO);
+            return new MiddleChangeReceiveInfo();
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO),MiddleChangeReceiveInfo.class);
+    }
+
     /**
      * 判断收货完成的售后换货单是否可以取消发货
      * @param refund 售后单

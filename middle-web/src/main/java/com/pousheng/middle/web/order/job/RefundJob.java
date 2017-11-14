@@ -85,9 +85,10 @@ public class RefundJob {
                 int count =0;
                 if (Objects.equals(orderType, "1")) {
                     //整单退款,调用整单退款的逻辑
+                    log.info("try to auto cancel shop order shopOrderId is {}",orderRefund.getOrderId());
                     orderWriteLogic.autoCancelShopOrder(orderRefund.getOrderId());
                 } else if (Objects.equals(orderType, "2")) {
-
+                    log.info("try to auto cancel sku order shopOrderId is {}",orderRefund.getOrderId());
                     List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
                     for (RefundItem refundItem : refundItems) {
                         //子单退款,调用子单退款的逻辑

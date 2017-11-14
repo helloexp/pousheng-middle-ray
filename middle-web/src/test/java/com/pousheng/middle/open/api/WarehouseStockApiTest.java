@@ -22,7 +22,7 @@ public class WarehouseStockApiTest {
 
     @Test
     public void onStockChanged() throws Exception {
-        for (int k = 0;k < 100000;k++){
+        for (int k = 0;k < 1;k++){
             Map<String, String> params = Maps.newTreeMap();
             params.put("appKey","pousheng");
             params.put("pampasCall","hk.stock.api");
@@ -41,8 +41,8 @@ public class WarehouseStockApiTest {
 
             params.put("sign", sign(params, "6a0e@93204aefe45d47f6e488"));
 
-            HttpRequest r = HttpRequest.post("http://middle-api-prepub.pousheng.com/api/gateway", params, true);
-            //HttpRequest r = HttpRequest.post("http://127.0.0.1:8095/api/gateway", params, true);
+            //HttpRequest r = HttpRequest.post("http://middle-api-prepub.pousheng.com/api/gateway", params, true);
+            HttpRequest r = HttpRequest.post("http://127.0.0.1:8095/api/gateway", params, true);
             System.out.println(r.body());
         }
     }

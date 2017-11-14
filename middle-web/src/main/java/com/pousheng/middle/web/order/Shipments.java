@@ -813,11 +813,13 @@ public class Shipments {
         Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
 
         //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
         for (WarehouseShipment ws : warehouseShipmentList) {
             for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
             }
         }
+        stockPusher.submit(skuCodes);
         return result;
 
     }

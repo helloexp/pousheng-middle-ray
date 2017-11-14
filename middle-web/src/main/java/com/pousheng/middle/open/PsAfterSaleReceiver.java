@@ -96,6 +96,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     protected void fillSkuInfo(ShopOrder shopOrder, Refund refund, SkuOfRefund skuOfRefund) {
         log.info("psAfterSaleReceiver skuCode is ({})",skuOfRefund.getSkuCode());
         log.info("psAfterSaleReceiver shopOrderId is ({})",shopOrder.getId());
+
+        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
+        //塞入地址信息
+        RefundExtra refundExtra = new RefundExtra();
+        refundExtra.setReceiverInfo(receiverInfo);
+
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }
@@ -112,12 +118,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         SkuTemplate skuTemplate = skuTemplateOptional.get();
 
-        ReceiverInfo receiverInfo = orderReadLogic.findReceiverInfo(shopOrder.getId());
         SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
         //查询需要售后的发货单
         Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
-        RefundExtra refundExtra = new RefundExtra();
-        refundExtra.setReceiverInfo(receiverInfo);
 
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 

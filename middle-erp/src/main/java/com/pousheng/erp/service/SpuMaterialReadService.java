@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.model.SpuMaterial;
 import io.terminus.common.model.Response;
+import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,16 @@ public class SpuMaterialReadService {
             return Response.ok(Optional.fromNullable(spuMaterialDao.findByMaterialCode(materialcode)));
         }catch (Exception e){
             log.error("find spuMaterial by materialcode :{} failed,  cause:{}", materialcode, Throwables.getStackTraceAsString(e));
+            return Response.fail("spu.material.find.fail");
+        }
+    }
+    public Response<java.util.Optional<SpuMaterial>> findBySpuId(Long spuId){
+        try {
+            List<SpuMaterial> spuMaterials = spuMaterialDao.findBySpuId(spuId);
+            java.util.Optional<SpuMaterial> spuMaterialOptional = spuMaterials.stream().findAny();
+            return Response.ok(spuMaterialOptional);
+        }catch (Exception e){
+            log.error("find spuMaterial by spuId :{} failed,  cause:{}", spuId, Throwables.getStackTraceAsString(e));
             return Response.fail("spu.material.find.fail");
         }
     }

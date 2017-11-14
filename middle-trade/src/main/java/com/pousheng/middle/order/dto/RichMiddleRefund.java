@@ -27,4 +27,7 @@ public class RichMiddleRefund implements Serializable{
     private List<OrderShipment> orderShipments;
 
     private Set<OrderOperation> operations;
+
+    //换货收货人信息
+    private MiddleChangeReceiveInfo middleChangeReceiveInfo;
 }

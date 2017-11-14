@@ -8,8 +8,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.events.trade.ModifyMobileEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
@@ -28,10 +30,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,6 +67,8 @@ public class Refunds {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private PermissionUtil permissionUtil;
+    @Autowired
+    private MiddleRefundWriteService middleRefundWriteService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -81,10 +82,11 @@ public class Refunds {
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
         List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-        if (criteria.getShopId() == null)
+        if (criteria.getShopId() == null) {
             criteria.setShopIds(currentUserCanOperateShopIds);
-        else if (!currentUserCanOperateShopIds.contains(criteria.getShopId()))
+        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
+        }
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
@@ -470,6 +472,8 @@ public class Refunds {
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            //获取换货的收货人地址
+            refundDetail.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         }
 
         //如果为换货,切已经生成过发货单，则封装发货信息（换货的发货单）
@@ -483,6 +487,18 @@ public class Refunds {
         return refundDetail;
 
     }
+
+    /**
+     * 修改订单的收货信息
+     * @param id 售后单主键
+     * @param middleChangeReceiveInfo
+     */
+    @RequestMapping(value = "/api/refund/{id}/edit/receiver/info",method = RequestMethod.PUT)
+    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
+        middleRefundWriteService.updateReceiveInfos(id,middleChangeReceiveInfo);
+    }
+
+
 
     private EditMiddleRefund makeEditMiddleRefund(Long refundId) {
 
@@ -501,6 +517,7 @@ public class Refunds {
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
+            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         }
 
         return editMiddleRefund;

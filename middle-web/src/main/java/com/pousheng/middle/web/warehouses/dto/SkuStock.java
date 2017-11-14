@@ -23,6 +23,8 @@ public class SkuStock implements Serializable {
 
     private String name;
 
+    private String materialCode;
+
     private List<SkuAttribute> skuAttrs;
 
     private Long stock;

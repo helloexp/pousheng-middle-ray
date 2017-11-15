@@ -14,7 +14,7 @@ public class StockPushLog {
     private Long shopId;
     private String shopName;
     private String skuCode;
-    private int status;
+    private int status;//1.成功,2.失败
     private String cause;
     private Long quantity;
     private Date createdAt;

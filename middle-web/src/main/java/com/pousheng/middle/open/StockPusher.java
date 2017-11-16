@@ -1,15 +1,11 @@
 package com.pousheng.middle.open;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.pousheng.middle.open.api.dto.MiddleSkuStock;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
@@ -28,7 +24,6 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
-import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,12 +31,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
-import java.util.concurrent.*;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>

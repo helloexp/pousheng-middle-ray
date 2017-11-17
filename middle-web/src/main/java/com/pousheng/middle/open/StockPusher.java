@@ -170,7 +170,7 @@ public class StockPusher {
                         shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                     } else {
                         //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                        this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule);
+                        this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
                     }
 
 
@@ -201,7 +201,7 @@ public class StockPusher {
 
     }
 
-    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, WarehouseShopStockRule shopStockRule) {
+    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName) {
         executorService.submit(() -> {
             Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
             if (!rP.isSuccess()) {
@@ -213,7 +213,7 @@ public class StockPusher {
             //异步生成库存推送日志
             StockPushLog stockPushLog = new StockPushLog();
             stockPushLog.setShopId(shopId);
-            stockPushLog.setShopName(shopStockRule.getShopName());
+            stockPushLog.setShopName(shopName);
             stockPushLog.setSkuCode(skuCode);
             stockPushLog.setQuantity((long) stock.intValue());
             stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);

@@ -26,7 +26,7 @@ public class RedisQueueProvider {
      * 生产者/消费者模式
      */
     public void startProvider(final String content) {
-        log.info("start provider stock info :{}",content);
+        log.info("start provider stockPushLog info :{}",content);
         try {
             jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
                 @Override
@@ -35,7 +35,7 @@ public class RedisQueueProvider {
                 }
             });
         } catch (Exception e) {
-            log.error("publish stock info:{} fail,cause: {}",content, Throwables.getStackTraceAsString(e));
+            log.error("publish stockPushLog info:{} fail,cause: {}",content, Throwables.getStackTraceAsString(e));
         }
     }
 }

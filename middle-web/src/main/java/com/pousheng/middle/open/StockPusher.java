@@ -6,15 +6,18 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
+import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
@@ -34,7 +37,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -73,19 +76,24 @@ public class StockPusher {
 
     private LoadingCache<Long, OpenShop> openShopCacher;
 
+    private ExecutorService executorService;
+
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+    @Autowired
+    private RedisQueueProvider redisQueueProvider;
 
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-      /*  this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*2, Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 6, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     @Override
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
                         log.error("task {} is rejected", r);
                     }
-                });*/
+                });
 
         this.skuCodeCacher = CacheBuilder.newBuilder()
                 .expireAfterWrite(duration * 24, TimeUnit.MINUTES)
@@ -166,23 +174,8 @@ public class StockPusher {
                     if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                         shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                     } else {
-                        //库存推送
-                        Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
-                        if (!rP.isSuccess()) {
-                            log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
-                                    skuCode, shopId, rP.getError());
-                        }
-                        log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-                                stock.intValue(), skuCode, shopId);
-                        //异步生成库存推送日志
-                        StockPushLog stockPushLog = new StockPushLog();
-                        stockPushLog.setShopId(shopId);
-                        stockPushLog.setShopName(shopStockRule.getShopName());
-                        stockPushLog.setSkuCode(skuCode);
-                        stockPushLog.setQuantity((long) stock.intValue());
-                        stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
-                        stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
-                        stockPushLogic.insertstockPushLog(stockPushLog);
+                        //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
+                        this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
                     }
 
 
@@ -208,9 +201,43 @@ public class StockPusher {
                 log.error("failed to push stocks {} to shop(id={}), error code{}",
                         paranaSkuStocks, shopId, r.getError());
             }
+            //添加日志到缓存中
+            List<StockPushLog> stockPushLogs = Lists.newArrayList();
+            for (ParanaSkuStock paranaSkuStock:paranaSkuStocks){
+                StockPushLog stockPushLog = new StockPushLog();
+                stockPushLog.setShopId(shopId);
+                stockPushLog.setShopName(openShopCacher.getUnchecked(shopId).getShopName());
+                stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
+                stockPushLog.setQuantity((long) paranaSkuStock.getStock());
+                stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
+                stockPushLog.setCause(r.isSuccess() ? "" : r.getError());
+                stockPushLogs.add(stockPushLog);
+            }
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
         }
 
 
+    }
+
+    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName) {
+        executorService.submit(() -> {
+            Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
+            if (!rP.isSuccess()) {
+                log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
+                        skuCode, shopId, rP.getError());
+            }
+            log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
+                    stock.intValue(), skuCode, shopId);
+            //异步生成库存推送日志
+            StockPushLog stockPushLog = new StockPushLog();
+            stockPushLog.setShopId(shopId);
+            stockPushLog.setShopName(shopName);
+            stockPushLog.setSkuCode(skuCode);
+            stockPushLog.setQuantity((long) stock.intValue());
+            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
+            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(stockPushLog)));
+        });
     }
 
   /*  @PreDestroy

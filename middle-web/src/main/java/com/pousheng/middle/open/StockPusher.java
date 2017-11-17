@@ -13,9 +13,11 @@ import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
+import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
@@ -77,6 +79,9 @@ public class StockPusher {
     private ExecutorService executorService;
 
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
+    @Autowired
+    private RedisQueueProvider redisQueueProvider;
 
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
@@ -196,6 +201,19 @@ public class StockPusher {
                 log.error("failed to push stocks {} to shop(id={}), error code{}",
                         paranaSkuStocks, shopId, r.getError());
             }
+            //添加日志到缓存中
+            List<StockPushLog> stockPushLogs = Lists.newArrayList();
+            for (ParanaSkuStock paranaSkuStock:paranaSkuStocks){
+                StockPushLog stockPushLog = new StockPushLog();
+                stockPushLog.setShopId(shopId);
+                stockPushLog.setShopName(openShopCacher.getUnchecked(shopId).getShopName());
+                stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
+                stockPushLog.setQuantity((long) paranaSkuStock.getStock());
+                stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
+                stockPushLog.setCause(r.isSuccess() ? "" : r.getError());
+                stockPushLogs.add(stockPushLog);
+            }
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
         }
 
 
@@ -218,7 +236,7 @@ public class StockPusher {
             stockPushLog.setQuantity((long) stock.intValue());
             stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
             stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
-            stockPushLogic.insertstockPushLog(stockPushLog);
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(stockPushLog)));
         });
     }
 

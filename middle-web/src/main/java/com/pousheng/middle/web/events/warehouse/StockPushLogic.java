@@ -6,18 +6,14 @@ package com.pousheng.middle.web.events.warehouse;
  * pousheng-middle
  */
 
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.util.concurrent.*;
+import java.util.List;
 
 /**
  * 中台推送库存日志处理逻辑
@@ -28,7 +24,7 @@ public class StockPushLogic {
     @Autowired
     private MiddleStockPushLogWriteService middleStockPushLogWriteService;
 
-    private final ExecutorService executorService;
+    /*private final ExecutorService executorService;
     @Autowired
     public StockPushLogic(@Value("${index.queue.size: 500000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
@@ -41,17 +37,34 @@ public class StockPushLogic {
                     }
                 });
     }
-
+*/
     public void insertstockPushLog(StockPushLog stockPushLog){
-            this.executorService.submit(()->{
-                try {
+        try {
+            Response<Long> response = middleStockPushLogWriteService.create(stockPushLog);
+            if (!response.isSuccess()){
+                log.error("create stockPushLog failed, caused by {}",response.getError());
+            }
+        }catch (Exception e){
+            log.error("create stockPushLog failed,caused by {}",e.getMessage());
+        }
+
+    }
+
+
+    public Response<Boolean> batchInsertStockPushLog(List<StockPushLog> stockPushLogs){
+
+            try {
+                for (StockPushLog stockPushLog:stockPushLogs){
                     Response<Long> response = middleStockPushLogWriteService.create(stockPushLog);
                     if (!response.isSuccess()){
                         log.error("create stockPushLog failed, caused by {}",response.getError());
                     }
-                }catch (Exception e){
-                    log.error("create stockPushLog failed,caused by {}",e.getMessage());
                 }
-            });
+                return Response.ok(Boolean.TRUE);
+            }catch (Exception e){
+                log.error("create stockPushLog failed,caused by {}",e.getMessage());
+                return Response.ok(Boolean.FALSE);
+            }
+
     }
 }

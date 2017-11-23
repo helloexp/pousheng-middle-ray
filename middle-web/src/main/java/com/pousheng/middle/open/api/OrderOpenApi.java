@@ -314,7 +314,7 @@ public class OrderOpenApi {
             if (Objects.equals(orderType,"1")){
                 OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
                 pos.setOrderId(orderId);
-                pos.setPosAmt(Long.valueOf(posAmt));
+                pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
                 pos.setShopId(orderShipment.getShopId());
@@ -325,7 +325,7 @@ public class OrderOpenApi {
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = refundReadLogic.findRefundById(orderId);
                 pos.setOrderId(refund.getId());
-                pos.setPosAmt(Long.valueOf(posAmt));
+                pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
                 pos.setShopId(refund.getShopId());

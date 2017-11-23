@@ -497,7 +497,7 @@ public class ExportController {
      * pos单导出
      * @param criteria
      */
-    @RequestMapping( value = "settlement/pos/export",method = RequestMethod.GET,produces= MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping( value = "settlement/pos/export")
     public void exportSettlementPos(PoushengSettlementPosCriteria criteria){
        List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
        if (!shopIds.contains(criteria.getShopId())){
@@ -532,6 +532,7 @@ public class ExportController {
                 entity.setOrderId(posContext.getOrderId());
                 entity.setPosCreatedAt(posContext.getPosCreatedAt());
                 entity.setCreatedAt(posContext.getCreatedAt());
+                posExportEntities.add(entity);
             });
         }
         exportService.saveToDiskAndCloud(new ExportContext(posExportEntities));

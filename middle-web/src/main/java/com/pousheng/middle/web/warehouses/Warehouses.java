@@ -120,7 +120,11 @@ public class Warehouses {
         }
     }
 
-
+    /**
+     * 根据主键查询推送日志
+     * @param id 表的主键
+     * @return
+     */
     @RequestMapping(value = "/stock/push/log/by/id",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<StockPushLog> queryStockPushLogById(@RequestParam("id") Long id){
         Response<StockPushLog> r = middleStockPushLogReadSerive.findById(id);
@@ -131,7 +135,16 @@ public class Warehouses {
         return r;
     }
 
-
+    /**
+     * 分页查询库存推送日志
+     * @param pageNo 页码
+     * @param pageSize 每页记录数
+     * @param skuCode  条码
+     * @param shopId   店铺id
+     * @param shopName 店铺名称
+     * @param status   推送状态
+     * @return
+     */
     @RequestMapping(value = "/stock/push/log/paging",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<StockPushLog>> paginationStockPushLog(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                    @RequestParam(required = false, value = "pageSize") Integer pageSize,

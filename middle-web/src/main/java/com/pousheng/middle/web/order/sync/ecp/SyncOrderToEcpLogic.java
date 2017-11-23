@@ -48,10 +48,10 @@ public class SyncOrderToEcpLogic {
     private ShipmentWiteLogic shipmentWiteLogic;
 
     /**
-     * 同步发货单到电商
-     * @param shopOrder
-     * @param expressCompayCode
-     * @param shipmentId
+     * 同步发货单到电商--只需要传送第一个发货的发货单
+     * @param shopOrder 店铺订单
+     * @param expressCompayCode 物流公司好
+     * @param shipmentId 发货单主键
      * @return
      */
     public Response<Boolean> syncOrderToECP(ShopOrder shopOrder,String expressCompayCode,Long shipmentId)
@@ -100,11 +100,11 @@ public class SyncOrderToEcpLogic {
 
 
     /**
-     * 同步发货单到电商
-     * @param shopOrder
+     * 同步发货单到电商，需要上传所有发货单到电商
+     * @param shopOrder 店铺订单
      * @return
      */
-    public Response<Boolean> syncOrderToTaobao(ShopOrder shopOrder)
+    public Response<Boolean> syncShipmentsToEcp(ShopOrder shopOrder)
     {
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
@@ -136,11 +136,16 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setOuterOrderId(shopOrder.getOutId());
                     openClientOrderShipment.setLogisticsCompany(expressCompanyCode);
                     List<String> outerItemOrderIds = Lists.newArrayList();
+                    List<String> outerSkuCodes = Lists.newArrayList();
                     //添加外部子订单的id
                     for (ShipmentItem shipmentItem:shipmentItems){
+                        //淘宝会用到外部sku订单号
                         outerItemOrderIds.add(shipmentItem.getSkuOutId());
+                        //官网会用到skuCode
+                        outerSkuCodes.add(shipmentItem.getSkuCode());
                     }
                     openClientOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
+                    openClientOrderShipment.setOuterSkuCodes(outerSkuCodes);
                     //填写运单号
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
                     Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);

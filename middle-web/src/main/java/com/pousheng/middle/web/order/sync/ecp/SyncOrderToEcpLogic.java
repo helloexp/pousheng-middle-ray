@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.sync.ecp;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
@@ -11,6 +12,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
@@ -114,6 +116,21 @@ public class SyncOrderToEcpLogic {
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+
+            // /判断该订单下所有发货单的状态
+            List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
+            //判断订单是否已经全部发货了
+            int number=0;
+            for (Integer status:orderShipMentStatusList){
+                if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
+                    number++;
+                }
+            }
+            //必须所有的发货单发货完成之后才能通知电商
+            if (number>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
+                throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
+            }
+
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));

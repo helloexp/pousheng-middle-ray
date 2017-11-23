@@ -1,8 +1,10 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
@@ -11,8 +13,10 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -25,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -47,6 +52,7 @@ public class SyncOrderToEcpLogic {
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
 
+    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     /**
      * 同步发货单到电商--只需要传送第一个发货的发货单
      * @param shopOrder 店铺订单
@@ -114,6 +120,21 @@ public class SyncOrderToEcpLogic {
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+
+            // /判断该订单下所有发货单的状态
+            List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
+            //判断订单是否已经全部发货了
+            int number=0;
+            for (Integer status:orderShipMentStatusList){
+                if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
+                    number++;
+                }
+            }
+            //必须所有的发货单发货完成之后才能通知电商
+            if (number>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
+                throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
+            }
+
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));
@@ -150,6 +171,11 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
                     log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                     Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
+
+                    Map<String,String> extraMap = shipment.getExtra();
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+                    shipment.setExtra(extraMap);
+
                     if (response.isSuccess()){
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment,MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());
                     }else{

@@ -148,6 +148,7 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setOuterSkuCodes(outerSkuCodes);
                     //填写运单号
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
+                    log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                     Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
                     if (response.isSuccess()){
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment,MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -15,6 +16,7 @@ import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -27,6 +29,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -49,6 +52,7 @@ public class SyncOrderToEcpLogic {
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
 
+    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     /**
      * 同步发货单到电商--只需要传送第一个发货的发货单
      * @param shopOrder 店铺订单
@@ -167,6 +171,11 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
                     log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                     Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
+
+                    Map<String,String> extraMap = shipment.getExtra();
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+                    shipment.setExtra(extraMap);
+
                     if (response.isSuccess()){
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment,MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());
                     }else{

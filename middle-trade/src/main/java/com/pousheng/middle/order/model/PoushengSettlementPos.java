@@ -22,6 +22,11 @@ public class PoushengSettlementPos implements Serializable {
     private Integer posType;
 
     /**
+     * 订单类型:1.正常发货,2.换货发货,3.退货
+     */
+    private Integer orderType;
+
+    /**
      * 订单或者售后单状态
      */
     private Integer status;

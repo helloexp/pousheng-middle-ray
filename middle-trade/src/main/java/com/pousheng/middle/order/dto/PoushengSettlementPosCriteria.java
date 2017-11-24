@@ -20,7 +20,10 @@ public class PoushengSettlementPosCriteria extends PagingCriteria implements Ser
      * pos单类型
      */
     private Integer posType;
-
+    /**
+     * 发货单类型 1.销售发货单，2.换货发货单，3.售后单
+     */
+    private Integer shipType;
     /**
      * pos单号
      */

@@ -313,9 +313,13 @@ public class OrderOpenApi {
             PoushengSettlementPos pos = new PoushengSettlementPos();
             if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
                 OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
-
-                pos.setOrderId(orderId);
-
+                if (Objects.equals(orderShipment.getType(),1)){
+                    pos.setOrderId(orderShipment.getOrderId());
+                    pos.setShipType(1);
+                }else{
+                    pos.setOrderId(orderShipment.getAfterSaleOrderId());
+                    pos.setShipType(2);
+                }
                 pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
@@ -329,6 +333,7 @@ public class OrderOpenApi {
                 pos.setOrderId(refund.getId());
                 pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
+                pos.setShipType(3);
                 pos.setPosSerialNo(posSerialNo);
                 pos.setShopId(refund.getShopId());
                 pos.setShopName(refund.getShopName());

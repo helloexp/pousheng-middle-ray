@@ -8,6 +8,7 @@
     <resultMap id="PoushengSettlementPosMap" type="PoushengSettlementPos">
         <id column="id" property="id"/>
         <result column="pos_type" property="posType"/>
+        <result column="ship_type" property="shipType"/>
         <result column="order_id" property="orderId"/>
         <result column="pos_serial_no" property="posSerialNo"/>
         <result column="pos_amt" property="posAmt"/>
@@ -27,17 +28,19 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        pos_type, order_id, pos_serial_no, pos_amt, shop_id,shop_name,pos_created_at,created_at,updated_at
+        pos_type,ship_type, order_id, pos_serial_no, pos_amt, shop_id,shop_name,pos_created_at,created_at,updated_at
     </sql>
 
     <sql id="vals">
-        #{posType}, #{orderId}, #{posSerialNo},#{posAmt},#{shopId},#{shopName},#{posCreatedAt}, now(), now()
+        #{posType}, #{shipType}, #{orderId}, #{posSerialNo},#{posAmt},#{shopId},#{shopName},#{posCreatedAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         
         <if test="posType != null">and `pos_type` = #{posType}</if>
-        
+
+        <if test="shipType != null">and `ship_type` = #{shipType}</if>
+
         <if test="orderId != null">and `order_id` = #{orderId}</if>
         
         <if test="posSerialNo != null">and `pos_serial_no` = #{posSerialNo}</if>

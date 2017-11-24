@@ -311,9 +311,11 @@ public class OrderOpenApi {
 
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
             PoushengSettlementPos pos = new PoushengSettlementPos();
-            if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的
+            if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
                 OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+
                 pos.setOrderId(orderId);
+
                 pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);

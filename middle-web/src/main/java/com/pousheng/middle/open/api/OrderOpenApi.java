@@ -38,6 +38,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -320,6 +322,7 @@ public class OrderOpenApi {
                     pos.setOrderId(orderShipment.getAfterSaleOrderId());
                     pos.setShipType(2);
                 }
+                String amt = String.valueOf(new BigDecimal(posAmt).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(posAmt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
@@ -331,7 +334,8 @@ public class OrderOpenApi {
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = refundReadLogic.findRefundById(orderId);
                 pos.setOrderId(refund.getId());
-                pos.setPosAmt(Long.valueOf(posAmt)*100);
+                String amt = String.valueOf(new BigDecimal(posAmt).setScale(0, RoundingMode.HALF_DOWN));
+                pos.setPosAmt(Long.valueOf(amt)*100);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setShipType(3);
                 pos.setPosSerialNo(posSerialNo);

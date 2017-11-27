@@ -61,9 +61,9 @@ public class PosJob {
 
 
 
-   /* *//**
+    /**
      * 每隔5分钟执行一次
-     *//*
+     */
     @Scheduled(cron = "0 0/1 * * * ? ")
     public void doInsertPosInfo(){
 
@@ -130,7 +130,6 @@ public class PosJob {
         }
 
     }
-*/
 
 
     /**

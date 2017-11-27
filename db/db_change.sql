@@ -99,6 +99,7 @@ CREATE TABLE `pousheng_settlement_pos`
 (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `pos_type` tinyint(4) NOT NULL COMMENT 'pos单类型:1.正常销售,2.售后订单',
+  `ship_type`tinyint(4) NOT NULL COMMENT '发货类型:1.销售发货单,2.换货发货单,3.售后',
   `order_id` bigint(20) NOT NULL COMMENT '发货单或售后单号',
   `pos_serial_no` VARCHAR(60)  NOT NULL COMMENT 'pos单号',
   `pos_amt` bigint(20) NOT NULL  COMMENT 'pos单金额',

@@ -41,7 +41,12 @@ public class PoushengSettlementPosReadServiceImpl implements PoushengSettlementP
 
     @Override
     public Response<PoushengSettlementPos> findByPosSerialNo(String posSerialNo) {
-        return null;
+        try {
+            return Response.ok(poushengSettlementPosDao.findByPosSerialNo(posSerialNo));
+        }catch (Exception e){
+            log.error("failed find settlement pos, criteria={}, cause:{}",posSerialNo, Throwables.getStackTraceAsString(e));
+            return Response.fail("settlement.pos.find.fail");
+        }
     }
 
 

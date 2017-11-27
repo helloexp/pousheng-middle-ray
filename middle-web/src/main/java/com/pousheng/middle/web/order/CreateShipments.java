@@ -90,6 +90,7 @@ public class CreateShipments {
             throw new JsonResponseException(response.getError());
         }
 
+
         //封装发货仓及下单店铺信息
         ShipmentPreview shipmentPreview = response.getResult();
 
@@ -112,6 +113,8 @@ public class CreateShipments {
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
         shipmentPreview.setErpOrderShopCode(shopCode);
         shipmentPreview.setErpOrderShopName(shopName);
+        //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码
+
         shipmentPreview.setErpPerformanceShopCode(shopCode);
         shipmentPreview.setErpPerformanceShopName(shopName);
 

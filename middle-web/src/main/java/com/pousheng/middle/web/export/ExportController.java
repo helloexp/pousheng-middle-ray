@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.export;
 
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
@@ -28,6 +29,7 @@ import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.xmlbeans.impl.jam.mutable.MPackage;
+import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -196,16 +198,21 @@ public class ExportController {
                         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(s);
                         export.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                         export.setCarrNo(shipmentExtra.getShipmentSerialNo());
-                        receiverInfo.ifPresent(receiver -> {
-                            export.setReciverAddress(receiver.getDetail());
-                            export.setReciverName(receiver.getReceiveUserName());
-                            export.setPhone(receiver.getMobile());
-                        });
                     });
-
+                    receiverInfo.ifPresent(receiver -> {
+                        String address = this.getAddress(receiver);
+                        export.setReciverAddress(address);
+                        export.setReciverName(receiver.getReceiveUserName());
+                        export.setPhone(receiver.getMobile());
+                    });
                     //TODO paytype enum
                     export.setPayType("在线支付");
-
+                    //恒康的绩效店铺代码
+                    if (shopOrder.getExtra()!=null){
+                        export.setPerformanceShopCode(shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE)!=null?shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE):"");
+                    }else{
+                        export.setPerformanceShopCode("");
+                    }
 //                    payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
@@ -257,6 +264,27 @@ public class ExportController {
         }
 
         exportService.saveToDiskAndCloud(new ExportContext(orderExportData));
+    }
+
+    @NotNull
+    private String getAddress(ReceiverInfo receiver) {
+        StringBuffer addressBuffer = new StringBuffer();
+        if (StringUtils.isNotEmpty(receiver.getProvince())) {
+            addressBuffer.append(receiver.getProvince());
+        }
+        if (StringUtils.isNotEmpty(receiver.getCity())) {
+            addressBuffer.append(receiver.getCity());
+        }
+        if (StringUtils.isNotEmpty(receiver.getRegion())) {
+            addressBuffer.append(receiver.getRegion());
+        }
+        if (StringUtils.isNotEmpty(receiver.getStreet())) {
+            addressBuffer.append(receiver.getStreet());
+        }
+        if (StringUtils.isNotEmpty(receiver.getDetail())) {
+            addressBuffer.append(receiver.getDetail());
+        }
+        return addressBuffer.toString();
     }
 
     @GetMapping("refund/export")
@@ -430,7 +458,7 @@ public class ExportController {
                     entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
                     if (!receiverResponse.getResult().isEmpty()) {
                         entity.setReciverName(receiverResponse.getResult().get(0).getReceiveUserName());
-                        entity.setReciverAddress(receiverResponse.getResult().get(0).getDetail());
+                        entity.setReciverAddress(this.getAddress(receiverResponse.getResult().get(0)));
                         entity.setPhone(receiverResponse.getResult().get(0).getMobile());
                     }
                     //TODO 销售类型

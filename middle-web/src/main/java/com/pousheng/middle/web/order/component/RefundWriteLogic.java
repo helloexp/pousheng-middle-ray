@@ -243,6 +243,13 @@ public class RefundWriteLogic {
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
         //完善换货信息
         completeChangeItemInfo(refundItem,submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
+        //完善换货发货地址信息
+        if (Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
+            if (Objects.nonNull(submitRefundInfo.getMiddleChangeReceiveInfo())){
+                extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO,mapper.toJson(submitRefundInfo.getMiddleChangeReceiveInfo()));
+            }
+        }
+
         //表明售后单的信息已经全部完善
         extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
         refund.setExtra(extraMap);
@@ -540,7 +547,9 @@ public class RefundWriteLogic {
 
         Map<String,SkuTemplate> skuCodeAndTemplateMap =  skuTemplateRes.getResult().stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getStatus(),-3))
                 .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
-
+        if (skuCodeAndTemplateMap.size()==0){
+            throw new JsonResponseException("sku.may.be.deleted");
+        }
         refundItems.forEach(it -> {
             SkuTemplate skuTemplate = skuCodeAndTemplateMap.get(it.getSkuCode());
             it.setAttrs(skuTemplate.getAttrs());

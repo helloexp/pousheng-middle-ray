@@ -138,6 +138,7 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
     @OperationLogType("取消子订单")
     public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
+        log.info("try to auto cancel sku order shop orderId is {},skuCode is {}",shopOrderId,skuCode);
         orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
     }
 
@@ -149,6 +150,7 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/rollback/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
+        log.info("try to roll back shop order shopOrderId is {}",shopOrderId);
         orderWriteLogic.rollbackShopOrder(shopOrderId);
     }
 
@@ -171,8 +173,10 @@ public class AdminOrderWriter {
             log.info("skuCode is not exist,because of not cancel sku order");
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
+            log.info("try to cancel sku order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
             orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
         } else {
+            log.info("try to cancel shop order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
             orderWriteLogic.cancelShopOrder(shopOrderId);
         }
 
@@ -186,6 +190,7 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/auto/cancel/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单取消")
     public void autoCancelShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
+        log.info("try to auto cancel shop order shopOrderId is {},skuCode is {}",shopOrderId);
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
     }
 

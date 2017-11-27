@@ -400,8 +400,9 @@ public class Shipments {
         Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
         Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
                 shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice,refund.getShopId());
+        //换货
+        shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
         Map<String,String> extraMap = shipment.getExtra();
-
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         shipment.setShopId(refund.getShopId());
@@ -468,6 +469,7 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步取消状态")
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
+        log.info("try to auto cancel shipment,shipment id is {},operationType is {}",shipmentId,0);
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,0);
         if(!syncRes.isSuccess()){
@@ -512,6 +514,17 @@ public class Shipments {
             return null;
         }
     }
+
+    private String findRefundReceiverInfo(Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        MiddleChangeReceiveInfo receiveInfo = refundReadLogic.findMiddleChangeReceiveInfo(refund);
+        try {
+            return objectMapper.writeValueAsString(receiveInfo);
+        } catch (JsonProcessingException e) {
+            return null;
+        }
+    }
+
 
     private List<ReceiverInfo> doFindReceiverInfos(Long orderId, OrderLevel orderLevel) {
         Response<List<ReceiverInfo>> receiversResp = receiverInfoReadService.findByOrderId(orderId, orderLevel);
@@ -622,8 +635,6 @@ public class Shipments {
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
-        shipmentExtra.setErpPerformanceShopCode(shopCode);
-        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
@@ -637,6 +648,9 @@ public class Shipments {
         //发货单的订单总金额
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
         //物流编码
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){

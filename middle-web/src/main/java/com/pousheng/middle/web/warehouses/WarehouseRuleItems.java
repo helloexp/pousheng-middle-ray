@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
@@ -56,6 +57,12 @@ public class WarehouseRuleItems {
             WarehouseRuleItemDto ruleItemDto = new WarehouseRuleItemDto();
             BeanMapper.copy(ruleItem, ruleItemDto);
             ruleItemDto.setCompanyCode(warehouse.getCompanyCode());
+            if (warehouse.getExtra()==null)
+            {
+                ruleItemDto.setOutCode("");
+            }else{
+                ruleItemDto.setOutCode(warehouse.getExtra().get("outCode")==null?"":warehouse.getExtra().get("outCode"));
+            }
             result.add(ruleItemDto);
         }
         return result;

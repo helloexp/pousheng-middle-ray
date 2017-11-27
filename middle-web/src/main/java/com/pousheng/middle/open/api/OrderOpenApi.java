@@ -221,7 +221,7 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
                                                                       "receivedDate","itemCode","quantity"
                                                                       }, httpMethods = RequestMethod.POST)
-    public void syncHkRefundStatus(@NotNull(message = "refund.order.id.is.null") Long refundOrderId,
+    public void syncHkRefundStatus(Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
@@ -229,6 +229,9 @@ public class OrderOpenApi {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
+            if (refundOrderId==null){
+                return;
+            }
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
             String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);

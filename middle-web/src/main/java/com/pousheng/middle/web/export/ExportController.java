@@ -6,8 +6,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
@@ -32,11 +34,14 @@ import org.apache.xmlbeans.impl.jam.mutable.MPackage;
 import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -81,6 +86,9 @@ public class ExportController {
 
     @Autowired
     private PermissionUtil permissionUtil;
+
+    @Autowired
+    private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
     /**
      * 导出订单
@@ -485,6 +493,50 @@ public class ExportController {
 
     }
 
+    /**
+     * pos单导出
+     * @param criteria
+     */
+    @GetMapping( value = "settlement/pos/export")
+    public void exportSettlementPos(PoushengSettlementPosCriteria criteria){
+       List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
+       if (!shopIds.contains(criteria.getShopId())){
+           throw new JsonResponseException("permission.check.shop.id.empty");
+       }
+
+        List<SettlementPosEntity> posExportEntities = new ArrayList<>();
+
+        criteria.setPageSize(500);
+        int pageNo=1;
+        while(true){
+            criteria.setPageNo(pageNo++);
+            Response<Paging<PoushengSettlementPos>> r = poushengSettlementPosReadService.paging(criteria);
+            if (!r.isSuccess()) {
+                log.error("find settlement pos by criteria:{} fail,error:{}", criteria, r.getError());
+                throw new JsonResponseException(r.getError());
+            }
+            if (r.getResult().getTotal() == 0) {
+                throw new JsonResponseException("export.data.empty");
+            }
+
+            if (r.getResult().getData().isEmpty()) {
+                break;
+            }
+            r.getResult().getData().forEach(posContext->{
+                SettlementPosEntity entity = new  SettlementPosEntity();
+                entity.setPosSerialNo(posContext.getPosSerialNo());
+                entity.setPosAmt(new BigDecimal(posContext.getPosAmt()==null?0:posContext.getPosAmt()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());
+                entity.setShopId(posContext.getShopId());
+                entity.setShopName(posContext.getShopName());
+                entity.setPosType(posContext.getPosType()==1?"正常销售":"售后");
+                entity.setOrderId(posContext.getOrderId());
+                entity.setPosCreatedAt(posContext.getPosCreatedAt());
+                entity.setCreatedAt(posContext.getCreatedAt());
+                posExportEntities.add(entity);
+            });
+        }
+        exportService.saveToDiskAndCloud(new ExportContext(posExportEntities));
+    }
     @GetMapping("export/files")
     public Response<Paging<FileRecord>> exportFiles() {
 

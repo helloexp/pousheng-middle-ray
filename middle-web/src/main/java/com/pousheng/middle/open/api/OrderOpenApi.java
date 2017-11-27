@@ -10,6 +10,8 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
+import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -23,6 +25,7 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -62,6 +65,8 @@ public class OrderOpenApi {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @RpcConsumer
+    private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
     private EventBus eventBus;
 
@@ -305,46 +310,41 @@ public class OrderOpenApi {
         try {
 
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
-            if (Objects.equals(orderType,"1")){
-                Shipment shipment = shipmentReadLogic.findShipmentById(orderId);
-                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                //封装更新信息
-                Shipment update = new Shipment();
-                update.setId(shipment.getId());
-                Map<String, String> extraMap = shipment.getExtra();
-                //添加pos单相关信息
-                shipmentExtra.setPosSerialNo(posSerialNo);
-                shipmentExtra.setPosType(String.valueOf(posType));
-                shipmentExtra.setPosAmt(String.valueOf(Double.valueOf(posAmt)*100));
-                shipmentExtra.setPosCreatedAt(dPos.toDate());
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                update.setExtra(extraMap);
-                //更新基本信息
-                Response<Boolean> updateRes = shipmentWriteService.update(update);
-                if (!updateRes.isSuccess()) {
-                    log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                    throw new ServiceException(updateRes.getError());
+            PoushengSettlementPos pos = new PoushengSettlementPos();
+            if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
+                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+                if (Objects.equals(orderShipment.getType(),1)){
+                    pos.setOrderId(orderShipment.getOrderId());
+                    pos.setShipType(1);
+                }else{
+                    pos.setOrderId(orderShipment.getAfterSaleOrderId());
+                    pos.setShipType(2);
                 }
+                pos.setPosAmt(Long.valueOf(posAmt)*100);
+                pos.setPosType(Integer.valueOf(posType));
+                pos.setPosSerialNo(posSerialNo);
+                pos.setShopId(orderShipment.getShopId());
+                pos.setShopName(orderShipment.getShopName());
+                pos.setPosCreatedAt(dPos.toDate());
+
+
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = refundReadLogic.findRefundById(orderId);
-                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-                Refund update = new Refund();
-                update.setId(refund.getId());
-                Map<String, String> extraMap = refund.getExtra();
-                //添加pos单相关信息
-                refundExtra.setPosSerialNo(posSerialNo);
-                refundExtra.setPosType(String.valueOf(posType));
-                refundExtra.setPosAmt(String.valueOf(Double.valueOf(posAmt)*100));
-                refundExtra.setPosCreatedAt(dPos.toDate());
-                extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-                update.setExtra(extraMap);
-                Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
-                if (!updateExtraRes.isSuccess()) {
-                    log.error("update reFund(id:{}) extra:{} fail,error:{}", orderId, refundExtra, updateExtraRes.getError());
-                    throw new ServiceException(updateExtraRes.getError());
-                }
+                pos.setOrderId(refund.getId());
+                pos.setPosAmt(Long.valueOf(posAmt)*100);
+                pos.setPosType(Integer.valueOf(posType));
+                pos.setShipType(3);
+                pos.setPosSerialNo(posSerialNo);
+                pos.setShopId(refund.getShopId());
+                pos.setShopName(refund.getShopName());
+                pos.setPosCreatedAt(dPos.toDate());
             }else{
                 throw new ServiceException("invalid.order.type");
+            }
+            Response<Long> r = poushengSettlementPosWriteService.create(pos);
+            if (!r.isSuccess()){
+                log.error("create poushengSettlementPos failed, poushengSettlementPos:{},caused by ",pos,r.getError());
+                throw new ServiceException(r.getError());
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, e.getMessage());

@@ -64,7 +64,7 @@ public class PosJob {
     /**
      * 每隔5分钟执行一次
      */
-    @Scheduled(cron = "0 0/1 * * * ? ")
+    @Scheduled(cron = "0 0/5 * * * ? ")
     public void doInsertPosInfo(){
 
         if(!hostLeader.isLeader()) {
@@ -133,9 +133,9 @@ public class PosJob {
 
 
     /**
-     * 每隔5分钟执行一次
+     * 每隔9分钟执行一次
      */
-    @Scheduled(cron = "0 0/1 * * * ? ")
+    @Scheduled(cron = "0 0/9 * * * ? ")
     public void doInsertAfterSalePosInfo(){
 
         if(!hostLeader.isLeader()) {

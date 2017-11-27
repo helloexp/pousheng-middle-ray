@@ -39,6 +39,11 @@ public class PoushengSettlementPosReadServiceImpl implements PoushengSettlementP
         }
     }
 
+    @Override
+    public Response<PoushengSettlementPos> findByPosSerialNo(String posSerialNo) {
+        return null;
+    }
+
 
     private void handleDate(PoushengSettlementPosCriteria criteria) {
         if (criteria.getStartAt() != null) {

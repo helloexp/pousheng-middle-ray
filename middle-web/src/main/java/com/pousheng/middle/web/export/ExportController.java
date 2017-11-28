@@ -500,10 +500,12 @@ public class ExportController {
     @GetMapping( value = "settlement/pos/export")
     public void exportSettlementPos(PoushengSettlementPosCriteria criteria){
        List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
-       if (!shopIds.contains(criteria.getShopId())){
+       if (criteria.getShopId()!=null&&!shopIds.contains(criteria.getShopId())){
            throw new JsonResponseException("permission.check.shop.id.empty");
        }
-
+       if (criteria.getShopId()==null){
+           criteria.setShopIds(shopIds);
+       }
         List<SettlementPosEntity> posExportEntities = new ArrayList<>();
 
         criteria.setPageSize(500);

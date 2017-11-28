@@ -17,4 +17,11 @@ public interface PoushengSettlementPosReadService {
      * @return
      */
     Response<Paging<PoushengSettlementPos>> paging(PoushengSettlementPosCriteria criteria);
+
+    /**
+     * 根据pos单号查询pos单信息
+     * @param posSerialNo
+     * @return
+     */
+    Response<PoushengSettlementPos> findByPosSerialNo(String posSerialNo);
 }

@@ -78,6 +78,13 @@
         WHERE id = #{id}
     </select>
 
+    <select id="findByPosSerialNo" parameterType="string" resultMap="PoushengSettlementPosMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE pos_serial_no = #{posSerialNo}
+    </select>
+
+
    <select id="findByIds" parameterType="list" resultMap="PoushengSettlementPosMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>

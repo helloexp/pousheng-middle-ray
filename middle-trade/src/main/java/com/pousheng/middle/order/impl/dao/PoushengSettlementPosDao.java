@@ -12,5 +12,7 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class PoushengSettlementPosDao extends MyBatisDao<PoushengSettlementPos>{
-
+    public PoushengSettlementPos findByPosSerialNo(String posSerialNo){
+        return getSqlSession().selectOne(sqlId("findByPosSerialNo"), posSerialNo);
+    }
 }

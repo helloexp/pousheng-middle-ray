@@ -322,8 +322,8 @@ public class OrderOpenApi {
                     pos.setOrderId(orderShipment.getAfterSaleOrderId());
                     pos.setShipType(2);
                 }
-                String amt = String.valueOf(new BigDecimal(posAmt).setScale(0, RoundingMode.HALF_DOWN));
-                pos.setPosAmt(Long.valueOf(posAmt)*100);
+                String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
+                pos.setPosAmt(Long.valueOf(amt));
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
                 pos.setShopId(orderShipment.getShopId());
@@ -334,8 +334,8 @@ public class OrderOpenApi {
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = refundReadLogic.findRefundById(orderId);
                 pos.setOrderId(refund.getId());
-                String amt = String.valueOf(new BigDecimal(posAmt).setScale(0, RoundingMode.HALF_DOWN));
-                pos.setPosAmt(Long.valueOf(amt)*100);
+                String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
+                pos.setPosAmt(Long.valueOf(amt));
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setShipType(3);
                 pos.setPosSerialNo(posSerialNo);

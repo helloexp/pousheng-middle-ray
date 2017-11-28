@@ -6,6 +6,7 @@ import com.pousheng.middle.order.dto.RefundPaging;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -14,6 +15,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,7 +36,7 @@ public class SettlementPos {
     @RpcConsumer
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @RpcConsumer
-    private ShipmentReadLogic shipmentReadLogic;
+    private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private RefundReadLogic refundReadLogic;
 
@@ -48,9 +50,9 @@ public class SettlementPos {
         List<PoushengSettlementPos> poushengSettlementPosList = r.getResult().getData();
         if (poushengSettlementPosList.size()>0){
             poushengSettlementPosList.forEach(poushengSettlementPos -> {
-                if (Objects.equals(poushengSettlementPos.getPosType(),1)){
-                    Shipment shipment  = shipmentReadLogic.findShipmentById(poushengSettlementPos.getOrderId());
-                    poushengSettlementPos.setStatus(shipment.getStatus());
+                if (Objects.equals(poushengSettlementPos.getShipType(),1)){
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(poushengSettlementPos.getOrderId());
+                    poushengSettlementPos.setStatus(shopOrder.getStatus());
                 }else{
                     Refund refund = refundReadLogic.findRefundById(poushengSettlementPos.getOrderId());
                     poushengSettlementPos.setStatus(refund.getStatus());

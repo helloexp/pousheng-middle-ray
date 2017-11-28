@@ -210,7 +210,7 @@ public class StockPusher {
                 stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
                 stockPushLog.setQuantity((long) paranaSkuStock.getStock());
                 stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
-                stockPushLog.setCause(r.isSuccess() ? "" : r.getError());
+                stockPushLog.setCause(r.isSuccess() ? "" : "电商平台返回:更新库存失败");
                 stockPushLogs.add(stockPushLog);
             }
             redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));

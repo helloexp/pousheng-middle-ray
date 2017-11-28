@@ -31,10 +31,12 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.*;
@@ -71,6 +73,9 @@ public class StockPusher {
 
     @RpcConsumer
     private OpenShopReadService openShopReadService;
+
+    @Autowired
+    private MessageSource messageSource;
 
     private LoadingCache<String, Long> skuCodeCacher;
 
@@ -210,7 +215,7 @@ public class StockPusher {
                 stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
                 stockPushLog.setQuantity((long) paranaSkuStock.getStock());
                 stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
-                stockPushLog.setCause(r.isSuccess() ? "" : "电商平台返回:更新库存失败");
+                stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(),null,Locale.CHINA));
                 stockPushLogs.add(stockPushLog);
             }
             redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));

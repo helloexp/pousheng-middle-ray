@@ -2,6 +2,8 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Ordering;
+import com.pousheng.middle.order.dto.ActivityItem;
+import com.pousheng.middle.order.dto.ActivityShop;
 import com.pousheng.middle.order.dto.GiftItem;
 import com.pousheng.middle.order.enums.PoushengGiftOrderRule;
 import com.pousheng.middle.order.enums.PoushengGiftQuantityRule;
@@ -84,8 +86,8 @@ public class PsGiftActivityStrategy {
             if (now>=activityEndTime){
                 continue;
             }
-            List<MiddleOpenShop> openShops = poushengGiftActivityReadLogic.getMiddleOpenShopList(poushengGiftActivity);
-            List<Long> shopIds = openShops.stream().filter(Objects::nonNull).map(MiddleOpenShop::getId).collect(Collectors.toList());
+            List<ActivityShop> activityShops = poushengGiftActivityReadLogic.getActivityShopList(poushengGiftActivity);
+            List<Long> shopIds = activityShops.stream().filter(Objects::nonNull).map(ActivityShop::getShopId).collect(Collectors.toList());
             //判断店铺是否满足条件
             if (!shopIds.contains(shop.getId())){
                 continue;
@@ -104,18 +106,36 @@ public class PsGiftActivityStrategy {
             }
             //如果类型是需要满足金额且有限定活动商品类型，则判断商品是否满足且判断金额是否满足活动
             if (Objects.equals(poushengGiftActivity.getOrderRule(), PoushengGiftOrderRule.SATIFIED_FEE_NOT_IGINORE_ACTIVITY_ITEM.value())){
-                if (!skuCodes.contains(poushengGiftActivity.getSkuCode())){
+                //判断该订单是否有商品在活动商品中
+                List<String> activitySkuCodes =  this.getActivitySkuCodes(poushengGiftActivity);
+                int count = 0;
+                for (String skuCode:skuCodes){
+                    if (activitySkuCodes.contains(skuCode)){
+                        count++;
+                    }
+                }
+                if (count==0){
                     continue;
                 }
+
                 if (fee<poushengGiftActivity.getOrderFee()){
                     continue;
                 }
             }
             //如果类型是需要满足数量且有限定活动商品类型，则判断商品是否满足且判断数量是否满足活动
             if (Objects.equals(poushengGiftActivity.getOrderRule(), PoushengGiftOrderRule.SATIFIED_QUANTITY_NOT_IGINORE_ACTIVITY_ITEM.value())){
-                if (!skuCodes.contains(poushengGiftActivity.getSkuCode())){
+                //判断该订单是否有商品在活动商品中
+                List<String> activitySkuCodes =  this.getActivitySkuCodes(poushengGiftActivity);
+                int count = 0;
+                for (String skuCode:skuCodes){
+                    if (activitySkuCodes.contains(skuCode)){
+                        count++;
+                    }
+                }
+                if (count==0){
                     continue;
                 }
+
                 if (quantity<poushengGiftActivity.getOrderQuantity()){
                     continue;
                 }
@@ -129,5 +149,9 @@ public class PsGiftActivityStrategy {
             activities.add(poushengGiftActivity);
         }
         return activities;
+    }
+    private List<String> getActivitySkuCodes(PoushengGiftActivity poushengGiftActivity){
+        List<ActivityItem> activityItems = poushengGiftActivityReadLogic.getActivityItem(poushengGiftActivity);
+        return activityItems.stream().map(ActivityItem::getSkuCode).collect(Collectors.toList());
     }
 }

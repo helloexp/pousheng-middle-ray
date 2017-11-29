@@ -1,5 +1,7 @@
 package com.pousheng.middle.order.dto;
 
+import lombok.Data;
+
 import java.io.Serializable;
 
 /**
@@ -7,6 +9,17 @@ import java.io.Serializable;
  * Date: 2017/11/28
  * pousheng-middle
  */
+@Data
 public class ActivityItem extends BasicItemInfo implements Serializable {
+
+    /**
+     * spuId
+     */
+    private Long spuId;
+
+    /**
+     * 货号
+     */
+    private String materialCode;
 
 }

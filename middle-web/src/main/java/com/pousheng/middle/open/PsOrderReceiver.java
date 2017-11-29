@@ -220,18 +220,22 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //获取赠品商品
         List<GiftItem> giftItems = psGiftActivityStrategy.getAvailGiftItems(richSkusByShop,activities);
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
-        if (!Objects.isNull(giftItems)){
+        if (!Objects.isNull(giftItems) && giftItems.size()>0){
             for (GiftItem giftItem : giftItems){
                 richOrder.setCompanyId(1L);//没有多余的字段了，companyId=1标记为这个订单中含有赠品
                 RichSku richSku = new RichSku();
-                Sku sku = new Sku();
-                sku.setId(giftItem.getSkuId());
-                sku.setSkuCode(giftItem.getSkuCode());
-                sku.setOuterSkuId(giftItem.getOutSKuId());
-                sku.setAttrs(giftItem.getAttrs());
-                Item item = new Item();
-                item.setId(giftItem.getItemId());
-                item.setName(giftItem.getItemName());
+                Sku sku = this.findSkuByCode(giftItem.getSkuCode());
+                if (sku==null){
+                    sku.setId(giftItem.getSkuId());
+                    sku.setSkuCode(giftItem.getSkuCode());
+                    sku.setOuterSkuId(giftItem.getOutSKuId());
+                    sku.setAttrs(giftItem.getAttrs());
+                }
+                Item item = this.findItemById(giftItem.getSpuId());
+                if (item==null){
+                    item.setId(giftItem.getItemId());
+                    item.setName(giftItem.getItemName());
+                }
                 ParanaUser buyer = new ParanaUser();
                 buyer.setId(richOrder.getBuyer().getId());
                 buyer.setName(richOrder.getBuyer().getName());

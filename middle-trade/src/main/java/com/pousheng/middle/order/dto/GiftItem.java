@@ -17,11 +17,23 @@ public class GiftItem extends BasicItemInfo implements Serializable {
      * 赠品数量
      */
     private Integer quantity;
+
     private Long itemId;
+    /**
+     * spu的name
+     */
     private String itemName;
     /**
      * 赠品标记的价格
      */
     private Integer price;
 
+    /**
+     * spuId
+     */
+    private Long spuId;
+    /**
+     * 货号
+     */
+    private String materialCode;
 }

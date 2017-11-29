@@ -10,7 +10,6 @@
         <result column="order_rule" property="orderRule"/>
         <result column="order_fee" property="orderFee"/>
         <result column="order_quantity" property="orderQuantity"/>
-        <result column="sku_code" property="skuCode"/>
         <result column="total_price" property="totalPrice"/>
         <result column="status" property="status"/>
         <result column="quantity_rule" property="quantityRule"/>
@@ -35,7 +34,7 @@
         quantity_rule,already_activity_quantity,activity_quantity,extra_json,created_at, updated_at
     </sql>
     <sql id="vals">
-         #{name}, #{orderRule},#{orderFee}, #{orderQuantity},#{skuCode},#{totalPrice},
+         #{name}, #{orderRule},#{orderFee}, #{orderQuantity},#{totalPrice},
         #{status},#{quantityRule},#{alreadyActivityQuantity},#{activityQuantity},#{extraJson},#{activityStartAt},#{activityEndAt} now(), now()
     </sql>
     <sql id="queryCondition">
@@ -47,8 +46,6 @@
         <if test="orderFee != null">and `order_fee` = #{orderFee}</if>
 
         <if test="orderQuantity != null">and `order_quantity` = #{orderQuantity}</if>
-
-        <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
 
         <if test="totalPrice != null">and `total_price` = #{totalPrice}</if>
 
@@ -87,7 +84,6 @@
             <if test="orderRule != null">order_rule = #{orderRule},</if>
             <if test="orderFee != null">order_fee = #{orderFee},</if>
             <if test="orderQuantity != null">order_quantity = #{orderQuantity},</if>
-            <if test="skuCode != null">sku_code = #{skuCode},</if>
             <if test="totalPrice != null">total_price = #{totalPrice},</if>
             <if test="status != null">status = #{status},</if>
             <if test="quantityRule != nulls">quantity_rule = #{quantityRule},</if>

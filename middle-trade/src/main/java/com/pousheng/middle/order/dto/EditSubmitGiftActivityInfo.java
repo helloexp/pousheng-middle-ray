@@ -26,9 +26,18 @@ public class EditSubmitGiftActivityInfo {
     private List<ActivityShop> activityShops;
 
     /**
+     * 活动主键
+     */
+    private Long id;
+    /**
      * 活动名称
      */
     private String name;
+
+    /**
+     * 状态
+     */
+    private Integer status;
 
     /**
      * 活动开始时间

@@ -66,6 +66,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足金额且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_FEE_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderFee(editSubmitGiftActivityInfo.getFee());
         }
         //满足金额且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -75,6 +76,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足数量且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_QUANTITY_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderQuantity(editSubmitGiftActivityInfo.getQuantity());
         }
         //满足数量且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -85,11 +87,11 @@ public class PoushengGiftActivityWriteLogic {
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
             activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
             activity.setAlreadyActivityQuantity(0);
-            activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
-        }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
+        }else{
+            activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }
-        activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityStartDate());
+        activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
         activity.setStatus(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue());
 
@@ -235,8 +237,11 @@ public class PoushengGiftActivityWriteLogic {
         }
 
         Integer targetStatus = flow.target(activity.getStatus(), orderOperation);
-        activity.setStatus(targetStatus);
-        Response<Boolean> updateRes = poushengGiftActivityWriteService.update(activity);
+
+        PoushengGiftActivity newActivity= new PoushengGiftActivity();
+        newActivity.setId(activity.getId());
+        newActivity.setStatus(targetStatus);
+        Response<Boolean> updateRes = poushengGiftActivityWriteService.update(newActivity);
         if (!updateRes.isSuccess()) {
             log.error("update poushengGiftActivity(id:{}) status to:{} fail,error:{}", activity.getId(), updateRes.getError());
             throw new JsonResponseException("update.poushengGiftActivity.failed");
@@ -244,6 +249,29 @@ public class PoushengGiftActivityWriteLogic {
         return Response.ok(Boolean.TRUE);
     }
 
+
+
+    /**
+     * 更新参与活动的人数
+     * @return
+     */
+    public Response<Boolean> updatePoushengGiftActivityParticipants(Long id){
+        Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
+        if (!r.isSuccess()||Objects.isNull(r.getResult())){
+            log.error("find pousheng gift activity faile,id is {},caused by {}",id,r.getError());
+            throw new JsonResponseException("find.single.poushengGiftActivity.failed");
+        }
+        PoushengGiftActivity activity = r.getResult();
+        PoushengGiftActivity newActivity= new PoushengGiftActivity();
+        newActivity.setId(activity.getId());
+        newActivity.setAlreadyActivityQuantity(activity.getAlreadyActivityQuantity()+1);
+        Response<Boolean> updateRes = poushengGiftActivityWriteService.update(newActivity);
+        if (!updateRes.isSuccess()) {
+            log.error("update poushengGiftActivity(id:{}) status to:{} fail,error:{}", activity.getId(), updateRes.getError());
+            throw new JsonResponseException("update.poushengGiftActivity.failed");
+        }
+        return Response.ok(Boolean.TRUE);
+    }
     /**
      * 查询skuTemplate
      * @param skuCode

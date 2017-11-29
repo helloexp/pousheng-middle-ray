@@ -252,6 +252,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 richSku.setSku(sku);
                 richSku.setItem(item);
                 richSku.setShipmentType(1);//没有其他字段可用现在只能用shipmentType打标用来打标赠品
+                richSku.setExtra(Maps.newHashMap());
                 richSkus.add(richSku);
             }
         }else{

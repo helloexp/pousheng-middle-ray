@@ -1,9 +1,6 @@
 package com.pousheng.middle.web.order;
 
-import com.pousheng.middle.order.dto.ActivityItem;
-import com.pousheng.middle.order.dto.EditSubmitGiftActivityInfo;
-import com.pousheng.middle.order.dto.GiftItem;
-import com.pousheng.middle.order.dto.SubmitRefundInfo;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityEvent;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.order.service.PoushengGiftActivityReadService;
@@ -61,7 +58,7 @@ public class GiftActivityWriter {
      * 创建活动规则
      * @return
      */
-    @RequestMapping(value = "/api/gift/actvity/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/gift/actvity/create/test", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建活动规则")
     public Response<Long> createTest(@RequestParam(required =false)String name,@RequestParam(required = false) String startAt,@RequestParam(required = false) String endAt,@RequestParam Integer activityType,
                                      @RequestParam(required = false) Integer fee,@RequestParam(required = false)Integer quantity,Boolean isNoLimitItem,Integer limitQuantity
@@ -85,7 +82,17 @@ public class GiftActivityWriter {
         List<GiftItem> giftItems = Lists.newArrayList();
         GiftItem giftItem = new GiftItem();
         giftItem.setSkuCode(giftSkuCode);
-
+        giftItem.setPrice(price);
+        giftItem.setQuantity(quantity);
+        giftItems.add(giftItem);
+        List<ActivityShop> activityShops = Lists.newArrayList();
+        ActivityShop activityShop = new ActivityShop();
+        activityShop.setShopId(shopId);
+        activityShop.setShopName(shopName);
+        activityShops.add(activityShop);
+        editSubmitGiftActivityInfo.setActivityItems(activityItems);
+        editSubmitGiftActivityInfo.setGiftItems(giftItems);
+        editSubmitGiftActivityInfo.setActivityShops(activityShops);
         return Response.ok(poushengGiftActivityWriteLogic.createGiftActivity(editSubmitGiftActivityInfo));
     }
 
@@ -109,6 +116,17 @@ public class GiftActivityWriter {
      */
     @RequestMapping(value = "/api/gift/actvity/{id}/publish", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> publishGiftActivity(@PathVariable("id") Long id){
+        Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
+        if (!r.isSuccess()||Objects.isNull(r.getResult())){
+            log.error("find pousheng gift activity faile,id is {},caused by {}",id,r.getError());
+            throw new JsonResponseException("find.single.poushengGiftActivity.failed");
+        }
+        PoushengGiftActivity activity = r.getResult();
+        long current= System.currentTimeMillis();
+        long endTime = activity.getActivityEndAt().getTime();
+        if (current>=endTime){
+            throw new JsonResponseException("gift.activity.time.out");
+        }
         return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.PUBLISH.toOrderOperation());
     }
 

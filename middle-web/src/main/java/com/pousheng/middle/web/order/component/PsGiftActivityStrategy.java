@@ -15,6 +15,7 @@ import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.assertj.core.util.Lists;
 import org.joda.time.DateTimeUtils;
@@ -33,9 +34,12 @@ import java.util.stream.Collectors;
  * 宝胜赠品活动列表,只有进行中的活动可以
  */
 @Component
+@Slf4j
 public class PsGiftActivityStrategy {
     @Autowired
     private PoushengGiftActivityReadLogic poushengGiftActivityReadLogic;
+    @Autowired
+    private PoushengGiftActivityWriteLogic poushengGiftActivityWriteLogic;
 
     private static final Ordering<PoushengGiftActivity> byPrice = Ordering.natural().onResultOf(new Function<PoushengGiftActivity, Integer>() {
         @Override
@@ -58,6 +62,15 @@ public class PsGiftActivityStrategy {
         }
         //获取最优的活动
         PoushengGiftActivity activity =  activities.get(activities.size()-1);
+        //限制参与人数
+        if (Objects.equals(activity.getQuantityRule(),PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value())){
+            try {
+                poushengGiftActivityWriteLogic.updatePoushengGiftActivityParticipants(activity.getId());
+            }catch (Exception e){
+             log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(),e.getMessage());
+                return Lists.newArrayList();
+            }
+        }
         return poushengGiftActivityReadLogic.getGiftItem(activity);
     }
 

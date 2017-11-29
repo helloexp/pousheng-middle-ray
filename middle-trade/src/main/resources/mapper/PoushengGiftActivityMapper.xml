@@ -30,12 +30,12 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        name,order_rule,order_fee,order_quantity,sku_code,total_price,status,
-        quantity_rule,already_activity_quantity,activity_quantity,extra_json,created_at, updated_at
+        name,order_rule,order_fee,order_quantity,total_price,status,
+        quantity_rule,already_activity_quantity,activity_quantity,extra_json,activity_start_at,activity_end_at,created_at, updated_at
     </sql>
     <sql id="vals">
          #{name}, #{orderRule},#{orderFee}, #{orderQuantity},#{totalPrice},
-        #{status},#{quantityRule},#{alreadyActivityQuantity},#{activityQuantity},#{extraJson},#{activityStartAt},#{activityEndAt} now(), now()
+        #{status},#{quantityRule},#{alreadyActivityQuantity},#{activityQuantity},#{extraJson},#{activityStartAt},#{activityEndAt},now(), now()
     </sql>
     <sql id="queryCondition">
 
@@ -86,10 +86,10 @@
             <if test="orderQuantity != null">order_quantity = #{orderQuantity},</if>
             <if test="totalPrice != null">total_price = #{totalPrice},</if>
             <if test="status != null">status = #{status},</if>
-            <if test="quantityRule != nulls">quantity_rule = #{quantityRule},</if>
+            <if test="quantityRule != null">quantity_rule = #{quantityRule},</if>
             <if test="alreadyActivityQuantity != null">already_activity_quantity = #{alreadyActivityQuantity},</if>
             <if test="activityQuantity != null">activity_quantity = #{activityQuantity},</if>
-            <if test="extraJson != null">,`extra_json` = #{extraJson}</if>
+            <if test="extraJson != null">`extra_json` = #{extraJson},</if>
             <if test="activityStartAt != null">activity_start_at = #{activityStartAt},</if>
             <if test="activityEndAt != null">activity_end_at = #{activityEndAt},</if>
             updated_at=now()
@@ -102,7 +102,7 @@
         WHERE id = #{id}
     </delete>
 
-    <select id="paging" parameterType="list" resultMap="ExpressCodeMap">
+    <select id="paging" parameterType="list" resultMap="PoushengGiftActivityMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         <where>

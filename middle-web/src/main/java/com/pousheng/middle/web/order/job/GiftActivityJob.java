@@ -43,8 +43,7 @@ public class GiftActivityJob {
         for (PoushengGiftActivity activity:waitStartActivities){
             long current = System.currentTimeMillis();
             long activityStartTime = activity.getActivityStartAt().getTime();
-            long activityEndTime = activity.getActivityEndAt().getTime();
-            if (current>=activityStartTime&&current<=activityEndTime){
+            if (current>=activityStartTime){
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
                 }catch (Exception e){

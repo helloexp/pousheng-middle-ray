@@ -93,3 +93,26 @@ ALTER TABLE `parana_shop_orders` change  `buyer_name` `buyer_name` VARCHAR(64)  
 ALTER TABLE `parana_invoices` change  `user_id` `user_id` bigint(20)  NULL COMMENT '用户id';
 -- spu归组规则新增字段rule_detail(规则详情)
 ALTER TABLE `pousheng_sku_group_rules` ADD COLUMN `rule_detail` VARCHAR(20) COMMENT '规则详情' AFTER `last_start`;
+
+
+drop table `pousheng_gift_activity`;
+create table `pousheng_gift_activity`
+(
+  'id' bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL COMMENT '活动名称',
+  `order_rule` tinyint(4) NOT NULL COMMENT '类型1.订单满足多少钱不限定活动商品,2.订单满足多少钱限定活动商品,3.订单满足多少件不限定活动商品,4.订单满足多少件限定活动商品',
+  `order_fee` BIGINT(20)  NULL COMMENT '满足赠品的订单金额',
+  `order_quantity`  BIGINT(20) NOT NULL COMMENT '满足赠品的订单数量',
+  `sku_code` VARCHAR(40) NULL COMMENT 'SKU 编码（参与活动的指定商品skuCode）',
+  `status` SMALLINT NOT NULL COMMENT '状态:0.未发布，1.未开始,2.进行中,3.已结束，4.已结束',
+  `quantity_rule` tinyint(4) NOT NULL COMMENT '类型:1.不限制前多少人参与活动,2.限制前多少位参与活动',
+  `already_activity_quantity` BIGINT(20) NOT NULL COMMENT '已经有多少人参与活动',
+  `activity_quantity` BIGINT(20) NOT NULL COMMENT '前多少位可以参与活动,为空则不限制(前端输入0，但是后端控制输入0时不会记录)',
+  `extra_json` varchar(1024) NOT NULL COMMENT '赠品商品信息',
+  `activity_start_at` datetime NOT NULL,
+  `activity_end_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `index_middle_gift_name` (`name`)
+)COMMENT='宝胜中台赠品活动表';

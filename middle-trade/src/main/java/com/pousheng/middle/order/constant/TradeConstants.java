@@ -104,5 +104,11 @@ public class TradeConstants {
     public static final String REFUND_WAIT_CANCEL = "0";
     public static final String REFUND_CANCELED = "1";
 
+    //活动商品
+    public static final String ACTIVITY_ITEM="activityItems";
+    //赠品
+    public static final String GIFT_ITEM="giftItems";
+
+    public static final String ACTIVITY_SHOP="activityShops";
 
 }

@@ -7,14 +7,16 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.GiftItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -25,6 +27,7 @@ import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
 import io.terminus.parana.order.dto.RichOrder;
@@ -41,6 +44,7 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -73,6 +77,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private OrderReadLogic orderReadLogic;
+
+    @Autowired
+    private PoushengGiftActivityReadLogic poushengGiftActivityReadLogic;
+
+    @Autowired
+    private PsGiftActivityStrategy psGiftActivityStrategy;
 
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
@@ -149,6 +159,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         return OpenClientOrderStatus.PAID.getValue();
     }
 
+    @Override
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
@@ -181,6 +192,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     }
 
 
+    @Override
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
@@ -203,14 +215,51 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
         richSkusByShop.setExtra(shopOrderExtra);
 
-        //初始化店铺子单extra
+        //判断是否存在可用的赠品
+        List<PoushengGiftActivity> activities = poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_DONE.getValue());
+        //获取赠品商品
+        List<GiftItem> giftItems = psGiftActivityStrategy.getAvailGiftItems(richSkusByShop,activities);
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
+        if (!Objects.isNull(giftItems)){
+            for (GiftItem giftItem : giftItems){
+                richOrder.setCompanyId(1L);//没有多余的字段了，companyId=1标记为这个订单中含有赠品
+                RichSku richSku = new RichSku();
+                Sku sku = new Sku();
+                sku.setId(giftItem.getSkuId());
+                sku.setSkuCode(giftItem.getSkuCode());
+                sku.setOuterSkuId(giftItem.getOutSKuId());
+                sku.setAttrs(giftItem.getAttrs());
+                Item item = new Item();
+                item.setId(giftItem.getItemId());
+                item.setName(giftItem.getItemName());
+                ParanaUser buyer = new ParanaUser();
+                buyer.setId(richOrder.getBuyer().getId());
+                buyer.setName(richOrder.getBuyer().getName());
+                richSku.setOrderStatus(OpenClientOrderStatus.PAID.getValue());
+                richSku.setQuantity(giftItem.getQuantity());
+                richSku.setFee(0L);
+                richSku.setOriginFee(0L);
+                richSku.setDiscount(0L);
+                richSku.setIntegral(0L);
+                richSku.setBalance(0L);
+                richSku.setShipFee(0L);
+                richSku.setShipFeeDiscount(0L);
+                richSku.setChannel(richSkusByShop.getChannel());
+                richSku.setSku(sku);
+                richSku.setItem(item);
+                richSku.setShipmentType(1);//没有其他字段可用现在只能用shipmentType打标用来打标赠品
+                richSkus.add(richSku);
+            }
+        }else{
+            richOrder.setCompanyId(2L);////没有多余的字段了，companyId=2标记为这个订单中不含有赠品
+        }
+        //初始化店铺子单extra
         richSkus.forEach(richSku -> {
             Map<String, String> skuExtra = richSku.getExtra();
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });
-
+        richSkusByShop.setRichSkus(richSkus);
         //生成发票信息
         Long invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
         richSkusByShop.setInvoiceId(invoiceId);

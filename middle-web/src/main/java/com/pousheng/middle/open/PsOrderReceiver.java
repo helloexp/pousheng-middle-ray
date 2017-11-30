@@ -13,6 +13,7 @@ import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
+import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -25,6 +26,7 @@ import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
 import io.terminus.parana.order.dto.RichOrder;
@@ -178,6 +180,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }
             }
         }
+        //如果是预售订单且订单没有发货，预售订单已经支付尾款，则通知订单将发货单发往恒康
+        if (openClientFullOrder.getIsStepOrder()&&openClientFullOrder.getStatus().getValue()<OpenClientOrderStatus.SHIPPED.getValue()){
+          if (openClientFullOrder.getStepStatus().getValue()== OpenClientStepOrderStatus.PAID.getValue()){
+              StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+              event.setShopOrderId(shopOrder.getId());
+          }
+        }
     }
 
 
@@ -201,6 +210,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         //添加绩效店铺编码,通过openClient获取
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
+        //判断是否是预售订单
+        if (openClientFullOrder.getIsStepOrder()){
+            shopOrderExtra.put(TradeConstants.IS_STEP_ORDER,String.valueOf(openClientFullOrder.getIsStepOrder().booleanValue()));
+            shopOrderExtra.put(TradeConstants.STEP_ORDER_STATUS,String.valueOf(openClientFullOrder.getStepStatus().getValue()));
+        }
         richSkusByShop.setExtra(shopOrderExtra);
 
         //初始化店铺子单extra

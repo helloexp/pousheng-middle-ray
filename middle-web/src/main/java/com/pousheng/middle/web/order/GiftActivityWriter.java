@@ -5,6 +5,7 @@ import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityEvent;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.order.service.PoushengGiftActivityReadService;
 import com.pousheng.middle.order.service.PoushengGiftActivityWriteService;
+import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityWriteLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -13,6 +14,7 @@ import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.assertj.core.util.Lists;
@@ -42,6 +44,8 @@ public class GiftActivityWriter {
     private PoushengGiftActivityWriteService poushengGiftActivityWriteService;
     @RpcConsumer
     private PoushengGiftActivityReadService poushengGiftActivityReadService;
+    @Autowired
+    private PoushengGiftActivityReadLogic poushengGiftActivityReadLogic;
     /**
      * 创建活动规则
      *
@@ -130,6 +134,33 @@ public class GiftActivityWriter {
         return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.PUBLISH.toOrderOperation());
     }
 
+    //编辑活动详情，或者新增活动详情
+    @RequestMapping(value = "/api/gift/activity/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @OperationLogType("编辑或创建")
+    public PoushengGiftActivityInfo edit(@RequestParam(required = false) @PermissionCheckParam Long id) {
+        if (Arguments.isNull(id)) {
+            PoushengGiftActivityInfo newInfo = new PoushengGiftActivityInfo();
+            newInfo.setIsCreate(true);
+            return newInfo;
+        }
+
+        Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
+        if (!r.isSuccess()){
+            log.error("find pousheng gift activity by id failed,id is {},caused by {}",id,r.getError());
+            throw new JsonResponseException("find.single.gift.activity.failed");
+        }
+        PoushengGiftActivity activity = r.getResult();
+        List<GiftItem> giftItems = poushengGiftActivityReadLogic.getGiftItem(activity);
+        List<ActivityItem> activityItems = poushengGiftActivityReadLogic.getActivityItem(activity);
+        List<ActivityShop> activityShops = poushengGiftActivityReadLogic.getActivityShopList(activity);
+        PoushengGiftActivityInfo poushengGiftActivityInfo = new PoushengGiftActivityInfo();
+        poushengGiftActivityInfo.setPoushengGiftActivity(activity);
+        poushengGiftActivityInfo.setActivityItems(activityItems);
+        poushengGiftActivityInfo.setGiftItems(giftItems);
+        poushengGiftActivityInfo.setActivityShops(activityShops);
+        poushengGiftActivityInfo.setIsCreate(false);
+        return poushengGiftActivityInfo;
+    }
     /**
      * 使活动失效
      */

@@ -29,4 +29,9 @@ public class PoushengGiftActivityInfo {
      * 活动店铺
      */
     private List<ActivityShop> activityShops;
+
+    /**
+     * 新增true，编辑false
+     */
+    private Boolean isCreate;
 }

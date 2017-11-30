@@ -45,4 +45,10 @@ public class MiddleOrderFlowPicker {
      * @return
      */
     public Flow pickSyncTaobao(){ return MiddleFlowBook.syncTaobaoFlow;}
+
+    /**
+     *  获取赠品活动列表状态
+     * @return
+     */
+    public Flow pickGiftActivity(){return MiddleFlowBook.activityFlow;}
 }

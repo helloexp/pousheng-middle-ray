@@ -28,4 +28,6 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
     private String itemId;
     //子单的外部订单id
     private String skuOutId;
+    //是否是赠品
+    private Boolean isGift;
 }

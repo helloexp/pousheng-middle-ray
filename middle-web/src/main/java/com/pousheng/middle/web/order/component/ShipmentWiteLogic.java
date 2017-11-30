@@ -491,6 +491,11 @@ public class ShipmentWiteLogic {
         for (Long skuOrderId : skuOrderIdAndQuantity.keySet()){
             ShipmentItem shipmentItem = new ShipmentItem();
             SkuOrder skuOrder = skuOrderMap.get(skuOrderId);
+            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+                shipmentItem.setIsGift(true);
+            }else{
+                shipmentItem.setIsGift(false);
+            }
             shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);

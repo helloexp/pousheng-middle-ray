@@ -299,3 +299,24 @@ CREATE TABLE `pousheng_settlement_pos`
   KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
   KEY `index_settlement_order_id` (`order_id`)
 )COMMENT ='宝胜结算管理pos单';
+drop table if exists `pousheng_gift_activity`;
+create table `pousheng_gift_activity`
+(
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(200) NOT NULL COMMENT '活动名称',
+  `order_rule` tinyint(4) NOT NULL COMMENT '类型1.订单满足多少钱不限定活动商品,2.订单满足多少钱限定活动商品,3.订单满足多少件不限定活动商品,4.订单满足多少件限定活动商品',
+  `order_fee` BIGINT(20)   COMMENT '满足赠品的订单金额',
+  `order_quantity`  BIGINT(20) COMMENT '满足赠品的订单数量',
+  `total_price`  BIGINT(20) COMMENT '赠品总的金额',
+  `status` SMALLINT NOT NULL COMMENT '状态:0.未发布，1.未开始,2.进行中,3.已结束，-1.已失效,-2.已删除',
+  `quantity_rule` tinyint(4) NOT NULL COMMENT '类型:1.不限制前多少人参与活动,2.限制前多少位参与活动',
+  `already_activity_quantity` BIGINT(20)  COMMENT '已经有多少人参与活动',
+  `activity_quantity` BIGINT(20)  COMMENT '前多少位可以参与活动,为空则不限制(前端输入0，但是后端控制输入0时不会记录)',
+  `extra_json` varchar(1024) COMMENT '赠品商品信息',
+  `activity_start_at` datetime NOT NULL,
+  `activity_end_at` datetime NOT NULL,
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `index_middle_gift_name` (`name`)
+)COMMENT='宝胜中台赠品活动表';

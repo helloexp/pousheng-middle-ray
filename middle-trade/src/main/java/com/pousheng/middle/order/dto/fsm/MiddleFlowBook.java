@@ -496,11 +496,39 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
                     MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue());
+        }
+    };
+    /**
+     * 赠品活动状态流转
+     */
+    public static final Flow activityFlow = new Flow("activityFlow") {
 
-
-
-
-
+        @Override
+        protected void configure() {
+            //未发布-->发布-->未开始
+            addTransition(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue(),
+                    PoushengGiftActivityEvent.PUBLISH.toOrderOperation(),
+                    PoushengGiftActivityStatus.WAIT_START.getValue());
+            //未发布-->删除->已删除
+            addTransition(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue(),
+                    PoushengGiftActivityEvent.DELETE.toOrderOperation(),
+                    PoushengGiftActivityStatus.DELETED.getValue());
+            //未开始->处理->进行中
+            addTransition(PoushengGiftActivityStatus.WAIT_START.getValue(),
+                    PoushengGiftActivityEvent.HANDLE.toOrderOperation(),
+                    PoushengGiftActivityStatus.WAIT_DONE.getValue());
+            //进行中->处理->已结束
+            addTransition(PoushengGiftActivityStatus.WAIT_DONE.getValue(),
+                    PoushengGiftActivityEvent.HANDLE.toOrderOperation(),
+                    PoushengGiftActivityStatus.DONE.getValue());
+            //未开始->使失效->已失效
+            addTransition(PoushengGiftActivityStatus.WAIT_START.getValue(),
+                    PoushengGiftActivityEvent.OVER.toOrderOperation(),
+                    PoushengGiftActivityStatus.OVER.getValue());
+            //进行中->使失效->已失效
+            addTransition(PoushengGiftActivityStatus.WAIT_DONE.getValue(),
+                    PoushengGiftActivityEvent.OVER.toOrderOperation(),
+                    PoushengGiftActivityStatus.OVER.getValue());
 
         }
     };

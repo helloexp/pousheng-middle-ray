@@ -105,7 +105,7 @@ public class OrderReadLogic {
         List<SkuOrder> skuOrders = Lists.newArrayList();
         OrderCriteria criteria = new OrderCriteria();
         criteria.setOrderId(shopOrderId);
-        criteria.setStatus(Arrays.asList(   ));
+        criteria.setStatus(Arrays.asList(status));
 
         int pageNo = 1;
         boolean next = batchHandle(pageNo, BATCH_SIZE,criteria ,skuOrders);

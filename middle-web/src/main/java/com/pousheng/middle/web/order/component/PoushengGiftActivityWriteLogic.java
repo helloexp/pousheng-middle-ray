@@ -12,7 +12,6 @@ import com.pousheng.middle.order.enums.PoushengGiftQuantityRule;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.order.service.PoushengGiftActivityReadService;
 import com.pousheng.middle.order.service.PoushengGiftActivityWriteService;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;

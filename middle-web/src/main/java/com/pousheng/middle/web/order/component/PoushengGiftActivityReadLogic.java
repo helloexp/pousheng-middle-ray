@@ -2,24 +2,21 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.dto.ActivityItem;
+import com.pousheng.middle.order.dto.ActivityShop;
+import com.pousheng.middle.order.dto.GiftItem;
+import com.pousheng.middle.order.dto.PoushengGiftActivityCriteria;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.order.service.PoushengGiftActivityReadService;
-import com.pousheng.middle.warehouse.model.MiddleOpenShop;
-import com.sun.xml.internal.bind.v2.runtime.reflect.ListTransducedAccessorImpl;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.dto.OrderCriteria;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.SkuOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 

@@ -36,6 +36,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -333,7 +334,15 @@ public class Shipments {
         }catch (ServiceException e){
             log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
         }
-        //同步恒康
+        //销售发货单需要判断预售商品是否已经支付完尾款
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        String isStepOrder = shopOrderExtra.get(TradeConstants.IS_STEP_ORDER);
+        String stepOrderStatus = shopOrderExtra.get(TradeConstants.STEP_ORDER_STATUS);
+        if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+            if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                return shipmentId;
+            }
+        }
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
         if (!syncRes.isSuccess()) {
             log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
@@ -433,7 +442,18 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步发货单到恒康")
     public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
-
+        OrderShipment orderShipment =  shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        if (Objects.equals(orderShipment.getType(),1)){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            Map<String,String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+                if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                    throw new JsonResponseException("step.order.not.all.paid.can.not sync.hk");
+                }
+            }
+        }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if(!syncRes.isSuccess()){

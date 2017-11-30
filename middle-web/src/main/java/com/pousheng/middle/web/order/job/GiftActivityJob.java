@@ -32,7 +32,7 @@ public class GiftActivityJob {
      * 该调度任务的主要作用是状态未开始但是到了开始时间的活动状态修改为进行中，
      * 将进行中的活动一旦到了结束时间，则状态修改为已结束
      */
-    @Scheduled(cron = "0 0/1 * * * ? ")
+    @Scheduled(cron = "0 0/3 * * * ? ")
     public void doGiftActvity() {
         if(!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());

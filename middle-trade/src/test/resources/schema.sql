@@ -290,7 +290,7 @@ create table `pousheng_gift_activity`
   `order_fee` BIGINT(20)   COMMENT '满足赠品的订单金额',
   `order_quantity`  BIGINT(20) COMMENT '满足赠品的订单数量',
   `total_price`  BIGINT(20) COMMENT '赠品总的金额',
-  `status` SMALLINT NOT NULL COMMENT '状态:0.未发布，1.未开始,2.进行中,3.已结束，4.已结束',
+  `status` SMALLINT NOT NULL COMMENT '状态:0.未发布，1.未开始,2.进行中,3.已结束，-1.已失效,-2.已删除',
   `quantity_rule` tinyint(4) NOT NULL COMMENT '类型:1.不限制前多少人参与活动,2.限制前多少位参与活动',
   `already_activity_quantity` BIGINT(20)  COMMENT '已经有多少人参与活动',
   `activity_quantity` BIGINT(20)  COMMENT '前多少位可以参与活动,为空则不限制(前端输入0，但是后端控制输入0时不会记录)',

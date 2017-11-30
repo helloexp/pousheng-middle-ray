@@ -211,9 +211,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //添加绩效店铺编码,通过openClient获取
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
         //判断是否是预售订单
-        if (openClientFullOrder.getIsStepOrder()){
+        if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
             shopOrderExtra.put(TradeConstants.IS_STEP_ORDER,String.valueOf(openClientFullOrder.getIsStepOrder().booleanValue()));
-            shopOrderExtra.put(TradeConstants.STEP_ORDER_STATUS,String.valueOf(openClientFullOrder.getStepStatus().getValue()));
+            if (Objects.nonNull(openClientFullOrder.getStepStatus())){
+                shopOrderExtra.put(TradeConstants.STEP_ORDER_STATUS,String.valueOf(openClientFullOrder.getStepStatus().getValue()));
+            }
         }
         richSkusByShop.setExtra(shopOrderExtra);
 

@@ -433,6 +433,7 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步发货单到恒康")
     public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
+
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if(!syncRes.isSuccess()){

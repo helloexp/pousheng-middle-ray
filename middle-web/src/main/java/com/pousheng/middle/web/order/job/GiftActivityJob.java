@@ -39,11 +39,24 @@ public class GiftActivityJob {
             return;
         }
         log.info("START SCHEDULE ON POUSNENG GIFT ACTIVITY");
-        List<PoushengGiftActivity> waitStartActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_START.getValue(),PoushengGiftActivityStatus.WAIT_DONE.getValue());
+        List<PoushengGiftActivity> waitStartActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_START.getValue());
         for (PoushengGiftActivity activity:waitStartActivities){
             long current = System.currentTimeMillis();
             long activityStartTime = activity.getActivityStartAt().getTime();
             if (current>=activityStartTime){
+                try{
+                    poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
+                }catch (Exception e){
+                    log.error("update PoushengGiftActivity failed,id is {},caused by {}",activity.getId(),e.getMessage());
+                }
+            }
+        }
+
+        List<PoushengGiftActivity> doingActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_DONE.getValue());
+        for (PoushengGiftActivity activity:doingActivities){
+            long current = System.currentTimeMillis();
+            long activityEndTime = activity.getActivityEndAt().getTime();
+            if (current>=activityEndTime){
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
                 }catch (Exception e){

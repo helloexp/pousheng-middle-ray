@@ -65,6 +65,7 @@ public class PsGiftActivityStrategy {
         //限制参与人数
         if (Objects.equals(activity.getQuantityRule(),PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value())){
             try {
+                //更新参与人数的数量
                 poushengGiftActivityWriteLogic.updatePoushengGiftActivityParticipants(activity.getId());
             }catch (Exception e){
              log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(),e.getMessage());

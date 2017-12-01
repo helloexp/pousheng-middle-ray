@@ -59,17 +59,7 @@ public class StepOrderNotifyHkListener {
         Long shopOrderId = event.getShopOrderId();
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<String, String> extraMap = shopOrder.getExtra();
-        String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-        String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-        //判断订单是否是预售订单，并且判断预售订单是否已经付完尾款
-        if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-            if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus,
-                    String.valueOf(OpenClientStepOrderStatus.PAID.getValue()))) {
-                return;
-            }
-        }
         extraMap.put(TradeConstants.STEP_ORDER_STATUS, String.valueOf(OpenClientStepOrderStatus.PAID.getValue()));
-
         Response<Boolean> r = orderWriteService.updateOrderExtra(shopOrderId, OrderLevel.SHOP, extraMap);
         if (!r.isSuccess()) {
             log.error("update shopOrder extra failed, shopOrder id is {},caused by {}", shopOrderId, r.getError());

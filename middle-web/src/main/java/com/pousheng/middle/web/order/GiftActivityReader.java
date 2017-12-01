@@ -89,5 +89,20 @@ public class GiftActivityReader {
         return Response.ok(poushengGiftActivityInfo);
     }
 
-
+    /**
+     * 分页查询活动中的活动商品
+     * @param id 活动id
+     * @return
+     */
+    @RequestMapping(value ="/api/pousheng/activity/item/{id}/info",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Paging<ActivityItem>> PagingActivityItemByActivityId(@PathVariable("id") Long id){
+        PoushengGiftActivityCriteria criteria = new PoushengGiftActivityCriteria();
+        criteria.setId(id);
+        Response<Paging<ActivityItem>> r = poushengGiftActivityReadLogic.pagingActivityItems(criteria);
+        if (!r.isSuccess()){
+            log.error("find pousheng activity item info failed,activity id is {},caused by {}",id,r.getError());
+            throw new JsonResponseException("find.pousehng.activity.item.failed");
+        }
+        return r;
+    }
 }

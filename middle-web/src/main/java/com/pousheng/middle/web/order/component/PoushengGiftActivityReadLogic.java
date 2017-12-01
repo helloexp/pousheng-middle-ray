@@ -2,7 +2,6 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ActivityItem;
@@ -16,7 +15,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -165,15 +163,20 @@ public class PoushengGiftActivityReadLogic {
             log.error("find pousheng gift activity by id failed,id is {},caused by {}",criteria.getId(),r.getError());
             throw new JsonResponseException("find.single.gift.activity.failed");
         }
+        Integer limit = criteria.getLimit();//每页记录数
+        Integer offset = criteria.getOffset();//偏移量
+
         PoushengGiftActivity activity = r.getResult();
         List<ActivityItem> activityItems = bySpuId.sortedCopy(this.getActivityItem(activity));
 
-        Long total = Long.valueOf(activityItems.size());
-        if (total <= 0){
+        Integer total = activityItems.size();
+        if (total <= 0||offset>total){
             return Response.ok(new Paging<ActivityItem>(0L, Collections.<ActivityItem>emptyList()));
+
         }
-        Integer limit = criteria.getLimit();//每页记录数
-        Integer offset = criteria.getOffset();//偏移量
-        return null;
+        Paging<ActivityItem> paging = new Paging<>();
+        paging.setTotal(Long.valueOf(total));
+        paging.setData(activityItems.subList(offset,(offset+limit)>total?total:(offset+limit)));
+        return Response.ok(paging);
     }
 }

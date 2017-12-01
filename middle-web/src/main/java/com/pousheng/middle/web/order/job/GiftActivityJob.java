@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.job;
 
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityEvent;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
+import com.pousheng.middle.order.enums.PoushengGiftQuantityRule;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityWriteLogic;
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -41,8 +43,8 @@ public class GiftActivityJob {
         log.info("START SCHEDULE ON POUSNENG GIFT ACTIVITY");
         List<PoushengGiftActivity> waitStartActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_START.getValue());
         for (PoushengGiftActivity activity:waitStartActivities){
-            long current = System.currentTimeMillis();
-            long activityStartTime = activity.getActivityStartAt().getTime();
+            long current = System.currentTimeMillis();//当前时间
+            long activityStartTime = activity.getActivityStartAt().getTime();//活动开始时间
             if (current>=activityStartTime){
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
@@ -54,9 +56,18 @@ public class GiftActivityJob {
 
         List<PoushengGiftActivity> doingActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_DONE.getValue());
         for (PoushengGiftActivity activity:doingActivities){
-            long current = System.currentTimeMillis();
-            long activityEndTime = activity.getActivityEndAt().getTime();
-            if (current>=activityEndTime){
+            long current = System.currentTimeMillis();//当前时间
+            long activityEndTime = activity.getActivityEndAt().getTime();//活动结束时间
+            //判断是否限制参与人数
+            boolean isEnoughQuantity = false;
+            if (Objects.equals(activity.getQuantityRule(), PoushengGiftQuantityRule.LIMIT_PARTICIPANTS)){
+                long alreadyActivityQuantity = activity.getAlreadyActivityQuantity(); //已经参与活动的订单数
+                long activityQuantity = activity.getActivityQuantity(); //总共可以参与的订单数
+                if (alreadyActivityQuantity>=activityQuantity){
+                    isEnoughQuantity=true;
+                }
+            }
+            if (current>=activityEndTime||isEnoughQuantity){
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
                 }catch (Exception e){

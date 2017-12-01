@@ -22,4 +22,8 @@ public class ActivityItem extends BasicItemInfo implements Serializable {
      */
     private String materialCode;
 
+    /**
+     * 活动商品最低购买数量
+     */
+    private Integer quantity;
 }

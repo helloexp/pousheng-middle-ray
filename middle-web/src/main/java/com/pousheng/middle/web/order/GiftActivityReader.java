@@ -88,4 +88,6 @@ public class GiftActivityReader {
         poushengGiftActivityInfo.setActivityShops(activityShops);
         return Response.ok(poushengGiftActivityInfo);
     }
+
+
 }

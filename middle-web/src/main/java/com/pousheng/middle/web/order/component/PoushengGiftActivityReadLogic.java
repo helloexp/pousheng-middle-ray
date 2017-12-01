@@ -1,6 +1,9 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ActivityItem;
 import com.pousheng.middle.order.dto.ActivityShop;
@@ -13,10 +16,12 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +38,12 @@ public class PoushengGiftActivityReadLogic {
     private PoushengGiftActivityReadService poushengGiftActivityReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
+    private static final Ordering<ActivityItem> bySpuId = Ordering.natural().onResultOf(new Function<ActivityItem, Long>() {
+        @Override
+        public Long apply(ActivityItem input) {
+            return input.getSpuId();
+        }
+    });
     /**
      * 获取赠品活动信息
      * @param activityId
@@ -142,5 +152,28 @@ public class PoushengGiftActivityReadLogic {
 
         int current = result.size();
         return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+    /**
+     * 分页查询活动商品
+     * @param criteria
+     * @return
+     */
+    public Response<Paging<ActivityItem>> pagingActivityItems(PoushengGiftActivityCriteria criteria){
+        Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(criteria.getId());
+        if (!r.isSuccess()){
+            log.error("find pousheng gift activity by id failed,id is {},caused by {}",criteria.getId(),r.getError());
+            throw new JsonResponseException("find.single.gift.activity.failed");
+        }
+        PoushengGiftActivity activity = r.getResult();
+        List<ActivityItem> activityItems = bySpuId.sortedCopy(this.getActivityItem(activity));
+
+        Long total = Long.valueOf(activityItems.size());
+        if (total <= 0){
+            return Response.ok(new Paging<ActivityItem>(0L, Collections.<ActivityItem>emptyList()));
+        }
+        Integer limit = criteria.getLimit();//每页记录数
+        Integer offset = criteria.getOffset();//偏移量
+        return null;
     }
 }

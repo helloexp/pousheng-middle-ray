@@ -327,6 +327,20 @@ public class ShipmentWiteLogic {
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
             throw new JsonResponseException(createResp.getError());
         }
+
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder:skuOrders){
+            try{
+                Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            }catch (Exception e){
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}",skuOrder.getId(),createResp.getResult(),e.getMessage());
+            }
+        }
         return createResp.getResult();
     }
 

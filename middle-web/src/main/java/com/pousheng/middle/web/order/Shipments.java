@@ -39,6 +39,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -104,6 +105,8 @@ public class Shipments {
     private StockPusher stockPusher;
     @Autowired
     private PermissionUtil permissionUtil;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -327,6 +330,19 @@ public class Shipments {
         Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
         if (!shipmentRes.isSuccess()) {
             log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+        }
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder:skuOrders){
+            try{
+                Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(shipmentId));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            }catch (Exception e){
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}",skuOrder.getId(),shipmentId,e.getMessage());
+            }
         }
         try{
             orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());

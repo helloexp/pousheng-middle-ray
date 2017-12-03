@@ -215,6 +215,15 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
                     MiddleOrderEvent.REVOKE_FAIL.toOrderOperation(),
                     MiddleOrderStatus.REVOKE_FAILED.getValue());
+            //------允许恒康将之前撤销失败和取消失败的订单改为已发货
+            //取消失败-->发货-->已发货
+            addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleOrderStatus.SHIPPED.getValue());
+            //撤销失败-->发货-->已发货
+            addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleOrderStatus.SHIPPED.getValue());
         }
     };
 
@@ -324,6 +333,11 @@ public class MiddleFlowBook {
             //目前没有添加同步取消失败状态下再次同步恒康正向单据的操作（如果要加的话，待发货和同步发货单失败两个状态下的取消要分开，
             //只有同步发货单失败的取消的失败才可以出现再次同步正向的单据操作）
 
+            //---------------------对于取消失败的发货单一旦恒康允许发货则发货单状态修改为已发货------------------------
+            //待发货 -->发货 -> 商家已发货,待同步电商平台
+            addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.SHIPPED.getValue());
         }
     };
 

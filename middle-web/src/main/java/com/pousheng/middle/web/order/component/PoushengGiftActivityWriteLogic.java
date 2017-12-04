@@ -188,12 +188,11 @@ public class PoushengGiftActivityWriteLogic {
         }
         activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
-        activity.setStatus(editSubmitGiftActivityInfo.getStatus());
         int totalPrice=0;
         for (GiftItem giftItem:giftItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(giftItem.getSkuCode());
             //吊牌价
-            Integer originSkuPrice = this.getOriginSkuPrice(skuTemplate);
+            Integer originSkuPrice = giftItem.getPrice()!=null?giftItem.getPrice():this.getOriginSkuPrice(skuTemplate);
             totalPrice = totalPrice+originSkuPrice;
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));

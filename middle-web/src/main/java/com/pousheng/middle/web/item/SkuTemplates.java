@@ -76,6 +76,7 @@ public class SkuTemplates {
     @RequestMapping(value="/api/sku-template/paging",method=RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuTemplate> pagination(@RequestParam(value ="skuCode", required = false) String skuCode,
                                           @RequestParam(value="name",  required = false) String name,
+                                          @RequestParam(value = "spuId",required = false) Long spuId,
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
                                           @RequestParam(value = "pageSize", required = false) Integer pageSize){
 
@@ -87,6 +88,10 @@ public class SkuTemplates {
         if(StringUtils.hasText(name)){
             params.put("name", name);
         }
+        if (spuId!=null){
+            params.put("spuId",spuId);
+        }
+        params.put("statuses",Lists.newArrayList(1,-3));
         Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);
         if(!r.isSuccess()){
             log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());

@@ -66,11 +66,13 @@ public class DecreaseLockStockListener {
             log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
         }
         //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
         for (WarehouseShipment ws : warehouseShipmentList) {
             for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
             }
         }
+        stockPusher.submit(skuCodes);
     }
 
     private List<SkuCodeAndQuantity> makeSkuCodeAndQuantities(List<ShipmentItem> list){

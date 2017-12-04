@@ -95,11 +95,11 @@ public class PoushengGiftActivityWriteLogic {
         activity.setStatus(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue());
 
         //活动店铺
-        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops();
+        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityShops();
         //赠品
-        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems();
+        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems()==null?Lists.newArrayList(): editSubmitGiftActivityInfo.getGiftItems();
         //活动商品
-        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems();
+        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityItems();
 
         int totalPrice=0;
         for (GiftItem giftItem:giftItems){
@@ -146,11 +146,12 @@ public class PoushengGiftActivityWriteLogic {
             throw new JsonResponseException("find.single.poushengGiftActivity.failed");
         }
         //活动店铺
-        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops();
+        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityShops();
         //赠品
-        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems();
+        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems()==null?Lists.newArrayList(): editSubmitGiftActivityInfo.getGiftItems();
         //活动商品
-        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems();
+        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityItems();
+
 
         PoushengGiftActivity activity = r.getResult();
         //活动名称

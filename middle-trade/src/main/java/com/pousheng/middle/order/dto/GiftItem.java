@@ -36,4 +36,9 @@ public class GiftItem extends BasicItemInfo implements Serializable {
      * 货号
      */
     private String materialCode;
+
+    /**
+     * skuTemplateId
+     */
+    private Long skuTemplateId;
 }

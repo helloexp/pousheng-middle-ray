@@ -110,12 +110,14 @@ public class PoushengGiftActivityWriteLogic {
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             giftItem.setAttrs(skuTemplate.getAttrs());
+            giftItem.setSkuTemplateId(skuTemplate.getId());
         }
         for (ActivityItem activityItem:activityItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(activityItem.getSkuCode());
             activityItem.setSpuId(skuTemplate.getSpuId());
             activityItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             activityItem.setAttrs(skuTemplate.getAttrs());
+            activityItem.setSkuTemplateId(skuTemplate.getId());
         }
         //获取活动的赠品的总的金额
         activity.setTotalPrice(totalPrice);

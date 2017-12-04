@@ -162,6 +162,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足金额且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_FEE_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderFee(editSubmitGiftActivityInfo.getFee());
         }
         //满足金额且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -171,6 +172,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足数量且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_QUANTITY_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderQuantity(editSubmitGiftActivityInfo.getQuantity());
         }
         //满足数量且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -184,14 +186,13 @@ public class PoushengGiftActivityWriteLogic {
         }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
         }
-        activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityStartDate());
+        activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
-        activity.setStatus(editSubmitGiftActivityInfo.getStatus());
         int totalPrice=0;
         for (GiftItem giftItem:giftItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(giftItem.getSkuCode());
             //吊牌价
-            Integer originSkuPrice = this.getOriginSkuPrice(skuTemplate);
+            Integer originSkuPrice = giftItem.getPrice()!=null?giftItem.getPrice():this.getOriginSkuPrice(skuTemplate);
             totalPrice = totalPrice+originSkuPrice;
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));

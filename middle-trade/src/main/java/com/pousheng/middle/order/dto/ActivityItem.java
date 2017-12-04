@@ -26,4 +26,9 @@ public class ActivityItem extends BasicItemInfo implements Serializable {
      * 活动商品最低购买数量
      */
     private Integer quantity;
+
+    /**
+     * skuTemplateId
+     */
+    private Long skuTemplateId;
 }

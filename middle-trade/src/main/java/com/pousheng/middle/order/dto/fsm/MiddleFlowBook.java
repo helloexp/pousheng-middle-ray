@@ -334,7 +334,7 @@ public class MiddleFlowBook {
             //只有同步发货单失败的取消的失败才可以出现再次同步正向的单据操作）
 
             //---------------------对于取消失败的发货单一旦恒康允许发货则发货单状态修改为已发货------------------------
-            //待发货 -->发货 -> 商家已发货,待同步电商平台
+            //取消失败 -->发货 -> 商家已发货,待同步电商平台
             addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.SHIPPED.getValue());

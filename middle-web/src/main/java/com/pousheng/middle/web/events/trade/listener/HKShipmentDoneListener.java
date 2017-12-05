@@ -101,7 +101,7 @@ public class HKShipmentDoneListener {
                 //count==0代表所有的发货单已经发货
                 if (count==0) {
                     //待发货--商家已经发货
-                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue());
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue(),MiddleOrderStatus.CANCEL_FAILED.getValue(),MiddleOrderStatus.REVOKE_FAILED.getValue());
                     for (SkuOrder skuOrder : skuOrders) {
                         Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                         if (!updateRlt.getResult()) {

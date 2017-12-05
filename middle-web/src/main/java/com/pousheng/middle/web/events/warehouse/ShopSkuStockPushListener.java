@@ -9,6 +9,7 @@ import io.terminus.common.model.Response;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -53,10 +54,12 @@ public class ShopSkuStockPushListener {
             }
             Paging<ItemMapping> p = r.getResult();
             List<ItemMapping> data = p.getData();
+            List<String> skuCodes = Lists.newArrayList();
             for (ItemMapping datum : data) {
                 log.info("trying to push stock of sku(code={})", datum.getSkuCode());
-                stockPusher.submit(datum.getSkuCode());
+                skuCodes.add(datum.getSkuCode());
             }
+            stockPusher.submit(skuCodes);
             pageNo++;
             if(data.size()<pageSize){
                 return;

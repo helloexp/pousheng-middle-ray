@@ -102,11 +102,13 @@ public class WarehouseChooser {
                     return Collections.emptyList();
                 }
                 //触发库存推送
+                List<String> skuCodes = Lists.newArrayList();
                 for (WarehouseShipment warehouseShipment : warehouseShipments) {
                     for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
-                        stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                        skuCodes.add(skuCodeAndQuantity.getSkuCode());
                     }
                 }
+                stockPusher.submit(skuCodes);
                 return warehouseShipments;
             }
         }
@@ -185,11 +187,13 @@ public class WarehouseChooser {
         }
 
         //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
         for (WarehouseShipment warehouseShipment : result) {
             for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
-                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
             }
         }
+        stockPusher.submit(skuCodes);
         return result;
     }
 

@@ -1,7 +1,10 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
+import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
@@ -32,6 +35,12 @@ public class Warehouses {
 
     @RpcConsumer
     private WarehouseReadService warehouseReadService;
+
+    @RpcConsumer
+    private MiddleStockPushLogReadSerive middleStockPushLogReadSerive;
+
+    @RpcConsumer
+    private MiddleStockPushLogWriteService middleStockPushLogWriteService;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("新建")
@@ -103,5 +112,64 @@ public class Warehouses {
 
     }
 
+    @RequestMapping(value = "/create/push/log",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_VALUE)
+    public void createStockPushLog(@RequestBody StockPushLog stockPushLog){
+        Response<Long> response = middleStockPushLogWriteService.create(stockPushLog);
+        if (!response.isSuccess()){
+            log.error("fffff");
+        }
+    }
+
+    /**
+     * 根据主键查询推送日志
+     * @param id 表的主键
+     * @return
+     */
+    @RequestMapping(value = "/stock/push/log/by/id",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<StockPushLog> queryStockPushLogById(@RequestParam("id") Long id){
+        Response<StockPushLog> r = middleStockPushLogReadSerive.findById(id);
+        if (!r.isSuccess()){
+                log.error("failed to query stockPushLog with is:{}, error code:{}", id, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r;
+    }
+
+    /**
+     * 分页查询库存推送日志
+     * @param pageNo 页码
+     * @param pageSize 每页记录数
+     * @param skuCode  条码
+     * @param shopId   店铺id
+     * @param shopName 店铺名称
+     * @param status   推送状态
+     * @return
+     */
+    @RequestMapping(value = "/stock/push/log/paging",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Paging<StockPushLog>> paginationStockPushLog(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                   @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                   @RequestParam(required = false,value = "skuCode") String skuCode,
+                                   @RequestParam(required = false,value = "shopId")Long shopId,
+                                   @RequestParam(required = false,value = "shopName")String shopName,@RequestParam(required = false) Integer status){
+        Map<String, Object> params = Maps.newHashMap();
+        if (StringUtils.hasText(skuCode)){
+            params.put("skuCode",skuCode);
+        }
+        if(shopId!=null){
+            params.put("shopId",shopId);
+        }
+        if (StringUtils.hasText(shopName)){
+            params.put("shopName",shopName);
+        }
+        if(status!=null){
+            params.put("status",status);
+        }
+        Response<Paging<StockPushLog>>  r = middleStockPushLogReadSerive.pagination(pageNo,pageSize,params);
+        if(!r.isSuccess()){
+            log.error("failed to pagination stockPushLog with params:{}, error code:{}", params, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r;
+    }
 
 }

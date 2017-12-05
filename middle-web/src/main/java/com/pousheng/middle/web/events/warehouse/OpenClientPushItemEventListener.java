@@ -40,6 +40,9 @@ public class OpenClientPushItemEventListener {
     public void onAddEvent(OpenClientPushItemSuccessEvent event){
         //向库存那边推送这个信息, 表示要关注这个商品对应的单据
         materialPusher.addSpus(Lists.newArrayList(event.getItemId()));
+        //调用恒康抓紧给我返回库存信息
+        // TODO: 2017/12/4
+        materialPusher.pushItemForStock(event.getItemId());
     }
 
     @Subscribe

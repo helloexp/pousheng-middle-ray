@@ -75,12 +75,18 @@ public class WarehouseImporter {
         if(r.getResult().isPresent()){ //已同步过, 则更新
             Warehouse exist = r.getResult().get();
             w.setId(exist.getId());
+            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
+            extra.remove("isNew");
+            w.setExtra(extra);
             Response<Boolean> ru = warehouseWriteService.update(w);
             if(!ru.isSuccess()){
                 log.error("failed to update {}, error code:{}, so skip {}", w, r.getError(), warehouse);
             }
         }else{ //未同步过, 则新建
             w.setStatus(1);
+            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
+            extra.put("isNew","true");
+            w.setExtra(extra);
             Response<Long> rc = warehouseWriteService.create(w);
             if(!rc.isSuccess()){
                 log.error("failed to create {}, error code:{}, so skip {}", w, r.getError(), warehouse);
@@ -99,5 +105,10 @@ public class WarehouseImporter {
         extra.put("telephone", pw.getTelphone());
         w.setExtra(extra);
         return w;
+    }
+
+    public static void main(String[] args) {
+        Map<String,String> map=Maps.newHashMap();
+        System.out.print(map.remove("aaa"));
     }
 }

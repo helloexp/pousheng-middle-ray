@@ -329,11 +329,11 @@ public class ShipmentWiteLogic {
         }
 
         //生成发货单之后需要将发货单id添加到子单中
-        for (SkuOrder skuOrder:skuOrders){
+        for (SkuOrder skuOrder:skuOrdersShipment){
             try{
                 Map<String,String> skuOrderExtra = skuOrder.getExtra();
                 skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
-                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
                 if (!response.isSuccess()) {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                 }

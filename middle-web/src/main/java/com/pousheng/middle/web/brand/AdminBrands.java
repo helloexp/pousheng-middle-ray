@@ -35,7 +35,7 @@ public class AdminBrands {
 
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Brand> findByNamePrefix(@RequestParam(value = "name", required = false) String namePrefix,
-                                        @RequestParam(value = "count", defaultValue = "5") Integer count) {
+                                        @RequestParam(value = "count", defaultValue = "10") Integer count) {
         Response<List<Brand>> r = brandReadService.findByNamePrefix(namePrefix,count);
         if (!r.isSuccess()) {
             log.warn("failed to find brands by prefix({}), error code:{}", namePrefix, r.getError());

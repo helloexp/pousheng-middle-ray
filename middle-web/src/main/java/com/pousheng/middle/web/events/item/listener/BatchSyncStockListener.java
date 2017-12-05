@@ -86,9 +86,11 @@ public class BatchSyncStockListener {
                 throw new OPServerException(200,r.getError());
             }
             //触发库存推送
+            List<String> skuCodes = Lists.newArrayList();
             for (StockDto stockDto : stockDtos) {
-                stockPusher.submit(stockDto.getSkuCode());
+                skuCodes.add(stockDto.getSkuCode());
             }
+            stockPusher.submit(skuCodes);
         } catch (Exception e) {
             log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"stock.data.invalid");

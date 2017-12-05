@@ -151,6 +151,10 @@ public class PsGiftActivityStrategy {
                     continue;
                 }
             }
+            //判断赠品中是否含有订单中的sku,如果有则跳过该活动
+            if(isGiftSkuEqualsOrderSku(skuCodeAndQuantityMap,poushengGiftActivity)){
+                continue;
+            }
             activities.add(poushengGiftActivity);
         }
         return activities;
@@ -179,5 +183,28 @@ public class PsGiftActivityStrategy {
             }
         }
         return isMatchActivityItem;
+    }
+
+    /**
+     * 判断赠品中是否含有购买的商品，如果含有返回true，如果不含有返回false，返回true代表这个活动不满足该订单
+     * @param skuCodeAndQuantityMap 订单中的skuCode以及数量
+     * @param poushengGiftActivity 赠品活动规则
+     * @return
+     */
+    private boolean isGiftSkuEqualsOrderSku(Map<String,Integer> skuCodeAndQuantityMap, PoushengGiftActivity poushengGiftActivity){
+        //获取赠品信息
+        List<GiftItem> giftItems = poushengGiftActivityReadLogic.getGiftItem(poushengGiftActivity);
+        //获取赠品skuCode
+        List<String> giftSkuCodes = Lists.newArrayList();
+        giftItems.forEach(giftItem -> {
+            giftSkuCodes.add(giftItem.getSkuCode());
+        });
+        boolean isGiftSkuEqualsOrderSku = false;
+        for (String skuCode:skuCodeAndQuantityMap.keySet()){
+            if (giftSkuCodes.contains(skuCode)){
+                isGiftSkuEqualsOrderSku = true;
+            }
+        }
+        return isGiftSkuEqualsOrderSku;
     }
 }

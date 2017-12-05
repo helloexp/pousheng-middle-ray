@@ -38,6 +38,7 @@
         #{status},#{quantityRule},#{alreadyActivityQuantity},#{activityQuantity},#{extraJson},#{activityStartAt},#{activityEndAt},now(), now()
     </sql>
     <sql id="queryCondition">
+        <if test="id != null">and `id` = #{id}</if>
 
         <if test="name != null">and `name` LIKE CONCAT('%', #{name}, '%')</if>
 

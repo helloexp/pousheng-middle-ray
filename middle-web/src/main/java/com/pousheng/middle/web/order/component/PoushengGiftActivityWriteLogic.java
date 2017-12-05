@@ -84,12 +84,12 @@ public class PoushengGiftActivityWriteLogic {
         }
         //限制活动参与人数
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
-            activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
-            activity.setAlreadyActivityQuantity(0);
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
         }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }
+        activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
+        activity.setAlreadyActivityQuantity(0);
         activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
         activity.setStatus(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue());
@@ -181,11 +181,11 @@ public class PoushengGiftActivityWriteLogic {
         }
         //限制活动参与人数
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
-            activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
             activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
         }
+        activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
         activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
         int totalPrice=0;

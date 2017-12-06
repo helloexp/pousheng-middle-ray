@@ -106,7 +106,7 @@ public class PoushengGiftActivityWriteLogic {
             SkuTemplate skuTemplate = this.getSkuTemplate(giftItem.getSkuCode());
             //如果前端传入的price为空，则显示吊牌价
             Integer originSkuPrice = giftItem.getPrice()!=null?giftItem.getPrice():this.getOriginSkuPrice(skuTemplate);
-            totalPrice = totalPrice+originSkuPrice;
+            totalPrice = totalPrice+originSkuPrice*(giftItem.getQuantity()==null?0:giftItem.getQuantity());
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             giftItem.setAttrs(skuTemplate.getAttrs());

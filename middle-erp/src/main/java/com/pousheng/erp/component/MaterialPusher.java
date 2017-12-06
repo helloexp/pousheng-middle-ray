@@ -66,7 +66,7 @@ public class MaterialPusher {
 
         Map<String,String> map= Maps.newHashMap();
         map.put("material",Joiners.COMMA.join(materialIds));
-        erpClient.get("/common/erp/inv/getinstockcount",map);
+        erpClient.get("common/erp/inv/getinstockcount",map);
     }
 
     /**

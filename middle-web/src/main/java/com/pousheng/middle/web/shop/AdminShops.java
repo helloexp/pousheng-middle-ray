@@ -4,7 +4,11 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.dto.ShopServerInfo;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -12,6 +16,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
@@ -28,6 +33,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,6 +53,9 @@ public class AdminShops {
     private ShopReadService shopReadService;
 
     @RpcConsumer
+    private PsShopReadService psShopReadService;
+
+    @RpcConsumer
     private ShopWriteService shopWriteService;
 
     @RpcConsumer
@@ -54,6 +63,8 @@ public class AdminShops {
 
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
+
+
 
     @ApiOperation("根据门店id查询门店信息")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -65,6 +76,19 @@ public class AdminShops {
         return rShop.getResult();
     }
 
+    /**
+     *  分页查询门店信息
+     * @param id id
+     * @param name 名称
+     * @param userId 用户id
+     * @param type 类型
+     * @param status 状态
+     * @param outerId 门店外码
+     * @param businessId 区别Id
+     * @param pageNo 页码
+     * @param pageSize 页大小
+     * @return 门店信息
+     */
     @ApiOperation("分页查询门店信息")
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<Shop> paging(@RequestParam(required = false) Long id,
@@ -72,6 +96,8 @@ public class AdminShops {
                                    @RequestParam(required = false) Long userId,
                                    @RequestParam(required = false) Integer type,
                                    @RequestParam(required = false) Integer status,
+                                   @RequestParam(required = false) String outerId,
+                                   @RequestParam(required = false) Long businessId,
                                    @RequestParam(required = false) Integer pageNo,
                                    @RequestParam(required = false) Integer pageSize) {
         if (id != null) {
@@ -82,7 +108,7 @@ public class AdminShops {
             }
             return new Paging<>(1L, Lists.newArrayList(rShop.getResult()));
         }
-        Response<Paging<Shop>> resp = shopReadService.pagination(name, userId, type, status, pageNo, pageSize);
+        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,businessId, pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }
@@ -112,6 +138,12 @@ public class AdminShops {
         }
 
         //创建门店
+        shop.setBusinessId(shop.getZoneId());//这里把区部id塞入到businessId字段中
+        ShopExtraInfo shopExtraInfo = new ShopExtraInfo();
+        shopExtraInfo.setZoneId(shop.getZoneId());
+        shopExtraInfo.setZoneName(shop.getZoneName());
+        Map<String,String> extraMap = Maps.newHashMap();
+        shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
         Long id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
 
         return Collections.singletonMap("id", id);
@@ -161,10 +193,12 @@ public class AdminShops {
     @ApiOperation("更新门店信息")
     @RequestMapping(value = "/{shopId}", method = RequestMethod.PUT)
     public void updateShop(@PathVariable Long shopId, @RequestBody Shop shop) {
+        //判断店铺名称是否重复
         checkShopNameIfDuplicated(shopId,shop.getName());
 
         val rExist = shopReadService.findById(shopId);
         if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
@@ -182,6 +216,144 @@ public class AdminShops {
             throw new JsonResponseException(500, resp.getError());
         }
     }
+
+
+    @ApiOperation("更新单个门店安全库存信息")
+    @RequestMapping(value = "/{shopId}/safe/stock", method = RequestMethod.PUT)
+    public void updateShopSafeStock(@PathVariable Long shopId, @RequestParam Integer safeStock) {
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+
+        ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        if (existShopExtraInfo != null) {
+            existShopExtraInfo.setSafeStock(safeStock);
+        }
+
+        Shop toUpdate = new Shop();
+        toUpdate.setId(shopId);
+        toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
+        Response<Boolean> resp = shopWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update shop extra:{}failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+    }
+
+
+    /**
+     * 批量更新门店安全库存信息
+     * @param shopIds 多个id用逗号隔开
+     * @param safeStock 安全库存
+     */
+    @ApiOperation("批量更新门店安全库存信息")
+    @RequestMapping(value = "/batch-set/safe/stock", method = RequestMethod.PUT)
+    public void batchUpdateShopSafeStock(@RequestParam String shopIds, @RequestParam Integer safeStock) {
+        List<Long> ids  = Splitters.splitToLong(shopIds,Splitters.COMMA);
+        for (Long shopId : ids){
+            this.updateShopSafeStock(shopId,safeStock);
+        }
+
+    }
+
+
+    /**
+     * 更新门店快递信息
+     * @param shopId 店铺id
+     * @param expresssCompanyJson 快递公司code name逗号隔开 例如：[{"code":"zhontong","name":"中通"},{"code":"shunfeng","name":"顺丰"}]
+     */
+    @ApiOperation("更新单个门店快递信息")
+    @RequestMapping(value = "/{shopId}/express/company", method = RequestMethod.PUT)
+    public void updateShopExpressCompany(@PathVariable Long shopId, @RequestParam String expresssCompanyJson) {
+
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+
+        ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        if (existShopExtraInfo != null) {
+            existShopExtraInfo.setExpresssCompanyJson(expresssCompanyJson);
+        }
+
+        Shop toUpdate = new Shop();
+        toUpdate.setId(shopId);
+        toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
+        Response<Boolean> resp = shopWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+    }
+
+
+    /**
+     * 批量更新门店快递信息
+     * @param shopIds 多个店铺id用逗号隔开
+     * @param expresssCompanyJson 快递公司code name逗号隔开 例如：[{"code":"zhontong","name":"中通"},{"code":"shunfeng","name":"顺丰"}]
+     */
+    @ApiOperation("批量更新门店快递信息")
+    @RequestMapping(value = "/batch-set/express/company", method = RequestMethod.PUT)
+    public void batchUpdateShopExpressCompany(@RequestParam String shopIds, @RequestParam String expresssCompanyJson) {
+        List<Long> ids  = Splitters.splitToLong(shopIds,Splitters.COMMA);
+        for (Long shopId : ids){
+            this.updateShopExpressCompany(shopId,expresssCompanyJson);
+        }
+    }
+
+
+    /**
+     * 更新门店服务信息
+     * @param shopId 店铺id
+     * @param shopServerInfo 服务信息
+     */
+    @ApiOperation("更新单个门店快递信息")
+    @RequestMapping(value = "/{shopId}/server/info", method = RequestMethod.PUT)
+    public void updateShopServerInfo(@PathVariable Long shopId, @RequestBody ShopServerInfo shopServerInfo) {
+
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+
+        ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        if (existShopExtraInfo != null) {
+            existShopExtraInfo.setShopServerInfo(shopServerInfo);
+        }
+
+        Shop toUpdate = new Shop();
+        toUpdate.setId(shopId);
+        toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
+        Response<Boolean> resp = shopWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+    }
+
+
+    /**
+     * 批量更新门店快递信息
+     * @param shopIds 多个店铺id用逗号隔开
+     * @param shopServerInfo 服务信息
+     */
+    @ApiOperation("批量更新门店快递信息")
+    @RequestMapping(value = "/batch-set/server/info", method = RequestMethod.PUT)
+    public void batchUpdateShopServerInfo(@RequestParam String shopIds, @RequestBody ShopServerInfo shopServerInfo) {
+        List<Long> ids  = Splitters.splitToLong(shopIds,Splitters.COMMA);
+        for (Long shopId : ids){
+            this.updateShopServerInfo(shopId,shopServerInfo);
+        }
+    }
+
+
 
     @ApiOperation("冻结门店")
     @RequestMapping(value = "/{shopId}/frozen", method = RequestMethod.PUT)
@@ -233,5 +405,10 @@ public class AdminShops {
         private static final long serialVersionUID = 7122636456538456745L;
 
         private String userPassword;
+
+        //区部Id
+        private Long zoneId;
+        //区部名称
+        private String zoneName;
     }
 }

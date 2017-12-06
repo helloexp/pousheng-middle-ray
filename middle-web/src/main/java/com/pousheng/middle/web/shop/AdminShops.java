@@ -377,14 +377,24 @@ public class AdminShops {
     @ApiOperation("冻结门店")
     @RequestMapping(value = "/{shopId}/frozen", method = RequestMethod.PUT)
     public void frozenSeller(@PathVariable Long shopId) {
+        //todo 冻结用户
         RespHelper.or500(adminShopWriteService.frozen(shopId));
     }
 
     @ApiOperation("解冻门店")
     @RequestMapping(value = "/{shopId}/unfrozen", method = RequestMethod.PUT)
     public void unfrozenSeller(@PathVariable Long shopId) {
+        //todo 解结用户
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
     }
+
+    @ApiOperation("删除门店")
+    @RequestMapping(value = "/{shopId}/unfrozen", method = RequestMethod.PUT)
+    public void closeSeller(@PathVariable Long shopId) {
+        //todo 删除用户
+        RespHelper.or500(adminShopWriteService.close(shopId));
+    }
+
 
 
 

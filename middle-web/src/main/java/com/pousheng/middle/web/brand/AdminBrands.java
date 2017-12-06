@@ -4,6 +4,8 @@
 
 package com.pousheng.middle.web.brand;
 
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -21,6 +23,7 @@ import java.util.List;
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
  * Date: 2016-01-15
  */
+@Api(description = "品牌API")
 @Slf4j
 @RestController
 @RequestMapping("/api/brands")
@@ -33,6 +36,7 @@ public class AdminBrands {
     private BrandReadService brandReadService;
 
 
+    @ApiOperation("根据品牌名称搜索品牌信息")
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Brand> findByNamePrefix(@RequestParam(value = "name", required = false) String namePrefix,
                                         @RequestParam(value = "count", defaultValue = "10") Integer count) {

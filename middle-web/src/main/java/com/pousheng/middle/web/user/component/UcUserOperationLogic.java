@@ -14,6 +14,7 @@ import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -79,15 +80,26 @@ public class UcUserOperationLogic {
     }
 
 
-    public Response<UcUserInfo> createUcUser(String name, String password){
+    public Response<UcUserInfo> createUcUserForOperator(String name, String password){
+        Map<String, Object> metadata = Maps.newHashMap();
+        metadata.put("rolesJson","[\"OPERATOR\"]");
+        return createUcUser(name,password,3, metadata);
+
+    }
+    public Response<UcUserInfo> createUcUserForShop(String name, String password){
+        Map<String, Object> metadata = Maps.newHashMap();
+        metadata.put("rolesJson","[\"SHOP\"]");
+        return createUcUser(name,password,4, metadata);
+    }
+
+
+    public Response<UcUserInfo> createUcUser(String name, String password,Integer type,Map<String, Object> metadata){
         try {
 
             UserInfoWithPassword up = new UserInfoWithPassword();
             up.setPassword(password);
             up.setUsername(name);
-            Map<String, Object> metadata = Maps.newHashMap();
-            metadata.put("rolesJson","[\"OPERATOR\"]");
-            up.setType(3);
+            up.setType(type);
             up.setMetadata(metadata);
             String userInfoJson = JsonMapper.nonDefaultMapper().toJson(up);
 

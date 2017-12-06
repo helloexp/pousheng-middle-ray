@@ -149,6 +149,8 @@ public class AdminShops {
             throw new JsonResponseException("shop.outer.in.invalid");
         }
 
+        //todo 判断门店外码是否已添加过
+
         //创建门店用户
         Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(shop.getOuterId(),password);
         if(!userInfoRes.isSuccess()){

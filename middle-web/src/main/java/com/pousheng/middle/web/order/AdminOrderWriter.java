@@ -145,7 +145,10 @@ public class AdminOrderWriter {
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         log.info("try to roll back shop order shopOrderId is {}",shopOrderId);
-        orderWriteLogic.rollbackShopOrder(shopOrderId);
+        boolean isSuccess = orderWriteLogic.rollbackShopOrder(shopOrderId);
+        if (!isSuccess){
+            throw new JsonResponseException("rollback.shop.order.failed");
+        }
     }
 
     /**
@@ -168,10 +171,17 @@ public class AdminOrderWriter {
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             log.info("try to cancel sku order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            boolean isSuccess = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            if (!isSuccess){
+                throw new JsonResponseException("cancel.sku.order.failed");
+            }
         } else {
             log.info("try to cancel shop order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            orderWriteLogic.cancelShopOrder(shopOrderId);
+            boolean isSuccess = orderWriteLogic.cancelShopOrder(shopOrderId);
+            if (!isSuccess){
+                throw new JsonResponseException("cancel.shop.order.failed");
+            }
+
         }
 
     }

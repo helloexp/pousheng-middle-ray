@@ -336,6 +336,20 @@ public class ShipmentWiteLogic {
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
             throw new JsonResponseException(createResp.getError());
         }
+
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder:skuOrdersShipment){
+            try{
+                Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            }catch (Exception e){
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}",skuOrder.getId(),createResp.getResult(),e.getMessage());
+            }
+        }
         return createResp.getResult();
     }
 
@@ -398,7 +412,10 @@ public class ShipmentWiteLogic {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-
+        Map<String,String> warehouseExtra = warehouse.getExtra();
+        if (Objects.nonNull(warehouseExtra)){
+            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode")!=null?warehouseExtra.get("outCode"):"");
+        }
 
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);

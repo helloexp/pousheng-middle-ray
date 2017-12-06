@@ -122,4 +122,6 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
     //活动赠品名称
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
+    //sku订单中的shipmentId
+    public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
 }

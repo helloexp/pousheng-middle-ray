@@ -112,7 +112,11 @@ public class ShipmentReadLogic {
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setQuantity(skuOrder.getQuantity());
-
+            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+                shipmentItem.setIsGift(true);
+            }else{
+                shipmentItem.setIsGift(false);
+            }
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //积分
             String originIntegral = "";

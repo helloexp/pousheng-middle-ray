@@ -155,6 +155,11 @@ public class AdminOrderReader {
             waitShipItemInfo.setSkuCode(skuOrder.getSkuCode());
             waitShipItemInfo.setOutSkuCode(skuOrder.getOutSkuId());
             waitShipItemInfo.setSkuName(skuOrder.getItemName());
+            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+                waitShipItemInfo.setIsGift(true);
+            }else{
+                waitShipItemInfo.setIsGift(false);
+            }
             String outItemId="";
             try{
                 outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);

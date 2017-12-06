@@ -403,7 +403,10 @@ public class ShipmentWiteLogic {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-
+        Map<String,String> warehouseExtra = warehouse.getExtra();
+        if (Objects.nonNull(warehouseExtra)){
+            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode")!=null?warehouseExtra.get("outCode"):"");
+        }
 
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);

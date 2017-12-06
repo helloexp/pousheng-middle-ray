@@ -220,7 +220,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //判断是否存在可用的赠品
         List<PoushengGiftActivity> activities = poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_DONE.getValue());
         //获取赠品商品
-        List<GiftItem> giftItems = psGiftActivityStrategy.getAvailGiftItems(richSkusByShop,activities);
+        PoushengGiftActivity activity = null;  //最终选择的活动
+        List<GiftItem> giftItems = psGiftActivityStrategy.getAvailGiftItems(richSkusByShop,activities,activity);
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         if (!Objects.isNull(giftItems) && giftItems.size()>0){
             for (GiftItem giftItem : giftItems){
@@ -263,6 +264,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //初始化店铺子单extra
         richSkus.forEach(richSku -> {
             Map<String, String> skuExtra = richSku.getExtra();
+            if (Objects.equals(richSku.getShipmentType(),1L)&&Objects.nonNull(activity)){
+                skuExtra.put(TradeConstants.GIFT_ACTIVITY_ID,String.valueOf(activity.getId()));
+                skuExtra.put(TradeConstants.GIFT_ACTIVITY_NAME,activity.getName());
+            }
             skuExtra.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(richSku.getQuantity()));
             richSku.setExtra(skuExtra);
         });

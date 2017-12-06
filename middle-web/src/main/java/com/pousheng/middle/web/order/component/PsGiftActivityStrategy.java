@@ -52,7 +52,7 @@ public class PsGiftActivityStrategy {
      * @param poushengGiftActivities 进行中的活动
      * @return
      */
-    public List<GiftItem> getAvailGiftItems(RichSkusByShop richSkusByShop, List<PoushengGiftActivity> poushengGiftActivities){
+    public List<GiftItem> getAvailGiftItems(RichSkusByShop richSkusByShop, List<PoushengGiftActivity> poushengGiftActivities,PoushengGiftActivity finalActivity){
         //获取满足金额的活动列表
         List<PoushengGiftActivity> activities = byPrice.sortedCopy(this.getAvailActivities(richSkusByShop, poushengGiftActivities));
         //如果没有合适的活动，直接返回
@@ -67,10 +67,12 @@ public class PsGiftActivityStrategy {
                 //更新参与人数的数量
                 poushengGiftActivityWriteLogic.updatePoushengGiftActivityParticipants(activity.getId());
             }catch (Exception e){
-             log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(),e.getMessage());
+                log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(),e.getMessage());
                 return Lists.newArrayList();
             }
         }
+        //最终选择的活动
+        finalActivity = activity;
         return poushengGiftActivityReadLogic.getGiftItem(activity);
     }
 

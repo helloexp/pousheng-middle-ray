@@ -181,8 +181,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
         }
         //如果是预售订单且订单没有发货，预售订单已经支付尾款，则通知订单将发货单发往恒康
-        if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()
-                &&openClientFullOrder.getStatus().getValue()<=OpenClientOrderStatus.SHIPPED.getValue()){
+        if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
           if (Objects.nonNull(openClientFullOrder.getStepStatus())&&openClientFullOrder.getStepStatus().getValue()== OpenClientStepOrderStatus.PAID.getValue()){
               Map<String, String> extraMap = shopOrder.getExtra();
               String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
@@ -190,13 +189,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
               //判断订单是否是预售订单，并且判断预售订单是否已经付完尾款
               if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
                   if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus,
-                          String.valueOf(OpenClientStepOrderStatus.PAID.getValue()))) {
-                      return;
+                          String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue()))) {
+                      //抛出一个事件更新预售订单状态
+                      StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+                      event.setShopOrderId(shopOrder.getId());
                   }
               }
-              //抛出一个事件更新预售订单状态
-              StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
-              event.setShopOrderId(shopOrder.getId());
           }
         }
     }

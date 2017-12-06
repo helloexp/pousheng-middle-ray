@@ -47,6 +47,7 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -220,8 +221,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //判断是否存在可用的赠品
         List<PoushengGiftActivity> activities = poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_DONE.getValue());
         //获取赠品商品
-        PoushengGiftActivity activity = null;  //最终选择的活动
-        List<GiftItem> giftItems = psGiftActivityStrategy.getAvailGiftItems(richSkusByShop,activities,activity);
+        PoushengGiftActivity activity = psGiftActivityStrategy.getAvailGiftActivity(richSkusByShop,activities);  //最终选择的活动
+        List<GiftItem> giftItems = null;
+        if (Objects.nonNull(activity)){
+            giftItems = poushengGiftActivityReadLogic.getGiftItem(activity);
+        }else{
+            giftItems = Lists.newArrayList();
+        }
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         if (!Objects.isNull(giftItems) && giftItems.size()>0){
             for (GiftItem giftItem : giftItems){
@@ -264,7 +270,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //初始化店铺子单extra
         richSkus.forEach(richSku -> {
             Map<String, String> skuExtra = richSku.getExtra();
-            if (Objects.equals(richSku.getShipmentType(),1L)&&Objects.nonNull(activity)){
+            if (Objects.equals(richSku.getShipmentType(),1)&&Objects.nonNull(activity)){
                 skuExtra.put(TradeConstants.GIFT_ACTIVITY_ID,String.valueOf(activity.getId()));
                 skuExtra.put(TradeConstants.GIFT_ACTIVITY_NAME,activity.getName());
             }

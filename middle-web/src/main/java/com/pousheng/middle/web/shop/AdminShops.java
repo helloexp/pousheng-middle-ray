@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
@@ -91,30 +92,48 @@ public class AdminShops {
      */
     @ApiOperation("分页查询门店信息")
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<Shop> paging(@RequestParam(required = false) Long id,
-                                   @RequestParam(required = false) String name,
-                                   @RequestParam(required = false) Long userId,
-                                   @RequestParam(required = false) Integer type,
-                                   @RequestParam(required = false) Integer status,
-                                   @RequestParam(required = false) String outerId,
-                                   @RequestParam(required = false) Long businessId,
-                                   @RequestParam(required = false) Integer pageNo,
-                                   @RequestParam(required = false) Integer pageSize) {
+    public Paging<ShopPaging> paging(@RequestParam(required = false) Long id,
+                                     @RequestParam(required = false) String name,
+                                     @RequestParam(required = false) Long userId,
+                                     @RequestParam(required = false) Integer type,
+                                     @RequestParam(required = false) Integer status,
+                                     @RequestParam(required = false) String outerId,
+                                     @RequestParam(required = false) Long businessId,
+                                     @RequestParam(required = false) Integer pageNo,
+                                     @RequestParam(required = false) Integer pageSize) {
         if (id != null) {
             Response<Shop> rShop = shopReadService.findById(id);
             if (!rShop.isSuccess()) {
                 log.debug("shop find by id={} failed, error={}", id, rShop.getError());
                 return Paging.empty();
             }
-            return new Paging<>(1L, Lists.newArrayList(rShop.getResult()));
+            return new Paging<>();
         }
         Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,businessId, pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }
-        return resp.getResult();
+
+        return transShopPaging(resp.getResult());
     }
 
+    private Paging<ShopPaging> transShopPaging(Paging<Shop> result) {
+        Paging<ShopPaging> shopPaging = new Paging<>();
+        shopPaging.setTotal(result.getTotal());
+        List<Shop> shops = result.getData();
+        List<ShopPaging> shopPagingList = Lists.newArrayListWithCapacity(shops.size());
+
+        for (Shop shop : shops){
+            ShopPaging shopPag = new ShopPaging();
+            shopPag.setShop(shop);
+            shopPag.setShopExtraInfo(ShopExtraInfo.fromJson(shop.getExtra()));
+
+            shopPagingList.add(shopPag);
+        }
+        shopPaging.setData(shopPagingList);
+
+        return shopPaging;
+    }
 
 
     @ApiOperation("创建门店信息")

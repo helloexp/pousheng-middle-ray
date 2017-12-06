@@ -389,7 +389,7 @@ public class AdminShops {
     }
 
     @ApiOperation("删除门店")
-    @RequestMapping(value = "/{shopId}/unfrozen", method = RequestMethod.PUT)
+    @RequestMapping(value = "/{shopId}/close", method = RequestMethod.PUT)
     public void closeSeller(@PathVariable Long shopId) {
         //todo 删除用户
         RespHelper.or500(adminShopWriteService.close(shopId));

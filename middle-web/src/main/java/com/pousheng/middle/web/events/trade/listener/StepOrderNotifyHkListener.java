@@ -55,7 +55,7 @@ public class StepOrderNotifyHkListener {
         eventBus.register(this);
     }
     @Subscribe
-    public void updateEcpOrderInitialStatus(StepOrderNotifyHkEvent event) {
+    public void updateStepOrderStatus(StepOrderNotifyHkEvent event) {
         Long shopOrderId = event.getShopOrderId();
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<String, String> extraMap = shopOrder.getExtra();

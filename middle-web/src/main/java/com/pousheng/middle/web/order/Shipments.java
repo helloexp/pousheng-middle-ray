@@ -450,7 +450,7 @@ public class Shipments {
             String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
             if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
                 if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
-                    throw new JsonResponseException("step.order.not.all.paid.can.not sync.hk");
+                    throw new JsonResponseException("step.order.not.all.paid.can.not.sync.hk");
                 }
             }
         }

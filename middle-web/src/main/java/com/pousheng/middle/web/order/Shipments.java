@@ -28,6 +28,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -921,5 +922,19 @@ public class Shipments {
             log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
         }
         return org.apache.commons.lang3.StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
+    }
+
+    /**
+     * 宝胜二期--单个发货单撤销功能
+     * @param shipmentId
+     */
+    @RequestMapping(value = "api/single/shipment/{id}/rollback", method = RequestMethod.PUT)
+    @OperationLogType("单个发货单取消")
+    public void rollbackShopOrder(@PathVariable("id") Long shipmentId) {
+        log.info("try to cancel shipemnt, shipmentId is {}",shipmentId);
+        boolean isRollBackSuccess = shipmentWiteLogic.rollbackShipment(shipmentId);
+        if (!isRollBackSuccess){
+            throw new JsonResponseException("cancel.shipment.failed");
+        }
     }
 }

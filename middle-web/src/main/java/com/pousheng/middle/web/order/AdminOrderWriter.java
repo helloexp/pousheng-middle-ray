@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order;
 
-import com.google.common.base.Function;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
@@ -16,6 +15,7 @@ import com.pousheng.middle.web.events.trade.ModifyMobileEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -27,9 +27,8 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +38,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nullable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +64,13 @@ public class AdminOrderWriter {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
     private MiddleOrderWriteService middleOrderWriteService;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
     @Autowired
     private EventBus eventBus;
 
@@ -236,6 +238,7 @@ public class AdminOrderWriter {
             log.error("update skuCode failed,skuCodeId is({})",id);
             throw new JsonResponseException(response.getError());
         }
+        //todo 一旦存在修改skuCode
     }
 
     /**
@@ -316,4 +319,88 @@ public class AdminOrderWriter {
         ExpressCode expressCode = response.getResult().getData().get(0);
         return expressCode;
     }
-}
+
+    /**
+     * 单个订单生成发货单自动处理逻辑
+     * @param shopOrderId
+     * @return
+     */
+    @RequestMapping(value = "api/order/{id}/auto/handle", method = RequestMethod.PUT)
+    public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") Long shopOrderId){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
+        if (!isSuccess){
+            //todo 添加动态提示
+            throw new JsonResponseException("");
+        }
+        return Response.ok(Boolean.TRUE);
+    }
+
+    /**
+     * 批量订单生成发货单自动处理逻辑
+     * @param ids
+     * @return
+     */
+    @RequestMapping(value = "api/order/batch/auto/handle", method = RequestMethod.PUT)
+    public Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids){
+        if (Objects.isNull(ids)||ids.isEmpty()){
+            throw new JsonResponseException("shop.order.ids.can.not.be.null");
+        }
+        List<Long> successShopOrderIds = Lists.newArrayList();
+        List<Long> failedShopOrderIds = Lists.newArrayList();
+        for (Long shopOrderId:ids){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+            boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
+            if (!isSuccess){
+              failedShopOrderIds.add(shopOrderId);
+              continue;
+            }
+            successShopOrderIds.add(shopOrderId);
+        }
+        if (failedShopOrderIds.isEmpty()){
+            //todo 添加动态提示
+            throw new JsonResponseException("");
+        }
+        return Response.ok(Boolean.TRUE);
+    }
+
+    /**
+     * 中台客服取消店铺订单
+     * @param id 店铺订单id
+     * @return
+     */
+    @RequestMapping(value = "api/order/shop/{id}/customer/service/cancel",method = RequestMethod.PUT)
+    public Response<Boolean> customerServiceCancelShopOrder(@PathVariable("id") Long id){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+        if (!Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
+            throw new JsonResponseException("error.status.can.not.cancel");
+        }
+        Response<Boolean> r = orderWriteService.shopOrderStatusChanged(id,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
+        if (r.isSuccess()){
+            log.error("shop order cancel failed,skuOrderId is {},caused by{}",id,r.getError());
+            throw new JsonResponseException("cancel.shop.order.failed");
+        }
+        return r;
+
+
+    }
+
+    /**
+     * 中台客服取消sku订单(即取消商品)
+     * @param id 店铺订单id
+     * @return
+     */
+    @RequestMapping(value = "api//order/sku/{id}/customer/service/cancel",method = RequestMethod.PUT)
+    public Response<Boolean> customerServiceCancelSkuOrder(@PathVariable("id") Long id){
+        SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
+        if (!Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
+            throw new JsonResponseException("error.status.can.not.cancel");
+        }
+        Response<Boolean> r = orderWriteService.skuOrderStatusChanged(id,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
+        if (r.isSuccess()){
+            log.error("sku order cancel failed,skuOrderId is {},caused by{}",id,r.getError());
+            throw new JsonResponseException("cancel.sku.order.failed");
+        }
+        return r;
+    }
+ }

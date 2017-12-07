@@ -41,7 +41,6 @@ public class AutoCreateShipmetsListener {
     public void onShipment(OpenClientOrderSyncEvent event) {
         log.info("try to auto create shipment,shopOrder id is {}",event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
-        log.info("auto create shipment,step one");
         shipmentWiteLogic.doAutoCreateShipment(shopOrder);
     }
 }

@@ -13,6 +13,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
@@ -235,6 +236,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         //添加绩效店铺编码,通过openClient获取
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
+        //初始化订单待处理状态
+        shopOrderExtra.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()));
         //判断是否是预售订单
         if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
             shopOrderExtra.put(TradeConstants.IS_STEP_ORDER,String.valueOf(openClientFullOrder.getIsStepOrder().booleanValue()));

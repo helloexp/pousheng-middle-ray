@@ -13,6 +13,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -172,15 +173,11 @@ public class ShipmentWiteLogic {
     public void doAutoCreateShipment(ShopOrder shopOrder){
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
                 MiddleOrderStatus.WAIT_HANDLE.getValue());
-        log.info("auto create shipment,step two");
         if (skuOrders.size()==0){
             return;
         }
-        //如果不自动生成发货单，则添加备注
-        StringBuffer shipmentNote = new StringBuffer();
         //判断是否满足自动生成发货单
-        if(!commValidateOfOrder(shopOrder,skuOrders,shipmentNote)){
-            this.updateShipmentNote(shopOrder, shipmentNote);
+        if(!commValidateOfOrder(shopOrder,skuOrders)){
             return;
         }
         //获取skuCode,数量的集合
@@ -197,40 +194,34 @@ public class ShipmentWiteLogic {
             log.error("find ReceiverInfo failed,shopOrderId is(:{})",shopOrder.getId());
             return;
         }
-        log.info("auto create shipment,step three");
         ReceiverInfo receiverInfo = response.getResult().get(0);
         if(Arguments.isNull(receiverInfo.getCityId())){
             log.error("receive info:{} city id is null,so skip auto create shipment",receiverInfo);
             return;
         }
-
-
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(),Long.valueOf(receiverInfo.getCityId()),skuCodeAndQuantities);
-        if(warehouseShipments.size()==0||warehouseShipments==null){
-          shipmentNote.append("发货仓库存不满足自动生成发货单");
+        if(Objects.isNull(warehouseShipments)||warehouseShipments.isEmpty()){
+            //库存不足，添加备注
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
         }
-        log.info("auto create shipment,step three+");
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){
 
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             //抛出一个事件,修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId!=null){
-                //修改状态
                 Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
-                log.info("auto create shipment,step x");
                 if (!shipmentRes.isSuccess()) {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                     return;
                 }
                 try{
                     orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
-                    log.info("auto create shipment,step xx");
                 }catch (ServiceException e){
                     log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
                 }
-                //同步恒康
+                //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                 Map<String,String> extraMap = shopOrder.getExtra();
                 String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
                 String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
@@ -240,24 +231,26 @@ public class ShipmentWiteLogic {
                     }
                 }
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
-                log.info("auto create shipment,step xxx");
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
             }
         }
-        //添加备注
-        this.updateShipmentNote(shopOrder, shipmentNote);
-
+        this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
     }
 
-    private void updateShipmentNote(ShopOrder shopOrder, StringBuffer shipmentNote) {
+    /**
+     * 添加不能自动生成发货单的原因
+     * @param shopOrder 店铺订单
+     * @param type  不能自动生成发货单的类型
+     */
+    private void updateShipmentNote(ShopOrder shopOrder, int type) {
         //添加备注
-        if(StringUtils.isNotEmpty(shipmentNote.toString())){
+        if(type>0){
             //shopOrderextra中添加字段
             ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
             Map<String, String> extraMap = order.getExtra();
-            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, shipmentNote.toString());
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, String.valueOf(type));
             Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
             if (!rltRes.isSuccess()) {
                 log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
@@ -357,28 +350,34 @@ public class ShipmentWiteLogic {
      * 是否满足自动创建发货单的校验
      * @param shopOrder 店铺订单
      * @param skuOrders 子单
-     * @param shipmentNote 不自动生成发货单的说明
      * @return 不可以自动创建发货单(false),可以自动创建发货单(true)
      */
-    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders,StringBuffer shipmentNote){
+    private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
+        int orderWaitHandleType = 0;
         //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
-            shipmentNote.append("京东货到付款不自动生成发货单");
+            orderWaitHandleType = OrderWaitHandleType.JD_PAY_ON_CASH.value();
             return false;
         }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
-            shipmentNote.append("订单有备注不自动生成发货单");
+            orderWaitHandleType =OrderWaitHandleType.ORDER_HAS_NOTE.value();
             return false;
         }
         //4.判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
         int count = 0;
         for (SkuOrder skuOrder:skuOrders){
             if (StringUtils.isEmpty(skuOrder.getSkuCode())){
-                shipmentNote.append("货品条码为空不自动生成发货单");
                 count++;
             }
+        }
+        if (count>0){
+            orderWaitHandleType = OrderWaitHandleType.SKU_NOT_MATCH.value();
+        }
+        if (orderWaitHandleType>0){
+            //添加备注
+            this.updateShipmentNote(shopOrder, orderWaitHandleType);
         }
         return count <= 0;
     }

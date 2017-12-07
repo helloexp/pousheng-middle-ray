@@ -181,9 +181,9 @@ public class PoushengGiftActivityWriteLogic {
         }
         //限制活动参与人数
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
-            activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
-        }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
+        }else{
+            activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }
         activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
         activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());

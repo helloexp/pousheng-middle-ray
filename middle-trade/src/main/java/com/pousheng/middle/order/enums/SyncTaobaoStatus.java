@@ -3,7 +3,7 @@ package com.pousheng.middle.order.enums;
 import com.google.common.base.Objects;
 
 /**
- * 同步淘宝的电商状态
+ * 同步淘宝的电商状态（目前只有官网，淘宝会用到该模块）
  */
 public enum SyncTaobaoStatus {
     WAIT_SYNC_TAOBAO(0),//待同步淘宝

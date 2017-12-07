@@ -36,9 +36,11 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
@@ -104,6 +106,8 @@ public class Shipments {
     private StockPusher stockPusher;
     @Autowired
     private PermissionUtil permissionUtil;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -292,7 +296,7 @@ public class Shipments {
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
-            shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
+            shipmentDiscountFee = (shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount())+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //订单总金额(运费优惠已经包含在子单折扣中)=商品总净价+运费
@@ -328,12 +332,33 @@ public class Shipments {
         if (!shipmentRes.isSuccess()) {
             log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
         }
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder:skuOrders){
+            try{
+                Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(shipmentId));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            }catch (Exception e){
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}",skuOrder.getId(),shipmentId,e.getMessage());
+            }
+        }
         try{
             orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
         }catch (ServiceException e){
             log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
         }
-        //同步恒康
+        //销售发货单需要判断预售商品是否已经支付完尾款
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        String isStepOrder = shopOrderExtra.get(TradeConstants.IS_STEP_ORDER);
+        String stepOrderStatus = shopOrderExtra.get(TradeConstants.STEP_ORDER_STATUS);
+        if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+            if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                return shipmentId;
+            }
+        }
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
         if (!syncRes.isSuccess()) {
             log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
@@ -393,7 +418,7 @@ public class Shipments {
         //订单总金额
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
-            shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
+            shipmentDiscountFee = (shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount())+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //发货单中订单总金额
@@ -433,6 +458,18 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步发货单到恒康")
     public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
+        OrderShipment orderShipment =  shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        if (Objects.equals(orderShipment.getType(),1)){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            Map<String,String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+                if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                    throw new JsonResponseException("step.order.not.all.paid.can.not.sync.hk");
+                }
+            }
+        }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
         if(!syncRes.isSuccess()){
@@ -628,7 +665,10 @@ public class Shipments {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-
+        Map<String,String> warehouseExtra = warehouse.getExtra();
+        if (Objects.nonNull(warehouseExtra)){
+            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode")!=null?warehouseExtra.get("outCode"):"");
+        }
 
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
@@ -818,11 +858,13 @@ public class Shipments {
         Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
 
         //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
         for (WarehouseShipment ws : warehouseShipmentList) {
             for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
             }
         }
+        stockPusher.submit(skuCodes);
         return result;
 
     }

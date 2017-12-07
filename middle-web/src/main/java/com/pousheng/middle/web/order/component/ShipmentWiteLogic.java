@@ -27,6 +27,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -230,6 +231,14 @@ public class ShipmentWiteLogic {
                     log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
                 }
                 //同步恒康
+                Map<String,String> extraMap = shopOrder.getExtra();
+                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+                if (!StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+                    if (!StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                        continue;
+                    }
+                }
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
                 log.info("auto create shipment,step xxx");
                 if (!syncRes.isSuccess()) {
@@ -327,6 +336,20 @@ public class ShipmentWiteLogic {
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
             throw new JsonResponseException(createResp.getError());
         }
+
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder:skuOrdersShipment){
+            try{
+                Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            }catch (Exception e){
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}",skuOrder.getId(),createResp.getResult(),e.getMessage());
+            }
+        }
         return createResp.getResult();
     }
 
@@ -389,7 +412,10 @@ public class ShipmentWiteLogic {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
-
+        Map<String,String> warehouseExtra = warehouse.getExtra();
+        if (Objects.nonNull(warehouseExtra)){
+            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode")!=null?warehouseExtra.get("outCode"):"");
+        }
 
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
@@ -636,6 +662,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setSyncTaobaoStatus(targetStatus);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+        shipment.setExtra(extraMap);
         Response<Boolean> updateRes = shipmentWriteService.update(shipment);
         if (!updateRes.isSuccess()) {
             log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());

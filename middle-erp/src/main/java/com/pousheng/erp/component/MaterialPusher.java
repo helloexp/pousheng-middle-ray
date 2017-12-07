@@ -1,9 +1,11 @@
 package com.pousheng.erp.component;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.model.SpuMaterial;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -11,9 +13,11 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -49,6 +53,20 @@ public class MaterialPusher {
         log.info("add material to erp, data:{}", json);
         erpClient.postJson("common/erp/base/creatematerialmapper",
                 json);
+    }
+    /**
+     * 通知恒康该商品要进行实施库存同步
+     */
+    public void pushItemForStock(Long spuId){
+        List<SpuMaterial> spuMaterials = spuMaterialDao.findBySpuId(spuId);
+        Set<String> materialIds = Sets.newHashSet();
+        for (SpuMaterial spuMaterial:spuMaterials){
+            materialIds.add(spuMaterial.getMaterialId());
+        }
+
+        Map<String,String> map= Maps.newHashMap();
+        map.put("material",Joiners.COMMA.join(materialIds));
+        erpClient.get("/common/erp/inv/getinstockcount",map);
     }
 
     /**

@@ -81,20 +81,16 @@ public class HKShipmentDoneListener {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-            if (shopOrder.getStatus() == MiddleOrderStatus.WAIT_SHIP.getValue()) {
+
+            Flow flow = flowPicker.pickOrder();
+            if (flow.operationAllowed(shopOrder.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation())) {
                 //获取该订单下所有的orderShipment信息
                 List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(orderShopId);
                 //过滤掉已经取消的发货单
                 List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                         .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
                 //获取发货单的状态
-                List<Integer> orderShipMentStatusList = Lists.transform(orderShipmentsFilter, new Function<OrderShipment, Integer>() {
-                    @Nullable
-                    @Override
-                    public Integer apply(@Nullable OrderShipment orderShipment) {
-                        return orderShipment.getStatus();
-                    }
-                });
+                List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
                 //判断订单是否已经全部发货了
                 int count=0;
                 for (Integer status:orderShipMentStatusList){
@@ -105,9 +101,9 @@ public class HKShipmentDoneListener {
                 //count==0代表所有的发货单已经发货
                 if (count==0) {
                     //待发货--商家已经发货
-                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue());
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue(),MiddleOrderStatus.CANCEL_FAILED.getValue(),MiddleOrderStatus.REVOKE_FAILED.getValue());
                     for (SkuOrder skuOrder : skuOrders) {
-                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue(), MiddleOrderStatus.SHIPPED.getValue());
+                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                         if (!updateRlt.getResult()) {
                             log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                             throw new JsonResponseException("update.sku.order.status.error");

@@ -61,7 +61,7 @@ public class Warehouses {
     public Boolean triggerPush(@RequestParam(value = "id") Long id){
         log.info("[trigger push ] id={}",id);
         Response<Warehouse> warehouseResponse=warehouseReadService.findById(id);
-        if (warehouseResponse.isSuccess()){
+        if (!warehouseResponse.isSuccess()){
             log.error("find Warehouse failed cause={}",warehouseResponse.getError());
             throw new JsonResponseException(warehouseResponse.getError());
         }

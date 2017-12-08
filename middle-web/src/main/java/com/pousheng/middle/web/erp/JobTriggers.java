@@ -42,7 +42,7 @@ public class JobTriggers {
     /**
      * 每天凌晨2点触发
      */
-    @Scheduled(cron="0 0 2 * * ?")
+    @Scheduled(cron="0 0 1 * * ?")
     public void synchronizeSpu(){
         if(hostLeader.isLeader()) {
             log.info("JOB -- begin to sync information");

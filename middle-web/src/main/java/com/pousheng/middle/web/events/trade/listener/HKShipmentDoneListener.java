@@ -121,24 +121,17 @@ public class HKShipmentDoneListener {
             Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
             if (refund.getStatus() == MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
-                List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
-                    @Nullable
-                    @Override
-                    public Integer apply(@Nullable OrderShipment orderShipment) {
-                        return orderShipment.getStatus();
-                    }
-                });
+                List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());
                 if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
-                    //更新售后单的处理状态
-
                     Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.SHIP.toOrderOperation());
                     if (!resRlt.isSuccess()) {
                         log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
                         throw new JsonResponseException("update.refund.status.error");
                     }
-                    //将shipmentExtra的已发货时间塞入值
+                    //将shipmentExtra的已发货时间塞入值,
+                    //todo 丢件补发有自己的状态,需要区分
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation());
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

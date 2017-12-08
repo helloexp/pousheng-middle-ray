@@ -17,7 +17,8 @@ public class EditMiddleRefund extends RichMiddleRefund implements Serializable {
     private List<EditRefundItem> refundItems;
     //换货信息
     private List<RefundItem> shipmentItems;
-
+    //丢件补发信息
+    private List<RefundItem> lostRefundItems;
     /**
      * 是否为新建售后单
      */

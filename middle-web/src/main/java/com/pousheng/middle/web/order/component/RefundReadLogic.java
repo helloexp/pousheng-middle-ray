@@ -270,4 +270,23 @@ public class RefundReadLogic {
         Integer unReturnedFee = Math.toIntExact((shipmentItem.getCleanFee() == null ? 0 : shipmentItem.getCleanFee()) - alreadyRefundFee);
         return cleanFee>unReturnedFee?unReturnedFee:cleanFee;
     }
+
+    /**
+     * 获取丢件补发类型的商品列表
+     * @param refund
+     * @return
+     */
+    public List<RefundItem> findRefundLostItems(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("refund(id:{}) extra field is null",refund.getId());
+            throw new JsonResponseException("refund.extra.is.empty");
+        }
+        if(!extraMap.containsKey(TradeConstants.REFUND_LOST_ITEM_INFO)){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_LOST_ITEM_INFO);
+            throw new JsonResponseException("refund.exit.not.contain.item.info");
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REFUND_LOST_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
+    }
+
 }

@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -22,6 +23,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.RefundWriteService;
+import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +65,8 @@ public class RefundWriteLogic {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private SyncRefundLogic syncRefundLogic;
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -595,6 +599,161 @@ public class RefundWriteLogic {
         if (!response.isSuccess()){
             log.error("refund add customerServiceNote failed,refundId is({}),caused by{}",refundId,response.getError());
             throw new JsonResponseException("add customer service note fail");
+        }
+    }
+
+
+    /**
+     * 创建丢件补发类型类型的逆向单
+     * @param submitRefundInfo 参数实体
+     * @return
+     */
+    public Long createRefundForLost(SubmitRefundInfo submitRefundInfo){
+        //获取订单
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
+        //获取订单下的所有发货单
+        List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+        List<Shipment> shipments = originShipments.stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        //获取订单下对应发货单的所有发货商品列表
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
+        //申请数量是否有效
+        List<RefundItem> refundItems = checkChangeItemsForLost(submitRefundInfo,shipmentItems);
+        completeSkuAttributeInfo(refundItems);
+        Refund refund = new Refund();
+        refund.setBuyerId(shopOrder.getBuyerId());
+        refund.setBuyerName(shopOrder.getBuyerName());
+        refund.setBuyerNote(submitRefundInfo.getBuyerNote());
+        refund.setRefundAt(new Date());
+        if(Objects.equals(submitRefundInfo.getOperationType(),1)){
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }else {
+            refund.setStatus(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue());
+        }
+        refund.setShopId(shopOrder.getShopId());
+        refund.setShopName(shopOrder.getShopName());
+        refund.setFee(shopOrder.getFee());
+        refund.setRefundType(submitRefundInfo.getRefundType());
+        Map<String,String> extraMap = Maps.newHashMap();
+        RefundExtra refundExtra = new RefundExtra();
+        ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipments.get(0).getReceiverInfos(),ReceiverInfo.class);
+        refundExtra.setReceiverInfo(receiverInfo);
+        //完善仓库及物流信息
+        completeWareHoseAndExpressInfo(submitRefundInfo.getRefundType(),refundExtra,submitRefundInfo);
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
+        extraMap.put(TradeConstants.REFUND_LOST_ITEM_INFO,mapper.toJson(refundItems));
+        //完善换货信息
+        //完善换货发货地址信息
+        if (Objects.equals(MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value(),submitRefundInfo.getRefundType())){
+            if (Objects.nonNull(submitRefundInfo.getMiddleChangeReceiveInfo())){
+                extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO,mapper.toJson(submitRefundInfo.getMiddleChangeReceiveInfo()));
+            }
+        }
+        //表明售后单的信息已经全部完善
+        extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
+        refund.setExtra(extraMap);
+        //打标
+        Map<String,String> tagMap = Maps.newHashMap();
+        tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
+        refund.setTags(tagMap);
+        //创建售后单
+        Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(submitRefundInfo.getOrderId()), OrderLevel.SHOP);
+        if (!rRefundRes.isSuccess()) {
+            log.error("failed to create {}, error code:{}", refund, rRefundRes.getError());
+            throw new JsonResponseException(rRefundRes.getError());
+        }
+        return rRefundRes.getResult();
+    }
+    /**
+     * 丢件补发参数组装
+     * @param submitRefundInfo
+     * @param shipmentItems
+     * @return
+     */
+    private List<RefundItem> checkChangeItemsForLost(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
+        //可能存在只有部分商品被弄丢了，这个时候需要传输商品条码
+        List<String> changeSkuCodes = submitRefundInfo.getLostSkuCodes();
+        List<RefundItem>   refundItems = Lists.newArrayList();
+        shipmentItems.forEach(shipmentItem -> {
+            //获取所有需要补发的RefundItem
+            if (changeSkuCodes.contains(shipmentItem.getSkuCode())){
+                RefundItem refundItem = new RefundItem();
+                BeanMapper.copy(shipmentItem,refundItem);
+                refundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
+                refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
+                refundItems.add(refundItem);
+            }
+        });
+        return refundItems;
+    }
+
+    /**
+     * 丢件补发类型的售后单完善
+     * @param refund
+     * @param submitRefundInfo
+     */
+    public void completeHandleForLostType(Refund refund, EditSubmitRefundInfo submitRefundInfo){
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        //获取订单
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+        //获取订单下的所有发货单
+        List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+        List<Shipment> shipments = originShipments.stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        //获取订单下对应发货单的所有发货商品列表
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
+        //获取最新的丢件补发的商品
+        List<RefundItem> cureentLostRefundItems = checkChangeItemsForLost(submitRefundInfo,shipmentItems);
+        completeSkuAttributeInfo(cureentLostRefundItems);
+
+        Map<String,String> extraMap = refund.getExtra();
+        //添加处理完成时间
+        refundExtra.setHandleDoneAt(new Date());
+        Refund updateRefund = new Refund();
+        updateRefund.setId(refund.getId());
+        updateRefund.setBuyerNote(submitRefundInfo.getBuyerNote());
+        updateRefund.setFee(shopOrder.getFee());
+
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
+        extraMap.put(TradeConstants.REFUND_LOST_ITEM_INFO,mapper.toJson(cureentLostRefundItems));
+        //提交动作
+        if(Objects.equals(submitRefundInfo.getOperationType(),2)){
+            //更新售后单状态
+            Response<Boolean> updateStatusRes = updateStatus(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+            if(!updateStatusRes.isSuccess()){
+                log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateStatusRes.getError());
+                throw new JsonResponseException(updateStatusRes.getError());
+            }
+        }
+        //表明售后单的信息已经全部完善
+        extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
+        updateRefund.setExtra(extraMap);
+        Response<Boolean> updateRes = refundWriteService.update(updateRefund);
+        if(!updateRes.isSuccess()){
+            log.error("update refund:{} fail,error:{}",updateRefund,updateRes.getError());
+            throw new JsonResponseException(updateRes.getError());
+        }
+    }
+
+    /**
+     * 丢件补发类型的售后单的删除
+     * @param refund 售后单
+     */
+    public void deleteRefundForLost(Refund refund){
+        //判断类型
+        RefundSource refundSource = refundReadLogic.findRefundSource(refund);
+        if(Objects.equals(refundSource.value(),RefundSource.THIRD.value())){
+            log.error("refund(id:{}) is third party refund  so cant not delete",refund.getId());
+            throw new JsonResponseException("third.party.refund.can.not.delete");
+        }
+        //更新状态
+        Response<Boolean> updateRes = this.updateStatus(refund,MiddleOrderEvent.DELETE.toOrderOperation());
+        if(!updateRes.isSuccess()){
+            log.error("delete refund(id:{}) fail,error:{}",refund.getId(),updateRes.getError());
+            throw new JsonResponseException(updateRes.getError());
         }
     }
 }

@@ -111,15 +111,19 @@ public class Refunds {
     public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
-            refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
-            if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
-                //完善之后同步售后单到恒康
-                Flow flow = flowPicker.pickAfterSales();
-                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                refund.setStatus(targetStatus);
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                refundWriteLogic.completeHandleForLostType(refund,editSubmitRefundInfo);
+            }else{
+                refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
+                if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
+                    //完善之后同步售后单到恒康
+                    Flow flow = flowPicker.pickAfterSales();
+                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                    refund.setStatus(targetStatus);
+                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                    }
                 }
             }
         }catch (JsonResponseException e1){
@@ -155,19 +159,23 @@ public class Refunds {
             throw new JsonResponseException("uncomplete.refund.can.not.pass.check");
         }
         refunds.forEach(refund -> {
-            OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
-            Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
-            if (!response.isSuccess()) {
-                log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
-                throw new JsonResponseException(response.getError());
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                //todo 丢件补发类型的售后单需要将状态变更为待创建售后单
             }else{
-                //审核之后同步售后单到恒康
-                Flow flow = flowPicker.pickAfterSales();
-                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                refund.setStatus(targetStatus);
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
+                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                if (!response.isSuccess()) {
+                    log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
+                    throw new JsonResponseException(response.getError());
+                }else{
+                    //审核之后同步售后单到恒康
+                    Flow flow = flowPicker.pickAfterSales();
+                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                    refund.setStatus(targetStatus);
+                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                    }
                 }
             }
         });
@@ -192,7 +200,11 @@ public class Refunds {
     public void delete(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
-        refundWriteLogic.deleteRefund(refund);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            refundWriteLogic.deleteRefundForLost(refund);
+        }else{
+            refundWriteLogic.deleteRefund(refund);
+        }
     }
 
 
@@ -206,7 +218,11 @@ public class Refunds {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @OperationLogType("创建")
     public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
-        return refundWriteLogic.createRefund(submitRefundInfo);
+        if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            return refundWriteLogic.createRefundForLost(submitRefundInfo);
+        }else{
+            return refundWriteLogic.createRefund(submitRefundInfo);
+        }
     }
 
 
@@ -220,20 +236,35 @@ public class Refunds {
     public List<WaitShipItemInfo> refundWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
-        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
-
-        List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
-        for (RefundItem refundItem : refundChangeItems) {
-            WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
-            waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
-            waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
-            waitShipItemInfo.setSkuName(refundItem.getSkuName());
-            waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity() - refundItem.getAlreadyHandleNumber());
-            waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
-            waitShipItemInfo.setItemId(refundItem.getItemId());
-            waitShipItemInfos.add(waitShipItemInfo);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
+            List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundLostItems.size());
+            for (RefundItem refundItem : refundLostItems) {
+                WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+                waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
+                waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+                waitShipItemInfo.setSkuName(refundItem.getSkuName());
+                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity());
+                waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
+                waitShipItemInfo.setItemId(refundItem.getItemId());
+                waitShipItemInfos.add(waitShipItemInfo);
+            }
+            return waitShipItemInfos;
+        }else{
+            List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+            List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
+            for (RefundItem refundItem : refundChangeItems) {
+                WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+                waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
+                waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+                waitShipItemInfo.setSkuName(refundItem.getSkuName());
+                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity() - refundItem.getAlreadyHandleNumber());
+                waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
+                waitShipItemInfo.setItemId(refundItem.getItemId());
+                waitShipItemInfos.add(waitShipItemInfo);
+            }
+            return waitShipItemInfos;
         }
-        return waitShipItemInfos;
     }
 
 
@@ -269,7 +300,9 @@ public class Refunds {
             throw new JsonResponseException(cancelRes.getError());
         }
         //回滚发货单的数量
-        refundWriteLogic.rollbackRefundQuantities(refund);
+        if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            refundWriteLogic.rollbackRefundQuantities(refund);
+        }
     }
 
 
@@ -468,7 +501,12 @@ public class Refunds {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
         refundDetail.setRefundExtra(refundExtra);
-
+        //如果为丢件补发，获取丢件补发的商品信息
+        if (isLostRefund(refund)){
+            refundDetail.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
+            //获取换货的收货人地址
+            refundDetail.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+        }
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
@@ -513,7 +551,11 @@ public class Refunds {
             editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
         }
         editMiddleRefund.setRefundExtra(refundExtra);
-
+        //如果为丢件补发类型
+        if(isChangeRefund(refund)){
+            editMiddleRefund.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
+            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+        }
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
@@ -564,5 +606,14 @@ public class Refunds {
 
     private Boolean isChangeRefund(Refund refund) {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value());
+    }
+
+    /**
+     * 是否是丢件补发类型
+     * @param refund 售后单
+     * @return
+     */
+    private Boolean isLostRefund(Refund refund){
+        return Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
 }

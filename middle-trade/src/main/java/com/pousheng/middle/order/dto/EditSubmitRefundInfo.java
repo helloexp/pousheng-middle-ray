@@ -3,6 +3,7 @@ package com.pousheng.middle.order.dto;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/4
@@ -41,5 +42,8 @@ public class EditSubmitRefundInfo implements Serializable {
     //操作类型 1：保存 2：提交
     private Integer operationType;
 
-
+    /**
+     * 丢件补发类型的需要补发的商品条码
+     */
+    private List<String> lostSkuCodes;
 }

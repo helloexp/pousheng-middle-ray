@@ -35,6 +35,8 @@ public class TradeConstants {
     public static final String REFUND_ITEM_INFO = "refundItemInfo";
     //逆向单换货商品信息
     public static final String REFUND_CHANGE_ITEM_INFO = "refundChangeItemInfo";
+    //逆向单丢件补发商品信息
+    public static final String REFUND_LOST_ITEM_INFO="refundLostItemInfo";
     //逆向单商品信息
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
     //通知电商平台状态

@@ -26,7 +26,9 @@ public enum MiddleRefundStatus {
     WAIT_CONFIRM_RECEIVE(10, "待确认收货（所有发货单全部发货完成）"),      //待确认收货（所有发货单全部发货完成）
     REFUND(11, "已退款(仅退款、退货退款)"),                              //已退款(仅退款、退货退款)
     DONE(12, "已完成（换货确认收货）"),                                  //已完成（换货确认收货）
-
+    LOST_WAIT_CREATE_SHIPMENT(13,"丢件补发-待创建发货单"),
+    LOST_SHIPPED(14,"丢件补发-已经发货"),
+    LOST_DONE(15,"丢件补发-客户确认收货"),
     SYNC_HK_FAIL(-1, "同步恒康失败"),                                  //同步恒康失败
     SYNC_HK_CANCEL_ING(-2, "同步恒康取消中"),                          //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     CANCELED(-3, "已取消"),                                           //已取消

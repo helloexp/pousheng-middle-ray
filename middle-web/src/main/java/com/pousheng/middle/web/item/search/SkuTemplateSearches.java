@@ -93,6 +93,7 @@ public class SkuTemplateSearches {
 
             searchSkuTemplate.setOtherAttrs(groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId()).getOtherAttrs());
             searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
+            searchSkuTemplate.setMainImage(skuTemplate.getImage_());
 
 
 

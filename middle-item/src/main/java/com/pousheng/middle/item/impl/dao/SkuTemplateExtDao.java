@@ -39,4 +39,11 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
     }
 
 
+
+    public Boolean updateImageByIds(List<Long> ids,String imageUrl){
+        return getSqlSession().update(sqlId("updateImageByIds"),ImmutableMap.of("ids",ids,"imageUrl",imageUrl))>0;
+
+    }
+
+
 }

@@ -19,6 +19,7 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -170,6 +171,39 @@ public class SkuTemplates {
     }
 
 
+
+    @ApiOperation("设置mpos货品折扣")
+    @RequestMapping(value = "/api/sku-template/{id}/discount/setting", method = RequestMethod.PUT)
+    public void setDiscount(@PathVariable Long id,@RequestParam Integer discount) {
+
+        val rExist = skuTemplateReadService.findById(id);
+        if (!rExist.isSuccess()) {
+            log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        SkuTemplate exist = rExist.getResult();
+        Map<String,String> extra = setMopsDiscount(exist,discount);
+
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        toUpdate.setExtra(extra);
+        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate failed error={}",resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+    }
+
+    @ApiOperation("对mpos货品批量设置折扣")
+    @RequestMapping(value = "/api/sku-template/batch/discount/setting", method = RequestMethod.PUT)
+    public void batchSetMposDiscount(@RequestParam String skuTemplateIds,@RequestParam Integer discount) {
+        List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
+        for (Long id : ids){
+            setDiscount(id,discount);
+        }
+    }
+
+
     @ApiOperation("对货品批量打mops打标")
     @RequestMapping(value = "/api/sku-template/batch/make/flag", method = RequestMethod.PUT)
     public void batchMakeMposFlag(@RequestParam String skuTemplateIds) {
@@ -188,6 +222,21 @@ public class SkuTemplates {
         }
     }
 
+    @ApiOperation("上传货品图片（单个和批量）")
+    @RequestMapping(value = "/api/sku-template/image/upload", method = RequestMethod.PUT)
+    public void uploadImage(@RequestParam String skuTemplateIds,@RequestParam String imageUrl) {
+        List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
+        if(Strings.isNullOrEmpty(imageUrl)){
+            throw new JsonResponseException("image.url.invalid");
+        }
+        Response<Boolean> response = psSkuTemplateWriteService.updateImageByIds(ids,imageUrl);
+        if(!response.isSuccess()){
+            log.error("failed to update skuTemplate:(ids:{}) image to:{}, error:{}", ids,imageUrl, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+
 
     //打标或取消打标
     private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
@@ -196,6 +245,18 @@ public class SkuTemplates {
             extra = Maps.newHashMap();
         }
         extra.put(PsItemConstants.MPOS_FLAG,type);
+        return extra;
+
+    }
+
+
+    //设置折扣
+    private Map<String,String> setMopsDiscount(SkuTemplate exist,Integer discount){
+        Map<String,String> extra = exist.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            extra = Maps.newHashMap();
+        }
+        extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
         return extra;
 
     }

@@ -57,7 +57,7 @@ public class Warehouses {
         }
         return r.getResult();
     }
-    @RequestMapping(value = "/trigger/push")
+    @RequestMapping(value = "/trigger/push",method = RequestMethod.GET)
     public Boolean triggerPush(@RequestParam(value = "id") Long id){
         log.info("[trigger push ] id={}",id);
         Response<Warehouse> warehouseResponse=warehouseReadService.findById(id);

@@ -69,7 +69,7 @@ public class Warehouses {
             throw new JsonResponseException("warehouse.status.is.not.allowed.trigger.push");
         }
         Map<String,String> map=Maps.newHashMap();
-        map.put("stock",warehouse.getId()+"");
+        map.put("stock",warehouse.getInnerCode());
         erpClient.get("/common/erp/inv/getinstockcount",map);
         return Boolean.TRUE;
 

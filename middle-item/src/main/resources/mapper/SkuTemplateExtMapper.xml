@@ -24,4 +24,16 @@
         ]]>
         ORDER BY id DESC LIMIT #{limit}
     </select>
+
+
+    <update id="updateImageByIds" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET image = #{imageUrl}, updated_at = now()
+        WHERE id IN
+        <foreach collection="ids" separator="," open="("
+                 close=")" item="id">
+            #{id}
+        </foreach>
+    </update>
 </mapper>

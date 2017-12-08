@@ -72,7 +72,7 @@ public class Warehouses {
         }
         Map<String,String> map=Maps.newHashMap();
         map.put("stock",warehouse.getInnerCode());
-        erpClient.get("/common/erp/inv/getinstockcount",map);
+        erpClient.get("common/erp/inv/getinstockcount",map);
         return Boolean.TRUE;
 
     }

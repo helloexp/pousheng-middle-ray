@@ -82,9 +82,12 @@ public class FireCall {
 
 
     @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeWarehouse(@RequestParam String start,
+    public String synchronizeWarehouse(@RequestParam(name = "start",required = false) String start,
                                        @RequestParam(name = "end", required = false) String end){
-        Date from = dft.parseDateTime(start).toDate();
+        Date from=new Date();
+        if (StringUtils.hasText(end)){
+             from = dft.parseDateTime(start).toDate();
+        }
         Date to = new Date();
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();

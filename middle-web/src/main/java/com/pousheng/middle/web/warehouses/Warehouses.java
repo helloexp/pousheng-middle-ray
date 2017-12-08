@@ -57,10 +57,12 @@ public class Warehouses {
         }
         return r.getResult();
     }
-    @RequestMapping(value = "/trigger/push")
-    public Boolean triggerPush(@RequestParam Long id){
+    @RequestMapping(value = "/trigger/push",method = RequestMethod.GET)
+    public Boolean triggerPush(@RequestParam(value = "id") Long id){
+        log.info("[trigger push ] id={}",id);
         Response<Warehouse> warehouseResponse=warehouseReadService.findById(id);
         if (warehouseResponse.isSuccess()){
+            log.error("find Warehouse failed cause={}",warehouseResponse.getError());
             throw new JsonResponseException(warehouseResponse.getError());
         }
         Warehouse warehouse=warehouseResponse.getResult();

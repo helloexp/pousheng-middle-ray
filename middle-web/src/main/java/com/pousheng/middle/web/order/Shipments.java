@@ -705,7 +705,13 @@ public class Shipments {
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{
-            shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+            Map<String,String> shopOrderMap = shopOrder.getExtra();
+            String expressCode = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE);
+            if (!StringUtils.isEmpty(expressCode)){
+                shipmentExtra.setVendCustID(expressCode);
+            }else{
+                shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+            }
         }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
         //店铺信息塞值

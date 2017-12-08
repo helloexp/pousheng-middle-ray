@@ -325,7 +325,7 @@ public class AdminOrderWriter {
      * @param shopOrderId
      * @return
      */
-    @RequestMapping(value = "api/order/{id}/auto/handle", method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/order/{id}/auto/handle", method = RequestMethod.PUT)
     public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
@@ -341,7 +341,7 @@ public class AdminOrderWriter {
      * @param ids
      * @return
      */
-    @RequestMapping(value = "api/order/batch/auto/handle", method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/order/batch/auto/handle", method = RequestMethod.PUT)
     public Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids){
         if (Objects.isNull(ids)||ids.isEmpty()){
             throw new JsonResponseException("shop.order.ids.can.not.be.null");
@@ -369,7 +369,7 @@ public class AdminOrderWriter {
      * @param id 店铺订单id
      * @return
      */
-    @RequestMapping(value = "api/order/shop/{id}/customer/service/cancel",method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/order/shop/{id}/customer/service/cancel",method = RequestMethod.PUT)
     public Response<Boolean> customerServiceCancelShopOrder(@PathVariable("id") Long id){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
         if (!Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
@@ -390,7 +390,7 @@ public class AdminOrderWriter {
      * @param id 店铺订单id
      * @return
      */
-    @RequestMapping(value = "api//order/sku/{id}/customer/service/cancel",method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/order/sku/{id}/customer/service/cancel",method = RequestMethod.PUT)
     public Response<Boolean> customerServiceCancelSkuOrder(@PathVariable("id") Long id){
         SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
         if (!Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
@@ -402,5 +402,24 @@ public class AdminOrderWriter {
             throw new JsonResponseException("cancel.sku.order.failed");
         }
         return r;
+    }
+
+    /**
+     *
+     * @param hkExpressCode
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/choose/hk/express/code",method = RequestMethod.PUT)
+    public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode,@RequestParam Long shopOrderId){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
+        Map<String, String> extraMap = order.getExtra();
+        extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, hkExpressCode);
+        Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+        if (!rltRes.isSuccess()) {
+            log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
+            throw new JsonResponseException("add.shop.express.code.fail");
+        }
+        return Response.ok(Boolean.TRUE);
     }
  }

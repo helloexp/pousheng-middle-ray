@@ -124,4 +124,6 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
     //sku订单中的shipmentId
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
+    //店铺订单选择的快递单号
+    public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
 }

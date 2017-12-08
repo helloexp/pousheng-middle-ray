@@ -4,6 +4,7 @@ import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -84,11 +85,11 @@ public class FireCall {
     @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeWarehouse(@RequestParam(name = "start",required = false) String start,
                                        @RequestParam(name = "end", required = false) String end){
-        Date from=new Date();
+        Date from= DateTime.now().withTimeAtStartOfDay().toDate();
         if (StringUtils.hasText(end)){
              from = dft.parseDateTime(start).toDate();
         }
-        Date to = new Date();
+        Date to = DateTime.now().withTimeAtStartOfDay().plusDays(1).minusSeconds(1).toDate();
         if (StringUtils.hasText(end)) {
             to = dft.parseDateTime(end).toDate();
         }

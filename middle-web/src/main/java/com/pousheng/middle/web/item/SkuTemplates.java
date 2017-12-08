@@ -2,22 +2,28 @@ package com.pousheng.middle.web.item;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
@@ -26,6 +32,7 @@ import java.util.Objects;
 /**
  * Created by songrenfei on 2017/6/30
  */
+@Api(description = "货品管理API")
 @RestController
 @Slf4j
 public class SkuTemplates {
@@ -33,13 +40,19 @@ public class SkuTemplates {
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
+    private PsSkuTemplateWriteService psSkuTemplateWriteService;
+    @RpcConsumer
     private SpuReadService spuReadService;
+    @Autowired
+    private EventBus eventBus;
+
 
     /**
      * 获取当前sku code对应sku的spu下的全部sku模板
      * @param skuCode 商品编码
      * @return sku模板
      */
+    @ApiOperation("根据货品条码查询")
     @RequestMapping(value="/api/sku-templates-spu",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode") String skuCode) {
         Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
@@ -73,7 +86,7 @@ public class SkuTemplates {
         return spuSkuTemplatesRes.getResult();
     }
 
-
+    @ApiOperation("货品分页查询基于mysql")
     @RequestMapping(value="/api/sku-template/paging",method=RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuTemplate> pagination(@RequestParam(value = "ids",required = false) List<Long> ids,@RequestParam(value ="skuCode", required = false) String skuCode,
                                           @RequestParam(value="name",  required = false) String name,
@@ -102,5 +115,98 @@ public class SkuTemplates {
         }
         return r.getResult();
 
+    }
+
+
+
+    @ApiOperation("对货品打mops打标")
+    @RequestMapping(value = "/api/sku-template/{id}/make/flag", method = RequestMethod.PUT)
+    public void makeMposFlag(@PathVariable Long id) {
+
+        val rExist = skuTemplateReadService.findById(id);
+        if (!rExist.isSuccess()) {
+            log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        SkuTemplate exist = rExist.getResult();
+        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.MPOS_ITEM);
+
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        toUpdate.setExtra(extra);
+        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate failed error={}",resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+
+        //更新搜索
+        postUpdateSearchEvent(id);
+
+    }
+
+    @ApiOperation("取消货品mops打标")
+    @RequestMapping(value = "/api/sku-template/{id}/cancel/flag", method = RequestMethod.PUT)
+    public void cancelMposFlag(@PathVariable Long id) {
+
+        val rExist = skuTemplateReadService.findById(id);
+        if (!rExist.isSuccess()) {
+            log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        SkuTemplate exist = rExist.getResult();
+        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.NOT_MPOS_ITEM);
+
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        toUpdate.setExtra(extra);
+        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate failed error={}",resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+        //更新搜索
+        postUpdateSearchEvent(id);
+    }
+
+
+    @ApiOperation("对货品批量打mops打标")
+    @RequestMapping(value = "/api/sku-template/batch/make/flag", method = RequestMethod.PUT)
+    public void batchMakeMposFlag(@RequestParam String skuTemplateIds) {
+        List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
+        for (Long id : ids){
+            makeMposFlag(id);
+        }
+    }
+
+    @ApiOperation("批量取消货品mops打标")
+    @RequestMapping(value = "/api/sku-template/batch/cancel/flag", method = RequestMethod.PUT)
+    public void batchCancelMposFlag(@RequestParam String skuTemplateIds) {
+        List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
+        for (Long id : ids){
+            cancelMposFlag(id);
+        }
+    }
+
+
+    //打标或取消打标
+    private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
+        Map<String,String> extra = exist.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            extra = Maps.newHashMap();
+        }
+        extra.put(PsItemConstants.MPOS_FLAG,type);
+        return extra;
+
+    }
+
+
+
+
+
+    private void postUpdateSearchEvent(Long skuTemplateId){
+        SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();
+        updateEvent.setSkuTemplateId(skuTemplateId);
+        eventBus.post(updateEvent);
     }
 }

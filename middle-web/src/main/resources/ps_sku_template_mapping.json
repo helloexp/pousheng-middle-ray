@@ -44,6 +44,10 @@
       "categoryIds":{
         "type": "integer"
       },
+      "categoryName": {
+        "type": "keyword",
+        "index": false
+      },
       "attributes": {
         "type": "keyword"
       },

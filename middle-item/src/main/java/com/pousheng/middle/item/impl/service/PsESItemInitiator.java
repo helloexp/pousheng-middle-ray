@@ -16,8 +16,8 @@ import javax.annotation.PostConstruct;
 /**
  * elasticsearch 的初始化准备工作, 需要创建商品索引和mapping
  * <p>
- * Author:  <a href="mailto:i@terminus.io">jlchen</a>
- * Date: 2016-02-16
+ * Author: songrenfei
+ * Date: 2017-11-16
  */
 @Component
 @Slf4j

@@ -3,6 +3,7 @@ package com.pousheng.middle.item.service;
 import io.terminus.parana.spu.model.SkuTemplate;
 
 /**
+ * 检查商品是否可以dump到搜索引擎
  * Author:songrenfei
  * Created on 13/12/2016.
  */

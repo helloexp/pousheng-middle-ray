@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * 搜索查询参数设置
  * @author songrenfei
  */
 @Slf4j
@@ -40,6 +41,13 @@ public class PsItemQueryBuilder extends DefaultItemQueryBuilder {
         if (StringUtils.hasText(skuCode)) {
             termList.add(new Term("skuCode", skuCode));
         }
+
+        String spuId = params.get("spuId"); // 货品条码
+        if (StringUtils.hasText(spuId)) {
+            termList.add(new Term("spuId", spuId));
+        }
+
+
 
         String spuCode = params.get("spuCode"); // 货号
         if (StringUtils.hasText(spuCode)) {

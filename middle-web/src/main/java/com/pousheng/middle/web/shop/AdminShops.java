@@ -184,11 +184,13 @@ public class AdminShops {
 
         Shop toCreate = new Shop();
         toCreate.setName(shop.getName());
+        toCreate.setBusinessId(shop.getBusinessId());
         toCreate.setImageUrl(shop.getImageUrl());
         toCreate.setType(MoreObjects.firstNonNull(shop.getType(),1));
         toCreate.setStatus(1);
 
         toCreate.setUserId(userId);
+        toCreate.setOuterId(shop.getOuterId());
         toCreate.setUserName(userName);
         toCreate.setPhone(shop.getPhone());
         toCreate.setAddress(shop.getAddress());

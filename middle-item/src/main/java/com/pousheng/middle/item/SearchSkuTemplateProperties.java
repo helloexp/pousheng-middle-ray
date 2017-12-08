@@ -9,6 +9,7 @@ import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * 搜索配置参数
  * Author:  songrenfei
  * Date: 2017-11-13
  */

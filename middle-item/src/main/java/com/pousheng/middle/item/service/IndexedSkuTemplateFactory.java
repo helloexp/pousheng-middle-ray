@@ -13,6 +13,7 @@ import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.model.SpuAttribute;
 
 /**
+ * 创建dump到搜索引擎的商品对象, 包含属性, 类目等信息
  * Author: 宋仁飞
  * Date: 2017-11-31
  */

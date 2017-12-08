@@ -18,7 +18,6 @@ import com.pousheng.middle.item.service.IndexedSkuTemplateGuarder;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
-import io.terminus.parana.item.impl.dao.ItemDao;
 import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
 import io.terminus.parana.spu.impl.dao.SpuAttributeDao;
 import io.terminus.parana.spu.impl.dao.SpuDao;
@@ -50,8 +49,6 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
 
     private static final DateTimeFormatter DATE_TIME_FORMAT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
-    @Autowired
-    private ItemDao itemDao;
     @Autowired
     private SpuDao spuDao;
     @Autowired
@@ -154,7 +151,6 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                     return spu.getId();
                 }
             });
-
 
 
             Map<Long, SpuAttribute> groupSpuAttributebySpuId = Maps.uniqueIndex(spuAttributes, new Function<SpuAttribute, Long>() {

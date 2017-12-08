@@ -4,11 +4,15 @@
 
 package com.pousheng.middle.item.impl.service;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
+import io.terminus.parana.attribute.dto.GroupedSkuAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.cache.BackCategoryCacher;
 import io.terminus.parana.cache.BrandCacher;
@@ -20,10 +24,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
- * Author:  <a href="mailto:i@terminus.io">jlchen</a>
- * Date: 2015-12-31
+ * Author:  songrenfei
+ * Date: 2017-11-31
  */
 @Slf4j
 public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFactory {
@@ -53,7 +58,11 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         indexedSkuTemplate.setSpuId(spu.getId());
         indexedSkuTemplate.setSpuCode(spu.getSpuCode());
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
-        indexedSkuTemplate.setType(1);//todo
+        if(isMopsItem(skuTemplate)){
+            indexedSkuTemplate.setType(1);
+        }else {
+            indexedSkuTemplate.setType(0);
+        }
         indexedSkuTemplate.setUpdatedAt(skuTemplate.getUpdatedAt());
 
         final Long brandId = spu.getBrandId();
@@ -64,6 +73,7 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         }
 
         final Long categoryId = spu.getCategoryId();
+        BackCategory currentBackCategory = backCategoryCacher.findBackCategoryById(categoryId);
         List<BackCategory> backCategories = backCategoryCacher.findAncestorsOf(categoryId);
         List<Long> backCategoryIds = Lists.newArrayListWithCapacity(backCategories.size());
         for (BackCategory backCategory : backCategories) {
@@ -71,12 +81,13 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         }
 
         indexedSkuTemplate.setCategoryIds(backCategoryIds);
+        indexedSkuTemplate.setCategoryName(currentBackCategory.getName());
 
 
+        //非销售属性
+        List<String> attributes = Lists.newArrayList();
         List<GroupedOtherAttribute> otherAttributes = spuAttribute.getOtherAttrs();
-        //也许有没有非销售属性的商品
         if (!CollectionUtils.isEmpty(otherAttributes)) {
-            List<String> attributes = Lists.newArrayList();
             for (GroupedOtherAttribute groupedOtherAttribute : otherAttributes) {
                 for (OtherAttribute attr : groupedOtherAttribute.getOtherAttributes()) {
                     if (isSearchableAttribute(categoryId, attr.getAttrKey())) {
@@ -84,11 +95,23 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
                     }
                 }
             }
-            indexedSkuTemplate.setAttributes(attributes);
         }
 
 
-        indexedSkuTemplate.setPrice(skuTemplate.getPrice());//todo
+        //销售属性
+       /* List<GroupedSkuAttribute> skuAttributes = spuAttribute.getSkuAttrs();
+        if (!CollectionUtils.isEmpty(skuAttributes)) {
+            for (GroupedSkuAttribute groupedSkuAttribute : skuAttributes) {
+                for (SkuAttribute attr : groupedSkuAttribute.getSkuAttributes()) {
+                    attributes.add(attr.getAttrKey() + ":" + attr.getAttrVal());
+                }
+            }
+        }
+*/
+
+        indexedSkuTemplate.setAttributes(attributes);
+
+        //indexedSkuTemplate.setPrice(skuTemplate.getPrice());
 
         return indexedSkuTemplate;
     }
@@ -115,5 +138,19 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
             return Boolean.valueOf(attrMetas.get(AttributeMetaKey.SEARCHABLE));
         }*/
         return true;
+    }
+
+    //是否为mPos商品
+    private Boolean isMopsItem(SkuTemplate exist){
+        Map<String,String> extra = exist.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            return Boolean.FALSE;
+        }
+        if(!extra.containsKey(PsItemConstants.MPOS_FLAG)){
+            return Boolean.FALSE;
+        }
+        String flag = extra.get(PsItemConstants.MPOS_FLAG);
+        return Objects.equal(flag,PsItemConstants.MPOS_ITEM);
+
     }
 }

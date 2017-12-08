@@ -105,6 +105,15 @@ public class IndexedSkuTemplate implements Serializable {
     @Setter
     private List<Long> categoryIds;
 
+
+
+    /**
+     * 当前商品后台类目名称
+     */
+    @Getter
+    @Setter
+    private String categoryName;
+
     /**
      * 所有商品属性,包括sku属性及非sku属性, 属性以key:value的String来存储, 搜索也需要以key:value的term 来搜索
      */

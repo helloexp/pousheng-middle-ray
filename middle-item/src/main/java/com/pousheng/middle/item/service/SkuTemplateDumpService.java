@@ -7,6 +7,7 @@ package com.pousheng.middle.item.service;
 import io.terminus.common.model.Response;
 
 /**
+ * dump服务
  * Author:  songrenfei
  * Date: 2017-11-15
  */

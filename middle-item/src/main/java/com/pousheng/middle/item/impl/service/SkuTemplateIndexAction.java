@@ -15,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
+ * 索引操作 添加或删除
  * Author:  songrenfei
  * Date: 2017-11-19
  */

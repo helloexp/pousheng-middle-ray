@@ -14,8 +14,6 @@ import io.terminus.parana.cache.FrontCategoryCacher;
 import io.terminus.parana.category.dto.FrontCategoryTree;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.search.item.impl.BaseItemQueryBuilder;
-import io.terminus.parana.search.item.impl.ItemSearchInShopResultComposer;
-import io.terminus.parana.search.item.impl.ItemSearchResultComposer;
 import io.terminus.search.api.Searcher;
 import io.terminus.search.api.model.WithAggregations;
 import io.terminus.search.api.query.Criterias;
@@ -53,9 +51,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
     private final FrontCategoryCacher frontCategoryCacher;
 
-    private final ItemSearchResultComposer itemSearchResultComposer;
-
-    private final ItemSearchInShopResultComposer itemSearchInShopResultComposer;
+    private final SkuTemplateSearchResultComposer skuTemplateSearchResultComposer;
 
 
     @Autowired
@@ -64,15 +60,13 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
                                             Searcher searcher,
                                             CategoryBindingCacher categoryBindingCacher,
                                             FrontCategoryCacher frontCategoryCacher,
-                                            ItemSearchResultComposer itemSearchResultComposer,
-                                            ItemSearchInShopResultComposer itemSearchInShopResultComposer) {
+                                            SkuTemplateSearchResultComposer skuTemplateSearchResultComposer) {
         this.searchSkuTemplateProperties = searchSkuTemplateProperties;
         this.itemQueryBuilder = itemQueryBuilder;
         this.searcher = searcher;
         this.categoryBindingCacher = categoryBindingCacher;
         this.frontCategoryCacher = frontCategoryCacher;
-        this.itemSearchResultComposer = itemSearchResultComposer;
-        this.itemSearchInShopResultComposer = itemSearchInShopResultComposer;
+        this.skuTemplateSearchResultComposer = skuTemplateSearchResultComposer;
     }
 
 
@@ -100,7 +94,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
         Map<String, Object> context = Maps.newHashMap();
 
         WithAggregations<T> withAggs = doSearch(pageNo, pageSize, templateName, params, clazz);
-        SearchedItemWithAggs<T> searchedItemWithAggs = itemSearchResultComposer.compose(withAggs, params, context);
+        SearchedItemWithAggs<T> searchedItemWithAggs = skuTemplateSearchResultComposer.compose(withAggs, params, context);
         return Response.ok(searchedItemWithAggs);
     }
 

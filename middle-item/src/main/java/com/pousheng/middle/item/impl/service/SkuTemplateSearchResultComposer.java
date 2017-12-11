@@ -79,7 +79,8 @@ public class SkuTemplateSearchResultComposer extends BaseItemSearchResultCompose
         searchWithAggs.setBrands(brandNavs);
 
         //处理属性聚合
-        String chosenAttrs = params.get("attrs");
+        //String chosenAttrs = params.get("attrs");
+        String chosenAttrs = null; //skuTemplate搜索就不用已选择的功能
         List<Bucket> attrAggs = aggregations.get(ATTR_AGGS);
         List<GroupedAggNav> attrNavs = makeGroupedAttrNavs(attrAggs, chosenAttrs);
         searchWithAggs.setAttributes(attrNavs);

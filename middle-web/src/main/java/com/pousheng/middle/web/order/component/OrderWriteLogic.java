@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -58,11 +57,6 @@ public class OrderWriteLogic {
 
 
 
-
-    @Autowired
-    private EventBus eventBus;
-
-    public static final Integer BATCH_SIZE = 100;     // 批处理数量
 
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {

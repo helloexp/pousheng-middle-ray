@@ -11,6 +11,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Created by tony on 2017/6/28
  */
@@ -47,6 +49,16 @@ public class ExpressCodeReadServiceImpl implements ExpressCodeReadService {
         } catch (Exception e) {
             log.error("failed to paging express code, id={}, cause:{}", id, Throwables.getStackTraceAsString(e));
             return Response.fail("single.expressCode.find.fail");
+        }
+    }
+
+    @Override
+    public Response<List<ExpressCode>> findAll() {
+        try{
+           return  Response.ok(expressCodeDao.findAll());
+        }catch (Exception e){
+            log.error("failed to find all express code, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("all.expressCode.find.fail");
         }
     }
 }

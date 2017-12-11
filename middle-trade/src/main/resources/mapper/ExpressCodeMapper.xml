@@ -116,4 +116,8 @@
             <include refid="queryCondition"/>
         </where>
     </select>
+    <select id="findAll"  resultMap="ExpressCodeMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+    </select>
 </mapper>

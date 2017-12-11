@@ -4,6 +4,8 @@ import com.pousheng.middle.order.model.ExpressCode;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Created by tony on 2017/6/27.
  */
@@ -17,4 +19,7 @@ public class ExpressCodeDao extends MyBatisDao<ExpressCode> {
         return getSqlSession().selectOne(sqlId("findByOfficalCode"), officialCode);
     }
 
+    public List<ExpressCode> findAll() {
+        return getSqlSession().selectList(sqlId("findAll"));
+    }
 }

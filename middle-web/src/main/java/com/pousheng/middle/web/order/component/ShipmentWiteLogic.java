@@ -394,11 +394,13 @@ public class ShipmentWiteLogic {
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             orderWaitHandleType = OrderWaitHandleType.JD_PAY_ON_CASH.value();
+            this.updateShipmentNote(shopOrder, orderWaitHandleType);
             return false;
         }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
             orderWaitHandleType =OrderWaitHandleType.ORDER_HAS_NOTE.value();
+            this.updateShipmentNote(shopOrder, orderWaitHandleType);
             return false;
         }
         //4.判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
@@ -426,6 +428,11 @@ public class ShipmentWiteLogic {
      */
     private boolean autoHandleOrderParam(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         int orderWaitHandleType = 0;
+        //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
+            orderWaitHandleType = OrderWaitHandleType.JD_PAY_ON_CASH.value();
+        }
         //判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
         int count = 0;
         for (SkuOrder skuOrder:skuOrders){
@@ -740,8 +747,8 @@ public class ShipmentWiteLogic {
 
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
-        //判断该订单是否有撤销订单的权限,只有订单在发货之前并且是非取消状态下才可以取消发货单
-        if (!Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())&&shipment.getStatus()<MiddleShipmentsStatus.SHIPPED.getValue()){
+        //判断该发货单是否可以撤销，已取消的或者已经发货的发货单是不能撤销的
+        if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())||shipment.getStatus()>MiddleShipmentsStatus.SHIPPED.getValue()){
             throw new JsonResponseException("invalid.shipment.status.can.not.cancel");
         }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());

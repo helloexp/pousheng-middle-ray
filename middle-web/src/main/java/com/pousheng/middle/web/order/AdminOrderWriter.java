@@ -375,12 +375,20 @@ public class AdminOrderWriter {
         if (!Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
             throw new JsonResponseException("error.status.can.not.cancel");
         }
-        Response<Boolean> r = orderWriteService.shopOrderStatusChanged(id,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
-        if (r.isSuccess()){
-            log.error("shop order cancel failed,skuOrderId is {},caused by{}",id,r.getError());
+        //判断订单是否存在有效的发货单
+        if(!orderReadLogic.isShipmentCreatedForShopOrder(shopOrder.getId())){
+            throw new JsonResponseException("shop.order.has.shipment");
+        }
+        //获取有效子单
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+        List<Long> skuIds = skuOrders.stream().filter(Objects::nonNull).filter(skuOrder -> !Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())).map(SkuOrder::getId).collect(Collectors.toList());
+        //更新订单状态
+        Response<List<Long>> r = orderWriteService.batchSkuOrderStatusChanged(skuIds,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
+        if (!r.isSuccess()){
+            log.error("shop order cancel failed,skuOrderId is {},caused by {}",id,r.getError());
             throw new JsonResponseException("cancel.shop.order.failed");
         }
-        return r;
+        return Response.ok(Boolean.TRUE);
 
 
     }
@@ -397,7 +405,7 @@ public class AdminOrderWriter {
             throw new JsonResponseException("error.status.can.not.cancel");
         }
         Response<Boolean> r = orderWriteService.skuOrderStatusChanged(id,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
-        if (r.isSuccess()){
+        if (!r.isSuccess()){
             log.error("sku order cancel failed,skuOrderId is {},caused by{}",id,r.getError());
             throw new JsonResponseException("cancel.sku.order.failed");
         }
@@ -405,15 +413,14 @@ public class AdminOrderWriter {
     }
 
     /**
-     *
+     * 选择快递商
      * @param hkExpressCode
      * @return
      */
-    @RequestMapping(value = "/api/order/{id}/choose/hk/express/code",method = RequestMethod.PUT)
+    @RequestMapping(value = "/api/order/choose/hk/express/code",method = RequestMethod.PUT)
     public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode,@RequestParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
-        Map<String, String> extraMap = order.getExtra();
+        Map<String, String> extraMap = shopOrder.getExtra();
         extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, hkExpressCode);
         Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
         if (!rltRes.isSuccess()) {

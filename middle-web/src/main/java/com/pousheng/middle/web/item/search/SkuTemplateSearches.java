@@ -91,7 +91,7 @@ public class SkuTemplateSearches {
             }
             searchSkuTemplate.setPrice(skuTemplate.getPrice());
             Map<String,String> extra = skuTemplate.getExtra();
-            if(CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            if(!CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
             }
 

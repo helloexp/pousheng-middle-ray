@@ -160,7 +160,12 @@ public class Refunds {
         }
         refunds.forEach(refund -> {
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
-                //todo 丢件补发类型的售后单需要将状态变更为待创建售后单
+                OrderOperation orderOperation = MiddleOrderEvent.LOST_HANDLE.toOrderOperation();
+                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                if (!response.isSuccess()) {
+                    log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
+                    throw new JsonResponseException(response.getError());
+                }
             }else{
                 OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
                 Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);

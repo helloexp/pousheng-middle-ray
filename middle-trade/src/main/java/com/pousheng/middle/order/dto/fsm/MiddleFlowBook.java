@@ -510,6 +510,26 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
                     MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue());
+
+            //=========丢件补发类型操作(特殊类型)===
+
+            //待处理-->提交-->待创建发货单
+            addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.LOST_HANDLE.toOrderOperation(),
+                    MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue());
+            //待生成发货单->生成发货单->待发货
+            addTransition(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation(),
+                    MiddleRefundStatus.LOST_WAIT_SHIP.getValue());
+            //待发货->发货->待收货
+            addTransition(MiddleRefundStatus.LOST_WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.LOST_SHIPPED.toOrderOperation(),
+                    MiddleRefundStatus.LOST_SHIPPED.getValue());
+            //待收货->客服确认收货->已完成
+            addTransition(MiddleRefundStatus.LOST_SHIPPED.getValue(),
+                    MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation(),
+                    MiddleRefundStatus.LOST_DONE.getValue());
+
         }
     };
     /**

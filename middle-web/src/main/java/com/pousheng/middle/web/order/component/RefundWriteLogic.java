@@ -722,7 +722,7 @@ public class RefundWriteLogic {
         //提交动作
         if(Objects.equals(submitRefundInfo.getOperationType(),2)){
             //更新售后单状态
-            Response<Boolean> updateStatusRes = updateStatus(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+            Response<Boolean> updateStatusRes = updateStatus(refund,MiddleOrderEvent.LOST_HANDLE.toOrderOperation());
             if(!updateStatusRes.isSuccess()){
                 log.error("update refund(id:{}) status to:{} fail,error:{}",refund.getId(),updateStatusRes.getError());
                 throw new JsonResponseException(updateStatusRes.getError());

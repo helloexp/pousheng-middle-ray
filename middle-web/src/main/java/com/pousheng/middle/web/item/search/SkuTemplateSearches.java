@@ -76,6 +76,10 @@ public class SkuTemplateSearches {
     //封装价格 和 销售属性信息
     private void assembleSkuInfo(List<SearchSkuTemplate> data) {
 
+        if(CollectionUtils.isEmpty(data)){
+            return;
+        }
+
         Map<Long,SkuTemplate> groupSkuTemplateById = groupSkuTemplateById(data);
 
         Map<Long, SpuAttribute> groupSpuAttributebySpuId = groupSpuAttributebySpuId(data);

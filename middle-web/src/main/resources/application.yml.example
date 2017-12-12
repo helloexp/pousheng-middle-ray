@@ -79,3 +79,15 @@ ych.token:
 taobao.token:
   appKey: xxx
   appName: 端点中台
+
+search:
+  host: 127.0.0.1
+  port: 9200
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 100

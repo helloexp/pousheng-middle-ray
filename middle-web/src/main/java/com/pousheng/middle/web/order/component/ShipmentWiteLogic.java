@@ -370,6 +370,7 @@ public class ShipmentWiteLogic {
         if (Objects.equals(shopOrder.getOutFrom(),MiddleChannel.TAOBAO.getValue())){
             if (shopOrder.getBuyerName().contains("**")){
                 shipmentNote.append("天猫收货人信息不全不自动生成发货单");
+                return false;
             }
         }
         //3.判断订单有无备注

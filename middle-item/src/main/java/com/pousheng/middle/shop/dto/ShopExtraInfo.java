@@ -3,6 +3,7 @@ package com.pousheng.middle.shop.dto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -79,6 +80,9 @@ public class ShopExtraInfo implements Serializable{
     }
 
     public static Map<String,String> putExtraInfo(Map<String,String> extraMap,ShopExtraInfo shopExtraInfo){
+        if(CollectionUtils.isEmpty(extraMap)){
+            extraMap = Maps.newHashMap();
+        }
         extraMap.put(ShopConstants.SHOP_EXTRA_INFO,mapper.toJson(shopExtraInfo));
         return extraMap;
     }

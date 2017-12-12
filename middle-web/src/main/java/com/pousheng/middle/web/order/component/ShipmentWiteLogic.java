@@ -239,6 +239,7 @@ public class ShipmentWiteLogic {
         if(Objects.isNull(warehouseShipments)||warehouseShipments.isEmpty()){
             //库存不足，添加备注
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+            return false;
         }
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment:warehouseShipments){

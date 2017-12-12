@@ -67,12 +67,12 @@ public class ShopExtraInfo implements Serializable{
 
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("shop extra info json is null");
-            return null;
+            return new ShopExtraInfo();
         }
 
         if(extraMap.containsKey(ShopConstants.SHOP_EXTRA_INFO)){
             log.error("shop extra map not contains key:{}",ShopConstants.SHOP_EXTRA_INFO);
-            return null;
+            return new ShopExtraInfo();
         }
 
         return mapper.fromJson(extraMap.get(ShopConstants.SHOP_EXTRA_INFO),ShopExtraInfo.class);

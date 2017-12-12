@@ -129,6 +129,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         sku.setName(skuTemplate.getName());
         sku.setPrice(skuTemplate.getPrice());
         sku.setSkuCode(skuTemplate.getSkuCode());
+        sku.setItemId(skuTemplate.getSpuId());
         try {
             sku.setExtraPrice(skuTemplate.getExtraPrice());
         } catch (Exception e) {

@@ -71,7 +71,7 @@ public class ShopExtraInfo implements Serializable{
             return new ShopExtraInfo();
         }
 
-        if(extraMap.containsKey(ShopConstants.SHOP_EXTRA_INFO)){
+        if(!extraMap.containsKey(ShopConstants.SHOP_EXTRA_INFO)){
             log.error("shop extra map not contains key:{}",ShopConstants.SHOP_EXTRA_INFO);
             return new ShopExtraInfo();
         }

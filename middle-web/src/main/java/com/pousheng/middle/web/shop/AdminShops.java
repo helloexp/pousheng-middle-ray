@@ -240,6 +240,25 @@ public class AdminShops {
         }
     }
 
+    @ApiOperation("更新门店用户登录密码")
+    @RequestMapping(value = "/{shopId}/reset/password", method = RequestMethod.PUT)
+    public void updateShop(@PathVariable Long shopId, @RequestParam String password) {
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        judgePassword(password);
+
+        //更新用户中心用户信息
+        Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(exist.getUserId(), exist.getUserName(), password);
+        if (!ucUserInfoRes.isSuccess()) {
+            log.error("update user center user(id:{}) fail,error:{}", exist.getUserId(), ucUserInfoRes.getError());
+            throw new JsonResponseException(ucUserInfoRes.getError());
+        }
+    }
+
 
     @ApiOperation("更新单个门店安全库存信息")
     @RequestMapping(value = "/{shopId}/safe/stock", method = RequestMethod.PUT)

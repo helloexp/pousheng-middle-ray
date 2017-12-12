@@ -16,6 +16,7 @@ import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.search.dto.SearchedItem;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -95,7 +96,10 @@ public class SkuTemplateSearches {
                 searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
             }
 
-            searchSkuTemplate.setOtherAttrs(groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId()).getOtherAttrs());
+            SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
+            if(Arguments.notNull(spuAttribute)){
+                searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
+            }
             searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
             searchSkuTemplate.setMainImage(skuTemplate.getImage_());
 

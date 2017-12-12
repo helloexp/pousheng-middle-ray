@@ -88,13 +88,7 @@ public class AdminOrderWriter {
         List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                 .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
         //判断该订单下所有发货单的状态
-        List<Integer> orderShipMentStatusList = com.google.common.collect.Lists.transform(orderShipmentsFilter, new Function<OrderShipment, Integer>() {
-            @Nullable
-            @Override
-            public Integer apply(@Nullable OrderShipment orderShipment) {
-                return orderShipment.getStatus();
-            }
-        });
+        List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
         //判断订单是否已经全部发货了
         int count=0;
         for (Integer status:orderShipMentStatusList){
@@ -106,7 +100,7 @@ public class AdminOrderWriter {
         if (count>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
             throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
         }
-        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
+        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
@@ -120,7 +114,7 @@ public class AdminOrderWriter {
                 throw new JsonResponseException(syncRes.getError());
             }
         }else{
-            Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToTaobao(shopOrder);
+            Response<Boolean> syncRes = syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
             if (!syncRes.isSuccess()) {
                 log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
                 throw new JsonResponseException(syncRes.getError());
@@ -151,7 +145,10 @@ public class AdminOrderWriter {
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         log.info("try to roll back shop order shopOrderId is {}",shopOrderId);
-        orderWriteLogic.rollbackShopOrder(shopOrderId);
+        boolean isSuccess = orderWriteLogic.rollbackShopOrder(shopOrderId);
+        if (!isSuccess){
+            throw new JsonResponseException("rollback.shop.order.failed");
+        }
     }
 
     /**
@@ -174,10 +171,17 @@ public class AdminOrderWriter {
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             log.info("try to cancel sku order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            boolean isSuccess = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            if (!isSuccess){
+                throw new JsonResponseException("cancel.sku.order.failed");
+            }
         } else {
             log.info("try to cancel shop order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            orderWriteLogic.cancelShopOrder(shopOrderId);
+            boolean isSuccess = orderWriteLogic.cancelShopOrder(shopOrderId);
+            if (!isSuccess){
+                throw new JsonResponseException("cancel.shop.order.failed");
+            }
+
         }
 
     }

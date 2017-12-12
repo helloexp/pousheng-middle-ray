@@ -144,7 +144,7 @@ public class CreateShipments {
         List<ShipmentItem> shipmentItems = shipmentPreview.getShipmentItems();
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
-            shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
+            shipmentDiscountFee = (shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount()) + shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
         }
         //发货单总金额(商品总净价+运费)

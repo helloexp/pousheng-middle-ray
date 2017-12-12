@@ -38,7 +38,9 @@ public class ErpClient {
         this.host = host;
         this.accessKey = accessKey;
     }
-
+    public String get(String path,Map<String,String> params){
+        return get(path,null,null,null,null,params);
+    }
     public String get(String path,
                       Date start,
                       Date end,

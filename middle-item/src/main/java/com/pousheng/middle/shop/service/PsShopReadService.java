@@ -1,0 +1,27 @@
+package com.pousheng.middle.shop.service;
+
+import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
+import io.terminus.parana.shop.model.Shop;
+
+/**
+ * Created by songrenfei on 2017/12/6
+ */
+public interface PsShopReadService {
+    /**
+     * 分页店铺
+     *
+     * @param name     店铺名
+     * @param userId   商家用户ID
+     * @param type     店铺类型
+     * @param status   店铺状态
+     * @param status   店铺状态
+     * @param outerId   店铺外码
+     * @param businessId   区别编码
+     * @param pageNo   页码
+     * @param pageSize 数量
+     * @return 分页结果
+     */
+    Response<Paging<Shop>> pagination(String name, Long userId, Integer type, Integer status,String outerId,Long businessId, Integer pageNo, Integer pageSize);
+
+}

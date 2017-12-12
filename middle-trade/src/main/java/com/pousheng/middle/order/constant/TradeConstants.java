@@ -94,7 +94,14 @@ public class TradeConstants {
      * see RefundSource
      */
     public static final String REFUND_SOURCE = "refundSource";
-
+    /**
+     * 是否是预售订单
+     */
+    public static final String IS_STEP_ORDER="isStepOrder";
+    /**
+     * 预售订单状态 1.付完定金没有付尾款,2.付完定金和尾款
+     */
+    public static final String STEP_ORDER_STATUS="stepOrderStatus";
 
 
     /**
@@ -115,4 +122,6 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
     //活动赠品名称
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
+    //sku订单中的shipmentId
+    public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
 }

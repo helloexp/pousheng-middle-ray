@@ -94,6 +94,42 @@ ALTER TABLE `parana_invoices` change  `user_id` `user_id` bigint(20)  NULL COMME
 -- spu归组规则新增字段rule_detail(规则详情)
 ALTER TABLE `pousheng_sku_group_rules` ADD COLUMN `rule_detail` VARCHAR(20) COMMENT '规则详情' AFTER `last_start`;
 
+
+drop table if exists `pousheng_stock_push_logs`;
+CREATE TABLE `pousheng_stock_push_logs`
+(
+  `id` BIGINT(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
+  `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
+  `sku_code` VARCHAR(40) NULL COMMENT 'SKU 编码 (标准库存单位编码)',
+  `quantity`  BIGINT(20) NOT NULL COMMENT 'sku数量',
+  `status` INT(1) NOT NULL COMMENT '1:推送成功,2:推送失败',
+  `cause` VARCHAR(512) COMMENT '失败原因',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `index_stock_push_shop_name` (`shop_name`),
+  KEY `index_stock_push_shop_id` (`shop_id`),
+  KEY `index_stock_push_sku_code` (`sku_code`)
+)COMMENT='宝胜库存推送日志';
+drop table if exists `pousheng_settlement_pos`;
+CREATE TABLE `pousheng_settlement_pos`
+(
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `pos_type` tinyint(4) NOT NULL COMMENT 'pos单类型:1.正常销售,2.售后订单',
+  `ship_type`tinyint(4) NOT NULL COMMENT '发货类型:1.销售发货单,2.换货发货单,3.售后',
+  `order_id` bigint(20) NOT NULL COMMENT '发货单或售后单号',
+  `pos_serial_no` VARCHAR(60)  NOT NULL COMMENT 'pos单号',
+  `pos_amt` bigint(20) NOT NULL  COMMENT 'pos单金额',
+  `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
+  `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
+  `pos_created_at`datetime NOT NULL COMMENT 'POS单创建时间',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
+  KEY `index_settlement_order_id` (`order_id`)
+)COMMENT ='宝胜结算管理pos单';
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`
 (

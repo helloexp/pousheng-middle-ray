@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Import;
  * Date: 20/04/2017
  */
 @Configuration
-@ComponentScan("com.pousheng.middle.spu.service")
+@ComponentScan("com.pousheng.middle.shop.impl")
 @Import({ItemAutoConfig.class})
 public class PoushengMiddleItemConfiguration {
 

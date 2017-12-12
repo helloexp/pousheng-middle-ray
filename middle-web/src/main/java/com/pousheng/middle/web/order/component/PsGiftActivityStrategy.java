@@ -146,7 +146,7 @@ public class PsGiftActivityStrategy {
 
             }
             //判断是否满足活动人数的限制
-            if (Objects.equals(poushengGiftActivity.getQuantityRule(), PoushengGiftQuantityRule.LIMIT_PARTICIPANTS)) {
+            if (Objects.equals(poushengGiftActivity.getQuantityRule(), PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value())) {
                 if (poushengGiftActivity.getAlreadyActivityQuantity()>=poushengGiftActivity.getActivityQuantity()){
                     continue;
                 }

@@ -99,7 +99,7 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
 
         //销售属性
-       /* List<GroupedSkuAttribute> skuAttributes = spuAttribute.getSkuAttrs();
+        List<GroupedSkuAttribute> skuAttributes = spuAttribute.getSkuAttrs();
         if (!CollectionUtils.isEmpty(skuAttributes)) {
             for (GroupedSkuAttribute groupedSkuAttribute : skuAttributes) {
                 for (SkuAttribute attr : groupedSkuAttribute.getSkuAttributes()) {
@@ -107,7 +107,6 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
                 }
             }
         }
-*/
 
         indexedSkuTemplate.setAttributes(attributes);
 

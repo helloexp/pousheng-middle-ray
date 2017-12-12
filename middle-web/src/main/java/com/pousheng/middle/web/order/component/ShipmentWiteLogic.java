@@ -367,6 +367,11 @@ public class ShipmentWiteLogic {
             shipmentNote.append("京东货到付款不自动生成发货单");
             return false;
         }
+        if (Objects.equals(shopOrder.getOutFrom(),MiddleChannel.TAOBAO.getValue())){
+            if (shopOrder.getBuyerName().contains("**")){
+                shipmentNote.append("天猫收货人信息不全不自动生成发货单");
+            }
+        }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
             shipmentNote.append("订单有备注不自动生成发货单");

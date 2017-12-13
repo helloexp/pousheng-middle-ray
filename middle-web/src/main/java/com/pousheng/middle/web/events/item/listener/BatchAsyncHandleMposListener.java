@@ -36,7 +36,7 @@ import java.util.Map;
  */
 @Slf4j
 @Component
-public class BatchAsyncHandleMposFlagListener {
+public class BatchAsyncHandleMposListener {
 
     @Autowired
     private EventBus eventBus;

@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -25,6 +26,7 @@ import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.Map;
@@ -232,6 +234,58 @@ public class SkuTemplates {
             throw new JsonResponseException(response.getError());
         }
     }
+
+    @ApiOperation("异步对货品批量mpos打标")
+    @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
+    public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
+        BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
+        event.setParams(params);
+        event.setType(PsItemConstants.MPOS_ITEM);
+        eventBus.post(event);
+    }
+
+    @ApiOperation("异步批量取消货品mpos打标")
+    @RequestMapping(value = "/api/sku-template/batch/async/cancel/flag",method = RequestMethod.PUT)
+    public void asyncCancelMposFlag(@RequestParam Map<String,String> params){
+        BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
+        event.setParams(params);
+        event.setType(PsItemConstants.NOT_MPOS_ITEM);
+        eventBus.post(event);
+    }
+
+    @ApiOperation("导入文件")
+    @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
+    public void asyncImportFile(@RequestParam(value="filename") MultipartFile file){
+        /**
+         * 导入excel
+         * 1.接收文件，转换成集合
+         * 2.批量做一些操作
+         * 3.保存至redis
+         *
+         * 疑问
+         * 1.excel内容
+         * 2.做什么操作
+         */
+    }
+
+    @ApiOperation("导出文件")
+    @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.GET)
+    public void asyncExportFile(Map<String,String> params){
+        /**
+         * 导出excel
+         * 1.获取集合  excel要展示哪些内容
+         * 货品条码 类别 spuId不用 除了折扣 其它都不可编辑
+         * 重写
+         * 2.exportService.saveToDiskAndCloud(list)
+         * 3.保存redis的位置要改（if）
+         * 4.获取记录的位置要改 （if）
+         *
+         * 疑问
+         * excel内容
+         */
+
+    }
+
 
 
 

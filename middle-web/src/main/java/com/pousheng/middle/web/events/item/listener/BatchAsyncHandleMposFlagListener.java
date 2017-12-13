@@ -156,7 +156,7 @@ public class BatchAsyncHandleMposFlagListener {
             });
             throw new JsonResponseException(500, resp.getError());
         }
-        //postUpdateSearchEvent(id);
+        postUpdateSearchEvent(id);
     }
 
     /**

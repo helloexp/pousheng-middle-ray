@@ -112,7 +112,6 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
-                refundWriteLogic.completeHandleForLostType(refund,editSubmitRefundInfo);
             }else{
                 refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
                 if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
@@ -532,7 +531,7 @@ public class Refunds {
     }
 
     /**
-     * 修改订单的收货信息
+     * 修改订单的收货信息，主要是换货使用
      * @param id 售后单主键
      * @param middleChangeReceiveInfo
      */
@@ -609,6 +608,11 @@ public class Refunds {
 
     }
 
+    /**
+     * 是否是换货
+     * @param refund
+     * @return
+     */
     private Boolean isChangeRefund(Refund refund) {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value());
     }

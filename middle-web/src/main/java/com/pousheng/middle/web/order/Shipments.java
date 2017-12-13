@@ -951,4 +951,23 @@ public class Shipments {
             throw new JsonResponseException("cancel.shipment.failed");
         }
     }
+
+    /**
+     * 根据电商店铺id获取发货单下所有的货品集合
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "api/order/{id}/shipment/items", method = RequestMethod.GET)
+    public List<ShipmentItem> findShipmentItemByOrder(@PathVariable("id") Long id){
+        //获取订单
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+        //获取订单下的所有发货单
+        List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+        List<Shipment> shipments = originShipments.stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                .collect(Collectors.toList());
+        //获取订单下对应发货单的所有发货商品列表
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
+        return shipmentItems;
+    }
 }

@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.component;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -29,12 +30,10 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import javax.annotation.Nullable;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -214,10 +213,11 @@ public class RefundWriteLogic {
         Shipment shipment = shipmentReadLogic.findShipmentById(submitRefundInfo.getShipmentId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //申请数量是否有效
-        RefundItem refundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
-        completeSkuAttributeInfo(Lists.newArrayList(refundItem));
-        updateShipmentItemRefundQuantity(submitRefundInfo.getRefundSkuCode(),submitRefundInfo.getRefundQuantity(),shipmentItems);
-
+        List<RefundItem> refundItems = checkRefundQuantity(submitRefundInfo,shipmentItems);
+        completeSkuAttributeInfo(refundItems);
+        for (EditSubmitRefundItem editSubmitRefundItem:submitRefundInfo.getEditSubmitRefundItems()){
+            updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity(),shipmentItems);
+        }
         Refund refund = new Refund();
         refund.setBuyerId(shopOrder.getBuyerId());
         refund.setBuyerName(shopOrder.getBuyerName());
@@ -244,9 +244,9 @@ public class RefundWriteLogic {
         completeWareHoseAndExpressInfo(submitRefundInfo.getRefundType(),refundExtra,submitRefundInfo);
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
-        extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(refundItem)));
+        extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(refundItems));
         //完善换货信息
-        completeChangeItemInfo(refundItem,submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
+        completeChangeItemInfo(refundItems,submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
         //完善换货发货地址信息
         if (Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
             if (Objects.nonNull(submitRefundInfo.getMiddleChangeReceiveInfo())){
@@ -288,12 +288,15 @@ public class RefundWriteLogic {
         return rRefundRes.getResult();
     }
 
-
+    /**
+     * 完善售后单
+     * @param refund 售后单
+     * @param submitRefundInfo 前端传入的参数
+     */
     public void completeHandle(Refund refund, EditSubmitRefundInfo submitRefundInfo){
 
         List<RefundItem> existRefundItems = refundReadLogic.findRefundItems(refund);
-        RefundItem existRefundItem = existRefundItems.get(0);//只会存在一条 退货商品
-        RefundItem currentRefundItem = existRefundItem;//当前编辑情况下的退货商品
+        List<RefundItem> currentRefundItems = existRefundItems;//当前编辑情况下的退货商品
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //发货单信息
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId()==null?submitRefundInfo.getShipmentId():refundExtra.getShipmentId());
@@ -315,21 +318,21 @@ public class RefundWriteLogic {
         updateRefund.setFee(submitRefundInfo.getFee());
 
         //判断退货商品及数量是否有变化
-        Boolean isRefundItemChanged = refundItemIsChanged(submitRefundInfo,existRefundItem);
+        Boolean isRefundItemChanged = refundItemIsChanged(submitRefundInfo,existRefundItems);
         if(isRefundItemChanged){
             //申请数量是否有效
-            currentRefundItem = checkRefundQuantity(submitRefundInfo,shipmentItems);
+            currentRefundItems = checkRefundQuantity(submitRefundInfo,shipmentItems);
             //更新发货商品中的已退货数量
-            updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItem);
-            completeSkuAttributeInfo(Lists.newArrayList(currentRefundItem));
-            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(currentRefundItem)));
+            updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItems);
+            completeSkuAttributeInfo(currentRefundItems);
+            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
         }
 
         //判断换货货商品及数量是否有变化
         Boolean isChangeItemChanged = changeItemIsChanged(refund,submitRefundInfo);
         if(isChangeItemChanged){
             //完善换货信息
-            completeChangeItemInfo(currentRefundItem,refund.getRefundType(),submitRefundInfo,extraMap);
+            completeChangeItemInfo(currentRefundItems,refund.getRefundType(),submitRefundInfo,extraMap);
         }
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
 
@@ -348,16 +351,16 @@ public class RefundWriteLogic {
         if(!Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
             //如果只是改了退款金额，则要更新退货商品中的退款金额
             if(!isRefundItemChanged){
-                currentRefundItem.setFee(submitRefundInfo.getFee());
-                extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(Lists.newArrayList(currentRefundItem)));
+                //currentRefundItem.setFee(submitRefundInfo.getFee());
+                //extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
 
             }
 
             //如果只是改了退款金额,则更新换货商品中的退款金额
             if(!isChangeItemChanged&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
-                RefundItem existChangeItem = refundReadLogic.findRefundChangeItems(refund).get(0);
-                existChangeItem.setFee(submitRefundInfo.getFee());
-                extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(existChangeItem)));
+                //RefundItem existChangeItem = refundReadLogic.findRefundChangeItems(refund).get(0);
+                //existChangeItem.setFee(submitRefundInfo.getFee());
+                //extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(existChangeItem)));
             }
         }
         //表明售后单的信息已经全部完善
@@ -382,18 +385,39 @@ public class RefundWriteLogic {
 
     }
 
-    //退货商品是否改变
-    private Boolean refundItemIsChanged(EditSubmitRefundInfo editSubmitRefundInfo,RefundItem existRefundItem){
+    /**
+     * 判断退换货商品是否已经改变
+     * @param editSubmitRefundInfo
+     * @param existRefundItems 当前存在的sku
+     * @return
+     */
+    private Boolean refundItemIsChanged(EditSubmitRefundInfo editSubmitRefundInfo,List<RefundItem> existRefundItems){
         Boolean isChanged = Boolean.FALSE;
-
-        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existRefundItem.getApplyQuantity())){
+        //传输进来的售后商品
+        List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
+        List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
+        //之前编辑的售后商品
+        Map<String,Integer> existSkuCodeAndQuantity = Maps.newHashMap();
+        List<String> existSkuCodes = existRefundItems.stream().filter(Objects::nonNull).map(RefundItem::getSkuCode).collect(Collectors.toList());
+        existRefundItems.forEach(refundItem -> {
+            existSkuCodeAndQuantity.put(refundItem.getSkuCode(),refundItem.getApplyQuantity());
+        });
+        //根据skuCode判断两者是否存在差集
+        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
+        if (diffSkuCodes.isEmpty()){
+            //如果不存在差集这比较两个商品之间是否存在金额变化的部分
+            for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
+                Integer existQuantity = existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode());
+                if (!Objects.equals(editSubmitRefundItem.getRefundQuantity(),existQuantity)){
+                    isChanged = Boolean.TRUE;
+                    return isChanged;
+                }
+            }
+        }else{
+            //如果存在差集说明有商品变化
             isChanged = Boolean.TRUE;
+            return isChanged;
         }
-
-        if(!Objects.equals(editSubmitRefundInfo.getRefundSkuCode(),existRefundItem.getSkuCode())){
-            isChanged = Boolean.TRUE;
-        }
-
         return isChanged;
     }
 
@@ -409,33 +433,77 @@ public class RefundWriteLogic {
         }
 
         List<RefundItem> existChangeItems = refundReadLogic.findRefundChangeItems(refund);
-        RefundItem existChangeItem = existChangeItems.get(0);//只会存在一条 换货商品
 
-        if(!Objects.equals(editSubmitRefundInfo.getRefundQuantity(),existChangeItem.getApplyQuantity())){
+        List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
+        List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
+        //当前存在的商品
+        Map<String,Integer> existSkuCodeAndQuantity = Maps.newHashMap();
+        List<String> existSkuCodes = Lists.newArrayList();
+        existChangeItems.forEach(refundItem -> {
+            existSkuCodeAndQuantity.put(refundItem.getSkuCode(),refundItem.getApplyQuantity());
+            existSkuCodes.add(refundItem.getSkuCode());
+        });
+        //根据skuCode判断两者是否存在差集
+        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
+        if (diffSkuCodes.isEmpty()){
+            //如果不存在差集这比较两个商品之间是否存在金额变化的部分
+            for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
+                Integer existQuantity = existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode());
+                if (!Objects.equals(editSubmitRefundItem.getRefundQuantity(),existQuantity)){
+                    isChanged = Boolean.TRUE;
+                    return isChanged;
+                }
+            }
+        }else{
+            //如果存在差集说明有商品变化
             isChanged = Boolean.TRUE;
+            return isChanged;
         }
-
-        if(!Objects.equals(editSubmitRefundInfo.getRefundSkuCode(),existChangeItem.getSkuCode())){
-            isChanged = Boolean.TRUE;
-        }
-
         return isChanged;
     }
 
-    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems,EditSubmitRefundInfo editSubmitRefundInfo,RefundItem refundItem){
-
-        //编辑前后商品没改变只改变了数量
-        if(Objects.equals(editSubmitRefundInfo.getRefundSkuCode(),refundItem.getSkuCode())){
-            //计算出变化量
-            Integer quantity = editSubmitRefundInfo.getRefundQuantity() - refundItem.getApplyQuantity();
-            updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),quantity,shipmentItems);
-        }else {
-            //改变了商品
-            updateShipmentItemRefundQuantity(editSubmitRefundInfo.getRefundSkuCode(),editSubmitRefundInfo.getRefundQuantity(),shipmentItems);
-            updateShipmentItemRefundQuantity(refundItem.getSkuCode(),-(refundItem.getApplyQuantity()==null?0:refundItem.getApplyQuantity()),shipmentItems);
-
+    /**
+     * 编辑是更新发货单中已经申请退货的数量
+     * @param shipmentItems 发货单中的商品集合
+     * @param editSubmitRefundInfo 编辑时前端传过来的参数
+     * @param refundItems 之前已经选择的售后商品集合
+     */
+    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems,EditSubmitRefundInfo editSubmitRefundInfo,List<RefundItem> refundItems){
+        //前台传输进来的售后商品集合
+        List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
+        List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
+        Map<String,Integer> editSkuCodeAndQuantity = Maps.newHashMap();
+        editSubmitRefundItems.forEach(editSubmitRefundItem -> {
+            editSkuCodeAndQuantity.put(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity());
+        });
+        //当前存在的商品
+        Map<String,Integer> existSkuCodeAndQuantity = Maps.newHashMap();
+        Map<String,RefundItem> skuCodesAndRefundItems = Maps.newHashMap();
+        List<String> existSkuCodes = Lists.newArrayList();
+        refundItems.forEach(refundItem -> {
+            existSkuCodeAndQuantity.put(refundItem.getSkuCode(),refundItem.getApplyQuantity());
+            skuCodesAndRefundItems.put(refundItem.getSkuCode(),refundItem);
+            existSkuCodes.add(refundItem.getSkuCode());
+        });
+        //获取当前传入的skuCode和之前保存的skuCode之间是否存在变化,求差集
+        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
+        if (diffSkuCodes.isEmpty()){
+            //说明商品没有变化只是改变了数量
+            for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
+                Integer quantity = editSubmitRefundItem.getRefundQuantity() - existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()); //只改变了数量
+                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),quantity,shipmentItems);
+            }
+        }else{
+            //说明有商品变化
+            List<String> editSkuCodeRemain = this.getDifferenceList(editSkuCodes,existSkuCodes); //获取传入的skuCode集合与当前的skuCode集合中不同的部分
+            List<String> existSkuCodeRemain = this.getDifferenceList(existSkuCodes,editSkuCodes); //获取当前的skuCode集合与传入的skuCode集合中不同的部分
+            for (String skuCode:editSkuCodeRemain){
+                updateShipmentItemRefundQuantity(skuCode,editSkuCodeAndQuantity.get(skuCode),shipmentItems);
+            }
+            for (String skuCode:existSkuCodeRemain){
+                updateShipmentItemRefundQuantity(skuCode,-(existSkuCodeAndQuantity.get(skuCode)==null?0:existSkuCodeAndQuantity.get(skuCode)),shipmentItems);
+            }
         }
-
     }
 
 
@@ -452,14 +520,20 @@ public class RefundWriteLogic {
         }
     }
 
-
-    private void completeChangeItemInfo(RefundItem refundItem,Integer refundType,EditSubmitRefundInfo submitRefundInfo,Map<String,String> extraMap){
+    /**
+     * 完善换货商品信息
+     * @param refundItems 当前需要换货的商品
+     * @param refundType 售后类型
+     * @param submitRefundInfo 前端提交的售后商品
+     * @param extraMap
+     */
+    private void completeChangeItemInfo(List<RefundItem> refundItems,Integer refundType,EditSubmitRefundInfo submitRefundInfo,Map<String,String> extraMap){
         if(Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),refundType)){
             //换货数量是否有效
             checkChangeQuantity(submitRefundInfo);
-            RefundItem changeItem = makeChangeItemInfo(refundItem,submitRefundInfo);
-            completeSkuAttributeInfo(Lists.newArrayList(changeItem));
-            extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItem)));
+            List<RefundItem> changeItems = makeChangeItemInfo(refundItems,submitRefundInfo);
+            completeSkuAttributeInfo(changeItems);
+            extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(changeItems)));
         }
     }
 
@@ -467,23 +541,33 @@ public class RefundWriteLogic {
 
 
     private void checkChangeQuantity(EditSubmitRefundInfo submitRefundInfo){
-        if(!Objects.equals(submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity())){
-            log.error("refund applyQuantity:{} not equal change applyQuantity:{}",submitRefundInfo.getRefundQuantity(),submitRefundInfo.getChangeQuantity());
-            throw new JsonResponseException("refund.applyQuantity.not.equal.change.applyQuantity");
+        List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
+        for (EditSubmitRefundItem editSubmitRefundItem:editSubmitRefundItems){
+            if(!Objects.equals(editSubmitRefundItem.getRefundQuantity(),editSubmitRefundItem.getChangeQuantity())){
+                log.error("refund applyQuantity:{} not equal change applyQuantity:{}",editSubmitRefundItem.getRefundQuantity(),editSubmitRefundItem.getChangeQuantity());
+                throw new JsonResponseException("refund.applyQuantity.not.equal.change.applyQuantity");
+            }
         }
     }
 
-    private RefundItem makeChangeItemInfo(RefundItem refundItem,EditSubmitRefundInfo submitRefundInfo){
-
-
-        RefundItem changeRefundItem = new RefundItem();
-        BeanMapper.copy(refundItem,changeRefundItem);
-        changeRefundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
-        changeRefundItem.setAlreadyHandleNumber(0);
-        changeRefundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
-        changeRefundItem.setItemId(refundItem.getItemId());
-        changeRefundItem.setAttrs(refundItem.getAttrs());
-        return changeRefundItem;
+    /**
+     *
+     * @param refundItems
+     * @param submitRefundInfo
+     * @return
+     */
+    private List<RefundItem> makeChangeItemInfo(List<RefundItem> refundItems,EditSubmitRefundInfo submitRefundInfo){
+        List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
+        List<RefundItem> changeRefundItems = Lists.newArrayList();
+        editSubmitRefundItems.forEach(editSubmitRefundItem -> {
+            RefundItem changeRefundItem = new RefundItem();
+            changeRefundItem.setApplyQuantity(editSubmitRefundItem.getChangeQuantity());
+            changeRefundItem.setAlreadyHandleNumber(0);
+            changeRefundItem.setSkuCode(editSubmitRefundItem.getChangeSkuCode());
+            changeRefundItem.setFee(editSubmitRefundItem.getFee());
+            changeRefundItems.add(changeRefundItem);
+        });
+        return changeRefundItems;
 
     }
 
@@ -498,28 +582,53 @@ public class RefundWriteLogic {
 
     }
 
-
-    private RefundItem checkRefundQuantity(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
-        for (ShipmentItem shipmentItem : shipmentItems){
-            if(Objects.equals(submitRefundInfo.getRefundSkuCode(),shipmentItem.getSkuCode())){
-                /*Integer availableQuantity = shipmentItem.getQuantity()-shipmentItem.getRefundQuantity();*/
-                if(submitRefundInfo.getRefundQuantity()<=0){
-                    log.error("refund applyQuantity:{} invalid",submitRefundInfo.getRefundQuantity());
+    /**
+     * 判断退货数量是否有效
+     * @param submitRefundInfo 从前端提交过来的请求参数
+     * @param shipmentItems 对应发货单的发货商品的集合
+     * @return
+     */
+    private List<RefundItem> checkRefundQuantity(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
+        //退货商品的列表集合
+        List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
+        //发货单的sku-quantity集合
+        Map<String,Integer> skuCodesAndQuantity = Maps.newHashMap();
+        List<String> skuCodes = Lists.newArrayList();
+        Map<String,ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
+        shipmentItems.forEach(shipmentItem -> {
+            skuCodesAndQuantity.put(shipmentItem.getSkuCode(),shipmentItem.getQuantity());
+            skuCodes.add(shipmentItem.getSkuCode());
+        });
+        List<RefundItem> refundItems = Lists.newArrayList();
+        int count = 0;//判断请求的skuCode在不在申请的发货单中，count>0代表存在skuCode不在发货单中
+        List<String> invalidSkuCodes = Lists.newArrayList();
+        for (EditSubmitRefundItem editSubmitRefundItem:editSubmitRefundItems){
+            if (skuCodes.contains(editSubmitRefundItem.getRefundSkuCode())){
+                //判断金额是否小于0
+                if (editSubmitRefundItem.getRefundQuantity()<0){
+                    log.error("refund applyQuantity:{} invalid",editSubmitRefundItem.getRefundQuantity());
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
-                if(submitRefundInfo.getRefundQuantity()>shipmentItem.getQuantity()){
-                    log.error("refund applyQuantity:{} gt available applyQuantity:{}",submitRefundInfo.getRefundQuantity(),shipmentItem.getQuantity());
+                //判断申请售后的商品数量是否大于发货单中商品的数量
+                if (editSubmitRefundItem.getRefundQuantity()>skuCodesAndQuantity.get(editSubmitRefundItem.getRefundQuantity())){
+                    log.error("refund applyQuantity:{} gt available applyQuantity:{}",editSubmitRefundItem.getRefundQuantity(),skuCodesAndQuantity.get(editSubmitRefundItem.getRefundQuantity()));
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 RefundItem refundItem = new RefundItem();
+                ShipmentItem shipmentItem = skuCodesAndShipmentItems.get(editSubmitRefundItem.getRefundSkuCode());
                 BeanMapper.copy(shipmentItem,refundItem);
-                refundItem.setApplyQuantity(submitRefundInfo.getRefundQuantity());
-                return refundItem;
+                refundItem.setApplyQuantity(editSubmitRefundItem.getRefundQuantity());
+                refundItems.add(refundItem);
+            }else{
+                count++;
             }
         }
-        log.error("refund sku code:{} invalid",submitRefundInfo.getRefundSkuCode());
-        throw new JsonResponseException("check.refund.applyQuantity.fail");
-
+        if (count==0){
+            return refundItems;
+        }else{
+            log.error("refund sku codes:{} invalid",invalidSkuCodes);
+            throw new JsonResponseException("check.refund.applyQuantity.fail");
+        }
     }
 
 
@@ -668,20 +777,24 @@ public class RefundWriteLogic {
     /**
      * 丢件补发参数组装
      * @param submitRefundInfo
-     * @param shipmentItems
+     * @param shipmentItems 该订单下的所有的商品集合
      * @return
      */
     private List<RefundItem> checkChangeItemsForLost(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
         //可能存在只有部分商品被弄丢了，这个时候需要传输商品条码
-        List<String> changeSkuCodes = submitRefundInfo.getLostSkuCodes();
+        //传输过来的需要丢件补发的商品集合
+        List<ShipmentItem> lostItems = submitRefundInfo.getLostItems();
+        //获取需要丢件补发的skuCode的集合
+        List<String> changeSkuCodes = lostItems.stream().filter(Objects::nonNull).map(ShipmentItem::getSkuCode).collect(Collectors.toList());
         List<RefundItem>   refundItems = Lists.newArrayList();
+        Map<String,Integer> skuCodesAndQuantity = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
             //获取所有需要补发的RefundItem
             if (changeSkuCodes.contains(shipmentItem.getSkuCode())){
                 RefundItem refundItem = new RefundItem();
                 BeanMapper.copy(shipmentItem,refundItem);
-                refundItem.setApplyQuantity(submitRefundInfo.getChangeQuantity());
-                refundItem.setSkuCode(submitRefundInfo.getChangeSkuCode());
+                refundItem.setApplyQuantity(skuCodesAndQuantity.get(shipmentItem.getSkuCode()));
+                refundItem.setSkuCode(shipmentItem.getSkuCode());
                 refundItems.add(refundItem);
             }
         });
@@ -756,4 +869,31 @@ public class RefundWriteLogic {
             throw new JsonResponseException(updateRes.getError());
         }
     }
+
+    /**
+     * 获取两个集合的交集
+     * @param list1
+     * @param list2
+     * @return
+     */
+    public List<String> getDntersectionList(List<String> list1, List<String> list2){
+        Set<String> sets = Sets.newHashSet(list1);
+        Set<String> sets2 = Sets.newHashSet(list2);
+        SetView<String> intersection = Sets.intersection(sets, sets2);
+        return new ArrayList<>(intersection);
+    }
+
+    /**
+     * 获取两个集合的差集
+     * @param list1
+     * @param list2
+     * @return
+     */
+    public List<String> getDifferenceList(List<String> list1, List<String> list2){
+        Set<String> sets = Sets.newHashSet(list1);
+        Set<String> sets2 = Sets.newHashSet(list2);
+        SetView<String> intersection = Sets.difference(sets, sets2);
+        return new ArrayList<>(intersection);
+    }
+
 }

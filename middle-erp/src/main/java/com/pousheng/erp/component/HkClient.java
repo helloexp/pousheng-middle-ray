@@ -23,7 +23,7 @@ import java.util.Map;
  */
 @Component
 @Slf4j
-public class ErpClient {
+public class HkClient {
 
     public static final ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -31,19 +31,11 @@ public class ErpClient {
     private final String host;
 
     private final String accessKey;
-    @Value("${gateway.hk.host}")
-    private String hkGateway;
-
-    @Value("${gateway.hk.accessKey}")
-    private String hkAccessKey;
 
     @Autowired
-    public ErpClient(@Value("${gateway.erp.host}") String host,@Value("${gateway.hk.host}") String hkGateway,@Value("${gateway.hk.accessKey}") String hkAccessKey,
-                     @Value("${gateway.erp.accessKey}") String accessKey) {
+    public HkClient(@Value("${gateway.hk.host}") String host, @Value("${gateway.hk.accessKey}") String accessKey) {
         this.host = host;
         this.accessKey = accessKey;
-        this.hkGateway=hkGateway;
-        this.hkAccessKey=hkAccessKey
     }
     public String get(String path,Map<String,String> params){
         return get(path,null,null,null,null,params);

@@ -13,7 +13,6 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
@@ -31,11 +30,13 @@ public class MaterialPusher {
     private final ErpClient erpClient;
 
     private final SpuMaterialDao spuMaterialDao;
+    private final HkClient hkClient;
 
     @Autowired
-    public MaterialPusher(ErpClient erpClient, SpuMaterialDao spuMaterialDao) {
+    public MaterialPusher(ErpClient erpClient, SpuMaterialDao spuMaterialDao, HkClient hkClient) {
         this.erpClient = erpClient;
         this.spuMaterialDao = spuMaterialDao;
+        this.hkClient = hkClient;
     }
 
     /**
@@ -66,7 +67,7 @@ public class MaterialPusher {
 
         Map<String,String> map= Maps.newHashMap();
         map.put("material",Joiners.COMMA.join(materialIds));
-        erpClient.get("common/erp/inv/getinstockcount",map);
+        hkClient.get("common/erp/inv/getinstockcount",map);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.component.HkClient;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -40,6 +41,8 @@ public class Warehouses {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private ErpClient erpClient;
+    @Autowired
+    private HkClient hkClient;
 
     @RpcConsumer
     private MiddleStockPushLogReadSerive middleStockPushLogReadSerive;
@@ -72,7 +75,7 @@ public class Warehouses {
         }
         Map<String,String> map=Maps.newHashMap();
         map.put("stock",warehouse.getInnerCode());
-        erpClient.get("common/erp/inv/getinstockcount",map);
+        hkClient.get("common/erp/inv/getinstockcount",map);
         return Boolean.TRUE;
 
     }

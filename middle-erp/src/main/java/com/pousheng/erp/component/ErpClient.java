@@ -31,19 +31,12 @@ public class ErpClient {
     private final String host;
 
     private final String accessKey;
-    @Value("${gateway.hk.host}")
-    private String hkGateway;
-
-    @Value("${gateway.hk.accessKey}")
-    private String hkAccessKey;
 
     @Autowired
-    public ErpClient(@Value("${gateway.erp.host}") String host,@Value("${gateway.hk.host}") String hkGateway,@Value("${gateway.hk.accessKey}") String hkAccessKey,
+    public ErpClient(@Value("${gateway.erp.host}") String host,
                      @Value("${gateway.erp.accessKey}") String accessKey) {
         this.host = host;
         this.accessKey = accessKey;
-        this.hkGateway=hkGateway;
-        this.hkAccessKey=hkAccessKey
     }
     public String get(String path,Map<String,String> params){
         return get(path,null,null,null,null,params);

@@ -8,8 +8,8 @@ import com.pousheng.middle.order.service.PoushengGiftActivityWriteService;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityWriteLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
-import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -118,7 +118,8 @@ public class GiftActivityWriter {
      * @return
      */
     @RequestMapping(value = "/api/gift/actvity/{id}/publish", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> publishGiftActivity(@PathVariable("id") Long id){
+    @OperationLogType("发布活动")
+    public Response<Boolean> publishGiftActivity(@PathVariable("id")@OperationLogParam Long id){
         Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
         if (!r.isSuccess()||Objects.isNull(r.getResult())){
             log.error("find pousheng gift activity faile,id is {},caused by {}",id,r.getError());
@@ -135,8 +136,7 @@ public class GiftActivityWriter {
 
     //编辑活动详情，或者新增活动详情
     @RequestMapping(value = "/api/gift/activity/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑或创建")
-    public PoushengGiftActivityInfo edit(@RequestParam(required = false) @PermissionCheckParam Long id) {
+    public PoushengGiftActivityInfo edit(@RequestParam(required = false)  Long id) {
         if (Arguments.isNull(id)) {
             PoushengGiftActivityInfo newInfo = new PoushengGiftActivityInfo();
             newInfo.setIsCreate(true);
@@ -164,7 +164,8 @@ public class GiftActivityWriter {
      * 使活动失效
      */
     @RequestMapping(value = "/api/gift/actvity/{id}/over", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> overGiftActivity(@PathVariable("id") Long id){
+    @OperationLogType("使赠品活动失效")
+    public Response<Boolean> overGiftActivity(@PathVariable("id") @OperationLogParam Long id){
         return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.OVER.toOrderOperation());
     }
 
@@ -172,7 +173,8 @@ public class GiftActivityWriter {
      * 删除活动
      */
     @RequestMapping(value = "/api/gift/actvity/{id}/delete", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> deleteGiftActivity(@PathVariable("id") Long id){
+    @OperationLogType("删除赠品活动")
+    public Response<Boolean> deleteGiftActivity(@PathVariable("id")@OperationLogParam Long id){
         return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.DELETE.toOrderOperation());
     }
 }

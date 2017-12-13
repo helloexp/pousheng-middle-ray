@@ -40,6 +40,7 @@ public @interface OperationLogModule {
         WAREHOUSE_ADDRESS_RULE(8, "仓库地址规则", "warehouse/address-rule"),
 
         WAREHOUSE_SHOP_RULE(9, "店铺发货规则", "warehouse/shop-rule"),
+        
         POUSHENG_GIFT_ACTIVITY(10,"宝胜活动赠品","gift");
 
         @Getter

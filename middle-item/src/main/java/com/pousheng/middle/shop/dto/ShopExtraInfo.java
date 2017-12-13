@@ -45,19 +45,19 @@ public class ShopExtraInfo implements Serializable{
     private ShopServerInfo shopServerInfo;
 
     @Getter
-    private String expresssCompanyJson;
+    private String expressCompanyJson;
 
 
 
-    public void setExpresssCompanyJson(String expresssCompanyJson){
-        this.expresssCompanyJson = expresssCompanyJson;
-        if (Strings.isNullOrEmpty(expresssCompanyJson)) {
+    public void setExpresssCompanyJson(String expressCompanyJson){
+        this.expressCompanyJson = expressCompanyJson;
+        if (Strings.isNullOrEmpty(expressCompanyJson)) {
             this.expresssCompanyList = Lists.newArrayList();
         } else {
             try {
-               this.expresssCompanyJson = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(expresssCompanyJson, EXPRESS_COMPANY_LIST);
+               this.expresssCompanyList = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(expressCompanyJson, EXPRESS_COMPANY_LIST);
             } catch (IOException e) {
-                log.error("analysis shop express company json:{} fail",expresssCompanyJson);
+                log.error("analysis shop express company json:{} fail",expressCompanyJson);
             }
 
         }

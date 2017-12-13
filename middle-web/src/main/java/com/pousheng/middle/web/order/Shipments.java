@@ -466,7 +466,7 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
     @OperationLogType("同步发货单到恒康")
-    public void syncHkShipment(@PathVariable(value = "id") Long shipmentId){
+    public void syncHkShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
         OrderShipment orderShipment =  shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         if (Objects.equals(orderShipment.getType(),1)){
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
@@ -495,7 +495,7 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{id}/cancel",method = RequestMethod.PUT)
     @OperationLogType("取消发货单")
-    public void cancleShipment(@PathVariable(value = "id") Long shipmentId){
+    public void cancleShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
         if(!cancelRes.isSuccess()){
@@ -944,7 +944,7 @@ public class Shipments {
      */
     @RequestMapping(value = "api/single/shipment/{id}/rollback", method = RequestMethod.PUT)
     @OperationLogType("单个发货单取消")
-    public void rollbackShopOrder(@PathVariable("id") Long shipmentId) {
+    public void rollbackShopOrder(@PathVariable("id") @OperationLogParam Long shipmentId) {
         log.info("try to cancel shipemnt, shipmentId is {}",shipmentId);
         boolean isRollBackSuccess = shipmentWiteLogic.rollbackShipment(shipmentId);
         if (!isRollBackSuccess){

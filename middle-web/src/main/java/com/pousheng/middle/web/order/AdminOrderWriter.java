@@ -382,7 +382,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/shop/{id}/customer/service/cancel",method = RequestMethod.PUT)
     @OperationLogType("中台客服取消店铺订单")
-    public Response<Boolean> customerServiceCancelShopOrder(@PathVariable("id")@OperationLogParam Long id){
+    public Response<Boolean> customerServiceCancelShopOrder(@PathVariable("id")@OperationLogParam Long id,@RequestParam String shopOrderCancelReason){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
         if (!Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
             throw new JsonResponseException("error.status.can.not.cancel");
@@ -390,6 +390,13 @@ public class AdminOrderWriter {
         //判断订单是否存在有效的发货单
         if(!orderReadLogic.isShipmentCreatedForShopOrder(shopOrder.getId())){
             throw new JsonResponseException("shop.order.has.shipment");
+        }
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        shopOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,shopOrderCancelReason);
+        try {
+            orderWriteService.updateOrderExtra(id,OrderLevel.SHOP,shopOrderExtra);
+        }catch (Exception e){
+            log.error("add shop order cancel reason failed,shop order id is {}",id);
         }
         //获取有效子单
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
@@ -412,10 +419,17 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/sku/{id}/customer/service/cancel",method = RequestMethod.PUT)
     @OperationLogType("中台客服取消子订单")
-    public Response<Boolean> customerServiceCancelSkuOrder(@PathVariable("id")@OperationLogParam Long id){
+    public Response<Boolean> customerServiceCancelSkuOrder(@PathVariable("id")@OperationLogParam Long id,@RequestParam String skuOrderCancelReason){
         SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
         if (!Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())){
             throw new JsonResponseException("error.status.can.not.cancel");
+        }
+        Map<String,String> skuOrderExtra = skuOrder.getExtra();
+        skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,skuOrderCancelReason);
+        try {
+            orderWriteService.updateOrderExtra(id,OrderLevel.SKU,skuOrderExtra);
+        }catch (Exception e){
+            log.error("add sku order cancel reason failed,sku order id is {}",id);
         }
         Response<Boolean> r = orderWriteService.skuOrderStatusChanged(id,MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.CANCEL.getValue());
         if (!r.isSuccess()){

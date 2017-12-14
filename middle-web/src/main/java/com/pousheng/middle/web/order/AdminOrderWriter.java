@@ -368,7 +368,7 @@ public class AdminOrderWriter {
             }
             successShopOrderIds.add(shopOrderId);
         }
-        if (failedShopOrderIds.isEmpty()){
+        if (!failedShopOrderIds.isEmpty()){
             //todo 添加动态提示
             throw new JsonResponseException("batch.auto.handle.failed");
         }

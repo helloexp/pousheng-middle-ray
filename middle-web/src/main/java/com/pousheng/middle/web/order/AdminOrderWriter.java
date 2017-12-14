@@ -392,7 +392,7 @@ public class AdminOrderWriter {
             throw new JsonResponseException("shop.order.has.shipment");
         }
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
-        shopOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,shopOrderCancelReason);
+        shopOrderExtra.put(TradeConstants.SHOP_ORDER_CANCEL_REASON,shopOrderCancelReason);
         try {
             orderWriteService.updateOrderExtra(id,OrderLevel.SHOP,shopOrderExtra);
         }catch (Exception e){

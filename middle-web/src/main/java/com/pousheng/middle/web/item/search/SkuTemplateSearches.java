@@ -16,6 +16,7 @@ import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.search.dto.SearchedItem;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -76,6 +77,10 @@ public class SkuTemplateSearches {
     //封装价格 和 销售属性信息
     private void assembleSkuInfo(List<SearchSkuTemplate> data) {
 
+        if(CollectionUtils.isEmpty(data)){
+            return;
+        }
+
         Map<Long,SkuTemplate> groupSkuTemplateById = groupSkuTemplateById(data);
 
         Map<Long, SpuAttribute> groupSpuAttributebySpuId = groupSpuAttributebySpuId(data);
@@ -87,11 +92,14 @@ public class SkuTemplateSearches {
             }
             searchSkuTemplate.setPrice(skuTemplate.getPrice());
             Map<String,String> extra = skuTemplate.getExtra();
-            if(CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            if(!CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
             }
 
-            searchSkuTemplate.setOtherAttrs(groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId()).getOtherAttrs());
+            SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
+            if(Arguments.notNull(spuAttribute)){
+                searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
+            }
             searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
             searchSkuTemplate.setMainImage(skuTemplate.getImage_());
 

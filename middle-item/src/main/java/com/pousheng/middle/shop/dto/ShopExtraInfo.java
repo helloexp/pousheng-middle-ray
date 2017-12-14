@@ -3,6 +3,7 @@ package com.pousheng.middle.shop.dto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -44,19 +45,19 @@ public class ShopExtraInfo implements Serializable{
     private ShopServerInfo shopServerInfo;
 
     @Getter
-    private String expresssCompanyJson;
+    private String expressCompanyJson;
 
 
 
-    public void setExpresssCompanyJson(String expresssCompanyJson){
-        this.expresssCompanyJson = expresssCompanyJson;
-        if (Strings.isNullOrEmpty(expresssCompanyJson)) {
+    public void setExpresssCompanyJson(String expressCompanyJson){
+        this.expressCompanyJson = expressCompanyJson;
+        if (Strings.isNullOrEmpty(expressCompanyJson)) {
             this.expresssCompanyList = Lists.newArrayList();
         } else {
             try {
-               this.expresssCompanyJson = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(expresssCompanyJson, EXPRESS_COMPANY_LIST);
+               this.expresssCompanyList = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(expressCompanyJson, EXPRESS_COMPANY_LIST);
             } catch (IOException e) {
-                log.error("analysis shop express company json:{} fail",expresssCompanyJson);
+                log.error("analysis shop express company json:{} fail",expressCompanyJson);
             }
 
         }
@@ -67,18 +68,21 @@ public class ShopExtraInfo implements Serializable{
 
         if(CollectionUtils.isEmpty(extraMap)){
             log.error("shop extra info json is null");
-            return null;
+            return new ShopExtraInfo();
         }
 
-        if(extraMap.containsKey(ShopConstants.SHOP_EXTRA_INFO)){
+        if(!extraMap.containsKey(ShopConstants.SHOP_EXTRA_INFO)){
             log.error("shop extra map not contains key:{}",ShopConstants.SHOP_EXTRA_INFO);
-            return null;
+            return new ShopExtraInfo();
         }
 
         return mapper.fromJson(extraMap.get(ShopConstants.SHOP_EXTRA_INFO),ShopExtraInfo.class);
     }
 
     public static Map<String,String> putExtraInfo(Map<String,String> extraMap,ShopExtraInfo shopExtraInfo){
+        if(CollectionUtils.isEmpty(extraMap)){
+            extraMap = Maps.newHashMap();
+        }
         extraMap.put(ShopConstants.SHOP_EXTRA_INFO,mapper.toJson(shopExtraInfo));
         return extraMap;
     }

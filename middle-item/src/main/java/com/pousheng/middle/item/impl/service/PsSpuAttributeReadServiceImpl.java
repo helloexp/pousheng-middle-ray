@@ -9,6 +9,7 @@ import io.terminus.parana.spu.model.SpuAttribute;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -26,6 +27,10 @@ public class PsSpuAttributeReadServiceImpl implements PsSpuAttributeReadService{
     @Override
     public Response<List<SpuAttribute>> findBySpuIds(List<Long> spuIds) {
         try {
+            if(CollectionUtils.isEmpty(spuIds)){
+                log.error("spu ids is null");
+                return Response.fail("spu.id.invalid");
+            }
             return Response.ok(spuAttributeDao.findBySpuIds(spuIds));
         }catch (Exception e){
             log.error("find spu attribute by spu ids:{} fail,cause:{}",spuIds, Throwables.getStackTraceAsString(e));

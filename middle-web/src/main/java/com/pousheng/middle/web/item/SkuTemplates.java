@@ -259,16 +259,6 @@ public class SkuTemplates {
     @ApiOperation("导入文件")
     @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
     public Response<String> asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
-        /**
-         * 导入excel
-         * 1.接收文件，转换成集合
-         * 2.批量做一些操作
-         * 3.保存至redis
-         *
-         * 疑问
-         * 1.excel内容
-         * 2.做什么操作
-         */
         if(multipartFile == null){
             return Response.fail("the upload file is null");
         }
@@ -278,8 +268,6 @@ public class SkuTemplates {
         }
         File file = (File)multipartFile;
         BatchAsyncImportMposDiscountEvent event = new BatchAsyncImportMposDiscountEvent();
-        //File testFile = new File("/Users/hello/test1.xlsx");
-        //event.setFile(testFile);
         event.setFile(file);
         eventBus.post(event);
         return Response.ok();
@@ -293,9 +281,6 @@ public class SkuTemplates {
         eventBus.post(event);
     }
 
-
-
-
     //打标或取消打标
     private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
         Map<String,String> extra = exist.getExtra();
@@ -307,7 +292,6 @@ public class SkuTemplates {
 
     }
 
-
     //设置折扣
     private Map<String,String> setMopsDiscount(SkuTemplate exist,Integer discount){
         Map<String,String> extra = exist.getExtra();
@@ -318,10 +302,6 @@ public class SkuTemplates {
         return extra;
 
     }
-
-
-
-
 
     private void postUpdateSearchEvent(Long skuTemplateId){
         SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();

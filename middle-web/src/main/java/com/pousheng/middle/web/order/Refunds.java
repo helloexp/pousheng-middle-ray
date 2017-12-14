@@ -114,6 +114,7 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                refundWriteLogic.completeHandleForLostType(refund,editSubmitRefundInfo);
             }else{
                 refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
                 if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {

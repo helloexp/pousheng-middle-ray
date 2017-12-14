@@ -261,7 +261,7 @@ public class Shipments {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
-            String data =  shipmentRequest.getData();
+            String data =  JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
             ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
@@ -389,7 +389,7 @@ public class Shipments {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
-            String data =  shipmentRequest.getData();
+            String data =  JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
             Refund refund = refundReadLogic.findRefundById(refundId);

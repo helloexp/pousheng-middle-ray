@@ -82,7 +82,7 @@ public class CreateShipments {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<ShipmentPreview> shipmentPreviews = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
-            String data = shipmentRequest.getData();
+            String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Long warehouseId = shipmentRequest.getWarehouseId();
             Response<ShipmentPreview> response;
             if (Objects.equals(1, type)) {

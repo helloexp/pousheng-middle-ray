@@ -22,7 +22,20 @@ public class PsItemConstants {
     //折扣
     public static final String MPOS_DISCOUNT = "mposDiscount";
 
+    //执行中
+    public static final String EXECUTING = "0";
 
+    //完成
+    public static final String EXECUTED = "1";
+
+    //异常
+    public static final String EXECUTE_ERROR = "2";
+
+    //导出任务
+    public static final String EXPORT_TASK = "export";
+
+    //导入任务
+    public static final String IMPORT_TASK = "import";
 
 
 }

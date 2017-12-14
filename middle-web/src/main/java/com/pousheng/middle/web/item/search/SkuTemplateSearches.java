@@ -60,7 +60,7 @@ public class SkuTemplateSearches {
      * @return 搜索结果, 包括属性导航, 面包屑等
      */
     @ApiOperation("搜索货品")
-    @RequestMapping(value = "/api/sku/template/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/api/middle/sku/template/search", produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> searchItemWithAggs(@RequestParam(required = false) Integer pageNo,
                                                                                           @RequestParam(required = false) Integer pageSize,
                                                                                           @RequestParam Map<String,String> params){

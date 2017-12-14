@@ -5,6 +5,9 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
+import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
+import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -25,7 +28,9 @@ import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -236,7 +241,48 @@ public class SkuTemplates {
         }
     }
 
+    @ApiOperation("异步对货品批量mpos打标")
+    @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
+    public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
+        BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
+        event.setParams(params);
+        event.setType(PsItemConstants.MPOS_ITEM);
+        eventBus.post(event);
+    }
 
+    @ApiOperation("异步批量取消货品mpos打标")
+    @RequestMapping(value = "/api/sku-template/batch/async/cancel/flag",method = RequestMethod.PUT)
+    public void asyncCancelMposFlag(@RequestParam Map<String,String> params){
+        BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
+        event.setParams(params);
+        event.setType(PsItemConstants.NOT_MPOS_ITEM);
+        eventBus.post(event);
+    }
+
+    @ApiOperation("导入文件")
+    @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
+    public Response<String> asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+        if(multipartFile == null){
+            return Response.fail("the upload file is null");
+        }
+        String fileName = multipartFile.getOriginalFilename();
+        if(!fileName.endsWith(".xls") && !fileName.endsWith(".xlsx")){
+            return Response.fail("the upload file is not a excel");
+        }
+        File file = (File)multipartFile;
+        BatchAsyncImportMposDiscountEvent event = new BatchAsyncImportMposDiscountEvent();
+        event.setFile(file);
+        eventBus.post(event);
+        return Response.ok();
+    }
+
+    @ApiOperation("导出文件")
+    @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.PUT)
+    public void asyncExportFile(Map<String,String> params){
+        BatchAsyncExportMposDiscountEvent event = new BatchAsyncExportMposDiscountEvent();
+        event.setParams(params);
+        eventBus.post(event);
+    }
 
     //打标或取消打标
     private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
@@ -249,7 +295,6 @@ public class SkuTemplates {
 
     }
 
-
     //设置折扣
     private Map<String,String> setMopsDiscount(SkuTemplate exist,Integer discount){
         Map<String,String> extra = exist.getExtra();
@@ -260,10 +305,6 @@ public class SkuTemplates {
         return extra;
 
     }
-
-
-
-
 
     private void postUpdateSearchEvent(Long skuTemplateId){
         SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();

@@ -283,7 +283,7 @@ public class ShipmentWiteLogic {
      */
     public void updateShipmentNote(ShopOrder shopOrder, int type) {
         //添加备注
-        if(type>0){
+        if(type>0&&type!=6){
             //shopOrderextra中添加字段
             ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
             Map<String, String> extraMap = order.getExtra();

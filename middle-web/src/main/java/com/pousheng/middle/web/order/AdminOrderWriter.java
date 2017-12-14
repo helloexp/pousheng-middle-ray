@@ -336,7 +336,8 @@ public class AdminOrderWriter {
         boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
         if (!isSuccess){
             //todo 添加动态提示
-            throw new JsonResponseException("");
+            log.error("auto handle shop order failed, order id is {}",shopOrderId);
+            throw new JsonResponseException("auto.handle.failed");
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -365,7 +366,7 @@ public class AdminOrderWriter {
         }
         if (failedShopOrderIds.isEmpty()){
             //todo 添加动态提示
-            throw new JsonResponseException("");
+            throw new JsonResponseException("batch.auto.handle.failed");
         }
         return Response.ok(Boolean.TRUE);
     }

@@ -116,8 +116,9 @@
             <include refid="queryCondition"/>
         </where>
     </select>
-    <select id="findAll"  resultMap="ExpressCodeMap" >
+    <select id="findAll" parameterType="string" resultMap="ExpressCodeMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
+        WHERE name like concat('%',#{name}, '%')
     </select>
 </mapper>

@@ -31,5 +31,5 @@ public interface ExpressCodeReadService {
      * 查询所有的快递商
      * @return
      */
-    Response<List<ExpressCode>> findAll();
+    Response<List<ExpressCode>> findAllByName(String name);
 }

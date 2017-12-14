@@ -53,9 +53,9 @@ public class ExpressCodeReadServiceImpl implements ExpressCodeReadService {
     }
 
     @Override
-    public Response<List<ExpressCode>> findAll() {
+    public Response<List<ExpressCode>> findAllByName(String name) {
         try{
-           return  Response.ok(expressCodeDao.findAll());
+           return Response.ok(expressCodeDao.findAllByName(name));
         }catch (Exception e){
             log.error("failed to find all express code, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("all.expressCode.find.fail");

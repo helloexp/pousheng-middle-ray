@@ -99,12 +99,10 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
 
         //销售属性
-        List<GroupedSkuAttribute> skuAttributes = spuAttribute.getSkuAttrs();
+        List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
         if (!CollectionUtils.isEmpty(skuAttributes)) {
-            for (GroupedSkuAttribute groupedSkuAttribute : skuAttributes) {
-                for (SkuAttribute attr : groupedSkuAttribute.getSkuAttributes()) {
-                    attributes.add(attr.getAttrKey() + ":" + attr.getAttrVal());
-                }
+            for (SkuAttribute skuAttribute : skuAttributes) {
+                    attributes.add(skuAttribute.getAttrKey() + ":" + skuAttribute.getAttrVal());
             }
         }
 

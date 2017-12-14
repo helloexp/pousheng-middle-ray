@@ -622,7 +622,7 @@ public class Refunds {
      * @param refund 售后单
      * @return
      */
-    private Boolean isLostRefund(Refund refund){
-        return Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
+    private Boolean isLostRefund(Refund refund) {
+        return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
 }

@@ -7,6 +7,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -29,6 +30,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
+import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +73,8 @@ public class AdminOrderWriter {
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @RpcConsumer
+    private RefundReadService refundReadService;
     @Autowired
     private EventBus eventBus;
 
@@ -438,5 +442,21 @@ public class AdminOrderWriter {
             throw new JsonResponseException("add.shop.express.code.fail");
         }
         return Response.ok(Boolean.TRUE);
+    }
+
+    /**
+     * 根据订单好查询售后单信息
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{id}/refunds/info",method = RequestMethod.GET)
+    public Response<List<Refund>> findRefundsByOrderId(@PathVariable("id") Long id){
+        Response<List<Refund>> r = refundReadService.findByOrderIdAndOrderLevel(id,OrderLevel.SHOP);
+        if (r.getResult().isEmpty()){
+            return r;
+        }else{
+            List<Refund> refunds = r.getResult().stream().filter(refund -> !Objects.equals(refund.getRefundType(), MiddleRefundType.ON_SALES_REFUND.value())).collect(Collectors.toList());
+            return Response.ok(refunds);
+        }
     }
  }

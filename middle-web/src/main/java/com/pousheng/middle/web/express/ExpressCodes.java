@@ -98,6 +98,9 @@ public class ExpressCodes {
     @RequestMapping(value = "all",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ExpressCode> findAll(@RequestParam(required = false) String name)
     {
+        if (StringUtils.isEmpty(name)){
+            name="";
+        }
         Response<List<ExpressCode>> r = expressCodeReadService.findAllByName(name);
         if (!r.isSuccess()) {
             log.error("find all express code failed, error code:{} "

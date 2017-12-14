@@ -432,10 +432,11 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/choose/hk/express/code",method = RequestMethod.PUT)
     @OperationLogType("选择快递商")
-    public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode,@RequestParam @OperationLogParam Long shopOrderId){
+    public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode,@RequestParam String expressName,@RequestParam @OperationLogParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<String, String> extraMap = shopOrder.getExtra();
         extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, hkExpressCode);
+        extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,expressName);
         Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
         if (!rltRes.isSuccess()) {
             log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());

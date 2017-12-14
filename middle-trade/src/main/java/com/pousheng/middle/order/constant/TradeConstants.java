@@ -128,4 +128,5 @@ public class TradeConstants {
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
     //店铺订单选择的快递单号
     public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
+    public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
 }

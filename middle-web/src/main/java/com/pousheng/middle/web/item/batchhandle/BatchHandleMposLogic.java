@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.item.batchhandle;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -62,46 +63,60 @@ public class BatchHandleMposLogic {
      * @return
      */
     public Response<List<BatchHandleRecord>> getImportFileRecord(){
-        return null;
+        Long userId = UserUtil.getUserId();
+        try{
+            List<BatchHandleRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<BatchHandleRecord>>() {
+                @Override
+                public List<BatchHandleRecord> action(Jedis jedis) {
+                    List<BatchHandleRecord> records = new ArrayList<>();
+                    jedis.keys("mpos:" + userId + ":import:*").forEach(key -> {
+                        BatchHandleRecord record = new BatchHandleRecord();
+                        String[] attr = key.split("~");
+                        record.setCreateAt(new Date(Long.parseLong(attr[1])));
+                        String value = jedis.get(key);
+                        record.setName(attr[0].substring(("mpos:" + userId + ":import").length()));
+                        record.setState(value);
+                        record.setId(Long.parseLong(attr[1]));
+                        records.add(record);
+                    });
+                    return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
+                }
+            });
+            return Response.ok(list);
+        }catch (Exception e){
+            log.error("fail to get mpos import record,cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("fail to get mpos import record");
+        }
     }
 
     /**
-     * 查看导入文件异常记录
-     * @param taskId
+     * 获取导出文件记录
      * @return
      */
-    public Response<Paging<AbnormalRecord>> getImportFileAbnormalRecord(String taskId,Integer pageNo,Integer pageSize){
-//        Long userId = UserUtil.getUserId();
-//        int limit = new PageInfo(pageNo,pageSize).getOffset();
-//        String key = "mpos:" + userId + ":abnormal:flag:" + taskId;
-//        try{
-//            List<AbnormalRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<AbnormalRecord>>() {
-//                @Override
-//                public List<AbnormalRecord> action(Jedis jedis) {
-//                    List<AbnormalRecord> records = new ArrayList<>();
-//                    jedis.lrange(key,limit,limit + pageSize).forEach(key -> {
-//                        AbnormalRecord record = new AbnormalRecord();
-//                        String value = jedis.get(key);
-//                        String[] vals = value.split(":");
-//                        record.setId(vals[0]);
-//                        record.setReason(vals[1]);
-//                        records.add(record);
-//                    });
-//                    return records;
-//                }
-//            });
-//            long total = jedisTemplate.execute(new JedisTemplate.JedisAction<Long>() {
-//                @Override
-//                public Long action(Jedis jedis) {
-//                    return jedis.llen(key);
-//                }
-//            });
-//            return Response.ok(new Paging<>(total,list));
-//        }catch (Exception e){
-//            log.error("fail to get mpos flag record,cause:{}", Throwables.getStackTraceAsString(e));
-//            return Response.fail("fail to get mpos flag record");
-//        }
-        return null;
+    public Response<List<FileRecord>> getExportFileRecord(){
+        Long userId = UserUtil.getUserId();
+        try{
+            List<FileRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<FileRecord>>() {
+                @Override
+                public List<FileRecord> action(Jedis jedis) {
+                    List<FileRecord> records = new ArrayList<>();
+                    jedis.keys("mpos:" + userId + ":export:*").forEach(key -> {
+                        FileRecord record = new FileRecord();
+                        String[] attr = key.split("~");
+                        record.setExportAt(new Date(Long.parseLong(attr[1])));
+                        String value = jedis.get(key);
+                        record.setName(attr[0].substring(("mpos:" + userId + ":export").length()));
+                        record.setUrl(value);
+                        records.add(record);
+                    });
+                    return records.stream().sorted((r1, r2) -> r2.getExportAt().compareTo(r1.getExportAt())).collect(Collectors.toList());
+                }
+            });
+            return Response.ok(list);
+        }catch (Exception e){
+            log.error("fail to get mpos export record,cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("fail to get mpos export record");
+        }
     }
 
     /**
@@ -109,7 +124,7 @@ public class BatchHandleMposLogic {
      * @param taskId
      * @return
      */
-    public Response<Paging<AbnormalRecord>> getMposFlagAbnormalRecord(String taskId,Integer pageNo,Integer pageSize,String type){
+    public Response<Paging<AbnormalRecord>> getMposAbnormalRecord(String taskId,Integer pageNo,Integer pageSize,String type){
         Long userId = UserUtil.getUserId();
         int limit = new PageInfo(pageNo,pageSize).getOffset();
         String key = "mpos:" + userId + ":abnormal:" + type + ":" + taskId;
@@ -139,14 +154,5 @@ public class BatchHandleMposLogic {
             log.error("fail to get mpos flag record,cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("fail to get mpos flag record");
         }
-    }
-
-    /**
-     * 导入excel
-     * @param fileName
-     * @param file
-     */
-    public void batchImport(String fileName,File file){
-
     }
 }

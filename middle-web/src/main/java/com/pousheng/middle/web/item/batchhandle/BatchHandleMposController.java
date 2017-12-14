@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.item.batchhandle;
 
+import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -25,9 +26,23 @@ public class BatchHandleMposController {
      * mpos导入文件记录
      * @return
      */
-    @RequestMapping(value = "/api/sku-template/batch/import/file/records",method = RequestMethod.GET)
+    @RequestMapping(value = "/api/sku-template/batch/import/records",method = RequestMethod.GET)
     public List<BatchHandleRecord> importRecord(){
         Response<List<BatchHandleRecord>> response = batchHandleMposLogic.getImportFileRecord();
+        if(!response.isSuccess()){
+            log.error("fail to find import record,cause:{}",response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
+    }
+
+    /**
+     * mpos导出文件记录
+     * @return
+     */
+    @RequestMapping(value = "/api/sku-template/batch/export/records",method = RequestMethod.GET)
+    public List<FileRecord> exportRecord(){
+        Response<List<FileRecord>> response = batchHandleMposLogic.getExportFileRecord();
         if(!response.isSuccess()){
             log.error("fail to find import record,cause:{}",response.getError());
             throw new JsonResponseException(response.getError());
@@ -54,11 +69,11 @@ public class BatchHandleMposController {
      * @param taskId
      * @return
      */
-    @RequestMapping(value = "api/sku-template/batch/import/file/abnormal/records")
+    @RequestMapping(value = "/api/sku-template/batch/import/abnormal/records")
     public Paging<AbnormalRecord> importFileAbnormalRecords(String taskId, @RequestParam(required = false) Integer pageNo,@RequestParam(required = false) Integer pageSize){
-        Response<Paging<AbnormalRecord>> response = batchHandleMposLogic.getImportFileAbnormalRecord(taskId,pageNo,pageSize);
+        Response<Paging<AbnormalRecord>> response = batchHandleMposLogic.getMposAbnormalRecord(taskId,pageNo,pageSize,"import");
         if(!response.isSuccess()){
-            log.error("");
+            log.error("fail to get import file abnormal records,id={}",taskId);
             throw new JsonResponseException(response.getError());
         }
         return response.getResult();
@@ -69,9 +84,9 @@ public class BatchHandleMposController {
      * @param taskId
      * @return
      */
-    @RequestMapping(value = "api/sku-template/batch/handle/mpos/flag/abnormal/records")
+    @RequestMapping(value = "/api/sku-template/batch/handle/mpos/flag/abnormal/records")
     public Paging<AbnormalRecord> mposAbnormalRecords(@RequestParam String taskId, @RequestParam(required = false,defaultValue = "1") Integer pageNo,@RequestParam(required = false,defaultValue = "10") Integer pageSize){
-        Response<Paging<AbnormalRecord>> response = batchHandleMposLogic.getMposFlagAbnormalRecord(taskId,pageNo,pageSize,"flag");
+        Response<Paging<AbnormalRecord>> response = batchHandleMposLogic.getMposAbnormalRecord(taskId,pageNo,pageSize,"flag");
         if(!response.isSuccess()){
             log.error("fail to find batch handle mpos flage by taskId={},cause:{}",taskId,response.getError());
             throw new JsonResponseException(response.getError());

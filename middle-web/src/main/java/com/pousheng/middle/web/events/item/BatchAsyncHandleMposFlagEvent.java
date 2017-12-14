@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.Map;
 
 /**
- * 批量打标,取消打标事件
+ * 批量异步打标,取消打标事件
  * @author penghui
  * @since 2017/12/11
  */

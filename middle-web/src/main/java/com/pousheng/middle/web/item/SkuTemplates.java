@@ -5,7 +5,9 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
+import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -28,6 +30,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -255,7 +258,7 @@ public class SkuTemplates {
 
     @ApiOperation("导入文件")
     @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
-    public void asyncImportFile(@RequestParam(value="filename") MultipartFile file){
+    public Response<String> asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
         /**
          * 导入excel
          * 1.接收文件，转换成集合
@@ -266,24 +269,28 @@ public class SkuTemplates {
          * 1.excel内容
          * 2.做什么操作
          */
+        if(multipartFile == null){
+            return Response.fail("the upload file is null");
+        }
+        String fileName = multipartFile.getOriginalFilename();
+        if(!fileName.endsWith(".xls") && !fileName.endsWith(".xlsx")){
+            return Response.fail("the upload file is not a excel");
+        }
+        File file = (File)multipartFile;
+        BatchAsyncImportMposDiscountEvent event = new BatchAsyncImportMposDiscountEvent();
+        //File testFile = new File("/Users/hello/test1.xlsx");
+        //event.setFile(testFile);
+        event.setFile(file);
+        eventBus.post(event);
+        return Response.ok();
     }
 
     @ApiOperation("导出文件")
-    @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.GET)
+    @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.PUT)
     public void asyncExportFile(Map<String,String> params){
-        /**
-         * 导出excel
-         * 1.获取集合  excel要展示哪些内容
-         * 货品条码 类别 spuId不用 除了折扣 其它都不可编辑
-         * 重写
-         * 2.exportService.saveToDiskAndCloud(list)
-         * 3.保存redis的位置要改（if）
-         * 4.获取记录的位置要改 （if）
-         *
-         * 疑问
-         * excel内容
-         */
-
+        BatchAsyncExportMposDiscountEvent event = new BatchAsyncExportMposDiscountEvent();
+        event.setParams(params);
+        eventBus.post(event);
     }
 
 

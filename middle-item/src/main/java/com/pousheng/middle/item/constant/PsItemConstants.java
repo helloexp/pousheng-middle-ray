@@ -31,5 +31,11 @@ public class PsItemConstants {
     //异常
     public static final String EXECUTE_ERROR = "2";
 
+    //导出任务
+    public static final String EXPORT_TASK = "export";
+
+    //导入任务
+    public static final String IMPORT_TASK = "import";
+
 
 }

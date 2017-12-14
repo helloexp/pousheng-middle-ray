@@ -256,10 +256,9 @@ public class Shipments {
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成销售发货单")
     public List<Long> createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
-                                    @RequestParam(value = "requestDataList") List<ShipmentRequest> requestDataList) {
-        if (Objects.isNull(requestDataList)||requestDataList.isEmpty()){
-            throw new JsonResponseException("invalid.shipment.preview.data.list");
-        }
+                                    @RequestParam(value = "dataList") String dataList) {
+
+        List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data =  shipmentRequest.getData();
@@ -380,17 +379,14 @@ public class Shipments {
      * 1. 更新子单的处理数量
      * 2. 更新子单的状态（如果子单全部为已处理则更新店铺订单为已处理）
      * @param refundId 换货单id
-     * @param requestDataList skuCode-quantity 以及仓库id的集合
+     * @param dataList skuCode-quantity 以及仓库id的集合
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成换货发货单")
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
-                                    @RequestParam(value = "requestDataList") List<ShipmentRequest> requestDataList) {
-
-        if (Objects.isNull(requestDataList)||requestDataList.isEmpty()){
-            throw new JsonResponseException("invalid.shipment.preview.data.list");
-        }
+                                    @RequestParam(value = "dataList") String dataList) {
+        List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data =  shipmentRequest.getData();

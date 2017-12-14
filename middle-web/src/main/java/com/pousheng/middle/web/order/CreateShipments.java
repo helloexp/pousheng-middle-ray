@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -11,6 +12,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -68,17 +70,16 @@ public class CreateShipments {
      * 发货预览
      *
      * @param id          单据id
-     * @param requestDataList 请求的skuCode-quantity 和发货仓id
+     * @param dataList 请求的skuCode-quantity 和发货仓id
      * @param type        1 销售发货  2 换货发货
      * @return 批量订单信息
      */
     @RequestMapping(value = "/api/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<ShipmentPreview>> shipPreview(@RequestParam Long id,
-                                                 @RequestParam(value = "requestDataList") List<ShipmentRequest> requestDataList,
+                                                 @RequestParam(value = "dataList") String dataList,
                                                  @RequestParam(defaultValue = "1") Integer type) {
-        if (Objects.isNull(requestDataList)||requestDataList.isEmpty()){
-            throw new JsonResponseException("invalid.shipment.preview.data.list");
-        }
+
+        List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<ShipmentPreview> shipmentPreviews = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data = shipmentRequest.getData();

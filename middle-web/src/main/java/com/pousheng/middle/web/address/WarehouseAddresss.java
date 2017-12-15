@@ -3,6 +3,8 @@ package com.pousheng.middle.web.address;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,6 +19,7 @@ import java.util.List;
 /**
  * Created by songrenfei on 2017/12/15
  */
+@Api(description = "地址库信息API")
 @RestController
 @Slf4j
 public class WarehouseAddresss {
@@ -30,6 +33,7 @@ public class WarehouseAddresss {
      * @param addressId id
      * @return 下级地址列表
      */
+    @ApiOperation("获取某一个地址的所有下级地址")
     @RequestMapping(value = "/api/middle/address/{id}/children", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<WarehouseAddress>> childAddressOf(@PathVariable("id") Long addressId) {
         try {
@@ -48,6 +52,7 @@ public class WarehouseAddresss {
      * @param id
      * @return
      */
+    @ApiOperation("获取某一个地址的所有下级地址")
     @RequestMapping(value = "/api/warehouse/address/{id}/children",method = RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
     public Response<List<WarehouseAddress>> findWarehouseAddressByPid(@PathVariable("id")long id){
        return this.childAddressOf(id);

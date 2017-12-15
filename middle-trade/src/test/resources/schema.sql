@@ -320,3 +320,27 @@ create table `pousheng_gift_activity`
   PRIMARY KEY(`id`),
   KEY `index_middle_gift_name` (`name`)
 )COMMENT='宝胜中台赠品活动表';
+
+
+drop table if exists `parana_address_gpss`;
+CREATE TABLE `parana_address_gpss` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `business_id` bigint(20) NOT NULL COMMENT '业务ID',
+  `business_type` tinyint(4) NOT NULL COMMENT '业务类型，1：门店，2：仓库',
+  `longitude` varchar(32) DEFAULT NULL COMMENT '经度',
+  `latitude` varchar(32) NOT NULL DEFAULT '' COMMENT '纬度',
+  `province` varchar(50) NOT NULL COMMENT '省',
+  `province_id` bigint(20) NOT NULL COMMENT '省ID',
+  `city` varchar(50) NOT NULL COMMENT '市',
+  `city_id` bigint(20) NOT NULL COMMENT '市ID',
+  `region` varchar(50) NOT NULL COMMENT '区',
+  `region_id` bigint(20) NOT NULL COMMENT '区ID',
+  `street` varchar(50) DEFAULT NULL COMMENT '街道，可以为空',
+  `street_id` bigint(20) DEFAULT NULL COMMENT '街道ID，可以为空',
+  `detail` varchar(256) NOT NULL COMMENT '详细地址',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+)COMMENT='地址定位信息表';
+create index idx_parana_address_gpss_business_id on parana_address_gpss(business_id);
+create index idx_parana_address_gpss_type on parana_address_gpss(business_type);

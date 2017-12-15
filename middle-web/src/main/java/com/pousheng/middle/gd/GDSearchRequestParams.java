@@ -4,7 +4,7 @@
 
 package com.pousheng.middle.gd;
 
-import com.pousheng.community.common.util.JacksonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,6 +15,8 @@ import java.util.Map;
  */
 @Data
 public class GDSearchRequestParams implements Serializable {
+
+    protected static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final long serialVersionUID = -8205717656143164968L;
 
@@ -33,7 +35,7 @@ public class GDSearchRequestParams implements Serializable {
     private String extensions;
 
     public Map toMap() {
-        return JacksonMapper.NON_NULL_MAPPER.convertValue(this, Map.class);
+        return MAPPER.convertValue(this, Map.class);
     }
 
     public enum Extensions {

@@ -6,6 +6,8 @@ import com.pousheng.middle.order.cache.AddressGpsCacher;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -25,6 +27,7 @@ import java.util.List;
 /**
  * Created by songrenfei on 2017/12/15
  */
+@Api(description = "门店或仓库地址定位信息API")
 @RestController
 @Slf4j
 public class AddressGpss {
@@ -42,6 +45,7 @@ public class AddressGpss {
      * @param regionId 区id
      * @return 门店信息
      */
+    @ApiOperation("获取某一个区内的门店")
     @RequestMapping(value = "/api/middle/region/{id}/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Shop> findShopByRegionId(@PathVariable("id") Long regionId) {
 

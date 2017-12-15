@@ -340,7 +340,7 @@ CREATE TABLE `parana_address_gpss` (
   `detail` varchar(256) NOT NULL COMMENT '详细地址',
   `created_at` datetime NOT NULL COMMENT '创建时间',
   `updated_at` datetime NOT NULL COMMENT '更新时间',
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`id`)
 )COMMENT='地址定位信息表';
 create index idx_parana_address_gpss_business_id on parana_address_gpss(business_id);
 create index idx_parana_address_gpss_type on parana_address_gpss(business_type);

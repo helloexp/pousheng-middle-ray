@@ -98,19 +98,19 @@
     <select id="findByBusinessIdAndType" parameterType="map" resultMap="AddressGpsMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE business_id = #{businessId} and businessType = #{businessType}
+        WHERE business_id = #{businessId} and business_type = #{businessType}
     </select>
 
     <select id="findByProvinceIdType" parameterType="map" resultMap="AddressGpsMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE province_id = #{provinceId} and businessType = #{businessType}
+        WHERE province_id = #{provinceId} and business_type = #{businessType}
     </select>
 
     <select id="findByRegionIdType" parameterType="map" resultMap="AddressGpsMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE region_id = #{regionId} and businessType = #{businessType}
+        WHERE region_id = #{regionId} and business_type = #{businessType}
     </select>
 
    <select id="findByIds" parameterType="list" resultMap="AddressGpsMap">

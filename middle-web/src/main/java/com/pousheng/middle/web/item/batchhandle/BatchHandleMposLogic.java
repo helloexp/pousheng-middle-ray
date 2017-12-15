@@ -45,7 +45,7 @@ public class BatchHandleMposLogic {
                         String type = attr[0].substring(("mpos:" + userId + ":flag").length());
                         record.setState(value);
                         record.setType(type);
-                        record.setId(Long.parseLong(attr[1]));
+                        //record.setId(Long.parseLong(attr[1]));
                         records.add(record);
                     });
                     return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
@@ -76,7 +76,7 @@ public class BatchHandleMposLogic {
                         String value = jedis.get(key);
                         record.setName(attr[0].substring(("mpos:" + userId + ":import:").length()));
                         record.setState(value);
-                        record.setId(Long.parseLong(attr[1]));
+                        //record.setId(Long.parseLong(attr[1]));
                         records.add(record);
                     });
                     return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());

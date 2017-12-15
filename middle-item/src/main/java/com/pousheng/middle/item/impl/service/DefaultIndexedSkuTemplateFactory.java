@@ -10,7 +10,6 @@ import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
-import io.terminus.parana.attribute.dto.GroupedSkuAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.brand.model.Brand;

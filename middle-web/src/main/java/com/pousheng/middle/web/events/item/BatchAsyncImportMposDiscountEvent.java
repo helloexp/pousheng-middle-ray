@@ -1,7 +1,9 @@
 package com.pousheng.middle.web.events.item;
 
 import lombok.Data;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.swing.plaf.multi.MultiInternalFrameUI;
 import java.io.File;
 
 /**
@@ -12,6 +14,6 @@ import java.io.File;
 @Data
 public class BatchAsyncImportMposDiscountEvent {
 
-    private File file;
+    private MultipartFile file;
 
 }

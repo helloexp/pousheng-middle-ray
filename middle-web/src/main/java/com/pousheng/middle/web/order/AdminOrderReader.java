@@ -13,8 +13,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -24,7 +22,6 @@ import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.channel.OpenClientChannel;
@@ -75,8 +72,7 @@ public class AdminOrderReader {
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-    @Autowired
-    private WarehouseAddressCacher warehouseAddressCacher;
+
     @Autowired
     private EventBus eventBus;
 
@@ -254,24 +250,7 @@ public class AdminOrderReader {
         return count <= 0;
 
     }
-    /**
-     * 根据pid获取下级地址信息
-     * @param id
-     * @return
-     */
-    @RequestMapping(value = "/api/warehouse/address/{id}/children",method = RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-    public Response<List<WarehouseAddress>> findWarehouseAddressByPid(@PathVariable("id")long id){
-        try{
-            List<WarehouseAddress> warehouseAddress= warehouseAddressCacher.findByPid(id);
-            return Response.ok(warehouseAddress);
-        }catch (ServiceException e){
-            log.error("address.found.failed", e.getMessage());
-            return Response.fail(e.getMessage());
-        }catch (Exception e){
-            log.error("address.found.failed", e.getMessage());
-            return Response.fail(e.getMessage());
-        }
-    }
+
 
     /**
      * 根据店铺订单id获取所关联的发货单id(不包括已取消)

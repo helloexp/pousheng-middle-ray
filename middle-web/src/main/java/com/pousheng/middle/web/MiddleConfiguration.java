@@ -83,7 +83,8 @@ import java.util.concurrent.*;
                 "com.pousheng.middle.erpsyc",
                 "com.pousheng.middle.hksyc",
                 "com.pousheng.middle.interceptors",
-                "com.pousheng.middle.web"})
+                "com.pousheng.middle.web",
+                "com.pousheng.middle.gd"})
 @EnableScheduling
 @EnableConfigurationProperties({
         ErpOpenApiToken.class

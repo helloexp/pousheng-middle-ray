@@ -14,4 +14,6 @@ public class BatchAsyncExportMposDiscountEvent {
 
     private Map<String,String> params;
 
+    private Long currentUserId;
+
 }

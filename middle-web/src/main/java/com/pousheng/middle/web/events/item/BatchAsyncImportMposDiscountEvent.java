@@ -16,4 +16,6 @@ public class BatchAsyncImportMposDiscountEvent {
 
     private MultipartFile file;
 
+    private Long currentUserId;
+
 }

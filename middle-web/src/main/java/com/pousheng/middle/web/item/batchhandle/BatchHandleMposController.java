@@ -70,7 +70,7 @@ public class BatchHandleMposController {
      * @return
      */
     @RequestMapping(value = "/api/sku-template/batch/import/abnormal/records")
-    public Paging<AbnormalRecord> importFileAbnormalRecords(String taskId, @RequestParam(required = false) Integer pageNo,@RequestParam(required = false) Integer pageSize){
+    public Paging<AbnormalRecord> importFileAbnormalRecords(String taskId, @RequestParam(required = false,defaultValue = "1") Integer pageNo,@RequestParam(required = false,defaultValue = "10") Integer pageSize){
         Response<Paging<AbnormalRecord>> response = batchHandleMposLogic.getMposAbnormalRecord(taskId,pageNo,pageSize,"import");
         if(!response.isSuccess()){
             log.error("fail to get import file abnormal records,id={}",taskId);

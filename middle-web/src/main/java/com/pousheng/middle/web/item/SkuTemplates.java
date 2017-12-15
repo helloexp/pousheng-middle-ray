@@ -16,6 +16,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -247,6 +248,7 @@ public class SkuTemplates {
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
         event.setType(PsItemConstants.MPOS_ITEM);
+        event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
 
@@ -256,6 +258,7 @@ public class SkuTemplates {
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
         event.setType(PsItemConstants.NOT_MPOS_ITEM);
+        event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
 
@@ -273,6 +276,7 @@ public class SkuTemplates {
         }
         BatchAsyncImportMposDiscountEvent event = new BatchAsyncImportMposDiscountEvent();
         event.setFile(multipartFile);
+        event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
 
@@ -281,6 +285,7 @@ public class SkuTemplates {
     public void asyncExportFile(@RequestParam Map<String,String> params){
         BatchAsyncExportMposDiscountEvent event = new BatchAsyncExportMposDiscountEvent();
         event.setParams(params);
+        event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
 

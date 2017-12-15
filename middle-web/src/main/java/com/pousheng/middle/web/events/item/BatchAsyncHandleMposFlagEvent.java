@@ -16,4 +16,6 @@ public class BatchAsyncHandleMposFlagEvent {
 
     private String type;
 
+    private Long currentUserId;
+
 }

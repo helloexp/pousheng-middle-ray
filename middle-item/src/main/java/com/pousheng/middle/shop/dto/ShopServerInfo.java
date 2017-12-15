@@ -17,6 +17,9 @@ public class ShopServerInfo implements Serializable{
     private String virtualShopCode;
     //虚拟店名称
     private String virtualShopName;
+
+    //退货仓id
+    private Long returnWarehouseId;
     //退货仓编码
     private String returnWarehouseCode;
     //退货仓名称

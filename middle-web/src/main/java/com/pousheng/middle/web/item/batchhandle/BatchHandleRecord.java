@@ -20,7 +20,7 @@ public class BatchHandleRecord {
     private String state;
 
     //异常id
-    private Long id;
+    private String url;
 
     //类型
     private String type;

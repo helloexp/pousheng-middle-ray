@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.export;
 
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.web.utils.export.ExportEditable;
 import com.pousheng.middle.web.utils.export.ExportTitle;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,6 +36,7 @@ public class SearchSkuTemplateEntity {
     private String categoryName;
 
     @ExportTitle("折扣")
+    @ExportEditable
     private Integer discount;
 
     @ExportTitle("销售价")
@@ -42,6 +44,10 @@ public class SearchSkuTemplateEntity {
 
     @ExportTitle("吊牌价")
     private Integer originPrice;
+
+    @ExportTitle("异常原因")
+    private String error;
+
 
     public SearchSkuTemplateEntity(SearchSkuTemplate searchSkuTemplate){
         this.id = searchSkuTemplate.getId();

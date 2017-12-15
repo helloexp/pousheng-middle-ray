@@ -1,9 +1,6 @@
 package com.pousheng.middle.web.item.batchhandle;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PrintStream;
+import java.io.*;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -383,7 +380,7 @@ public class ExcelUtil {
     }
 
     /**
-     * 初始化这个处理程序 将
+     * 初始化这个处理程序
      *
      * @throws IOException
      * @throws OpenXML4JException
@@ -413,51 +410,14 @@ public class ExcelUtil {
         return list;
     }
 
-    /**
-     * 读取Excel
-     *
-     * @param path
-     *            文件路径
-     * @param sheetName
-     *            sheet名称
-     * @param minColumns
-     *            列总数
-     * @return
-     * @throws SAXException
-     * @throws ParserConfigurationException
-     * @throws OpenXML4JException
-     * @throws IOException
-     */
-    private static List<String[]> readerExcel(String path, String sheetName,
-                                              int minColumns) throws IOException, OpenXML4JException,
-            ParserConfigurationException, SAXException {
-        File file = new File(path);
-        return readerExcel(file,sheetName,minColumns);
-    }
 
-    public static List<String[]> readerExcel(File file, String sheetName, int minColumns) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
-        OPCPackage p = OPCPackage.open(file, PackageAccess.READ);
+    public static List<String[]> readerExcel(InputStream inputStream, String sheetName, int minColumns) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
+        OPCPackage p = OPCPackage.open(inputStream);
         ExcelUtil xlsx2csv = new ExcelUtil(p, System.out,
                 sheetName, minColumns);
         List<String[]> list = xlsx2csv.process();
         p.close();
         return list;
-    }
-
-    public static void main(String[] args) throws Exception {
-        List<String[]> list = ExcelUtil
-                .readerExcel(
-                        "/Users/hello/test.xls",
-                        "Sheet0", 11);
-        String[] strs = list.get(5);
-        System.out.println("\"\"".equals(strs[8]));
-//        for (String[] record : list) {
-//
-//            for (String cell : record) {
-//                System.out.print(cell + "  ");
-//            }
-            System.out.println();
-//        }
     }
 
 }

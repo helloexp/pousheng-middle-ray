@@ -258,24 +258,24 @@ public class SkuTemplates {
 
     @ApiOperation("导入文件")
     @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
-    public Response<String> asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+    public void asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
         if(multipartFile == null){
-            return Response.fail("the upload file is null");
+            log.error("the upload file is null");
+            throw new JsonResponseException("the upload file is null");
         }
         String fileName = multipartFile.getOriginalFilename();
         if(!fileName.endsWith(".xls") && !fileName.endsWith(".xlsx")){
-            return Response.fail("the upload file is not a excel");
+            log.error("the upload file is not a excel");
+            throw new JsonResponseException("the upload file is not a excel");
         }
-        File file = (File)multipartFile;
         BatchAsyncImportMposDiscountEvent event = new BatchAsyncImportMposDiscountEvent();
-        event.setFile(file);
+        event.setFile(multipartFile);
         eventBus.post(event);
-        return Response.ok();
     }
 
     @ApiOperation("导出文件")
     @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.PUT)
-    public void asyncExportFile(Map<String,String> params){
+    public void asyncExportFile(@RequestParam Map<String,String> params){
         BatchAsyncExportMposDiscountEvent event = new BatchAsyncExportMposDiscountEvent();
         event.setParams(params);
         eventBus.post(event);

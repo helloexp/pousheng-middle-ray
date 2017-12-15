@@ -38,6 +38,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+import org.springframework.web.multipart.MultipartFile;
 import org.xml.sax.SAXException;
 import redis.clients.jedis.Jedis;
 
@@ -86,8 +87,6 @@ public class BatchAsyncHandleMposListener {
 
     private static final String DEFAULT_CLOUD_PATH = "export";
 
-    @Value("${export.local.temp.file.location:}")
-    private String localFileLocation;
 
     @PostConstruct
     private void register() {
@@ -106,6 +105,7 @@ public class BatchAsyncHandleMposListener {
         Long userId = UserUtil.getUserId();
         String operateType = batchMakeMposFlagEvent.getType();
         String key = toKey(userId,operateType,taskId);
+        log.info("ayncs handle mpos flag task start");
         //1.开始的时候记录状态
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
             @Override
@@ -117,7 +117,6 @@ public class BatchAsyncHandleMposListener {
         while(next && pageNo < 100){
             pageNo++;
             next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,taskId);
-            log.info("第"+pageNo+"页已打标");
         }
         //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
@@ -131,6 +130,7 @@ public class BatchAsyncHandleMposListener {
                 }
             }
         });
+        log.info("ayncs handle mpos flag task over");
     }
 
     /**
@@ -229,6 +229,7 @@ public class BatchAsyncHandleMposListener {
     @Subscribe
     public void onExportMposDiscount(BatchAsyncExportMposDiscountEvent exportMposDiscountEvent) throws IOException {
         Map<String,String> params = exportMposDiscountEvent.getParams();
+        log.info("ayncs export mpos task start");
         int pageNo = 1;
         XSSFWorkbook wb = new XSSFWorkbook();
         Sheet sheet = wb.createSheet();
@@ -238,9 +239,9 @@ public class BatchAsyncHandleMposListener {
         while(next && pageNo < 100){
             pageNo++;
             next = batchExportMposDiscount(pageNo,BATCH_SIZE, params,wb,sheet,filedNames);
-            log.info("第"+ pageNo +"页已导完");
+            log.debug(pageNo + "exporting");
         }
-        File file = new File(localFileLocation, DateTime.now().toString("yyyyMMddHHmmss") + ".xls");
+        File file = new File(".", DateTime.now().toString("yyyyMMddHHmmss") + ".xls");
         try{
             if(!file.exists()){
                 file.createNewFile();
@@ -251,7 +252,10 @@ public class BatchAsyncHandleMposListener {
             throw new RuntimeException("save export result to file fail", e);
         }
         this.uploadToAzureOSS(file);
+        log.info("async export mpos task over");
     }
+
+
 
     /**
      *  分批次处理数据
@@ -388,24 +392,25 @@ public class BatchAsyncHandleMposListener {
 
     @Subscribe
     public void onImportMposDiscount(BatchAsyncImportMposDiscountEvent event) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
-        File file = event.getFile();
+        log.info("ayncs import mpos discount task start");
+        MultipartFile file = event.getFile();
         Long userId = UserUtil.getUserId();
         String taskId = taskId();
-        String key = toImportKey(userId,file.getName(),taskId);
+        String key = toImportKey(userId,file.getOriginalFilename(),taskId);
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
             @Override
             public void action(Jedis jedis) {
                 jedis.setex(key,BATCH_RECORD_EXPIRE_TIME,PsItemConstants.EXECUTING);
             }
         });
-        List<String[]> list = ExcelUtil.readerExcel(file,"Sheet0",11);
+        List<String[]> list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",11);
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[8]) && !"\"\"".equals(strs[8])){
                 try{
                     Long id = Long.parseLong(strs[0].replace("\"",""));
                     Integer discount = Integer.parseInt(strs[8]);
-                    setDiscount(id,discount,taskId);
+                    setDiscount(id,discount);
                 }catch (Exception e){
                     log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[8], Throwables.getStackTraceAsString(e));
                     jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
@@ -415,7 +420,7 @@ public class BatchAsyncHandleMposListener {
                             if(!jedis.exists(key)){
                                 jedis.expire(key,BATCH_RECORD_EXPIRE_TIME);
                             }
-                            jedis.lpush(key,strs[1]+"~"+ Throwables.getStackTraceAsString(e));
+                            jedis.lpush(key,strs[1]+"~"+ "Formatting error");
                         }
                     });
                 }
@@ -432,15 +437,15 @@ public class BatchAsyncHandleMposListener {
                 }
             }
         });
+        log.info("ayncs import mpos discount task over");
     }
 
     /**
      * 设置折扣
      * @param id
      * @param discount
-     * @param taskId
      */
-    private void setDiscount(Long id, Integer discount,String taskId) {
+    private void setDiscount(Long id, Integer discount) {
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -456,7 +461,6 @@ public class BatchAsyncHandleMposListener {
             log.error("update SkuTemplate failed error={}",resp.getError());
             throw new JsonResponseException(resp.getError());
         }
-        log.info("设置折扣"+id+"：" + discount);
     }
 
     //设置折扣

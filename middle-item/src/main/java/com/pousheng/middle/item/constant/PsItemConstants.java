@@ -38,4 +38,13 @@ public class PsItemConstants {
     public static final String IMPORT_TASK = "import";
 
 
+    public static final String ERROR_NOT_FIND_ = "货品未找到";
+
+    public static final String ERROR_UPDATE_FAIL = "更新失败";
+
+    public static final String ERROR_FORMATE_ERROR = "格式错误";
+
+    public static final String ERROR_SAVE_EXCEL = "文件上传失败";
+
+
 }

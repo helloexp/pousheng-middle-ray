@@ -462,5 +462,10 @@ public class AdminShops {
         private Long zoneId;
         //区部名称
         private String zoneName;
+
+        /**
+         * 公司id
+         */
+        private String companyId;
     }
 }

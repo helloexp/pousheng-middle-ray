@@ -32,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -185,11 +186,16 @@ public class SkuTemplates {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
+        Integer originPrice = 0;
+        if (exist.getExtraPrice() != null) {
+            originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+        }
         Map<String,String> extra = setMopsDiscount(exist,discount);
 
         SkuTemplate toUpdate = new SkuTemplate();
         toUpdate.setId(exist.getId());
         toUpdate.setExtra(extra);
+        toUpdate.setPrice(calculatePrice(discount,originPrice));
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
@@ -312,5 +318,11 @@ public class SkuTemplates {
         SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();
         updateEvent.setSkuTemplateId(skuTemplateId);
         eventBus.post(updateEvent);
+    }
+
+
+    private static Integer calculatePrice(Integer discount, Integer originPrice){
+        BigDecimal decimal=new BigDecimal(discount/100);
+        return decimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
     }
 }

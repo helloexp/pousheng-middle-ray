@@ -1,9 +1,9 @@
 package com.pousheng.middle.web.item.batchhandle;
 
-import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.utils.export.ExportEditable;
 import com.pousheng.middle.web.utils.export.ExportOrder;
 import com.pousheng.middle.web.utils.export.ExportTitle;
+import io.terminus.common.exception.JsonResponseException;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -14,7 +14,11 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.assertj.core.util.Lists;
+import org.joda.time.DateTime;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Objects;
@@ -23,14 +27,10 @@ import java.util.stream.Stream;
 /**
  * 导出excel辅助类
  * @param <T>
+ * penghui
  */
 @Slf4j
 public class ExcelExportHelper<T> {
-
-    /**
-     * 1.先读取class 获取每个字段的字段名，标题，是否可写
-     * 2.传入list，追加至excel
-     */
 
     private XSSFWorkbook workbook;
 
@@ -43,7 +43,12 @@ public class ExcelExportHelper<T> {
     private ExcelExportHelper(Class clazz){
         workbook = new XSSFWorkbook();
         sheet = workbook.createSheet();
-        exportFields = this.extractAttr(clazz,sheet);
+        try{
+            exportFields = this.extractAttr(clazz,sheet);
+        }catch(Exception e){
+            log.error("fail to extract {} attributes",clazz.getName());
+            throw new JsonResponseException("fail to create excel");
+        }
         unLockStyle =  workbook.createCellStyle();
         unLockStyle.setLocked(false);
     }
@@ -52,14 +57,13 @@ public class ExcelExportHelper<T> {
         return new ExcelExportHelper(clazz);
     }
 
-    public boolean appendToExcel(T t){
-       return this.appendToExcel(Lists.newArrayList(t));
-    }
-
-    public boolean appendToExcel(List<T> list){
+    /**
+     * 追加数据至excel
+     * @param t
+     */
+    public void appendToExcel(T t){
         int pos = sheet.getLastRowNum() + 1;
-        for (T t:list) {
-            Row row = sheet.createRow(pos ++ );
+            Row row = sheet.createRow(pos ++);
             if(CollectionUtils.isNotEmpty(exportFields)) {
                 int rowPos = 0;
                 for (ExportField exportField : exportFields) {
@@ -73,14 +77,20 @@ public class ExcelExportHelper<T> {
                         if (sheet.getProtect() && exportField.isCanWrite())
                             cell.setCellStyle(unLockStyle);
                     } catch (NoSuchFieldException e) {
-                        throw new RuntimeException("can not find field:" + exportField.getName() + "in " + t.getClass().getName() + " class", e);
+                        log.error("fail find field {} in {} class",exportField.getName(),t.getClass().getName());
+                        throw new JsonResponseException("fail append to excel");
                     } catch (IllegalAccessException e) {
-                        throw new RuntimeException("cant not access field:" + exportField.getName() + "in " + t.getClass().getName() + " class", e);
+                        log.error("fail access field {} in {} class",exportField.getName(),t.getClass().getName());
+                        throw new JsonResponseException("fail append to excel");
                     }
                 }
-            }
         }
-        return true;
+    }
+
+    public void appendToExcel(List<T> list){
+        for (T t:list) {
+            this.appendToExcel(t);
+        }
     }
 
 
@@ -127,6 +137,29 @@ public class ExcelExportHelper<T> {
         return this.workbook;
     }
 
+    public Integer size(){
+        return this.sheet.getLastRowNum();
+    }
+
+    /**
+     * 转换成文件
+     * @return
+     */
+    public File transformToFile(){
+        File file = new File(".", DateTime.now().toString("yyyyMMddHHmmss") + ".xls");
+        try{
+            if(!file.exists()){
+                file.createNewFile();
+            }
+            FileOutputStream out = new FileOutputStream(file);
+            this.workbook.write(out);
+        } catch (IOException e) {
+            log.error("fail transform workbook to file {}",file.getName());
+            throw new JsonResponseException("fail save export result to file");
+        }
+        return file;
+    }
+
     @Data
     class ExportField {
 
@@ -145,12 +178,5 @@ public class ExcelExportHelper<T> {
          */
         private boolean canWrite;
 
-    }
-
-    public static void main(String[] args) {
-        Field[] fields = SearchSkuTemplateEntity.class.getDeclaredFields();
-        for (Field field:fields) {
-            System.out.println(field.getName());
-        }
     }
 }

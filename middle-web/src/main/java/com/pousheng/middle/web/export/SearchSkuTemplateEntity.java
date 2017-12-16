@@ -6,6 +6,7 @@ import com.pousheng.middle.web.utils.export.ExportTitle;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.StringUtils;
 
 
 @Data
@@ -37,7 +38,7 @@ public class SearchSkuTemplateEntity {
 
     @ExportTitle("折扣")
     @ExportEditable
-    private Integer discount;
+    private String discount;
 
     @ExportTitle("销售价")
     private Integer price;
@@ -59,9 +60,26 @@ public class SearchSkuTemplateEntity {
         }
         this.brandName = searchSkuTemplate.getBrandName();
         this.categoryName = searchSkuTemplate.getCategoryName();
-        this.discount = searchSkuTemplate.getDiscount();
+        if(searchSkuTemplate.getDiscount() != null)
+            this.discount = String.valueOf(searchSkuTemplate.getDiscount());
         this.price = searchSkuTemplate.getPrice();
         this.originPrice = searchSkuTemplate.getOriginPrice();
+    }
+
+    public SearchSkuTemplateEntity(String[] strs){
+        this.id = Long.parseLong(strs[0]);
+        this.spuCode = strs[1];
+        this.name = strs[2];
+        this.color = strs[3];
+        this.size = strs[4];
+        this.brandName = strs[6];
+        this.categoryName = strs[7];
+        this.discount = strs[8];
+        if(StringUtils.isNotEmpty(strs[9]))
+            this.price = Integer.valueOf(strs[9]);
+        if(StringUtils.isNotEmpty(strs[8]))
+            this.originPrice = Integer.valueOf(strs[10]);
+        this.error = strs[11];
     }
 
 }

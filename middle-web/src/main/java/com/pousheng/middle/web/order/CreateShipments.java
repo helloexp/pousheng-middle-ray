@@ -71,7 +71,7 @@ public class CreateShipments {
      *
      * @param id          单据id
      * @param dataList 请求的skuCode-quantity 和发货仓id
-     * @param type        1 销售发货  2 换货发货
+     * @param type        1 销售发货  2 换货发货，3.丢件补发
      * @return 批量订单信息
      */
     @RequestMapping(value = "/api/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -87,7 +87,7 @@ public class CreateShipments {
             Response<ShipmentPreview> response;
             if (Objects.equals(1, type)) {
                 response = shipmentReadLogic.orderShipPreview(id, data);
-            } else if (Objects.equals(2, type)) {
+            } else if (Objects.equals(2, type)||Objects.equals(3, type)) {
                 response = shipmentReadLogic.changeShipPreview(id, data);
             } else {
                 throw new JsonResponseException("invalid.type");

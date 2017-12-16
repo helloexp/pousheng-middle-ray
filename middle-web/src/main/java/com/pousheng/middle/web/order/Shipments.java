@@ -380,12 +380,13 @@ public class Shipments {
      * 2. 更新子单的状态（如果子单全部为已处理则更新店铺订单为已处理）
      * @param refundId 换货单id
      * @param dataList skuCode-quantity 以及仓库id的集合
+     * @param shipType 2.换货，3.丢件补发
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成换货发货单")
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
-                                    @RequestParam(value = "dataList") String dataList) {
+                                    @RequestParam(value = "dataList") String dataList,@RequestParam(required = false,defaultValue = "2") Integer shipType) {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
@@ -428,7 +429,7 @@ public class Shipments {
             //发货单中订单总金额
             Long shipmentTotalPrice=shipmentTotalFee+shipmentShipFee-shipmentShipDiscountFee;;
             Shipment shipment = makeShipment(orderRefund.getOrderId(),warehouseId,shipmentItemFee,
-                    shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,ShipmentType.EXCHANGE_SHIP.value(),shipmentShipDiscountFee,shipmentTotalPrice,refund.getShopId());
+                    shipmentDiscountFee,shipmentTotalFee,shipmentShipFee,shipType,shipmentShipDiscountFee,shipmentTotalPrice,refund.getShopId());
             //换货
             shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
             Map<String,String> extraMap = shipment.getExtra();

@@ -10,6 +10,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.auth.AuthConfiguration;
 import com.pousheng.erp.ErpConfiguration;
 import com.pousheng.middle.PoushengMiddleItemConfiguration;
+import com.pousheng.middle.gd.GDMapToken;
 import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
@@ -83,10 +84,11 @@ import java.util.concurrent.*;
                 "com.pousheng.middle.erpsyc",
                 "com.pousheng.middle.hksyc",
                 "com.pousheng.middle.interceptors",
-                "com.pousheng.middle.web"})
+                "com.pousheng.middle.web",
+                "com.pousheng.middle.gd"})
 @EnableScheduling
 @EnableConfigurationProperties({
-        ErpOpenApiToken.class
+        ErpOpenApiToken.class,GDMapToken.class
 })
 @Slf4j
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {

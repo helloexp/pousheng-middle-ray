@@ -102,7 +102,7 @@ public class MemberShopOperationLogic {
      * @param type 查询条件{@link MemberFromType}
      * @return 门店地址信息
      */
-    private Response<MemberCenterAddressDto> findShopAddress(String companyId, String storeCode, Integer type) {
+    public Response<MemberCenterAddressDto> findShopAddress(String companyId, String storeCode, Integer type) {
         try {
             Map<String, String> criteria = new HashMap<>();
             criteria.put("companyId",companyId);

@@ -5,11 +5,13 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.web.shop.event.CreateShopAddressEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -64,6 +66,8 @@ public class AdminShops {
 
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
+    @Autowired
+    private EventBus eventBus;
 
 
 
@@ -166,6 +170,10 @@ public class AdminShops {
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
         Long id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
+
+
+        CreateShopAddressEvent addressEvent = new CreateShopAddressEvent(id,shop.getCompanyId(),shop.getOuterId());
+        eventBus.post(addressEvent);
 
         return Collections.singletonMap("id", id);
     }
@@ -462,5 +470,10 @@ public class AdminShops {
         private Long zoneId;
         //区部名称
         private String zoneName;
+
+        /**
+         * 公司id
+         */
+        private String companyId;
     }
 }

@@ -13,6 +13,9 @@ import java.util.Map;
  */
 @Data
 public class ShipmentRequest implements java.io.Serializable {
+
+    private static final long serialVersionUID = -155017114462660391L;
+
     private Map<Long,Integer> data;
     private Long warehouseId;
 }

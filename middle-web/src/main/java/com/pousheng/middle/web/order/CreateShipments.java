@@ -12,6 +12,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.ShopOrder;
@@ -80,6 +81,10 @@ public class CreateShipments {
                                                  @RequestParam(defaultValue = "1") Integer type) {
 
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
+        if(Arguments.isNull(requestDataList)){
+            log.error("data json :{} invalid",dataList);
+            throw new JsonResponseException("analysis.shipment.json.error");
+        }
         List<ShipmentPreview> shipmentPreviews = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());

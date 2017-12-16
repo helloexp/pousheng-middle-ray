@@ -748,8 +748,6 @@ public class RefundWriteLogic {
         RefundExtra refundExtra = new RefundExtra();
         ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipments.get(0).getReceiverInfos(),ReceiverInfo.class);
         refundExtra.setReceiverInfo(receiverInfo);
-        //完善仓库及物流信息
-        completeWareHoseAndExpressInfo(submitRefundInfo.getRefundType(),refundExtra,submitRefundInfo);
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_LOST_ITEM_INFO,mapper.toJson(refundItems));
         //完善换货信息

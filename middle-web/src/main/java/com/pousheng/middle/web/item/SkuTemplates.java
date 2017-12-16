@@ -187,7 +187,7 @@ public class SkuTemplates {
         }
         SkuTemplate exist = rExist.getResult();
         Integer originPrice = 0;
-        if (exist.getExtraPrice() != null) {
+        if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
             originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
         }
         Map<String,String> extra = setMopsDiscount(exist,discount);
@@ -322,7 +322,9 @@ public class SkuTemplates {
 
 
     private static Integer calculatePrice(Integer discount, Integer originPrice){
-        BigDecimal decimal=new BigDecimal(discount/100);
-        return decimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
+        BigDecimal ratio = new BigDecimal("100");  // 百分比的倍率
+        BigDecimal discountDecimal = new BigDecimal(discount);
+        BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
+        return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
     }
 }

@@ -559,7 +559,7 @@ public class Refunds {
         }
         editMiddleRefund.setRefundExtra(refundExtra);
         //如果为丢件补发类型
-        if(isChangeRefund(refund)){
+        if(isLostRefund(refund)){
             editMiddleRefund.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
             editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
         }

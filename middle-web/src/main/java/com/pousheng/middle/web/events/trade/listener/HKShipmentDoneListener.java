@@ -131,7 +131,6 @@ public class HKShipmentDoneListener {
                         throw new JsonResponseException("update.refund.status.error");
                     }
                     //将shipmentExtra的已发货时间塞入值,
-                    //todo 丢件补发有自己的状态,需要区分
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation());
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
@@ -145,6 +144,28 @@ public class HKShipmentDoneListener {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());
                         throw new JsonResponseException("update.refund.error");
                     }
+                }
+            }
+            //丢件补发类型
+            if (refund.getStatus() == MiddleRefundStatus.LOST_WAIT_SHIP.getValue()) {
+                Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
+                if (!resRlt.isSuccess()) {
+                    log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
+                    throw new JsonResponseException("update.refund.status.error");
+                }
+                //将shipmentExtra的已发货时间塞入值,
+                Flow flow = flowPicker.pickAfterSales();
+                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
+                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                refundExtra.setShipAt(new Date());
+                Map<String, String> extrMap = refund.getExtra();
+                extrMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+                refund.setExtra(extrMap);
+                refund.setStatus(targetStatus);
+                Response<Boolean> updateRefundRes = refundWriteService.update(refund);
+                if (!updateRefundRes.isSuccess()) {
+                    log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());
+                    throw new JsonResponseException("update.refund.error");
                 }
             }
         }

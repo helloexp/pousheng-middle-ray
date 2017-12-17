@@ -57,10 +57,18 @@ public class PoushengSettlementPos implements Serializable {
     private String shopName;
 
     /**
+     * 发货单号
+     */
+    private Long  shipmentId;
+    /**
      * pos单创建时间
      */
     private Date posCreatedAt;
 
+    /**
+     * pos单完成时间
+     */
+    private Date posDoneAt;
     /**
      * 创建时间
      */

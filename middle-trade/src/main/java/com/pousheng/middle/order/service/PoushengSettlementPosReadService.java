@@ -24,4 +24,21 @@ public interface PoushengSettlementPosReadService {
      * @return
      */
     Response<PoushengSettlementPos> findByPosSerialNo(String posSerialNo);
+
+
+    /**
+     * 根据发货单号查询pos单信息
+     * @param shipmentId
+     * @return
+     */
+    Response<PoushengSettlementPos> findByShipmentId(Long shipmentId);
+
+    /**
+     * 根据售后单号以及pos单类型
+     * @param refundId 售后单号
+     * @param posType pos类型
+     * @return
+     */
+    Response<PoushengSettlementPos> findByRefundIdAndPosType(Long refundId,Integer posType);
+
 }

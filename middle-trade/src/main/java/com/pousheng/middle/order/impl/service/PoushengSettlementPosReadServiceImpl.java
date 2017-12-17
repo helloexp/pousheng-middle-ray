@@ -44,9 +44,24 @@ public class PoushengSettlementPosReadServiceImpl implements PoushengSettlementP
         try {
             return Response.ok(poushengSettlementPosDao.findByPosSerialNo(posSerialNo));
         }catch (Exception e){
-            log.error("failed find settlement pos, criteria={}, cause:{}",posSerialNo, Throwables.getStackTraceAsString(e));
+            log.error("failed find settlement pos, posSerialNo={}, cause:{}",posSerialNo, Throwables.getStackTraceAsString(e));
             return Response.fail("settlement.pos.find.fail");
         }
+    }
+
+    @Override
+    public Response<PoushengSettlementPos> findByShipmentId(Long shipmentId) {
+        try {
+            return Response.ok(poushengSettlementPosDao.findByShipmentId(shipmentId));
+        }catch (Exception e){
+            log.error("failed find settlement pos, shipmentId={}, cause:{}",shipmentId, Throwables.getStackTraceAsString(e));
+            return Response.fail("settlement.pos.find.fail");
+        }
+    }
+
+    @Override
+    public Response<PoushengSettlementPos> findByRefundIdAndPosType(Long refundId, Integer posType) {
+        return null;
     }
 
 

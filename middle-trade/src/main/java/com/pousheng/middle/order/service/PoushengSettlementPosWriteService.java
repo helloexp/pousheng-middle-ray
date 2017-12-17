@@ -17,4 +17,13 @@ public interface PoushengSettlementPosWriteService {
      * @return
      */
     Response<Long> create(PoushengSettlementPos poushengSettlementPos);
+
+    /**
+     * 创建 pos单
+     * @param poushengSettlementPos
+     * @return
+     */
+    Response<Boolean> update(PoushengSettlementPos poushengSettlementPos);
+
+
 }

@@ -37,7 +37,7 @@ public class SearchSkuTemplateEntity {
     private String categoryName;
 
     @ExportTitle("折扣")
-    @ExportEditable
+    @ExportEditable(true)
     private String discount;
 
     @ExportTitle("销售价")
@@ -67,18 +67,26 @@ public class SearchSkuTemplateEntity {
     }
 
     public SearchSkuTemplateEntity(String[] strs){
-        this.id = Long.parseLong(strs[0]);
-        this.spuCode = strs[1];
-        this.name = strs[2];
-        this.color = strs[3];
-        this.size = strs[4];
-        this.brandName = strs[6];
-        this.categoryName = strs[7];
-        this.discount = strs[8];
-        if(StringUtils.isNotEmpty(strs[9]))
-            this.price = Integer.valueOf(strs[9]);
+        if(StringUtils.isNotEmpty(strs[0]))
+            this.id = Long.parseLong(strs[0].replace("\"",""));
+        if(StringUtils.isNotEmpty(strs[1]))
+            this.spuCode = strs[1].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[2]))
+            this.name = strs[2].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[3]))
+            this.color = strs[3].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[4]))
+            this.size = strs[4].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[6]))
+            this.brandName = strs[6].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[7]))
+            this.categoryName = strs[7].replace("\"","");
         if(StringUtils.isNotEmpty(strs[8]))
-            this.originPrice = Integer.valueOf(strs[10]);
+            this.discount = strs[8].replace("\"","");
+        if(StringUtils.isNotEmpty(strs[9]))
+            this.price = Integer.valueOf(strs[9].replace("\"",""));
+        if(StringUtils.isNotEmpty(strs[10]))
+            this.originPrice = Integer.valueOf(strs[10].replace("\"",""));
         this.error = strs[11];
     }
 

@@ -109,7 +109,7 @@ public class BatchAsyncHandleMposListener {
         //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
         if(helper.size() > 0){
             String url = this.uploadToAzureOSS(helper.transformToFile());
-            recordToRedis(key,PsItemConstants.EXECUTE_ERROR + ":" + url,userId);
+            recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
             log.error("async handle mpos flag task abnormality");
         }else{
             recordToRedis(key,PsItemConstants.EXECUTED,userId);
@@ -221,7 +221,7 @@ public class BatchAsyncHandleMposListener {
         if (fileName.contains(File.separator)) {
             fileName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
         }
-        recordToRedis(toUploadKey(userId,uploadUrl,"export"),uploadUrl,userId);
+        recordToRedis(toUploadKey(userId,fileName,"export"),uploadUrl,userId);
         log.info("async export mpos task end");
     }
 
@@ -283,11 +283,12 @@ public class BatchAsyncHandleMposListener {
         String key = toImportKey(userId,file.getOriginalFilename());
         ExcelExportHelper<SearchSkuTemplateEntity> helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
         recordToRedis(key,PsItemConstants.EXECUTING,userId);
-        List<String[]> list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",11);
+        List<String[]> list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",12);
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[8]) && !"\"\"".equals(strs[8])){
                 try{
+                    strs[11] = "";
                     Long id = Long.parseLong(strs[0].replace("\"",""));
                     Integer discount = Integer.valueOf(strs[8]);
                     setDiscount(id,discount);
@@ -305,7 +306,9 @@ public class BatchAsyncHandleMposListener {
             }
         }
         if(helper.size() > 0){
-            recordToRedis(key,PsItemConstants.EXECUTE_ERROR,userId);
+            String url = this.uploadToAzureOSS(helper.transformToFile());
+            recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
+            log.error("async import mpos discount task abnormality");
         }else{
             recordToRedis(key,PsItemConstants.EXECUTED,userId);
         }

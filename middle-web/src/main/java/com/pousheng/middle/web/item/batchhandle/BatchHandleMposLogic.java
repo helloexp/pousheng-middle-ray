@@ -45,7 +45,7 @@ public class BatchHandleMposLogic {
                         record.setName(attr[1]);
                         String type = attr[0].substring(("mpos:" + userId + ":flag").length());
                         record.setType(type);
-                        String[] val = value.split(":");
+                        String[] val = value.split("~");
                         if(val.length == 1) {
                             record.setState(value);
                         }else{
@@ -81,7 +81,7 @@ public class BatchHandleMposLogic {
                         record.setCreateAt(new Date(Long.parseLong(attr[1])));
                         String value = jedis.get(key);
                         record.setName(attr[0].substring(("mpos:" + userId + ":import:").length()));
-                        String[] val = value.split(":");
+                        String[] val = value.split("~");
                         if(val.length == 1) {
                             record.setState(value);
                         }else{

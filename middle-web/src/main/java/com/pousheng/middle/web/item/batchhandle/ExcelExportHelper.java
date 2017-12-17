@@ -125,10 +125,12 @@ public class ExcelExportHelper<T> {
                     ExportField exportField = new ExportField();
                     exportField.setName(field.getName());
                     ExportEditable editableAnnotation = field.getAnnotation(ExportEditable.class);
-                    exportField.setCanWrite(editableAnnotation.value());
+                    if(editableAnnotation != null)
+                        exportField.setCanWrite(editableAnnotation.value());
                     ExportTitle titleAnnotation = field.getAnnotation(ExportTitle.class);
                     exportField.setTitle(titleAnnotation.value());
                     row.createCell(row.getPhysicalNumberOfCells()).setCellValue(titleAnnotation.value());
+                    exportFields.add(exportField);
                 });
         return exportFields;
     }

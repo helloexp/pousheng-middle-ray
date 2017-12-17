@@ -123,6 +123,57 @@ public class RefundWriteLogic {
 
     }
 
+    /**
+     * 更新丢件补发类型售后单已经处理数量
+     * 判断是否商品已全部处理，如果是则更新状态为 WAIT_SHIP:待发货
+     * @param skuCodeAndQuantity 商品编码及数量
+     */
+    public void updateSkuHandleNumberForLost(Long refundId,Map<String,Integer> skuCodeAndQuantity){
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        //换货商品
+        List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
+
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        //是否全部处理
+        Boolean isAllHandle= Boolean.TRUE;
+        //更新发货数量
+        for (RefundItem refundItem : refundLostItems) {
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
+                refundItem.setAlreadyHandleNumber(refundItem.getAlreadyHandleNumber() + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+            }
+
+            //如果存在未处理完成的
+            if(!Objects.equals(refundItem.getApplyQuantity(),refundItem.getAlreadyHandleNumber())){
+                isAllHandle = Boolean.FALSE;
+            }else{
+                //换货商品已经全部处理完,此时处于待发货状态,此时填入换货发货单创建时间
+                refundExtra.setLostShipmentAt(new Date());
+            }
+        }
+
+        Refund update = new Refund();
+        update.setId(refundId);
+        Map<String,String> extrMap = refund.getExtra();
+        extrMap.put(TradeConstants.REFUND_LOST_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundLostItems));
+        extrMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
+        update.setExtra(extrMap);
+
+        Response<Boolean> updateRes = refundWriteService.update(update);
+        if(!updateRes.isSuccess()){
+            log.error("update refund(id:{}) fail,error:{}",refund,updateRes.getError());
+        }
+
+        if(isAllHandle){
+            Flow flow = flowPicker.pickAfterSales();
+            Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation());
+            Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refundId,targetStatus);
+            if(!updateStatusRes.isSuccess()){
+                log.error("update refund(id:{}) status to:{} fail,error:{}",refund,targetStatus,updateRes.getError());
+            }
+        }
+
+    }
 
 
     public Response<Boolean> updateStatus(Refund refund, OrderOperation orderOperation){

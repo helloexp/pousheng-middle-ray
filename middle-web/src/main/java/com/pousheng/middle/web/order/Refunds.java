@@ -109,7 +109,7 @@ public class Refunds {
 
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("完善")
+    @OperationLogType("完善或提交售后单")
     public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
@@ -142,7 +142,7 @@ public class Refunds {
      * @param data 逗号隔开的逆向单id拼接
      */
     @RequestMapping(value = "/api/refund/batch/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("批量处理")
+    @OperationLogType("批量处理售后单")
     public void completeHandle(@RequestParam(value = "refundIds") String data) {
         List<Long> refundIds = Splitters.splitToLong(data, Splitters.COMMA);
         List<Refund> refunds = refundReadLogic.findRefundByIds(refundIds);
@@ -191,7 +191,6 @@ public class Refunds {
 
     //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑或创建")
     public EditMiddleRefund edit(@RequestParam(required = false) @PermissionCheckParam Long refundId) {
         if (Arguments.isNull(refundId)) {
             EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
@@ -204,7 +203,8 @@ public class Refunds {
 
     //删除逆向单
     @RequestMapping(value = "/api/refund/{id}/delete", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void delete(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
+    @OperationLogType("删除售后单")
+    public void delete(@PathVariable(value = "id")@OperationLogParam @PermissionCheckParam Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
         if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
@@ -223,7 +223,7 @@ public class Refunds {
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    @OperationLogType("创建")
+    @OperationLogType("创建售后单")
     public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
         if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             return refundWriteLogic.createRefundForLost(submitRefundInfo);
@@ -298,7 +298,7 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel", method = RequestMethod.PUT)
-    @OperationLogType("取消")
+    @OperationLogType("取消销售单")
     public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
@@ -392,7 +392,8 @@ public class Refunds {
      * @param customerSerivceNote 客服备注
      */
     @RequestMapping(value = "/api/refund/{id}/add/customer/service/note", method = RequestMethod.PUT)
-    public void createCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
+    @OperationLogType("售后单添加中台客服备注")
+    public void createCustomerServiceNote(@PathVariable("id") @OperationLogParam Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
         refundWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
     }
 
@@ -401,7 +402,8 @@ public class Refunds {
      * @param id 售后单id
      */
     @RequestMapping(value = "/api/refund/{id}/cancel/on/change",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void cancelRefundForChange(@PathVariable("id")Long id){
+    @OperationLogType("换货改退货取消售后单")
+    public void cancelRefundForChange(@PathVariable("id")@OperationLogParam Long id){
         Refund refund = refundReadLogic.findRefundById(id);
         if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
             //如果允许取消发货则修改状态
@@ -426,7 +428,8 @@ public class Refunds {
      * @param refundId 退款单id
      */
     @RequestMapping(value = "/api/refund/{id}/manual/confirm/refund",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void confirmRefund(@PathVariable("id") Long refundId){
+    @OperationLogType("人工确认已经退款")
+    public void confirmRefund(@PathVariable("id")@OperationLogParam Long refundId){
        Refund refund =  refundReadLogic.findRefundById(refundId);
        OrderRefund orderRefund =  refundReadLogic.findOrderRefundByRefundId(refundId);
        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -451,7 +454,8 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "/api/refund/{id}/manual/confirm/return",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void confirmReturn(@PathVariable("id") Long refundId){
+    @OperationLogType("人工确认已经退货")
+    public void confirmReturn(@PathVariable("id") @OperationLogParam Long refundId){
         Refund refund =  refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund =  refundReadLogic.findOrderRefundByRefundId(refundId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -539,7 +543,8 @@ public class Refunds {
      * @param middleChangeReceiveInfo
      */
     @RequestMapping(value = "/api/refund/{id}/edit/receiver/info",method = RequestMethod.PUT)
-    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
+    @OperationLogType("修改换货售后单客户收货地址")
+    public void editReceiverInfos(@PathVariable("id")@OperationLogParam Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
         middleRefundWriteService.updateReceiveInfos(id,middleChangeReceiveInfo);
     }
 
@@ -628,4 +633,17 @@ public class Refunds {
     private Boolean isLostRefund(Refund refund) {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
     }
+
+    /**
+     * 丢件补发类型客服确认客户收货
+     * @param id 售后单id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/customer/service/confirm/done",method = RequestMethod.PUT)
+    @OperationLogType("丢件补发客服确认收货")
+    public Response<Boolean> confirmDoneForLost(@PathVariable("id") @OperationLogParam Long id){
+        Refund refund = refundReadLogic.findRefundById(id);
+        return refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
+    }
+
 }

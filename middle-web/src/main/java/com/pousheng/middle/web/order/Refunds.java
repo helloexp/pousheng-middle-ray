@@ -331,7 +331,7 @@ public class Refunds {
                 throw new JsonResponseException(updateSyncStatusRes.getError());
             }
         }else{
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+                Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
             if (!syncRes.isSuccess()) {
                 log.error("sync cancel refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
                 throw new JsonResponseException(syncRes.getError());

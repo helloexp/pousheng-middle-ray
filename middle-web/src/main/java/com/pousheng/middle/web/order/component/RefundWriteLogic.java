@@ -661,7 +661,7 @@ public class RefundWriteLogic {
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 //判断申请售后的商品数量是否大于发货单中商品的数量
-                if (editSubmitRefundItem.getRefundQuantity()>skuCodesAndQuantity.get(editSubmitRefundItem.getRefundQuantity())){
+                if (editSubmitRefundItem.getRefundQuantity()>skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode())){
                     log.error("refund applyQuantity:{} gt available applyQuantity:{}",editSubmitRefundItem.getRefundQuantity(),skuCodesAndQuantity.get(editSubmitRefundItem.getRefundQuantity()));
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }

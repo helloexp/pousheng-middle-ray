@@ -81,6 +81,13 @@ public class AdminShops {
         return rShop.getResult();
     }
 
+
+    @ApiOperation("根据用户id查询门店信息")
+    @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Shop> findShopByUserId(@PathVariable("id") Long userId) {
+        return shopReadService.findByUserId(userId);
+    }
+
     /**
      *  分页查询门店信息
      * @param id id

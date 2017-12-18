@@ -110,7 +110,7 @@ public class SkuTemplates {
                                           @RequestParam(value = "spuId",required = false) Long spuId,
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
                                           @RequestParam(value = "pageSize", required = false) Integer pageSize,
-                                          @RequestParam(value = "statuses",required = false) List<Integer> statuses){
+                                          @RequestParam(value = "statuses", required = false) List<Integer> statuses){
 
         Map<String, Object> params = Maps.newHashMap();
         if (Objects.nonNull(ids)){
@@ -125,9 +125,10 @@ public class SkuTemplates {
         if (spuId!=null){
             params.put("spuId",spuId);
         }
-        if (statuses.isEmpty()){
+
+        if (Objects.isNull(statuses)){
             params.put("statuses",Lists.newArrayList(1,-3));
-        }else{
+        }else if (!statuses.isEmpty()){
             params.put("statuses",statuses);
         }
         Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);

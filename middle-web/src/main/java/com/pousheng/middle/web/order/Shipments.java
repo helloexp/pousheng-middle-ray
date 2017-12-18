@@ -292,7 +292,7 @@ public class Shipments {
         }
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
-            shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
+            shipmentDiscountFee = (shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount())+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //订单总金额(运费优惠已经包含在子单折扣中)=商品总净价+运费
@@ -393,7 +393,7 @@ public class Shipments {
         //订单总金额
         for (ShipmentItem shipmentItem : shipmentItems) {
             shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;
-            shipmentDiscountFee = shipmentItem.getSkuDiscount()+shipmentDiscountFee;
+            shipmentDiscountFee = (shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount())+shipmentDiscountFee;
             shipmentTotalFee = shipmentItem.getCleanFee()+shipmentTotalFee;
         }
         //发货单中订单总金额
@@ -818,11 +818,13 @@ public class Shipments {
         Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
 
         //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
         for (WarehouseShipment ws : warehouseShipmentList) {
             for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                stockPusher.submit(skuCodeAndQuantity.getSkuCode());
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
             }
         }
+        stockPusher.submit(skuCodes);
         return result;
 
     }

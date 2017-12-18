@@ -346,11 +346,11 @@ public class SyncShipmentLogic {
             //购买数量--对应中台发货单sku发货数量
             item.setNum(shipmentItem.getQuantity());
             //优惠金额--中台折扣/10
-            item.setPreferentialMon(new BigDecimal(shipmentItem.getSkuDiscount()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            item.setPreferentialMon(new BigDecimal(shipmentItem.getSkuDiscount()==null?0:shipmentItem.getSkuDiscount()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //销售单价(减去所有的优惠(优惠需要按比例计算))
-            item.setSalePrice(new BigDecimal(shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            item.setSalePrice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //总价(销售价格*数量)
-            item.setTotalPrice(new BigDecimal(shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            item.setTotalPrice(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //赠品(1),非赠品(2)默认填写非赠品
             item.setIsGifts(2);
             items.add(item);

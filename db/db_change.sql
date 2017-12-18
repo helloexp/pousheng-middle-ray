@@ -94,6 +94,24 @@ ALTER TABLE `parana_invoices` change  `user_id` `user_id` bigint(20)  NULL COMME
 -- spu归组规则新增字段rule_detail(规则详情)
 ALTER TABLE `pousheng_sku_group_rules` ADD COLUMN `rule_detail` VARCHAR(20) COMMENT '规则详情' AFTER `last_start`;
 
+
+drop table if exists `pousheng_stock_push_logs`;
+CREATE TABLE `pousheng_stock_push_logs`
+(
+  `id` BIGINT(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
+  `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
+  `sku_code` VARCHAR(40) NULL COMMENT 'SKU 编码 (标准库存单位编码)',
+  `quantity`  BIGINT(20) NOT NULL COMMENT 'sku数量',
+  `status` INT(1) NOT NULL COMMENT '1:推送成功,2:推送失败',
+  `cause` VARCHAR(512) COMMENT '失败原因',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY(`id`),
+  KEY `index_stock_push_shop_name` (`shop_name`),
+  KEY `index_stock_push_shop_id` (`shop_id`),
+  KEY `index_stock_push_sku_code` (`sku_code`)
+)COMMENT='宝胜库存推送日志';
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`
 (

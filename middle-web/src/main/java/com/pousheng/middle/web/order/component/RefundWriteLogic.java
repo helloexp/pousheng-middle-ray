@@ -453,9 +453,10 @@ public class RefundWriteLogic {
         existRefundItems.forEach(refundItem -> {
             existSkuCodeAndQuantity.put(refundItem.getSkuCode(),refundItem.getApplyQuantity());
         });
-        //根据skuCode判断两者是否存在差集
-        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
-        if (diffSkuCodes.isEmpty()){
+        //获取交集
+        List<String> commSkuCodes = this.getDntersectionList(editSkuCodes,existSkuCodes);
+        //如果交集等于他们各自的数量，则表明没有skuCode变化
+        if (commSkuCodes.size()==editSkuCodes.size()&&commSkuCodes.size()==existSkuCodes.size()){
             //如果不存在差集这比较两个商品之间是否存在金额变化的部分
             for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
                 Integer existQuantity = existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode());
@@ -486,7 +487,7 @@ public class RefundWriteLogic {
         List<RefundItem> existChangeItems = refundReadLogic.findRefundChangeItems(refund);
 
         List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
-        List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
+        List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getChangeSkuCode).collect(Collectors.toList());
         //当前存在的商品
         Map<String,Integer> existSkuCodeAndQuantity = Maps.newHashMap();
         List<String> existSkuCodes = Lists.newArrayList();
@@ -495,12 +496,12 @@ public class RefundWriteLogic {
             existSkuCodes.add(refundItem.getSkuCode());
         });
         //根据skuCode判断两者是否存在差集
-        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
-        if (diffSkuCodes.isEmpty()){
+        List<String> commSkuCodes = this.getDntersectionList(editSkuCodes,existSkuCodes);
+        if (commSkuCodes.size()==editSkuCodes.size()&&commSkuCodes.size()==existSkuCodes.size()){
             //如果不存在差集这比较两个商品之间是否存在金额变化的部分
             for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
-                Integer existQuantity = existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode());
-                if (!Objects.equals(editSubmitRefundItem.getRefundQuantity(),existQuantity)){
+                Integer existQuantity = existSkuCodeAndQuantity.get(editSubmitRefundItem.getChangeSkuCode());
+                if (!Objects.equals(editSubmitRefundItem.getChangeQuantity(),existQuantity)){
                     isChanged = Boolean.TRUE;
                     return isChanged;
                 }
@@ -536,9 +537,9 @@ public class RefundWriteLogic {
             skuCodesAndRefundItems.put(refundItem.getSkuCode(),refundItem);
             existSkuCodes.add(refundItem.getSkuCode());
         });
-        //获取当前传入的skuCode和之前保存的skuCode之间是否存在变化,求差集
-        List<String> diffSkuCodes = this.getDifferenceList(editSkuCodes,existSkuCodes);
-        if (diffSkuCodes.isEmpty()){
+        //获取当前传入的skuCode和之前保存的skuCode之间是否存在变化,求交集
+        List<String> commSkuCodes = this.getDntersectionList(editSkuCodes,existSkuCodes);
+        if (commSkuCodes.size()==editSkuCodes.size()&&commSkuCodes.size()==existSkuCodes.size()){
             //说明商品没有变化只是改变了数量
             for (EditSubmitRefundItem editSubmitRefundItem: editSubmitRefundItems){
                 Integer quantity = editSubmitRefundItem.getRefundQuantity() - existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()); //只改变了数量
@@ -546,8 +547,8 @@ public class RefundWriteLogic {
             }
         }else{
             //说明有商品变化
-            List<String> editSkuCodeRemain = this.getDifferenceList(editSkuCodes,existSkuCodes); //获取传入的skuCode集合与当前的skuCode集合中不同的部分
-            List<String> existSkuCodeRemain = this.getDifferenceList(existSkuCodes,editSkuCodes); //获取当前的skuCode集合与传入的skuCode集合中不同的部分
+            List<String> editSkuCodeRemain = this.getDifferenceList(editSkuCodes,commSkuCodes); //获取传入的skuCode集合与当前的skuCode集合中不同的部分
+            List<String> existSkuCodeRemain = this.getDifferenceList(existSkuCodes,commSkuCodes); //获取当前的skuCode集合与传入的skuCode集合中不同的部分
             for (String skuCode:editSkuCodeRemain){
                 updateShipmentItemRefundQuantity(skuCode,editSkuCodeAndQuantity.get(skuCode),shipmentItems);
             }

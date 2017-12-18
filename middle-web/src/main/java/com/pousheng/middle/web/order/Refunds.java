@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 @RestController
 @Slf4j
 @OperationLogModule(OperationLogModule.Module.REFUND)
-@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
+//@PermissionCheck(PermissionCheck.PermissionCheckType.REFUND)
 public class Refunds {
 
     @Autowired
@@ -110,7 +110,7 @@ public class Refunds {
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("完善或提交售后单")
-    public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
+    public void completeHandle(@PathVariable(value = "id")  @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){

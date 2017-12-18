@@ -98,7 +98,7 @@ public class BatchAsyncHandleMposListener {
         String operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
         ExcelExportHelper<AbnormalRecord> helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-        log.info("asnc handle mpos flag task start");
+        log.info("async handle mpos flag task start");
         //1.开始的时候记录状态
         recordToRedis(key,PsItemConstants.EXECUTING,userId);
         boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper);

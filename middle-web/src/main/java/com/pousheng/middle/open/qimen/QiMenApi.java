@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -12,6 +13,7 @@ import com.pousheng.middle.utils.XmlUtils;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -45,7 +47,8 @@ public class QiMenApi {
 
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
-
+    @Autowired
+    private EventBus eventBus;
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
 
@@ -99,7 +102,9 @@ public class QiMenApi {
                 return XmlUtils.toXml(QimenResponse.fail(updateBuyerInfoR.getError()));
             }
         }
-
+        //抛出一个事件用于天猫自动生成发货单
+        OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
+        eventBus.post(event);
         return XmlUtils.toXml(QimenResponse.ok());
     }
 

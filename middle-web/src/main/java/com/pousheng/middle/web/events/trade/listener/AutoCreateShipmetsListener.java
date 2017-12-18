@@ -6,6 +6,7 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
@@ -15,6 +16,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Objects;
 
 /**
  * 发货单自动发货的事件
@@ -41,6 +43,12 @@ public class AutoCreateShipmetsListener {
     public void onShipment(OpenClientOrderSyncEvent event) {
         log.info("try to auto create shipment,shopOrder id is {}",event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
+        //天猫订单如果还没有拉取售后地址是不能生成发货单的
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
+            if (shopOrder.getBuyerName().contains("**")){
+                return;
+            }
+        }
         shipmentWiteLogic.doAutoCreateShipment(shopOrder);
     }
 }

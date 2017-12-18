@@ -648,6 +648,7 @@ public class RefundWriteLogic {
         Map<String,ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
             skuCodesAndQuantity.put(shipmentItem.getSkuCode(),shipmentItem.getQuantity());
+            skuCodesAndShipmentItems.put(shipmentItem.getSkuCode(),shipmentItem);
             skuCodes.add(shipmentItem.getSkuCode());
         });
         List<RefundItem> refundItems = Lists.newArrayList();

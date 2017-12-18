@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.item.batchhandle;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
@@ -43,9 +44,14 @@ public class BatchHandleMposLogic {
                         String value = jedis.get(key);
                         record.setName(attr[1]);
                         String type = attr[0].substring(("mpos:" + userId + ":flag").length());
-                        record.setState(value);
                         record.setType(type);
-                        //record.setId(Long.parseLong(attr[1]));
+                        String[] val = value.split("~");
+                        if(val.length == 1) {
+                            record.setState(value);
+                        }else{
+                            record.setState(val[0]);
+                            record.setUrl(val[1]);
+                        }
                         records.add(record);
                     });
                     return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
@@ -75,8 +81,13 @@ public class BatchHandleMposLogic {
                         record.setCreateAt(new Date(Long.parseLong(attr[1])));
                         String value = jedis.get(key);
                         record.setName(attr[0].substring(("mpos:" + userId + ":import:").length()));
-                        record.setState(value);
-                        //record.setId(Long.parseLong(attr[1]));
+                        String[] val = value.split("~");
+                        if(val.length == 1) {
+                            record.setState(value);
+                        }else{
+                            record.setState(val[0]);
+                            record.setUrl(val[1]);
+                        }
                         records.add(record);
                     });
                     return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
@@ -119,40 +130,40 @@ public class BatchHandleMposLogic {
         }
     }
 
-    /**
-     * 查看打标，取消打标异常记录
-     * @param taskId
-     * @return
-     */
-    public Response<Paging<AbnormalRecord>> getMposAbnormalRecord(String taskId,Integer pageNo,Integer pageSize,String type){
-        Long userId = UserUtil.getUserId();
-        int limit = new PageInfo(pageNo,pageSize).getOffset();
-        String key = "mpos:" + userId + ":abnormal:" + type + ":" + taskId;
-        try{
-            long total = jedisTemplate.execute(new JedisTemplate.JedisAction<Long>() {
-                @Override
-                public Long action(Jedis jedis) {
-                    return jedis.llen(key);
-                }
-            });
-            List<AbnormalRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<AbnormalRecord>>() {
-                @Override
-                public List<AbnormalRecord> action(Jedis jedis) {
-                    List<AbnormalRecord> records = new ArrayList<>();
-                    jedis.lrange(key,limit,limit + pageSize).forEach(value -> {
-                        AbnormalRecord record = new AbnormalRecord();
-                        String[] vals = value.split("~");
-                        record.setCode(vals[0]);
-                        record.setReason(vals[1]);
-                        records.add(record);
-                    });
-                    return records;
-                }
-            });
-            return Response.ok(new Paging<>(total,list));
-        }catch (Exception e){
-            log.error("fail to get mpos flag record,cause:{}", Throwables.getStackTraceAsString(e));
-            return Response.fail("fail to get mpos flag record");
-        }
-    }
+//    /**
+//     * 查看打标，取消打标异常记录
+//     * @param taskId
+//     * @return
+//     */
+//    public Response<Paging<AbnormalRecord>> getMposAbnormalRecord(String taskId,Integer pageNo,Integer pageSize,String type){
+//        Long userId = UserUtil.getUserId();
+//        int limit = new PageInfo(pageNo,pageSize).getOffset();
+//        String key = "mpos:" + userId + ":abnormal:" + type + ":" + taskId;
+//        try{
+//            long total = jedisTemplate.execute(new JedisTemplate.JedisAction<Long>() {
+//                @Override
+//                public Long action(Jedis jedis) {
+//                    return jedis.llen(key);
+//                }
+//            });
+//            List<AbnormalRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<AbnormalRecord>>() {
+//                @Override
+//                public List<AbnormalRecord> action(Jedis jedis) {
+//                    List<AbnormalRecord> records = new ArrayList<>();
+//                    jedis.lrange(key,limit,limit + pageSize).forEach(value -> {
+//                        AbnormalRecord record = new AbnormalRecord();
+//                        String[] vals = value.split("~");
+//                        record.setCode(vals[0]);
+//                        record.setReason(vals[1]);
+//                        records.add(record);
+//                    });
+//                    return records;
+//                }
+//            });
+//            return Response.ok(new Paging<>(total,list));
+//        }catch (Exception e){
+//            log.error("fail to get mpos flag record,cause:{}", Throwables.getStackTraceAsString(e));
+//            return Response.fail("fail to get mpos flag record");
+//        }
+//    }
 }

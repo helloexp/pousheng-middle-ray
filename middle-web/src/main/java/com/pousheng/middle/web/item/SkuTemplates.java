@@ -55,6 +55,15 @@ public class SkuTemplates {
     private EventBus eventBus;
 
 
+
+
+    @ApiOperation("根据id查询商品信息")
+    @RequestMapping(value = "/api/sku-template/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<SkuTemplate> findShopByUserId(@PathVariable("id") Long id) {
+        return skuTemplateReadService.findById(id);
+    }
+
+
     /**
      * 获取当前sku code对应sku的spu下的全部sku模板
      * @param skuCode 商品编码

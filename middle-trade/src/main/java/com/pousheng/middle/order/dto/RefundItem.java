@@ -29,4 +29,6 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     private Integer alreadyHandleNumber;
     //商品id
     private String itemId;
+    //换货时存放的需要申请售后的skuCode
+    private String refundSkuCode;
 }

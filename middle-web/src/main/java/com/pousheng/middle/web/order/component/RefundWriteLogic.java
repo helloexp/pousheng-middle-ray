@@ -610,12 +610,19 @@ public class RefundWriteLogic {
     private List<RefundItem> makeChangeItemInfo(List<RefundItem> refundItems,EditSubmitRefundInfo submitRefundInfo){
         List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
         List<RefundItem> changeRefundItems = Lists.newArrayList();
+        Map<String,RefundItem> skuCodeAndRefundItemsMap = Maps.newHashMap();
+        refundItems.forEach(refundItem -> {
+            skuCodeAndRefundItemsMap.put(refundItem.getSkuCode(),refundItem);
+        });
         editSubmitRefundItems.forEach(editSubmitRefundItem -> {
             RefundItem changeRefundItem = new RefundItem();
+            RefundItem refundItem = skuCodeAndRefundItemsMap.get(editSubmitRefundItem.getRefundSkuCode());
+            BeanMapper.copy(refundItem,changeRefundItem);
             changeRefundItem.setApplyQuantity(editSubmitRefundItem.getChangeQuantity());
             changeRefundItem.setAlreadyHandleNumber(0);
             changeRefundItem.setSkuCode(editSubmitRefundItem.getChangeSkuCode());
             changeRefundItem.setFee(editSubmitRefundItem.getFee());
+            changeRefundItem.setRefundSkuCode(refundItem.getSkuCode());
             changeRefundItems.add(changeRefundItem);
         });
         return changeRefundItems;

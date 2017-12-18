@@ -93,7 +93,7 @@ public class SkuTemplates {
         }
         if (Objects.isNull(statuses)){
             params.put("statuses",Lists.newArrayList(1,-3));
-        }else if (Objects.nonNull(statuses)&&!statuses.isEmpty()){
+        }else if (!statuses.isEmpty()){
             params.put("statuses",statuses);
         }
         Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);

@@ -391,13 +391,6 @@ public class ShipmentWiteLogic {
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         int orderWaitHandleType = 0;
-        //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
-            orderWaitHandleType = OrderWaitHandleType.JD_PAY_ON_CASH.value();
-            this.updateShipmentNote(shopOrder, orderWaitHandleType);
-            return false;
-        }
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())){
             orderWaitHandleType =OrderWaitHandleType.ORDER_HAS_NOTE.value();

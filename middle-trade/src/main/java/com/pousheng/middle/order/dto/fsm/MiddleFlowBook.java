@@ -451,7 +451,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.CANCEL.toOrderOperation(),
                     MiddleRefundStatus.CANCELED.getValue());
-
+            //丢件补发-待同步恒康 -->取消 -> 已取消（不需同步恒康）
+            addTransition(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.CANCEL.toOrderOperation(),
+                    MiddleRefundStatus.CANCELED.getValue());
             //=============== 仅退款 ================
 
             //同步退款成功-待退款 -->取消 --> 同步恒康取消中

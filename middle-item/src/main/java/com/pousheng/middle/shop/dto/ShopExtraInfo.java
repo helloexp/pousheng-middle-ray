@@ -44,6 +44,9 @@ public class ShopExtraInfo implements Serializable{
     //服务信息
     private ShopServerInfo shopServerInfo;
 
+    //open shop表的id
+    private Long openShopId;
+
     @Getter
     private String expressCompanyJson;
 

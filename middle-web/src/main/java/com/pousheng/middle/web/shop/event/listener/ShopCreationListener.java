@@ -14,7 +14,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.dto.MemberCenterAddressDto;
-import com.pousheng.middle.web.shop.event.CreateShopAddressEvent;
+import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -54,7 +54,7 @@ public class ShopCreationListener {
     }
 
     @Subscribe
-    public void onCreated(CreateShopAddressEvent event) {
+    public void onCreated(CreateShopEvent event) {
         //1、调用会员中心查询门店地址
         Response<MemberCenterAddressDto> addressDtoRes =  memberShopOperationLogic.findShopAddress(event.getCompanyId(),event.getStoreCode(), MemberFromType.SHOP.value());
         if(!addressDtoRes.isSuccess()){

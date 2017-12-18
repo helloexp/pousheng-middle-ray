@@ -30,4 +30,15 @@ public class PoushengSettlementPosWriteServiceImpl implements PoushengSettlement
             return Response.fail("pousheng.setttlement.pos.create.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> update(PoushengSettlementPos poushengSettlementPos) {
+        try {
+            poushengSettlementPosDao.update(poushengSettlementPos);
+            return io.terminus.common.model.Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("create poushengSettlementPos failed, poushengSettlementPos:{}, cause:{}", poushengSettlementPos, Throwables.getStackTraceAsString(e));
+            return Response.fail("pousheng.setttlement.pos.create.fail");
+        }
+    }
 }

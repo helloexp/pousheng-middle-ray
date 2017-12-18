@@ -12,8 +12,11 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -37,11 +40,13 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
+import io.terminus.parana.order.dto.RefundCriteria;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
+import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
@@ -53,6 +58,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Nullable;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -108,7 +115,12 @@ public class Shipments {
     private PermissionUtil permissionUtil;
     @RpcConsumer
     private OrderWriteService orderWriteService;
-
+    @Autowired
+    private PoushengSettlementPosReadService poushengSettlementPosReadService;
+    @RpcConsumer
+    private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
+    @RpcConsumer
+    private RefundReadService refundReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -831,7 +843,6 @@ public class Shipments {
 
         return ruleRes.getResult();
     }
-
     private Response<Boolean> lockStock(Shipment shipment){
         //获取发货单下的sku订单信息
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
@@ -921,5 +932,123 @@ public class Shipments {
             log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
         }
         return org.apache.commons.lang3.StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
+    }
+
+    /**
+     * 旧数据脚本迁移，发货单pos信息迁移
+     */
+    @RequestMapping(value = "api/shipment/create/pos/move",method = RequestMethod.GET)
+    public void doInsertCreatePosInfo(){
+        int pageNo=1;
+        //获取所有的发货单信息,目前生产环境上的有效的数据不超过1000
+        while(true){
+            OrderShipmentCriteria criteria = new OrderShipmentCriteria();
+            criteria.setPageNo(pageNo++);
+            criteria.setPageSize(40);
+            Response<Paging<ShipmentPagingInfo>> r =  orderShipmentReadService.findBy(criteria);
+            if (!r.isSuccess()){
+                log.error("find shipment info failed,criteria is {},caused by {}",criteria,r.getError());
+                return;
+            }
+            if (r.getResult().getData().size()==0){
+                break;
+            }
+            List<ShipmentPagingInfo> shipmentPagingInfos =  r.getResult().getData();
+            List<Shipment> shipments = Lists.newArrayList();
+            for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
+                shipments.add(shipmentPagingInfo.getShipment());
+            }
+            //获取正向的发货单
+            List<Shipment> shipmentList = shipments.stream().filter(Objects::nonNull).filter(it -> (it.getStatus()>= MiddleShipmentsStatus.ACCEPTED.getValue())).collect(Collectors.toList());
+            for (Shipment shipment:shipmentList){
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                OrderShipment orderShipment =  shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+                PoushengSettlementPos pos = new PoushengSettlementPos();
+                if (StringUtils.isEmpty(shipmentExtra.getPosSerialNo())){
+                    continue;
+                }
+                if (Objects.equals(orderShipment.getType(),1)){
+                    pos.setOrderId(orderShipment.getOrderId());
+                    pos.setShipType(1);
+                }else{
+                    pos.setOrderId(orderShipment.getAfterSaleOrderId());
+                    pos.setShipType(2);
+                }
+                pos.setPosDoneAt(shipment.getUpdatedAt());
+                String posAmt = String.valueOf(new BigDecimal(shipmentExtra.getPosAmt()).setScale(0, RoundingMode.HALF_DOWN));
+                pos.setPosAmt(Long.valueOf(posAmt));
+                pos.setPosType(Integer.valueOf(shipmentExtra.getPosType()));
+                pos.setPosSerialNo(shipmentExtra.getPosSerialNo());
+                pos.setShopId(orderShipment.getShopId());
+                pos.setShopName(orderShipment.getShopName());
+                pos.setPosCreatedAt(shipmentExtra.getPosCreatedAt());
+                Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(shipmentExtra.getPosSerialNo());
+                if (!r.isSuccess()){
+                    log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",shipmentExtra.getPosSerialNo(),rP.getError());
+                    continue;
+                }
+                if(!Objects.isNull(rP.getResult())){
+                    continue;
+                }
+                Response<Long> rL = poushengSettlementPosWriteService.create(pos);
+                if (!rL.isSuccess()){
+                    log.error("create pousheng settlement pos failed,pos is {},caused by {}",pos,rL.getError());
+                    continue;
+                }
+            }
+        }
+    }
+
+    /**
+     * 售后单pos信息迁移
+     */
+    @RequestMapping(value = "api/shipment/after/sale/pos/move",method = RequestMethod.GET)
+    public void doInsertAfterSalePosInfo(){
+        //获取所有的发货单信息,目前生产环境上的有效的数据不超过1000
+        int pageNo=1;
+        while(true){
+            RefundCriteria criteria = new RefundCriteria();
+            criteria.setSize(40);
+            Response<Paging<Refund>> r = refundReadService.findRefundBy(pageNo++,criteria.getSize(),criteria);
+            if (!r.isSuccess()){
+                log.error("find.refund failed,criteria is {},caused by {}",criteria,r.getError());
+                return;
+            }
+            if (r.getResult().getData().size()==0){
+                break;
+            }
+            List<Refund> refunds = r.getResult().getData();
+            List<Refund> refundList = refunds.stream().filter(Objects::nonNull).filter(it->(it.getStatus()>= MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())).collect(Collectors.toList());
+            for (Refund refund:refundList){
+                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                if (StringUtils.isEmpty(refundExtra.getPosSerialNo())){
+                    continue;
+                }
+                PoushengSettlementPos pos = new PoushengSettlementPos();
+                pos.setOrderId(refund.getId());
+                String posAmt = String.valueOf(new BigDecimal(refundExtra.getPosAmt()).setScale(0, RoundingMode.HALF_DOWN));
+                pos.setPosAmt(Long.valueOf(posAmt));
+                pos.setPosType(Integer.valueOf(refundExtra.getPosType()));
+                pos.setShipType(3);
+                pos.setPosSerialNo(refundExtra.getPosSerialNo());
+                pos.setShopId(refund.getShopId());
+                pos.setShopName(refund.getShopName());
+                pos.setPosCreatedAt(refundExtra.getPosCreatedAt());
+                pos.setPosDoneAt(refund.getUpdatedAt());
+                Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(refundExtra.getPosSerialNo());
+                if (!r.isSuccess()){
+                    log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",refundExtra.getPosSerialNo(),rP.getError());
+                    continue;
+                }
+                if(!Objects.isNull(rP.getResult())){
+                    continue;
+                }
+                Response<Long> rL = poushengSettlementPosWriteService.create(pos);
+                if (!rL.isSuccess()){
+                    log.error("create pousheng settlement pos failed,pos is {},caused by {}",pos,rL.getError());
+                    continue;
+                }
+            }
+        }
     }
 }

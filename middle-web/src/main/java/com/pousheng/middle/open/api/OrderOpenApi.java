@@ -40,6 +40,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -321,9 +322,11 @@ public class OrderOpenApi {
                 }else{
                     pos.setOrderId(orderShipment.getAfterSaleOrderId());
                     pos.setShipType(2);
+                    pos.setPosDoneAt(new Date());
                 }
                 String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(amt));
+                pos.setShipmentId(orderId);
                 pos.setPosType(Integer.valueOf(posType));
                 pos.setPosSerialNo(posSerialNo);
                 pos.setShopId(orderShipment.getShopId());
@@ -342,6 +345,7 @@ public class OrderOpenApi {
                 pos.setShopId(refund.getShopId());
                 pos.setShopName(refund.getShopName());
                 pos.setPosCreatedAt(dPos.toDate());
+                pos.setPosDoneAt(new Date());
             }else{
                 throw new ServiceException("invalid.order.type");
             }

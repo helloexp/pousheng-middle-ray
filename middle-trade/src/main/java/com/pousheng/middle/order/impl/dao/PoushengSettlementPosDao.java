@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
@@ -14,5 +15,11 @@ import org.springframework.stereotype.Repository;
 public class PoushengSettlementPosDao extends MyBatisDao<PoushengSettlementPos>{
     public PoushengSettlementPos findByPosSerialNo(String posSerialNo){
         return getSqlSession().selectOne(sqlId("findByPosSerialNo"), posSerialNo);
+    }
+    public PoushengSettlementPos findByShipmentId(Long shipmentId){
+        return getSqlSession().selectOne(sqlId("findByShipmentId"), shipmentId);
+    }
+    public PoushengSettlementPos findByRefundIdAndPosType(Long shipmentId,Integer posType){
+        return getSqlSession().selectOne(sqlId("findByRefundIdAndPosType"), ImmutableMap.of("shipmentId", shipmentId, "posType", posType));
     }
 }

@@ -10,11 +10,13 @@
         <result column="pos_type" property="posType"/>
         <result column="ship_type" property="shipType"/>
         <result column="order_id" property="orderId"/>
+        <result column="shipment_id" property="shipmentId"/>
         <result column="pos_serial_no" property="posSerialNo"/>
         <result column="pos_amt" property="posAmt"/>
         <result column="shop_id" property="shopId"/>
         <result column="shop_name" property="shopName"/>
         <result column="pos_created_at" property="posCreatedAt"/>
+        <result column="pos_done_at" property="posDoneAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -28,11 +30,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        pos_type,ship_type, order_id, pos_serial_no, pos_amt, shop_id,shop_name,pos_created_at,created_at,updated_at
+        pos_type,ship_type, order_id,shipment_id, pos_serial_no, pos_amt, shop_id,shop_name,pos_created_at,pos_done_at,created_at,updated_at
     </sql>
 
     <sql id="vals">
-        #{posType}, #{shipType}, #{orderId}, #{posSerialNo},#{posAmt},#{shopId},#{shopName},#{posCreatedAt}, now(), now()
+        #{posType}, #{shipType}, #{orderId},#{shipmentId}, #{posSerialNo},#{posAmt},#{shopId},#{shopName},#{posCreatedAt},#{posDoneAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -42,7 +44,9 @@
         <if test="shipType != null">and `ship_type` = #{shipType}</if>
 
         <if test="orderId != null">and `order_id` = #{orderId}</if>
-        
+
+        <if test="shipmentId != null">and `shipment_id` = #{shipmentId}</if>
+
         <if test="posSerialNo != null">and `pos_serial_no` = #{posSerialNo}</if>
         
         <if test="posAmt != null">and `pos_amt` = #{posAmt}</if>
@@ -55,9 +59,9 @@
             </foreach>
         </if>
 
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
+        <if test="startAt != null">and pos_created_at &gt; #{startAt}</if>
 
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
+        <if test="endAt != null">and pos_created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">
@@ -83,6 +87,16 @@
         FROM <include refid="tb" />
         WHERE pos_serial_no = #{posSerialNo}
     </select>
+    <select id="findByShipmentId" parameterType="long" resultMap="PoushengSettlementPosMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE shipment_id = #{shipmentId}
+    </select>
+    <select id="findByRefundIdAndPosType" parameterType="map" resultMap="PoushengSettlementPosMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE order_id = #{orderId} and pos_type = #{posType}
+    </select>
 
 
    <select id="findByIds" parameterType="list" resultMap="PoushengSettlementPosMap">
@@ -104,6 +118,7 @@
             <if test="posSerialNo != null">pos_serial_no = #{posSerialNo},</if>
             <if test="posAmt != null">pos_amt = #{posAmt},</if>
             <if test="posCreatedAt != null">pos_created_at = #{posCreatedAt},</if>
+            <if test="posDoneAt != null">pos_done_at = #{posDoneAt},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}

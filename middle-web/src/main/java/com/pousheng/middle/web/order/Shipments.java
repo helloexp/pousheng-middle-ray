@@ -402,7 +402,13 @@ public class Shipments {
                 log.error("can not create shipment becacuse of not right refundtype ({}) or status({}) ", refund.getRefundType(), refund.getStatus());
                 throw new JsonResponseException("refund.can.not.create.shipment.error.type.or.status");
             }
-            List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+            List<RefundItem> refundChangeItems = null;
+            if (Objects.equals(shipType,2)){
+                refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+            }
+            if (Objects.equals(shipType,3)){
+                refundChangeItems = refundReadLogic.findRefundLostItems(refund);
+            }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
             //检查库存是否充足

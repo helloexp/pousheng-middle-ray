@@ -8,7 +8,7 @@ import java.io.Serializable;
  *  创建门店地址信息
  * @author songrenfei
  */
-public class CreateShopAddressEvent implements Serializable {
+public class CreateShopEvent implements Serializable {
 
 
     @Getter
@@ -18,7 +18,7 @@ public class CreateShopAddressEvent implements Serializable {
     @Getter
     protected String storeCode;
 
-    public CreateShopAddressEvent(Long shopId,String companyId,String storeCode) {
+    public CreateShopEvent(Long shopId, String companyId, String storeCode) {
         this.shopId = shopId;
         this.companyId = companyId;
         this.storeCode = storeCode;

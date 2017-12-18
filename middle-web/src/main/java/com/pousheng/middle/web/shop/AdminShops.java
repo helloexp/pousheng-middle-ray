@@ -11,7 +11,7 @@ import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
-import com.pousheng.middle.web.shop.event.CreateShopAddressEvent;
+import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -179,7 +179,7 @@ public class AdminShops {
         Long id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
 
 
-        CreateShopAddressEvent addressEvent = new CreateShopAddressEvent(id,shop.getCompanyId(),shop.getOuterId());
+        CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
         eventBus.post(addressEvent);
 
         return Collections.singletonMap("id", id);

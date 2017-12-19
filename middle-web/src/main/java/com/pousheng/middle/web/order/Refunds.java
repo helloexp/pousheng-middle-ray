@@ -493,7 +493,7 @@ public class Refunds {
      * @param orderId 订单主键
      * @param shipmentId 发货单主键
      * @param refundId 退货单主键
-     * @param  data skuCode-applyQuantity 集合
+     * @param  list skuCode-applyQuantity 集合
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)

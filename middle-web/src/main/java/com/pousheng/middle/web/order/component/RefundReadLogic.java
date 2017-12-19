@@ -260,6 +260,7 @@ public class RefundReadLogic {
                 .filter(refund->!Objects.equals(refund.getId(),refundId))
                 .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value()))
                 .filter(refund -> !Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue()))
+                .filter(refund -> !Objects.equals(refund.getStatus(),MiddleRefundStatus.DELETED.getValue()))
                 .collect(Collectors.toList());
         //获取已经退款的金额
         Long alreadyRefundFee = 0L;

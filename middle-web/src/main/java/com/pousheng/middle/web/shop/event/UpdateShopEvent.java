@@ -5,13 +5,13 @@ import lombok.Getter;
 import java.io.Serializable;
 
 /**
- *  创建门店地址信息
+ *  更新门店地址信息
  * @author songrenfei
  */
-public class CreateShopEvent implements Serializable {
+public class UpdateShopEvent implements Serializable {
 
 
-    private static final long serialVersionUID = 8144976237694246387L;
+    private static final long serialVersionUID = 3285534935695785921L;
     @Getter
     protected Long shopId;
     @Getter
@@ -19,7 +19,7 @@ public class CreateShopEvent implements Serializable {
     @Getter
     protected String storeCode;
 
-    public CreateShopEvent(Long shopId, String companyId, String storeCode) {
+    public UpdateShopEvent(Long shopId, String companyId, String storeCode) {
         this.shopId = shopId;
         this.companyId = companyId;
         this.storeCode = storeCode;

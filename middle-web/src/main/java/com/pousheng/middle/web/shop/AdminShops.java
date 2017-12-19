@@ -221,10 +221,7 @@ public class AdminShops {
 
     //直接恢复状态
     private Long updateShop(Long shopId){
-        Shop shop = new Shop();
-        shop.setId(shopId);
-        shop.setStatus(1);
-        Response<Boolean> updateRes = shopWriteService.update(shop);
+        Response<Boolean> updateRes = adminShopWriteService.unfrozen(shopId);
         if(!updateRes.isSuccess()){
             log.error("update shop(id:{}) status to:{} fail,error:{}",shopId,1,updateRes.getError());
             throw new JsonResponseException(updateRes.getError());

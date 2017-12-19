@@ -79,3 +79,6 @@ ych.token:
 taobao.token:
   appKey: xxx
   appName: 端点中台
+
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: false

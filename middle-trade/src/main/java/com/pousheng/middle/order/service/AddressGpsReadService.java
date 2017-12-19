@@ -21,6 +21,9 @@ public interface AddressGpsReadService {
      */
     Response<AddressGps> findById(Long Id);
 
+
+    Response<AddressGps> findByBusinessIdAndType(Long businessId,AddressBusinessType type);
+
     /**
      * 根据省id和业务类型查询对应的门店或仓库的定位信息
      * @param provinceId 省id

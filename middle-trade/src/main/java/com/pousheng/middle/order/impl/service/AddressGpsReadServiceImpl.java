@@ -39,6 +39,21 @@ public class AddressGpsReadServiceImpl implements AddressGpsReadService {
     }
 
     @Override
+    public Response<AddressGps> findByBusinessIdAndType(Long businessId, AddressBusinessType type) {
+        try {
+            AddressGps addressGps = addressGpsDao.findByBusinessIdAndType(businessId, type);
+            if (addressGps == null) {
+                log.error("not find address gps by businessId:{} and business type:{}", businessId,type);
+                return Response.fail("address.gps.not.found");
+            }
+            return Response.ok(addressGps);
+        }catch (Exception e){
+            log.error("find address gps by businessId:{} and business type:{} fail,cause:{}", businessId,type);
+            return Response.fail("find.address.gps.fail");
+        }
+    }
+
+    @Override
     public Response<List<AddressGps>> findByProvinceIdAndBusinessType(Long provinceId, AddressBusinessType businessType) {
         try {
             return Response.ok(addressGpsDao.findByProvinceIdAndBusinessType(provinceId,businessType));

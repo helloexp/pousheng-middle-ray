@@ -92,7 +92,7 @@ public class RefundWriteLogic {
             }
 
             //如果存在未处理完成的
-            if(!Objects.equals(refundItem.getApplyQuantity(),refundItem.getAlreadyHandleNumber())){
+            if(!Objects.equals(refundItem.getApplyQuantity(),(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))){
                 isAllHandle = Boolean.FALSE;
             }else{
                 //换货商品已经全部处理完,此时处于待发货状态,此时填入换货发货单创建时间
@@ -144,7 +144,7 @@ public class RefundWriteLogic {
             }
 
             //如果存在未处理完成的
-            if(!Objects.equals(refundItem.getApplyQuantity(),refundItem.getAlreadyHandleNumber())){
+            if(!Objects.equals(refundItem.getApplyQuantity(),(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))){
                 isAllHandle = Boolean.FALSE;
             }else{
                 //换货商品已经全部处理完,此时处于待发货状态,此时填入换货发货单创建时间

@@ -631,6 +631,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setSyncTaobaoStatus(targetStatus);
         Map<String,String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+        shipment.setExtra(extraMap);
         Response<Boolean> updateRes = shipmentWriteService.update(shipment);
         if (!updateRes.isSuccess()) {
             log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());

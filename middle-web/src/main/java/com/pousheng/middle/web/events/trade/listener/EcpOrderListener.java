@@ -113,13 +113,7 @@ public class EcpOrderListener {
         List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                 .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
         //判断该订单下所有发货单的状态
-        List<Integer> orderShipMentStatusList = Lists.transform(orderShipmentsFilter, new Function<OrderShipment, Integer>() {
-            @Nullable
-            @Override
-            public Integer apply(@Nullable OrderShipment orderShipment) {
-                return orderShipment.getStatus();
-            }
-        });
+        List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());;
         //判断订单是否已经全部发货了
         int count=0;
         for (Integer status:orderShipMentStatusList){
@@ -134,10 +128,10 @@ public class EcpOrderListener {
             ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //最后一个发货单发货完成之后需要将订单同步到电商
             String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
+            if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
                 syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
             }else{
-                syncOrderToEcpLogic.syncOrderToTaobao(shopOrder);
+                syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
             }
         }
     }

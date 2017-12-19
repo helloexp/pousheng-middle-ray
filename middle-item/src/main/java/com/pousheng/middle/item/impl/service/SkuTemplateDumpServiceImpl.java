@@ -129,13 +129,11 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         // 计数本次full dump的商品数
         int allIndexed = 0;
         while (true) {
-            if(allIndexed > 100000){
                 try {
-                    Thread.sleep(3000);
+                    Thread.sleep(500);
                 } catch (InterruptedException e) {
                     log.error("delayed error:{}",Throwables.getStackTraceAsString(e));
                 }
-            }
             List<SkuTemplate> skuTemplates = skuTemplateExtDao.listSince(lastId, since, searchSkuTemplateProperties.getBatchSize());
             if (Iterables.isEmpty(skuTemplates)) {
                 break;

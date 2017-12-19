@@ -144,3 +144,5 @@ gd_map:
   searchApi: 'http://restapi.amap.com/v3/place/text'
   districtApi: 'http://restapi.amap.com/v3/place/text'
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
+
+index.queue.size: 500000

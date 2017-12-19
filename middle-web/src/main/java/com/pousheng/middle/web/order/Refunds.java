@@ -247,31 +247,32 @@ public class Refunds {
             List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
             List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundLostItems.size());
             for (RefundItem refundItem : refundLostItems) {
-                WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
-                waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
-                waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
-                waitShipItemInfo.setSkuName(refundItem.getSkuName());
-                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
-                waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
-                waitShipItemInfo.setItemId(refundItem.getItemId());
-                waitShipItemInfos.add(waitShipItemInfo);
+                if((refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber())>0){
+                    this.waitShipItems(waitShipItemInfos, refundItem);
+                }
             }
             return waitShipItemInfos;
         }else{
             List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
             List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
             for (RefundItem refundItem : refundChangeItems) {
-                WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
-                waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
-                waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
-                waitShipItemInfo.setSkuName(refundItem.getSkuName());
-                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity() - refundItem.getAlreadyHandleNumber());
-                waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
-                waitShipItemInfo.setItemId(refundItem.getItemId());
-                waitShipItemInfos.add(waitShipItemInfo);
+                if((refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber())>0){
+                    this.waitShipItems(waitShipItemInfos, refundItem);
+                }
             }
             return waitShipItemInfos;
         }
+    }
+
+    private void waitShipItems(List<WaitShipItemInfo> waitShipItemInfos, RefundItem refundItem) {
+        WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+        waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
+        waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+        waitShipItemInfo.setSkuName(refundItem.getSkuName());
+        waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
+        waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
+        waitShipItemInfo.setItemId(refundItem.getItemId());
+        waitShipItemInfos.add(waitShipItemInfo);
     }
 
 
@@ -492,14 +493,14 @@ public class Refunds {
      * @param orderId 订单主键
      * @param shipmentId 发货单主键
      * @param refundId 退货单主键
-     * @param skuCode 商品条码
-     * @param applyQuantity 申请退货的数量
+     * @param  data skuCode-applyQuantity 集合
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public int getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam("shipmentId") Long shipmentId,@RequestParam(required = false) Long refundId,
-                                    @RequestParam("skuCode") String skuCode,@RequestParam("applyQuantity") Integer applyQuantity){
-        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,skuCode,applyQuantity);
+                                   @RequestParam(value = "list") String list){
+        List<RefundFeeData> refundFeeDatas = JsonMapper.nonEmptyMapper().fromJson(list, JsonMapper.nonEmptyMapper().createCollectionType(List.class,RefundFeeData.class));
+        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,refundFeeDatas);
     }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {

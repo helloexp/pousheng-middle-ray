@@ -251,7 +251,7 @@ public class Refunds {
                 waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
                 waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
                 waitShipItemInfo.setSkuName(refundItem.getSkuName());
-                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity());
+                waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
                 waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
                 waitShipItemInfo.setItemId(refundItem.getItemId());
                 waitShipItemInfos.add(waitShipItemInfo);
@@ -643,7 +643,8 @@ public class Refunds {
     @OperationLogType("丢件补发客服确认收货")
     public Response<Boolean> confirmDoneForLost(@PathVariable("id") @OperationLogParam Long id){
         Refund refund = refundReadLogic.findRefundById(id);
-        return refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
+        Response<Boolean> r = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
+        return Response.ok(r.isSuccess());
     }
 
 }

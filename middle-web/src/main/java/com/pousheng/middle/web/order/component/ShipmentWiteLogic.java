@@ -6,14 +6,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddlePayType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.OrderWaitHandleType;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
@@ -34,10 +32,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.service.OrderWriteService;
-import io.terminus.parana.order.service.ReceiverInfoReadService;
-import io.terminus.parana.order.service.ShipmentReadService;
-import io.terminus.parana.order.service.ShipmentWriteService;
+import io.terminus.parana.order.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +80,12 @@ public class ShipmentWiteLogic {
     private MiddleOrderWriteService middleOrderWriteService;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
+    @RpcConsumer
+    private RefundWriteService refundWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -745,25 +746,151 @@ public class ShipmentWiteLogic {
         if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())||shipment.getStatus()>MiddleShipmentsStatus.SHIPPED.getValue()){
             throw new JsonResponseException("invalid.shipment.status.can.not.cancel");
         }
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        //判断发货单类型，如果发货单类型是销售发货单正常处理
+        if (Objects.equals(orderShipment.getType(),ShipmentType.SALES_SHIP.value())){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+            List<String> skuCodes = shipmentItems.stream().map(ShipmentItem::getSkuCode).collect(Collectors.toList());
+            List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes,shopOrder.getId());
+            int count= 0 ;//计数器用来记录是否有发货单取消失败的
+            if (!this.cancelShipment(shipment,1))
+            {
+                count++;
+            }
+            //获取该订单下所有的子单和发货单
+            if (count>0){
+                middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            }else{
+                middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
+            }
+            if (count>0){
+                return false;
+            }else{
+                return true;
+            }
+        }
+        //换货
+        if (Objects.equals(orderShipment.getType(),ShipmentType.EXCHANGE_SHIP.value())){
+            Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+            if (Objects.equals(refund.getStatus(), MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue())){
+                return false;
+            }
+            int count= 0 ;//计数器用来记录是否有发货单取消失败的
+            if (!this.cancelShipment(shipment,1))
+            {
+                count++;
+            }
+            //换货发货单发货之前可以取消发货单，将已经处理的发货单数量恢复成初始状态，如果所有的发货单的alreadyHandleNumber已经是0，则将售后待状态变更为退货完成待创建发货单,取消发货单失败则订单状态不作变更
+            if (count==0){
+                this.rollbackChangeRefund(shipment, orderShipment, refund);
+            }else {
+                return false;
+            }
+
+        }
+        //丢件补发
+        if (Objects.equals(orderShipment.getType(),3)){
+            Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+            if (Objects.equals(refund.getStatus(), MiddleRefundStatus.LOST_SHIPPED.getValue())){
+                return false;
+            }
+            int count= 0 ;//计数器用来记录是否有发货单取消失败的
+            if (!this.cancelShipment(shipment,1))
+            {
+                count++;
+            }
+            //丢件补发类型的发货单在发货之前可以取消发货单，将已经处理的发货单的数量恢复成初始状态，如果所有的发货单的alreadyHandleNumber已经是0，则将售后单状态恢复成待创建发货单，取消发货单失败订单状态不作变更
+            if (count==0){
+                this.rollbackLostRefund(shipment,orderShipment,refund);
+            }else{
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * 撤销售后单发货--换货类型
+     * @param shipment 发货单
+     * @param orderShipment 发货单
+     * @param refund
+     */
+    private void rollbackChangeRefund(Shipment shipment, OrderShipment orderShipment, Refund refund) {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        List<String> skuCodes = shipmentItems.stream().map(ShipmentItem::getSkuCode).collect(Collectors.toList());
-        List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes,shopOrder.getId());
-        //获取该订单下所有的子单和发货单
-        int count= 0 ;//计数器用来记录是否有发货单取消失败的
-        if (!this.cancelShipment(shipment,1))
-        {
-            count++;
+        Map<String,Integer> skuCodesAndQuantity = Maps.newHashMap();
+        shipmentItems.forEach(shipmentItem -> {
+            skuCodesAndQuantity.put(shipmentItem.getSkuCode(),shipmentItem.getQuantity());
+        });
+        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        refundChangeItems.forEach(refundChangeItem -> {
+            if (skuCodesAndQuantity.containsKey(refundChangeItem.getSkuCode())){
+                refundChangeItem.setAlreadyHandleNumber(refundChangeItem.getAlreadyHandleNumber()==null?0:refundChangeItem.getAlreadyHandleNumber()-skuCodesAndQuantity.get(refundChangeItem.getSkuCode()));
+            }
+        });
+        Map<String, String> refundExtra = refund.getExtra();
+        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundChangeItems));
+        refund.setExtra(refundExtra);
+        refundWriteLogic.update(refund);
+        Refund newRefund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+        List<RefundItem> newRefundChangeItems = refundReadLogic.findRefundChangeItems(newRefund);
+        int newCount=0;
+        for (RefundItem refundItem:newRefundChangeItems){
+            if (refundItem.getAlreadyHandleNumber()>0){
+                newCount++;
+            }
         }
-        if (count>0){
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
-        }else{
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
+        //说明所有的发货单都已经取消了，这个时候可以将换货单的状态改为退货完成待创建发货单的状态了
+        if (newCount==0){
+            updateRefundStatus(refund);
         }
-        if (count>0){
-            return false;
-        }else{
-            return true;
+    }
+
+    /**
+     * 撤销售后单发货---丢件补发类型
+     * @param shipment 发货单
+     * @param orderShipment 发货单售后单关联表
+     * @param refund 售后单
+     */
+    private void rollbackLostRefund(Shipment shipment, OrderShipment orderShipment, Refund refund) {
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        Map<String,Integer> skuCodesAndQuantity = Maps.newHashMap();
+        shipmentItems.forEach(shipmentItem -> {
+            skuCodesAndQuantity.put(shipmentItem.getSkuCode(),shipmentItem.getQuantity());
+        });
+        List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
+        refundLostItems.forEach(refundLostItem -> {
+            if (skuCodesAndQuantity.containsKey(refundLostItem.getSkuCode())){
+                refundLostItem.setAlreadyHandleNumber(refundLostItem.getAlreadyHandleNumber()==null?0:refundLostItem.getAlreadyHandleNumber()-skuCodesAndQuantity.get(refundLostItem.getSkuCode()));
+            }
+        });
+        Map<String, String> refundExtra = refund.getExtra();
+        refundExtra.put(TradeConstants.REFUND_LOST_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundLostItems));
+        refund.setExtra(refundExtra);
+        refundWriteLogic.update(refund);
+        Refund newRefund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+        List<RefundItem> newRefundChangeItems = refundReadLogic.findRefundLostItems(newRefund);
+        int newCount=0;
+        for (RefundItem refundItem:newRefundChangeItems){
+            if (refundItem.getAlreadyHandleNumber()>0){
+                newCount++;
+            }
+        }
+        //说明所有的发货单都已经取消了，这个时候可以将换货单的状态改为退货完成待创建发货单的状态了
+        if (newCount==0){
+            updateRefundStatus(refund);
+        }
+    }
+
+    /**
+     * 撤销售后单发货状态
+     * @param refund 售后单
+     */
+    private void updateRefundStatus(Refund refund) {
+        Flow flow = flowPicker.pickAfterSales();
+        Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.REVOKE.toOrderOperation());
+        Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refund.getId(),targetStatus);
+        if(!updateStatusRes.isSuccess()){
+            log.error("update refund(id:{}) status to:{} fail,error:{}",refund,targetStatus,updateStatusRes.getError());
         }
     }
 

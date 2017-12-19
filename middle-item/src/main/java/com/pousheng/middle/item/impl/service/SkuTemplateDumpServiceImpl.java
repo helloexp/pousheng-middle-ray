@@ -130,7 +130,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         int allIndexed = 0;
         while (true) {
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     log.error("delayed error:{}",Throwables.getStackTraceAsString(e));
                 }

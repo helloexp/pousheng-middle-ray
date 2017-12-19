@@ -114,11 +114,17 @@ public class HKShipmentDoneListener {
 
         }
         if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value()) {
-            //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成
+            //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成,C
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             long afterSaleOrderId = orderShipment.getAfterSaleOrderId();
+            List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
+            //获取该售后单下所有的发
             Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
+            List<Integer> shipmentStatuses = orderShipments.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
+            if (shipmentStatuses.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())){
+                return;
+            }
             if (refund.getStatus() == MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
                 List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());

@@ -8,6 +8,7 @@ import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.order.service.AddressGpsWriteService;
 import com.pousheng.middle.shop.enums.MemberFromType;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
@@ -15,6 +16,7 @@ import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.dto.MemberCenterAddressDto;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
+import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -33,7 +35,7 @@ import javax.annotation.PostConstruct;
  */
 @Slf4j
 @Component
-public class ShopCreationListener {
+public class ShopCreationOrUpdateListener {
 
     @Autowired
     private EventBus eventBus;
@@ -43,6 +45,8 @@ public class ShopCreationListener {
     private GDMapSearchService gdMapSearchService;
     @RpcConsumer
     private AddressGpsWriteService addressGpsWriteService;
+    @RpcConsumer
+    private AddressGpsReadService addressGpsReadService;
     @RpcConsumer
     private ShopWriteService shopWriteService;
     @Autowired
@@ -55,21 +59,74 @@ public class ShopCreationListener {
 
     @Subscribe
     public void onCreated(CreateShopEvent event) {
-        //1、调用会员中心查询门店地址
-        Response<MemberCenterAddressDto> addressDtoRes =  memberShopOperationLogic.findShopAddress(event.getCompanyId(),event.getStoreCode(), MemberFromType.SHOP.value());
-        if(!addressDtoRes.isSuccess()){
-            log.error("find shop address by company id:{} code:{} type:{} fail,error:{}",event.getCompanyId(),event.getStoreCode(),MemberFromType.SHOP.value(),addressDtoRes.getError());
+       
+
+        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId(),event.getStoreCode());
+        if(Arguments.isNull(addressGps)){
             return;
+        }
+        Response<Long> createRes = addressGpsWriteService.create(addressGps);
+        if(!createRes.isSuccess()){
+            log.error("create address gps:{} fail,error:{}",addressGps,createRes.getError());
+            return;
+        }
+
+        //4、更新门店地址信息
+        updateShopAddress(event.getShopId(),addressGps.getDetail());
+
+    }
+
+
+    @Subscribe
+    public void onUpdate(UpdateShopEvent event) {
+
+        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId(),event.getStoreCode());
+        if(Arguments.isNull(addressGps)){
+            return;
+        }
+        Response<AddressGps> existRes = addressGpsReadService.findByBusinessIdAndType(event.getShopId(),AddressBusinessType.SHOP);
+        if(!existRes.isSuccess()){
+            log.error("find address gps by businessId:{} and business type:{} fail,error:{}", event.getShopId(),AddressBusinessType.SHOP,existRes.getError());
+            return;
+        }
+        addressGps.setId(existRes.getResult().getId());
+        Response<Boolean> updateRes = addressGpsWriteService.update(addressGps);
+        if(!updateRes.isSuccess()){
+            log.error("updateRes address gps:{} fail,error:{}",addressGps,updateRes.getError());
+            return;
+        }
+
+        //4、更新门店地址信息
+        updateShopAddress(event.getShopId(),addressGps.getDetail());
+        
+    }
+
+    private void updateShopAddress(Long shopId,String address){
+        Shop updateShop = new Shop();
+        updateShop.setId(shopId);
+        updateShop.setAddress(address);
+        Response<Boolean> updateShopRes = shopWriteService.update(updateShop);
+        if(!updateShopRes.isSuccess()){
+            log.error("update shop:{} fail,error:{}",updateShop,updateShopRes.getError());
+        }
+    }
+    
+    private AddressGps getAddressGps(Long shopId,String companyId,String storeCode){
+        //1、调用会员中心查询门店地址
+        Response<MemberCenterAddressDto> addressDtoRes =  memberShopOperationLogic.findShopAddress(companyId,storeCode, MemberFromType.SHOP.value());
+        if(!addressDtoRes.isSuccess()){
+            log.error("find shop address by company id:{} code:{} type:{} fail,error:{}",companyId,storeCode,MemberFromType.SHOP.value(),addressDtoRes.getError());
+            return null;
         }
 
         MemberCenterAddressDto addressDto = addressDtoRes.getResult();
         if(Arguments.isNull(addressDto)){
-            log.error("not find shop address by company id:{} code:{} type:{}",event.getCompanyId(),event.getStoreCode(),MemberFromType.SHOP.value());
-            return;
+            log.error("not find shop address by company id:{} code:{} type:{}",companyId,storeCode,MemberFromType.SHOP.value());
+            return null;
         }
         if(Strings.isNullOrEmpty(addressDto.getAddress())){
-            log.error("shop address is null for company id:{} code:{} type:{}",event.getCompanyId(),event.getStoreCode(),MemberFromType.SHOP.value());
-            return;
+            log.error("shop address is null for company id:{} code:{} type:{}",companyId,storeCode,MemberFromType.SHOP.value());
+            return null;
         }
 
 
@@ -78,13 +135,13 @@ public class ShopCreationListener {
         Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(addressDto.getAddress());
         if(!locationRes.isSuccess()){
             log.error("find location by address:{} fail,error:{}",addressDto.getAddress(),locationRes.getError());
-            return;
+            return null;
         }
 
         Optional<Location> locationOp = locationRes.getResult();
         if(!locationOp.isPresent()){
             log.error("not find location by address:{}",addressDto.getAddress());
-            return;
+            return null;
         }
         Location location = locationOp.get();
 
@@ -92,13 +149,13 @@ public class ShopCreationListener {
         AddressGps addressGps = new AddressGps();
         addressGps.setLatitude(location.getLat());
         addressGps.setLongitude(location.getLon());
-        addressGps.setBusinessId(event.getShopId());
+        addressGps.setBusinessId(shopId);
         addressGps.setBusinessType(AddressBusinessType.SHOP.getValue());
         addressGps.setDetail(addressDto.getAddress());
         //省
         WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
         if(Arguments.isNull(province)){
-            return;
+            return null;
         }
         addressGps.setProvinceId(province.getId());
         addressGps.setProvince(province.getName());
@@ -106,7 +163,7 @@ public class ShopCreationListener {
         //市
         WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
         if(Arguments.isNull(city)){
-            return;
+            return null;
         }
         addressGps.setCityId(city.getId());
         addressGps.setCity(city.getName());
@@ -114,25 +171,12 @@ public class ShopCreationListener {
         //区
         WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
         if(Arguments.isNull(region)){
-            return;
+            return null;
         }
         addressGps.setRegionId(region.getId());
         addressGps.setRegion(region.getName());
 
-        Response<Long> createRes = addressGpsWriteService.create(addressGps);
-        if(!createRes.isSuccess()){
-            log.error("create address gps:{} fail,error:{}",addressGps,createRes.getError());
-            return;
-        }
-
-        //4、更新门店地址信息
-        Shop updateShop = new Shop();
-        updateShop.setId(event.getShopId());
-        updateShop.setAddress(addressDto.getAddress());
-        Response<Boolean> updateShopRes = shopWriteService.update(updateShop);
-        if(!updateShopRes.isSuccess()){
-            log.error("update shop:{} fail,error:{}",updateShop,updateShopRes.getError());
-        }
+        return addressGps;
     }
 
 

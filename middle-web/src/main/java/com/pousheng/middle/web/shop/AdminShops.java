@@ -12,6 +12,7 @@ import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
+import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -19,6 +20,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
@@ -155,19 +157,7 @@ public class AdminShops {
         judgePassword(password);
 
         //交易门店外码是否正确
-        if(Strings.isNullOrEmpty(shop.getOuterId())){
-            log.error("shop outer id is null");
-            throw new JsonResponseException("shop.outer.in.invalid");
-        }
-
-        //todo 判断门店外码是否已添加过
-
-        //创建门店用户
-        Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(shop.getOuterId(),password);
-        if(!userInfoRes.isSuccess()){
-            log.error("create user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
-            throw new JsonResponseException(userInfoRes.getError());
-        }
+        Shop recoverShop = checkOuterId(shop.getOuterId());
 
         //创建门店
         shop.setBusinessId(shop.getZoneId());//这里把区部id塞入到businessId字段中
@@ -176,13 +166,68 @@ public class AdminShops {
         shopExtraInfo.setZoneName(shop.getZoneName());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
-        Long id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
 
 
-        CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
-        eventBus.post(addressEvent);
+        Long id;
+        if(Arguments.isNull(recoverShop)){
+            //创建门店用户
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(shop.getOuterId(),password);
+            if(!userInfoRes.isSuccess()){
+                log.error("create user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
+                throw new JsonResponseException(userInfoRes.getError());
+            }
+            //创建门店信息
+            id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
+
+            CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
+            eventBus.post(addressEvent);
+        }else {
+            //更新门店用户
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(shop.getUserId(),shop.getUserName(),password);
+            if(!userInfoRes.isSuccess()){
+                log.error("update user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
+                throw new JsonResponseException(userInfoRes.getError());
+            }
+            //更新门店信息
+            id = updateShop(recoverShop.getId());
+
+            UpdateShopEvent updateShopEvent = new UpdateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
+            eventBus.post(updateShopEvent);
+        }
+
 
         return Collections.singletonMap("id", id);
+    }
+
+    private Shop checkOuterId(String outerId){
+        if(Strings.isNullOrEmpty(outerId)){
+            log.error("shop outer id is null");
+            throw new JsonResponseException("shop.outer.in.invalid");
+        }
+        Response<Shop> shopRes = shopReadService.findByOuterId(outerId);
+        if(shopRes.isSuccess()){
+            Shop shop = shopRes.getResult();
+            log.warn("shop(id:{}) ,status:{} exist outer id:{}",shop.getId(),shop.getStatus(),outerId);
+            if(Objects.equal(shop.getStatus(),-1)){
+                log.warn("shop(id:{}),status:{} exist outer id:{} ,so to recover status 1",shop.getId(),shop.getStatus(),outerId);
+                return shop;
+            }
+            throw new JsonResponseException("duplicate.shop.outer.id");
+        }
+
+        return null;
+
+    }
+
+    //直接恢复状态
+    private Long updateShop(Long shopId){
+        Response<Boolean> updateRes = adminShopWriteService.unfrozen(shopId);
+        if(!updateRes.isSuccess()){
+            log.error("update shop(id:{}) status to:{} fail,error:{}",shopId,1,updateRes.getError());
+            throw new JsonResponseException(updateRes.getError());
+        }
+
+        return shopId;
     }
 
     private Long createShop(Shop shop, Long userId, String userName) {

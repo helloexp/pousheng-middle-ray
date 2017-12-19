@@ -247,7 +247,7 @@ public class Refunds {
             List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
             List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundLostItems.size());
             for (RefundItem refundItem : refundLostItems) {
-                if((refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber())>0){
+                if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))>0){
                     this.waitShipItems(waitShipItemInfos, refundItem);
                 }
             }
@@ -256,7 +256,7 @@ public class Refunds {
             List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
             List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
             for (RefundItem refundItem : refundChangeItems) {
-                if((refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber())>0){
+                if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))>0){
                     this.waitShipItems(waitShipItemInfos, refundItem);
                 }
             }
@@ -269,7 +269,7 @@ public class Refunds {
         waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
         waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
         waitShipItemInfo.setSkuName(refundItem.getSkuName());
-        waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-refundItem.getAlreadyHandleNumber());
+        waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()));
         waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
         waitShipItemInfo.setItemId(refundItem.getItemId());
         waitShipItemInfos.add(waitShipItemInfo);

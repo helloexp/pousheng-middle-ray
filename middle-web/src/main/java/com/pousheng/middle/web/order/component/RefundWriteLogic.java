@@ -88,7 +88,7 @@ public class RefundWriteLogic {
         //更新发货数量
         for (RefundItem refundItem : refundChangeItems) {
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-                refundItem.setAlreadyHandleNumber(refundItem.getAlreadyHandleNumber() + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的
@@ -140,7 +140,7 @@ public class RefundWriteLogic {
         //更新发货数量
         for (RefundItem refundItem : refundLostItems) {
             if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())) {
-                refundItem.setAlreadyHandleNumber(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber() + skuCodeAndQuantity.get(refundItem.getSkuCode()));
+                refundItem.setAlreadyHandleNumber((refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()) + skuCodeAndQuantity.get(refundItem.getSkuCode()));
             }
 
             //如果存在未处理完成的

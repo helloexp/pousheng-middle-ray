@@ -27,9 +27,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -222,6 +220,14 @@ public class AdminOrderWriter {
         Boolean result = orderReadLogic.isShipmentCreated(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
+        }
+        SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(skuOrder.getOrderId());
+        //获取其他子单的条码
+        List<String> orderSkuCodes = skuOrders.stream().filter(skuOrder1 -> !Objects.equals(skuOrder1.getId(),id)).map(SkuOrder::getSkuCode).collect(Collectors.toList());
+        //如果其他子单含有这个条码则抛出异常
+        if (orderSkuCodes.contains(skuCode)){
+            throw new JsonResponseException("other.sku.orders.contains.this.sku.code");
         }
         List<String> skuCodes = Lists.newArrayList();
         skuCodes.add(skuCode);

@@ -33,7 +33,7 @@ public class SkuTemplateDumps {
     private HostLeader hostLeader;
 
     @RequestMapping(value = "full", produces = MediaType.APPLICATION_JSON_VALUE)
-    @Scheduled(cron="0 0 1 * * ?")
+    //@Scheduled(cron="0 0 1 * * ?")
     public void fullDump(){  //每天凌晨一点执行一次
         if(!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());

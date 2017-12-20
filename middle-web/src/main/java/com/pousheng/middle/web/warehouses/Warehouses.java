@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.warehouse.dto.WarehouseServerInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
@@ -9,15 +10,18 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -82,7 +86,9 @@ public class Warehouses {
                                         @RequestParam(required = false, value = "code") String code,
                                         @RequestParam(required = false, value="codePrefix") String codePrefix,
                                         @RequestParam(required = false, value = "name") String namePrefix,
-                                        @RequestParam(required = false, value="outCode") String outCode) {
+                                        @RequestParam(required = false, value="outCode") String outCode,
+                                        @RequestParam(required = false, value = "isMpos") Integer isMpos,
+                                        @RequestParam(required = false, value = "companyId") String companyId) {
         Map<String, Object> params = Maps.newHashMap();
         if (StringUtils.hasText(code)) {
             //params.put("code", code);
@@ -102,6 +108,12 @@ public class Warehouses {
 
         if(StringUtils.hasText(outCode)){
             params.put("outCode", outCode);
+        }
+        if(isMpos != null){
+            params.put("isMpos",isMpos);
+        }
+        if(StringUtils.hasText(companyId)){
+            params.put("companyId",companyId);
         }
         Response<Paging<Warehouse>> r = warehouseReadService.pagination(pageNo, pageSize, params);
         if(!r.isSuccess()){
@@ -171,5 +183,160 @@ public class Warehouses {
         }
         return r;
     }
+
+
+    /**
+     * @param id 库存id
+     */
+    @ApiOperation("库存mpos打标")
+    @RequestMapping(value = "/{id}/make/flag",method = RequestMethod.PUT)
+    public void makeMposFlag(@PathVariable Long id){
+        Response<Warehouse> response = warehouseReadService.findById(id);
+        if(!response.isSuccess()){
+            log.error("fail to find warehouse by id:{},error:{}",id,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        Warehouse exist = response.getResult();
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(exist.getId());
+        warehouse.setIsMpos(1);
+        Response<Boolean> res = warehouseWriteService.update(warehouse);
+        if(!res.isSuccess()){
+            log.error("update warehouse failed,error:{}",res.getError());
+            throw new JsonResponseException(res.getError());
+        }
+    }
+
+    /**
+     * @param 库存id
+     */
+    @ApiOperation("库存mpos取消打标")
+    @RequestMapping(value = "/{id}/cancel/flag",method = RequestMethod.PUT)
+    public void cancelMposFlag(@PathVariable Long id){
+        Response<Warehouse> response = warehouseReadService.findById(id);
+        if(!response.isSuccess()){
+            log.error("fail to find warehouse by id:{},error:{}",id,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        Warehouse exist = response.getResult();
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(exist.getId());
+        warehouse.setIsMpos(0);
+        Response<Boolean> res = warehouseWriteService.update(warehouse);
+        if(!res.isSuccess()){
+            log.error("update warehouse failed,error:{}",res.getError());
+            throw new JsonResponseException(res.getError());
+        }
+    }
+
+    /**
+     * @param id 仓库id
+     * @param safeStock 安全库存
+     */
+    @ApiOperation("设置安全库存")
+    @RequestMapping(value = "/{id}/safestock/setting",method = RequestMethod.PUT)
+    public void setSafeStock(@PathVariable Long id,@RequestParam Integer safeStock){
+        Response<Warehouse> response = warehouseReadService.findById(id);
+        if(!response.isSuccess()){
+            log.error("fail to find warehouse by id:{},error:{}",id,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        Warehouse exist = response.getResult();
+        Warehouse warehouse = new Warehouse();
+        warehouse.setId(exist.getId());
+        Map<String,String> extra = exist.getExtra();
+        extra.put("safeStock",safeStock.toString());
+        warehouse.setExtra(extra);
+        Response<Boolean> res = warehouseWriteService.update(warehouse);
+        if(!res.isSuccess()){
+            log.error("update warehouse failed,error:{}",res.getError());
+            throw new JsonResponseException(res.getError());
+        }
+    }
+
+    /**
+     *
+     * @param warehouseId 仓库id
+     */
+    @ApiOperation("设置虚拟店以及退货仓")
+    @RequestMapping(value = "/{warehouseId}/server/info",method = RequestMethod.PUT)
+    public void updateWarehouseServerInfo(@PathVariable Long warehouseId,@RequestBody WarehouseServerInfo warehouseServerInfo){
+        Response<Warehouse> res = warehouseReadService.findById(warehouseId);
+        if(!res.isSuccess()){
+            log.error("fail to find warehouse by id {}",warehouseId);
+            throw new JsonResponseException(res.getError());
+        }
+        Warehouse exist = res.getResult();
+        Map<String,String> extra = exist.getExtra();
+        if(StringUtils.hasText(warehouseServerInfo.getVirtualShopCode())){
+            extra.put("virtualShopCode",warehouseServerInfo.getVirtualShopCode());
+            extra.put("virtualShopName",warehouseServerInfo.getVirtualShopName());
+        }
+        if(StringUtils.hasText(warehouseServerInfo.getReturnWarehouseCode())){
+            extra.put("returnWarehouseCode",warehouseServerInfo.getReturnWarehouseCode());
+            extra.put("returnWarehouseName",warehouseServerInfo.getReturnWarehouseName());
+            extra.put("returnWarehouseId",warehouseServerInfo.getReturnWarehouseId().toString());
+        }
+        Warehouse update = new Warehouse();
+        update.setId(warehouseId);
+        update.setExtra(extra);
+        Response<Boolean> r = warehouseWriteService.update(update);
+        if(!r.isSuccess()){
+            log.error("fail to update warehouse id:{},cause:{}",warehouseId,r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+    }
+
+
+    /**
+     * @param warehouseIds 仓库id集合
+     */
+    @ApiOperation("仓库批量mpos打标")
+    @RequestMapping(value = "/batch/make/flag",method = RequestMethod.PUT)
+    public void batchMakeMposFlag(@RequestParam String warehouseIds){
+        List<Long> ids  = Splitters.splitToLong(warehouseIds,Splitters.COMMA);
+        for (Long id : ids) {
+            makeMposFlag(id);
+        }
+    }
+
+    /**
+     * @param warehouseIds 仓库id集合
+     */
+    @ApiOperation("仓库批量mpos取消打标")
+    @RequestMapping(value = "/batch/cancel/flag",method = RequestMethod.PUT)
+    public void batchCancelMposFlag(@RequestParam String warehouseIds){
+        List<Long> ids  = Splitters.splitToLong(warehouseIds,Splitters.COMMA);
+        for (Long id : ids) {
+            cancelMposFlag(id);
+        }
+    }
+
+    /**
+     * @param warehouseIds id集合
+     * @param safeStock 安全库存
+     */
+    @ApiOperation("批量设置安全库存")
+    @RequestMapping(value = "/batch/safestock/setting",method = RequestMethod.PUT)
+    public void batchSetSafeStock(@RequestParam String warehouseIds,@RequestParam Integer safeStock){
+        List<Long> ids = Splitters.splitToLong(warehouseIds,Splitters.COMMA);
+        for (Long id:ids) {
+            setSafeStock(id,safeStock);
+        }
+    }
+
+    /**
+     * @param warehouseIds 仓库id集合
+     * @param warehouseServerInfo 服务信息
+     */
+    @ApiOperation("批量更新仓库服务信息")
+    @RequestMapping(value = "/batch-set/server/info", method = RequestMethod.PUT)
+    public void batchUpdateShopServerInfo(@RequestParam String warehouseIds, @RequestBody WarehouseServerInfo warehouseServerInfo) {
+        List<Long> ids  = Splitters.splitToLong(warehouseIds,Splitters.COMMA);
+        for (Long warehouseId : ids){
+            this.updateWarehouseServerInfo(warehouseId,warehouseServerInfo);
+        }
+    }
+
 
 }

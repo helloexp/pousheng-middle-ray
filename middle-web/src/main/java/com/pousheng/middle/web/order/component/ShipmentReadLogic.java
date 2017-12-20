@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
@@ -160,7 +161,20 @@ public class ShipmentReadLogic {
     public Response<ShipmentPreview> changeShipPreview(Long refundId,String data){
         Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);
-        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        //判断是丢件补发类型的售后单还是换货售后单
+        List<RefundItem>  originRefundChangeItems = null;
+        if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            originRefundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        }else{
+            originRefundChangeItems = refundReadLogic.findRefundLostItems(refund);
+        }
+        //获取当前需要生成发货单的售后商品
+        List<RefundItem>  refundChangeItems = Lists.newArrayList();
+        originRefundChangeItems.forEach(refundItem -> {
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())){
+                refundChangeItems.add(refundItem);
+            }
+        });
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
         //订单基本信息
@@ -182,6 +196,7 @@ public class ShipmentReadLogic {
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(refundChangeItems.size());
         for (RefundItem refundItem : refundChangeItems){
+
             ShipmentItem shipmentItem = new ShipmentItem();
             shipmentItem.setSkuCode(refundItem.getSkuCode());
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
@@ -433,5 +448,31 @@ public class ShipmentReadLogic {
         return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
     }
 
+    /**
+     * 根据店铺订单主键查询发货单
+     * @param shopOrderId 店铺订单主键
+     * @return
+     */
+    public List<Shipment> findByShopOrderId(Long shopOrderId){
+        Response<List<Shipment>> r = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!r.isSuccess()){
+            log.error("find shipment list by shop order id failed,shopOrderId is {},caused by {}",shopOrderId,r.getError());
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        return r.getResult();
+    }
 
+    /**
+     * 获取发货单集合下所有的发货单发货商品列表
+     * @param shipments
+     * @return
+     */
+    public List<ShipmentItem> getShipmentItemsForList(List<Shipment> shipments){
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        shipments.forEach(shipment -> {
+            List<ShipmentItem>  shipmentItems =  this.getShipmentItems(shipment);
+            newShipmentItems.addAll(shipmentItems);
+        });
+        return newShipmentItems;
+    }
 }

@@ -114,31 +114,29 @@ public class HKShipmentDoneListener {
 
         }
         if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value()) {
-            //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成
+            //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成,C
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             long afterSaleOrderId = orderShipment.getAfterSaleOrderId();
+            List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
+            //获取该售后单下所有的发
             Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
+            List<Integer> shipmentStatuses = orderShipments.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
+            if (shipmentStatuses.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())){
+                return;
+            }
             if (refund.getStatus() == MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
-                List<Integer> orderShipMentStatusList = Lists.transform(listResponse.getResult(), new Function<OrderShipment, Integer>() {
-                    @Nullable
-                    @Override
-                    public Integer apply(@Nullable OrderShipment orderShipment) {
-                        return orderShipment.getStatus();
-                    }
-                });
+                List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());
                 if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
-                    //更新售后单的处理状态
-
                     Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.SHIP.toOrderOperation());
                     if (!resRlt.isSuccess()) {
                         log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
                         throw new JsonResponseException("update.refund.status.error");
                     }
-                    //将shipmentExtra的已发货时间塞入值
+                    //将shipmentExtra的已发货时间塞入值,
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation());
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
@@ -152,6 +150,28 @@ public class HKShipmentDoneListener {
                         log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());
                         throw new JsonResponseException("update.refund.error");
                     }
+                }
+            }
+            //丢件补发类型
+            if (refund.getStatus() == MiddleRefundStatus.LOST_WAIT_SHIP.getValue()) {
+                Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
+                if (!resRlt.isSuccess()) {
+                    log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
+                    throw new JsonResponseException("update.refund.status.error");
+                }
+                //将shipmentExtra的已发货时间塞入值,
+                Flow flow = flowPicker.pickAfterSales();
+                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
+                RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                refundExtra.setShipAt(new Date());
+                Map<String, String> extrMap = refund.getExtra();
+                extrMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+                refund.setExtra(extrMap);
+                refund.setStatus(targetStatus);
+                Response<Boolean> updateRefundRes = refundWriteService.update(refund);
+                if (!updateRefundRes.isSuccess()) {
+                    log.error("update refund(id:{}) fail,error:{}", refund, updateRefundRes.getError());
+                    throw new JsonResponseException("update.refund.error");
                 }
             }
         }

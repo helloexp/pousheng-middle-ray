@@ -26,7 +26,7 @@ public class WaitShipItemInfo extends BasicItemInfo implements Serializable{
     private String itemId;
     //skuAttrs
     List<SkuAttribute> skuAttrs;
-
+    //是否是赠品
     private Boolean isGift;
 
 

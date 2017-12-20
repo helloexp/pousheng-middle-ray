@@ -71,8 +71,14 @@ public class SkuTemplates {
      */
     @ApiOperation("根据货品条码查询")
     @RequestMapping(value="/api/sku-templates-spu",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode") String skuCode) {
-        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+    public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode,@RequestParam(required = false,name ="skuCodes")List<String> skuCodes) {
+        List<String> originSkuCodes = Lists.newArrayList();
+        if (!StringUtils.isEmpty(skuCode)){
+            originSkuCodes.add(skuCode);
+        }else{
+            originSkuCodes = skuCodes;
+        }
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(originSkuCodes);
         if(!skuTemplateRes.isSuccess()){
             log.error("find sku template by sku code:{} fail,error:{}",skuCode,skuTemplateRes.getError());
             throw new JsonResponseException(skuTemplateRes.getError());

@@ -75,9 +75,6 @@ public class WarehouseImporter {
         if(r.getResult().isPresent()){ //已同步过, 则更新
             Warehouse exist = r.getResult().get();
             w.setId(exist.getId());
-            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
-            extra.remove("isNew");
-            w.setExtra(extra);
             Response<Boolean> ru = warehouseWriteService.update(w);
             if(!ru.isSuccess()){
                 log.error("failed to update {}, error code:{}, so skip {}", w, r.getError(), warehouse);

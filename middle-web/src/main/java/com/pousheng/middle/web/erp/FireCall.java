@@ -3,6 +3,7 @@ package com.pousheng.middle.web.erp;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
+import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -83,8 +84,8 @@ public class FireCall {
 
 
     @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeWarehouse(@RequestParam(name = "start",required = false) String start,
-                                       @RequestParam(name = "end", required = false) String end){
+    public Response synchronizeWarehouse(@RequestParam(name = "start",required = false) String start,
+                                         @RequestParam(name = "end", required = false) String end){
         Date from= DateTime.now().withTimeAtStartOfDay().toDate();
         if (StringUtils.hasText(end)){
              from = dft.parseDateTime(start).toDate();
@@ -96,7 +97,7 @@ public class FireCall {
         log.info("begin to synchronize warehouse from {} to {}", start, end);
         int warehouseCount = warehouseImporter.process(from, to);
         log.info("synchronized {} warehouses", warehouseCount);
-        return "ok";
+        return Response.ok();
 
     }
 

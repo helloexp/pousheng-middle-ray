@@ -160,10 +160,10 @@ public class AdminShops {
         Shop recoverShop = checkOuterId(shop.getOuterId());
 
         //创建门店
-        shop.setBusinessId(shop.getZoneId());//这里把区部id塞入到businessId字段中
+        shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
         ShopExtraInfo shopExtraInfo = new ShopExtraInfo();
-        shopExtraInfo.setZoneId(shop.getZoneId());
-        shopExtraInfo.setZoneName(shop.getZoneName());
+        shopExtraInfo.setCompanyId(shop.getCompanyId());
+        shopExtraInfo.setCompanyName(shop.getCompanyName());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
 
@@ -517,15 +517,13 @@ public class AdminShops {
         private static final long serialVersionUID = 7122636456538456745L;
 
         private String userPassword;
-
-        //区部Id
-        private Long zoneId;
-        //区部名称
-        private String zoneName;
-
         /**
          * 公司id
          */
-        private String companyId;
+        private Long companyId;
+        //公司名称
+        private String companyName;
+
+
     }
 }

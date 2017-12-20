@@ -2,15 +2,10 @@ package com.pousheng.middle.web.shop.event.listener;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.gd.GDMapSearchService;
-import com.pousheng.middle.order.service.AddressGpsWriteService;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
-import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
-import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;

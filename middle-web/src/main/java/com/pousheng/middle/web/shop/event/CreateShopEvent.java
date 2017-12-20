@@ -15,11 +15,11 @@ public class CreateShopEvent implements Serializable {
     @Getter
     protected Long shopId;
     @Getter
-    protected String companyId;
+    protected Long companyId;
     @Getter
     protected String storeCode;
 
-    public CreateShopEvent(Long shopId, String companyId, String storeCode) {
+    public CreateShopEvent(Long shopId, Long companyId, String storeCode) {
         this.shopId = shopId;
         this.companyId = companyId;
         this.storeCode = storeCode;

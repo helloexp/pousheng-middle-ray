@@ -272,8 +272,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }
                 Item item = this.findItemById(giftItem.getSpuId());
                 if (item==null){
-                    item.setId(giftItem.getItemId());
-                    item.setName(giftItem.getItemName());
+                    item.setId(giftItem.getSpuId()==null?0L:giftItem.getSpuId());
+                    item.setName(StringUtils.isEmpty(giftItem.getItemName())?"":giftItem.getItemName());
                 }
                 ParanaUser buyer = new ParanaUser();
                 buyer.setId(richOrder.getBuyer().getId());

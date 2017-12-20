@@ -75,11 +75,11 @@ public class PsGiftActivityStrategy {
     }
 
     private List<PoushengGiftActivity> getAvailActivities(RichSkusByShop richSkusByShop, List<PoushengGiftActivity> poushengGiftActivities) {
-        //获取金额
-        Long fee = richSkusByShop.getFee();
+        List<RichSku> richSkus  = richSkusByShop.getRichSkus();
+        //初始的子单净价总和
+        Long totalCleanFee = 0L;
         //获取数量
         Integer quantity = 0;
-        List<RichSku> richSkus =  richSkusByShop.getRichSkus();
         //获取店铺
         Shop shop = richSkusByShop.getShop();
         //获取商品中
@@ -92,8 +92,11 @@ public class PsGiftActivityStrategy {
             Sku sku = richSku.getSku();
             skuCodes.add(sku.getSkuCode());
             skuCodeAndQuantityMap.put(richSku.getSku().getSkuCode(),richSku.getQuantity());
+            totalCleanFee+=(richSku.getOriginFee()==null?0L:richSku.getOriginFee());
         }
-
+        //订单的实付金额
+        Long fee = totalCleanFee+(richSkusByShop.getShipFee()==null?0L:richSkusByShop.getShipFee())
+                -(richSkusByShop.getDiscount()==null?0L:richSkusByShop.getDiscount());
         List<PoushengGiftActivity> activities = Lists.newArrayList();
 
         for (PoushengGiftActivity poushengGiftActivity:poushengGiftActivities){

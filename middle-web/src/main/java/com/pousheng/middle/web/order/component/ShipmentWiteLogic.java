@@ -284,11 +284,11 @@ public class ShipmentWiteLogic {
      */
     public void updateShipmentNote(ShopOrder shopOrder, int type) {
         //添加备注
-        if(type>0&&type!=6){
+        if(type>0){
             //shopOrderextra中添加字段
             ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
             Map<String, String> extraMap = order.getExtra();
-            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, String.valueOf(type));
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, type==6?"":String.valueOf(type));
             Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
             if (!rltRes.isSuccess()) {
                 log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());

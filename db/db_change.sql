@@ -154,3 +154,8 @@ create table `pousheng_gift_activity`
   KEY `index_middle_gift_name` (`name`)
 )COMMENT='宝胜中台赠品活动表';
 
+-- 库存表添加mpos标识,公司代码，公司名称。
+alter table `pousheng_warehouses` add `is_mpos` tinyint default 0 after `is_default`;
+alter table `pousheng_warehouses` add `company_id` varchar(64) after `address`;
+alter table `pousheng_warehouses` add `company_name` varchar(64) after `company_id`;
+alter table `pousheng_warehouses` add index `index_middle_warehouse_company` (`company_id`);

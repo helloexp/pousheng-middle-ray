@@ -47,6 +47,18 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private String name;
+
+    /**
+     * 公司代码
+     */
+    @Setter
+    private String companyId;
+
+    /**
+     * 公司名称
+     */
+    @Setter
+    private String companyName;
     
     /**
      * 负责人id
@@ -77,6 +89,12 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Boolean isDefault;
+
+    /**
+     * 是否mpos
+     */
+    @Setter
+    private Integer isMpos;
     
     /**
      * 附加信息

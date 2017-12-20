@@ -20,6 +20,11 @@ public class PoushengWarehouse implements Serializable {
     private String company_id;
 
     /**
+     * 公司名称
+     */
+    private String company_name;
+
+    /**
      * 仓库内码
      */
     private String stock_id;

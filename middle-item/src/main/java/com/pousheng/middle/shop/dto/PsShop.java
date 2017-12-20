@@ -22,9 +22,9 @@ public class PsShop {
 
     private String code;
 
-    private String zoneId;
+    private String companyId;
 
-    private String zoneName;
+    private String companyName;
 
 
 }

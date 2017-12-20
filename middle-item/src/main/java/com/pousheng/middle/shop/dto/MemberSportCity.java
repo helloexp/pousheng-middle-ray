@@ -29,6 +29,8 @@ public class MemberSportCity implements Serializable {
 
     private String companyId;
 
+    private String companyName;
+
     private String regionId;
 
     private String zoneId;

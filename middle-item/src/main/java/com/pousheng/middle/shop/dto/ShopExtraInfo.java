@@ -30,10 +30,10 @@ public class ShopExtraInfo implements Serializable{
     private static final TypeReference<List<ShopExpresssCompany>> EXPRESS_COMPANY_LIST = new TypeReference<List<ShopExpresssCompany>>() {};
 
 
-    //区部Id
-    private Long zoneId;
-    //区部名称
-    private String zoneName;
+    //公司Id
+    private Long companyId;
+    //公司名称
+    private String companyName;
 
     //安全库存
     private Integer safeStock;

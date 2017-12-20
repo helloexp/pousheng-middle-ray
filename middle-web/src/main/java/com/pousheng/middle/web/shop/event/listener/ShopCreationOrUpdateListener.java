@@ -61,7 +61,7 @@ public class ShopCreationOrUpdateListener {
     public void onCreated(CreateShopEvent event) {
        
 
-        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId(),event.getStoreCode());
+        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){
             return;
         }
@@ -80,7 +80,7 @@ public class ShopCreationOrUpdateListener {
     @Subscribe
     public void onUpdate(UpdateShopEvent event) {
 
-        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId(),event.getStoreCode());
+        AddressGps addressGps = getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){
             return;
         }

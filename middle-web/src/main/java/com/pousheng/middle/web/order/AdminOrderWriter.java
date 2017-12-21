@@ -337,11 +337,10 @@ public class AdminOrderWriter {
     @OperationLogType("单个订单自动处理")
     public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
-        if (!isSuccess){
-            //todo 添加动态提示
+        Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+        if (!response.isSuccess()){
             log.error("auto handle shop order failed, order id is {}",shopOrderId);
-            throw new JsonResponseException("auto.handle.failed");
+            throw new JsonResponseException("生成发货单失败，原因:"+response.getError());
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -361,16 +360,15 @@ public class AdminOrderWriter {
         List<Long> failedShopOrderIds = Lists.newArrayList();
         for (Long shopOrderId:ids){
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-            boolean isSuccess = shipmentWiteLogic.autoHandleOrder(shopOrder);
-            if (!isSuccess){
-              failedShopOrderIds.add(shopOrderId);
-              continue;
+            Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+            if (!response.isSuccess()){
+                failedShopOrderIds.add(shopOrderId);
+                continue;
             }
             successShopOrderIds.add(shopOrderId);
         }
         if (!failedShopOrderIds.isEmpty()){
-            //todo 添加动态提示
-            throw new JsonResponseException("batch.auto.handle.failed");
+            throw new JsonResponseException("订单号:"+successShopOrderIds+"生成发货单成功， 订单号："+failedShopOrderIds+"生成发货单失败，具体原因见订单详情");
         }
         return Response.ok(Boolean.TRUE);
     }

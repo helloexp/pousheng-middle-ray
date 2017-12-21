@@ -25,10 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -474,5 +471,28 @@ public class ShipmentReadLogic {
             newShipmentItems.addAll(shipmentItems);
         });
         return newShipmentItems;
+    }
+
+    /**
+     *判断该订单下是否存在可以撤单的发货单
+     * @param shopOrderId 店铺订单id
+     * @return true 可以撤单， false 不可以撤单
+     */
+    public boolean isShopOrderCanRevoke(Long shopOrderId){
+        List<OrderShipment> orderShipments = this.findByOrderIdAndType(shopOrderId);
+        Optional<OrderShipment> orderShipmentOptional = orderShipments.stream().findAny();
+        if (!orderShipmentOptional.isPresent()){
+            return false;
+        }
+        List<Integer> orderShipmentStatus = orderShipments.stream().filter(Objects::nonNull).map(OrderShipment::getStatus).collect(Collectors.toList());
+        List<Integer> canRevokeStatus = Lists.newArrayList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()
+                ,MiddleShipmentsStatus.ACCEPTED.getValue(), MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),MiddleShipmentsStatus.SYNC_HK_FAIL.getValue());
+        for (Integer shipmentStatus:orderShipmentStatus){
+            if (!canRevokeStatus.contains(shipmentStatus)){
+                return false;
+            }
+        }
+        return true;
     }
 }

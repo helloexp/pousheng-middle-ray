@@ -532,8 +532,8 @@ public class ExportController {
                 entity.setShopName(posContext.getShopName());
                 entity.setPosType(posContext.getPosType()==1?"正常销售":"售后");
                 entity.setOrderId(posContext.getOrderId());
-                entity.setPosCreatedAt(posContext.getPosCreatedAt());
-                entity.setCreatedAt(posContext.getCreatedAt());
+                entity.setPosCreatedAt(posContext.getPosDoneAt());
+                entity.setCreatedAt(posContext.getPosCreatedAt());
                 posExportEntities.add(entity);
             });
         }

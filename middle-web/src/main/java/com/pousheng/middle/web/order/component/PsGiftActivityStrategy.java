@@ -76,6 +76,16 @@ public class PsGiftActivityStrategy {
 
     private List<PoushengGiftActivity> getAvailActivities(RichSkusByShop richSkusByShop, List<PoushengGiftActivity> poushengGiftActivities) {
         List<RichSku> richSkus  = richSkusByShop.getRichSkus();
+        //如果条码对不上，直接不用往下走，直接不满足赠品活动
+        for (RichSku richSku : richSkus) {
+            if (Objects.isNull(richSku.getSku())){
+                return new ArrayList<>();
+            }else{
+                if (Objects.isNull(richSku.getSku().getSkuCode())){
+                    return new ArrayList<>();
+                }
+            }
+        }
         //初始的子单净价总和
         Long totalCleanFee = 0L;
         //获取数量

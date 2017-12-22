@@ -101,7 +101,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             return null;
         }
         Spu spu = findR.getResult();
-
+        if (spu==null){
+            Item item = new Item();
+            item.setId(0L);
+        }
         Item item = new Item();
         item.setId(spu.getId());
         item.setName(spu.getName());
@@ -120,7 +123,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
         Optional<SkuTemplate> skuTemplateOptional = findR.getResult();
         if (!skuTemplateOptional.isPresent()) {
-            return null;
+            Sku sku = new Sku();
+            sku.setId(0L);
+            return sku;
         }
         SkuTemplate skuTemplate = skuTemplateOptional.get();
 

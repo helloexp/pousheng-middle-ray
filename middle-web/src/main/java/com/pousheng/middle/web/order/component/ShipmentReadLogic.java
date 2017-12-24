@@ -101,6 +101,16 @@ public class ShipmentReadLogic {
         shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
         shipmentPreview.setShopOrder(orderDetail.getShopOrder());
         shipmentPreview.setShopId(orderDetail.getShopOrder().getShopId());
+        ShopOrder shopOrder = orderDetail.getShopOrder();
+        Map<String,String> shopOrderMap = shopOrder.getExtra();
+        String expressCode = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE);
+        if (!org.springframework.util.StringUtils.isEmpty(expressCode)){
+            shipmentPreview.setOrderHkExpressCode(expressCode);
+        }
+        String expressName = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME);
+        if (!org.springframework.util.StringUtils.isEmpty(expressName)){
+            shipmentPreview.setOrderHkExpressName(expressName);
+        }
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
         for (SkuOrder skuOrder : currentSkuOrders){

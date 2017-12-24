@@ -50,5 +50,8 @@ public class ShipmentPreview extends OrderBasicInfo implements Serializable{
 
     //换货收货人信息
     private  MiddleChangeReceiveInfo middleChangeReceiveInfo;
-
+    //中台选择的恒康快递代码
+    private String orderHkExpressCode;
+    //中台选择的快递名称
+    private String orderHkExpressName;
 }

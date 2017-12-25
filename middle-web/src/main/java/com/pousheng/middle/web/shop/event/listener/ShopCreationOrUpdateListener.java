@@ -153,6 +153,8 @@ public class ShopCreationOrUpdateListener {
         addressGps.setBusinessType(AddressBusinessType.SHOP.getValue());
         addressGps.setDetail(addressDto.getAddress());
         //省
+
+        log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
         WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
         if(Arguments.isNull(province)){
             return null;
@@ -183,12 +185,12 @@ public class ShopCreationOrUpdateListener {
     //将会员中心的地址与中台地址做比较，转换为中台的地址
     private WarehouseAddress transToWarehouseAddress(String code,String name){
         try {
+            if(Strings.isNullOrEmpty(code)){
+                log.error("[QUERY-MIDDLE-ADDRESS] code is null",code,name);
+                return null;
+            }
             Long addressId = Long.valueOf(code);
             WarehouseAddress address = warehouseAddressCacher.findById(addressId);
-          /*  if(address.getName().contains(name)){
-                return address;
-            }*/
-
             if(Arguments.isNull(address)){
                 log.error("[QUERY-MIDDLE-ADDRESS] by code:{} name:{} not find",code,name);
                 return null;

@@ -4,17 +4,12 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
-import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -40,13 +35,12 @@ import java.util.stream.Collectors;
 public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
     @Autowired
-    private AddressGpsReadService addressGpsReadService;
+    private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
     @Autowired
     private WarehouseCacher warehouseCacher;
-    @Autowired
-    private WarehouseReadService warehouseReadService;
+
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -54,7 +48,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         //电商在售可用仓，从上个规则传递过来。 // TODO: 2017/12/23  解析context map
         List<Long> onlineSaleWarehouseIds = Lists.newArrayList();
         //省内的mpos仓,如果没有则进入下个规则
-        List<AddressGps> addressGpses = findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
+        List<AddressGps> addressGpses = warehouseAddressComponent.findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;
         }
@@ -77,7 +71,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<Warehouse> warehouses = findWarehouseByIds(warehouseIds);
+        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //查询仓代码
         List<String> stockCodes = Lists.transform(warehouses, new Function<Warehouse, String>() {
@@ -102,29 +96,6 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
 
         return true;
-    }
-
-
-    private List<AddressGps> findWarehouseAddressGps(Long provinceId){
-
-        Response<List<AddressGps>> addressGpsListRes = addressGpsReadService.findByProvinceIdAndBusinessType(provinceId, AddressBusinessType.WAREHOUSE);
-        if(!addressGpsListRes.isSuccess()){
-            log.error("find addressGps by province id :{} for warehouse failed,  error:{}", provinceId,addressGpsListRes.getError());
-            throw new ServiceException(addressGpsListRes.getError());
-        }
-        return addressGpsListRes.getResult();
-
-    }
-
-    private List<Warehouse> findWarehouseByIds(List<Long> ids){
-
-        Response<List<Warehouse>> warehouseListRes = warehouseReadService.findByIds(ids);
-        if(!warehouseListRes.isSuccess()){
-            log.error("find warehouse by ids:{} failed,  error:{}", ids,warehouseListRes.getError());
-            throw new ServiceException(warehouseListRes.getError());
-        }
-        return warehouseListRes.getResult();
-
     }
 
 

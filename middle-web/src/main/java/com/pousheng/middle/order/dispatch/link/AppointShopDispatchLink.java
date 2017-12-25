@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -24,7 +25,7 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         //初始化分派商品信息
-        initDispatchOrderItemInfo();
+        initDispatchOrderItemInfo(dispatchOrderItemInfo,context);
 
         Boolean isAppointShopDispatch = Boolean.TRUE;
         Long shopId = 1L;
@@ -41,14 +42,13 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
         return true;
     }
 
-    private void initDispatchOrderItemInfo(){
+    private void initDispatchOrderItemInfo(DispatchOrderItemInfo dispatchOrderItemInfo,Map<String, Serializable> context){
 
-        DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
+        dispatchOrderItemInfo = new DispatchOrderItemInfo();
         List<ShopShipment> shopShipments = Lists.newArrayList();
         List<WarehouseShipment> warehouseShipments = Lists.newArrayList();
         dispatchOrderItemInfo.setShopShipments(shopShipments);
         dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
-
-
+        context = Maps.newHashMap();
     }
 }

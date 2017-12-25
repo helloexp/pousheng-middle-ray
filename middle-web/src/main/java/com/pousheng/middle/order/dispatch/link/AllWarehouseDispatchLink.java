@@ -49,81 +49,11 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
-        //电商在售可用仓，从上个规则传递过来。 // TODO: 2017/12/23  解析context map
-        List<Long> onlineSaleWarehouseIds = Lists.newArrayList();
-        //省内的mpos仓,如果没有则进入下个规则
-        List<AddressGps> addressGpses = findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
-        if(CollectionUtils.isEmpty(addressGpses)){
-            return Boolean.TRUE;
-        }
-
-        //过滤掉上个规则匹配到的电商在售仓,过滤后如果没有可用的范围则进入下个规则
-        List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !onlineSaleWarehouseIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
-        if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
-            return Boolean.TRUE;
-        }
-
-        if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
-            return Boolean.TRUE;
-        }
-
-        List<Long> warehouseIds = Lists.transform(rangeInnerAddressGps, new Function<AddressGps, Long>() {
-            @Nullable
-            @Override
-            public Long apply(@Nullable AddressGps input) {
-                return input.getBusinessId();
-            }
-        });
-
-        List<Warehouse> warehouses = findWarehouseByIds(warehouseIds);
-
-        //查询仓代码
-        List<String> stockCodes = Lists.transform(warehouses, new Function<Warehouse, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable Warehouse input) {
-                return input.getCode();//todo 需要确认什么code
-            }
-        });
-
-        List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable SkuCodeAndQuantity input) {
-                return input.getSkuCode();
-            }
-        });
-
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
-
-
-
-
         return true;
     }
 
 
-    private List<AddressGps> findWarehouseAddressGps(Long provinceId){
 
-        Response<List<AddressGps>> addressGpsListRes = addressGpsReadService.findByProvinceIdAndBusinessType(provinceId, AddressBusinessType.WAREHOUSE);
-        if(!addressGpsListRes.isSuccess()){
-            log.error("find addressGps by province id :{} for warehouse failed,  error:{}", provinceId,addressGpsListRes.getError());
-            throw new ServiceException(addressGpsListRes.getError());
-        }
-        return addressGpsListRes.getResult();
-
-    }
-
-    private List<Warehouse> findWarehouseByIds(List<Long> ids){
-
-        Response<List<Warehouse>> warehouseListRes = warehouseReadService.findByIds(ids);
-        if(!warehouseListRes.isSuccess()){
-            log.error("find warehouse by ids:{} failed,  error:{}", ids,warehouseListRes.getError());
-            throw new ServiceException(warehouseListRes.getError());
-        }
-        return warehouseListRes.getResult();
-
-    }
 
 
 }

@@ -1,8 +1,13 @@
 package com.pousheng.middle.hksyc.component;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.kevinsawicki.http.HttpRequest;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.hksyc.utils.Numbers;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -10,15 +15,16 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 /**
- * 查询恒康仓或门店商品库存信息
  * Created by songrenfei on 2017/7/19
  */
 @Component
 @Slf4j
-public class SycHkOrderCancelApi {
+public class QueryHkWarhouseOrShopStockApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
@@ -28,21 +34,25 @@ public class SycHkOrderCancelApi {
     @Value("${gateway.hk.accessKey}")
     private String accessKey;
 
-    /**
-     * 取消订单
-     * @param shopCode 恒康店铺内码id
-     * @param orderId 发货单号或退货单号，根据type
-     * @param type 0:发货单  1:退货单
-     * @param operationType 0 取消,1删除
-     */
-    public String doCancelOrder(String shopCode, Long orderId, Integer operationType,Integer type){
 
+    private static final TypeReference<List<HkSkuStockInfo>> LIST_OF_SKU_STOCK = new TypeReference<List<HkSkuStockInfo>>() {};
+
+
+    /**
+     * 查询库存信息
+     * @param stockCodes 仓或门店外码集合
+     * @param skuCodes 商品编码集合
+     * @param stockType 0 = 不限; 1 = 店仓; 2 = 总仓
+     */
+    public List<HkSkuStockInfo> doQueryStockInfo(List<String> stockCodes, List<String> skuCodes, Integer stockType){
+
+        String stock_ids = Joiners.COMMA.join(stockCodes);
+        String material_ids = Joiners.COMMA.join(skuCodes);
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         Map<String, Object> params = Maps.newHashMap();
-        params.put("shopid",shopCode);
-        params.put("orderNo",orderId);
-        params.put("optype",operationType);
-        params.put("type",type);
+        params.put("stock_ids",stock_ids);
+        params.put("material_ids",material_ids);
+        params.put("stock_type",stockType);
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
@@ -58,7 +68,20 @@ public class SycHkOrderCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
-        return responseBody;
+        log.info("query hk stock info result:{}",responseBody);
+
+        return readStockFromJson(responseBody);
+    }
+
+
+    private List<HkSkuStockInfo> readStockFromJson(String json) {
+        try {
+            return JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(json, LIST_OF_SKU_STOCK);
+        } catch (IOException e) {
+            log.error("analysis json:{} to stock dto error,cause:{}",json, Throwables.getStackTraceAsString(e));
+        }
+
+        return Lists.newArrayList();
+
     }
 }

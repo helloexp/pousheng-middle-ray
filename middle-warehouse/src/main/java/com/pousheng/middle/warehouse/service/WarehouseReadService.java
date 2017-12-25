@@ -22,6 +22,14 @@ public interface WarehouseReadService {
      */
     Response<Warehouse> findById(Long Id);
 
+
+    /**
+     * 根据ids查询仓库集合
+     * @param Ids 主键ids
+     * @return 仓库
+     */
+    Response<List<Warehouse>> findByIds(List<Long> Ids);
+
     /**
      * 仓库列表
      *

@@ -113,7 +113,8 @@ public class HKShipmentDoneListener {
             }
 
         }
-        if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value()) {
+        //丢件补发类型的发货单的类型是3，中台没有相应的枚举类
+        if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value()||shipment.getType()==3) {
             //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成,C
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();

@@ -9,7 +9,7 @@ import java.util.Objects;
  */
 public enum OrderWaitHandleType {
 
-    WAIT_HANDLE(1,"待处理"),
+    WAIT_HANDLE(1,"尚未尝试自动生成发货单"),
     ORDER_HAS_NOTE(2,"订单有备注"),
     JD_PAY_ON_CASH(3,"京东货到付款"),
     SKU_NOT_MATCH(4,"商品对应失败"),
@@ -34,6 +34,7 @@ public enum OrderWaitHandleType {
     public int value() {
         return value;
     }
+    public String getDesc(){return desc;}
     @Override
     public String toString() {
         return desc;

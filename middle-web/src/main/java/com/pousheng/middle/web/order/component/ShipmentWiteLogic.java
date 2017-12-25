@@ -191,30 +191,33 @@ public class ShipmentWiteLogic {
      * 订单自动处理逻辑
      * @param shopOrder 店铺订单
      */
-    public boolean  autoHandleOrder(ShopOrder shopOrder){
+    public Response<String>  autoHandleOrder(ShopOrder shopOrder) {
         //没有经过自动生成发货单逻辑的订单时不能自动处理的，可能存在冲突
-        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        Map<String, String> shopOrderExtra = shopOrder.getExtra();
         String orderWaitHandleType = shopOrderExtra.get(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE);
-        if (Objects.equals(orderWaitHandleType,String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()))){
-            return false;
+        if (Objects.equals(orderWaitHandleType, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()))) {
+            return Response.fail(OrderWaitHandleType.WAIT_HANDLE.getDesc());
         }
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
                 MiddleOrderStatus.WAIT_HANDLE.getValue());
-        if (skuOrders.size()==0){
-            return false;
+        if (skuOrders.size() == 0) {
+            return Response.fail("sku.order.not.wait.handle.status");
         }
         //判断是否满足自动生成发货单
-        if(!autoHandleOrderParam(shopOrder,skuOrders)){
-            return false;
+        if (!autoHandleOrderParam(shopOrder, skuOrders)) {
+            return Response.fail(OrderWaitHandleType.SKU_NOT_MATCH.getDesc());
         }
-        return this.autoCreateShipmentLogic(shopOrder, skuOrders);
+        if (!this.autoCreateShipmentLogic(shopOrder, skuOrders)) {
+            return Response.fail(OrderWaitHandleType.STOCK_NOT_ENOUGH.getDesc());
+        }
+        return Response.ok("");
     }
 
-    /**
-     * 自动生成发货单逻辑
-     * @param shopOrder
-     * @param skuOrders
-     */
+        /**
+         * 自动生成发货单逻辑
+         * @param shopOrder
+         * @param skuOrders
+         */
     private boolean autoCreateShipmentLogic(ShopOrder shopOrder, List<SkuOrder> skuOrders) {
         //获取skuCode,数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
@@ -423,11 +426,6 @@ public class ShipmentWiteLogic {
      */
     private boolean autoHandleOrderParam(ShopOrder shopOrder,List<SkuOrder> skuOrders){
         int orderWaitHandleType = 0;
-        //1.判断订单是否是京东支付 && 2.判断订单是否是货到付款
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
-            orderWaitHandleType = OrderWaitHandleType.JD_PAY_ON_CASH.value();
-        }
         //判断skuCode是否为空,如果存在skuCode为空则不能自动生成发货单
         int count = 0;
         for (SkuOrder skuOrder:skuOrders){

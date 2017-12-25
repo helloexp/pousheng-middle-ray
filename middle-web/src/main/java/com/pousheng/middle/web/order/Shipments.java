@@ -268,6 +268,8 @@ public class Shipments {
 
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         List<Long> shipmentIds = Lists.newArrayList();
+        //用于判断运费是否已经算过
+        int shipmentFeeCount=0;
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data =  JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
             Long warehouseId = shipmentRequest.getWarehouseId();
@@ -300,9 +302,10 @@ public class Shipments {
             Long shipmentShipDiscountFee=0L;
 
             //判断运费是否已经加过
-            if (!shipmentReadLogic.isShipmentFeeCalculated(shopOrderId)){
+            if (!shipmentReadLogic.isShipmentFeeCalculated(shopOrderId)&&shipmentFeeCount==0){
                 shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                 shipmentShipDiscountFee=shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
+                shipmentFeeCount++;
             }
             for (ShipmentItem shipmentItem : shipmentItems) {
                 shipmentItemFee = shipmentItem.getSkuPrice()*shipmentItem.getQuantity() + shipmentItemFee;

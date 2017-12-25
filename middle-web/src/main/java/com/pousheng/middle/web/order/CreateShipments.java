@@ -85,6 +85,8 @@ public class CreateShipments {
             log.error("data json :{} invalid",dataList);
             throw new JsonResponseException("analysis.shipment.json.error");
         }
+        //用于判断运费是否计算
+        int shipmentFeeCount=0;
         List<ShipmentPreview> shipmentPreviews = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest:requestDataList){
             String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
@@ -145,11 +147,12 @@ public class CreateShipments {
                 //运费
 
                 //判断运费是否已经加过
-                if (!shipmentReadLogic.isShipmentFeeCalculated(id)) {
+                if (!shipmentReadLogic.isShipmentFeeCalculated(id)&&shipmentFeeCount==0) {
 
                     ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
                     shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                     shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
+                    shipmentFeeCount++;
                 }
                 shipmentPreview.setShipmentShipFee(shipmentShipFee);
             }

@@ -1,15 +1,21 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
+import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.common.exception.ServiceException;
@@ -24,6 +30,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -45,14 +52,59 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     private WarehouseCacher warehouseCacher;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private DispatchComponent dispatchComponent;
+    @Autowired
+    private WarehouseAddressComponent warehouseAddressComponent;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
-        return true;
+        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
+
+        List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
+            @Nullable
+            @Override
+            public String apply(@Nullable SkuCodeAndQuantity input) {
+                return input.getSkuCode();
+            }
+        });
+
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodes,2);
+        if(CollectionUtils.isEmpty(skuStockInfos)){
+            return Boolean.TRUE;
+        }
+
+        List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQueryWarehouseSkuCodeQuantityTable(skuStockInfos,warehouseSkuCodeQuantityTable);
+        //判断是否有整单
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(filterSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+
+        //没有整单发的
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Boolean.TRUE;
+        }
+
+        //如果只有一个
+        if(Objects.equal(warehouseShipments.size(),1)){
+            dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
+            return Boolean.FALSE;
+        }
+
+        String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        //如果有多个要选择最近的
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
+        dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
+
+        return Boolean.FALSE;
     }
 
 
+    //过滤掉省内和电商在售仓
+    private List<HkSkuStockInfo> filterAlreadyQueryWarehouseSkuCodeQuantityTable(List<HkSkuStockInfo> hkSkuStockInfos,Table<Long, String, Integer> warehouseSkuCodeQuantityTable){
+       Set<Long> alreadyQueryWarehouseIds =  warehouseSkuCodeQuantityTable.rowKeySet();
+        return hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryWarehouseIds.contains(hkSkuStockInfo.getWarehouseId())).collect(Collectors.toList());
+
+    }
 
 
 

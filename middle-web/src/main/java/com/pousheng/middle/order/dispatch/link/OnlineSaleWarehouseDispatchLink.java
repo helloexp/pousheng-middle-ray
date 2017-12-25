@@ -2,15 +2,19 @@ package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -43,9 +47,16 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
     private WarehouseReadService warehouseReadService;
     @Autowired
     private WarehouseAddressComponent warehouseAddressComponent;
+    @Autowired
+    private WarehouseChooser warehouseChooser;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
+
+
+        //收货地址明细
+        String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();
+        context.put(DispatchContants.BUYER_ADDRESS,address);
 
         List<WarehouseSkuStock> onlineSaleWarehouses = getOnlineSaleWarehouse(skuCodeAndQuantities);
         //如果不存在直接让下个规则处理
@@ -62,6 +73,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         });
 
         List<Warehouse> warehouseList = findWarehouseByIds(warehouseIds);
+        context.put(DispatchContants.MPOS_ONLINE_SALE_WAREHOUSE, (Serializable) warehouseList);
 
         //过滤掉非mpos仓,过滤后如果没有则进入下个规则
         List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
@@ -69,12 +81,28 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
+        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
+
         //判断是否可以整单发货
+        List<WarehouseShipment> warehouseShipments = warehouseChooser.chooseMposOnlineSaleSingleWarehouse(mposOnlineSaleWarehouse,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        //没有整单发的
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Boolean.TRUE;
+        }
 
 
-        context.put("mposOnlineSaleWarehouse", (Serializable) warehouseList);
+        //如果只有一个
+        if(Objects.equal(warehouseShipments.size(),1)){
+            dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
+            return Boolean.FALSE;
+        }
 
-        return false;
+        //如果有多个要选择最近的
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
+        dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
+
+        return Boolean.FALSE;
     }
 
 

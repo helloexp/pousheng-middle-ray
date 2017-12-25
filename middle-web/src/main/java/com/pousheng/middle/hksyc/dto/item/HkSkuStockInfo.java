@@ -15,6 +15,16 @@ public class HkSkuStockInfo implements Serializable{
     private static final long serialVersionUID = -9080866179617924285L;
 
     /**
+     * 中台的仓id todo 需要完善
+     */
+    private Long warehouseId;
+
+    /**
+     * 中台仓名称
+     */
+    private String warehouseName;
+
+    /**
      * 仓库 id
      */
     private String stock_id;

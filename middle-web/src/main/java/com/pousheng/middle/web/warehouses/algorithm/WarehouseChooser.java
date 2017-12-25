@@ -115,6 +115,26 @@ public class WarehouseChooser {
         return Collections.emptyList();
     }
 
+
+    /**
+     * 获取 mpos 电商在售可以整单发货的仓
+     * @param warehouses 仓集合
+     * @param widskucode2stock 仓、商品、数量的table
+     * @param skuCodeAndQuantities 商品编码和数量
+     * @return 可以整单发货的仓
+     */
+    public List<WarehouseShipment> chooseMposOnlineSaleSingleWarehouse(List<Warehouse> warehouses,Table<Long, String, Integer> widskucode2stock,
+                                                    List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+        List<WarehouseShipment> singleWarehouses = Lists.newArrayListWithCapacity(warehouses.size());
+        for (Warehouse warehouse : warehouses) {
+            List<WarehouseShipment> warehouseShipments = trySingleWarehouseByPriority(skuCodeAndQuantities, widskucode2stock, warehouse.getId());
+            if (!CollectionUtils.isEmpty(warehouseShipments)) {
+                singleWarehouses.addAll(warehouseShipments);
+            }
+        }
+        return singleWarehouses;
+    }
+
     private List<WarehouseShipment> chooseWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
                                                     List<SkuCodeAndQuantity> skuCodeAndQuantities) {
         Table<Long, String, Integer> widskucode2stock = HashBasedTable.create();

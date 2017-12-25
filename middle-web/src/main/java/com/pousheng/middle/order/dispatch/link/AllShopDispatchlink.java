@@ -1,13 +1,26 @@
 package com.pousheng.middle.order.dispatch.link;
 
+import com.google.common.base.Objects;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
+import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
+import com.pousheng.middle.order.dispatch.component.ShopAddressComponent;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.order.dispatch.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 全国门店发货规则
@@ -18,8 +31,63 @@ import java.util.Map;
  * Created by songrenfei on 2017/12/23
  */
 public class AllShopDispatchlink implements DispatchOrderLink{
+
+    @Autowired
+    private ShopAddressComponent shopAddressComponent;
+    @Autowired
+    private DispatchComponent dispatchComponent;
+    @Autowired
+    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-        return false;
+        //拒绝过发货单的mpos门店
+        List<Long> rejectShopIds = (List<Long>) context.get(DispatchContants.REJECT_SHOP_IDS);
+
+        List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
+
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodes,1);
+        if(CollectionUtils.isEmpty(skuStockInfos)){
+            return Boolean.TRUE;
+        }
+
+        Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
+
+
+        List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQuery(skuStockInfos,shopSkuCodeQuantityTable,rejectShopIds);
+        if(CollectionUtils.isEmpty(filterSkuStockInfos)){
+            return Boolean.TRUE;
+        }
+        //判断是否有整单
+        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(filterSkuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
+
+        //没有整单发的
+        if(CollectionUtils.isEmpty(shopShipments)){
+            return Boolean.TRUE;
+        }
+
+        //如果只有一个
+        if(Objects.equal(shopShipments.size(),1)){
+            dispatchOrderItemInfo.setShopShipments(shopShipments);
+            return Boolean.FALSE;
+        }
+
+        String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        //如果有多个要选择最近的
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address);
+        dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
+
+        return Boolean.FALSE;
+    }
+
+
+    //过滤掉省内和已拒绝的门店
+    private List<HkSkuStockInfo> filterAlreadyQuery(List<HkSkuStockInfo> hkSkuStockInfos,Table<Long, String, Integer> shopSkuCodeQuantityTable,List<Long> rejectShopIds){
+        Set<Long> alreadyQueryShopIds =  shopSkuCodeQuantityTable.rowKeySet();
+        //过滤掉省内
+        List<HkSkuStockInfo> hkSkuStockInfoList = hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryShopIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
+        //过滤掉已拒绝的门店
+        return hkSkuStockInfoList.stream().filter(hkSkuStockInfo -> !rejectShopIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
+
     }
 }

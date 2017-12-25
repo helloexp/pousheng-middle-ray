@@ -74,7 +74,7 @@ public class CreateShipments {
     @RequestMapping(value = "/api/ship/preview", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShipmentPreview> shipPreview(@RequestParam Long id,
                                                  @RequestParam("data") String data,
-                                                 @RequestParam(value = "warehouseId") Long warehouseId,
+                                                 @RequestParam(value = "businessId") Long warehouseId,
                                                  @RequestParam(defaultValue = "1") Integer type) {
 
         Response<ShipmentPreview> response;

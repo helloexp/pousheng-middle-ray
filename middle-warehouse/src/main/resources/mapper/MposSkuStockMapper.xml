@@ -7,7 +7,7 @@
 <mapper namespace="MposSkuStock">
     <resultMap id="MposSkuStockMap" type="MposSkuStock">
         <id column="id" property="id"/>
-        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_id" property="businessId"/>
         <result column="shop_id" property="shopId"/>
         <result column="sku_code" property="skuCode"/>
         <result column="locked_stock" property="lockedStock"/>
@@ -29,12 +29,12 @@
     </sql>
 
     <sql id="vals">
-        #{warehouseId}, #{shopId}, #{skuCode}, #{lockedStock}, now(), now()
+        #{businessId}, #{shopId}, #{skuCode}, #{lockedStock}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         
-        <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
+        <if test="businessId != null">and `warehouse_id` = #{businessId}</if>
         
         <if test="shopId != null">and `shop_id` = #{shopId}</if>
         
@@ -83,7 +83,7 @@
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="businessId != null">warehouse_id = #{businessId},</if>
             <if test="shopId != null">shop_id = #{shopId},</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>
             <if test="lockedStock != null">locked_stock = #{lockedStock},</if>

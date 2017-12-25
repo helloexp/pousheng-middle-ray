@@ -22,4 +22,16 @@ public class DispatchContants {
     public static final String WAREHOUSE_SKUCODE_QUANTITY_TABLE = "warehouseSkuCodeQuantityTable";
 
 
+    /**
+     * 门店 商品编码 数量 集合
+     */
+    public static final String SHOP_SKUCODE_QUANTITY_TABLE = "shopSkuCodeQuantityTable";
+
+
+    /**
+     * 拒绝过发货单的门店
+     */
+    public static final String REJECT_SHOP_IDS = "rejectShopIds";
+
+
 }

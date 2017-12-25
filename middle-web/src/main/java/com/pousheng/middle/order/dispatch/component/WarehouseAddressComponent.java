@@ -46,14 +46,8 @@ public class WarehouseAddressComponent {
     private GDMapSearchService gdMapSearchService;
     @Autowired
     private AddressGpsCacher addressGpsCacher;
-
-
-    private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
-        @Override
-        public Double apply(DistanceDto input) {
-            return input.getDistance();
-        }
-    });
+    @Autowired
+    private DispatchComponent dispatchComponent;
 
 
 
@@ -104,11 +98,11 @@ public class WarehouseAddressComponent {
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
         for (WarehouseShipment warehouseShipment : warehouseShipments){
             AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue());
-            distanceDtos.add(getWarehouseDistance(addressGps,location.getLon(),location.getLat()));
+            distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
         }
 
         //增序
-        List<DistanceDto> sortDistance= bydiscount.sortedCopy(distanceDtos);
+        List<DistanceDto> sortDistance= dispatchComponent.sortDistanceDto(distanceDtos);
 
         Map<Long, WarehouseShipment> warehouseShipmentMap = warehouseShipments.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(WarehouseShipment::getWarehouseId, it -> it));
@@ -116,14 +110,6 @@ public class WarehouseAddressComponent {
 
         return warehouseShipmentMap.get(sortDistance.get(0));
 
-    }
-
-    private DistanceDto getWarehouseDistance(AddressGps addressGps, String longitude,String latitude){
-
-        DistanceDto distanceDto = new DistanceDto();
-        distanceDto.setDistance(DistanceUtil.getDistance(Double.valueOf(addressGps.getLatitude()),Double.valueOf(addressGps.getLongitude()),Double.valueOf(latitude),Double.valueOf(longitude)));
-        distanceDto.setId(addressGps.getBusinessId());
-        return distanceDto;
     }
 
 

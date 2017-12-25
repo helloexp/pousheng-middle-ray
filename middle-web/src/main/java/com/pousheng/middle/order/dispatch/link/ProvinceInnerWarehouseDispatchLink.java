@@ -77,10 +77,6 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
-        if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
-            return Boolean.TRUE;
-        }
-
         List<Long> warehouseIds = Lists.transform(rangeInnerAddressGps, new Function<AddressGps, Long>() {
             @Nullable
             @Override
@@ -100,14 +96,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable SkuCodeAndQuantity input) {
-                return input.getSkuCode();
-            }
-        });
-
+        List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
 

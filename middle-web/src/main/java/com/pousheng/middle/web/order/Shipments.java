@@ -255,7 +255,7 @@ public class Shipments {
     @OperationLogType("生成销售发货单")
     public Long createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
                                @RequestParam("data") String data,
-                               @RequestParam(value = "warehouseId") Long warehouseId) {
+                               @RequestParam(value = "businessId") Long warehouseId) {
 
         Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
         ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
@@ -360,7 +360,7 @@ public class Shipments {
     @OperationLogType("生成换货发货单")
     public Long createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                @RequestParam("data") String data,
-                               @RequestParam(value = "warehouseId") Long warehouseId) {
+                               @RequestParam(value = "businessId") Long warehouseId) {
 
         Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);

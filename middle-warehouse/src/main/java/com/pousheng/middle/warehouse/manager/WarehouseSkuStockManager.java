@@ -77,7 +77,7 @@ public class WarehouseSkuStockManager {
                         skuCode,
                         quantity);
                 if(!success){
-                    log.error("failed to decrease stock of warehouse where warehouseId={} and skuCode={}, delta={}",
+                    log.error("failed to decrease stock of warehouse where businessId={} and skuCode={}, delta={}",
                             warehouseId, skuCode, quantity );
                     throw new ServiceException("stock.decrease.fail");
                 }
@@ -107,7 +107,7 @@ public class WarehouseSkuStockManager {
                         skuCode,
                         quantity);
                 if(!success){
-                    log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
+                    log.error("failed to unlock stock of warehouse where businessId={} and skuCode={}, delta={}",
                             warehouseId, skuCode, quantity );
                     throw new ServiceException("stock.unlock.fail");
                 }

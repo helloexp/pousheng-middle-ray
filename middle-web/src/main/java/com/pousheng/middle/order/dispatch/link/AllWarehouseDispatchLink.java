@@ -10,16 +10,11 @@ import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.enums.AddressBusinessType;
-import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +71,9 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQueryWarehouseSkuCodeQuantityTable(skuStockInfos,warehouseSkuCodeQuantityTable);
+        if(CollectionUtils.isEmpty(filterSkuStockInfos)){
+            return Boolean.TRUE;
+        }
         //判断是否有整单
         List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(filterSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
@@ -102,7 +100,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     //过滤掉省内和电商在售仓
     private List<HkSkuStockInfo> filterAlreadyQueryWarehouseSkuCodeQuantityTable(List<HkSkuStockInfo> hkSkuStockInfos,Table<Long, String, Integer> warehouseSkuCodeQuantityTable){
        Set<Long> alreadyQueryWarehouseIds =  warehouseSkuCodeQuantityTable.rowKeySet();
-        return hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryWarehouseIds.contains(hkSkuStockInfo.getWarehouseId())).collect(Collectors.toList());
+        return hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryWarehouseIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
 
     }
 

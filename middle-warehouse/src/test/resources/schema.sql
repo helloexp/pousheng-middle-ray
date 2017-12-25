@@ -161,3 +161,21 @@ CREATE TABLE `pousheng_stock_push_logs`
   KEY `index_stock_push_shop_id` (`shop_id`),
   KEY `index_stock_push_sku_code` (`sku_code`)
 )COMMENT='宝胜库存推送日志';
+
+
+
+drop table if exists `pousheng_mpos_sku_stocks`;
+
+CREATE TABLE `pousheng_mpos_sku_stocks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
+  `shop_id` bigint(20)  NULL COMMENT '店铺id',
+  `sku_code` varchar(64) NOT NULL COMMENT 'sku标识',
+  `locked_stock` bigint(20) NOT NULL COMMENT '当前锁定库存',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_mss_skus_code` (`sku_code`),
+  KEY `idx_mss_shop_id` (`shop_id`),
+  KEY `idx_mss_warehouse_id` (`warehouse_id`)
+)COMMENT='mpos下单sku锁定库存情况';

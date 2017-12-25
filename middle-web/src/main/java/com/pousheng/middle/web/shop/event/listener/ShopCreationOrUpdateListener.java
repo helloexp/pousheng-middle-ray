@@ -185,10 +185,15 @@ public class ShopCreationOrUpdateListener {
         try {
             Long addressId = Long.valueOf(code);
             WarehouseAddress address = warehouseAddressCacher.findById(addressId);
-            if(address.getName().contains(name)){
+          /*  if(address.getName().contains(name)){
                 return address;
+            }*/
+
+            if(Arguments.isNull(address)){
+                log.error("[QUERY-MIDDLE-ADDRESS] by code:{} name:{} not find",code,name);
+                return null;
             }
-            return null;
+            return address;
         }catch (ServiceException e){
             log.error("check is matching warehouse address by code:{} name:{} fail,error:{}",code,name, e.getMessage());
             return null;

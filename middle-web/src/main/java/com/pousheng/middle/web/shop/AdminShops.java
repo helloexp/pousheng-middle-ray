@@ -98,7 +98,7 @@ public class AdminShops {
      * @param type 类型
      * @param status 状态
      * @param outerId 门店外码
-     * @param businessId 区别Id
+     * @param companyId 公司Id
      * @param pageNo 页码
      * @param pageSize 页大小
      * @return 门店信息
@@ -111,7 +111,7 @@ public class AdminShops {
                                      @RequestParam(required = false) Integer type,
                                      @RequestParam(required = false) Integer status,
                                      @RequestParam(required = false) String outerId,
-                                     @RequestParam(required = false) Long businessId,
+                                     @RequestParam(required = false) Long companyId,
                                      @RequestParam(required = false) Integer pageNo,
                                      @RequestParam(required = false) Integer pageSize) {
         if (id != null) {
@@ -122,7 +122,7 @@ public class AdminShops {
             }
             return new Paging<>();
         }
-        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,businessId, pageNo, pageSize);
+        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }

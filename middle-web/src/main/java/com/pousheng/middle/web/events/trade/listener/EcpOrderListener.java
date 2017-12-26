@@ -14,6 +14,7 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -21,6 +22,7 @@ import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
@@ -57,7 +59,8 @@ public class EcpOrderListener {
     private OrderWriteService orderWriteService;
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
-
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -122,7 +125,10 @@ public class EcpOrderListener {
             }
         }
         //如果已经全部发货了并且电商已经无任何发货单要生成了,则通知电商平台状态为已收货,将第一个发货的发货单的运单号之类的传给电商
-        if (count==0&&shopOrder.getStatus()>= MiddleOrderStatus.WAIT_SHIP.getValue()){
+        Flow flow = flowPicker.pickOrder();
+        if (count==0&&(shopOrder.getStatus()>= MiddleOrderStatus.WAIT_SHIP.getValue()
+                ||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL_FAILED.getValue())
+                ||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.REVOKE_FAILED.getValue()))){
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(shipmentId));
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());

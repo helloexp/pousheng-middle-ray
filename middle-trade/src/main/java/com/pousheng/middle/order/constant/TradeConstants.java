@@ -104,5 +104,6 @@ public class TradeConstants {
     public static final String REFUND_WAIT_CANCEL = "0";
     public static final String REFUND_CANCELED = "1";
 
-
+    //sku订单中的shipmentId
+    public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
 }

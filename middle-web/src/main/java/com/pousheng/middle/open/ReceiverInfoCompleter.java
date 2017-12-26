@@ -59,7 +59,7 @@ public class ReceiverInfoCompleter {
             receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
         }else {
             handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道市："+receiverInfo.getProvince()+"未匹配到中台的市");
+            errors.add("第三方渠道市："+receiverInfo.getCity()+"未匹配到中台的市");
         }
 
         if (StringUtils.hasText(receiverInfo.getRegion())){
@@ -68,7 +68,7 @@ public class ReceiverInfoCompleter {
                 receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
             }else {
                 handleResult.setSuccess(Boolean.FALSE);
-                errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
+                errors.add("第三方渠道区："+receiverInfo.getRegion()+"未匹配到中台的区");
             }
         }
 

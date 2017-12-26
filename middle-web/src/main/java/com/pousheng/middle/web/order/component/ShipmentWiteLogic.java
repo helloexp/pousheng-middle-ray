@@ -496,6 +496,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
         shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
+        shipmentExtra.setIsStepOrder(shopOrder.getExtra().get(TradeConstants.IS_STEP_ORDER));
         //添加物流编码
         Map<String,String> shopOrderMap = shopOrder.getExtra();
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())

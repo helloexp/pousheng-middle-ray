@@ -14,6 +14,8 @@ public class ShipmentExtra implements Serializable{
 
     private static final long serialVersionUID = 1970760321501280133L;
 
+    //所属订单是否是预售订单
+    private String isStepOrder;
     //发货仓ID
     private Long warehouseId;
 

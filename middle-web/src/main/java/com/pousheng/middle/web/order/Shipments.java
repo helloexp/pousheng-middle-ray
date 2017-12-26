@@ -715,11 +715,11 @@ public class Shipments {
         shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
         //物流编码
+        Map<String,String> shopOrderMap = shopOrder.getExtra();
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())&&Objects.equals(shipType,ShipmentType.SALES_SHIP.value())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{
-            Map<String,String> shopOrderMap = shopOrder.getExtra();
             String expressCode = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE);
             if (!StringUtils.isEmpty(expressCode)){
                 shipmentExtra.setVendCustID(expressCode);
@@ -727,6 +727,8 @@ public class Shipments {
                 shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
             }
         }
+        shipmentExtra.setOrderHkExpressCode(shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE));
+        shipmentExtra.setOrderHkExpressName(shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME));
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
         //店铺信息塞值
         shipment.setShopId(Long.valueOf(openShop.getId()));

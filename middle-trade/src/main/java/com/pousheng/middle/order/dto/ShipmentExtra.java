@@ -65,4 +65,8 @@ public class ShipmentExtra implements Serializable{
     private Integer syncTaobaoStatus;
     //仓库外码
     private String warehouseOutCode;
+    //中台选择的恒康快递代码
+    private String orderHkExpressCode;
+    //中台选择的快递名称
+    private String orderHkExpressName;
 }

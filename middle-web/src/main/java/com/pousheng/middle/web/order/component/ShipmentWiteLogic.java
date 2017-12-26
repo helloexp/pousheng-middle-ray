@@ -497,12 +497,20 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         //添加物流编码
+        Map<String,String> shopOrderMap = shopOrder.getExtra();
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             shipmentExtra.setVendCustID(TradeConstants.JD_VEND_CUST_ID);
         }else{
-            shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+            String expressCode = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE);
+            if (!org.springframework.util.StringUtils.isEmpty(expressCode)){
+                shipmentExtra.setVendCustID(expressCode);
+            }else{
+                shipmentExtra.setVendCustID(TradeConstants.OPTIONAL_VEND_CUST_ID);
+            }
         }
+        shipmentExtra.setOrderHkExpressCode(shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE));
+        shipmentExtra.setOrderHkExpressName(shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME));
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
 
         shipment.setExtra(extraMap);

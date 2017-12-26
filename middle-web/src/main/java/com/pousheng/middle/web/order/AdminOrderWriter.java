@@ -445,6 +445,10 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/choose/hk/express/code",method = RequestMethod.PUT)
     @OperationLogType("选择快递商")
     public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode,@RequestParam String expressName,@RequestParam @OperationLogParam Long shopOrderId){
+        //只有订单处于待处理状态且没有有效的发货单时才可以选择快递
+        if(!orderReadLogic.isShipmentCreatedForShopOrder(shopOrderId)){
+            throw new JsonResponseException("shipment.exist.can.not.edit.express.code");
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Map<String, String> extraMap = shopOrder.getExtra();
         extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, hkExpressCode);

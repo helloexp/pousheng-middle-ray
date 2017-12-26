@@ -669,7 +669,7 @@ public class Shipments {
         //发货单的订单总金额
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-
+        shipmentExtra.setIsStepOrder(shopOrder.getExtra().get(TradeConstants.IS_STEP_ORDER));
         shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
         //物流编码

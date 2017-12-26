@@ -22,6 +22,7 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
+ * 发货单发货后用于扣减库存
  * Created by tony on 2017/7/13.
  * pousheng-middle
  */

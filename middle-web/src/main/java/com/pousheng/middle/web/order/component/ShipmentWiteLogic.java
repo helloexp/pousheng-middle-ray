@@ -249,7 +249,7 @@ public class ShipmentWiteLogic {
         for (WarehouseShipment warehouseShipment:warehouseShipments){
 
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
-            //抛出一个事件,修改子单和总单的状态,待处理数量,并同步恒康
+            //修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId!=null){
                 Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
                 if (!shipmentRes.isSuccess()) {

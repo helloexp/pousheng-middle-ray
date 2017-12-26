@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
+import com.pousheng.middle.order.enums.Municipality;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.utils.Arguments;
@@ -16,6 +17,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import static com.pousheng.middle.order.enums.Municipality.SHANGHAI;
 
 /**
  * Created by cp on 9/4/17
@@ -31,6 +35,15 @@ public class ReceiverInfoCompleter {
         ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
         handleResult.setSuccess(Boolean.TRUE);
         List<String> errors = Lists.newArrayList();
+        //特殊处理直辖市,京东市一级的地址是区，用省的字段填充市
+        List<String> municipalities = Lists.newArrayList(Municipality.SHANGHAI.getName(),Municipality.SHANGHAI.getDesc(),Municipality.BEIJING.getName(),Municipality.BEIJING.getDesc()
+                ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
+        if (municipalities.contains(receiverInfo.getProvince())){
+            if (!municipalities.contains(receiverInfo.getCity())){
+                receiverInfo.setCity(receiverInfo.getProvince());
+                receiverInfo.setRegion(receiverInfo.getCity());
+            }
+        }
 
         //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
         Long provinceId = queryAddressId(1L,receiverInfo.getProvince());
@@ -58,7 +71,7 @@ public class ReceiverInfoCompleter {
                 errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
             }
         }
-        
+
         handleResult.setErrors(errors);
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));

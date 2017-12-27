@@ -24,7 +24,7 @@ import org.springframework.context.annotation.Import;
  * Date: 20/04/2017
  */
 @Configuration
-@ComponentScan({"com.pousheng.middle.shop.impl","com.pousheng.middle.item","io.terminus.search.api"})
+@ComponentScan({"com.pousheng.middle.shop.impl","com.pousheng.middle.item","io.terminus.search.api","com.pousheng.middle.shop.cacher"})
 @Import({ItemAutoConfig.class})
 @EnableConfigurationProperties({
         SearchSkuTemplateProperties.class

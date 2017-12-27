@@ -1,30 +1,36 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
+import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
-import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
+import com.pousheng.middle.web.warehouses.Warehouses;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
+import javax.xml.ws.Dispatch;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -36,35 +42,38 @@ import java.util.stream.Collectors;
  * 4、判断是否有整单发货的仓，如果没有则进入下个规则，如果有则判断个数，如果只有一个则该仓发货，如果有多个则需要根据用户收货地址找出距离用户最近的一个仓
  * Created by songrenfei on 2017/12/22
  */
+@Component
 @Slf4j
 public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
     @Autowired
-    private AddressGpsReadService addressGpsReadService;
+    private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
     @Autowired
     private WarehouseCacher warehouseCacher;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private DispatchComponent dispatchComponent;
+
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
-        //电商在售可用仓，从上个规则传递过来。 // TODO: 2017/12/23  解析context map
-        List<Long> onlineSaleWarehouseIds = Lists.newArrayList();
+        //从上个规则传递过来。
+        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
+        if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
+            warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        }
+        Set<Long>  alreadyQueryWarehouseIds = warehouseSkuCodeQuantityTable.rowKeySet();
+
         //省内的mpos仓,如果没有则进入下个规则
-        List<AddressGps> addressGpses = findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
+        List<AddressGps> addressGpses = warehouseAddressComponent.findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;
         }
 
         //过滤掉上个规则匹配到的电商在售仓,过滤后如果没有可用的范围则进入下个规则
-        List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !onlineSaleWarehouseIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
-        if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
-            return Boolean.TRUE;
-        }
-
+        List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !alreadyQueryWarehouseIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
         if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
             return Boolean.TRUE;
         }
@@ -77,7 +86,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<Warehouse> warehouses = findWarehouseByIds(warehouseIds);
+        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //查询仓代码
         List<String> stockCodes = Lists.transform(warehouses, new Function<Warehouse, String>() {
@@ -88,42 +97,45 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable SkuCodeAndQuantity input) {
-                return input.getSkuCode();
-            }
-        });
+        List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
+
 
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
-
-
-
-
-        return true;
-    }
-
-
-    private List<AddressGps> findWarehouseAddressGps(Long provinceId){
-
-        Response<List<AddressGps>> addressGpsListRes = addressGpsReadService.findByProvinceIdAndBusinessType(provinceId, AddressBusinessType.WAREHOUSE);
-        if(!addressGpsListRes.isSuccess()){
-            log.error("find addressGps by province id :{} for warehouse failed,  error:{}", provinceId,addressGpsListRes.getError());
-            throw new ServiceException(addressGpsListRes.getError());
+        if(CollectionUtils.isEmpty(skuStockInfos)){
+            return Boolean.TRUE;
         }
-        return addressGpsListRes.getResult();
 
-    }
-
-    private List<Warehouse> findWarehouseByIds(List<Long> ids){
-
-        Response<List<Warehouse>> warehouseListRes = warehouseReadService.findByIds(ids);
-        if(!warehouseListRes.isSuccess()){
-            log.error("find warehouse by ids:{} failed,  error:{}", ids,warehouseListRes.getError());
-            throw new ServiceException(warehouseListRes.getError());
+        // 放入 warehouseSkuCodeQuantityTable
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                warehouseSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+            }
         }
-        return warehouseListRes.getResult();
+
+
+        //判断是否有整单
+
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(skuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+
+        //没有整单发的
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Boolean.TRUE;
+        }
+
+
+
+        //如果只有一个
+        if(Objects.equal(warehouseShipments.size(),1)){
+            dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
+            return Boolean.FALSE;
+        }
+
+        String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        //如果有多个要选择最近的
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
+        dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
+
+        return Boolean.FALSE;
 
     }
 

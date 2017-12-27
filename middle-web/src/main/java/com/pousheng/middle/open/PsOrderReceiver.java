@@ -163,7 +163,20 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
-        return OpenClientOrderStatus.PAID.getValue();
+        switch (clientOrderStatus){
+            case PAID:
+                return OpenClientOrderStatus.PAID.getValue();
+            case SHIPPED:
+                return OpenClientOrderStatus.SHIPPED.getValue();
+            case NOT_PAID:
+                return OpenClientOrderStatus.NOT_PAID.getValue();
+            case CANCEL:
+                return OpenClientOrderStatus.CANCEL.getValue();
+            case CONFIRMED:
+                return OpenClientOrderStatus.CONFIRMED.getValue();
+            default:
+                return OpenClientOrderStatus.CANCEL.getValue();
+        }
     }
 
     @Override
@@ -356,12 +369,15 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected void saveParanaOrder(RichOrder richOrder) {
-        super.saveParanaOrder(richOrder);
+        RichSkusByShop orginRichSkusByShop = richOrder.getRichSkusByShops().get(0);
+        if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())){
+            super.saveParanaOrder(richOrder);
 
-        for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
-            //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
-            if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
-                syncReceiverInfo(richSkusByShop);
+            for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
+                //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
+                if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
+                    syncReceiverInfo(richSkusByShop);
+                }
             }
         }
     }

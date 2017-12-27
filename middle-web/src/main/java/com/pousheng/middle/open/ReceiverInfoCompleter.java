@@ -40,8 +40,8 @@ public class ReceiverInfoCompleter {
                 ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
         if (municipalities.contains(receiverInfo.getProvince())){
             if (!municipalities.contains(receiverInfo.getCity())){
-                receiverInfo.setCity(receiverInfo.getProvince());
                 receiverInfo.setRegion(receiverInfo.getCity());
+                receiverInfo.setCity(receiverInfo.getProvince());
             }
         }
 

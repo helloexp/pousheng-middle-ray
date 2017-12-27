@@ -117,6 +117,11 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 }
             }
         }
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //如果天猫拉取过来的退货退款的售后单就是success,这个时候中台做一下特殊处理
+                refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
+
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }
@@ -309,6 +314,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (refund.getOutId().contains("taobao")&&
                 Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
                 &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())){
+            return;
+        }
+        //淘宝的退货退款单只有订单退货完成待退款才可以更新发货单状态
+        if (refund.getOutId().contains("taobao")&&
+                Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
+                &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())){
             return;
         }
         Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.REFUND.getValue());

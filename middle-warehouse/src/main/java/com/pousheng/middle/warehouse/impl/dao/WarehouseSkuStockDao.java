@@ -49,7 +49,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public WarehouseSkuStock findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode) {
         return this.sqlSession.selectOne(sqlId("findByWarehouseIdAndSkuCode"),
-                ImmutableMap.of("businessId", warehouseId, "skuCode", skuCode));
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode));
     }
 
     /**
@@ -84,7 +84,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public boolean decreaseStock(Long warehouseId, String skuCode, Integer delta) {
         return this.sqlSession.update(sqlId("decreaseStock"),
-                ImmutableMap.of("businessId", warehouseId, "skuCode", skuCode, "delta", delta))
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "delta", delta))
                 == 1;
     }
 
@@ -98,7 +98,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public boolean lockStock(Long warehouseId, String skuCode, Integer delta) {
         return this.sqlSession.update(sqlId("lockStock"),
-                ImmutableMap.of("businessId", warehouseId, "skuCode", skuCode, "delta", delta))
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "delta", delta))
                 == 1;
     }
 
@@ -112,7 +112,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public boolean unlockStock(Long warehouseId, String skuCode, Integer delta) {
         return this.sqlSession.update(sqlId("unlockStock"),
-                ImmutableMap.of("businessId", warehouseId, "skuCode", skuCode, "delta", delta))
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "delta", delta))
                 == 1;
     }
 
@@ -137,7 +137,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
             this.create(wss);
         }else {
             this.sqlSession.update(sqlId("syncStock"),
-                    ImmutableMap.of("businessId", warehouseId, "skuCode", skuCode,
+                    ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode,
                             "erpStock", erpStock, "updatedAt", updatedAt));
         }
     }

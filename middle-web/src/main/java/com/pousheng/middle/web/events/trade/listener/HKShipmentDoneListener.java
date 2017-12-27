@@ -1,7 +1,5 @@
 package com.pousheng.middle.web.events.trade.listener;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -26,7 +24,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.List;
@@ -91,7 +88,7 @@ public class HKShipmentDoneListener {
                         .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
                 //获取发货单的状态
                 List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-                //判断订单是否已经全部发货了
+                //判断发货单是否已经全部发货了
                 int count=0;
                 for (Integer status:orderShipMentStatusList){
                     if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){

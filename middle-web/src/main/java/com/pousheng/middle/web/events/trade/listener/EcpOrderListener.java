@@ -1,7 +1,5 @@
 package com.pousheng.middle.web.events.trade.listener;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -11,7 +9,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
@@ -32,7 +29,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +36,7 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * 恒康第一个发货单发货完成之后需要将ecpOrderstatus状态从初始的代发货修改为已发货
+ * 同步电商发货事件，必须等到所有的发货单发货完成之后才会通知电商,天猫，官网会将所有的发货单发货到电商平台，苏宁，京东只会同步第一个发货单过去
  * Created by tony on 2017/7/13.
  * pousheng-middle
  */

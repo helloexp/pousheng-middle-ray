@@ -67,7 +67,7 @@ public class WarehouseWriteServiceImpl implements WarehouseWriteService {
         try {
             return Response.ok(warehouseDao.delete(warehouseId));
         } catch (Exception e) {
-            log.error("delete warehouse failed, businessId:{}, cause:{}", warehouseId, Throwables.getStackTraceAsString(e));
+            log.error("delete warehouse failed, warehouseId:{}, cause:{}", warehouseId, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.delete.fail");
         }
     }

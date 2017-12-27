@@ -1,9 +1,6 @@
 package com.pousheng.middle.order.dispatch.component;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
@@ -11,7 +8,6 @@ import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
-import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -82,18 +78,7 @@ public class WarehouseAddressComponent {
     public WarehouseShipment nearestWarehouse(List<WarehouseShipment> warehouseShipments, String address){
 
         //1、调用高德地图查询地址坐标
-        Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(address);
-        if(!locationRes.isSuccess()){
-            log.error("find location by address:{} fail,error:{}",address,locationRes.getError());
-            throw new ServiceException(locationRes.getError());
-        }
-
-        Optional<Location> locationOp = locationRes.getResult();
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
-            return null;
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(address);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
         for (WarehouseShipment warehouseShipment : warehouseShipments){

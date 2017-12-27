@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dispatch.dto;
 
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import lombok.Data;
 
@@ -26,6 +27,14 @@ public class DispatchOrderItemInfo implements Serializable{
      * 仓库发货
      */
     private List<WarehouseShipment> warehouseShipments;
+
+
+    /**
+     * 无法派单的商品
+     */
+    private List<SkuCodeAndQuantity> skuCodeAndQuantities;
+
+
 
 
 }

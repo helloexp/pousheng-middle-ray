@@ -1,17 +1,24 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Table;
+import com.pousheng.middle.gd.GDMapSearchService;
+import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.dispatch.dto.ShopShipment;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -29,6 +36,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class DispatchComponent {
 
+    @Autowired
+    private GDMapSearchService gdMapSearchService;
+
 
 
     private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
@@ -37,6 +47,32 @@ public class DispatchComponent {
             return input.getDistance();
         }
     });
+
+
+    private static final Ordering<DispatchWithPriority> byPriority = Ordering.natural().onResultOf(new Function<DispatchWithPriority, Double>() {
+        @Override
+        public Double apply(DispatchWithPriority input) {
+            return input.getPriority();
+        }
+    });
+
+
+    public Location getLocation(String address){
+        //1、调用高德地图查询地址坐标
+        Response<Optional<Location>> locationRes = gdMapSearchService.searchByAddress(address);
+        if(!locationRes.isSuccess()){
+            log.error("find location by address:{} fail,error:{}",address,locationRes.getError());
+            throw new ServiceException(locationRes.getError());
+        }
+
+        Optional<Location> locationOp = locationRes.getResult();
+        if(!locationOp.isPresent()){
+            log.error("not find location by address:{}",address);
+            return null;
+        }
+        return locationOp.get();
+    }
+
 
 
 
@@ -94,6 +130,11 @@ public class DispatchComponent {
 
     public List<DistanceDto> sortDistanceDto(List<DistanceDto> distanceDtos){
         return bydiscount.sortedCopy(distanceDtos);
+    }
+
+
+    public List<DispatchWithPriority> sortDispatchWithPriority(List<DispatchWithPriority> dispatchWithPriorities){
+        return byPriority.sortedCopy(dispatchWithPriorities);
     }
 
     public DistanceDto getDistance(AddressGps addressGps, String longitude, String latitude){

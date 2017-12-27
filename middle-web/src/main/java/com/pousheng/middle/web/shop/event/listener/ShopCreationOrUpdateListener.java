@@ -1,11 +1,11 @@
 package com.pousheng.middle.web.shop.event.listener;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
@@ -51,6 +51,8 @@ public class ShopCreationOrUpdateListener {
     private ShopWriteService shopWriteService;
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
+    @Autowired
+    private DispatchComponent dispatchComponent;
 
     @PostConstruct
     private void register() {
@@ -131,19 +133,7 @@ public class ShopCreationOrUpdateListener {
 
 
         //2、调用高德地图查询地址坐标
-
-        Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(addressDto.getAddress());
-        if(!locationRes.isSuccess()){
-            log.error("find location by address:{} fail,error:{}",addressDto.getAddress(),locationRes.getError());
-            return null;
-        }
-
-        Optional<Location> locationOp = locationRes.getResult();
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",addressDto.getAddress());
-            return null;
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(addressDto.getAddress());
 
         //3、创建门店地址定位信息
         AddressGps addressGps = new AddressGps();

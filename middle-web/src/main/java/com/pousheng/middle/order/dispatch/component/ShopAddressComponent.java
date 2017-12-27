@@ -80,18 +80,7 @@ public class ShopAddressComponent {
     public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address){
 
         //1、调用高德地图查询地址坐标
-        Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(address);
-        if(!locationRes.isSuccess()){
-            log.error("find location by address:{} fail,error:{}",address,locationRes.getError());
-            throw new ServiceException(locationRes.getError());
-        }
-
-        Optional<Location> locationOp = locationRes.getResult();
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
-            return null;
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(address);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());
         for (ShopShipment shopShipment : shopShipments){

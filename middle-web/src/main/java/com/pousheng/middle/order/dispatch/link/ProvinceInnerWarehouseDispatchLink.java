@@ -17,10 +17,12 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.warehouses.Warehouses;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
@@ -28,6 +30,7 @@ import javax.xml.ws.Dispatch;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -39,6 +42,7 @@ import java.util.stream.Collectors;
  * 4、判断是否有整单发货的仓，如果没有则进入下个规则，如果有则判断个数，如果只有一个则该仓发货，如果有多个则需要根据用户收货地址找出距离用户最近的一个仓
  * Created by songrenfei on 2017/12/22
  */
+@Component
 @Slf4j
 public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
@@ -55,15 +59,12 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
-        //电商在售可用仓，从上个规则传递过来。
-        List<Warehouse> onlineSaleWarehouseList = (List<Warehouse>) context.get(DispatchContants.MPOS_ONLINE_SALE_WAREHOUSE);
-        List<Long> onlineSaleWarehouseIds = Lists.transform(onlineSaleWarehouseList, new Function<Warehouse, Long>() {
-            @Nullable
-            @Override
-            public Long apply(@Nullable Warehouse input) {
-                return input.getId();
-            }
-        });
+        //从上个规则传递过来。
+        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
+        if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
+            warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        }
+        Set<Long>  alreadyQueryWarehouseIds = warehouseSkuCodeQuantityTable.rowKeySet();
 
         //省内的mpos仓,如果没有则进入下个规则
         List<AddressGps> addressGpses = warehouseAddressComponent.findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
@@ -72,7 +73,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         //过滤掉上个规则匹配到的电商在售仓,过滤后如果没有可用的范围则进入下个规则
-        List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !onlineSaleWarehouseIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
+        List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !alreadyQueryWarehouseIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
         if(CollectionUtils.isEmpty(rangeInnerAddressGps)){
             return Boolean.TRUE;
         }
@@ -98,13 +99,20 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
-
 
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
         if(CollectionUtils.isEmpty(skuStockInfos)){
             return Boolean.TRUE;
         }
+
+        // 放入 warehouseSkuCodeQuantityTable
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                warehouseSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+            }
+        }
+
+
         //判断是否有整单
 
         List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(skuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
@@ -113,6 +121,8 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Boolean.TRUE;
         }
+
+
 
         //如果只有一个
         if(Objects.equal(warehouseShipments.size(),1)){

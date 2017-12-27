@@ -9,8 +9,8 @@
         <id column="id" property="id"/>
         <result column="company_code" property="companyCode"/>
         <result column="company_name" property="companyName"/>
-        <result column="warehouse_id" property="businessId"/>
-        <result column="warehouse_name" property="businessName"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
         
@@ -29,15 +29,15 @@
     </sql>
 
     <sql id="vals">
-        #{companyCode}, #{companyName}, #{businessId}, #{businessName}, now(), now()
+        #{companyCode}, #{companyName}, #{warehouseId}, #{warehouseName}, now(), now()
     </sql>
 
     <sql id="queryCondition">
 
         
-        <if test="businessId != null">and `warehouse_id` = #{businessId}</if>
+        <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
         
-        <if test="businessName != null">and `warehouse_name` = #{businessName}</if>
+        <if test="warehouseName != null">and `warehouse_name` = #{warehouseName}</if>
         
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         
@@ -90,8 +90,8 @@
         UPDATE
         <include refid="tb"/>
         <set>
-            <if test="businessId != null">warehouse_id = #{businessId},</if>
-            <if test="businessName != null">warehouse_name = #{businessName},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
+            <if test="warehouseName != null">warehouse_name = #{warehouseName},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}

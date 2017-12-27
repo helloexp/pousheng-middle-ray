@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dispatch.dto;
 
+import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import lombok.Data;
@@ -32,7 +33,7 @@ public class DispatchOrderItemInfo implements Serializable{
     /**
      * 无法派单的商品
      */
-    private List<SkuCodeAndQuantity> skuCodeAndQuantities;
+    private List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
 
 
 

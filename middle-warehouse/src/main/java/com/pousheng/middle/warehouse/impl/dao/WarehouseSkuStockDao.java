@@ -71,7 +71,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public List<WarehouseSkuStock> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes) {
         return this.sqlSession.selectList(sqlId("findByWarehouseIdAndSkuCodes"),
-                ImmutableMap.of("businessId", warehouseId, "skuCodes", skuCodes));
+                ImmutableMap.of("warehouseId", warehouseId, "skuCodes", skuCodes));
     }
 
     /**

@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
@@ -11,9 +12,12 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
@@ -30,6 +34,8 @@ import java.util.stream.Collectors;
  * 3、判断是否有整单发货的门店，如果没有则进入下个规则，如果有则判断个数，如果只有一个则该门店发货，如果有多个则需要根据用户收货地址找出距离用户最近的一个门店
  * Created by songrenfei on 2017/12/23
  */
+@Component
+@Slf4j
 public class AllShopDispatchlink implements DispatchOrderLink{
 
     @Autowired
@@ -43,6 +49,9 @@ public class AllShopDispatchlink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         //拒绝过发货单的mpos门店
         List<Long> rejectShopIds = (List<Long>) context.get(DispatchContants.REJECT_SHOP_IDS);
+        if(CollectionUtils.isEmpty(rejectShopIds)){
+            rejectShopIds = Lists.newArrayList();
+        }
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
@@ -52,12 +61,22 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         }
 
         Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
-
+        if(Arguments.isNull(shopSkuCodeQuantityTable)){
+            shopSkuCodeQuantityTable = HashBasedTable.create();
+        }
 
         List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQuery(skuStockInfos,shopSkuCodeQuantityTable,rejectShopIds);
         if(CollectionUtils.isEmpty(filterSkuStockInfos)){
             return Boolean.TRUE;
         }
+
+        //放入 shopSkuCodeQuantityTable
+        for (HkSkuStockInfo hkSkuStockInfo : filterSkuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                shopSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+            }
+        }
+
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(filterSkuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
 

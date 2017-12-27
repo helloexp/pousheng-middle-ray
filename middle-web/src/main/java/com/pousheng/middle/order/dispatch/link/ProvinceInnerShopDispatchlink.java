@@ -19,6 +19,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
@@ -36,6 +37,7 @@ import java.util.stream.Collectors;
  * 4、判断是否有整单发货的门店，如果没有则进入下个规则（记录下省内的门店），如果有则判断个数，如果只有一个则该门店发货，如果有多个则需要根据用户收货地址找出距离用户最近的一个门店
  * Created by songrenfei on 2017/12/23
  */
+@Component
 @Slf4j
 public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
     @Autowired
@@ -48,14 +50,15 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
+        List<Long> rejectShopIds = Lists.newArrayList();//todo 拒绝门店整理
+        context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
+
         //省内的mpos门店,如果没有则进入下个规则
         List<AddressGps> addressGpses = shopAddressComponent.findShopAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;
         }
 
-        List<Long> rejectShopIds = Lists.newArrayList();
-        context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
 
         //过滤掉该订单下已拒绝过的门店,过滤后如果没有可用的范围则进入下个规则
         List<AddressGps> rangeInnerAddressGps = addressGpses.stream().filter(addressGps -> !rejectShopIds.contains(addressGps.getBusinessId())).collect(Collectors.toList());
@@ -90,6 +93,11 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
         Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                shopSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+            }
+        }
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(skuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);

@@ -2,7 +2,6 @@ package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.*;
-import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
@@ -15,13 +14,15 @@ import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.List;
@@ -36,17 +37,16 @@ import java.util.Map;
  * 4、组合拆单情况下距离和最短优先
  * Created by songrenfei on 2017/12/23
  */
+@Component
 @Slf4j
 public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
-    @Autowired
-    private GDMapSearchService gdMapSearchService;
+
     @Autowired
     private AddressGpsCacher addressGpsCacher;
     @Autowired
     private DispatchComponent dispatchComponent;
-
-    @RpcConsumer
+    @Autowired
     private WarehouseCacher warehouseCacher;
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -59,11 +59,20 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
         }
 
-        List<DispatchWithPriority> dispatchWithPriorities = Lists.newArrayList();
+        //全部的仓和门店的距离信息
+        List<DispatchWithPriority> allDispatchWithPriorities = Lists.newArrayList();
+
+        //全部的仓和门店
+        Table<String, String, Integer> allSkuCodeQuantityTable = HashBasedTable.create();
 
 
         //全部仓及商品信息
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
+        if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
+            warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        }
+        //调用高德地图查询地址坐标
+        Location location = dispatchComponent.getLocation(address);
 
         ListMultimap<Long, String> byWarehouseId = ArrayListMultimap.create();
         //最少拆单中发货件数最多的仓
@@ -78,42 +87,70 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             }*/
 
             DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
-            dispatchWithPriority.setWarehouseOrShopId("warehouse:"+warehouseId);
-            dispatchWithPriority.setPriority(getDistance(warehouseId,AddressBusinessType.WAREHOUSE,address));
-            dispatchWithPriorities.add(dispatchWithPriority);
+            String warehouseOrShopId = "warehouse:"+warehouseId;
+            dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
+            dispatchWithPriority.setPriority(getDistance(warehouseId,AddressBusinessType.WAREHOUSE,location));
+            allDispatchWithPriorities.add(dispatchWithPriority);
+            //添加到 allSkuCodeQuantityTable
+            for (String skuCode : current.elementSet()) {
+                Integer stock = 0;
+                Object stockObject = warehouseSkuCodeQuantityTable.get(warehouseId,skuCode);
+                if(!Arguments.isNull(stockObject)){
+                    stock = (Integer) stockObject;
+                }
+                allSkuCodeQuantityTable.put(warehouseOrShopId,skuCode,stock);
+            }
 
         }
 
-        List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(dispatchWithPriorities);
+        List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(allDispatchWithPriorities);
 
-        DispatchWithPriority nearestWarehouse = warehouseDispatchWithPriority.get(0);
+        //最远仓的距离
+        Double farthestWarehouseDistance = 0.0;
+        if(!CollectionUtils.isEmpty(warehouseDispatchWithPriority)){
+            DispatchWithPriority farthestWarehouse = warehouseDispatchWithPriority.get(warehouseDispatchWithPriority.size()-1);
+            farthestWarehouseDistance = farthestWarehouse.getPriority();
+        }
         //全部门店及商品信息
         Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
-
+        if(Arguments.isNull(shopSkuCodeQuantityTable)){
+            shopSkuCodeQuantityTable = HashBasedTable.create();
+        }
         ListMultimap<Long, String> byShopId = ArrayListMultimap.create();
         //最少拆单中发货件数最多的仓
         for (Long shopId : shopSkuCodeQuantityTable.rowKeySet()) {
             //本仓库当前可以发货的数量
-            for (String skuCode : current.elementSet()) {
+            /*for (String skuCode : current.elementSet()) {
                 int required = current.count(skuCode);
                 int stock = shopSkuCodeQuantityTable.get(shopId, skuCode);
                 if(stock>=required){
                     byShopId.put(shopId,skuCode);
                 }
+            }*/
+
+            DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
+            String warehouseOrShopId = "shop:"+shopId;
+            dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
+            //店铺的距离永远按比仓的距离远，实现 先仓后店
+            dispatchWithPriority.setPriority(getDistance(shopId,AddressBusinessType.SHOP,location)+farthestWarehouseDistance);
+            allDispatchWithPriorities.add(dispatchWithPriority);
+            //添加到 allSkuCodeQuantityTable
+            for (String skuCode : current.elementSet()) {
+                int stock =shopSkuCodeQuantityTable.get(shopId,skuCode);
+                allSkuCodeQuantityTable.put(warehouseOrShopId,skuCode,stock);
             }
         }
 
 
+        List<DispatchWithPriority> allDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(allDispatchWithPriorities);
 
-        packageShipmentInfo(dispatchOrderItemInfo,warehouseSkuCodeQuantityTable,skuCodeAndQuantities,dispatchWithPriorities);
-
-
+        packageShipmentInfo(dispatchOrderItemInfo,allSkuCodeQuantityTable,skuCodeAndQuantities,allDispatchWithPriority);
 
         return false;
     }
 
 
-    private void packageShipmentInfo(DispatchOrderItemInfo dispatchOrderItemInfo,Table<String, String, Integer> widskucode2stock,List<SkuCodeAndQuantity> skuCodeAndQuantities,List<DispatchWithPriority> dispatchWithPriorities){
+    private void packageShipmentInfo(DispatchOrderItemInfo dispatchOrderItemInfo,Table<String, String, Integer> allSkuCodeQuantityTable,List<SkuCodeAndQuantity> skuCodeAndQuantities,List<DispatchWithPriority> dispatchWithPriorities){
 
         //skuCode及数量
         Multiset<String> current = ConcurrentHashMultiset.create();
@@ -136,7 +173,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                 int count = 0;
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
-                    int stock = widskucode2stock.get(warehouseOrShopId, skuCode);
+                    int stock = allSkuCodeQuantityTable.get(warehouseOrShopId, skuCode);
                     int actual = stock >= required ? 1 : 0;
                     count += actual;
                 }
@@ -154,10 +191,11 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                     log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
                     SkuCodeAndQuantity adq = new SkuCodeAndQuantity();
                     adq.setSkuCode(skuCode);
-                    adq.setQuantity(current.count(skuAndQuantity));
+                    adq.setQuantity(current.count(skuCode));
                     skuAndQuantity.add(adq);
                 }
                 dispatchOrderItemInfo.setSkuCodeAndQuantities(skuAndQuantity);
+                break;
             } else {//分配发货仓库
                 List<String> typeAndId = Splitters.COLON.splitToList(candidateWarehouseOrShopId);
                 String type = typeAndId.get(0);
@@ -166,7 +204,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                 List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
-                    int stock = widskucode2stock.get(candidateWarehouseOrShopId, skuCode);
+                    int stock = allSkuCodeQuantityTable.get(candidateWarehouseOrShopId, skuCode);
                     int actual = stock >= required ? required : 0;
 
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
@@ -207,13 +245,12 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
      * 获取距离用户收货地址到门店或仓的距离
      * @param businessId 门店或仓id
      * @param addressBusinessType {@link AddressBusinessType}
-     * @param address 用户收货地址
+     * @param location 用户收货地址坐标
      * @return 距离
      */
-    public double getDistance(Long businessId,AddressBusinessType addressBusinessType, String address){
+    public double getDistance(Long businessId,AddressBusinessType addressBusinessType, Location location){
 
-        //1、调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address);
+
         AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(businessId, addressBusinessType.getValue());
         return dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()).getDistance();
     }

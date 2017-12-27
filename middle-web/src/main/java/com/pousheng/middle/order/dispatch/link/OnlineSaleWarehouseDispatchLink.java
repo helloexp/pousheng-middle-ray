@@ -5,6 +5,7 @@ import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
@@ -21,6 +22,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
@@ -38,6 +40,7 @@ import java.util.stream.Collectors;
  * 如果不能整单发货则记录到所匹配的电商在售仓集合中，供下个规则使用。
  * Created by songrenfei on 2017/12/23
  */
+@Component
 @Slf4j
 public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
@@ -64,6 +67,8 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
+
+
         List<Long> warehouseIds = Lists.transform(onlineSaleWarehouses, new Function<WarehouseSkuStock, Long>() {
             @Nullable
             @Override
@@ -73,7 +78,6 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         });
 
         List<Warehouse> warehouseList = findWarehouseByIds(warehouseIds);
-        context.put(DispatchContants.MPOS_ONLINE_SALE_WAREHOUSE, (Serializable) warehouseList);
 
         //过滤掉非mpos仓,过滤后如果没有则进入下个规则
         List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
@@ -81,7 +85,24 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
+        //电商mpos 仓id集合
+        List<Long> mposOnlineSaleWarehouseIds = Lists.transform(mposOnlineSaleWarehouse, new Function<Warehouse, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable Warehouse input) {
+                return input.getId();
+            }
+        });
+
+
+        //仓库 商品 库存
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        for (WarehouseSkuStock warehouseSkuStock : onlineSaleWarehouses){
+            //过滤掉非mpos的
+            if(mposOnlineSaleWarehouseIds.contains(warehouseSkuStock.getWarehouseId())){
+                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(warehouseSkuStock.getAvailStock().toString()));
+            }
+        }
         context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
 
         //判断是否可以整单发货
@@ -90,7 +111,6 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Boolean.TRUE;
         }
-
 
         //如果只有一个
         if(Objects.equal(warehouseShipments.size(),1)){

@@ -8,7 +8,7 @@
     <resultMap id="WarehouseRuleItemMap" type="WarehouseRuleItem">
         <id column="id" property="id"/>
         <result column="rule_id" property="ruleId"/>
-        <result column="warehouse_id" property="businessId"/>
+        <result column="warehouse_id" property="warehouseId"/>
         <result column="name" property="name"/>
         <result column="priority" property="priority"/>
         <result column="created_at" property="createdAt"/>
@@ -29,14 +29,14 @@
     </sql>
 
     <sql id="vals">
-        #{ruleId}, #{businessId}, #{name}, #{priority}, now(), now()
+        #{ruleId}, #{warehouseId}, #{name}, #{priority}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         
         <if test="ruleId != null">and `rule_id` = #{ruleId}</if>
         
-        <if test="businessId != null">and `warehouse_id` = #{businessId}</if>
+        <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
         
         <if test="name != null">and `name` = #{name}</if>
         
@@ -83,7 +83,7 @@
         <include refid="tb"/>
         <set>
             <if test="ruleId != null">rule_id = #{ruleId},</if>
-            <if test="businessId != null">warehouse_id = #{businessId},</if>
+            <if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="name != null">name = #{name},</if>
             <if test="priority != null">priority = #{priority},</if>
             updated_at=now()

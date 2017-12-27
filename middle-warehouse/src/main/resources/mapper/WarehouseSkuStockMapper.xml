@@ -7,7 +7,7 @@
 <mapper namespace="WarehouseSkuStock">
     <resultMap id="WarehouseSkuStockMap" type="WarehouseSkuStock">
         <id column="id" property="id"/>
-        <result column="warehouse_id" property="businessId"/>
+        <result column="warehouse_id" property="warehouseId"/>
         <result column="sku_code" property="skuCode"/>
         <result column="base_stock" property="baseStock"/>
         <result column="avail_stock" property="availStock"/>
@@ -31,12 +31,12 @@
     </sql>
 
     <sql id="vals">
-        #{businessId}, #{skuCode}, #{baseStock}, #{availStock}, #{lockedStock}, #{syncAt}, now(), now()
+        #{warehouseId}, #{skuCode}, #{baseStock}, #{availStock}, #{lockedStock}, #{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         
-        <if test="businessId != null">and `warehouse_id` = #{businessId}</if>
+        <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
 
         <if test="shopId!=null"> and `shop_id`=#{shopGroupId}</if>
         
@@ -87,14 +87,14 @@
     <select id="findByWarehouseIdAndSkuCode" parameterType="map" resultMap="WarehouseSkuStockMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE  warehouse_id= #{businessId} and sku_code=#{skuCode}
+        WHERE  warehouse_id= #{warehouseId} and sku_code=#{skuCode}
     </select>
 
     <update id="update" parameterType="WarehouseSkuStock">
         UPDATE
         <include refid="tb"/>
         <set>
-            <!--<if test="businessId != null">warehouse_id = #{businessId},</if>
+            <!--<if test="warehouseId != null">warehouse_id = #{warehouseId},</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>-->
             <if test="baseStock != null">base_stock = #{baseStock},</if>
             <if test="availStock != null">avail_stock = #{availStock},</if>
@@ -109,7 +109,7 @@
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock - #{delta}
-        WHERE warehouse_id= #{businessId} and sku_code=#{skuCode}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
         and
         <![CDATA[ avail_stock>=#{delta} ]]>
     </update>
@@ -118,7 +118,7 @@
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock - #{delta}, locked_stock = locked_stock + #{delta}
-        WHERE warehouse_id= #{businessId} and sku_code=#{skuCode} and
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
         <![CDATA[ avail_stock>=#{delta} ]]>
     </update>
 
@@ -126,14 +126,14 @@
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock + #{delta}, locked_stock = locked_stock - #{delta}
-        WHERE warehouse_id= #{businessId} and sku_code=#{skuCode}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
     </update>
 
     <update id="syncStock" parameterType="map">
         UPDATE
         <include refid="tb"/>
         SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{updatedAt}
-        WHERE warehouse_id= #{businessId} and sku_code=#{skuCode} and
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
         <![CDATA[ sync_at < #{updatedAt} ]]>
     </update>
 
@@ -192,7 +192,7 @@
     <select id="findByWarehouseIdAndSkuCodes" parameterType="long" resultMap="WarehouseSkuStockMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE  warehouse_id= #{businessId} and
+        WHERE  warehouse_id= #{warehouseId} and
         sku_code IN
         <foreach item="skuCode" collection="skuCodes" open="(" separator="," close=")">
             #{skuCode}

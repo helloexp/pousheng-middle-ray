@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Function;
 import com.google.common.base.Objects;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
@@ -15,10 +16,12 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
@@ -36,6 +39,7 @@ import java.util.stream.Collectors;
  * 3、判断是否有整单发货的仓，如果没有则进入下个规则，如果有则判断个数，如果只有一个则该仓发货，如果有多个则需要根据用户收货地址找出距离用户最近的一个仓
  * Created by songrenfei on 2017/12/22
  */
+@Component
 @Slf4j
 public class AllWarehouseDispatchLink implements DispatchOrderLink{
 
@@ -56,7 +60,9 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
-
+        if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
+            warehouseSkuCodeQuantityTable = HashBasedTable.create();
+        }
         List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
             @Nullable
             @Override
@@ -74,6 +80,14 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(filterSkuStockInfos)){
             return Boolean.TRUE;
         }
+
+        // 放入 warehouseSkuCodeQuantityTable
+        for (HkSkuStockInfo hkSkuStockInfo : filterSkuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                warehouseSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+            }
+        }
+
         //判断是否有整单
         List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(filterSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 

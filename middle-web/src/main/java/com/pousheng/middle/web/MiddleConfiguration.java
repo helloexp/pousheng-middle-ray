@@ -14,6 +14,8 @@ import com.pousheng.middle.gd.GDMapToken;
 import com.pousheng.middle.interceptors.LoginInterceptor;
 import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
+import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
+import com.pousheng.middle.order.dispatch.link.*;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
@@ -133,6 +135,24 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
                 categoryAttributeNoCacher);
         poushengPipelineConfigurer.configureRuleExecutors(ruleExecutorRegistry);
         return poushengPipelineConfigurer;
+    }
+
+    @Bean
+    public DispatchOrderChain dispatchOrderChain(AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
+                                                 AllWarehouseDispatchLink allWarehouseDispatchLink, OnlineSaleWarehouseDispatchLink onlineSaleWarehouseDispatchLink,
+                                                 ProvinceInnerShopDispatchlink provinceInnerShopDispatchlink,ProvinceInnerWarehouseDispatchLink provinceInnerWarehouseDispatchLink,
+                                                 ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
+        DispatchOrderChain dispatchOrderChain = new DispatchOrderChain();
+        List<DispatchOrderLink> dispatchOrderLinks = Lists.newArrayList();
+        dispatchOrderLinks.add(appointShopDispatchLink);
+        dispatchOrderLinks.add(onlineSaleWarehouseDispatchLink);
+        dispatchOrderLinks.add(provinceInnerWarehouseDispatchLink);
+        dispatchOrderLinks.add(allWarehouseDispatchLink);
+        dispatchOrderLinks.add(provinceInnerShopDispatchlink);
+        dispatchOrderLinks.add(allShopDispatchlink);
+        dispatchOrderLinks.add(shopOrWarehouseDispatchlink);
+        dispatchOrderChain.setDispatchOrderLinks(dispatchOrderLinks);
+        return dispatchOrderChain;
     }
 
 

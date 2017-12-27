@@ -852,6 +852,11 @@ public class RefundWriteLogic {
         shipmentItems.forEach(shipmentItem -> {
             //获取所有需要补发的RefundItem
             if (changeSkuCodes.contains(shipmentItem.getSkuCode())){
+                //要限制丢件补发的数量
+                int lostQuantity =skuCodesAndQuantity.get(shipmentItem.getSkuCode())==null?0:skuCodesAndQuantity.get(shipmentItem.getSkuCode());
+                if (lostQuantity>shipmentItem.getQuantity()){
+                    throw new JsonResponseException("lost.refund.quantity.can.not.larger.than.shipment.quanity");
+                }
                 RefundItem refundItem = new RefundItem();
                 BeanMapper.copy(shipmentItem,refundItem);
                 refundItem.setApplyQuantity(skuCodesAndQuantity.get(shipmentItem.getSkuCode()));

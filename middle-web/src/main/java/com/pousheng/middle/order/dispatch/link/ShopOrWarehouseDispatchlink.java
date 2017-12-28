@@ -70,6 +70,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
+            context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
         //调用高德地图查询地址坐标
         Location location = dispatchComponent.getLocation(address);
@@ -115,6 +116,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
         Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(shopSkuCodeQuantityTable)){
             shopSkuCodeQuantityTable = HashBasedTable.create();
+            context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         }
         ListMultimap<Long, String> byShopId = ArrayListMultimap.create();
         //最少拆单中发货件数最多的仓

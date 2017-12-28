@@ -62,6 +62,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
+            context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
         List<String> skuCodes = Lists.transform(skuCodeAndQuantities, new Function<SkuCodeAndQuantity, String>() {
             @Nullable

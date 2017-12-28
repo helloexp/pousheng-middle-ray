@@ -128,12 +128,13 @@ public class OuterOrderReceiver {
             skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
-        try {
-            return dispatchOrderEngine.toDispatchOrder(shopOrderRes.getResult(),receiveInfosRes.getResult().get(0),skuCodeAndQuantities);
-        } catch (Exception e) {
-            log.error("dispatch order:{} fail,cause:{}", orderId,Throwables.getStackTraceAsString(e));
-            throw new JsonResponseException("dispatch.fail");
+        Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrderRes.getResult(),receiveInfosRes.getResult().get(0),skuCodeAndQuantities);
+        if(!response.isSuccess()){
+            log.error("dispatch fail,error:{}",response.getError());
+            throw new JsonResponseException(response.getError());
         }
+        return response.getResult();
+
     }
 
 }

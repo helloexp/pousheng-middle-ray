@@ -63,6 +63,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(shopSkuCodeQuantityTable)){
             shopSkuCodeQuantityTable = HashBasedTable.create();
+            context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         }
 
         List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQuery(skuStockInfos,shopSkuCodeQuantityTable,rejectShopIds);

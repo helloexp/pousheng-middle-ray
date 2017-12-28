@@ -51,6 +51,11 @@ public class PoushengWarehouse implements Serializable {
     private String stock_address;
 
     /**
+     * 仓库地址省市区信息 例如：上海直辖市.上海市.虹口区
+     */
+    private String area_full_name;
+
+    /**
      * 仓库类型
      */
     private int stock_type;

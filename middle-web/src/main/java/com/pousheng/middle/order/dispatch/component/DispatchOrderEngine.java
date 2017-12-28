@@ -1,12 +1,13 @@
 package com.pousheng.middle.order.dispatch.component;
 
-import com.google.common.base.MoreObjects;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +31,7 @@ public class DispatchOrderEngine {
     private ApplicationContext applicationContext;
 
 
-    public DispatchOrderItemInfo toDispatchOrder(ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities) throws Exception {
+    public Response<DispatchOrderItemInfo> toDispatchOrder(ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities){
 
         //因为这个的scope是prototype, 所以需要每次从容器中获取新实例
         DispatchLinkInvocation dispatchLinkInvocation = applicationContext.getBean(DispatchLinkInvocation.class);
@@ -43,18 +44,20 @@ public class DispatchOrderEngine {
         dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
         Map<String, Serializable> context = Maps.newHashMap();
         initDispatchOrderItemInfo(dispatchOrderItemInfo,context);
-        boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context);
+        try {
+            boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context);
 
-        if(success){
-            //todo 创建发货单
-            log.info("dispatchOrderItemInfo: " ,dispatchOrderItemInfo);
+            if(success){
+                log.info("dispatchOrderItemInfo: " ,dispatchOrderItemInfo);
+                return Response.ok(dispatchOrderItemInfo);
+            }
+            log.error("order:{} not matching any dispatch link",shopOrder.getId());
+            return Response.fail("dispatch.order.fail");
 
-            return dispatchOrderItemInfo;
-
+        }catch (Exception e){
+            log.error("dispatch order:{} fail,cause:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));
+            return Response.fail("dispatch.order.fail");
         }
-
-        return null;
-
     }
 
     private void initDispatchOrderItemInfo(DispatchOrderItemInfo dispatchOrderItemInfo,Map<String, Serializable> context){

@@ -84,7 +84,7 @@ public class FireCall {
 
 
     @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response synchronizeWarehouse(@RequestParam(name = "start",required = false,defaultValue = "") String start,
+    public Boolean synchronizeWarehouse(@RequestParam(name = "start",required = false,defaultValue = "") String start,
                                          @RequestParam(name = "end", required = false,defaultValue = "") String end){
         Date from= DateTime.now().withTimeAtStartOfDay().toDate();
         if (StringUtils.hasText(start)){
@@ -97,7 +97,7 @@ public class FireCall {
         log.info("begin to synchronize warehouse from {} to {}", from, to);
         int warehouseCount = warehouseImporter.process(from, to);
         log.info("synchronized {} warehouses", warehouseCount);
-        return Response.ok();
+        return Boolean.TRUE;
 
     }
 

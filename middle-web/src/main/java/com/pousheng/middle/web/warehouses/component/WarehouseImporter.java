@@ -15,6 +15,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.Splitters;
@@ -142,7 +143,12 @@ public class WarehouseImporter {
             address = pw.getStock_address();
         }
         //2、调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address);
+        Optional<Location> locationOp = dispatchComponent.getLocation(address);
+        if(!locationOp.isPresent()){
+            log.error("[ADDRESS-LOCATION]:not find warehouse(id:{}) location by address:{}",warehouseId,address);
+            return;
+        }
+        Location location = locationOp.get();
         //3、创建门店地址定位信息
         AddressGps addressGps = new AddressGps();
         addressGps.setLatitude(location.getLat());

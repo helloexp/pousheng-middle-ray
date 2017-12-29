@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.*;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
@@ -14,6 +15,7 @@ import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -73,7 +75,12 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
         //调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address);
+        Optional<Location> locationOp = dispatchComponent.getLocation(address);
+        if(!locationOp.isPresent()){
+            log.error("not find location by address:{}",address);
+            throw new ServiceException("buyer.receive.info.address.invalid");
+        }
+        Location location = locationOp.get();
 
         ListMultimap<Long, String> byWarehouseId = ArrayListMultimap.create();
         //最少拆单中发货件数最多的仓

@@ -20,6 +20,7 @@
         <result column="street" property="street"/>
         <result column="street_id" property="streetId"/>
         <result column="detail" property="detail"/>
+        <result column="extra_json" property="extraJson"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
         
@@ -34,11 +35,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        business_id, business_type, longitude, latitude, province, province_id, city, city_id, region, region_id, street, street_id, detail, created_at, updated_at
+        business_id, business_type, longitude, latitude, province, province_id, city, city_id, region, region_id, street, street_id, detail, extra_json,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{businessId}, #{businessType}, #{longitude}, #{latitude}, #{province}, #{provinceId}, #{city}, #{cityId}, #{region}, #{regionId}, #{street}, #{streetId}, #{detail}, now(), now()
+        #{businessId}, #{businessType}, #{longitude}, #{latitude}, #{province}, #{provinceId}, #{city}, #{cityId}, #{region}, #{regionId}, #{street}, #{streetId}, #{detail},#{extraJson}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -141,9 +142,7 @@
             <if test="street != null">street = #{street},</if>
             <if test="streetId != null">street_id = #{streetId},</if>
             <if test="detail != null">detail = #{detail},</if>
-            
-            
-            
+            <if test="extraJson != null">extra_json = #{extraJson},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}

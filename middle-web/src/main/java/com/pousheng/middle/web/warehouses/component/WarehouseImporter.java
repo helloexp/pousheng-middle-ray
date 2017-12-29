@@ -137,6 +137,10 @@ public class WarehouseImporter {
 
     private void handAddress(PoushengWarehouse pw,Long warehouseId,Boolean isUpdate){
         List<String> addressList = Splitters.DOT.splitToList(pw.getArea_full_name());
+        if(addressList.size()!=3){
+            log.error("warehouse(id:{}) address area full name :{} invalid,so skip",warehouseId,pw.getArea_full_name());
+            return;
+        }
         String province = addressList.get(0);
         String city = addressList.get(1);
         String region = addressList.get(2);

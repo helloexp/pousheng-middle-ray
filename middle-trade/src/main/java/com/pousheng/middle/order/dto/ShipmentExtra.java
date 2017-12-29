@@ -65,6 +65,14 @@ public class ShipmentExtra implements Serializable{
     private String vendCustID;
     //同步淘宝的状态,仅限于淘宝使用
     private Integer syncTaobaoStatus;
+    //发货方式
+    private String shipmentWay;
+    //发货店铺Id
+    private Long deliverShopId;
+    //发货店铺名称
+    private String deliverShopName;
+
+
     //仓库外码
     private String warehouseOutCode;
     //中台选择的恒康快递代码

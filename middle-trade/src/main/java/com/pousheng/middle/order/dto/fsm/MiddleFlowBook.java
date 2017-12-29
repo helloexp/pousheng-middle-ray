@@ -95,6 +95,11 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
 
+            //待处理 -->派单失败 -->取消
+            addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.DISPATCHER_FAIL.toOrderOperation(),
+                    MiddleOrderStatus.CANCEL.getValue());
+
             //处理中 -->处理 -> 处理中
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE.toOrderOperation(),
@@ -108,7 +113,6 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.HANDLE_DONE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_SHIP.getValue());
-
             //待发货 -->发货 -> 商家已发货
             addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
@@ -238,6 +242,49 @@ public class MiddleFlowBook {
          */
         @Override
         protected void configure() {
+
+            // ============ mpos正向流程
+            addTransition(MiddleShipmentsStatus.WAIT_DISPACHER.getValue(),
+                    MiddleOrderEvent.DISPATCHER.toOrderOperation(),
+                    MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
+            //待同步mpos --> 同步mpos -->同步中
+            addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
+                    MiddleOrderEvent.SYNC_MPOS.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ING.getValue());
+            //同步中 --> 受理成功 --> 待接单
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue());
+            //同步中 --> 受理失败 --> 受理失败
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue());
+            //受理失败 --> 受理成功 --> 待接单
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue());
+            //受理失败 --> 受理失败 --> 受理失败
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue());
+            //待接单 --> 接单 --> 待发货
+            addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
+                    MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation(),
+                    MiddleShipmentsStatus.WAIT_SHIP.getValue());
+            //待接单 --> 拒单 --> 已拒绝(重新生成发货单)
+            addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
+                    MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),
+                    MiddleShipmentsStatus.REJECTED.getValue());
+            //待发货 --> 发货 --> 待收货
+            addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.SHIPPED.getValue());
+            //待收货 --> 确认收货成功 --> 已完成
+            addTransition(MiddleShipmentsStatus.SHIPPED.getValue(),
+                    MiddleOrderEvent.CONFIRM.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue());
+
+
             //===========正向流程
             //待同步hk -->同步hk -> 同步中
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),

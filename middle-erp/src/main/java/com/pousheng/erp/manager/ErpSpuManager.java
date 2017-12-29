@@ -198,6 +198,12 @@ public class ErpSpuManager {
             yearNo.setAttrVal(material.getYear_no().toString());
             otherAttributes.add(yearNo);
         }
+        if (StringUtils.hasText(material.getSeason_name())) {
+            OtherAttribute seasonName = new OtherAttribute();
+            seasonName.setAttrKey("季节");
+            seasonName.setAttrVal(material.getSeason_name());
+            otherAttributes.add(seasonName);
+        }
         if (StringUtils.hasText(material.getInv_spec())) {
             OtherAttribute invSpec = new OtherAttribute();
             invSpec.setAttrKey("规格");

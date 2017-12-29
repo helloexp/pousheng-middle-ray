@@ -120,6 +120,25 @@ public class TradeConstants {
 
     public static final String ACTIVITY_SHOP="activityShops";
 
+    /**
+     * mpos 状态
+     */
+    public static final String MPOS_SHIPMENT_CANCEL = "cancel";
+    //发货单接单待发货
+    public static final String MPOS_SHIPMENT_WAIT_SHIP = "wait_ship";
+    //发货单拒单
+    public static final String MPOS_SHIPMENT_REJECT = "reject";
+    //发货单发货待收货
+    public static final String MPOS_SHIPMENT_SHIPPED = "shipped";
+    //订单待发货
+    public static final String MPOS_ORDER_WAIT_SHIP = "wait_ship";
+    //订单待收货
+    public static final String MPOS_ORDER_SHIPPED = "shipped";
+    //店铺发货
+    public static final String MPOS_SHOP_DELIVER = "shop";
+    //仓库发货
+    public static final String MPOS_WAREHOUSE_DELIVER = "warehouse";
+
     //活动赠品id
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
     //活动赠品名称
@@ -131,4 +150,9 @@ public class TradeConstants {
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
     public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
     public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
+    //是否指定门店 1 指定 2 未指定
+    public static final String IS_ASSIGN_SHOP = "isAssignShop";
+    //指定门店id
+    public static final String ASSIGN_SHOP_ID = "assignShopId";
+
 }

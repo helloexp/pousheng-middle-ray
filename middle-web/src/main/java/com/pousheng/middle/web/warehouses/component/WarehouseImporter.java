@@ -108,9 +108,6 @@ public class WarehouseImporter {
             }
         }else{ //未同步过, 则新建
             w.setStatus(1);
-            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
-            extra.put("isNew","true");
-            w.setExtra(extra);
             Response<Long> rc = warehouseWriteService.create(w);
             if(!rc.isSuccess()){
                 log.error("failed to create {}, error code:{}, so skip {}", w, r.getError(), warehouse);

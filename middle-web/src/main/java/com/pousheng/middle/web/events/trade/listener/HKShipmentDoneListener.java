@@ -95,9 +95,9 @@ public class HKShipmentDoneListener {
                         throw new JsonResponseException("update.sku.order.status.error");
                     }
                 }
-                //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
-                ecpOrderLogic.shipToEcp(shipment.getId());
             }
+            //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
+            ecpOrderLogic.shipToEcp(shipment.getId());
 
         }
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

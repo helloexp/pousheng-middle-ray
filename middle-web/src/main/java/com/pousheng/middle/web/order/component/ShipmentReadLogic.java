@@ -495,7 +495,7 @@ public class ShipmentReadLogic {
             return false;
         }
         List<Integer> orderShipmentStatus = orderShipments.stream().filter(Objects::nonNull)
-                .filter(status->!Objects.equals(status,MiddleShipmentsStatus.CANCELED.getValue()))
+                .filter(orderShipment->!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()))
                 .map(OrderShipment::getStatus).collect(Collectors.toList());
         List<Integer> canRevokeStatus = Lists.newArrayList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()
                 ,MiddleShipmentsStatus.ACCEPTED.getValue(), MiddleShipmentsStatus.WAIT_SHIP.getValue(),

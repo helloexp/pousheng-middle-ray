@@ -23,6 +23,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by songrenfei on 2017/12/15
@@ -65,8 +67,8 @@ public class AddressGpss {
         if(!shopsRes.isSuccess()){
             throw new JsonResponseException(shopsRes.getError());
         }
-
-        return shopsRes.getResult();
+        List<Shop> shops = shopsRes.getResult().stream().filter(shop -> !Objects.equals(shop.getStatus(),-2)).collect(Collectors.toList());
+        return shops;
 
     }
 

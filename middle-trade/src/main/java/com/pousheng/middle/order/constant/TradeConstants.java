@@ -150,5 +150,9 @@ public class TradeConstants {
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
     public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
     public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
+    //是否指定门店 1 指定 2 未指定
+    public static final String IS_ASSIGN_SHOP = "isAssignShop";
+    //指定门店id
+    public static final String ASSIGN_SHOP_ID = "assignShopId";
 
 }

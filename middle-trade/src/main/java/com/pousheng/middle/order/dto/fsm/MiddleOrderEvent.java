@@ -51,6 +51,15 @@ public enum MiddleOrderEvent {
     HK_CONFIRME_FAILED(31,"hkConfirmedFail","admin"),
     SYNC_TAOBAO_SUCCESS(32,"syncTaobaoSuccess","hk"),
     SYNC_TAOBAO_FAIL(33,"syncTaobaofail","hk"),
+
+    SYNC_MPOS(34,"syncMpos","admin"),
+    SYNC_MPOS_ACCEPT_SUCCESS(35,"syncMposAcceptSuccess","mpos"),
+    SYNC_MPOS_ACCEPT_FAIL(36,"syncMposAcceptFail","mpos"),
+    MPOS_RECEIVE(100,"mposReceive","mpos"),
+    MPOS_REJECT(100,"mposReject","mpos"),
+    DISPATCHER(100,"dispatcher","admin"),
+    DISPATCHER_FAIL(100,"dispatcherFail","admin"),
+
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),

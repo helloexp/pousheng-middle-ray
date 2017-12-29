@@ -13,11 +13,13 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.OrderSource;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -57,6 +59,8 @@ public class EcpOrderListener {
     private OrderWriteService orderWriteService;
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
 
     @PostConstruct
     public void init() {
@@ -93,8 +97,12 @@ public class EcpOrderListener {
                     throw new ServiceException(response1.getError());
                 }
             }
-            //同步订单信息到电商平台
-            this.syncEcpShipmentInfos(shopOrder.getId());
+            if(Objects.equals(shopOrder.getChannel(), ShopConstants.CHANNEL)){
+                syncMposShipmentLogic.syncShippedToMpos(shipment,shopOrder);
+            }else{
+                //同步订单信息到电商平台
+                this.syncEcpShipmentInfos(shopOrder.getId());
+            }
         } catch (ServiceException e) {
             log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), e.getMessage());
         }catch (Exception e) {

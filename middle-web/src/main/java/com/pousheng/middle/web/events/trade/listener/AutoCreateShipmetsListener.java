@@ -4,8 +4,10 @@
 
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.base.Strings;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
@@ -13,6 +15,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 
@@ -42,6 +45,11 @@ public class AutoCreateShipmetsListener {
         log.info("try to auto create shipment,shopOrder id is {}",event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
         log.info("auto create shipment,step one");
-        shipmentWiteLogic.doAutoCreateShipment(shopOrder);
+        //如果是mpos订单，进行派单
+        if(ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())){
+            shipmentWiteLogic.toDispatchOrder(shopOrder);
+        }else{
+            shipmentWiteLogic.doAutoCreateShipment(shopOrder);
+        }
     }
 }

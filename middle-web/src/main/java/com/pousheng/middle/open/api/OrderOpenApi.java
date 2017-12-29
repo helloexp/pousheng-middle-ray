@@ -95,6 +95,7 @@ public class OrderOpenApi {
                 if (handleResult){
                     //如果发货单已受理，则跳过
                     if(shipment.getStatus()>= MiddleShipmentsStatus.ACCEPTED.getValue()){
+                        log.warn("shipment(id:{}) duplicate request to handle,so skip",shipment.getId());
                         continue;
                     }
                     OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();

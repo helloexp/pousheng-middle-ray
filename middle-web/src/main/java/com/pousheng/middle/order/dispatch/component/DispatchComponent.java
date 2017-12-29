@@ -57,7 +57,7 @@ public class DispatchComponent {
     });
 
 
-    public Location getLocation(String address){
+    public Optional<Location> getLocation(String address){
         //1、调用高德地图查询地址坐标
         Response<Optional<Location>> locationRes = gdMapSearchService.searchByAddress(address);
         if(!locationRes.isSuccess()){
@@ -65,12 +65,7 @@ public class DispatchComponent {
             throw new ServiceException(locationRes.getError());
         }
 
-        Optional<Location> locationOp = locationRes.getResult();
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
-            return null;
-        }
-        return locationOp.get();
+        return locationRes.getResult();
     }
 
 

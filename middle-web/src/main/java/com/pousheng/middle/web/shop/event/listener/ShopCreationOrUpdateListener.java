@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.shop.event.listener;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -133,7 +134,12 @@ public class ShopCreationOrUpdateListener {
 
 
         //2、调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(addressDto.getAddress());
+        Optional<Location> locationOp = dispatchComponent.getLocation(addressDto.getAddress());
+        if(!locationOp.isPresent()){
+            log.error("[ADDRESS-LOCATION]:not find shop(id:{}) location by address:{}",shopId,addressDto.getAddress());
+           return null;
+        }
+        Location location = locationOp.get();
 
         //3、创建门店地址定位信息
         AddressGps addressGps = new AddressGps();

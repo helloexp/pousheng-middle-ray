@@ -82,6 +82,7 @@ public class ErpSpuManager {
         Long spuId;
         if (spu != null) { //已经存在对应的spu
             spuId = spu.getId();
+            updateSpuOtherAttribute(material,spuId);
         } else {
             spu = new Spu();
             spu.setCategoryId(leafId);
@@ -137,6 +138,18 @@ public class ErpSpuManager {
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
         createOrUpdateSkuTemplates(spuId, spu.getName(), skus);
         return spuId;
+    }
+
+    private void updateSpuOtherAttribute(PoushengMaterial material,Long spuId){
+        GroupedOtherAttribute goa = new GroupedOtherAttribute();
+        goa.setGroup("SPU");
+        List<OtherAttribute> otherAttributes = makeOtherAttributes(material);
+        goa.setOtherAttributes(otherAttributes);
+
+        SpuAttribute u = new SpuAttribute();
+        u.setSpuId(spuId);
+        u.setOtherAttrs(Lists.newArrayList(goa));
+        spuAttributeDao.updateBySpuId(u);
     }
 
     private StringBuffer getSpuName(PoushengMaterial material) {

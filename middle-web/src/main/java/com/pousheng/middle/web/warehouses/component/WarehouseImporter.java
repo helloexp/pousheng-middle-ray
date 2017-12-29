@@ -170,7 +170,7 @@ public class WarehouseImporter {
                 //如果没找到则新建（旧数据）
                 if(Objects.equal(addressGpsRes.getError(),"address.gps.not.found")){
                     Response<Long> response = addressGpsWriteService.create(addressGps);
-                    log.error("create address gps for warehouse id:{} fail,error:{}",warehouseId,response.getError());
+                    log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
                 }
             }
             AddressGps existAddressGps = addressGpsRes.getResult();

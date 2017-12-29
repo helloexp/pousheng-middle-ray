@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -63,6 +64,8 @@ public class HKShipmentDoneListener {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private EcpOrderLogic ecpOrderLogic;
 
     @PostConstruct
     public void init() {
@@ -78,36 +81,23 @@ public class HKShipmentDoneListener {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-
             Flow flow = flowPicker.pickOrder();
             if (flow.operationAllowed(shopOrder.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation())) {
-                //获取该订单下所有的orderShipment信息
-                List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(orderShopId);
-                //过滤掉已经取消的发货单
-                List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                        .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-                //获取发货单的状态
-                List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-                //判断发货单是否已经全部发货了
-                int count=0;
-                for (Integer status:orderShipMentStatusList){
-                    if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                        count++;
-                    }
-                }
-                //count==0代表所有的发货单已经发货
-                if (count==0) {
-                    //待发货--商家已经发货
-                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, MiddleOrderStatus.WAIT_SHIP.getValue(),MiddleOrderStatus.CANCEL_FAILED.getValue(),MiddleOrderStatus.REVOKE_FAILED.getValue());
-                    for (SkuOrder skuOrder : skuOrders) {
-                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
-                        if (!updateRlt.getResult()) {
-                            log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
-                            throw new JsonResponseException("update.sku.order.status.error");
-                        }
+                //更新子订单中的信息
+                List<Long> skuOrderIds = Lists.newArrayList();
+                Map<Long,Integer> skuInfos = shipment.getSkuInfos();
+                skuOrderIds.addAll(skuInfos.keySet());
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                for (SkuOrder skuOrder : skuOrders) {
+                    Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
+                    if (!updateRlt.getResult()) {
+                        log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                        throw new JsonResponseException("update.sku.order.status.error");
                     }
                 }
             }
+            //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
+            ecpOrderLogic.shipToEcp(shipment.getId());
 
         }
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

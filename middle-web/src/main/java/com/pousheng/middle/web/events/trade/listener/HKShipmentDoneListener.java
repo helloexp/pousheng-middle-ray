@@ -75,6 +75,7 @@ public class HKShipmentDoneListener {
     @Subscribe
     public void doneShipment(HkShipmentDoneEvent event) {
         Shipment shipment = event.getShipment();
+        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
         //判断发货单是否发货完
         if (shipment.getType() == ShipmentType.SALES_SHIP.value()) {
             //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货
@@ -82,6 +83,7 @@ public class HKShipmentDoneListener {
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             Flow flow = flowPicker.pickOrder();
+            log.info("HK SHIPMENT DONE LISTENER shopOrderStatus is {}",shopOrder.getStatus());
             if (flow.operationAllowed(shopOrder.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation())) {
                 //更新子订单中的信息
                 List<Long> skuOrderIds = Lists.newArrayList();
@@ -97,6 +99,7 @@ public class HKShipmentDoneListener {
                 }
             }
             //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
+            log.info("wait to notify ecp,shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
             ecpOrderLogic.shipToEcp(shipment.getId());
 
         }
@@ -116,6 +119,7 @@ public class HKShipmentDoneListener {
             if (refund.getStatus() == MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
                 List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());
+                log.info("HK SHIPMENT DONE LISTENER for change,orderShipMentStatusList is {}",orderShipMentStatusList);
                 if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
@@ -142,6 +146,7 @@ public class HKShipmentDoneListener {
             }
             //丢件补发类型
             if (refund.getStatus() == MiddleRefundStatus.LOST_WAIT_SHIP.getValue()) {
+                log.info("HK SHIPMENT DONE LISTENER for lost,shipmentId is {}",shipment.getId());
                 Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
                 if (!resRlt.isSuccess()) {
                     log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
@@ -163,5 +168,6 @@ public class HKShipmentDoneListener {
                 }
             }
         }
+        log.info("HK SHIPMENT DONE LISTENER end, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
     }
 }

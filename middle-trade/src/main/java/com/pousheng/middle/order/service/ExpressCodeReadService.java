@@ -5,6 +5,8 @@ import com.pousheng.middle.order.model.ExpressCode;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
+import java.util.List;
+
 /**
  * Created by tony on 2017/6/28.
  */
@@ -24,4 +26,10 @@ public interface ExpressCodeReadService {
      * @return
      */
     Response<ExpressCode> findById(Long id);
+
+    /**
+     * 查询所有的快递商
+     * @return
+     */
+    Response<List<ExpressCode>> findAllByName(String name);
 }

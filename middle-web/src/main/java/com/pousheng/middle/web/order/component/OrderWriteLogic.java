@@ -230,7 +230,7 @@ public class OrderWriteLogic {
      *取消整单失败时,用于补偿失败的订单
      * @param shopOrderId 店铺订单主键
      */
-    public void cancelShopOrder(Long shopOrderId) {
+    public boolean cancelShopOrder(Long shopOrderId) {
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单是否有取消订单的权限
@@ -265,6 +265,11 @@ public class OrderWriteLogic {
         }else {
             //发货单取消失败,订单状态设置为取消失败
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+        }
+        if (count>0){
+            return false;
+        }else{
+            return true;
         }
     }
     /**
@@ -331,7 +336,7 @@ public class OrderWriteLogic {
      * @param shopOrderId 店铺订单主键
      * @param skuCode     子单代码
      */
-    public void cancelSkuOrder(long shopOrderId, String skuCode) {
+    public boolean cancelSkuOrder(long shopOrderId, String skuCode) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单所属整单是否有取消订单的权限
         if (!validateCancelShopOrder4Sku(shopOrder)){
@@ -377,6 +382,11 @@ public class OrderWriteLogic {
             }
 
         }
+        if (count>0){
+            return false;
+        }else{
+            return true;
+        }
     }
 
     /**
@@ -384,7 +394,7 @@ public class OrderWriteLogic {
      *
      * @param shopOrderId 店铺订单主键
      */
-    public void rollbackShopOrder(Long shopOrderId) {
+    public boolean rollbackShopOrder(Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单是否有撤销订单的权限
         if (!validateRollbackShopOrder(shopOrder)){
@@ -418,9 +428,11 @@ public class OrderWriteLogic {
         }else{
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
         }
-
-
-
+        if (count>0){
+            return false;
+        }else{
+            return true;
+        }
     }
 
     /**

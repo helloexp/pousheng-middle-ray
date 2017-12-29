@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Data;
 
 import java.util.Date;
@@ -42,11 +43,13 @@ public class EditSubmitGiftActivityInfo {
     /**
      * 活动开始时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+08:00")
     private Date activityStartDate;
 
     /**
      * 活动结束时间
      */
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss",timezone = "GMT+08:00")
     private Date activityEndDate;
 
 

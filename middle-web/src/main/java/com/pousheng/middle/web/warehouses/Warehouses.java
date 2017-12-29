@@ -1,8 +1,10 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.dto.WarehouseServerInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
+import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
@@ -17,6 +19,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -39,6 +42,8 @@ public class Warehouses {
 
     @RpcConsumer
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private ErpClient erpClient;
 
     @RpcConsumer
     private MiddleStockPushLogReadSerive middleStockPushLogReadSerive;
@@ -55,6 +60,23 @@ public class Warehouses {
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
+    }
+    @RequestMapping(value = "/trigger/push")
+    public Boolean triggerPush(@RequestParam Long id){
+        Response<Warehouse> warehouseResponse=warehouseReadService.findById(id);
+        if (warehouseResponse.isSuccess()){
+            throw new JsonResponseException(warehouseResponse.getError());
+        }
+        Warehouse warehouse=warehouseResponse.getResult();
+        Map<String,String> extra=warehouse.getExtra();
+        if (extra==null||!extra.containsKey("isNew")|| !Objects.equal(extra.get("isNew"),"true")){
+            throw new JsonResponseException("warehouse.status.is.not.allowed.trigger.push");
+        }
+        Map<String,String> map=Maps.newHashMap();
+        map.put("stock",warehouse.getId()+"");
+        erpClient.get("/common/erp/inv/getinstockcount",map);
+        return Boolean.TRUE;
+
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)

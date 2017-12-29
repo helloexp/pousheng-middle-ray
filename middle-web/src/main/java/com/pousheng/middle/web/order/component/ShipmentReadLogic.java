@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
@@ -24,10 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -103,6 +101,16 @@ public class ShipmentReadLogic {
         shipmentPreview.setReceiverInfo(JsonMapper.nonDefaultMapper().fromJson(orderReceiverInfos.get(0).getReceiverInfoJson(),ReceiverInfo.class));
         shipmentPreview.setShopOrder(orderDetail.getShopOrder());
         shipmentPreview.setShopId(orderDetail.getShopOrder().getShopId());
+        ShopOrder shopOrder = orderDetail.getShopOrder();
+        Map<String,String> shopOrderMap = shopOrder.getExtra();
+        String expressCode = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE);
+        if (!org.springframework.util.StringUtils.isEmpty(expressCode)){
+            shipmentPreview.setOrderHkExpressCode(expressCode);
+        }
+        String expressName = shopOrderMap.get(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME);
+        if (!org.springframework.util.StringUtils.isEmpty(expressName)){
+            shipmentPreview.setOrderHkExpressName(expressName);
+        }
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(currentSkuOrders.size());
         for (SkuOrder skuOrder : currentSkuOrders){
@@ -112,7 +120,11 @@ public class ShipmentReadLogic {
             shipmentItem.setOutSkuCode(skuOrder.getOutSkuId());
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setQuantity(skuOrder.getQuantity());
-
+            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+                shipmentItem.setIsGift(true);
+            }else{
+                shipmentItem.setIsGift(false);
+            }
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //积分
             String originIntegral = "";
@@ -156,7 +168,20 @@ public class ShipmentReadLogic {
     public Response<ShipmentPreview> changeShipPreview(Long refundId,String data){
         Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
         Refund refund = refundReadLogic.findRefundById(refundId);
-        List<RefundItem>  refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        //判断是丢件补发类型的售后单还是换货售后单
+        List<RefundItem>  originRefundChangeItems = null;
+        if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            originRefundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        }else{
+            originRefundChangeItems = refundReadLogic.findRefundLostItems(refund);
+        }
+        //获取当前需要生成发货单的售后商品
+        List<RefundItem>  refundChangeItems = Lists.newArrayList();
+        originRefundChangeItems.forEach(refundItem -> {
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())){
+                refundChangeItems.add(refundItem);
+            }
+        });
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
         //订单基本信息
@@ -178,6 +203,7 @@ public class ShipmentReadLogic {
         //封装发货预览商品信息
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithCapacity(refundChangeItems.size());
         for (RefundItem refundItem : refundChangeItems){
+
             ShipmentItem shipmentItem = new ShipmentItem();
             shipmentItem.setSkuCode(refundItem.getSkuCode());
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
@@ -429,5 +455,56 @@ public class ShipmentReadLogic {
         return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
     }
 
+    /**
+     * 根据店铺订单主键查询发货单
+     * @param shopOrderId 店铺订单主键
+     * @return
+     */
+    public List<Shipment> findByShopOrderId(Long shopOrderId){
+        Response<List<Shipment>> r = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!r.isSuccess()){
+            log.error("find shipment list by shop order id failed,shopOrderId is {},caused by {}",shopOrderId,r.getError());
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        return r.getResult();
+    }
 
+    /**
+     * 获取发货单集合下所有的发货单发货商品列表
+     * @param shipments
+     * @return
+     */
+    public List<ShipmentItem> getShipmentItemsForList(List<Shipment> shipments){
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        shipments.forEach(shipment -> {
+            List<ShipmentItem>  shipmentItems =  this.getShipmentItems(shipment);
+            newShipmentItems.addAll(shipmentItems);
+        });
+        return newShipmentItems;
+    }
+
+    /**
+     *判断该订单下是否存在可以撤单的发货单
+     * @param shopOrderId 店铺订单id
+     * @return true 可以撤单， false 不可以撤单
+     */
+    public boolean isShopOrderCanRevoke(Long shopOrderId){
+        List<OrderShipment> orderShipments = this.findByOrderIdAndType(shopOrderId);
+        Optional<OrderShipment> orderShipmentOptional = orderShipments.stream().findAny();
+        if (!orderShipmentOptional.isPresent()){
+            return false;
+        }
+        List<Integer> orderShipmentStatus = orderShipments.stream().filter(Objects::nonNull)
+                .filter(status->!Objects.equals(status,MiddleShipmentsStatus.CANCELED.getValue()))
+                .map(OrderShipment::getStatus).collect(Collectors.toList());
+        List<Integer> canRevokeStatus = Lists.newArrayList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()
+                ,MiddleShipmentsStatus.ACCEPTED.getValue(), MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),MiddleShipmentsStatus.SYNC_HK_FAIL.getValue());
+        for (Integer shipmentStatus:orderShipmentStatus){
+            if (!canRevokeStatus.contains(shipmentStatus)){
+                return false;
+            }
+        }
+        return true;
+    }
 }

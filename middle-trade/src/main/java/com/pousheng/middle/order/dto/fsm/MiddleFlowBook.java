@@ -219,6 +219,15 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
                     MiddleOrderEvent.REVOKE_FAIL.toOrderOperation(),
                     MiddleOrderStatus.REVOKE_FAILED.getValue());
+            //------允许恒康将之前撤销失败和取消失败的订单改为已发货
+            //取消失败-->发货-->已发货
+            addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleOrderStatus.SHIPPED.getValue());
+            //撤销失败-->发货-->已发货
+            addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleOrderStatus.SHIPPED.getValue());
         }
     };
 
@@ -371,6 +380,11 @@ public class MiddleFlowBook {
             //目前没有添加同步取消失败状态下再次同步恒康正向单据的操作（如果要加的话，待发货和同步发货单失败两个状态下的取消要分开，
             //只有同步发货单失败的取消的失败才可以出现再次同步正向的单据操作）
 
+            //---------------------对于取消失败的发货单一旦恒康允许发货则发货单状态修改为已发货------------------------
+            //取消失败 -->发货 -> 商家已发货,待同步电商平台
+            addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.SHIPPED.getValue());
         }
     };
 
@@ -484,7 +498,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.CANCEL.toOrderOperation(),
                     MiddleRefundStatus.CANCELED.getValue());
-
+            //丢件补发-待同步恒康 -->取消 -> 已取消（不需同步恒康）
+            addTransition(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.CANCEL.toOrderOperation(),
+                    MiddleRefundStatus.CANCELED.getValue());
             //=============== 仅退款 ================
 
             //同步退款成功-待退款 -->取消 --> 同步恒康取消中
@@ -543,6 +560,33 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
                     MiddleRefundStatus.SYNC_HK_CANCEL_ING.getValue());
+            //待发货-->撤销->退货完成待创建发货单
+            addTransition(MiddleRefundStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.REVOKE.toOrderOperation(),
+                    MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
+            //丢件补发待发货-->撤销->带创建发货单
+            addTransition(MiddleRefundStatus.LOST_WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.REVOKE.toOrderOperation(),
+                    MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue());
+            //=========丢件补发类型操作(特殊类型)===
+
+            //待处理-->提交-->待创建发货单
+            addTransition(MiddleRefundStatus.WAIT_HANDLE.getValue(),
+                    MiddleOrderEvent.LOST_HANDLE.toOrderOperation(),
+                    MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue());
+            //待生成发货单->生成发货单->待发货
+            addTransition(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation(),
+                    MiddleRefundStatus.LOST_WAIT_SHIP.getValue());
+            //待发货->发货->待收货
+            addTransition(MiddleRefundStatus.LOST_WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.LOST_SHIPPED.toOrderOperation(),
+                    MiddleRefundStatus.LOST_SHIPPED.getValue());
+            //待收货->客服确认收货->已完成
+            addTransition(MiddleRefundStatus.LOST_SHIPPED.getValue(),
+                    MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation(),
+                    MiddleRefundStatus.LOST_DONE.getValue());
+
         }
     };
     /**

@@ -13,6 +13,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 /**
  * Created by tony on 2017/6/28.
  */
@@ -88,6 +90,21 @@ public class ExpressCodes {
         if (!r.isSuccess()) {
             log.error("failed to delete expressCode(id={}), error code:{} ",
                     id, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
+    }
+
+    @RequestMapping(value = "all",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<ExpressCode> findAll(@RequestParam(required = false) String name)
+    {
+        if (StringUtils.isEmpty(name)){
+            name="";
+        }
+        Response<List<ExpressCode>> r = expressCodeReadService.findAllByName(name);
+        if (!r.isSuccess()) {
+            log.error("find all express code failed, error code:{} "
+                    , r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();

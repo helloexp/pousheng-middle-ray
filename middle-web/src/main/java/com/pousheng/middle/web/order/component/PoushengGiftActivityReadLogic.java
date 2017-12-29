@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ActivityItem;
 import com.pousheng.middle.order.dto.ActivityShop;
@@ -17,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -33,7 +36,12 @@ public class PoushengGiftActivityReadLogic {
     private PoushengGiftActivityReadService poushengGiftActivityReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
+    private static final Ordering<ActivityItem> bySpuId = Ordering.natural().onResultOf(new Function<ActivityItem, Long>() {
+        @Override
+        public Long apply(ActivityItem input) {
+            return input.getSpuId();
+        }
+    });
     /**
      * 获取赠品活动信息
      * @param activityId
@@ -142,5 +150,33 @@ public class PoushengGiftActivityReadLogic {
 
         int current = result.size();
         return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+    /**
+     * 分页查询活动商品
+     * @param criteria
+     * @return
+     */
+    public Response<Paging<ActivityItem>> pagingActivityItems(PoushengGiftActivityCriteria criteria){
+        Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(criteria.getId());
+        if (!r.isSuccess()){
+            log.error("find pousheng gift activity by id failed,id is {},caused by {}",criteria.getId(),r.getError());
+            throw new JsonResponseException("find.single.gift.activity.failed");
+        }
+        Integer limit = criteria.getLimit();//每页记录数
+        Integer offset = criteria.getOffset();//偏移量
+
+        PoushengGiftActivity activity = r.getResult();
+        List<ActivityItem> activityItems = bySpuId.sortedCopy(this.getActivityItem(activity));
+
+        Integer total = activityItems.size();
+        if (total <= 0||offset>total){
+            return Response.ok(new Paging<ActivityItem>(0L, Collections.<ActivityItem>emptyList()));
+
+        }
+        Paging<ActivityItem> paging = new Paging<>();
+        paging.setTotal(Long.valueOf(total));
+        paging.setData(activityItems.subList(offset,(offset+limit)>total?total:(offset+limit)));
+        return Response.ok(paging);
     }
 }

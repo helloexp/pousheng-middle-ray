@@ -35,6 +35,7 @@ import java.io.File;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by songrenfei on 2017/6/30
@@ -70,8 +71,14 @@ public class SkuTemplates {
      */
     @ApiOperation("根据货品条码查询")
     @RequestMapping(value="/api/sku-templates-spu",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode") String skuCode) {
-        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+    public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode,@RequestParam(required = false,name ="skuCodes")List<String> skuCodes) {
+        List<String> originSkuCodes = Lists.newArrayList();
+        if (!StringUtils.isEmpty(skuCode)){
+            originSkuCodes.add(skuCode);
+        }else{
+            originSkuCodes = skuCodes;
+        }
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(originSkuCodes);
         if(!skuTemplateRes.isSuccess()){
             log.error("find sku template by sku code:{} fail,error:{}",skuCode,skuTemplateRes.getError());
             throw new JsonResponseException(skuTemplateRes.getError());
@@ -104,14 +111,16 @@ public class SkuTemplates {
 
     @ApiOperation("货品分页查询基于mysql")
     @RequestMapping(value="/api/sku-template/paging",method=RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<SkuTemplate> pagination(@RequestParam(value ="skuCode", required = false) String skuCode,
+    public Paging<SkuTemplate> pagination(@RequestParam(value = "ids",required = false) List<Long> ids,@RequestParam(value ="skuCode", required = false) String skuCode,
                                           @RequestParam(value="name",  required = false) String name,
                                           @RequestParam(value = "spuId",required = false) Long spuId,
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
                                           @RequestParam(value = "pageSize", required = false) Integer pageSize){
 
         Map<String, Object> params = Maps.newHashMap();
-
+        if (Objects.nonNull(ids)){
+            params.put("ids",ids);
+        }
         if(StringUtils.hasText(skuCode)){
             params.put("skuCode", skuCode);
         }

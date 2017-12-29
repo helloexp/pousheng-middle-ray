@@ -84,38 +84,40 @@ public class PoushengGiftActivityWriteLogic {
         }
         //限制活动参与人数
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
-            activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
-            activity.setAlreadyActivityQuantity(0);
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
         }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }
+        activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
+        activity.setAlreadyActivityQuantity(0);
         activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
         activity.setStatus(PoushengGiftActivityStatus.WAIT_PUBLISH.getValue());
 
         //活动店铺
-        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops();
+        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityShops();
         //赠品
-        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems();
+        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems()==null?Lists.newArrayList(): editSubmitGiftActivityInfo.getGiftItems();
         //活动商品
-        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems();
+        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityItems();
 
         int totalPrice=0;
         for (GiftItem giftItem:giftItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(giftItem.getSkuCode());
             //如果前端传入的price为空，则显示吊牌价
             Integer originSkuPrice = giftItem.getPrice()!=null?giftItem.getPrice():this.getOriginSkuPrice(skuTemplate);
-            totalPrice = totalPrice+originSkuPrice;
+            totalPrice = totalPrice+originSkuPrice*(giftItem.getQuantity()==null?0:giftItem.getQuantity());
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             giftItem.setAttrs(skuTemplate.getAttrs());
+            giftItem.setSkuTemplateId(skuTemplate.getId());
         }
         for (ActivityItem activityItem:activityItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(activityItem.getSkuCode());
             activityItem.setSpuId(skuTemplate.getSpuId());
             activityItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             activityItem.setAttrs(skuTemplate.getAttrs());
+            activityItem.setSkuTemplateId(skuTemplate.getId());
         }
         //获取活动的赠品的总的金额
         activity.setTotalPrice(totalPrice);
@@ -146,11 +148,12 @@ public class PoushengGiftActivityWriteLogic {
             throw new JsonResponseException("find.single.poushengGiftActivity.failed");
         }
         //活动店铺
-        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops();
+        List<ActivityShop> activityShops = editSubmitGiftActivityInfo.getActivityShops()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityShops();
         //赠品
-        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems();
+        List<GiftItem> giftItems = editSubmitGiftActivityInfo.getGiftItems()==null?Lists.newArrayList(): editSubmitGiftActivityInfo.getGiftItems();
         //活动商品
-        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems();
+        List<ActivityItem> activityItems = editSubmitGiftActivityInfo.getActivityItems()==null?Lists.newArrayList():editSubmitGiftActivityInfo.getActivityItems();
+
 
         PoushengGiftActivity activity = r.getResult();
         //活动名称
@@ -159,6 +162,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足金额且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_FEE_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderFee(editSubmitGiftActivityInfo.getFee());
         }
         //满足金额且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),1)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -168,6 +172,7 @@ public class PoushengGiftActivityWriteLogic {
         //满足数量且不限活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&editSubmitGiftActivityInfo.getIsNoLimitItem()){
             activity.setOrderRule(PoushengGiftOrderRule.SATIFIED_QUANTITY_IGINORE_ACTIVITY_ITEM.value());
+            activity.setOrderQuantity(editSubmitGiftActivityInfo.getQuantity());
         }
         //满足数量且限定活动商品
         if (Objects.equals(editSubmitGiftActivityInfo.getActivityType(),2)&&!editSubmitGiftActivityInfo.getIsNoLimitItem()){
@@ -176,23 +181,23 @@ public class PoushengGiftActivityWriteLogic {
         }
         //限制活动参与人数
         if (editSubmitGiftActivityInfo.getLimitQuantity()!=0){
-            activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
             activity.setQuantityRule(PoushengGiftQuantityRule.NO_LIMIT_PARTICIPANTS.value());
         }else{
             activity.setQuantityRule(PoushengGiftQuantityRule.LIMIT_PARTICIPANTS.value());
         }
-        activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityStartDate());
+        activity.setActivityQuantity(editSubmitGiftActivityInfo.getLimitQuantity());
+        activity.setActivityStartAt(editSubmitGiftActivityInfo.getActivityStartDate());
         activity.setActivityEndAt(editSubmitGiftActivityInfo.getActivityEndDate());
-        activity.setStatus(editSubmitGiftActivityInfo.getStatus());
         int totalPrice=0;
         for (GiftItem giftItem:giftItems){
             SkuTemplate skuTemplate = this.getSkuTemplate(giftItem.getSkuCode());
             //吊牌价
-            Integer originSkuPrice = this.getOriginSkuPrice(skuTemplate);
+            Integer originSkuPrice = giftItem.getPrice()!=null?giftItem.getPrice():this.getOriginSkuPrice(skuTemplate);
             totalPrice = totalPrice+originSkuPrice;
             giftItem.setSpuId(skuTemplate.getSpuId());
             giftItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             giftItem.setAttrs(skuTemplate.getAttrs());
+            giftItem.setSkuTemplateId(skuTemplate.getId());
         }
 
         for (ActivityItem activityItem:activityItems){
@@ -200,6 +205,7 @@ public class PoushengGiftActivityWriteLogic {
             activityItem.setSpuId(skuTemplate.getSpuId());
             activityItem.setMaterialCode(this.getMaterialCode(skuTemplate));
             activityItem.setAttrs(skuTemplate.getAttrs());
+            activityItem.setSkuTemplateId(skuTemplate.getId());
         }
         activity.setTotalPrice(totalPrice);
         Map<String ,String> extraMap = Maps.newHashMap();

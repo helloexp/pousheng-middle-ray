@@ -7,10 +7,13 @@ package com.pousheng.middle.web.events.trade.listener;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,8 @@ public class RefundShipmentListener {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
     @Autowired
     private EventBus eventBus;
@@ -54,8 +59,12 @@ public class RefundShipmentListener {
 
         Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
-
-        refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(),skuCodeAndQuantityMap);
+        Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+        if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(),skuCodeAndQuantityMap);
+        }else{
+            refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(),skuCodeAndQuantityMap);
+        }
 
     }
 }

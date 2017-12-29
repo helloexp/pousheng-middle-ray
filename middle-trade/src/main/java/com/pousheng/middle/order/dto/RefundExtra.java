@@ -38,6 +38,8 @@ public class RefundExtra implements Serializable{
     private Date hkReturnDoneAt;
     //换货发货单创建时间
     private Date changeShipmentAt;
+    //丢件补发售后单创建时间
+    private Date lostShipmentAt;
     //发货时间
     private Date shipAt;
     //确认收货时间

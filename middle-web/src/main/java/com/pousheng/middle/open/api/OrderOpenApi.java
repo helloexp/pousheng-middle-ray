@@ -9,6 +9,7 @@ import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
@@ -96,9 +97,14 @@ public class OrderOpenApi {
                 Boolean handleResult = result.getSuccess();
                 String hkShipmentId = result.getHkShipmentId();
                 Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+
                 //冗余恒康发货单号
                 //更新发货单的状态
                 if (handleResult){
+                    //如果发货单已受理，则跳过
+                    if(shipment.getStatus()>= MiddleShipmentsStatus.ACCEPTED.getValue()){
+                        continue;
+                    }
                     OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                     Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
                     if (!updateSyncStatusRes.isSuccess()) {

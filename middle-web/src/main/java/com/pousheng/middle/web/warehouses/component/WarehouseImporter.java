@@ -15,6 +15,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.Splitters;
@@ -100,9 +101,6 @@ public class WarehouseImporter {
         if(r.getResult().isPresent()){ //已同步过, 则更新
             Warehouse exist = r.getResult().get();
             w.setId(exist.getId());
-            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
-            extra.remove("isNew");
-            w.setExtra(extra);
             Response<Boolean> ru = warehouseWriteService.update(w);
             if(!ru.isSuccess()){
                 log.error("failed to update {}, error code:{}, so skip {}", w, r.getError(), warehouse);
@@ -111,9 +109,6 @@ public class WarehouseImporter {
             }
         }else{ //未同步过, 则新建
             w.setStatus(1);
-            Map<String,String> extra=w.getExtra()==null?Maps.newHashMap():w.getExtra();
-            extra.put("isNew","true");
-            w.setExtra(extra);
             Response<Long> rc = warehouseWriteService.create(w);
             if(!rc.isSuccess()){
                 log.error("failed to create {}, error code:{}, so skip {}", w, r.getError(), warehouse);
@@ -138,18 +133,26 @@ public class WarehouseImporter {
         return w;
     }
 
-
-    private void handAddress(PoushengWarehouse pw,Long warehouseId,Boolean isUpdate) {
+    private void handAddress(PoushengWarehouse pw,Long warehouseId,Boolean isUpdate){
         List<String> addressList = Splitters.DOT.splitToList(pw.getArea_full_name());
+        if(addressList.size()!=3){
+            log.error("warehouse(id:{}) address area full name :{} invalid,so skip",warehouseId,pw.getArea_full_name());
+            return;
+        }
         String province = addressList.get(0);
         String city = addressList.get(1);
         String region = addressList.get(2);
-        String address = province + city + region;
-        if (!Strings.isNullOrEmpty(pw.getStock_address())) {
+        String address = province+city+region;
+        if(!Strings.isNullOrEmpty(pw.getStock_address())){
             address = pw.getStock_address();
         }
         //2、调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address);
+        Optional<Location> locationOp = dispatchComponent.getLocation(address);
+        if(!locationOp.isPresent()){
+            log.error("[ADDRESS-LOCATION]:not find warehouse(id:{}) location by address:{}",warehouseId,address);
+            return;
+        }
+        Location location = locationOp.get();
         //3、创建门店地址定位信息
         AddressGps addressGps = new AddressGps();
         addressGps.setLatitude(location.getLat());
@@ -162,23 +165,23 @@ public class WarehouseImporter {
         addressGps.setRegion(region);
         warehouseAddressTransverter.complete(addressGps);
 
-        if (isUpdate) {
-            Response<AddressGps> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId, AddressBusinessType.WAREHOUSE);
-            if (!addressGpsRes.isSuccess()) {
-                log.error("find address gps by warehouse id:{} fail,error:{}", warehouseId, addressGpsRes.getError());
+        if(isUpdate){
+            Response<AddressGps> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId,AddressBusinessType.WAREHOUSE);
+            if(!addressGpsRes.isSuccess()){
+                log.error("find address gps by warehouse id:{} fail,error:{}",warehouseId,addressGpsRes.getError());
                 //如果没找到则新建（旧数据）
-                if (Objects.equal(addressGpsRes.getError(), "address.gps.not.found")) {
+                if(Objects.equal(addressGpsRes.getError(),"address.gps.not.found")){
                     Response<Long> response = addressGpsWriteService.create(addressGps);
-                    log.error("create address gps for warehouse id:{} fail,error:{}", warehouseId, response.getError());
+                    log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
                 }
             }
             AddressGps existAddressGps = addressGpsRes.getResult();
             addressGps.setId(existAddressGps.getId());
             Response<Boolean> response = addressGpsWriteService.update(addressGps);
-            log.error("update address gps for warehouse id:{} fail,error:{}", warehouseId, response.getError());
-        } else {
+            log.error("update address gps for warehouse id:{} fail,error:{}",warehouseId,response.getError());
+        }else {
             Response<Long> response = addressGpsWriteService.create(addressGps);
-            log.error("create address gps for warehouse id:{} fail,error:{}", warehouseId, response.getError());
+            log.error("create address gps for warehouse id:{} fail,error:{}",warehouseId,response.getError());
         }
     }
 }

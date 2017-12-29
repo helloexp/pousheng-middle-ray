@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dispatch.component;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
@@ -78,7 +79,12 @@ public class WarehouseAddressComponent {
     public WarehouseShipment nearestWarehouse(List<WarehouseShipment> warehouseShipments, String address){
 
         //1、调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address);
+        Optional<Location> locationOp = dispatchComponent.getLocation(address);
+        if(!locationOp.isPresent()){
+            log.error("not find location by address:{}",address);
+            throw new ServiceException("buyer.receive.info.address.invalid");
+        }
+        Location location = locationOp.get();
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
         for (WarehouseShipment warehouseShipment : warehouseShipments){

@@ -8,7 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.dispatch.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;

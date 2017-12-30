@@ -1,6 +1,5 @@
-package com.pousheng.middle.order.dispatch.dto;
+package com.pousheng.middle.warehouse.dto;
 
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import lombok.Data;
 
 import java.io.Serializable;

@@ -10,7 +10,7 @@ import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
-import com.pousheng.middle.order.dispatch.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;

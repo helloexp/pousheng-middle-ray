@@ -6,7 +6,6 @@ package com.pousheng.middle.item.dto;
 
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
-import io.terminus.parana.spu.model.SpuAttribute;
 import lombok.Getter;
 import lombok.Setter;
 

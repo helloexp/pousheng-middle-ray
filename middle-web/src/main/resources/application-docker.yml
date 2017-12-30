@@ -89,6 +89,8 @@ gateway:
   hk:
     host: ${HK_HOST}
     accessKey: ${HK_ACCESS_KEY}
+  parana:
+    host: ${PARANA_HOST}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}

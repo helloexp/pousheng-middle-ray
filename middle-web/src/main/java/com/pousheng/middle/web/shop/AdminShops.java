@@ -13,6 +13,7 @@ import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
+import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -70,6 +71,8 @@ public class AdminShops {
     private UcUserOperationLogic ucUserOperationLogic;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private ParanaUserOperationLogic paranaUserOperationLogic;
 
 
 
@@ -188,15 +191,17 @@ public class AdminShops {
             eventBus.post(addressEvent);
         }else {
             //更新门店用户
-            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(shop.getUserId(),shop.getUserName(),password);
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(recoverShop.getUserId(),shop.getUserName(),password);
             if(!userInfoRes.isSuccess()){
-                log.error("update user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
+                log.error("update user(name:{}) fail,error:{}",recoverShop.getOuterId(),userInfoRes.getError());
                 throw new JsonResponseException(userInfoRes.getError());
             }
+            //解冻
+            RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,recoverShop.getUserId()));
             //更新门店信息
             id = updateShop(recoverShop.getId());
 
-            UpdateShopEvent updateShopEvent = new UpdateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
+            UpdateShopEvent updateShopEvent = new UpdateShopEvent(id,shop.getCompanyId(),recoverShop.getOuterId());
             eventBus.post(updateShopEvent);
         }
 
@@ -465,22 +470,42 @@ public class AdminShops {
     @ApiOperation("冻结门店")
     @RequestMapping(value = "/{shopId}/frozen", method = RequestMethod.PUT)
     public void frozenSeller(@PathVariable Long shopId) {
-        //todo 冻结用户
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.frozen(shopId));
+        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
     }
 
     @ApiOperation("解冻门店")
     @RequestMapping(value = "/{shopId}/unfrozen", method = RequestMethod.PUT)
     public void unfrozenSeller(@PathVariable Long shopId) {
-        //todo 解结用户
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
+        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
+
     }
 
     @ApiOperation("删除门店")
     @RequestMapping(value = "/{shopId}/close", method = RequestMethod.PUT)
     public void closeSeller(@PathVariable Long shopId) {
-        //todo 删除用户
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.close(shopId));
+        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+
     }
 
 

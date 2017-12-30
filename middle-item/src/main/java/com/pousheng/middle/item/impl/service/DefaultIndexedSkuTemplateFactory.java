@@ -73,11 +73,13 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
         final Long categoryId = spu.getCategoryId();
         BackCategory currentBackCategory = backCategoryCacher.findBackCategoryById(categoryId);
-        List<BackCategory> backCategories = backCategoryCacher.findAncestorsOf(categoryId);
-        List<Long> backCategoryIds = Lists.newArrayListWithCapacity(backCategories.size());
-        for (BackCategory backCategory : backCategories) {
+        //List<BackCategory> backCategories = backCategoryCacher.findAncestorsOf(categoryId);
+        List<Long> backCategoryIds = Lists.newArrayListWithCapacity(1);
+        /*for (BackCategory backCategory : backCategories) {
             backCategoryIds.add(backCategory.getId());
-        }
+        }*/
+
+        backCategoryIds.add(categoryId);
 
         indexedSkuTemplate.setCategoryIds(backCategoryIds);
         indexedSkuTemplate.setCategoryName(currentBackCategory.getName());

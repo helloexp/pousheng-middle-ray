@@ -106,7 +106,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
         if (!StringUtils.hasText(brandId)) {
             sb.append("$" + BRAND_AGGS + ":brandId:"+Integer.MAX_VALUE);
         }
-        sb.append("$" + CAT_AGGS + ":categoryIds:"+5000);
+        sb.append("$" + CAT_AGGS + ":categoryIds:"+Integer.MAX_VALUE);
         return sb.toString();
     }
 

@@ -277,7 +277,7 @@ public class OrderOpenApi {
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             String outId = refund.getChannel();
             if (StringUtils.hasText(outId)){
-                String channel = this.getOutChannel(outId);
+                String channel = refundReadLogic.getOutChannel(outId);
                 if (!Objects.equals(channel, MiddleChannel.TAOBAO.getValue())){
                     return;
                 }
@@ -286,6 +286,7 @@ public class OrderOpenApi {
                 event.setRefundId(refundOrderId);
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
+                event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleId(outId));
                 eventBus.post(event);
             }
 
@@ -398,28 +399,5 @@ public class OrderOpenApi {
                 throw new JsonResponseException("refund.type.invalid");
         }
 
-    }
-    /**
-     * 通过outId获取渠道
-     *
-     * @return 获取渠道
-     */
-    public String getOutChannel(String outId) {
-        if (StringUtils.hasText(outId)) {
-            return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(0);
-        }
-        return null;
-    }
-
-    /**
-     * 通过outId获取渠道
-     *
-     * @return 获取渠道
-     */
-    public String getOutafterSaleId(String outId) {
-        if (StringUtils.hasText(outId)) {
-            return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(1);
-        }
-        return null;
     }
 }

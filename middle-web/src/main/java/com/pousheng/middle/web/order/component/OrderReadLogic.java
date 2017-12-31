@@ -511,7 +511,7 @@ public class OrderReadLogic {
         List<OrderShipment> orderShipmentList =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
         if (orderShipments.isEmpty()){
-           return false;
+           return true;
         }
         for (OrderShipment orderShipment:orderShipments){
             if (orderShipment.getStatus()>=MiddleShipmentsStatus.SHIPPED.getValue()){

@@ -286,7 +286,7 @@ public class OrderOpenApi {
                 event.setRefundId(refundOrderId);
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
-                event.setOpenAfterSaleId(this.getOutafterSaleId(outId));
+                eventBus.post(event);
             }
 
         } catch (JsonResponseException | ServiceException e) {

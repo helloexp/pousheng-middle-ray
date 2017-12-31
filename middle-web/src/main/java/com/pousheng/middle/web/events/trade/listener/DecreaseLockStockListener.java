@@ -46,9 +46,8 @@ public class DecreaseLockStockListener {
 
     @Subscribe
     public void doDecreaseStock(HkShipmentDoneEvent event){
-
+        log.info("start decrease stock,shipmentId is {}",event.getShipment().getId());
         Shipment shipment = event.getShipment();
-
         //获取发货单下的sku订单信息
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //获取发货仓信息
@@ -59,6 +58,7 @@ public class DecreaseLockStockListener {
         //组装sku订单数量信息
         List<SkuCodeAndQuantity> skuCodeAndQuantities =makeSkuCodeAndQuantities(shipmentItems);
         warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+        log.info("will decrease stock,skuCodeAndQuantities is {},warehouseId is {},warehouseName is{}",event.getShipment().getId(),extra.getWarehouseId(),extra.getWarehouseName());
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
         warehouseShipmentList.add(warehouseShipment);
@@ -74,6 +74,7 @@ public class DecreaseLockStockListener {
             }
         }
         stockPusher.submit(skuCodes);
+        log.info("end decrease stock");
     }
 
     private List<SkuCodeAndQuantity> makeSkuCodeAndQuantities(List<ShipmentItem> list){

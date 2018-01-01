@@ -19,7 +19,7 @@ public class BatchHandleRecord {
     //状态
     private String state;
 
-    //异常id
+    //异常url
     private String url;
 
     //类型

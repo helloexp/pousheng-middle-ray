@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.item.batchhandle;
 
+import com.google.common.base.Strings;
 import com.pousheng.middle.web.utils.export.ExportEditable;
 import com.pousheng.middle.web.utils.export.ExportOrder;
 import com.pousheng.middle.web.utils.export.ExportTitle;
@@ -15,6 +16,7 @@ import org.apache.poi.xssf.usermodel.XSSFCellStyle;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.assertj.core.util.Lists;
 import org.joda.time.DateTime;
+import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -147,8 +149,10 @@ public class ExcelExportHelper<T> {
      * 转换成文件
      * @return
      */
-    public File transformToFile(){
-        File file = new File(".", DateTime.now().toString("yyyyMMddHHmmss") + ".xls");
+    public File transformToFile(String fileName){
+        if(!StringUtils.hasText(fileName))
+            fileName = DateTime.now().toString("yyyyMMddHHmmss");
+        File file = new File(".", fileName);
         try{
             if(!file.exists()){
                 file.createNewFile();
@@ -160,6 +164,10 @@ public class ExcelExportHelper<T> {
             throw new JsonResponseException("fail save export result to file");
         }
         return file;
+    }
+
+    public File transformToFile(){
+        return this.transformToFile(null);
     }
 
     @Data

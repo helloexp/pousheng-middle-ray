@@ -104,23 +104,31 @@ public class BatchHandleMposLogic {
      * 获取导出文件记录
      * @return
      */
-    public Response<List<FileRecord>> getExportFileRecord(){
+    public Response<List<BatchHandleRecord>> getExportFileRecord(){
         Long userId = UserUtil.getUserId();
         try{
-            List<FileRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<FileRecord>>() {
+            List<BatchHandleRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<BatchHandleRecord>>() {
                 @Override
-                public List<FileRecord> action(Jedis jedis) {
-                    List<FileRecord> records = new ArrayList<>();
+                public List<BatchHandleRecord> action(Jedis jedis) {
+                    List<BatchHandleRecord> records = new ArrayList<>();
                     jedis.keys("mpos:" + userId + ":export:*").forEach(key -> {
-                        FileRecord record = new FileRecord();
+                        BatchHandleRecord record = new BatchHandleRecord();
                         String[] attr = key.split("~");
-                        record.setExportAt(new Date(Long.parseLong(attr[1])));
+                        record.setCreateAt(new Date(Long.parseLong(attr[1])));
                         String value = jedis.get(key);
-                        record.setName(attr[0].substring(("mpos:" + userId + ":export:").length()));
-                        record.setUrl(value);
+                        record.setName(attr[1]);
+                        String name = attr[0].substring(("mpos:" + userId + ":export:").length());
+                        record.setName(name);
+                        String[] val = value.split("~");
+                        if(val.length == 1) {
+                            record.setState(value);
+                        }else {
+                            record.setState(val[0]);
+                            record.setUrl(val[1]);
+                        }
                         records.add(record);
                     });
-                    return records.stream().sorted((r1, r2) -> r2.getExportAt().compareTo(r1.getExportAt())).collect(Collectors.toList());
+                    return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
                 }
             });
             return Response.ok(list);

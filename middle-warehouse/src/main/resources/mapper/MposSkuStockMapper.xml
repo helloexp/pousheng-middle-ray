@@ -148,4 +148,20 @@
 
 
 
+    <update id="unlockStockWarehouse" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock - #{quantity}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </update>
+
+
+    <update id="unlockStockShop" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock - #{quantity}
+        WHERE shop_id= #{shopId} and sku_code=#{skuCode}
+    </update>
+
+
 </mapper>

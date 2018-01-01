@@ -57,6 +57,21 @@ public class MposSkuStockDao extends MyBatisDao<MposSkuStock> {
 
 
     /**
+     * 解锁仓库库存
+     *
+     * @param warehouseId 仓库id
+     * @param skuCode     sku编码
+     * @param quantity       数值
+     * @return 是否操作成功
+     */
+    public boolean unlockStockWarehouse(Long warehouseId, String skuCode, Integer quantity) {
+        return this.sqlSession.update(sqlId("unlockStockWarehouse"),
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "quantity", quantity))
+                == 1;
+    }
+
+
+    /**
      * 锁门店库存
      *
      * @param shopId 门店id
@@ -69,5 +84,20 @@ public class MposSkuStockDao extends MyBatisDao<MposSkuStock> {
                 ImmutableMap.of("shopId", shopId, "skuCode", skuCode, "quantity", quantity))
                 == 1;
     }
+
+    /**
+     * 解锁门店库存
+     *
+     * @param shopId 门店id
+     * @param skuCode     sku编码
+     * @param quantity      数值
+     * @return 是否操作成功
+     */
+    public boolean unlockStockShop(Long shopId, String skuCode, Integer quantity) {
+        return this.sqlSession.update(sqlId("unlockStockShop"),
+                ImmutableMap.of("shopId", shopId, "skuCode", skuCode, "quantity", quantity))
+                == 1;
+    }
+
 
 }

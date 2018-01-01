@@ -292,7 +292,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 添加不能自动生成发货单的原因
-     *
      * @param shopOrder 店铺订单
      * @param type      不能自动生成发货单的类型
      */
@@ -313,7 +312,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 创建发货单
-     *
      * @param shopOrder         店铺订单
      * @param skuOrders         子单
      * @param warehouseShipment 发货仓库信息
@@ -364,8 +362,6 @@ public class ShipmentWiteLogic {
         }
         //订单总金额(运费优惠已经包含在子单折扣中)=商品总净价+运费
         Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
-        ;
-
         Shipment shipment = this.makeShipment(shopOrder, warehouseId, shipmentItemFee
                 , shipmentDiscountFee, shipmentTotalFee, shipmentShipFee, shipmentShipDiscountFee, shipmentTotalPrice, shopOrder.getShopId());
         shipment.setSkuInfos(skuOrderIdAndQuantity);
@@ -509,7 +505,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 是否满足自动创建发货单的校验
-     *
      * @param shopOrder 店铺订单
      * @param skuOrders 子单
      * @return 不可以自动创建发货单(false), 可以自动创建发货单(true)
@@ -535,7 +530,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 根据skuCode获取skuOrder
-     *
      * @param skuOrders 子单集合
      * @param skuCode   sku代码
      * @return 返回经过过滤的skuOrder记录
@@ -612,7 +606,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 组装发货单参数
-     *
      * @param shopOrder     店铺订单
      * @param deliverShopId 接单店铺id
      * @return 返回组装的发货单
@@ -664,7 +657,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 查找收货人信息
-     *
      * @param orderId    订单主键
      * @param orderLevel 订单级别 店铺订单or子单
      * @return 收货人信息的json串
@@ -706,7 +698,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 获取发货仓库信息
-     *
      * @param warehouseId 仓库主键
      * @return 仓库信息
      */

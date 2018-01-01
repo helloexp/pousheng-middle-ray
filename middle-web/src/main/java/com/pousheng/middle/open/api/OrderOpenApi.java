@@ -1,5 +1,6 @@
 package com.pousheng.middle.open.api;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
@@ -8,12 +9,14 @@ import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
+import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -36,6 +39,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
@@ -283,6 +287,21 @@ public class OrderOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
+            }
+            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            String outId = refund.getChannel();
+            if (StringUtils.hasText(outId)){
+                String channel = refundReadLogic.getOutChannel(outId);
+                if (!Objects.equals(channel, MiddleChannel.TAOBAO.getValue())){
+                    return;
+                }
+                Refund newRefund =  refundReadLogic.findRefundById(refundOrderId);
+                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                event.setRefundId(refundOrderId);
+                event.setChannel(channel);
+                event.setOpenShopId(newRefund.getShopId());
+                event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleId(outId));
+                eventBus.post(event);
             }
 
         } catch (JsonResponseException | ServiceException e) {

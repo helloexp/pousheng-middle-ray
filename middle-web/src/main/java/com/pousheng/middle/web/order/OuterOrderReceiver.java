@@ -95,6 +95,7 @@ public class OuterOrderReceiver {
         openClientShop.setShopName(exist.getName());
 
         OpenClientFullOrder openClientFullOrder = paranaOrderConverter.transform(orderInfo);
+        openClientFullOrder.setExtra(orderInfo.getShopOrder().getExtra());
 
         //处理单据
         orderReceiver.receiveOrder(openClientShop, Lists.newArrayList(openClientFullOrder));

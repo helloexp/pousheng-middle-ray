@@ -15,6 +15,9 @@ import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.model.MposSkuStock;
+import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +41,8 @@ public class DispatchComponent {
 
     @Autowired
     private GDMapSearchService gdMapSearchService;
+    @RpcConsumer
+    private MposSkuStockReadService mposSkuStockReadService;
 
 
 
@@ -68,6 +73,76 @@ public class DispatchComponent {
         return locationRes.getResult();
     }
 
+    public Long getMposSkuWarehouseLockStock(Long warehouseId,String skuCode){
+
+        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
+        if(!response.isSuccess()){
+            log.error("find mposSkuStock by warehouse id :{} and sku code:{} failed,  error:{}", warehouseId,skuCode, response.getError());
+            return 0L;
+        }
+
+        Optional<MposSkuStock> stockOptional = response.getResult();
+        if(stockOptional.isPresent()){
+            return stockOptional.get().getLockedStock();
+        }
+
+        return 0L;
+    }
+
+
+
+    public Long getMposSkuShopLockStock(Long warehouseId,String skuCode){
+
+        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(warehouseId,skuCode);
+        if(!response.isSuccess()){
+            log.error("find mposSkuStock by shop id :{} and sku code:{} failed,  error:{}", warehouseId,skuCode, response.getError());
+            return 0L;
+        }
+
+        Optional<MposSkuStock> stockOptional = response.getResult();
+        if(stockOptional.isPresent()){
+            return stockOptional.get().getLockedStock();
+        }
+
+        return 0L;
+    }
+
+    /**
+     * 完善 仓库商品库存信息
+     * @param skuStockInfos 商品数量信息
+     * @param skuCodeQuantityTable tab
+     */
+    public void completeWarehouseTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
+
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                //可用库存要减去mpos占用部分
+                Integer availStock = skuAndQuantityInfo.getQuantity();
+                Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
+                //这里先不考虑 availStock-lockStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock);
+            }
+        }
+    }
+
+
+    /**
+     * 完善 门店商品库存信息
+     * @param skuStockInfos 商品数量信息
+     * @param skuCodeQuantityTable tab
+     */
+    public void completeShopTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
+
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                //可用库存要减去mpos占用部分
+                Integer availStock = skuAndQuantityInfo.getQuantity();
+                Integer lockStock = Integer.valueOf(this.getMposSkuShopLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
+                //这里先不考虑 availStock-lockStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock);
+            }
+        }
+    }
 
 
 

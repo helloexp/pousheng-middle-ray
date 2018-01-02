@@ -16,7 +16,6 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.web.warehouses.Warehouses;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -26,7 +25,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.Nullable;
-import javax.xml.ws.Dispatch;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -107,12 +105,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         // 放入 warehouseSkuCodeQuantityTable
-        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                warehouseSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
-            }
-        }
-
+        dispatchComponent.completeWarehouseTab(skuStockInfos,warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
 

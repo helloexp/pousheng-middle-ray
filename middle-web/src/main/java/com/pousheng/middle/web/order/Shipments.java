@@ -413,7 +413,7 @@ public class Shipments {
                 refundChangeItems = refundReadLogic.findRefundLostItems(refund);
             }
             if (refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems)){
-                throw new JsonResponseException("");
+                throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
             }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 

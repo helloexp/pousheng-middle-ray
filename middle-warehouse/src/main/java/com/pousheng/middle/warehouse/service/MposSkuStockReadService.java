@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.service;
 
+import com.google.common.base.Optional;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import io.terminus.common.model.Response;
 
@@ -17,4 +18,21 @@ public interface MposSkuStockReadService {
      * @return mpos下单sku锁定库存情况
      */
     Response<MposSkuStock> findById(Long Id);
+
+    /**
+     * 获取mpos 仓库商品锁定数量
+     * @param warehouseId 仓库id
+     * @param skuCode 商品编码
+     * @return 商品锁定
+     */
+    Response<Optional<MposSkuStock>> findByWarehouseIdAndSkuCode(Long warehouseId, String skuCode);
+
+
+    /**
+     * 获取mpos 门店商品锁定数量
+     * @param shopId 门店id
+     * @param skuCode 商品编码
+     * @return 商品锁定
+     */
+    Response<Optional<MposSkuStock>> findByShopIdAndSkuCode(Long shopId, String skuCode);
 }

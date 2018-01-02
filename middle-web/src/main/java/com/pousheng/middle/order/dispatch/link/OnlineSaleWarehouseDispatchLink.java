@@ -6,6 +6,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
@@ -13,9 +14,11 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
+import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -52,6 +55,9 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
     private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
     private WarehouseChooser warehouseChooser;
+    @Autowired
+    private DispatchComponent dispatchComponent;
+
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -103,7 +109,10 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         for (WarehouseSkuStock warehouseSkuStock : onlineSaleWarehouses){
             //过滤掉非mpos的
             if(mposOnlineSaleWarehouseIds.contains(warehouseSkuStock.getWarehouseId())){
-                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(warehouseSkuStock.getAvailStock().toString()));
+                //可用库存要减去mpos占用部分
+                Long availStock = warehouseSkuStock.getAvailStock();
+                availStock-=dispatchComponent.getMposSkuWarehouseLockStock(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode());
+                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(availStock.toString()));
             }
         }
         context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);

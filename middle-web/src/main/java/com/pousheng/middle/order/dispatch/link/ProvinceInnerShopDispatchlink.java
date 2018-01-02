@@ -93,11 +93,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
         Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
-        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                shopSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
-            }
-        }
+        dispatchComponent.completeShopTab(skuStockInfos,shopSkuCodeQuantityTable);
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(skuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);

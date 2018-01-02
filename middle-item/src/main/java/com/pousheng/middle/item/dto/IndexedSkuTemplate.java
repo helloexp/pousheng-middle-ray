@@ -34,7 +34,7 @@ public class IndexedSkuTemplate implements Serializable {
 
 
     /**
-     * spu编码
+     * spu编码 （货号）
      */
     @Getter
     @Setter

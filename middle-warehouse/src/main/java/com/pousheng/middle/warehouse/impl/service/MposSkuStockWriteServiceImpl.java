@@ -74,6 +74,16 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
     }
 
     @Override
+    public Response<Boolean> unlockStockWarehouse(List<WarehouseShipment> warehouseShipments) {
+        try {
+            mposSkuStockManager.unLockStockWarehouse(warehouseShipments);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("mpos failed to unlock warehouse stock for {}", warehouseShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.stock.unlock.fail");
+        }    }
+
+    @Override
     public Response<Boolean> lockStockShop(List<ShopShipment> shopShipments) {
         try {
             mposSkuStockManager.lockStockShop(shopShipments);
@@ -81,6 +91,17 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
         }catch (Exception e){
             log.error("mpos failed to lock shop stock for {}", shopShipments, Throwables.getStackTraceAsString(e));
             return Response.fail("shop.stock.lock.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> unLockStockShop(List<ShopShipment> shopShipments) {
+        try {
+            mposSkuStockManager.unLockStockShop(shopShipments);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("mpos failed to unlock shop stock for {}", shopShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("shop.stock.unlock.fail");
         }
     }
 

@@ -1,5 +1,6 @@
 package com.pousheng.middle.open;
 
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
@@ -9,6 +10,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -35,6 +37,8 @@ public class AvailableStockCalc {
 
     @RpcConsumer
     private WarehouseRuleReadService warehouseRuleReadService;
+    @Autowired
+    private DispatchComponent dispatchComponent;
 
     /**
      * 计算某个sku在指定店铺中的可用库存
@@ -60,7 +64,10 @@ public class AvailableStockCalc {
                         skuCode, warehouseId, r.getError());
             }else{
                 if (Objects.nonNull(r.getResult())){
-                    quantity= quantity+ (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock());
+                    //获取mpos仓占用库存
+                    Long lockStock = dispatchComponent.getMposSkuWarehouseLockStock(warehouseId,skuCode);
+                    //减去mpos仓商品占用库存
+                    quantity= quantity+ (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock())-lockStock;
                 }
             }
         }

@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
@@ -50,12 +51,15 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
      * 创建dump到搜索引擎的商品对象, 包含属性, 类目等信息
      */
     public IndexedSkuTemplate create(SkuTemplate skuTemplate, Spu spu, SpuAttribute spuAttribute, Object... others) {
+
+        Map<String,String> extra = skuTemplate.getExtra();
+        String materialId = extra.get("materialId");
         IndexedSkuTemplate indexedSkuTemplate = new IndexedSkuTemplate();
         indexedSkuTemplate.setId(skuTemplate.getId());
         indexedSkuTemplate.setName(skuTemplate.getName());
         indexedSkuTemplate.setMainImage(skuTemplate.getImage_());
         indexedSkuTemplate.setSpuId(spu.getId());
-        indexedSkuTemplate.setSpuCode(spu.getSpuCode());
+        indexedSkuTemplate.setSpuCode(materialId);//货号
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
         if(isMopsItem(skuTemplate)){
             indexedSkuTemplate.setType(1);
@@ -102,13 +106,14 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
 
         //销售属性
-   /*     List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
+        List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
         if (!CollectionUtils.isEmpty(skuAttributes)) {
             for (SkuAttribute skuAttribute : skuAttributes) {
+                if(Objects.equal(skuAttribute.getAttrKey(),"尺码")) {
                     attributes.add(skuAttribute.getAttrKey() + ":" + skuAttribute.getAttrVal());
+                }
             }
         }
-*/
         indexedSkuTemplate.setAttributes(attributes);
 
         //indexedSkuTemplate.setPrice(skuTemplate.getPrice());

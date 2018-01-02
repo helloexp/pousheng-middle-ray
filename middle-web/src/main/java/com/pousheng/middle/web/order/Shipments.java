@@ -412,6 +412,9 @@ public class Shipments {
             if (Objects.equals(shipType,3)){
                 refundChangeItems = refundReadLogic.findRefundLostItems(refund);
             }
+            if (refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems)){
+                throw new JsonResponseException("");
+            }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
             //检查库存是否充足

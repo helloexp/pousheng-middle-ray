@@ -26,7 +26,9 @@ import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -106,7 +108,7 @@ public class SyncOrderToEcpLogic {
 
 
     /**
-     * 同步发货单到电商，需要上传所有发货单到电商
+     * 同步发货单到电商，需要上传所有发货单到电商，天猫是子单发货，如果一个发货单中只有赠品，该发货单不会被同步到电商平台，就算已经同步成功
      * @param shopOrder 店铺订单
      * @return
      */
@@ -161,7 +163,9 @@ public class SyncOrderToEcpLogic {
                     //添加外部子订单的id
                     for (ShipmentItem shipmentItem:shipmentItems){
                         //淘宝会用到外部sku订单号
-                        outerItemOrderIds.add(shipmentItem.getSkuOutId());
+                        if (!StringUtils.isEmpty(shipmentItem.getSkuOutId())){
+                            outerItemOrderIds.add(shipmentItem.getSkuOutId());
+                        }
                         //官网会用到skuCode
                         outerSkuCodes.add(shipmentItem.getSkuCode());
                     }
@@ -170,7 +174,12 @@ public class SyncOrderToEcpLogic {
                     //填写运单号
                     openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
                     log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
-                    Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
+                    Response<Boolean> response = null;
+                    if (!isTaobaoGiftShipmentOnly(shopOrder,shipmentItems)){
+                        response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
+                    }else{
+                        response = Response.ok(Boolean.TRUE);
+                    }
 
                     Map<String,String> extraMap = shipment.getExtra();
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
@@ -206,5 +215,23 @@ public class SyncOrderToEcpLogic {
         }
 
         return Response.ok();
+    }
+
+    /**
+     * 判断是否是淘宝的赠品发货单(该发货单中只有淘宝赠品)
+     * @param shopOrder
+     * @param shipmentItems
+     * @return 不是淘宝赠品发货单false,
+     */
+    public boolean isTaobaoGiftShipmentOnly(ShopOrder shopOrder,List<ShipmentItem> shipmentItems)
+    {
+        if (Objects.equals(shopOrder.getOutFrom(),MiddleChannel.TAOBAO.getValue())&&shipmentItems.size()==1){
+           for (ShipmentItem shipmentItem:shipmentItems){
+               if (StringUtils.isEmpty(shipmentItem.getSkuOutId())){
+                   return true;
+               }
+           }
+        }
+        return false;
     }
 }

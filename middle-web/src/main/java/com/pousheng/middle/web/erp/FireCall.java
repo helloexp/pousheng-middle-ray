@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.erp;
 
 import com.pousheng.erp.component.BrandImporter;
+import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import lombok.extern.slf4j.Slf4j;
@@ -33,15 +34,20 @@ public class FireCall {
 
     private final WarehouseImporter warehouseImporter;
 
+
+    private final MposWarehousePusher mposWarehousePusher;
+
+
     private final DateTimeFormatter dft;
 
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter) {
+                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
+        this.mposWarehousePusher = mposWarehousePusher;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -94,6 +100,21 @@ public class FireCall {
         log.info("synchronized {} warehouses", warehouseCount);
         return "ok";
 
+    }
+
+
+    @RequestMapping(value="/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String syncMposWarehouse(@RequestParam String companyId,
+                                       @RequestParam String stockId){
+        mposWarehousePusher.addWarehouses(companyId,stockId);
+        return "ok";
+    }
+
+    @RequestMapping(value="/del/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String delMposWarehouse(@RequestParam String companyId,
+                                    @RequestParam String stockId){
+        mposWarehousePusher.removeWarehouses(companyId,stockId);
+        return "ok";
     }
 
 

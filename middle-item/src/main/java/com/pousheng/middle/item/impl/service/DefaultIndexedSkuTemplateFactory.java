@@ -9,7 +9,6 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
-import io.terminus.common.utils.Arguments;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;

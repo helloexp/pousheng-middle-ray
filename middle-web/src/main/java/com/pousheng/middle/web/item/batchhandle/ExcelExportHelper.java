@@ -151,7 +151,7 @@ public class ExcelExportHelper<T> {
      */
     public File transformToFile(String fileName){
         if(!StringUtils.hasText(fileName))
-            fileName = DateTime.now().toString("yyyyMMddHHmmss");
+            fileName = DateTime.now().toString("yyyyMMddHHmmss") + ".xls";
         File file = new File(".", fileName);
         try{
             if(!file.exists()){

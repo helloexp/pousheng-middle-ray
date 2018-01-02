@@ -22,6 +22,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Map;
+
 /**
  * Created by songrenfei on 2017/12/7
  */
@@ -64,6 +66,13 @@ public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWrite
             Spu spu = spuDao.findById(exist.getSpuId());
 
             if (indexedSkuTemplateGuarder.indexable(exist)) {  //更新
+
+                Map<String,String> extra = exist.getExtra();
+                //当没找到sku对应的货号时跳过
+                if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
+                    log.warn("sku template(id:{}) not find material id so skip create search index",exist.getId());
+                    return Response.ok();
+                }
                 IndexedSkuTemplate indexedItem = indexedItemFactory.create(exist, spu,spuAttribute);
                 IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                 indexExecutor.submit(indexTask);

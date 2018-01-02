@@ -18,6 +18,7 @@ import com.pousheng.middle.item.service.IndexedSkuTemplateGuarder;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
 import io.terminus.parana.spu.impl.dao.SpuAttributeDao;
 import io.terminus.parana.spu.impl.dao.SpuDao;
@@ -168,6 +169,12 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
                     if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {  //更新
+                        Map<String,String> extra = skuTemplate.getExtra();
+                        //当没找到sku对应的货号时跳过
+                        if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
+                            log.warn("sku template(id:{}) not find material id so skip create search index",skuTemplate.getId());
+                            continue;
+                        }
                         IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
                         IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                         indexExecutor.submit(indexTask);

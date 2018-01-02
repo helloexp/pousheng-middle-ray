@@ -102,6 +102,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
             //借用tradeNo字段来标记售中退款的逆向单是否已处理
             refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }
 
         //判断售后单对应的是否是天猫订单
@@ -310,14 +311,14 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (afterSale.getStatus() != OpenClientAfterSaleStatus.SUCCESS) {
             return;
         }
-        //淘宝仅退款的订单做特殊处理
-        if (refund.getOutId().contains("taobao")&&
+        //淘宝苏宁仅退款的订单做特殊处理
+        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
                 Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
                 &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())){
             return;
         }
         //淘宝的退货退款单只有订单退货完成待退款才可以更新发货单状态
-        if (refund.getOutId().contains("taobao")&&
+        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
                 Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
                 &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())){
             return;

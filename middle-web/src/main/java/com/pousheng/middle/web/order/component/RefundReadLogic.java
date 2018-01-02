@@ -315,7 +315,7 @@ public class RefundReadLogic {
      *
      * @return 获取渠道
      */
-    public String getOutChannel(String outId) {
+    public String getOutChannelTaobao(String outId) {
         if (StringUtils.hasText(outId)) {
             return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(0);
         }
@@ -327,7 +327,7 @@ public class RefundReadLogic {
      *
      * @return 获取渠道
      */
-    public String getOutafterSaleId(String outId) {
+    public String getOutafterSaleIdTaobao(String outId) {
         if (StringUtils.hasText(outId)) {
             return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(1);
         }
@@ -349,4 +349,16 @@ public class RefundReadLogic {
         }
         return count==0;
     }
+    /**
+     * 通过outId获取渠道
+     *
+     * @return 获取渠道
+     */
+    public String getOutChannelSuning(String outId) {
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(3).splitToList(outId).get(0);
+        }
+        return null;
+    }
+
 }

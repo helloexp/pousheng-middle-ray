@@ -1,6 +1,5 @@
 package com.pousheng.middle.open.api;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
@@ -29,9 +28,7 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -290,18 +287,34 @@ public class OrderOpenApi {
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             String outId = refund.getChannel();
-            if (StringUtils.hasText(outId)){
-                String channel = refundReadLogic.getOutChannel(outId);
-                if (!Objects.equals(channel, MiddleChannel.TAOBAO.getValue())){
-                    return;
+            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+                String channel = refundReadLogic.getOutChannelTaobao(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                    eventBus.post(event);
                 }
-                Refund newRefund =  refundReadLogic.findRefundById(refundOrderId);
-                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                event.setRefundId(refundOrderId);
-                event.setChannel(channel);
-                event.setOpenShopId(newRefund.getShopId());
-                event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleId(outId));
-                eventBus.post(event);
+            }
+            //如果是苏宁的售后单，将会主动查询售后单的状态
+            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+                String channel = refundReadLogic.getOutChannelSuning(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenOrderId(shopOrder.getOutId());
+                    eventBus.post(event);
+                }
             }
 
         } catch (JsonResponseException | ServiceException e) {

@@ -100,7 +100,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
 
     private String makeAggSpecifiers(String brandId) {
-        StringBuilder sb = new StringBuilder(ATTR_AGGS + ":attributes:100");
+        StringBuilder sb = new StringBuilder(ATTR_AGGS + ":attributes:300");
 
         //如果指定了品牌, 则品牌不需要计算聚合了
         if (!StringUtils.hasText(brandId)) {

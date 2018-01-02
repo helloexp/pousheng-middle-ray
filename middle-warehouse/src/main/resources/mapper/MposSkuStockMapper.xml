@@ -117,4 +117,51 @@
         </where>
     </select>
 
+
+    <update id="lockStockWarehouse" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock + #{quantity}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </update>
+
+    <update id="lockStockShop" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock + #{quantity}
+        WHERE shop_id= #{shopId} and sku_code=#{skuCode}
+    </update>
+
+
+    <select id="findByWarehouseIdAndSkuCode" parameterType="map" resultMap="MposSkuStockMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE  warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </select>
+
+
+    <select id="findByShopIdAndSkuCode" parameterType="map" resultMap="MposSkuStockMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE  shop_id= #{shopId} and sku_code=#{skuCode}
+    </select>
+
+
+
+    <update id="unlockStockWarehouse" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock - #{quantity}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+    </update>
+
+
+    <update id="unlockStockShop" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET locked_stock = locked_stock - #{quantity}
+        WHERE shop_id= #{shopId} and sku_code=#{skuCode}
+    </update>
+
+
 </mapper>

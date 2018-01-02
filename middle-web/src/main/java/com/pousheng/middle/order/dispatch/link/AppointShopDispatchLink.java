@@ -3,7 +3,7 @@ package com.pousheng.middle.order.dispatch.link;
 import com.google.common.base.Objects;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.dispatch.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.parana.cache.ShopCacher;
@@ -11,7 +11,6 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.ognl.JavaSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

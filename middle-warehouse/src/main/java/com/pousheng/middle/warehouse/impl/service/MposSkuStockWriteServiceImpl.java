@@ -1,7 +1,10 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.impl.dao.MposSkuStockDao;
+import com.pousheng.middle.warehouse.manager.MposSkuStockManager;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
@@ -9,6 +12,8 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 /**
  * Author: songrenfei
@@ -20,12 +25,11 @@ import org.springframework.stereotype.Service;
 @RpcProvider
 public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
 
-    private final MposSkuStockDao mposSkuStockDao;
-
     @Autowired
-    public MposSkuStockWriteServiceImpl(MposSkuStockDao mposSkuStockDao) {
-        this.mposSkuStockDao = mposSkuStockDao;
-    }
+    private MposSkuStockDao mposSkuStockDao;
+    @Autowired
+    private MposSkuStockManager mposSkuStockManager;
+
 
     @Override
     public Response<Long> create(MposSkuStock mposSkuStock) {
@@ -55,6 +59,39 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
         } catch (Exception e) {
             log.error("delete mposSkuStock failed, mposSkuStockId:{}, cause:{}", mposSkuStockId, Throwables.getStackTraceAsString(e));
             return Response.fail("mpos.sku.stock.delete.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> lockStockWarehouse(List<WarehouseShipment> warehouseShipments) {
+        try {
+            mposSkuStockManager.lockStockWarehouse(warehouseShipments);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("mpos failed to lock warehouse stock for {}", warehouseShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.stock.lock.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> lockStockShop(List<ShopShipment> shopShipments) {
+        try {
+            mposSkuStockManager.lockStockShop(shopShipments);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("mpos failed to lock shop stock for {}", shopShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("shop.stock.lock.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> lockStockShopAndWarehouse(List<ShopShipment> shopShipments, List<WarehouseShipment> warehouseShipments) {
+        try {
+            mposSkuStockManager.lockStockShopAndWarehouse(shopShipments,warehouseShipments);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("mpos failed to lock shop stock shopShipments: {},warehouseShipments: {}", shopShipments,warehouseShipments, Throwables.getStackTraceAsString(e));
+            return Response.fail("shop.stock.lock.fail");
         }
     }
 }

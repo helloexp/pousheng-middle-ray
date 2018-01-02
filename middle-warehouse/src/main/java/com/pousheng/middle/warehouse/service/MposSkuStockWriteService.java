@@ -1,7 +1,11 @@
 package com.pousheng.middle.warehouse.service;
 
+import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import io.terminus.common.model.Response;
+
+import java.util.List;
 
 /**
  * Author: songrenfei
@@ -31,4 +35,32 @@ public interface MposSkuStockWriteService {
      * @return 是否成功
      */
     Response<Boolean> deleteById(Long mposSkuStockId);
+
+
+
+    /**
+     * 根据指定的仓库分配策略锁定库存
+     *
+     * @param warehouseShipments 仓库及发货数量列表
+     * @return 是否锁定成功
+     */
+    Response<Boolean> lockStockWarehouse(List<WarehouseShipment> warehouseShipments);
+
+    /**
+     * 根据指定的门店锁定库存
+     *
+     * @param shopShipments 门店及发货数量列表
+     * @return 是否锁定成功
+     */
+    Response<Boolean> lockStockShop(List<ShopShipment> shopShipments);
+
+
+    /**
+     * 根据指定的门店和仓库锁定库存
+     *
+     * @param shopShipments 门店及发货数量列表
+     * @param warehouseShipments 仓库及发货数量列表
+     * @return 是否锁定成功
+     */
+    Response<Boolean> lockStockShopAndWarehouse(List<ShopShipment> shopShipments,List<WarehouseShipment> warehouseShipments);
 }

@@ -97,24 +97,31 @@ public class BatchAsyncHandleMposListener {
         Long userId = batchMakeMposFlagEvent.getCurrentUserId();
         String operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
-        ExcelExportHelper<AbnormalRecord> helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-        log.info("async handle mpos flag task start");
-        //1.开始的时候记录状态
-        recordToRedis(key,PsItemConstants.EXECUTING,userId);
-        boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper);
-        while(next && pageNo < 100){
-            pageNo++;
-            next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper);
+        ExcelExportHelper<AbnormalRecord> helper;
+        try{
+            helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
+            log.info("async handle mpos flag task start");
+            //1.开始的时候记录状态
+            recordToRedis(key,PsItemConstants.EXECUTING,userId);
+            boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper);
+            while(next && pageNo < 100){
+                pageNo++;
+                next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper);
+                log.info("async handle mpos flag " + pageNo * 100);
+            }
+            //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
+            if(helper.size() > 0){
+                String url = this.uploadToAzureOSS(helper.transformToFile());
+                recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
+                log.error("async handle mpos flag task abnormality");
+            }else{
+                recordToRedis(key,PsItemConstants.EXECUTED,userId);
+            }
+            log.info("async handle mpos flag task end");
+        }catch (Exception e){
+            log.error("async handle mpos flag task error",Throwables.getStackTraceAsString(e));
+            recordToRedis(key,PsItemConstants.SYSTEM_ERROR + "~" + e.getMessage(),userId);
         }
-        //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
-        if(helper.size() > 0){
-            String url = this.uploadToAzureOSS(helper.transformToFile());
-            recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
-            log.error("async handle mpos flag task abnormality");
-        }else{
-            recordToRedis(key,PsItemConstants.EXECUTED,userId);
-        }
-        log.info("async handle mpos flag task end");
     }
 
     /**
@@ -209,19 +216,18 @@ public class BatchAsyncHandleMposListener {
         Long userId = exportMposDiscountEvent.getCurrentUserId();
         ExcelExportHelper<SearchSkuTemplateEntity> helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
         log.info("async export mpos task start");
+        String fileName = DateTime.now().toString("yyyyMMddHHmmss") + ".xls";
+        String key = toUploadKey(userId,fileName,PsItemConstants.EXPORT_TASK);
+        recordToRedis(key,PsItemConstants.EXECUTING,userId);
         boolean next = batchExportMposDiscount(pageNo,BATCH_SIZE,params,helper);
         while(next && pageNo < 100){
             pageNo++;
             next = batchExportMposDiscount(pageNo,BATCH_SIZE, params,helper);
             log.debug(pageNo + "exported");
         }
-        File file = helper.transformToFile();
+        File file = helper.transformToFile(fileName);
         String uploadUrl = this.uploadToAzureOSS(file);
-        String fileName = file.getName();
-        if (fileName.contains(File.separator)) {
-            fileName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
-        }
-        recordToRedis(toUploadKey(userId,fileName,"export"),uploadUrl,userId);
+        recordToRedis(key,PsItemConstants.EXECUTED + "~" + uploadUrl,userId);
         log.info("async export mpos task end");
     }
 
@@ -281,9 +287,16 @@ public class BatchAsyncHandleMposListener {
         MultipartFile file = event.getFile();
         Long userId = event.getCurrentUserId();
         String key = toImportKey(userId,file.getOriginalFilename());
-        ExcelExportHelper<SearchSkuTemplateEntity> helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
-        recordToRedis(key,PsItemConstants.EXECUTING,userId);
-        List<String[]> list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",12);
+        ExcelExportHelper<SearchSkuTemplateEntity> helper;
+        List<String[]> list;
+        try{
+            helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
+            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",12);
+        }catch (Exception e){
+            log.error("illegal file");
+            recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
+            throw new JsonResponseException("illegal file");
+        }
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[8]) && !"\"\"".equals(strs[8])){
@@ -294,7 +307,7 @@ public class BatchAsyncHandleMposListener {
                     setDiscount(id,discount);
                 }catch (NumberFormatException nfe){
                     log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[8], Throwables.getStackTraceAsString(nfe));
-                    strs[11] = "格式错误";
+                    strs[11] = PsItemConstants.ERROR_FORMATE_ERROR;
                 }catch (JsonResponseException jre){
                     strs[11] = jre.getMessage();
                 }finally{
@@ -324,7 +337,7 @@ public class BatchAsyncHandleMposListener {
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
-            throw new JsonResponseException("未找到该货品");
+            throw new JsonResponseException(PsItemConstants.ERROR_NOT_FIND);
         }
         SkuTemplate exist = rExist.getResult();
         Map<String,String> extra = setMopsDiscount(exist,discount);
@@ -334,7 +347,7 @@ public class BatchAsyncHandleMposListener {
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
-            throw new JsonResponseException("更新失败");
+            throw new JsonResponseException(PsItemConstants.ERROR_UPDATE_FAIL);
         }
     }
 
@@ -405,7 +418,7 @@ public class BatchAsyncHandleMposListener {
     }
 
     private String toImportKey(Long userId,String fileName){
-        return "mpos:" + userId + ":import:"+ fileName + "~" + DateTime.now().toDate().getTime();
+        return "mpos:" + userId + ":" + PsItemConstants.IMPORT_TASK + ":"+ fileName + "~" + DateTime.now().toDate().getTime();
     }
 
     /**

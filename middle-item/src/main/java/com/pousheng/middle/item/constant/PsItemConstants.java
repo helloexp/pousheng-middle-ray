@@ -31,20 +31,22 @@ public class PsItemConstants {
     //异常
     public static final String EXECUTE_ERROR = "2";
 
+    //导入错误文件
+    public static final String IMPORT_FILE_ILLEGAL = "3";
+
+    //系统异常
+    public static final String SYSTEM_ERROR = "4";
+
     //导出任务
     public static final String EXPORT_TASK = "export";
 
     //导入任务
     public static final String IMPORT_TASK = "import";
 
-
-    public static final String ERROR_NOT_FIND_ = "货品未找到";
+    public static final String ERROR_NOT_FIND = "货品未找到";
 
     public static final String ERROR_UPDATE_FAIL = "更新失败";
 
     public static final String ERROR_FORMATE_ERROR = "格式错误";
-
-    public static final String ERROR_SAVE_EXCEL = "文件上传失败";
-
 
 }

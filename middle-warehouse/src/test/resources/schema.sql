@@ -171,7 +171,7 @@ CREATE TABLE `pousheng_mpos_sku_stocks` (
   `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
   `shop_id` bigint(20)  NULL COMMENT '店铺id',
   `sku_code` varchar(64) NOT NULL COMMENT 'sku标识',
-  `locked_stock` bigint(20) NOT NULL COMMENT '当前锁定库存',
+  `locked_stock` bigint(20) DEFAULT 0 COMMENT '当前锁定库存',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),

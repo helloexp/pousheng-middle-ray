@@ -159,3 +159,7 @@ alter table `pousheng_warehouses` add `is_mpos` tinyint default 0 after `is_defa
 alter table `pousheng_warehouses` add `company_id` varchar(64) after `address`;
 alter table `pousheng_warehouses` add `company_name` varchar(64) after `company_id`;
 alter table `pousheng_warehouses` add index `index_middle_warehouse_company` (`company_id`);
+
+
+-- 增大shop表extra字段长度
+alter table `parana_shops` modify column `extra_json` varchar(2048);

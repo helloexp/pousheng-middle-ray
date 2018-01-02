@@ -100,13 +100,13 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
 
         //销售属性
-        List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
+   /*     List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
         if (!CollectionUtils.isEmpty(skuAttributes)) {
             for (SkuAttribute skuAttribute : skuAttributes) {
                     attributes.add(skuAttribute.getAttrKey() + ":" + skuAttribute.getAttrVal());
             }
         }
-
+*/
         indexedSkuTemplate.setAttributes(attributes);
 
         //indexedSkuTemplate.setPrice(skuTemplate.getPrice());

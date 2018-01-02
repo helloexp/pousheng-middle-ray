@@ -85,6 +85,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
+
         //电商mpos 仓id集合
         List<Long> mposOnlineSaleWarehouseIds = Lists.transform(mposOnlineSaleWarehouse, new Function<Warehouse, Long>() {
             @Nullable
@@ -93,6 +94,8 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
                 return input.getId();
             }
         });
+
+        dispatchOrderItemInfo.setMposOnlineSaleWarehouseIds(mposOnlineSaleWarehouseIds);
 
 
         //仓库 商品 库存

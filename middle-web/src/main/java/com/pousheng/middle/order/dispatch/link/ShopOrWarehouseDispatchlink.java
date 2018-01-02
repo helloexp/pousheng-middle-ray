@@ -9,7 +9,7 @@ import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
-import com.pousheng.middle.order.dispatch.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;

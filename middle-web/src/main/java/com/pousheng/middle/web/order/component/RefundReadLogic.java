@@ -310,6 +310,7 @@ public class RefundReadLogic {
     }
 
     /**
+<<<<<<< HEAD
      * 通过outId获取渠道
      *
      * @return 获取渠道
@@ -331,5 +332,21 @@ public class RefundReadLogic {
             return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(1);
         }
         return null;
+
+    }
+
+    /**
+     * 判断丢件补发或者售后换货是否可以继续生成发货单
+     * @param refundItems
+     * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
+     */
+    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems){
+        int count= 0;
+        for (RefundItem refundItem : refundItems) {
+            if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
+                count++;
+            }
+        }
+        return count==0;
     }
 }

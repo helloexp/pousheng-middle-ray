@@ -29,4 +29,9 @@ public class TaobaoConfirmRefundEvent implements Serializable {
      * 店铺id
      */
     private Long openShopId;
+
+    /**
+     * 第三方平台订单号
+     */
+    private String openOrderId;
 }

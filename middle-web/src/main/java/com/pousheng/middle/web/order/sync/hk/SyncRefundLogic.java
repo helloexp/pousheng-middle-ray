@@ -22,10 +22,7 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
-import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -34,8 +31,10 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -75,6 +74,8 @@ public class SyncRefundLogic {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -114,8 +115,8 @@ public class SyncRefundLogic {
                 }
                 //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
                 String outId = refund.getChannel();
-                if (StringUtils.hasText(outId)){
-                    String channel = refundReadLogic.getOutChannel(outId);
+                if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+                    String channel = refundReadLogic.getOutChannelTaobao(outId);
                     if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
                             &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
                         Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
@@ -123,7 +124,23 @@ public class SyncRefundLogic {
                         event.setRefundId(refund.getId());
                         event.setChannel(channel);
                         event.setOpenShopId(newRefund.getShopId());
-                        event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleId(outId));
+                        event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                        eventBus.post(event);
+                    }
+                }
+                //如果是苏宁的售后单，将会主动查询售后单的状态
+                if (StringUtils.hasText(outId)&&outId.contains("suning")){
+                    String channel = refundReadLogic.getOutChannelSuning(outId);
+                    if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                            &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                        Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                        TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                        event.setRefundId(refund.getId());
+                        event.setChannel(channel);
+                        event.setOpenShopId(newRefund.getShopId());
+                        event.setOpenOrderId(shopOrder.getOutId());
                         eventBus.post(event);
                     }
                 }

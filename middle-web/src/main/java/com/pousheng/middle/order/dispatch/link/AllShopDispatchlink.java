@@ -72,11 +72,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         }
 
         //放入 shopSkuCodeQuantityTable
-        for (HkSkuStockInfo hkSkuStockInfo : filterSkuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                shopSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
-            }
-        }
+        dispatchComponent.completeShopTab(filterSkuStockInfos,shopSkuCodeQuantityTable);
 
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(filterSkuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);

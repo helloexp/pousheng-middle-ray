@@ -46,6 +46,16 @@ public interface MposSkuStockWriteService {
      */
     Response<Boolean> lockStockWarehouse(List<WarehouseShipment> warehouseShipments);
 
+
+    /**
+     * 根据指定的仓库分配策略解锁库存, 当撤销发货单时, 调用这个接口
+     *
+     * @param warehouseShipments 仓库及解锁数量列表
+     * @return 是否解锁成功
+     */
+    Response<Boolean> unlockStockWarehouse(List<WarehouseShipment> warehouseShipments);
+
+
     /**
      * 根据指定的门店锁定库存
      *
@@ -53,6 +63,15 @@ public interface MposSkuStockWriteService {
      * @return 是否锁定成功
      */
     Response<Boolean> lockStockShop(List<ShopShipment> shopShipments);
+
+
+    /**
+     * 根据指定的门店分配策略解锁库存, 当撤销发货单时, 调用这个接口
+     *
+     * @param shopShipments 门店及发货数量列表
+     * @return 是否锁定成功
+     */
+    Response<Boolean> unLockStockShop(List<ShopShipment> shopShipments);
 
 
     /**

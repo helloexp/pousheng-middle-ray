@@ -51,6 +51,34 @@ public class MposSkuStockManager {
 
 
     /**
+     * 释放仓库库存
+     * @param warehouses 待释放的库存明细
+     */
+    @Transactional
+    public void unLockStockWarehouse(List<WarehouseShipment> warehouses) {
+        for (WarehouseShipment warehouseShipment : warehouses) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = warehouseShipment.getSkuCodeAndQuantities();
+            Long warehouseId = warehouseShipment.getWarehouseId();
+
+            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+                String skuCode = skuCodeAndQuantity.getSkuCode();
+                Integer quantity = skuCodeAndQuantity.getQuantity();
+                if(warehouseSkuStockIsExist(warehouseId,skuCode,Long.valueOf(quantity))){
+                    boolean success = mposSkuStockDao.unlockStockWarehouse(warehouseId,
+                            skuCode,
+                            quantity);
+                    if (!success) {
+                        log.error("unlock sku stock(skuCode={}, stock={}) for warehouse(id={})",
+                                skuCode, quantity,  warehouseId);
+                        throw new ServiceException("unlock.sku.stock.fail");
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
      * 锁定门店库存
      * @param shopShipments 待锁定的库存明细
      */
@@ -71,6 +99,34 @@ public class MposSkuStockManager {
                         log.error("lock sku stock(skuCode={}, stock={}) for shop(id={})",
                                 skuCode, quantity,  shopId);
                         throw new ServiceException("lock.sku.stock.fail");
+                    }
+                }
+            }
+        }
+    }
+
+
+    /**
+     * 释放门店库存
+     * @param shopShipments 待释放的库存明细
+     */
+    @Transactional
+    public void unLockStockShop(List<ShopShipment> shopShipments) {
+        for (ShopShipment shopShipment : shopShipments) {
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = shopShipment.getSkuCodeAndQuantities();
+            Long shopId = shopShipment.getShopId();
+
+            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+                String skuCode = skuCodeAndQuantity.getSkuCode();
+                Integer quantity = skuCodeAndQuantity.getQuantity();
+                if(checkIsNeedCreateShopSkuStock(shopId,skuCode,Long.valueOf(quantity))){
+                    boolean success = mposSkuStockDao.unlockStockShop(shopId,
+                            skuCode,
+                            quantity);
+                    if (!success) {
+                        log.error("unlock sku stock(skuCode={}, stock={}) for shop(id={})",
+                                skuCode, quantity,  shopId);
+                        throw new ServiceException("unlock.sku.stock.fail");
                     }
                 }
             }

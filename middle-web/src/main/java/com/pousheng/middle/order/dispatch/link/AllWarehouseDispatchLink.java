@@ -83,11 +83,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         // 放入 warehouseSkuCodeQuantityTable
-        for (HkSkuStockInfo hkSkuStockInfo : filterSkuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                warehouseSkuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
-            }
-        }
+        dispatchComponent.completeWarehouseTab(filterSkuStockInfos,warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
         List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(filterSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);

@@ -92,7 +92,9 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
             for (GroupedOtherAttribute groupedOtherAttribute : otherAttributes) {
                 for (OtherAttribute attr : groupedOtherAttribute.getOtherAttributes()) {
                     if (isSearchableAttribute(categoryId, attr.getAttrKey())) {
-                        attributes.add(attr.getAttrKey() + ":" + attr.getAttrVal());
+                        if(Objects.equal(attr.getAttrKey(),"年份")||Objects.equal(attr.getAttrKey(),"季节")){
+                            attributes.add(attr.getAttrKey() + ":" + attr.getAttrVal());
+                        }
                     }
                 }
             }

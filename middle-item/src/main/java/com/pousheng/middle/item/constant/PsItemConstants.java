@@ -34,8 +34,8 @@ public class PsItemConstants {
     //导入错误文件
     public static final String IMPORT_FILE_ILLEGAL = "3";
 
-    //打标未知异常
-    public static final String MPOS_FLAG_UNKNOWN_ERROR = "4";
+    //系统异常
+    public static final String SYSTEM_ERROR = "4";
 
     //导出任务
     public static final String EXPORT_TASK = "export";

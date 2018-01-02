@@ -97,8 +97,9 @@ public class BatchAsyncHandleMposListener {
         Long userId = batchMakeMposFlagEvent.getCurrentUserId();
         String operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
+        ExcelExportHelper<AbnormalRecord> helper;
         try{
-            ExcelExportHelper<AbnormalRecord> helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
+            helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
             log.info("async handle mpos flag task start");
             //1.开始的时候记录状态
             recordToRedis(key,PsItemConstants.EXECUTING,userId);
@@ -118,8 +119,8 @@ public class BatchAsyncHandleMposListener {
             }
             log.info("async handle mpos flag task end");
         }catch (Exception e){
-            log.error("async handle mpos flag error",Throwables.getStackTraceAsString(e));
-            recordToRedis(key,PsItemConstants.MPOS_FLAG_UNKNOWN_ERROR + "~" + e.getMessage(),userId);
+            log.error("async handle mpos flag task error",Throwables.getStackTraceAsString(e));
+            recordToRedis(key,PsItemConstants.SYSTEM_ERROR + "~" + e.getMessage(),userId);
         }
     }
 
@@ -226,9 +227,6 @@ public class BatchAsyncHandleMposListener {
         }
         File file = helper.transformToFile(fileName);
         String uploadUrl = this.uploadToAzureOSS(file);
-        if (fileName.contains(File.separator)) {
-            fileName = fileName.substring(fileName.lastIndexOf(File.separator) + 1);
-        }
         recordToRedis(key,PsItemConstants.EXECUTED + "~" + uploadUrl,userId);
         log.info("async export mpos task end");
     }
@@ -433,10 +431,10 @@ public class BatchAsyncHandleMposListener {
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
             @Override
             public void action(Jedis jedis) {
-//                if(userId == null){
-//                    log.error("fail save record to redis cause:can not get current user");
-//                    throw new JsonResponseException("fail save record to redis");
-//                }
+                if(userId == null){
+                    log.error("fail save record to redis cause:can not get current user");
+                    throw new JsonResponseException("fail save record to redis");
+                }
                 try{
                     jedis.setex(key,BATCH_RECORD_EXPIRE_TIME,value);
                     log.info(key + " save to redis success");

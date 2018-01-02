@@ -178,7 +178,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 自动创建发货单
-     *
      * @param shopOrder 店铺订单
      */
     public void doAutoCreateShipment(ShopOrder shopOrder) {
@@ -197,7 +196,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 订单自动处理逻辑
-     *
      * @param shopOrder 店铺订单
      */
     public Response<String> autoHandleOrder(ShopOrder shopOrder) {
@@ -224,7 +222,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 自动生成发货单逻辑
-     *
      * @param shopOrder
      * @param skuOrders
      */
@@ -473,7 +470,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 是否满足自动创建发货单的校验
-     *
      * @param shopOrder 店铺订单
      * @param skuOrders 子单
      * @return 不可以自动创建发货单(false), 可以自动创建发货单(true)
@@ -540,7 +536,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 组装发货单参数
-     *
      * @param shopOrder   店铺订单
      * @param warehouseId 发货仓主键
      * @return 返回组装的发货单
@@ -556,6 +551,7 @@ public class ShipmentWiteLogic {
         Warehouse warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
+        shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
         shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
         Map<String, String> warehouseExtra = warehouse.getExtra();
@@ -622,8 +618,8 @@ public class ShipmentWiteLogic {
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
-        shipmentExtra.setDeliverShopId(deliverShop.getId());
-        shipmentExtra.setDeliverShopName(deliverShop.getShopName());
+        shipmentExtra.setWarehouseId(deliverShop.getId());
+        shipmentExtra.setWarehouseName(deliverShop.getShopName());
 
         //下单店铺代码（绩效店铺在接单后保存）
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
@@ -682,7 +678,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 查找收货人信息
-     *
      * @param orderId    订单主键
      * @param orderLevel 订单级别 店铺订单or子单
      * @return 收货人信息的list集合
@@ -714,7 +709,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 发货单中填充sku订单信息
-     *
      * @param skuOrders             子单集合
      * @param skuOrderIdAndQuantity 子单的主键和数量的集合
      * @return shipmentItem的集合
@@ -784,7 +778,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 计算总净价
-     *
      * @param skuPrice        商品原价
      * @param discount        发货单中sku商品的折扣
      * @param shipSkuQuantity 发货单中sku商品的数量
@@ -797,7 +790,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 计算商品净价
-     *
      * @param cleanFee        商品总净价
      * @param shipSkuQuantity 发货单中sku商品的数量
      * @return 返回sku商品净价
@@ -808,7 +800,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 计算积分
-     *
      * @param integral            sku订单获取的积分
      * @param skuQuantity         sku订单总的数量
      * @param shipmentSkuQuantity 发货单中该sku订单的数量
@@ -820,7 +811,6 @@ public class ShipmentWiteLogic {
 
     /**
      * 判断是否存在有效的发货单
-     *
      * @param shopOrderId 店铺订单主键
      * @return true:已经计算过发货单,false:没有计算过发货单
      */
@@ -866,7 +856,6 @@ public class ShipmentWiteLogic {
     public Response<Boolean> updateShipmentSyncTaobaoStatus(Shipment shipment, OrderOperation orderOperation) {
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Flow flow = flowPicker.pickSyncTaobao();
-        ;
         //判断当前状态是否可以操作
         if (!flow.operationAllowed(shipmentExtra.getSyncTaobaoStatus(), orderOperation)) {
             log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipmentExtra.getSyncTaobaoStatus(), orderOperation.getText());
@@ -887,7 +876,6 @@ public class ShipmentWiteLogic {
     }
 
     /**
-     * <<<<<<< HEAD
      * 拆单派单
      *
      * @param shopOrder
@@ -953,6 +941,10 @@ public class ShipmentWiteLogic {
 
     }
 
+    /**
+     * 同步发货单至mpos
+     * @param shipment
+     */
     private void syncShipmentToMpos(Shipment shipment) {
         try {
             //修改订单状态为待发货
@@ -968,11 +960,7 @@ public class ShipmentWiteLogic {
         }
     }
 
-
-
-
-
-     /* 单个发货单撤销
+     /** 单个发货单撤销
      * @param shipmentId 发货单主键
      * @return
      */

@@ -22,6 +22,9 @@ public class BatchHandleRecord {
     //url
     private String url;
 
+    //信息
+    private String message;
+
     //类型
     private String type;
 

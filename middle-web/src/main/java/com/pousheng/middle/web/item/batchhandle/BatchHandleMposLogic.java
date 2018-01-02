@@ -17,6 +17,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Component
@@ -49,8 +50,13 @@ public class BatchHandleMposLogic {
                         if(val.length == 1) {
                             record.setState(value);
                         }else{
-                            record.setState(val[0]);
-                            record.setUrl(val[1]);
+                            if(Objects.equals(val[0],PsItemConstants.SYSTEM_ERROR)){
+                                record.setState(val[0]);
+                                record.setMessage(val[1]);
+                            }else {
+                                record.setState(val[0]);
+                                record.setUrl(val[1]);
+                            }
                         }
                         records.add(record);
                     });

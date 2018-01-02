@@ -10,6 +10,7 @@ import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
@@ -24,8 +25,10 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.model.SpuAttribute;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -67,6 +70,9 @@ public class BatchAsyncHandleMposListener {
 
     @RpcConsumer
     private PsSkuTemplateWriteService psSkuTemplateWriteService;
+
+    @RpcConsumer
+    private PsSpuAttributeReadService psSpuAttributeReadService;
 
     @Autowired
     private JedisTemplate jedisTemplate;
@@ -291,7 +297,7 @@ public class BatchAsyncHandleMposListener {
         List<String[]> list;
         try{
             helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
-            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",12);
+            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",15);
         }catch (Exception e){
             log.error("illegal file");
             recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
@@ -299,19 +305,19 @@ public class BatchAsyncHandleMposListener {
         }
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
-            if(!Strings.isNullOrEmpty(strs[8]) && !"\"\"".equals(strs[8])){
+            if(!Strings.isNullOrEmpty(strs[11]) && !"\"\"".equals(strs[11])){
                 try{
-                    strs[11] = "";
+                    strs[14] = "";
                     Long id = Long.parseLong(strs[0].replace("\"",""));
-                    Integer discount = Integer.valueOf(strs[8]);
+                    Integer discount = Integer.valueOf(strs[11].replace("\"",""));
                     setDiscount(id,discount);
                 }catch (NumberFormatException nfe){
-                    log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[8], Throwables.getStackTraceAsString(nfe));
-                    strs[11] = PsItemConstants.ERROR_FORMATE_ERROR;
+                    log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[11], Throwables.getStackTraceAsString(nfe));
+                    strs[14] = PsItemConstants.ERROR_FORMATE_ERROR;
                 }catch (JsonResponseException jre){
-                    strs[11] = jre.getMessage();
+                    strs[14] = jre.getMessage();
                 }finally{
-                    if(!StringUtils.isEmpty(strs[11])){
+                    if(!StringUtils.isEmpty(strs[14])){
                         SearchSkuTemplateEntity entity = new SearchSkuTemplateEntity(strs);
                         helper.appendToExcel(entity);
                     }
@@ -361,12 +367,17 @@ public class BatchAsyncHandleMposListener {
         return extra;
     }
 
-    /**
-     * 封装商品信息
-     * @param data
-     */
+    //封装价格 和 销售属性信息
     private void assembleSkuInfo(List<SearchSkuTemplate> data) {
+
+        if(CollectionUtils.isEmpty(data)){
+            return;
+        }
+
         Map<Long,SkuTemplate> groupSkuTemplateById = groupSkuTemplateById(data);
+
+        Map<Long, SpuAttribute> groupSpuAttributebySpuId = groupSpuAttributebySpuId(data);
+
         for (SearchSkuTemplate searchSkuTemplate : data){
             SkuTemplate skuTemplate = groupSkuTemplateById.get(searchSkuTemplate.getId());
             if (skuTemplate.getExtraPrice() != null) {
@@ -374,12 +385,19 @@ public class BatchAsyncHandleMposListener {
             }
             searchSkuTemplate.setPrice(skuTemplate.getPrice());
             Map<String,String> extra = skuTemplate.getExtra();
-            if(CollectionUtils.isEmpty(extra) && extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            if(!CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
             }
+
+            SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
+            if(Arguments.notNull(spuAttribute)){
+                searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
+            }
             searchSkuTemplate.setAttrs(skuTemplate.getAttrs());
+            searchSkuTemplate.setMainImage(skuTemplate.getImage_());
         }
     }
+
 
     private Map<Long,SkuTemplate> groupSkuTemplateById(List<SearchSkuTemplate> data){
         List<Long> skuTemplateIds = Lists.transform(data, new Function<SearchSkuTemplate, Long>() {
@@ -389,11 +407,14 @@ public class BatchAsyncHandleMposListener {
                 return input.getId();
             }
         });
+
         Response<List<SkuTemplate>>  skuTemplateRes = skuTemplateReadService.findByIds(skuTemplateIds);
         if(!skuTemplateRes.isSuccess()){
             log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,skuTemplateRes.getError());
             throw new JsonResponseException(skuTemplateRes.getError());
         }
+
+
         return Maps.uniqueIndex(skuTemplateRes.getResult(), new Function<SkuTemplate, Long>() {
             @Override
             public Long apply(SkuTemplate skuTemplate) {
@@ -401,6 +422,30 @@ public class BatchAsyncHandleMposListener {
             }
         });
 
+    }
+
+    private Map<Long, SpuAttribute> groupSpuAttributebySpuId(List<SearchSkuTemplate> data){
+
+        List<Long> spuIds = Lists.transform(data, new Function<SearchSkuTemplate, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable SearchSkuTemplate input) {
+                return input.getSpuId();
+            }
+        });
+
+        Response<List<SpuAttribute>> spuAttributeRes = psSpuAttributeReadService.findBySpuIds(spuIds);
+        if(!spuAttributeRes.isSuccess()){
+            log.error("find sku spu attribute by spu ids:{} fail,error:{}",spuIds,spuAttributeRes.getError());
+            throw new JsonResponseException(spuAttributeRes.getError());
+        }
+
+        return Maps.uniqueIndex(spuAttributeRes.getResult(), new Function<SpuAttribute, Long>() {
+            @Override
+            public Long apply(SpuAttribute spuAttribute) {
+                return spuAttribute.getSpuId();
+            }
+        });
     }
 
     /**

@@ -51,7 +51,7 @@ mybatis:
 session:
   cookie-context-path: /
   cookie-domain: pousheng.com
-  cookie-name: msid
+  cookie-name: msidPousheng
   cookie-max-age: 604800
   max-inactive-interval: 604800
   source: redis

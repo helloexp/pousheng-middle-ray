@@ -111,7 +111,9 @@ public class OrderOpenApi {
                     Map<String, String> extraMap = shipment.getExtra();
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
                     update.setExtra(extraMap);
+                    log.info("start update hkShipmentId is {}",hkShipmentId);
                     shipmentWiteLogic.update(update);
+                    log.info("end update hkShipmentId is {}",hkShipmentId);
                 }else{
                     OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                     Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);

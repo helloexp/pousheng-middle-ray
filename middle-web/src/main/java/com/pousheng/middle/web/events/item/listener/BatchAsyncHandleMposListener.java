@@ -158,9 +158,9 @@ public class BatchAsyncHandleMposListener {
 
     /**
      * 打标／取消打标
-     * @param id
-     * @param operateType 0 打标 1 取消打标
-     * @taskId 任务ID 用户记录异常日志
+     * @param id            货品ID
+     * @param operateType   0 打标 1 取消打标
+     * @param helper        导出excel辅助类
      */
     private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper){
         val rExist = skuTemplateReadService.findById(id);
@@ -185,10 +185,9 @@ public class BatchAsyncHandleMposListener {
     }
 
     /**
-     * 打标／取消打标
-     * @param exist
-     * @param type
-     * @return
+     * 封装货品mpos类型
+     * @param exist 货品
+     * @param type  类型
      */
     private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
         Map<String,String> extra = exist.getExtra();
@@ -201,7 +200,7 @@ public class BatchAsyncHandleMposListener {
 
     /**
      * 更新搜索
-     * @param skuTemplateId
+     * @param skuTemplateId skuId
      */
     private void postUpdateSearchEvent(Long skuTemplateId){
         SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();
@@ -231,13 +230,16 @@ public class BatchAsyncHandleMposListener {
             next = batchExportMposDiscount(pageNo,BATCH_SIZE, params,helper);
             log.debug(pageNo + "exported");
         }
+        try {
+            Thread.sleep(10000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
         File file = helper.transformToFile(fileName);
         String uploadUrl = this.uploadToAzureOSS(file);
         recordToRedis(key,PsItemConstants.EXECUTED + "~" + uploadUrl,userId);
         log.info("async export mpos task end");
     }
-
-
 
     /**
      *  分批次处理数据
@@ -269,7 +271,8 @@ public class BatchAsyncHandleMposListener {
 
     /**
      * 文件上传至微软云
-     * @param file
+     * @param file  文件
+     * @return      文件url
      */
     private String uploadToAzureOSS(File file){
         String url = null;
@@ -287,8 +290,12 @@ public class BatchAsyncHandleMposListener {
     }
 
 
+    /**
+     * 监听导入文件设置折扣事件
+     * @param event
+     */
     @Subscribe
-    public void onImportMposDiscount(BatchAsyncImportMposDiscountEvent event) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
+    public void onImportMposDiscount(BatchAsyncImportMposDiscountEvent event) {
         log.info("async import mpos discount task start");
         MultipartFile file = event.getFile();
         Long userId = event.getCurrentUserId();
@@ -298,6 +305,8 @@ public class BatchAsyncHandleMposListener {
         try{
             helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
             list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",15);
+            if(CollectionUtils.isEmpty(list) || list.get(0).length != 15)
+                throw new Exception();
         }catch (Exception e){
             log.error("illegal file");
             recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
@@ -336,8 +345,8 @@ public class BatchAsyncHandleMposListener {
 
     /**
      * 设置折扣
-     * @param id
-     * @param discount
+     * @param id        货品id
+     * @param discount  折扣
      */
     private void setDiscount(Long id, Integer discount) {
         val rExist = skuTemplateReadService.findById(id);
@@ -357,7 +366,12 @@ public class BatchAsyncHandleMposListener {
         }
     }
 
-    //设置折扣
+    /**
+     * 设置折扣
+     * @param exist     货品
+     * @param discount  折扣
+     * @return
+     */
     private Map<String,String> setMopsDiscount(SkuTemplate exist,Integer discount){
         Map<String,String> extra = exist.getExtra();
         if(CollectionUtils.isEmpty(extra)){
@@ -367,17 +381,16 @@ public class BatchAsyncHandleMposListener {
         return extra;
     }
 
-    //封装价格 和 销售属性信息
+    /**
+     *  封装价格和销售属性信息
+     *  @param data 未整理数据
+     */
     private void assembleSkuInfo(List<SearchSkuTemplate> data) {
-
         if(CollectionUtils.isEmpty(data)){
             return;
         }
-
         Map<Long,SkuTemplate> groupSkuTemplateById = groupSkuTemplateById(data);
-
         Map<Long, SpuAttribute> groupSpuAttributebySpuId = groupSpuAttributebySpuId(data);
-
         for (SearchSkuTemplate searchSkuTemplate : data){
             SkuTemplate skuTemplate = groupSkuTemplateById.get(searchSkuTemplate.getId());
             if (skuTemplate.getExtraPrice() != null) {
@@ -388,7 +401,6 @@ public class BatchAsyncHandleMposListener {
             if(!CollectionUtils.isEmpty(extra)&&extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 searchSkuTemplate.setDiscount(Integer.valueOf(extra.get(PsItemConstants.MPOS_DISCOUNT)));
             }
-
             SpuAttribute spuAttribute = groupSpuAttributebySpuId.get(searchSkuTemplate.getSpuId());
             if(Arguments.notNull(spuAttribute)){
                 searchSkuTemplate.setOtherAttrs(spuAttribute.getOtherAttrs());
@@ -398,7 +410,11 @@ public class BatchAsyncHandleMposListener {
         }
     }
 
-
+    /**
+     * 根据ID查询货品详情
+     * @param data
+     * @return
+     */
     private Map<Long,SkuTemplate> groupSkuTemplateById(List<SearchSkuTemplate> data){
         List<Long> skuTemplateIds = Lists.transform(data, new Function<SearchSkuTemplate, Long>() {
             @Nullable
@@ -407,25 +423,25 @@ public class BatchAsyncHandleMposListener {
                 return input.getId();
             }
         });
-
         Response<List<SkuTemplate>>  skuTemplateRes = skuTemplateReadService.findByIds(skuTemplateIds);
         if(!skuTemplateRes.isSuccess()){
             log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,skuTemplateRes.getError());
             throw new JsonResponseException(skuTemplateRes.getError());
         }
-
-
         return Maps.uniqueIndex(skuTemplateRes.getResult(), new Function<SkuTemplate, Long>() {
             @Override
             public Long apply(SkuTemplate skuTemplate) {
                 return skuTemplate.getId();
             }
         });
-
     }
 
+    /**
+     * 根据ID获取货品属性
+     * @param data
+     * @return
+     */
     private Map<Long, SpuAttribute> groupSpuAttributebySpuId(List<SearchSkuTemplate> data){
-
         List<Long> spuIds = Lists.transform(data, new Function<SearchSkuTemplate, Long>() {
             @Nullable
             @Override
@@ -433,13 +449,11 @@ public class BatchAsyncHandleMposListener {
                 return input.getSpuId();
             }
         });
-
         Response<List<SpuAttribute>> spuAttributeRes = psSpuAttributeReadService.findBySpuIds(spuIds);
         if(!spuAttributeRes.isSuccess()){
             log.error("find sku spu attribute by spu ids:{} fail,error:{}",spuIds,spuAttributeRes.getError());
             throw new JsonResponseException(spuAttributeRes.getError());
         }
-
         return Maps.uniqueIndex(spuAttributeRes.getResult(), new Function<SpuAttribute, Long>() {
             @Override
             public Long apply(SpuAttribute spuAttribute) {
@@ -476,10 +490,10 @@ public class BatchAsyncHandleMposListener {
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
             @Override
             public void action(Jedis jedis) {
-                if(userId == null){
-                    log.error("fail save record to redis cause:can not get current user");
-                    throw new JsonResponseException("fail save record to redis");
-                }
+//                if(userId == null){
+//                    log.error("fail save record to redis cause:can not get current user");
+//                    throw new JsonResponseException("fail save record to redis");
+//                }
                 try{
                     jedis.setex(key,BATCH_RECORD_EXPIRE_TIME,value);
                     log.info(key + " save to redis success");
@@ -490,5 +504,4 @@ public class BatchAsyncHandleMposListener {
             }
         });
     }
-
 }

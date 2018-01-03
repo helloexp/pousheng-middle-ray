@@ -244,9 +244,6 @@ public class MiddleFlowBook {
         protected void configure() {
 
             // ============ mpos正向流程
-            addTransition(MiddleShipmentsStatus.WAIT_DISPACHER.getValue(),
-                    MiddleOrderEvent.DISPATCHER.toOrderOperation(),
-                    MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             //待同步mpos --> 同步mpos -->同步中
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.SYNC_MPOS.toOrderOperation(),
@@ -271,7 +268,7 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
                     MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation(),
                     MiddleShipmentsStatus.WAIT_SHIP.getValue());
-            //待接单 --> 拒单 --> 已拒绝(重新生成发货单)
+            //待接单 --> 拒单 --> 已拒绝
             addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
                     MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),
                     MiddleShipmentsStatus.REJECTED.getValue());

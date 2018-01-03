@@ -50,7 +50,8 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
-        List<Long> rejectShopIds = Lists.newArrayList();//todo 拒绝门店整理
+        //拒绝过的门店
+        List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
         context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
 
         //省内的mpos门店,如果没有则进入下个规则

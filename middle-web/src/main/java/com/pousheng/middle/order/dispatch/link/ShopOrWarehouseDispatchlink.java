@@ -9,17 +9,19 @@ import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 门店或仓 发货规则（最后一条规则，最复杂场景）todo 锁定库存
+ * 门店或仓 发货规则（最后一条规则，最复杂场景）
  * 优先级 7
  * 1、最少拆单
  * 2、先仓后端
@@ -50,6 +52,9 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
     private DispatchComponent dispatchComponent;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private ShopCacher shopCacher;
+
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
@@ -236,7 +241,8 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                 }else {
                     ShopShipment shopShipment = new ShopShipment();
                     shopShipment.setShopId(id);
-                    shopShipment.setShopName("");//todo
+                    Shop shop = shopCacher.findShopById(id);
+                    shopShipment.setShopName(shop.getName());
                     shopShipment.setSkuCodeAndQuantities(scaqs);
                     shopShipmentResult.add(shopShipment);
 

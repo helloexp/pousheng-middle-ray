@@ -148,3 +148,6 @@ gd_map:
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
 
 index.queue.size: 500000
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'

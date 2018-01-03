@@ -91,3 +91,6 @@ skutemplate:
     mapping-path: ps_sku_template_mapping.json
     full-dump-range: -1
     batch-size: 100
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'

@@ -106,10 +106,9 @@ public class OrderOpenApi {
                     if(shipment.getStatus()>= MiddleShipmentsStatus.ACCEPTED.getValue()){
                         continue;
                     }
-                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                    if (!updateSyncStatusRes.isSuccess()) {
-                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
+                    if (!updateRes.isSuccess()) {
+                        log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(),MiddleShipmentsStatus.WAIT_SHIP.getValue(), updateRes.getError());
                     }
                     //更新恒康shipmentId
                     Shipment update = new Shipment();
@@ -119,7 +118,9 @@ public class OrderOpenApi {
                     Map<String, String> extraMap = shipment.getExtra();
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
                     update.setExtra(extraMap);
+                    log.info("start update hkShipmentId is {}",hkShipmentId);
                     shipmentWiteLogic.update(update);
+                    log.info("end update hkShipmentId is {}",hkShipmentId);
                 }else{
                     OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                     Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);

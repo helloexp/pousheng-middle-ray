@@ -20,10 +20,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -84,26 +81,22 @@ public class MposOpenApi {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
-        MiddleOrderEvent orderEvent = null;
+        MiddleOrderEvent orderEvent;
         Shipment update = null;
         switch (status){
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
-                //保存外部发货单id
-                shipmentExtra.setOutShipmentId(extra.get("shimentId"));
-                update = new Shipment();
-                update.setId(shipment.getId());
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                update.setExtra(extra);
                 //todo 接单推送绩效店铺给恒康
                 break;
             case TradeConstants.MPOS_SHIPMENT_REJECT:
                 orderEvent = MiddleOrderEvent.MPOS_REJECT;
+
                 break;
             case TradeConstants.MPOS_SHIPMENT_SHIPPED:
                 orderEvent = MiddleOrderEvent.SHIP;
                 update = new Shipment();
                 update.setId(shipment.getId());
+                //保存物流信息
                 shipmentExtra.setShipmentSerialNo(extra.get("shipmentSerialNo"));
                 shipmentExtra.setShipmentCorpCode(extra.get("shipmentCorpCode"));
                 ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(extra.get("shipmentCorpCode"));
@@ -116,7 +109,7 @@ public class MposOpenApi {
                 this.decreaseStock(shipment);
                 break;
             default:
-                return Response.fail("illegal type");
+                return Response.fail("illegal status");
         }
         if(Objects.nonNull(update))
             shipmentWiteLogic.update(update);
@@ -130,8 +123,6 @@ public class MposOpenApi {
         return Response.ok(true);
     }
 
-
-
     /**
      *  修改本地订单状态
      * @param shopOrderId 订单ID
@@ -139,7 +130,7 @@ public class MposOpenApi {
      */
     @ApiOperation("确认收货")
     @RequestMapping(value = "/order/{shopOrderId}/confirm",method = RequestMethod.PUT)
-    public Response<Boolean> confirmedOuterOrder(Long shopOrderId){
+    public Response<Boolean> confirmedOuterOrder(@PathVariable Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Boolean res = orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP,MiddleOrderEvent.CONFIRM);
         if(!res){
@@ -147,25 +138,35 @@ public class MposOpenApi {
             return Response.fail("sync order(id:{}) fail");
         }
         List<OrderShipment> orderShipmentList = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-        orderShipmentList.forEach(orderShipment -> {
+        for(OrderShipment orderShipment:orderShipmentList){
             Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-            //通知恒康已经收货
-            Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
-            if (!response.isSuccess()){
-                log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            if(Objects.equals(shipmentExtra.getShipmentWay(),"2")){
+//            todo 通知恒康已经收货
+//            Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+//            if (!response.isSuccess()){
+//                log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());
+//            }
             }
-        });
+            Response<Boolean> response = shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.CONFIRM.toOrderOperation());
+            if (!response.isSuccess()){
+                log.error("sync shipment(id:{}) confirm fail",shipment.getId());
+                return Response.fail(response.getError());
+            }
+        }
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
         return Response.ok(true);
     }
 
-
+    /**
+     * 扣减库存
+     * @param shipment 发货单
+     */
     private void decreaseStock(Shipment shipment){
         //获取发货单下的sku订单信息
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //获取发货仓信息
         ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-
         List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
         WarehouseShipment warehouseShipment = new WarehouseShipment();
         //组装sku订单数量信息
@@ -200,6 +201,4 @@ public class MposOpenApi {
         }
         return skuCodeAndQuantities;
     }
-
-
 }

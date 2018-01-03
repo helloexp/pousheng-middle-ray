@@ -51,7 +51,7 @@ public class AutoCreateShipmetsListener {
                 return;
             }
         }
-        //如果是mpos订单，进行派单
+        // 如果是Mpos订单，进行派单
         if(ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())){
             shipmentWiteLogic.toDispatchOrder(shopOrder);
         }else{

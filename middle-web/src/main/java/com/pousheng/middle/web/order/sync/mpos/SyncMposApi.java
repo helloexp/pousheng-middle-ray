@@ -1,15 +1,14 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
 import com.github.kevinsawicki.http.HttpRequest;
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
 import java.util.Map;
 
 /**
+ * created by penghui on 2017/12/30
  * 同步mpos
  */
 @Component
@@ -18,6 +17,8 @@ public class SyncMposApi {
 
     //@Value("mpos.gateway")
     private String mposGateway = "http://api-test-mpos.pousheng.com";
+
+    //private String mposGateway = "http://30.40.87.77:8089";
 
     /**
      * 同步发货单到mpos
@@ -47,39 +48,4 @@ public class SyncMposApi {
         log.info("response:{}",responseBody);
         return responseBody;
     }
-
-//    /**
-//     * 同步订单状态到mpos
-//     * @param orderId
-//     * @param status
-//     * @return
-//     */
-//    public String syncOrderStatusToMpos(Long orderId,String status){
-//        String gateWay = mposGateway + "";
-//        log.info("sync orderId:{} status:{}",orderId,status);
-//        Map<String,Serializable> param = Maps.newHashMapWithExpectedSize(2);
-//        param.put("orderId",orderId);
-//        param.put("status",status);
-//        String responseBody = HttpRequest.put(gateWay,param,false)
-//                .connectTimeout(10000).readTimeout(10000)
-//                .body();
-//        log.info("response:{}",responseBody);
-//        return responseBody;
-//    }
-        public static void main(String[] args) {
-            SyncMposApi api = new SyncMposApi();
-            Map<String,Serializable> param = Maps.newHashMap();
-//            param.put("orderId",0000);
-//            param.put("id",000);
-//            param.put("name","test");
-//            param.put("shipmentType",1);
-//            param.put("outShipmentId",0000);
-//            param.put("outerSkuCodes","");
-//            System.out.println(api.syncShipmentToMpos(param));
-            param.put("shipmentId",000);
-            param.put("shipmentCorpCode","test");
-            param.put("shipmentSerialNo","test");
-            param.put("shipmentDate","201712282213");
-            System.out.println(api.syncShipmentShippedToMpos(param));
-        }
 }

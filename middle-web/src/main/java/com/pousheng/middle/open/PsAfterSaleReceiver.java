@@ -122,7 +122,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             //如果天猫拉取过来的退货退款的售后单就是success,这个时候中台做一下特殊处理
                 refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }
-
+        //苏宁售后近退款单子到中台订单状态做初始化
+        if (Objects.equals(shopOrder.getOutFrom(),MiddleChannel.SUNING.getValue())&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }

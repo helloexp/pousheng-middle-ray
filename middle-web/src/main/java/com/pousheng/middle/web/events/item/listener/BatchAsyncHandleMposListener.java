@@ -490,10 +490,10 @@ public class BatchAsyncHandleMposListener {
         jedisTemplate.execute(new JedisTemplate.JedisActionNoResult() {
             @Override
             public void action(Jedis jedis) {
-//                if(userId == null){
-//                    log.error("fail save record to redis cause:can not get current user");
-//                    throw new JsonResponseException("fail save record to redis");
-//                }
+                if(userId == null){
+                    log.error("fail save record to redis cause:can not get current user");
+                    throw new JsonResponseException("fail save record to redis");
+                }
                 try{
                     jedis.setex(key,BATCH_RECORD_EXPIRE_TIME,value);
                     log.info(key + " save to redis success");

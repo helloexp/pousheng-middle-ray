@@ -282,8 +282,8 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/edit/invoice",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("")
-    public void editInvoiceInfos(@PathVariable("id")Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
+    @OperationLogType("修改发票信息")
+    public void editInvoiceInfos(@PathVariable("id")@OperationLogParam Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");

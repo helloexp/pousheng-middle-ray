@@ -303,6 +303,7 @@ public class BatchAsyncHandleMposListener {
         ExcelExportHelper<SearchSkuTemplateEntity> helper;
         List<String[]> list;
         try{
+            recordToRedis(key,PsItemConstants.EXECUTING,userId);
             helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
             list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",15);
             if(CollectionUtils.isEmpty(list) || list.get(0).length != 15)

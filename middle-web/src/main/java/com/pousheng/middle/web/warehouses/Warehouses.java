@@ -2,6 +2,7 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.warehouse.dto.WarehouseServerInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.erp.component.ErpClient;
@@ -50,6 +51,9 @@ public class Warehouses {
 
     @RpcConsumer
     private MiddleStockPushLogWriteService middleStockPushLogWriteService;
+
+    @Autowired
+    private MposWarehousePusher warehousePusher;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("新建")
@@ -227,10 +231,11 @@ public class Warehouses {
             log.error("update warehouse failed,error:{}",res.getError());
             throw new JsonResponseException(res.getError());
         }
+        warehousePusher.addWarehouses(exist.getCompanyId(),exist.getExtra().get("outCode"));
     }
 
     /**
-     * @param 库存id
+     * @param id 库存id
      */
     @ApiOperation("库存mpos取消打标")
     @RequestMapping(value = "/{id}/cancel/flag",method = RequestMethod.PUT)
@@ -249,6 +254,7 @@ public class Warehouses {
             log.error("update warehouse failed,error:{}",res.getError());
             throw new JsonResponseException(res.getError());
         }
+        warehousePusher.removeWarehouses(exist.getCompanyId(),exist.getExtra().get("outCode"));
     }
 
     /**

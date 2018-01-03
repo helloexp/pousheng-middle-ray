@@ -92,7 +92,8 @@ skutemplate:
     mapping-path: ps_sku_template_mapping.json
     full-dump-range: -1
     batch-size: 100
-=======
 ## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
 open.client.sync.item.mapping.job.enable: false
->>>>>>> hotfix/switch-on
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'

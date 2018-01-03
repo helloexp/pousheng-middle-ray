@@ -10,6 +10,8 @@ import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
+import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.utils.DistanceUtil;
@@ -17,9 +19,11 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -43,7 +47,8 @@ public class DispatchComponent {
     private GDMapSearchService gdMapSearchService;
     @RpcConsumer
     private MposSkuStockReadService mposSkuStockReadService;
-
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
 
     private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
@@ -272,5 +277,26 @@ public class DispatchComponent {
         }
 
         return enough;
+    }
+
+    /**
+     * 获取拒绝过该订单的店铺id集合
+     * @param shopOrderId 订单id
+     * @return 店铺id集合
+     */
+    public List<Long> findRejectedShop(Long shopOrderId){
+        List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrderId);
+        if(CollectionUtils.isEmpty(shipments))
+            return null;
+        List<Shipment> rejectedShipment = shipments.stream().filter(shipment -> Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
+        if(!CollectionUtils.isEmpty(rejectedShipment)){
+            List<Long> rejectedList = Lists.newArrayList();
+            rejectedShipment.forEach(shipment -> {
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                rejectedList.add(shipmentExtra.getWarehouseId());
+            });
+            return rejectedList;
+        }
+        return null;
     }
 }

@@ -876,11 +876,19 @@ public class ShipmentWiteLogic {
     }
 
     /**
-     * 拆单派单
-     *
-     * @param shopOrder
+     * 订单拆单派单
+     * @param shopOrder  订单
      */
-    public void toDispatchOrder(ShopOrder shopOrder) {
+    public void toDispatchOrder(ShopOrder shopOrder){
+        this.toDispatchOrder(shopOrder,Collections.EMPTY_LIST);
+    }
+
+    /**
+     * 拆单派单(拒单后重新派单)
+     * @param skuCodeAndQuantities 被拒单的商品
+     * @param shopOrder            订单
+     */
+    public void toDispatchOrder(ShopOrder shopOrder,List<SkuCodeAndQuantity> skuCodeAndQuantities) {
         Response<List<SkuOrder>> skuOrdersRes = skuOrderReadService.findByShopOrderId(shopOrder.getId());
         if (!skuOrdersRes.isSuccess()) {
             throw new JsonResponseException(skuOrdersRes.getError());
@@ -890,21 +898,22 @@ public class ShipmentWiteLogic {
             throw new JsonResponseException(receiveInfosRes.getError());
         }
         List<SkuOrder> skuOrders = skuOrdersRes.getResult();
-        //获取skuCode,数量的集合
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
-        skuOrders.forEach(skuOrder -> {
-            SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-            skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
-            skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
-            skuCodeAndQuantities.add(skuCodeAndQuantity);
-        });
+        if(CollectionUtils.isEmpty(skuCodeAndQuantities)){
+            //获取skuCode,数量的集合
+            skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
+            for (SkuOrder skuOrder:skuOrders) {
+                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
+                skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
+                skuCodeAndQuantities.add(skuCodeAndQuantity);
+            }
+        }
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
-
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             if (shipmentId != null) {
@@ -938,7 +947,6 @@ public class ShipmentWiteLogic {
             SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
             orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
         }
-
     }
 
     /**

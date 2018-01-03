@@ -123,21 +123,16 @@ public class TradeConstants {
     /**
      * mpos 状态
      */
-    public static final String MPOS_SHIPMENT_CANCEL = "cancel";
-    //发货单接单待发货
+    //发货单接单,待发货
     public static final String MPOS_SHIPMENT_WAIT_SHIP = "wait_ship";
     //发货单拒单
     public static final String MPOS_SHIPMENT_REJECT = "reject";
-    //发货单发货待收货
+    //发货单发货,待收货
     public static final String MPOS_SHIPMENT_SHIPPED = "shipped";
-    //订单待发货
-    public static final String MPOS_ORDER_WAIT_SHIP = "wait_ship";
-    //订单待收货
-    public static final String MPOS_ORDER_SHIPPED = "shipped";
     //店铺发货
-    public static final String MPOS_SHOP_DELIVER = "shop";
+    public static final String MPOS_SHOP_DELIVER = "1";
     //仓库发货
-    public static final String MPOS_WAREHOUSE_DELIVER = "warehouse";
+    public static final String MPOS_WAREHOUSE_DELIVER = "2";
 
     //活动赠品id
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";

@@ -4,12 +4,15 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.*;
@@ -44,7 +47,8 @@ public class MposShipmentListener {
     @Autowired
     private OrderWriteService orderWriteService;
 
-
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
     @PostConstruct
     public void init() {
@@ -60,10 +64,20 @@ public class MposShipmentListener {
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){
-            this.syncOrderStatus(shipment,MiddleOrderStatus.SHIPPED.getValue());
+            this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());
         }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT){
-            this.reAssignShipment(shipment.getId());
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
+            shipmentItems.forEach(shipmentItem -> {
+                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
+                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+                skuCodeAndQuantities.add(skuCodeAndQuantity);
+            });
+            shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
         }
     }
 
@@ -73,7 +87,7 @@ public class MposShipmentListener {
      * @param shipment
      * @param targetStatus
      */
-    private void syncOrderStatus(Shipment shipment,Integer targetStatus){
+    private void syncOrderStatus(Shipment shipment,Integer targetStatus,Integer orderStatus){
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         long orderShopId = orderShipment.getOrderId();
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
@@ -101,7 +115,7 @@ public class MposShipmentListener {
             //更新订单状态
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, shopOrder.getStatus());
             for (SkuOrder skuOrder : skuOrders) {
-                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), targetStatus);
+                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), orderStatus);
                 if (!updateRlt.getResult()) {
                     log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                     throw new JsonResponseException("update.sku.order.status.error");
@@ -110,7 +124,4 @@ public class MposShipmentListener {
         }
     }
 
-    private void reAssignShipment(Long shipmentId){
-
-    }
 }

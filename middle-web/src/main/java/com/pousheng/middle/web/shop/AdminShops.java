@@ -23,7 +23,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
-import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.shop.model.Shop;
@@ -51,9 +50,6 @@ import java.util.Map;
 @Slf4j
 @RequestMapping("/api/shop")
 public class AdminShops {
-
-    @Autowired
-    private ShopCacher shopCacher;
 
     @RpcConsumer
     private ShopReadService shopReadService;

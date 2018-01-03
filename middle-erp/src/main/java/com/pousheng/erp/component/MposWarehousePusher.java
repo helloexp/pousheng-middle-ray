@@ -52,7 +52,7 @@ public class MposWarehousePusher {
         params.put("stock_list",mposStocks);
         String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(params);
         log.info("add mpos warehouse to erp, data:{}", json);
-        erpClient.postJson("e-commerce-api/v1/create-mposstock-mapper",
+        erpClient.postJson("common/erp/base/createmposstockmapper",
                 json);
     }
 
@@ -71,7 +71,7 @@ public class MposWarehousePusher {
         params.put("stock_list",mposStocks);
         String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(params);
         log.info("remove mpos warehouse from erp, data:{}", json);
-        erpClient.postJson("e-commerce-api/v1/remove-mposstock-mapper",
+        erpClient.postJson("common/erp/base/removemposstockmapper",
                 json);
     }
 

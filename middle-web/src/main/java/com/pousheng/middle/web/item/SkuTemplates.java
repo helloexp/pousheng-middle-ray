@@ -63,6 +63,12 @@ public class SkuTemplates {
         return skuTemplateReadService.findById(id);
     }
 
+    @ApiOperation("根据id集合查询商品集合")
+    @RequestMapping(value = "api/sku-templates",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<List<SkuTemplate>> findSkuByIds(@RequestParam String skuIds){
+        List<Long> ids  = Splitters.splitToLong(skuIds,Splitters.COMMA);
+        return skuTemplateReadService.findByIds(ids);
+    }
 
     /**
      * 获取当前sku code对应sku的spu下的全部sku模板

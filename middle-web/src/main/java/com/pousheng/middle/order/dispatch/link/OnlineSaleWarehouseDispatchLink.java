@@ -5,7 +5,6 @@ import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
@@ -14,13 +13,14 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +57,8 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
     private WarehouseChooser warehouseChooser;
     @Autowired
     private DispatchComponent dispatchComponent;
+    @RpcConsumer
+    private MappingReadService mappingReadService;
 
 
     @Override
@@ -67,13 +69,16 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();
         context.put(DispatchContants.BUYER_ADDRESS,address);
 
-        List<WarehouseSkuStock> onlineSaleWarehouses = getOnlineSaleWarehouse(skuCodeAndQuantities);
+        //查找该批商品中电商在售的
+        List<SkuCodeAndQuantity> onlineSaleSku = getOnlineSaleSku(skuCodeAndQuantities);
+        if(CollectionUtils.isEmpty(onlineSaleSku)){
+            return Boolean.TRUE;
+        }
+        List<WarehouseSkuStock> onlineSaleWarehouses = getOnlineSaleWarehouseStock(onlineSaleSku);
         //如果不存在直接让下个规则处理
         if(CollectionUtils.isEmpty(onlineSaleWarehouses)){
             return Boolean.TRUE;
         }
-
-
 
         List<Long> warehouseIds = Lists.transform(onlineSaleWarehouses, new Function<WarehouseSkuStock, Long>() {
             @Nullable
@@ -139,7 +144,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
 
     //电商在售的仓
-    private List<WarehouseSkuStock> getOnlineSaleWarehouse(List<SkuCodeAndQuantity> skuCodeAndQuantities){
+    private List<WarehouseSkuStock> getOnlineSaleWarehouseStock(List<SkuCodeAndQuantity> skuCodeAndQuantities){
         List<WarehouseSkuStock> allWarehouseSkuStock = Lists.newArrayList();
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities){
             Response<List<WarehouseSkuStock>> warehouseSkuStockRes = warehouseSkuReadService.findBySkuCode(skuCodeAndQuantity.getSkuCode());
@@ -159,5 +164,23 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             throw new ServiceException(warehouseListRes.getError());
         }
         return warehouseListRes.getResult();
+    }
+
+    private List<SkuCodeAndQuantity> getOnlineSaleSku(List<SkuCodeAndQuantity> skuCodeAndQuantities){
+        List<SkuCodeAndQuantity> filterSkuCodeAndQuantitys =Lists.newArrayListWithCapacity(skuCodeAndQuantities.size());
+
+        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities){
+            Response<List<ItemMapping>> response = mappingReadService.findBySkuCode(skuCodeAndQuantity.getSkuCode());
+            if(!response.isSuccess()){
+                log.error("find item mapping by sku code:{} fail,error:{}",skuCodeAndQuantity.getSkuCode(),response.getError());
+                throw new ServiceException(response.getError());
+            }
+            List<ItemMapping> itemMappingList = response.getResult();
+            //不为空则说明电商在售
+            if(!CollectionUtils.isEmpty(itemMappingList)){
+                filterSkuCodeAndQuantitys.add(skuCodeAndQuantity);
+            }
+        }
+        return filterSkuCodeAndQuantitys;
     }
 }

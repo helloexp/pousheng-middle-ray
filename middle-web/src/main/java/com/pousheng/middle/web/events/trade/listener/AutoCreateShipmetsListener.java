@@ -6,16 +6,23 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Response;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
+import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -31,6 +38,8 @@ public class AutoCreateShipmetsListener {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
     @Autowired
     private EventBus eventBus;
 
@@ -47,6 +56,16 @@ public class AutoCreateShipmetsListener {
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
             if (shopOrder.getBuyerName().contains("**")){
                 return;
+            }
+        }
+        //如果是京东货到付款，默认展示京东快递
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())){
+            Map<String, String> extraMap = shopOrder.getExtra();
+            extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
+            extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,"京东快递");
+            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+            if (!rltRes.isSuccess()) {
+                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
             }
         }
         shipmentWiteLogic.doAutoCreateShipment(shopOrder);

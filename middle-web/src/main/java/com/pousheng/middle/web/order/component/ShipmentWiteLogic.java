@@ -403,7 +403,7 @@ public class ShipmentWiteLogic {
     private Long createShopShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, ShopShipment shopShipment) {
         //获取该仓库中可发货的skuCode和数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantitiesChooser = shopShipment.getSkuCodeAndQuantities();
-        //获取仓库的id
+        //获取发货店铺的id
         long deliveyShopId = shopShipment.getShopId();
         //获取skuOid,quantity的集合
         Map<Long, Integer> skuOrderIdAndQuantity = Maps.newHashMap();
@@ -448,7 +448,7 @@ public class ShipmentWiteLogic {
         Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
         ;
 
-        Shipment shipment = this.makeShopShipment(shopOrder, deliveyShopId, shipmentItemFee
+        Shipment shipment = this.makeShopShipment(shopOrder, deliveyShopId,shopShipment.getShopName(), shipmentItemFee
                 , shipmentDiscountFee, shipmentTotalFee, shipmentShipFee, shipmentShipDiscountFee, shipmentTotalPrice, shopOrder.getShopId());
         shipment.setSkuInfos(skuOrderIdAndQuantity);
         shipment.setType(ShipmentType.SALES_SHIP.value());
@@ -607,19 +607,18 @@ public class ShipmentWiteLogic {
      * @param deliverShopId 接单店铺id
      * @return 返回组装的发货单
      */
-    private Shipment makeShopShipment(ShopOrder shopOrder, Long deliverShopId, Long shipmentItemFee, Long shipmentDiscountFee,
+    private Shipment makeShopShipment(ShopOrder shopOrder, Long deliverShopId,String deliverShopName, Long shipmentItemFee, Long shipmentDiscountFee,
                                       Long shipmentTotalFee, Long shipmentShipFee, Long shipmentShipDiscountFee,
                                       Long shipmentTotalPrice, Long shopId) {
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
 
-        OpenShop deliverShop = orderReadLogic.findOpenShopByShopId(deliverShopId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
-        shipmentExtra.setWarehouseId(deliverShop.getId());
-        shipmentExtra.setWarehouseName(deliverShop.getShopName());
+        shipmentExtra.setWarehouseId(deliverShopId);
+        shipmentExtra.setWarehouseName(deliverShopName);
 
         //下单店铺代码（绩效店铺在接单后保存）
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);

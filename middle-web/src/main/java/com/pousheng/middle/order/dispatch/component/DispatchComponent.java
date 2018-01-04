@@ -12,18 +12,26 @@ import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -49,6 +57,12 @@ public class DispatchComponent {
     private MposSkuStockReadService mposSkuStockReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private WarehouseSkuReadService warehouseSkuReadService;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+    @Autowired
+    private ShopCacher shopCacher;
 
 
     private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
@@ -80,18 +94,14 @@ public class DispatchComponent {
 
     public Long getMposSkuWarehouseLockStock(Long warehouseId,String skuCode){
 
-        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
-        if(!response.isSuccess()){
-            log.error("find mposSkuStock by warehouse id :{} and sku code:{} failed,  error:{}", warehouseId,skuCode, response.getError());
-            return 0L;
+        Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+        if (!rStock.isSuccess()) {
+            log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
+                    skuCode, warehouseId, rStock.getError());
+            throw new ServiceException(rStock.getError());
         }
 
-        Optional<MposSkuStock> stockOptional = response.getResult();
-        if(stockOptional.isPresent()){
-            return stockOptional.get().getLockedStock();
-        }
-
-        return 0L;
+        return rStock.getResult().getLockedStock();
     }
 
 
@@ -120,12 +130,21 @@ public class DispatchComponent {
     public void completeWarehouseTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
+            Map<String,String> extra = warehouse.getExtra();
+            if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
+                log.error("not find safe stock for warehouse:(id:{})",hkSkuStockInfo.getBusinessId());
+                throw new ServiceException("warehouse.safe.stock.not.find");
+            }
+            //安全库存
+            Integer safeStock = Integer.valueOf(extra.get("safeStock"));
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                //可用库存要减去mpos占用部分
+                //可用库存
                 Integer availStock = skuAndQuantityInfo.getQuantity();
+                //锁定库存
                 Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
-                //这里先不考虑 availStock-lockStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock);
+                //这里先不考虑 availStock-lockStock - safeStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock -safeStock);
             }
         }
     }
@@ -139,12 +158,18 @@ public class DispatchComponent {
     public void completeShopTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
+
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            //安全库存
+            Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                //可用库存要减去mpos占用部分
+                //可用库存
                 Integer availStock = skuAndQuantityInfo.getQuantity();
+                //mpos占用库存
                 Integer lockStock = Integer.valueOf(this.getMposSkuShopLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
-                //这里先不考虑 availStock-lockStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock);
+                //这里先不考虑 availStock-lockStock-safeStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock-safeStock);
             }
         }
     }
@@ -201,6 +226,17 @@ public class DispatchComponent {
             }
         });
 
+    }
+
+    public List<String> getWarehouseSkuCodes(List<WarehouseShipment> warehouseShipments){
+        List<String> skuCodes = Lists.newArrayList();
+        for (WarehouseShipment warehouseShipment : warehouseShipments){
+            for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()){
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
+            }
+        }
+
+        return skuCodes;
     }
 
     public List<DistanceDto> sortDistanceDto(List<DistanceDto> distanceDtos){

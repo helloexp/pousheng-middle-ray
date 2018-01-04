@@ -149,5 +149,21 @@ public class TradeConstants {
     public static final String IS_ASSIGN_SHOP = "isAssignShop";
     //指定门店id
     public static final String ASSIGN_SHOP_ID = "assignShopId";
+    //订单取消
+    public static final String ORDER_CANCEL = "order";
+    //发货单取消
+    public static final String SHIPMENT_CANCEL = "shipment";
+    //仓库安全库存
+    public static final String WAREHOUSE_SAFESTOCK = "safeStock";
+    //仓库虚拟店编码
+    public static final String WAREHOUSE_VIRTUALSHOPCODE = "virtualShopCode";
+    //仓库虚拟店名称
+    public static final String WAREHOUSE_VIRTUALSHOPNAME = "virtualShopName";
+    //仓库退货仓id
+    public static final String WAREHOUSE_RETURNWAREHOUSEID = "returnWarehouseId";
+    //仓库退货仓编码
+    public static final String WAREHOUSE_RETURNWAREHOUSECODE = "returnWarehouseCode";
+    //仓库退货仓名称
+    public static final String WAREHOUSE_RETURNWAREHOUSENAME = "returnWarehouseName";
 
 }

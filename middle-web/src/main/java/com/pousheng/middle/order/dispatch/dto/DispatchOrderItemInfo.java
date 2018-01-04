@@ -36,12 +36,5 @@ public class DispatchOrderItemInfo implements Serializable{
      */
     private List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
 
-    /**
-     * 当前订单下mpos与电商仓的交集（电商仓）
-     */
-    private List<Long> mposOnlineSaleWarehouseIds = Lists.newArrayList();
-
-
-
 
 }

@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
@@ -70,6 +71,8 @@ public class OrderOpenApi {
     private ShipmentWiteLogic shipmentWiteLogic;
     @RpcConsumer
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
+    @RpcConsumer
+    private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @Autowired
     private EventBus eventBus;
 
@@ -348,6 +351,15 @@ public class OrderOpenApi {
                 pos.setPosDoneAt(new Date());
             }else{
                 throw new ServiceException("invalid.order.type");
+            }
+            Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(posSerialNo);
+            if (!rP.isSuccess()){
+                log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",posSerialNo,rP.getError());
+                return;
+            }
+            if(!Objects.isNull(rP.getResult())){
+                log.error("duplicate posSerialNo is {},caused by {}",posSerialNo,rP.getError());
+                return;
             }
             Response<Long> r = poushengSettlementPosWriteService.create(pos);
             if (!r.isSuccess()){

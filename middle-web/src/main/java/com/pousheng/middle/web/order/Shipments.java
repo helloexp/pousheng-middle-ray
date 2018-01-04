@@ -936,7 +936,7 @@ public class Shipments {
                 pos.setShopName(orderShipment.getShopName());
                 pos.setPosCreatedAt(shipmentExtra.getPosCreatedAt());
                 Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(shipmentExtra.getPosSerialNo());
-                if (!r.isSuccess()){
+                if (!rP.isSuccess()){
                     log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",shipmentExtra.getPosSerialNo(),rP.getError());
                     continue;
                 }
@@ -989,7 +989,7 @@ public class Shipments {
                 pos.setPosCreatedAt(refundExtra.getPosCreatedAt());
                 pos.setPosDoneAt(refund.getUpdatedAt());
                 Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(refundExtra.getPosSerialNo());
-                if (!r.isSuccess()){
+                if (!rP.isSuccess()){
                     log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",refundExtra.getPosSerialNo(),rP.getError());
                     continue;
                 }

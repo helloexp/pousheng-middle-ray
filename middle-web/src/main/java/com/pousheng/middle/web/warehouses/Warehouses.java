@@ -3,6 +3,7 @@ package com.pousheng.middle.web.warehouses;
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.component.MposWarehousePusher;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.warehouse.dto.WarehouseServerInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.erp.component.ErpClient;
@@ -273,7 +274,7 @@ public class Warehouses {
         Warehouse warehouse = new Warehouse();
         warehouse.setId(exist.getId());
         Map<String,String> extra = exist.getExtra();
-        extra.put("safeStock",safeStock.toString());
+        extra.put(TradeConstants.WAREHOUSE_SAFESTOCK,safeStock.toString());
         warehouse.setExtra(extra);
         Response<Boolean> res = warehouseWriteService.update(warehouse);
         if(!res.isSuccess()){
@@ -297,13 +298,13 @@ public class Warehouses {
         Warehouse exist = res.getResult();
         Map<String,String> extra = exist.getExtra();
         if(StringUtils.hasText(warehouseServerInfo.getVirtualShopCode())){
-            extra.put("virtualShopCode",warehouseServerInfo.getVirtualShopCode());
-            extra.put("virtualShopName",warehouseServerInfo.getVirtualShopName());
+            extra.put(TradeConstants.WAREHOUSE_VIRTUALSHOPCODE,warehouseServerInfo.getVirtualShopCode());
+            extra.put(TradeConstants.WAREHOUSE_VIRTUALSHOPNAME,warehouseServerInfo.getVirtualShopName());
         }
         if(StringUtils.hasText(warehouseServerInfo.getReturnWarehouseCode())){
-            extra.put("returnWarehouseCode",warehouseServerInfo.getReturnWarehouseCode());
-            extra.put("returnWarehouseName",warehouseServerInfo.getReturnWarehouseName());
-            extra.put("returnWarehouseId",warehouseServerInfo.getReturnWarehouseId().toString());
+            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSECODE,warehouseServerInfo.getReturnWarehouseCode());
+            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSENAME,warehouseServerInfo.getReturnWarehouseName());
+            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSEID,warehouseServerInfo.getReturnWarehouseId().toString());
         }
         Warehouse update = new Warehouse();
         update.setId(warehouseId);

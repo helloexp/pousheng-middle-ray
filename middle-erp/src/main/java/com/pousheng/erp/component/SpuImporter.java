@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.Collections;
 import java.util.Date;
@@ -242,4 +243,23 @@ public class SpuImporter {
             return child;
         }
     }
+
+    /**
+     * 根据skuCode拉取货品信息
+     * @param skuCode
+     * @return
+     */
+    public int processPullMarterials(String skuCode) {
+        if (StringUtils.isEmpty(skuCode)){
+            log.error("no skuCode when import material");
+            throw new IllegalArgumentException("skuCode.is.null");
+        }
+        List<PoushengMaterial> materials = materialFetcher.fetchByBarCode(skuCode);
+        for (PoushengMaterial material : materials) {
+            Brand brand = brandCacher.findByCardName(material.getCard_name());//做品牌映射
+            doProcess(material, brand);
+        }
+        return materials.size();
+    }
+
 }

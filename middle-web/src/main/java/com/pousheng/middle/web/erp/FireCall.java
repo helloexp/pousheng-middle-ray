@@ -96,6 +96,12 @@ public class FireCall {
 
     }
 
+    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
+        int spuCount =spuImporter.processPullMarterials(skuCode);
+        log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
 
 }
 

@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
@@ -54,6 +55,8 @@ public class ShopCreationOrUpdateListener {
     private WarehouseAddressCacher warehouseAddressCacher;
     @Autowired
     private DispatchComponent dispatchComponent;
+    @Autowired
+    private MposWarehousePusher mposWarehousePusher;
 
     @PostConstruct
     private void register() {
@@ -74,8 +77,12 @@ public class ShopCreationOrUpdateListener {
             return;
         }
 
-        //4、更新门店地址信息
+        //更新门店地址信息
         updateShopAddress(event.getShopId(),addressGps.getDetail());
+
+        //同步恒康mpos门店范围
+        mposWarehousePusher.addWarehouses(event.getCompanyId().toString(),event.getOuterId());
+
 
     }
 

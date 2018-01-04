@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.UcUserInfo;
+import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
@@ -69,6 +70,8 @@ public class AdminShops {
     private EventBus eventBus;
     @Autowired
     private ParanaUserOperationLogic paranaUserOperationLogic;
+    @Autowired
+    private MposWarehousePusher mposWarehousePusher;
 
 
 
@@ -183,7 +186,7 @@ public class AdminShops {
             //创建门店信息
             id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
 
-            CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId());
+            CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId(),shop.getOuterId());
             eventBus.post(addressEvent);
         }else {
             //更新门店用户
@@ -501,6 +504,8 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.close(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        //同步恒康mpos门店范围
+        mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
 
     }
 

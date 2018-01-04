@@ -1,7 +1,6 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Function;
-import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
@@ -32,6 +31,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -91,10 +91,14 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         List<Warehouse> warehouseList = findWarehouseByIds(warehouseIds);
 
         //过滤掉非mpos仓,过滤后如果没有则进入下个规则
-        List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
+        List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equals(warehouse.getIsMpos(),1)).collect(Collectors.toList());
         if(CollectionUtils.isEmpty(mposOnlineSaleWarehouse)){
             return Boolean.TRUE;
         }
+
+        Map<Long, Warehouse> warehouseIdMap = mposOnlineSaleWarehouse.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(Warehouse::getId, it -> it));
+
 
 
         //电商mpos 仓id集合
@@ -106,18 +110,25 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        dispatchOrderItemInfo.setMposOnlineSaleWarehouseIds(mposOnlineSaleWarehouseIds);
-
-
         //仓库 商品 库存
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
         for (WarehouseSkuStock warehouseSkuStock : onlineSaleWarehouses){
+
+
+
             //过滤掉非mpos的
             if(mposOnlineSaleWarehouseIds.contains(warehouseSkuStock.getWarehouseId())){
-                //可用库存要减去mpos占用部分
+
+                Map<String,String> extra = warehouseIdMap.get(warehouseSkuStock.getWarehouseId()).getExtra();
+                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
+                    log.error("not find safe stock for warehouse:(id:{})",warehouseSkuStock.getWarehouseId());
+                    throw new ServiceException("warehouse.safe.stock.not.find");
+                }
+                //可用库存
                 Long availStock = warehouseSkuStock.getAvailStock();
-                availStock-=dispatchComponent.getMposSkuWarehouseLockStock(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode());
-                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(availStock.toString()));
+                //安全库存
+                Integer safeStock = Integer.valueOf(extra.get("safeStock"));
+                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(availStock.toString())-safeStock);
             }
         }
         context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
@@ -130,7 +141,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         //如果只有一个
-        if(Objects.equal(warehouseShipments.size(),1)){
+        if(Objects.equals(warehouseShipments.size(),1)){
             dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
             return Boolean.FALSE;
         }

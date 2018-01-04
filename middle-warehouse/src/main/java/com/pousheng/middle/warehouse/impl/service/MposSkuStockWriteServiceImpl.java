@@ -12,6 +12,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -86,6 +87,9 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
     @Override
     public Response<Boolean> lockStockShop(List<ShopShipment> shopShipments) {
         try {
+            if(CollectionUtils.isEmpty(shopShipments)){
+                return Response.ok();
+            }
             mposSkuStockManager.lockStockShop(shopShipments);
             return Response.ok();
         }catch (Exception e){

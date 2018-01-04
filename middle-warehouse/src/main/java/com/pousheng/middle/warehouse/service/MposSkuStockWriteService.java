@@ -44,6 +44,7 @@ public interface MposSkuStockWriteService {
      * @param warehouseShipments 仓库及发货数量列表
      * @return 是否锁定成功
      */
+    @Deprecated
     Response<Boolean> lockStockWarehouse(List<WarehouseShipment> warehouseShipments);
 
 
@@ -53,6 +54,7 @@ public interface MposSkuStockWriteService {
      * @param warehouseShipments 仓库及解锁数量列表
      * @return 是否解锁成功
      */
+    @Deprecated
     Response<Boolean> unlockStockWarehouse(List<WarehouseShipment> warehouseShipments);
 
 
@@ -81,5 +83,6 @@ public interface MposSkuStockWriteService {
      * @param warehouseShipments 仓库及发货数量列表
      * @return 是否锁定成功
      */
+    @Deprecated
     Response<Boolean> lockStockShopAndWarehouse(List<ShopShipment> shopShipments,List<WarehouseShipment> warehouseShipments);
 }

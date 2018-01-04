@@ -72,4 +72,15 @@ public class AddressGpss {
 
     }
 
+    /**
+     * 获取门店地址
+     * @param shopId 门店id
+     * @return 门店地址信息
+     */
+    @ApiOperation("获取门店地址信息")
+    @RequestMapping(value = "/api/middle/shop/{id}/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<AddressGps> findGpsByShopId(@PathVariable("id") Long shopId) {
+        return addressGpsReadService.findByBusinessIdAndType(shopId, AddressBusinessType.SHOP);
+    }
+
 }

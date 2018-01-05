@@ -80,6 +80,10 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
     private String outBuyerId;
     private String mobile;
     /**
+     * 借用字段，用来查询该订单是否含有赠品
+     */
+    private Long companyId;//赠品订单companyId=1
+    /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
     @Override

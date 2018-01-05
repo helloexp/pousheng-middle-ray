@@ -106,4 +106,15 @@ public class TradeConstants {
 
     //sku订单中的shipmentId
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
+    //活动商品
+    public static final String ACTIVITY_ITEM="activityItems";
+    //赠品
+    public static final String GIFT_ITEM="giftItems";
+
+    public static final String ACTIVITY_SHOP="activityShops";
+
+    //活动赠品id
+    public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
+    //活动赠品名称
+    public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
 }

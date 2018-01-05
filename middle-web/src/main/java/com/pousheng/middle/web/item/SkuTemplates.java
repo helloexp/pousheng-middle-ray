@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by songrenfei on 2017/6/30
@@ -74,14 +75,17 @@ public class SkuTemplates {
 
 
     @RequestMapping(value="/api/sku-template/paging",method=RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<SkuTemplate> pagination(@RequestParam(value ="skuCode", required = false) String skuCode,
+    public Paging<SkuTemplate> pagination(@RequestParam(value = "ids",required = false) List<Long> ids,@RequestParam(value ="skuCode", required = false) String skuCode,
                                           @RequestParam(value="name",  required = false) String name,
                                           @RequestParam(value = "spuId",required = false) Long spuId,
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
-                                          @RequestParam(value = "pageSize", required = false) Integer pageSize){
+                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                          @RequestParam(value = "statuses", required = false) List<Integer> statuses){
 
         Map<String, Object> params = Maps.newHashMap();
-
+        if (Objects.nonNull(ids)){
+            params.put("ids",ids);
+        }
         if(StringUtils.hasText(skuCode)){
             params.put("skuCode", skuCode);
         }
@@ -91,7 +95,11 @@ public class SkuTemplates {
         if (spuId!=null){
             params.put("spuId",spuId);
         }
-        params.put("statuses",Lists.newArrayList(1,-3));
+        if (Objects.isNull(statuses)){
+            params.put("statuses",Lists.newArrayList(1,-3));
+        }else if (!statuses.isEmpty()){
+            params.put("statuses",statuses);
+        }
         Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);
         if(!r.isSuccess()){
             log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());

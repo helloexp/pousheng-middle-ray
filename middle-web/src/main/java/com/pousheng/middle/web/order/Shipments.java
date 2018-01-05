@@ -703,6 +703,11 @@ public class Shipments {
             SkuOrder skuOrder = skuOrderMap.get(skuOrderId);
             shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
             //初始情况下,refundQuery为0
+            if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
+                shipmentItem.setIsGift(true);
+            }else{
+                shipmentItem.setIsGift(false);
+            }
             shipmentItem.setRefundQuantity(0);
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());

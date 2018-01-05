@@ -27,6 +27,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -230,6 +231,14 @@ public class ShipmentWiteLogic {
                     log.error("shipment id is {} update sku handle number failed.caused by {}",shipmentId,e.getMessage());
                 }
                 //同步恒康
+                Map<String,String> extraMap = shopOrder.getExtra();
+                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+                if (!StringUtils.isEmpty(isStepOrder)&&Objects.equals(isStepOrder,"true")){
+                    if (!StringUtils.isEmpty(stepOrderStatus)&&Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),Integer.valueOf(stepOrderStatus))){
+                        continue;
+                    }
+                }
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
                 log.info("auto create shipment,step xxx");
                 if (!syncRes.isSuccess()) {
@@ -427,6 +436,7 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
         shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
         shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
+        shipmentExtra.setIsStepOrder(shopOrder.getExtra().get(TradeConstants.IS_STEP_ORDER));
         //添加物流编码
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){

@@ -16,6 +16,7 @@ import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
+import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
@@ -30,6 +31,7 @@ import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.item.model.Item;
 import io.terminus.parana.item.model.Sku;
@@ -192,6 +194,23 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }
             }
         }
+        //如果是预售订单且订单没有发货，预售订单已经支付尾款，则通知订单将发货单发往恒康
+        if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
+          if (Objects.nonNull(openClientFullOrder.getStepStatus())&&openClientFullOrder.getStepStatus().getValue()== OpenClientStepOrderStatus.PAID.getValue()){
+              Map<String, String> extraMap = shopOrder.getExtra();
+              String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+              String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+              //判断订单是否是预售订单，并且判断预售订单是否已经付完尾款
+              if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                  if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus,
+                          String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue()))) {
+                      //抛出一个事件更新预售订单状态
+                      StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+                      event.setShopOrderId(shopOrder.getId());
+                  }
+              }
+          }
+        }
     }
 
 
@@ -216,6 +235,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         //添加绩效店铺编码,通过openClient获取
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
+        //判断是否是预售订单
+        if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
+            shopOrderExtra.put(TradeConstants.IS_STEP_ORDER,String.valueOf(openClientFullOrder.getIsStepOrder().booleanValue()));
+            if (Objects.nonNull(openClientFullOrder.getStepStatus())){
+                shopOrderExtra.put(TradeConstants.STEP_ORDER_STATUS,String.valueOf(openClientFullOrder.getStepStatus().getValue()));
+            }
+        }
         richSkusByShop.setExtra(shopOrderExtra);
 
         //判断是否存在可用的赠品

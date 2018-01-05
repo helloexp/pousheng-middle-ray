@@ -35,6 +35,8 @@ public class TradeConstants {
     public static final String REFUND_ITEM_INFO = "refundItemInfo";
     //逆向单换货商品信息
     public static final String REFUND_CHANGE_ITEM_INFO = "refundChangeItemInfo";
+    //逆向单丢件补发商品信息
+    public static final String REFUND_LOST_ITEM_INFO="refundLostItemInfo";
     //逆向单商品信息
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
     //通知电商平台状态
@@ -111,8 +113,6 @@ public class TradeConstants {
     public static final String REFUND_WAIT_CANCEL = "0";
     public static final String REFUND_CANCELED = "1";
 
-    //sku订单中的shipmentId
-    public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
     //活动商品
     public static final String ACTIVITY_ITEM="activityItems";
     //赠品
@@ -124,4 +124,11 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
     //活动赠品名称
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
+    //sku订单中的shipmentId
+    public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
+    //店铺订单选择的快递单号
+    public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
+    public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
+    public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
+    public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
 }

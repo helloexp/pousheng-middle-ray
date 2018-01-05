@@ -109,19 +109,23 @@ public class Refunds {
 
     //完善处理逆向单
     @RequestMapping(value = "/api/refund/{id}/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("完善")
+    @OperationLogType("完善或提交售后单")
     public void completeHandle(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId, @RequestBody EditSubmitRefundInfo editSubmitRefundInfo) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         try{
-            refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
-            if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
-                //完善之后同步售后单到恒康
-                Flow flow = flowPicker.pickAfterSales();
-                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                refund.setStatus(targetStatus);
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                refundWriteLogic.completeHandleForLostType(refund,editSubmitRefundInfo);
+            }else{
+                refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
+                if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
+                    //完善之后同步售后单到恒康
+                    Flow flow = flowPicker.pickAfterSales();
+                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                    refund.setStatus(targetStatus);
+                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                    }
                 }
             }
         }catch (JsonResponseException e1){
@@ -138,7 +142,7 @@ public class Refunds {
      * @param data 逗号隔开的逆向单id拼接
      */
     @RequestMapping(value = "/api/refund/batch/handle", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("批量处理")
+    @OperationLogType("批量处理售后单")
     public void completeHandle(@RequestParam(value = "refundIds") String data) {
         List<Long> refundIds = Splitters.splitToLong(data, Splitters.COMMA);
         List<Refund> refunds = refundReadLogic.findRefundByIds(refundIds);
@@ -157,19 +161,28 @@ public class Refunds {
             throw new JsonResponseException("uncomplete.refund.can.not.pass.check");
         }
         refunds.forEach(refund -> {
-            OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
-            Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
-            if (!response.isSuccess()) {
-                log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
-                throw new JsonResponseException(response.getError());
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                OrderOperation orderOperation = MiddleOrderEvent.LOST_HANDLE.toOrderOperation();
+                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                if (!response.isSuccess()) {
+                    log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
+                    throw new JsonResponseException(response.getError());
+                }
             }else{
-                //审核之后同步售后单到恒康
-                Flow flow = flowPicker.pickAfterSales();
-                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                refund.setStatus(targetStatus);
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
+                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                if (!response.isSuccess()) {
+                    log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
+                    throw new JsonResponseException(response.getError());
+                }else{
+                    //审核之后同步售后单到恒康
+                    Flow flow = flowPicker.pickAfterSales();
+                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                    refund.setStatus(targetStatus);
+                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                    }
                 }
             }
         });
@@ -178,7 +191,6 @@ public class Refunds {
 
     //编辑逆向单 或 创建逆向订单
     @RequestMapping(value = "/api/refund/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑或创建")
     public EditMiddleRefund edit(@RequestParam(required = false) @PermissionCheckParam Long refundId) {
         if (Arguments.isNull(refundId)) {
             EditMiddleRefund editMiddleRefund = new EditMiddleRefund();
@@ -191,10 +203,15 @@ public class Refunds {
 
     //删除逆向单
     @RequestMapping(value = "/api/refund/{id}/delete", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void delete(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
+    @OperationLogType("删除售后单")
+    public void delete(@PathVariable(value = "id")@OperationLogParam @PermissionCheckParam Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
-        refundWriteLogic.deleteRefund(refund);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            refundWriteLogic.deleteRefundForLost(refund);
+        }else{
+            refundWriteLogic.deleteRefund(refund);
+        }
     }
 
 
@@ -206,9 +223,13 @@ public class Refunds {
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    @OperationLogType("创建")
+    @OperationLogType("创建售后单")
     public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
-        return refundWriteLogic.createRefund(submitRefundInfo);
+        if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            return refundWriteLogic.createRefundForLost(submitRefundInfo);
+        }else{
+            return refundWriteLogic.createRefund(submitRefundInfo);
+        }
     }
 
 
@@ -222,20 +243,36 @@ public class Refunds {
     public List<WaitShipItemInfo> refundWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long refundId) {
 
         Refund refund = refundReadLogic.findRefundById(refundId);
-        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
-
-        List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
-        for (RefundItem refundItem : refundChangeItems) {
-            WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
-            waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
-            waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
-            waitShipItemInfo.setSkuName(refundItem.getSkuName());
-            waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity() - refundItem.getAlreadyHandleNumber());
-            waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
-            waitShipItemInfo.setItemId(refundItem.getItemId());
-            waitShipItemInfos.add(waitShipItemInfo);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
+            List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundLostItems.size());
+            for (RefundItem refundItem : refundLostItems) {
+                if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))>0){
+                    this.waitShipItems(waitShipItemInfos, refundItem);
+                }
+            }
+            return waitShipItemInfos;
+        }else{
+            List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+            List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(refundChangeItems.size());
+            for (RefundItem refundItem : refundChangeItems) {
+                if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))>0){
+                    this.waitShipItems(waitShipItemInfos, refundItem);
+                }
+            }
+            return waitShipItemInfos;
         }
-        return waitShipItemInfos;
+    }
+
+    private void waitShipItems(List<WaitShipItemInfo> waitShipItemInfos, RefundItem refundItem) {
+        WaitShipItemInfo waitShipItemInfo = new WaitShipItemInfo();
+        waitShipItemInfo.setSkuCode(refundItem.getSkuCode());
+        waitShipItemInfo.setOutSkuCode(refundItem.getSkuCode());
+        waitShipItemInfo.setSkuName(refundItem.getSkuName());
+        waitShipItemInfo.setWaitHandleNumber(refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()));
+        waitShipItemInfo.setSkuAttrs(refundItem.getAttrs());
+        waitShipItemInfo.setItemId(refundItem.getItemId());
+        waitShipItemInfos.add(waitShipItemInfo);
     }
 
 
@@ -262,7 +299,7 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel", method = RequestMethod.PUT)
-    @OperationLogType("取消")
+    @OperationLogType("取消销售单")
     public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
@@ -271,7 +308,9 @@ public class Refunds {
             throw new JsonResponseException(cancelRes.getError());
         }
         //回滚发货单的数量
-        refundWriteLogic.rollbackRefundQuantities(refund);
+        if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            refundWriteLogic.rollbackRefundQuantities(refund);
+        }
     }
 
 
@@ -293,7 +332,7 @@ public class Refunds {
                 throw new JsonResponseException(updateSyncStatusRes.getError());
             }
         }else{
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+                Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
             if (!syncRes.isSuccess()) {
                 log.error("sync cancel refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
                 throw new JsonResponseException(syncRes.getError());
@@ -354,7 +393,8 @@ public class Refunds {
      * @param customerSerivceNote 客服备注
      */
     @RequestMapping(value = "/api/refund/{id}/add/customer/service/note", method = RequestMethod.PUT)
-    public void createCustomerServiceNote(@PathVariable("id") Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
+    @OperationLogType("售后单添加中台客服备注")
+    public void createCustomerServiceNote(@PathVariable("id") @OperationLogParam Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
         refundWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
     }
 
@@ -363,7 +403,8 @@ public class Refunds {
      * @param id 售后单id
      */
     @RequestMapping(value = "/api/refund/{id}/cancel/on/change",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void cancelRefundForChange(@PathVariable("id")Long id){
+    @OperationLogType("换货改退货取消售后单")
+    public void cancelRefundForChange(@PathVariable("id")@OperationLogParam Long id){
         Refund refund = refundReadLogic.findRefundById(id);
         if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
             //如果允许取消发货则修改状态
@@ -388,7 +429,8 @@ public class Refunds {
      * @param refundId 退款单id
      */
     @RequestMapping(value = "/api/refund/{id}/manual/confirm/refund",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void confirmRefund(@PathVariable("id") Long refundId){
+    @OperationLogType("人工确认已经退款")
+    public void confirmRefund(@PathVariable("id")@OperationLogParam Long refundId){
        Refund refund =  refundReadLogic.findRefundById(refundId);
        OrderRefund orderRefund =  refundReadLogic.findOrderRefundByRefundId(refundId);
        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -413,7 +455,8 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "/api/refund/{id}/manual/confirm/return",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void confirmReturn(@PathVariable("id") Long refundId){
+    @OperationLogType("人工确认已经退货")
+    public void confirmReturn(@PathVariable("id") @OperationLogParam Long refundId){
         Refund refund =  refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund =  refundReadLogic.findOrderRefundByRefundId(refundId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -450,14 +493,14 @@ public class Refunds {
      * @param orderId 订单主键
      * @param shipmentId 发货单主键
      * @param refundId 退货单主键
-     * @param skuCode 商品条码
-     * @param applyQuantity 申请退货的数量
+     * @param  list skuCode-applyQuantity 集合
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public int getAlreadyRefundFee(@PathVariable("id") Long orderId,@RequestParam("shipmentId") Long shipmentId,@RequestParam(required = false) Long refundId,
-                                    @RequestParam("skuCode") String skuCode,@RequestParam("applyQuantity") Integer applyQuantity){
-        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,skuCode,applyQuantity);
+                                   @RequestParam(value = "list") String list){
+        List<RefundFeeData> refundFeeDatas = JsonMapper.nonEmptyMapper().fromJson(list, JsonMapper.nonEmptyMapper().createCollectionType(List.class,RefundFeeData.class));
+        return refundReadLogic.getAlreadyRefundFee(orderId,refundId,shipmentId,refundFeeDatas);
     }
 
     private MiddleRefundDetail makeRefundDetail(Long refundId) {
@@ -470,7 +513,12 @@ public class Refunds {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         refundDetail.setRefundItems(refundReadLogic.findRefundItems(refund));
         refundDetail.setRefundExtra(refundExtra);
-
+        //如果为丢件补发，获取丢件补发的商品信息
+        if (isLostRefund(refund)){
+            refundDetail.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
+            //获取换货的收货人地址
+            refundDetail.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+        }
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             refundDetail.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
@@ -491,12 +539,13 @@ public class Refunds {
     }
 
     /**
-     * 修改订单的收货信息
+     * 修改订单的收货信息，主要是换货使用
      * @param id 售后单主键
      * @param middleChangeReceiveInfo
      */
     @RequestMapping(value = "/api/refund/{id}/edit/receiver/info",method = RequestMethod.PUT)
-    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
+    @OperationLogType("修改换货售后单客户收货地址")
+    public void editReceiverInfos(@PathVariable("id")@OperationLogParam Long id, @RequestParam(required = false) String buyerName,@RequestBody MiddleChangeReceiveInfo middleChangeReceiveInfo){
         middleRefundWriteService.updateReceiveInfos(id,middleChangeReceiveInfo);
     }
 
@@ -515,7 +564,11 @@ public class Refunds {
             editMiddleRefund.setRefundItems(makeEditRefundItemFromRefund(refund, refundExtra.getShipmentId()));
         }
         editMiddleRefund.setRefundExtra(refundExtra);
-
+        //如果为丢件补发类型
+        if(isLostRefund(refund)){
+            editMiddleRefund.setLostRefundItems(refundReadLogic.findRefundLostItems(refund));
+            editMiddleRefund.setMiddleChangeReceiveInfo(refundReadLogic.findMiddleChangeReceiveInfo(refund));
+        }
         //如果为换货,则获取换货商品信息
         if (isChangeRefund(refund)) {
             editMiddleRefund.setShipmentItems(refundReadLogic.findRefundChangeItems(refund));
@@ -564,7 +617,35 @@ public class Refunds {
 
     }
 
+    /**
+     * 是否是换货
+     * @param refund
+     * @return
+     */
     private Boolean isChangeRefund(Refund refund) {
         return Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value());
     }
+
+    /**
+     * 是否是丢件补发类型
+     * @param refund 售后单
+     * @return
+     */
+    private Boolean isLostRefund(Refund refund) {
+        return Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value());
+    }
+
+    /**
+     * 丢件补发类型客服确认客户收货
+     * @param id 售后单id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/customer/service/confirm/done",method = RequestMethod.PUT)
+    @OperationLogType("丢件补发客服确认收货")
+    public Response<Boolean> confirmDoneForLost(@PathVariable("id") @OperationLogParam Long id){
+        Refund refund = refundReadLogic.findRefundById(id);
+        Response<Boolean> r = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
+        return Response.ok(r.isSuccess());
+    }
+
 }

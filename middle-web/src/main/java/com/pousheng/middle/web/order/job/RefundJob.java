@@ -11,9 +11,8 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +44,8 @@ public class RefundJob {
     private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
     private RefundReadService refundReadService;
+    @RpcConsumer
+    private OrderWriteService orderWriteService;
 
     /**
      * 每隔5分钟执行一次,拉取中台售中退款的退款单
@@ -86,6 +87,14 @@ public class RefundJob {
                 if (Objects.equals(orderType, "1")) {
                     //整单退款,调用整单退款的逻辑
                     log.info("try to auto cancel shop order shopOrderId is {}",orderRefund.getOrderId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    try {
+                        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+                        shopOrderExtra.put(TradeConstants.SHOP_ORDER_CANCEL_REASON,"电商取消同步");
+                        orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP,shopOrderExtra);
+                    }catch (Exception e){
+                        log.error("add shop order cancel reason failed,shop order id is {}",shopOrder.getId());
+                    }
                     orderWriteLogic.autoCancelShopOrder(orderRefund.getOrderId());
                 } else if (Objects.equals(orderType, "2")) {
                     log.info("try to auto cancel sku order shopOrderId is {}",orderRefund.getOrderId());
@@ -97,6 +106,14 @@ public class RefundJob {
                         if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CANCEL_FAILED.getValue())){
                             count++;
                             continue;
+                        }
+                        SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(orderRefund.getOrderId(),refundItem.getSkuCode());
+                        try {
+                            Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                            skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,"电商取消同步");
+                            orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                        }catch (Exception e){
+                            log.error("add sku order cancel reason failed,sku order id is {}",skuOrder.getId());
                         }
                         orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode());
                     }

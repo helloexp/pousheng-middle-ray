@@ -92,9 +92,9 @@ public class AdminOrderReader {
         }
 
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-        if (middleOrderCriteria.getShopId() == null)
+        if (middleOrderCriteria.getShopId() == null) {
             middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
-        else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
+        } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
             throw new JsonResponseException("permission.check.query.deny");
         }
         if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
@@ -112,7 +112,7 @@ public class AdminOrderReader {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
             String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
-            shopOrderPagingInfo.setShopOrderOperations(Objects.equals(Integer.valueOf(ecpOrderStatus), EcpOrderStatus.WAIT_SHIP.getValue())
+            shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
                     ?flow.availableOperations(shopOrder.getStatus())
                     :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             pagingInfos.add(shopOrderPagingInfo);

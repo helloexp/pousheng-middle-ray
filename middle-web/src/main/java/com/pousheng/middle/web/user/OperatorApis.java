@@ -101,7 +101,7 @@ public class OperatorApis {
             checkUserExist(outUserId);
         } else {
             //调用用户中心创建用户
-            Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUser(operator.getUsername(), operator.getPassword());
+            Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.createUcUserForOperator(operator.getUsername(), operator.getPassword());
             if (!ucUserInfoRes.isSuccess()) {
                 log.error("create middleUser center middleUser(name:{}) fail,error:{}", operator.getUsername(), ucUserInfoRes.getError());
                 throw new JsonResponseException(ucUserInfoRes.getError());

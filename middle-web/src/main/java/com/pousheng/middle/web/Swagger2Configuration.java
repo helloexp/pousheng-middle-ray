@@ -14,7 +14,7 @@ import springfox.documentation.swagger2.annotations.EnableSwagger2;
  * Date: 2017-06-09
  */
 @Configuration
-@Profile({"default","dev","test"})
+//@Profile({"default","dev","test"})
 @EnableSwagger2
 public class Swagger2Configuration {
     @Bean

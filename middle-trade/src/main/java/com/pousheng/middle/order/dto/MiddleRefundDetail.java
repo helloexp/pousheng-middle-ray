@@ -18,7 +18,8 @@ public class MiddleRefundDetail extends RichMiddleRefund implements Serializable
     //换货信息
     private List<RefundItem> shipmentItems;
 
-
+    //丢件补发类型的信息
+    private List<RefundItem> lostRefundItems;
 
 
 

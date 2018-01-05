@@ -30,7 +30,10 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -237,11 +240,18 @@ public class RefundReadLogic {
      * @param orderId 订单id
      * @param refundId 退货单id
      * @param shipmentId 发货单id
-     * @param skuCode 条码
-     * @param applyQuantity
+     * @param refundFeeDatas 传输进来的售后单sku以及数量
      * @return
      */
-    public int getAlreadyRefundFee(Long orderId,Long refundId,Long shipmentId,String skuCode,Integer applyQuantity){
+    public int getAlreadyRefundFee(Long orderId,Long refundId,Long shipmentId,List<RefundFeeData> refundFeeDatas){
+        //传输进来的售后单sku集合
+        List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getSkuCode).collect(Collectors.toList());
+        //传输进来的售后单sku以及数量的map
+        Map<String,Integer> editSkuCodeAndQuantityMap = Maps.newHashMap();
+        refundFeeDatas.forEach(refundFeeData -> {
+            editSkuCodeAndQuantityMap.put(refundFeeData.getSkuCode(),refundFeeData.getApplyQuantity());
+        });
+        //获取订单信息
         Response<List<Refund>> rltRes = refundReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
         if (!rltRes.isSuccess()){
             log.error("find Refund failed,order id is ({}),caused by {}",orderId,rltRes.getError());
@@ -252,25 +262,66 @@ public class RefundReadLogic {
                 .filter(refund->!Objects.equals(refund.getId(),refundId))
                 .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value()))
                 .filter(refund -> !Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue()))
+                .filter(refund -> !Objects.equals(refund.getStatus(),MiddleRefundStatus.DELETED.getValue()))
                 .collect(Collectors.toList());
+        //获取已经退款的金额
         Long alreadyRefundFee = 0L;
         for (Refund refund:refunds){
             List<RefundItem> refundItems = this.findRefundItems(refund);
             List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
-            if (skuCodes.contains(skuCode)){
-                alreadyRefundFee+= refund.getFee();
+            for (String skuCode:editSkuCodes){
+                if (skuCodes.contains(skuCode)){
+                    alreadyRefundFee+= refund.getFee();
+                }
             }
         }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        Optional<ShipmentItem> shipmentItemOpt = shipmentItems.stream().filter(Objects::nonNull).
-                filter(shipmentItem -> Objects.equals(shipmentItem.getSkuCode(),skuCode)).findFirst();
-        ShipmentItem shipmentItem = shipmentItemOpt.get();
-        //获取商品总净价
-        Integer cleanFee = (shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice())*applyQuantity;
+        Integer totalCleanFee=0; //商品总进价
+        Integer totalEditCleanFee = 0; //申请的商品总进价
+        for (ShipmentItem shipmentItem:shipmentItems){
+            if (editSkuCodeAndQuantityMap.containsKey(shipmentItem.getSkuCode())){
+                //获取商品净价
+                totalCleanFee += shipmentItem.getCleanFee();
+                totalEditCleanFee+= (shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice())*editSkuCodeAndQuantityMap.get(shipmentItem.getSkuCode());
+            }
+        }
         //未退款金额
-        Integer unReturnedFee = Math.toIntExact((shipmentItem.getCleanFee() == null ? 0 : shipmentItem.getCleanFee()) - alreadyRefundFee);
-        return cleanFee>unReturnedFee?unReturnedFee:cleanFee;
+        Integer unReturnedFee = Math.toIntExact((totalCleanFee == null ? 0 :totalCleanFee) - alreadyRefundFee);
+        return totalEditCleanFee>unReturnedFee?unReturnedFee:totalEditCleanFee;
+    }
+
+    /**
+     * 获取丢件补发类型的商品列表
+     * @param refund
+     * @return
+     */
+    public List<RefundItem> findRefundLostItems(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("refund(id:{}) extra field is null",refund.getId());
+            throw new JsonResponseException("refund.extra.is.empty");
+        }
+        if(!extraMap.containsKey(TradeConstants.REFUND_LOST_ITEM_INFO)){
+            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_LOST_ITEM_INFO);
+            throw new JsonResponseException("refund.exit.not.contain.item.info");
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REFUND_LOST_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
+    }
+
+    /**
+     * 判断丢件补发或者售后换货是否可以继续生成发货单
+     * @param refundItems
+     * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
+     */
+    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems){
+        int count= 0;
+        for (RefundItem refundItem : refundItems) {
+            if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
+                count++;
+            }
+        }
+        return count==0;
     }
     /**
      * 通过outId获取渠道

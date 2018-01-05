@@ -114,7 +114,7 @@ public class SyncRefundLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
                 //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-                String outId = refund.getChannel();
+                String outId = refund.getOutId();
                 if (StringUtils.hasText(outId)&&outId.contains("taobao")){
                     String channel = refundReadLogic.getOutChannelTaobao(outId);
                     if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())

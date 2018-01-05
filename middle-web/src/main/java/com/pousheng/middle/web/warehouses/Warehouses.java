@@ -1,7 +1,10 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.component.HkClient;
 import com.pousheng.middle.warehouse.model.StockPushLog;
+import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
@@ -14,6 +17,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +39,10 @@ public class Warehouses {
 
     @RpcConsumer
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private ErpClient erpClient;
+    @Autowired
+    private HkClient hkClient;
 
     @RpcConsumer
     private MiddleStockPushLogReadSerive middleStockPushLogReadSerive;
@@ -51,6 +59,21 @@ public class Warehouses {
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
+    }
+    @RequestMapping(value = "/trigger/push",method = RequestMethod.GET)
+    public Boolean triggerPush(@RequestParam(value = "id") Long id){
+        log.info("[trigger push ] id={}",id);
+        Response<Warehouse> warehouseResponse=warehouseReadService.findById(id);
+        if (!warehouseResponse.isSuccess()){
+            log.error("find Warehouse failed cause={}",warehouseResponse.getError());
+            throw new JsonResponseException(warehouseResponse.getError());
+        }
+        Warehouse warehouse=warehouseResponse.getResult();
+        Map<String,String> map=Maps.newHashMap();
+        map.put("stock",warehouse.getInnerCode());
+        hkClient.get("common/erp/inv/getinstockcount",map);
+        return Boolean.TRUE;
+
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)

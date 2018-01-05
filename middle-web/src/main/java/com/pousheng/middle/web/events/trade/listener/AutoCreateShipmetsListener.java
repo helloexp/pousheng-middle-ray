@@ -8,6 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -59,7 +60,8 @@ public class AutoCreateShipmetsListener {
             }
         }
         //如果是京东货到付款，默认展示京东快递
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())){
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
             Map<String, String> extraMap = shopOrder.getExtra();
             extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
             extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,"京东快递");

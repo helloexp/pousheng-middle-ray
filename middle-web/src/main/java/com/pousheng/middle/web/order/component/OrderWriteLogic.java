@@ -321,7 +321,7 @@ public class OrderWriteLogic {
         }
         if (count>0){
             //子单取消失败
-            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,skuOrder,
+            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,Lists.newArrayList(),skuOrder,
                     MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(),skuCode);
         }else{
             //子单取消成功
@@ -375,7 +375,7 @@ public class OrderWriteLogic {
             }
         }
         if (count>0){
-            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrdersFilter,
+            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,Lists.newArrayList(),
                     skuOrder,MiddleOrderEvent.CANCEL.toOrderOperation(),MiddleOrderEvent.CANCEL.toOrderOperation(),skuCode);
 
         }else{

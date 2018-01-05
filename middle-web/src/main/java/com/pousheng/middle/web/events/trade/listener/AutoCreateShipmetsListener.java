@@ -8,6 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -50,30 +51,31 @@ public class AutoCreateShipmetsListener {
 
     @Subscribe
     public void onShipment(OpenClientOrderSyncEvent event) {
-        log.info("try to auto create shipment,shopOrder id is {}",event.getShopOrderId());
+        log.info("try to auto create shipment,shopOrder id is {}", event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
         log.info("auto create shipment,step one");
         //天猫订单如果还没有拉取售后地址是不能生成发货单的
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
-            if (shopOrder.getBuyerName().contains("**")){
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())) {
+            if (shopOrder.getBuyerName().contains("**")) {
                 return;
             }
         }
         // 如果是Mpos订单，进行派单
-        if(ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())){
+        if (ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())) {
             shipmentWiteLogic.toDispatchOrder(shopOrder);
-        }else{
+        } else {
             //如果是京东货到付款，默认展示京东快递
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())){
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
                 Map<String, String> extraMap = shopOrder.getExtra();
                 extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
-                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,"京东快递");
+                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME, "京东快递");
                 Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
                 if (!rltRes.isSuccess()) {
                     log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
                 }
+                shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
-            shipmentWiteLogic.doAutoCreateShipment(shopOrder);
         }
     }
 }

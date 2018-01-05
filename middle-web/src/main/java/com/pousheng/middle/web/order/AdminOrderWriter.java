@@ -215,7 +215,8 @@ public class AdminOrderWriter {
      * @param skuCode 中台条码
      */
     @RequestMapping(value ="/api/sku/order/{id}/update/sku/code",method = RequestMethod.PUT)
-    public void  updateSkuOrderCodeAndSkuId(@PathVariable("id") Long id, @RequestParam("skuCode") String skuCode){
+    @OperationLogType("修改货品条码")
+    public void  updateSkuOrderCodeAndSkuId(@PathVariable("id")@OperationLogParam Long id, @RequestParam("skuCode") String skuCode){
         //判断该订单是否生成过发货单
         Boolean result = orderReadLogic.isShipmentCreated(id);
         if (!result){
@@ -262,7 +263,8 @@ public class AdminOrderWriter {
      * @return true (更新成功)or false (更新失败)
      */
     @RequestMapping(value = "/api/order/{id}/edit/receiver/info",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam("data")String data,@RequestParam(value = "buyerNote",required = false) String buyerNote){
+    @OperationLogType("修改订单收货信息")
+    public void editReceiverInfos(@PathVariable("id")@OperationLogParam Long id, @RequestParam("data")String data,@RequestParam(value = "buyerNote",required = false) String buyerNote){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
@@ -290,7 +292,8 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/edit/invoice",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    public void editInvoiceInfos(@PathVariable("id")Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
+    @OperationLogType("修改发票信息")
+    public void editInvoiceInfos(@PathVariable("id")@OperationLogParam Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");

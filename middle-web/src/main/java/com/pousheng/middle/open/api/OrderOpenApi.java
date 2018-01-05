@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -15,6 +16,7 @@ import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
+import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -27,9 +29,7 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -37,6 +37,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
@@ -287,6 +288,37 @@ public class OrderOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
+            }
+            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            String outId = refund.getOutId();
+            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+                String channel = refundReadLogic.getOutChannelTaobao(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                    eventBus.post(event);
+                }
+            }
+            //如果是苏宁的售后单，将会主动查询售后单的状态
+            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+                String channel = refundReadLogic.getOutChannelSuning(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenOrderId(shopOrder.getOutId());
+                    eventBus.post(event);
+                }
             }
 
         } catch (JsonResponseException | ServiceException e) {

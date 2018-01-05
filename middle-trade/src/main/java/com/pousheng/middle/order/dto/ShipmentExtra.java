@@ -65,11 +65,6 @@ public class ShipmentExtra implements Serializable{
     private Integer syncTaobaoStatus;
     //发货方式
     private String shipmentWay;
-    //发货店铺Id
-    private Long deliverShopId;
-    //发货店铺名称
-    private String deliverShopName;
-
 
     //仓库外码
     private String warehouseOutCode;

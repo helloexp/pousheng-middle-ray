@@ -1,8 +1,10 @@
 package com.pousheng.middle.web.events.trade;
 
+import io.terminus.parana.order.model.Shipment;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 
 /**
  * mpos订单状态更新事件
@@ -21,12 +23,17 @@ public class MposOrderUpdateEvent implements Serializable{
     /**
      * 更新类型
      */
-    private String type;
+    private Integer type;
 
+    /**
+     * 可用发货单集合
+     */
+    private List<Shipment> shipments;
 
-    public MposOrderUpdateEvent(Long orderId,String type){
+    public MposOrderUpdateEvent(Long orderId,Integer type,List<Shipment> shipments){
         this.orderId = orderId;
         this.type = type;
+        this.shipments = shipments;
     }
 
 }

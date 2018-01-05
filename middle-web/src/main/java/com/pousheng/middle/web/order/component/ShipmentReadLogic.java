@@ -4,10 +4,14 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -506,5 +510,48 @@ public class ShipmentReadLogic {
             }
         }
         return true;
+    }
+
+    /**
+     * 根据发货单获取sku详情
+     * @param shipment 发货单
+     * @return
+     */
+    public List<SkuCodeAndQuantity> findShipmentSkuDetail(Shipment shipment){
+        List<ShipmentItem> shipmentItems = this.getShipmentItems(shipment);
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
+        shipmentItems.forEach(shipmentItem -> {
+            SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
+            skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+            skuCodeAndQuantities.add(skuCodeAndQuantity);
+        });
+        return skuCodeAndQuantities;
+    }
+
+    /**
+     * 组装数据，用来处理库存
+     * @param shipment 发货单
+     * @return
+     */
+    public DispatchOrderItemInfo getDispatchOrderItem(Shipment shipment){
+        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
+        DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = this.findShipmentSkuDetail(shipment);
+        if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+            ShopShipment shopShipment = new ShopShipment();
+            shopShipment.setShopId(shipmentExtra.getWarehouseId());
+            shopShipment.setShopName(shipmentExtra.getWarehouseName());
+            shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            dispatchOrderItemInfo.setShopShipments(CollectionUtils.arrayToList(shopShipment));
+        }
+        if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_WAREHOUSE_DELIVER)){
+            WarehouseShipment warehouseShipment = new WarehouseShipment();
+            warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());
+            warehouseShipment.setWarehouseName(shipmentExtra.getWarehouseName());
+            warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            dispatchOrderItemInfo.setWarehouseShipments(CollectionUtils.arrayToList(warehouseShipment));
+        }
+        return dispatchOrderItemInfo;
     }
 }

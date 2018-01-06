@@ -6,6 +6,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -36,11 +37,8 @@ public class QueryHkWarhouseOrShopStockApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${gateway.hk.host}")
-    private String hkGateway;
-
-    @Value("${gateway.hk.accessKey}")
-    private String accessKey;
+    @Autowired
+    private ErpClient erpClient;
 
     @Autowired
     private MiddleShopCacher middleShopCacher;
@@ -58,75 +56,25 @@ public class QueryHkWarhouseOrShopStockApi {
      * @param stockType 0 = 不限; 1 = 店仓; 2 = 总仓
      */
     public List<HkSkuStockInfo> doQueryStockInfo(List<String> stockCodes, List<String> skuCodes, Integer stockType){
-        List<HkSkuStockInfo> list = Lists.newArrayList();
-
-        if(CollectionUtils.isEmpty(stockCodes)){
-            stockCodes = Lists.newArrayList();
-            if(Objects.equal(2,stockType)){
-                stockCodes.add("242-00000000000001");
-                stockCodes.add("200-200000003");
-                stockCodes.add("201-201000345");
-            }else {
-                stockCodes.add("SP110090");
-                stockCodes.add("SP110093");
-                stockCodes.add("20000028");
-            }
-        }
-
-        for (String stockCode : stockCodes){
-            HkSkuStockInfo hkSkuStockInfo = new HkSkuStockInfo();
-            hkSkuStockInfo.setStock_id(stockCode);
-            hkSkuStockInfo.setStock_name(stockCode);
-
-            List<HkSkuStockInfo.SkuAndQuantityInfo> skuAndQuantityInfos = Lists.newArrayList();
-
-            for (String skuCode : skuCodes){
-                HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo = new HkSkuStockInfo.SkuAndQuantityInfo();
-                skuAndQuantityInfo.setQuantity(0);
-                skuAndQuantityInfo.setBarcode(skuCode);
-                skuAndQuantityInfos.add(skuAndQuantityInfo);
-            }
-            hkSkuStockInfo.setMaterial_list(skuAndQuantityInfos);
-            if(Objects.equal(2,stockType)){
+        Map<String,String> map= Maps.newHashMap();
+        map.put("stock_ids",Joiners.COMMA.join(stockCodes));
+        map.put("material_ids",Joiners.COMMA.join(skuCodes));
+        map.put("stock_type",stockType.toString());
+        String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
+        List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
+        for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList){
+            /*if(Objects.equal(2,stockType)){
                 Warehouse warehouse = warehouseCacher.findByCode(stockCode);
-                hkSkuStockInfo.setBusinessId(warehouse.getId());
-                hkSkuStockInfo.setBusinessName(warehouse.getName());
+                skuStockInfo.setBusinessId(warehouse.getId());
+                skuStockInfo.setBusinessName(warehouse.getName());
             }else {
                 Shop shop = middleShopCacher.findShopByOuterId(stockCode);
-                hkSkuStockInfo.setBusinessId(shop.getId());
-                hkSkuStockInfo.setBusinessName(shop.getName());
-            }
-
-            list.add(hkSkuStockInfo);
+                skuStockInfo.setBusinessId(shop.getId());
+                skuStockInfo.setBusinessName(shop.getName());
+            }*/
         }
 
-        return list;
-
-       /* String stock_ids = Joiners.COMMA.join(stockCodes);
-        String material_ids = Joiners.COMMA.join(skuCodes);
-        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
-        Map<String, Object> params = Maps.newHashMap();
-        params.put("stock_ids",stock_ids);
-        params.put("material_ids",material_ids);
-        params.put("stock_type",stockType);
-
-
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
-        log.info("paramJson:{}",paramJson);
-        String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
-        String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
-                .header("serialNo",serialNo)
-                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-                .contentType("application/json")
-                //.trustAllHosts().trustAllCerts()
-                .send(paramJson)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
-
-        log.info("query hk stock info result:{}",responseBody);
-
-        return readStockFromJson(responseBody);*/
+        return hkSkuStockInfoList;
     }
 
 

@@ -4,7 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -50,6 +51,9 @@ public class MposShipmentListener {
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
 
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
+
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -64,20 +68,21 @@ public class MposShipmentListener {
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){
+            //扣减库存
+            DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+            mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
+            //todo 发货推送信息给恒康
             this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());
         }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT){
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
-            shipmentItems.forEach(shipmentItem -> {
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                skuCodeAndQuantities.add(skuCodeAndQuantity);
-            });
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
+        }
+        if(event.getMiddleOrderEvent() == MiddleOrderEvent.CANCEL){
+            shipmentWiteLogic.mposCancelShipment(shipment,0);
+            this.syncOrderStatus(shipment,MiddleShipmentsStatus.CANCELED.getValue(),MiddleOrderStatus.CANCEL.getValue());
         }
     }
 

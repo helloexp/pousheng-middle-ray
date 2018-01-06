@@ -1,37 +1,37 @@
 package com.pousheng.middle.open.mpos;
 
-import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.web.events.trade.MposOrderUpdateEvent;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
+import com.pousheng.middle.web.order.component.*;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by penghui on 2017/12/25
@@ -52,11 +52,10 @@ public class MposOpenApi {
     @Autowired
     private EventBus eventBus;
     @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
+    private MiddleOrderFlowPicker flowPicker;
     @Autowired
-    private StockPusher stockPusher;
-    @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
+    private OrderWriteService orderWriteService;
+
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
@@ -86,7 +85,6 @@ public class MposOpenApi {
         switch (status){
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
-                //todo 接单推送绩效店铺给恒康
                 break;
             case TradeConstants.MPOS_SHIPMENT_REJECT:
                 orderEvent = MiddleOrderEvent.MPOS_REJECT;
@@ -105,18 +103,16 @@ public class MposOpenApi {
                 shipmentExtra.setShipmentDate(dt.toDate());
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
-                //扣减库存
-                this.decreaseStock(shipment);
                 break;
             default:
-                return Response.fail("illegal status");
+                throw new JsonResponseException("illegal type");
         }
         if(Objects.nonNull(update))
             shipmentWiteLogic.update(update);
         Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,orderEvent.toOrderOperation());
         if(!res.isSuccess()){
             log.error("sync shipment(id:{}) fail,cause:{}",shipmentId,res.getError());
-            return Response.fail(res.getError());
+            throw new JsonResponseException(res.getError());
         }
         eventBus.post(new MposShipmentUpdateEvent(shipmentId,orderEvent));
         log.info("sync shipment(id:{}) success",shipmentId);
@@ -124,7 +120,7 @@ public class MposOpenApi {
     }
 
     /**
-     *  修改本地订单状态
+     *  确认收货
      * @param shopOrderId 订单ID
      * @return
      */
@@ -132,73 +128,77 @@ public class MposOpenApi {
     @RequestMapping(value = "/order/{shopOrderId}/confirm",method = RequestMethod.PUT)
     public Response<Boolean> confirmedOuterOrder(@PathVariable Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Boolean res = orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP,MiddleOrderEvent.CONFIRM);
-        if(!res){
-            log.error("sync order(id:{}) fail",shopOrderId);
-            return Response.fail("sync order(id:{}) fail");
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
+        if (skuOrders.size() == 0) {
+            log.error("sku order not allow confirm");
+            throw new JsonResponseException("shop.order.confirm.fail");
         }
-        List<OrderShipment> orderShipmentList = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-        for(OrderShipment orderShipment:orderShipmentList){
-            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if(Objects.equals(shipmentExtra.getShipmentWay(),"2")){
-//            todo 通知恒康已经收货
-//            Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
-//            if (!response.isSuccess()){
-//                log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());
-//            }
-            }
-            Response<Boolean> response = shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.CONFIRM.toOrderOperation());
-            if (!response.isSuccess()){
-                log.error("sync shipment(id:{}) confirm fail",shipment.getId());
-                return Response.fail(response.getError());
+        for (SkuOrder skuOrder : skuOrders) {
+            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.SHIPPED.getValue(), MiddleOrderStatus.CONFIRMED.getValue());
+            if (!updateRlt.getResult()) {
+                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                throw new JsonResponseException("shop.order.confirm.fail");
             }
         }
-        orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
+        //判断订单的状态是否是已完成
+        ShopOrder shopOrder1 = orderReadLogic.findShopOrderById(shopOrderId);
+        if (!Objects.equals(shopOrder1.getStatus(), MiddleOrderStatus.CONFIRMED.getValue())) {
+            log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order",
+                    shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
+            throw new JsonResponseException("shop.order.already.confirmed");
+        } else {
+            //更新同步电商状态为已确认收货
+            OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
+            Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+            if (response.isSuccess()) {
+                //通知恒康发货单收货时间
+                NotifyHkOrderDoneEvent event = new NotifyHkOrderDoneEvent();
+                event.setShopOrderId(shopOrder.getId());
+                eventBus.post(event);
+            }
+        }
         return Response.ok(true);
     }
 
     /**
-     * 扣减库存
-     * @param shipment 发货单
+     * 取消订单/发货单
+     * @param id      id
+     * @param type    类型 order 订单, shipment 发货单
+     * @return
      */
-    private void decreaseStock(Shipment shipment){
-        //获取发货单下的sku订单信息
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        //获取发货仓信息
-        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
-        WarehouseShipment warehouseShipment = new WarehouseShipment();
-        //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities =makeSkuCodeAndQuantities(shipmentItems);
-        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-        warehouseShipment.setWarehouseId(extra.getWarehouseId());
-        warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> decreaseStockRlt =  warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
-        if (!decreaseStockRlt.isSuccess()){
-            log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
-        }
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipmentList) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
+    @ApiOperation("取消订单/发货单")
+    @RequestMapping(value = "/order/{id}/cancel")
+    public Response<Boolean> cancelOuterOrder(@PathVariable Long id,@RequestParam String type){
+        if(Objects.equals(TradeConstants.ORDER_CANCEL,type)){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+            Flow orderFlow = flowPicker.pickOrder();
+            if(orderFlow.operationAllowed(shopOrder.getStatus(), MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation())){
+                log.error("cancel order(id:{}) fail,the order shipped",id);
+                throw new JsonResponseException("shop.order.cancel.fail");
             }
-        }
-        stockPusher.submit(skuCodes);
-    }
-
-    private List<SkuCodeAndQuantity> makeSkuCodeAndQuantities(List<ShipmentItem> list){
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
-        if (list.size()>0){
-            for (ShipmentItem shipmentItem:list){
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                skuCodeAndQuantities.add(skuCodeAndQuantity);
+            List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(id);
+            if(CollectionUtils.isEmpty(shipments)){
+                log.error("order(id:{}) has no shipment");
+                throw new JsonResponseException("shop.order.cancel.fail");
             }
+            List<Shipment> filterShipments = shipments.stream().filter(Objects::nonNull).
+                    filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
+            for(Shipment shipment:filterShipments){
+                if(!orderFlow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation()) && !orderFlow.operationAllowed(shipment.getStatus(),MiddleOrderEvent.CANCEL_HK.toOrderOperation())){
+                    log.error("shipment(id:{}) shipped");
+                    throw new JsonResponseException("shop.order.cancel.fail");
+                }
+            }
+            eventBus.post(new MposOrderUpdateEvent(id,MiddleOrderStatus.CANCEL.getValue(),filterShipments));
         }
-        return skuCodeAndQuantities;
+        if(Objects.equals(TradeConstants.SHIPMENT_CANCEL,type)){
+            Shipment shipment = shipmentReadLogic.findShipmentById(id);
+            if(shipment.getStatus() > MiddleShipmentsStatus.WAIT_SHIP.getValue() || shipment.getStatus() < MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()){
+                log.error("cancel shipment(id:{}) fail,the shipment shipped",id);
+                throw new JsonResponseException("shop.shipment.cancel.fail");
+            }
+            eventBus.post(new MposShipmentUpdateEvent(id,MiddleOrderEvent.CANCEL));
+        }
+        return Response.ok(true);
     }
 }

@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.dto.RefundItem;
@@ -93,6 +94,8 @@ public class ShipmentWiteLogic {
     private RefundWriteLogic refundWriteLogic;
     @RpcConsumer
     private RefundWriteService refundWriteService;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -168,6 +171,47 @@ public class ShipmentWiteLogic {
                 UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
                 unLockStockEvent.setShipment(shipment);
                 eventBus.post(unLockStockEvent);
+            }
+            return true;
+        } catch (Exception e) {
+            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 取消/删除发货单逻辑(撤销订单的时候通知恒康删除发货单,电商取消订单的时候取消发货单)
+     *
+     * @param shipment 发货单
+     * @param type     0 取消 1 删除
+     * @return 取消成功 返回返回true,取消失败返回false
+     */
+    public boolean mposCancelShipment(Shipment shipment, Integer type) {
+        try {
+            log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipment.getId(), type);
+            Flow flow = flowPicker.pickShipments();
+            //如果是店铺发货，后者仓库发货未同步恒康,现在只需要将发货单状态置为已取消即可
+            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
+                Response<Boolean> cancelRes = this.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+                if (!cancelRes.isSuccess()) {
+                    log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
+                    throw new JsonResponseException(cancelRes.getError());
+                }
+                //解锁库存
+                DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+                mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
+            }
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            //如果是仓库发货，且已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功
+            if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_WAREHOUSE_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment, type);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
+                }
+                //解锁库存
+                DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+                mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
             }
             return true;
         } catch (Exception e) {

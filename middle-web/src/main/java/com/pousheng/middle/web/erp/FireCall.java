@@ -3,8 +3,10 @@ package com.pousheng.middle.web.erp;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.erp.component.SpuImporter;
+import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
-import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
+import java.util.List;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -39,17 +42,20 @@ public class FireCall {
 
     private final MposWarehousePusher mposWarehousePusher;
 
+    private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+
 
     private final DateTimeFormatter dft;
 
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher) {
+                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
         this.mposWarehousePusher = mposWarehousePusher;
+        this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -128,6 +134,16 @@ public class FireCall {
         log.info("synchronized {} spus", spuCount);
         return "ok";
     }
+
+    @RequestMapping(value="/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<HkSkuStockInfo> queryStock(@RequestParam String stockCodes,
+                                           @RequestParam String skuCodes,
+                                           @RequestParam Integer stockType){
+        List<String> stockCodesList = Splitters.COMMA.splitToList(stockCodes);
+        List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
+        return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
+    }
+
 
 }
 

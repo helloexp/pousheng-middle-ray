@@ -41,8 +41,24 @@ public class SyncMposApi {
      * @return
      */
     public String syncShipmentShippedToMpos(Map<String,Serializable> param){
+        log.info("sync shipment shipped to mpos,param:{}",param);
         String gateWay = mposGateway + "/api/order/sync/shipment/express";
         String responseBody = HttpRequest.post(gateWay,param,true)
+                .connectTimeout(10000).readTimeout(10000)
+                .body();
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    /**
+     * 商品派不出去或连续被拒单，同步mpos
+     * @param param 参数
+     * @return
+     */
+    public String syncAfterSaleToMpos(Map<String,Serializable> param){
+        log.info("sync shipments to mpos,param:{}",param);
+        String gateway = mposGateway + "/api/order/sync";
+        String responseBody = HttpRequest.post(gateway,param,true)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
         log.info("response:{}",responseBody);

@@ -1,14 +1,14 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.order.dto.ShipInfo;
+import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
-import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
@@ -27,7 +27,7 @@ public class yyEDIOpenApi {
      * @param shipInfo
      */
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
-    public void receiveYyEDIShipmentResult(List<ShipInfo> shipInfo){
+    public void receiveYYEDIShipmentResult(List<YyEdiShipInfo> shipInfo){
        try{
 
        }catch (JsonResponseException | ServiceException e) {
@@ -37,5 +37,16 @@ public class yyEDIOpenApi {
         log.error("hk shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
         throw new OPServerException(200,"sync.fail");
        }
+    }
+
+    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
+            "receivedDate","itemCode","quantity"
+    }, httpMethods = RequestMethod.POST)
+    public void syncHkRefundStatus(Long refundOrderId,
+                                   @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
+                                   @NotEmpty(message = "item.info.empty") String itemInfo,
+                                   @NotEmpty(message = "received.date.empty") String receivedDate
+    ) {
+
     }
 }

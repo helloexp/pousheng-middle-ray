@@ -1,4 +1,4 @@
-package com.pousheng.middle.order.dto;
+package com.pousheng.middle.open.api.dto;
 
 import lombok.Data;
 
@@ -8,7 +8,7 @@ import lombok.Data;
  * pousheng-middle
  */
 @Data
-public class ShipInfo {
+public class YyEdiShipInfo {
     /**
      * 中台发货单号
      */

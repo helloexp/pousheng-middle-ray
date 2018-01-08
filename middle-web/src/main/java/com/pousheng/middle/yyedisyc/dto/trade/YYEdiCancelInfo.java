@@ -7,7 +7,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Date: 2018/1/7
  * pousheng-middle
  */
-public class YYEdiCancelShipmentInfo implements java.io.Serializable{
+public class YYEdiCancelInfo implements java.io.Serializable{
     private static final long serialVersionUID = 4658593769032049717L;
 
     @JsonProperty(value = "BillNo")

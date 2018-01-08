@@ -25,6 +25,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -98,6 +99,8 @@ public class Shipments {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+    @Autowired
+    private SyncYYEdiShipmentLogic syncYYEdiShipmentLogic;
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
     @RpcConsumer
@@ -376,7 +379,7 @@ public class Shipments {
                     continue;
                 }
             }
-            Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+            Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
             if (!syncRes.isSuccess()) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }
@@ -995,5 +998,17 @@ public class Shipments {
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
         return shipmentItems;
+    }
+
+    /**
+     * 订单派发中心取消发货单
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "api/shipment/cancel/{id}/to/yyedi", method = RequestMethod.GET)
+    public boolean cancelShipmentForEdi(@PathVariable("id") Long id){
+        Shipment shipment = shipmentReadLogic.findShipmentById(id);
+        Response<Boolean> r = syncYYEdiShipmentLogic.syncShipmentCancelToYYEdi(shipment);
+        return r.getResult();
     }
 }

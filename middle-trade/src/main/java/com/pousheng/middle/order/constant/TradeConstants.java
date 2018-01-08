@@ -140,4 +140,10 @@ public class TradeConstants {
     public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
     //退货类型
     public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
+    //yyedi返回结果:整体成功
+    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
+    //yyedi返回结果:部分成功
+    public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
+    //yyedi返回结果:整体失败
+    public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
 }

@@ -10,7 +10,7 @@ import java.util.List;
  * pousheng-middle
  */
 @Data
-public class YYEdiCancelShipmentBody implements java.io.Serializable {
+public class YYEdiCancelBody implements java.io.Serializable {
     private static final long serialVersionUID = 6870272122005691814L;
-    private List<YYEdiCancelShipmentInfo> requestData;
+    private List<YYEdiCancelInfo> requestData;
 }

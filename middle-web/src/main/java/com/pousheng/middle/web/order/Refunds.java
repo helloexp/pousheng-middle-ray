@@ -14,6 +14,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
+import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiReturnLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -63,6 +64,8 @@ public class Refunds {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private SyncRefundLogic syncRefundLogic;
+    @Autowired
+    private SyncYYEdiReturnLogic syncYYEdiReturnLogic;
     @Autowired
     private SyncRefundToEcpLogic syncRefundToEcpLogic;
     @Autowired
@@ -122,7 +125,7 @@ public class Refunds {
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
                     refund.setStatus(targetStatus);
-                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    Response<Boolean> syncRes = syncYYEdiReturnLogic.syncRefundToYYEdi(refund);
                     if (!syncRes.isSuccess()) {
                         log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
                     }

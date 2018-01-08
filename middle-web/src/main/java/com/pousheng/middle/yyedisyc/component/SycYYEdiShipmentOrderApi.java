@@ -33,17 +33,10 @@ public class SycYYEdiShipmentOrderApi {
 
     public String doSyncShipmentOrder( List<YYEdiShipmentInfo> requestData){
 
-       String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
-
-
-        HkRequestHead head = HkRequestHead.create()
-                .appCode("ec").format("json").isSign("1").method("addOrder")
-                .sendTime(DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-                .signBody("09D13CCA2BE96F99BFC24DA0E691DE67").version("1.0").serialNo(serialNo);
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
         YYEdiShipmentInfoBody body = new YYEdiShipmentInfoBody();
         body.setRequestData(requestData);
-
         String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
         log.info("paramJson:{}",paramJson);
         String gateway =hkGateway + "/commonerp/erp/sal/addorder";
@@ -57,7 +50,7 @@ public class SycYYEdiShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+        log.info("sync yyedi result:{}",responseBody);
         return responseBody;
     }
 }

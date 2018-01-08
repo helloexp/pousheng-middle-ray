@@ -10,7 +10,7 @@ import java.io.Serializable;
  * pousheng-middle
  */
 @Data
-public class YYEdiCancelShipmentResponse implements Serializable {
+public class YYEdiCancelResponse implements Serializable {
     private static final long serialVersionUID = 938351538642662035L;
     //200:整体成功,100:部分成功,-100:整体失败
     private String errorCode;

@@ -19,6 +19,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -58,6 +59,8 @@ public class ShipmentWiteLogic {
     private EventBus eventBus;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+    @Autowired
+    private SyncYYEdiShipmentLogic syncYYEdiShipmentLogic;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
@@ -152,7 +155,7 @@ public class ShipmentWiteLogic {
             }
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,type);
+                Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
                 if(!syncRes.isSuccess()){
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipment.getId(),syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());

@@ -52,7 +52,7 @@ public class YYEdiReturnItem implements java.io.Serializable{
      * 预计数量
      */
     @JsonProperty(value = "ExpectQty")
-    private String ExpectQty;
+    private int ExpectQty;
 
     /**
      * 网店交易单号
@@ -126,11 +126,11 @@ public class YYEdiReturnItem implements java.io.Serializable{
         SizeName = sizeName;
     }
 
-    public String getExpectQty() {
+    public int getExpectQty() {
         return ExpectQty;
     }
 
-    public void setExpectQty(String expectQty) {
+    public void setExpectQty(int expectQty) {
         ExpectQty = expectQty;
     }
 

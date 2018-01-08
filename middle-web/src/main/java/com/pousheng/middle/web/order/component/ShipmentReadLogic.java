@@ -543,14 +543,14 @@ public class ShipmentReadLogic {
             shopShipment.setShopId(shipmentExtra.getWarehouseId());
             shopShipment.setShopName(shipmentExtra.getWarehouseName());
             shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(CollectionUtils.arrayToList(shopShipment));
+            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
         }
         if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_WAREHOUSE_DELIVER)){
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());
             warehouseShipment.setWarehouseName(shipmentExtra.getWarehouseName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setWarehouseShipments(CollectionUtils.arrayToList(warehouseShipment));
+            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }
         return dispatchOrderItemInfo;
     }

@@ -273,6 +273,17 @@ public class Shipments {
             if (!orderReadLogic.validateCompanyCode(warehouseId,shopOrder.getShopId())){
                 throw new JsonResponseException("warehouse.must.be.in.one.company");
             }
+            //判断是否可以生成发货单
+            for (Long skuOrderId:skuOrderIdAndQuantity.keySet()){
+                SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId,OrderLevel.SKU);
+                Map<String,String> skuOrderExtraMap = skuOrder.getExtra();
+                Integer waitHandleNumber = Integer.valueOf(skuOrderExtraMap.get(TradeConstants.WAIT_HANDLE_NUMBER));
+                if (waitHandleNumber <= 0) {
+                    log.error("sku order(id:{}) extra wait handle number:{} ,not enough to ship", skuOrder.getId(), waitHandleNumber);
+                    throw new ServiceException("wait.handle.number.is.zero.can.not.create.shipment");
+                }
+            }
+
             //获取子单商品
             List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
             skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
@@ -413,6 +424,9 @@ public class Shipments {
             }
             if (Objects.equals(shipType,3)){
                 refundChangeItems = refundReadLogic.findRefundLostItems(refund);
+            }
+            if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems)){
+                throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
             }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 

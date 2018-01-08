@@ -3,11 +3,13 @@ package com.pousheng.middle.web.order.sync.mpos;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -26,6 +28,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 
 /**
@@ -50,6 +53,9 @@ public class SyncMposShipmentLogic{
 
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+
+    @Autowired
+    private EventBus eventBus;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -95,6 +101,27 @@ public class SyncMposShipmentLogic{
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             return Response.fail(updateSyncStatusRes.getError());
         }
+        //如果指定门店，状态未待发货
+        if(Objects.equals(shipmentExtra.getIsAppint(),"1")){
+            Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
+            OrderOperation syncOrderOperation1 = MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation();
+            Response<Boolean> updateSyncStatusRes1 = shipmentWiteLogic.updateStatus(shipment1, syncOrderOperation1);
+            if (!updateSyncStatusRes1.isSuccess()) {
+                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                return Response.fail(updateSyncStatusRes1.getError());
+            }
+        }
+        //如果门店自提，状态改为待收货
+        if(Objects.equals(shipmentExtra.getTakeWay(),"2")){
+            Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
+            OrderOperation syncOrderOperation1 = MiddleOrderEvent.SHIP.toOrderOperation();
+            Response<Boolean> updateSyncStatusRes1 = shipmentWiteLogic.updateStatus(shipment1, syncOrderOperation1);
+            if (!updateSyncStatusRes1.isSuccess()) {
+                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                return Response.fail(updateSyncStatusRes1.getError());
+            }
+            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
+        }
         return Response.ok(true);
     }
 
@@ -128,6 +155,16 @@ public class SyncMposShipmentLogic{
         }
         return Response.ok(true);
     }
+
+    /**
+     * 仓库收货通知mpos
+     * @return
+     */
+    public Response<Boolean> syncWarehouseConfirmToMpos(){
+        //todo 整理参数
+        return Response.ok(true);
+    }
+
 
     /**
      * 组装发货单参数

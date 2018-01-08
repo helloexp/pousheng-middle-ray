@@ -140,67 +140,70 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             return;
         }
         SkuTemplate skuTemplate = skuTemplateOptional.get();
+        try{
+            SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
+            //查询需要售后的发货单
+            Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
 
-        SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
-        //查询需要售后的发货单
-        Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
+            Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 
-        Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
-
-        if (!Objects.isNull(shipment)) {
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            refundExtra.setShipmentId(shipment.getId());
-            //添加售后仓库
-            try{
-                OpenShop openShop=orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
-                String warehouseId=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,openShop);
-                String warehouseName=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,openShop);
-                refundExtra.setWarehouseId(Long.valueOf(warehouseId));
-                refundExtra.setWarehouseName(warehouseName);
-                //表明售后单的信息已经全部完善
-                extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
-            }catch (ServiceException e){
-                log.error("find warehouse info failed,caused by {}",e.getMessage());
+            if (!Objects.isNull(shipment)) {
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                refundExtra.setShipmentId(shipment.getId());
+                //添加售后仓库
+                try{
+                    OpenShop openShop=orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
+                    String warehouseId=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,openShop);
+                    String warehouseName=orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,openShop);
+                    refundExtra.setWarehouseId(Long.valueOf(warehouseId));
+                    refundExtra.setWarehouseName(warehouseName);
+                    //表明售后单的信息已经全部完善
+                    extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
+                }catch (ServiceException e){
+                    log.error("find warehouse info failed,caused by {}",e.getMessage());
+                }
             }
-        }
-        RefundItem refundItem = new RefundItem();
-        if (!Objects.isNull(shipment)) {
-            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            ShipmentItem shipmentItem = shipmentItems
-                    .stream().filter(shipmentItem1 ->
-                            Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
-            refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
-            refundItem.setSkuPrice(shipmentItem.getSkuPrice());
-            refundItem.setSkuDiscount(shipmentItem.getSkuDiscount());
-            refundItem.setCleanFee(shipmentItem.getCleanFee());
-            refundItem.setCleanPrice(shipmentItem.getCleanPrice());
-            refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
-            refundItem.setAttrs(shipmentItem.getAttrs());
-            refundItem.setItemId(shipmentItem.getItemId());
-            refundItem.setApplyQuantity(shipmentItem.getQuantity());
-            updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
-            //更新发货单商品中的已退货数量
-            Map<String, String> shipmentExtraMap = shipment.getExtra();
-            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-            //如果拉取下来的售后单是已取消，则不需要更新已退货数量
-            if (!Objects.equals(refund.getStatus(),MiddleRefundStatus.CANCELED.getValue())){
-                shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+            RefundItem refundItem = new RefundItem();
+            if (!Objects.isNull(shipment)) {
+                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+                ShipmentItem shipmentItem = shipmentItems
+                        .stream().filter(shipmentItem1 ->
+                                Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
+                refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
+                refundItem.setSkuPrice(shipmentItem.getSkuPrice());
+                refundItem.setSkuDiscount(shipmentItem.getSkuDiscount());
+                refundItem.setCleanFee(shipmentItem.getCleanFee());
+                refundItem.setCleanPrice(shipmentItem.getCleanPrice());
+                refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
+                refundItem.setAttrs(shipmentItem.getAttrs());
+                refundItem.setItemId(shipmentItem.getItemId());
+                refundItem.setApplyQuantity(shipmentItem.getQuantity());
+                updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
+                //更新发货单商品中的已退货数量
+                Map<String, String> shipmentExtraMap = shipment.getExtra();
+                shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+                //如果拉取下来的售后单是已取消，则不需要更新已退货数量
+                if (!Objects.equals(refund.getStatus(),MiddleRefundStatus.CANCELED.getValue())){
+                    shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+                }
             }
+
+            refundItem.setSkuCode(skuOrder.getSkuCode());
+            refundItem.setSkuOrderId(skuOrder.getId());
+            refundItem.setOutSkuCode(skuOrder.getOutSkuId());
+            refundItem.setAttrs(skuTemplate.getAttrs());
+            refundItem.setSkuName(skuOrder.getItemName());
+
+            extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+            extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
+            Map<String,String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();
+            tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
+
+            refund.setExtra(extraMap);
+            refund.setTags(tagMap);
+        }catch (Exception e){
+            log.error("create refund find error,shopOrderId is {},caused by {}",shopOrder.getId(),e.getMessage());
         }
-
-        refundItem.setSkuCode(skuOrder.getSkuCode());
-        refundItem.setSkuOrderId(skuOrder.getId());
-        refundItem.setOutSkuCode(skuOrder.getOutSkuId());
-        refundItem.setAttrs(skuTemplate.getAttrs());
-        refundItem.setSkuName(skuOrder.getItemName());
-
-        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-        extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(Lists.newArrayList(refundItem)));
-        Map<String,String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();
-        tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
-
-        refund.setExtra(extraMap);
-        refund.setTags(tagMap);
     }
 
 

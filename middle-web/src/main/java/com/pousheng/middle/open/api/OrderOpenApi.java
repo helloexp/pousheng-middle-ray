@@ -1,7 +1,6 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
@@ -9,10 +8,10 @@ import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
-import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -70,7 +69,7 @@ public class OrderOpenApi {
     @RpcConsumer
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
-    private EventBus eventBus;
+    private HKShipmentDoneLogic hkShipmentDoneLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -98,10 +97,9 @@ public class OrderOpenApi {
                 //冗余恒康发货单号
                 //更新发货单的状态
                 if (handleResult){
-                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                    if (!updateSyncStatusRes.isSuccess()) {
-                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                    Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
+                    if (!updateRes.isSuccess()) {
+                        log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(),MiddleShipmentsStatus.WAIT_SHIP.getValue(), updateRes.getError());
                     }
                     //更新恒康shipmentId
                     Shipment update = new Shipment();
@@ -111,7 +109,9 @@ public class OrderOpenApi {
                     Map<String, String> extraMap = shipment.getExtra();
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
                     update.setExtra(extraMap);
+                    log.info("start update hkShipmentId is {}",hkShipmentId);
                     shipmentWiteLogic.update(update);
+                    log.info("end update hkShipmentId is {}",hkShipmentId);
                 }else{
                     OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                     Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -202,10 +202,8 @@ public class OrderOpenApi {
                 log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                 throw new ServiceException(updateRes.getError());
             }
-            //使用一个监听事件,用来监听是否存在订单或者售后单下的发货单是否已经全部发货完成
-            HkShipmentDoneEvent event = new HkShipmentDoneEvent();
-            event.setShipment(shipment);
-            eventBus.post(event);
+            //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
+            hkShipmentDoneLogic.doneShipment(shipment);
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());

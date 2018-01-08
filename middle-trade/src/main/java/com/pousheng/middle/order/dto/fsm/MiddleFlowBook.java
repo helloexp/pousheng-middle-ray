@@ -199,6 +199,10 @@ public class MiddleFlowBook {
             addTransition(MiddleOrderStatus.REVOKE_FAILED.getValue(),
                     MiddleOrderEvent.REVOKE.toOrderOperation(),
                     MiddleOrderStatus.WAIT_HANDLE.getValue());
+            //取消失败->撤销->待处理
+            addTransition(MiddleOrderStatus.CANCEL_FAILED.getValue(),
+                    MiddleOrderEvent.REVOKE.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
             //待处理->撤销失败->撤销失败
             addTransition(MiddleOrderStatus.WAIT_HANDLE.getValue(),
                     MiddleOrderEvent.REVOKE_FAIL.toOrderOperation(),

@@ -157,16 +157,6 @@ public class SyncMposShipmentLogic{
     }
 
     /**
-     * 仓库收货通知mpos
-     * @return
-     */
-    public Response<Boolean> syncWarehouseConfirmToMpos(){
-        //todo 整理参数
-        return Response.ok(true);
-    }
-
-
-    /**
      * 组装发货单参数
      * @param shipment 发货单
      * @return

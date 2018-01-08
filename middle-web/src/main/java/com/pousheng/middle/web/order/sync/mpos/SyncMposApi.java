@@ -51,7 +51,7 @@ public class SyncMposApi {
     }
 
     /**
-     * 商品派不出去或连续被拒单，同步mpos
+     * 商品派不出去，同步mpos
      * @param param 参数
      * @return
      */
@@ -59,20 +59,6 @@ public class SyncMposApi {
         log.info("sync shipments to mpos,param:{}",param);
         String gateway = mposGateway + "/api/order/sync";
         String responseBody = HttpRequest.post(gateway,param,true)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
-        log.info("response:{}",responseBody);
-        return responseBody;
-    }
-
-    /**
-     * 针对退货情况，仓库收货通知mpos
-     * @return
-     */
-    public String syncWarehouseConfirmToMpos(Map<String,Serializable> param){
-        log.info("sync shipments to mpos,param:{}",param);
-        String gateway = mposGateway + "/api/order";
-        String responseBody = HttpRequest.put(gateway,param,true)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
         log.info("response:{}",responseBody);

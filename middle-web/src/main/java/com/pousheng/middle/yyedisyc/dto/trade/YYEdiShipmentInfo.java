@@ -2,6 +2,7 @@ package com.pousheng.middle.yyedisyc.dto.trade;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -239,7 +240,7 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      * 代收金额
      */
     @JsonProperty(value = "CollectionAmount")
-    private String CollectionAmount;
+    private BigDecimal CollectionAmount;
     /**
      * 结算金额
      */
@@ -249,12 +250,12 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      * 买家邮费
      */
     @JsonProperty(value = "ExpressAmount")
-    private String ExpressAmount;
+    private BigDecimal ExpressAmount;
     /**
      * 线上实付金额
      */
     @JsonProperty(value = "PayAmountBakUp")
-    private String PayAmountBakUp;
+    private BigDecimal PayAmountBakUp;
     /**
      * 会员兑换积分
      */
@@ -291,4 +292,415 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      */
     private List<YYEdiShipmentItem> items;
 
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
+    }
+
+    public String getCompanyCode() {
+        return CompanyCode;
+    }
+
+    public void setCompanyCode(String companyCode) {
+        CompanyCode = companyCode;
+    }
+
+    public String getBillNo() {
+        return BillNo;
+    }
+
+    public void setBillNo(String billNo) {
+        BillNo = billNo;
+    }
+
+    public String getBillType() {
+        return BillType;
+    }
+
+    public void setBillType(String billType) {
+        BillType = billType;
+    }
+
+    public String getSourceBillNo() {
+        return SourceBillNo;
+    }
+
+    public void setSourceBillNo(String sourceBillNo) {
+        SourceBillNo = sourceBillNo;
+    }
+
+    public String getShopBillNo() {
+        return ShopBillNo;
+    }
+
+    public void setShopBillNo(String shopBillNo) {
+        ShopBillNo = shopBillNo;
+    }
+
+    public String getShopCode() {
+        return ShopCode;
+    }
+
+    public void setShopCode(String shopCode) {
+        ShopCode = shopCode;
+    }
+
+    public String getShopName() {
+        return ShopName;
+    }
+
+    public void setShopName(String shopName) {
+        ShopName = shopName;
+    }
+
+    public String getStockCode() {
+        return StockCode;
+    }
+
+    public void setStockCode(String stockCode) {
+        StockCode = stockCode;
+    }
+
+    public int getRefundChangeType() {
+        return RefundChangeType;
+    }
+
+    public void setRefundChangeType(int refundChangeType) {
+        RefundChangeType = refundChangeType;
+    }
+
+    public int getExpectQty() {
+        return ExpectQty;
+    }
+
+    public void setExpectQty(int expectQty) {
+        ExpectQty = expectQty;
+    }
+
+    public Date getPaymentDate() {
+        return PaymentDate;
+    }
+
+    public void setPaymentDate(Date paymentDate) {
+        PaymentDate = paymentDate;
+    }
+
+    public String getCustomerCode() {
+        return CustomerCode;
+    }
+
+    public void setCustomerCode(String customerCode) {
+        CustomerCode = customerCode;
+    }
+
+    public String getCustomerName() {
+        return CustomerName;
+    }
+
+    public void setCustomerName(String customerName) {
+        CustomerName = customerName;
+    }
+
+    public String getFreightCompany() {
+        return FreightCompany;
+    }
+
+    public void setFreightCompany(String freightCompany) {
+        FreightCompany = freightCompany;
+    }
+
+    public String getExpressType() {
+        return ExpressType;
+    }
+
+    public void setExpressType(String expressType) {
+        ExpressType = expressType;
+    }
+
+    public int getIsInvoice() {
+        return IsInvoice;
+    }
+
+    public void setIsInvoice(int isInvoice) {
+        IsInvoice = isInvoice;
+    }
+
+    public int getIsPrintInvoice() {
+        return IsPrintInvoice;
+    }
+
+    public void setIsPrintInvoice(int isPrintInvoice) {
+        IsPrintInvoice = isPrintInvoice;
+    }
+
+    public int getIstrave() {
+        return Istrave;
+    }
+
+    public void setIstrave(int istrave) {
+        Istrave = istrave;
+    }
+
+    public String getInvoiceName() {
+        return InvoiceName;
+    }
+
+    public void setInvoiceName(String invoiceName) {
+        InvoiceName = invoiceName;
+    }
+
+    public int getInvoiceType() {
+        return InvoiceType;
+    }
+
+    public void setInvoiceType(int invoiceType) {
+        InvoiceType = invoiceType;
+    }
+
+    public String getVATNumber() {
+        return VATNumber;
+    }
+
+    public void setVATNumber(String VATNumber) {
+        this.VATNumber = VATNumber;
+    }
+
+    public String getInvoiceContent() {
+        return InvoiceContent;
+    }
+
+    public void setInvoiceContent(String invoiceContent) {
+        InvoiceContent = invoiceContent;
+    }
+
+    public String getInvoiceEmail() {
+        return InvoiceEmail;
+    }
+
+    public void setInvoiceEmail(String invoiceEmail) {
+        InvoiceEmail = invoiceEmail;
+    }
+
+    public String getConsigneeName() {
+        return ConsigneeName;
+    }
+
+    public void setConsigneeName(String consigneeName) {
+        ConsigneeName = consigneeName;
+    }
+
+    public String getProvince() {
+        return Province;
+    }
+
+    public void setProvince(String province) {
+        Province = province;
+    }
+
+    public String getCity() {
+        return City;
+    }
+
+    public void setCity(String city) {
+        City = city;
+    }
+
+    public String getArea() {
+        return Area;
+    }
+
+    public void setArea(String area) {
+        Area = area;
+    }
+
+    public String getAddress() {
+        return Address;
+    }
+
+    public void setAddress(String address) {
+        Address = address;
+    }
+
+    public String getZipCode() {
+        return ZipCode;
+    }
+
+    public void setZipCode(String zipCode) {
+        ZipCode = zipCode;
+    }
+
+    public String getBuyerTel() {
+        return BuyerTel;
+    }
+
+    public void setBuyerTel(String buyerTel) {
+        BuyerTel = buyerTel;
+    }
+
+    public String getBuyerMobileTel() {
+        return BuyerMobileTel;
+    }
+
+    public void setBuyerMobileTel(String buyerMobileTel) {
+        BuyerMobileTel = buyerMobileTel;
+    }
+
+    public String getSendContact() {
+        return SendContact;
+    }
+
+    public void setSendContact(String sendContact) {
+        SendContact = sendContact;
+    }
+
+    public String getSendContactTel() {
+        return SendContactTel;
+    }
+
+    public void setSendContactTel(String sendContactTel) {
+        SendContactTel = sendContactTel;
+    }
+
+    public String getSendProvince() {
+        return SendProvince;
+    }
+
+    public void setSendProvince(String sendProvince) {
+        SendProvince = sendProvince;
+    }
+
+    public String getSendCity() {
+        return SendCity;
+    }
+
+    public void setSendCity(String sendCity) {
+        SendCity = sendCity;
+    }
+
+    public String getSendArea() {
+        return SendArea;
+    }
+
+    public void setSendArea(String sendArea) {
+        SendArea = sendArea;
+    }
+
+    public String getSendAddress() {
+        return SendAddress;
+    }
+
+    public void setSendAddress(String sendAddress) {
+        SendAddress = sendAddress;
+    }
+
+    public String getBCMemberName() {
+        return BCMemberName;
+    }
+
+    public void setBCMemberName(String BCMemberName) {
+        this.BCMemberName = BCMemberName;
+    }
+
+    public String getBCMemberCard() {
+        return BCMemberCard;
+    }
+
+    public void setBCMemberCard(String BCMemberCard) {
+        this.BCMemberCard = BCMemberCard;
+    }
+
+    public int getPaymenttype() {
+        return Paymenttype;
+    }
+
+    public void setPaymenttype(int paymenttype) {
+        Paymenttype = paymenttype;
+    }
+
+    public BigDecimal getCollectionAmount() {
+        return CollectionAmount;
+    }
+
+    public void setCollectionAmount(BigDecimal collectionAmount) {
+        CollectionAmount = collectionAmount;
+    }
+
+    public String getPayAmount() {
+        return PayAmount;
+    }
+
+    public void setPayAmount(String payAmount) {
+        PayAmount = payAmount;
+    }
+
+    public BigDecimal getExpressAmount() {
+        return ExpressAmount;
+    }
+
+    public void setExpressAmount(BigDecimal expressAmount) {
+        ExpressAmount = expressAmount;
+    }
+
+    public BigDecimal getPayAmountBakUp() {
+        return PayAmountBakUp;
+    }
+
+    public void setPayAmountBakUp(BigDecimal payAmountBakUp) {
+        PayAmountBakUp = payAmountBakUp;
+    }
+
+    public String getExchangeIntegral() {
+        return ExchangeIntegral;
+    }
+
+    public void setExchangeIntegral(String exchangeIntegral) {
+        ExchangeIntegral = exchangeIntegral;
+    }
+
+    public String getRptAmount() {
+        return RptAmount;
+    }
+
+    public void setRptAmount(String rptAmount) {
+        RptAmount = rptAmount;
+    }
+
+    public String getPromZRAmount() {
+        return PromZRAmount;
+    }
+
+    public void setPromZRAmount(String promZRAmount) {
+        PromZRAmount = promZRAmount;
+    }
+
+    public String getFreightPay() {
+        return FreightPay;
+    }
+
+    public void setFreightPay(String freightPay) {
+        FreightPay = freightPay;
+    }
+
+    public String getTdq() {
+        return Tdq;
+    }
+
+    public void setTdq(String tdq) {
+        Tdq = tdq;
+    }
+
+    public String getERPModifyTime() {
+        return ERPModifyTime;
+    }
+
+    public void setERPModifyTime(String ERPModifyTime) {
+        this.ERPModifyTime = ERPModifyTime;
+    }
+
+    public List<YYEdiShipmentItem> getItems() {
+        return items;
+    }
+
+    public void setItems(List<YYEdiShipmentItem> items) {
+        this.items = items;
+    }
 }

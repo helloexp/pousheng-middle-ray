@@ -55,6 +55,7 @@ public enum MiddleOrderEvent {
     LOST_CREATE_SHIP(35,"lostCreateShip","seller"),
     LOST_SHIPPED(36,"lostCreateShip","seller"),
     LOST_CONFIRMED(37,"lostConfirmed","seller"),
+    SYNC_YYEDI(38, "syncHk", "admin"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),

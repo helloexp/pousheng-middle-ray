@@ -131,4 +131,11 @@ public class TradeConstants {
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
     public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
     public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
+    //货号
+    public static final String HK_MATRIAL_CODE="materialCode";
+
+    //电商销售单
+    public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
+    //线下门店
+    public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
 }

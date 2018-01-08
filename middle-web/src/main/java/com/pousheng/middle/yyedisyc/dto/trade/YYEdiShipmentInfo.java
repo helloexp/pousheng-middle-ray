@@ -260,27 +260,27 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      * 会员兑换积分
      */
     @JsonProperty(value = "ExchangeIntegral")
-    private String ExchangeIntegral;
+    private BigDecimal ExchangeIntegral;
     /**
      * 红包支付金额
      */
     @JsonProperty(value = "RptAmount")
-    private String RptAmount;
+    private BigDecimal RptAmount;
     /**
      * 促销优惠金额
      */
     @JsonProperty(value = "PromZRAmount")
-    private String PromZRAmount;
+    private BigDecimal PromZRAmount;
     /**
      * 运费到付
      */
     @JsonProperty(value = "FreightPay")
-    private String FreightPay;
+    private int FreightPay;
     /**
      * 总行数
      */
     @JsonProperty(value = "Tdq")
-    private String Tdq;
+    private int Tdq;
     /**
      * ERP最近修改时间
      */
@@ -648,43 +648,43 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
         PayAmountBakUp = payAmountBakUp;
     }
 
-    public String getExchangeIntegral() {
+    public BigDecimal getExchangeIntegral() {
         return ExchangeIntegral;
     }
 
-    public void setExchangeIntegral(String exchangeIntegral) {
+    public void setExchangeIntegral(BigDecimal exchangeIntegral) {
         ExchangeIntegral = exchangeIntegral;
     }
 
-    public String getRptAmount() {
+    public BigDecimal getRptAmount() {
         return RptAmount;
     }
 
-    public void setRptAmount(String rptAmount) {
+    public void setRptAmount(BigDecimal rptAmount) {
         RptAmount = rptAmount;
     }
 
-    public String getPromZRAmount() {
+    public BigDecimal getPromZRAmount() {
         return PromZRAmount;
     }
 
-    public void setPromZRAmount(String promZRAmount) {
+    public void setPromZRAmount(BigDecimal promZRAmount) {
         PromZRAmount = promZRAmount;
     }
 
-    public String getFreightPay() {
+    public int getFreightPay() {
         return FreightPay;
     }
 
-    public void setFreightPay(String freightPay) {
+    public void setFreightPay(int freightPay) {
         FreightPay = freightPay;
     }
 
-    public String getTdq() {
+    public int getTdq() {
         return Tdq;
     }
 
-    public void setTdq(String tdq) {
+    public void setTdq(int tdq) {
         Tdq = tdq;
     }
 

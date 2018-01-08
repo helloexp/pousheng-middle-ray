@@ -77,4 +77,92 @@ public class YYEdiReturnItem implements java.io.Serializable{
      */
     @JsonProperty(value = "BalaPrice")
     private BigDecimal BalaPrice;
+
+    public int getRowNo() {
+        return RowNo;
+    }
+
+    public void setRowNo(int rowNo) {
+        RowNo = rowNo;
+    }
+
+    public String getCompanyCode() {
+        return CompanyCode;
+    }
+
+    public void setCompanyCode(String companyCode) {
+        CompanyCode = companyCode;
+    }
+
+    public String getBillNo() {
+        return BillNo;
+    }
+
+    public void setBillNo(String billNo) {
+        BillNo = billNo;
+    }
+
+    public String getSKU() {
+        return SKU;
+    }
+
+    public void setSKU(String SKU) {
+        this.SKU = SKU;
+    }
+
+    public String getMaterialCode() {
+        return MaterialCode;
+    }
+
+    public void setMaterialCode(String materialCode) {
+        MaterialCode = materialCode;
+    }
+
+    public String getSizeName() {
+        return SizeName;
+    }
+
+    public void setSizeName(String sizeName) {
+        SizeName = sizeName;
+    }
+
+    public String getExpectQty() {
+        return ExpectQty;
+    }
+
+    public void setExpectQty(String expectQty) {
+        ExpectQty = expectQty;
+    }
+
+    public String getShopBillNo() {
+        return ShopBillNo;
+    }
+
+    public void setShopBillNo(String shopBillNo) {
+        ShopBillNo = shopBillNo;
+    }
+
+    public BigDecimal getPayAmount() {
+        return PayAmount;
+    }
+
+    public void setPayAmount(BigDecimal payAmount) {
+        PayAmount = payAmount;
+    }
+
+    public BigDecimal getRetailPrice() {
+        return RetailPrice;
+    }
+
+    public void setRetailPrice(BigDecimal retailPrice) {
+        RetailPrice = retailPrice;
+    }
+
+    public BigDecimal getBalaPrice() {
+        return BalaPrice;
+    }
+
+    public void setBalaPrice(BigDecimal balaPrice) {
+        BalaPrice = balaPrice;
+    }
 }

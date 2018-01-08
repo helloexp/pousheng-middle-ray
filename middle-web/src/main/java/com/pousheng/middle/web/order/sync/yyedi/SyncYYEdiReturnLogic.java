@@ -18,10 +18,9 @@ import com.pousheng.middle.order.enums.HkRefundType;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfo;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnItem;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -30,8 +29,10 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -42,6 +43,7 @@ import org.springframework.util.CollectionUtils;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -60,6 +62,8 @@ public class SyncYYEdiReturnLogic {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
     @Autowired
     private SycHkRefundOrderApi sycHkRefundOrderApi;
     @Autowired
@@ -223,18 +227,13 @@ public class SyncYYEdiReturnLogic {
      * @param refund
      * @return
      */
-    private SycHkRefund makeSyncHkRefund(Refund refund) {
+    private YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
+        YYEdiReturnInfo refundInfo = new YYEdiReturnInfo();
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-        SycHkRefund sycHkRefund = new SycHkRefund();
-        //中台退换货单号
-        sycHkRefund.setRefundNo(String.valueOf(refund.getId()));
-        //中台原主订单号--发货单号
-        sycHkRefund.setOrderNo(String.valueOf(refundExtra.getShipmentId()));
-        //中台店铺id
-        sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
-        //退货仓
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
         if (refundExtra.getWarehouseId()!=null){
             Response<Warehouse> response = warehouseReadService.findById(refundExtra.getWarehouseId());
             if (!response.isSuccess()){
@@ -242,27 +241,62 @@ public class SyncYYEdiReturnLogic {
                 throw new ServiceException(response.getError());
             }
             Warehouse warehouse = response.getResult();
-            sycHkRefund.setStockId(warehouse.getInnerCode());
+            //公司码
+            refundInfo.setCompanyCode(warehouse.getCompanyCode());
+            //仓库内码
+            refundInfo.setStockCode(warehouse.getInnerCode());
         }
-        sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
-        //退款金额为页面上申请的退款金额
-        sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());
-        sycHkRefund.setRefundFreight(0);
-        //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
-        //中台状态1:售后退款,2:退货退款,恒康状态0:退货退款,1:仅退款
-        sycHkRefund.setType(String.valueOf(this.getHkRefundType(refund).value()));
-        //默认状态为待仓库接收
-        sycHkRefund.setStatus(String.valueOf(4));
-        //售后单创建时间
-        sycHkRefund.setCreatedDate(formatter.print(refund.getCreatedAt().getTime()));
-        sycHkRefund.setTotalRefund(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
-        //寄回物流单号
-        sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
-        //寄回物流公司代码
-        sycHkRefund.setLogisticsCompany(refundExtra.getShipmentCorpCode());
+        //退货单号
+        refundInfo.setBillNo(String.valueOf(refund.getId()));
+        //来源单号
+        refundInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+        //网店交易单号
+        refundInfo.setShopBillNo(shopOrder.getOutId());
+        //单据类型
+        refundInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_RETURN);
+        //店铺内码
+        refundInfo.setShopCode(shipmentExtra.getErpPerformanceShopCode());
+        //店铺名称
+        refundInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
+        //买家用户名
+        refundInfo.setBCMemberName(shopOrder.getBuyerName());
+        //客户供应商快递公司内码
+        refundInfo.setCustomerCode("");
+        refundInfo.setCustomerName("");
+        refundInfo.setExpressBillNo("");
+        refundInfo.setIsRefundInvoice(0);
+        //1.退货，0.换货
+        refundInfo.setRefundChangeType(refund.getRefundType()==2?1:0);
+        //退款金额
+        refundInfo.setCollectionAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN));
+        //邮费
+        refundInfo.setExpressAmount(new BigDecimal(0.00));
+        //中台没有运费到付,所以填0
+        refundInfo.setFreightPay(0);
+        //寄件人信息
+        refundInfo.setSendContact("");
+        //寄件人姓名
+        refundInfo.setSendContactTel("");
+        //寄件人电话
+        refundInfo.setSendProvince("");
+        //寄件省
+        refundInfo.setSendProvince("");
+        //寄件市
+        refundInfo.setSendCity("");
+        //寄件区
+        refundInfo.setSendArea("");
+        //寄件地址
+        refundInfo.setSendAddress("");
+        //寄件邮编
+        refundInfo.setZipCode("");
+        //预期数量 todo
+        refundInfo.setExpectQty(0);
+        //总行数
+        refundInfo.setTdq(0);
+        //最近修改时间
+        refundInfo.setERPModifyTime(new Date());
 
-        sycHkRefund.setMemo(refund.getBuyerNote());
-        return sycHkRefund;
+        return refundInfo;
     }
 
     /**
@@ -271,15 +305,17 @@ public class SyncYYEdiReturnLogic {
      * @param refund
      * @return
      */
-    private List<SycHkRefundItem> makeSycHkRefundItemList(Refund refund) {
+    private List<YYEdiReturnItem> makeSycHkRefundItemList(Refund refund,Warehouse warehouse) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        List<SycHkRefundItem> items = Lists.newArrayList();
+        List<YYEdiReturnItem> items = Lists.newArrayList();
+        int count= 0;
         for (RefundItem refundItem : refundItems) {
-            SycHkRefundItem item = new SycHkRefundItem();
-            //中台退换货子单号,用refunId与skuCode拼接
-            item.setRefundSubNo(refund.getId() + "-" + refundItem.getSkuCode());
-            //原销售来源子单号
+            YYEdiReturnItem item = new YYEdiReturnItem();
+             //行号
+            item.setRowNo(count);
+            //
+           /* //原销售来源子单号
             item.setOrderSubNo(refundExtra.getShipmentId() + "-" + refundItem.getSkuCode());
             //恒康商品条码
             item.setBarCode(refundItem.getSkuCode());
@@ -293,7 +329,8 @@ public class SyncYYEdiReturnLogic {
             item.setRefundAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //商品名称
             item.setItemName(refundItem.getSkuName());
-            items.add(item);
+            items.add(item);*/
+            count++;
         }
 
         return items;

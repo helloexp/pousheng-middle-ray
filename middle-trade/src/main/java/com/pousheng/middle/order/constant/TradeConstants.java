@@ -138,4 +138,6 @@ public class TradeConstants {
     public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
     //线下门店
     public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
+    //退货类型
+    public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
 }

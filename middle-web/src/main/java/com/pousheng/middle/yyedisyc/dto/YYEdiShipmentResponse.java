@@ -12,7 +12,7 @@ import java.util.List;
  * pousheng-middle
  */
 @Data
-public class YYEdiResponse implements Serializable{
+public class YYEdiShipmentResponse implements Serializable{
     private static final long serialVersionUID = -4030774668654863201L;
     //200:整体成功,100:部分成功,-100:整体失败
     private String errorCode;

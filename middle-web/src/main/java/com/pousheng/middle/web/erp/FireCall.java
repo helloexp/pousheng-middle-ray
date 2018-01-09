@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.erp;
 
+import com.google.common.collect.Lists;
 import com.pousheng.erp.component.BrandImporter;
+import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.common.model.Response;
@@ -35,15 +37,18 @@ public class FireCall {
 
     private final WarehouseImporter warehouseImporter;
 
+    private final MaterialPusher materialPusher;
+
     private final DateTimeFormatter dft;
 
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter) {
+                    WarehouseImporter warehouseImporter,MaterialPusher materialPusher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
+        this.materialPusher = materialPusher;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -105,6 +110,16 @@ public class FireCall {
     public String synchronizeSpuByBarCode(@RequestParam String skuCode){
         int spuCount =spuImporter.processPullMarterials(skuCode);
         log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
+
+
+    @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuStock(@RequestParam Long spuId){
+        //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+        materialPusher.addSpus(Lists.newArrayList(spuId));
+        //调用恒康抓紧给我返回库存信息
+        materialPusher.pushItemForStock(spuId);
         return "ok";
     }
 

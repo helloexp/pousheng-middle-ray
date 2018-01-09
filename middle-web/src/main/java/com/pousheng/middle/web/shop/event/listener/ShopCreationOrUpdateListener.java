@@ -80,9 +80,12 @@ public class ShopCreationOrUpdateListener {
         //更新门店地址信息
         updateShopAddress(event.getShopId(),addressGps.getDetail());
 
-        //同步恒康mpos门店范围
-        mposWarehousePusher.addWarehouses(event.getCompanyId().toString(),event.getOuterId());
-
+        try {
+            //同步恒康mpos门店范围
+            mposWarehousePusher.addWarehouses(event.getCompanyId().toString(),event.getOuterId());
+        }catch (Exception e){
+            log.error("sync hk shop(id:{}) range fail,cause:{}",event.getShopId(),Throwables.getStackTraceAsString(e));
+        }
 
     }
 

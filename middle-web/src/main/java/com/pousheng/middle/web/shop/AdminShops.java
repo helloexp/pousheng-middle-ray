@@ -24,6 +24,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.shop.model.Shop;
@@ -63,6 +64,8 @@ public class AdminShops {
 
     @RpcConsumer
     private AdminShopWriteService adminShopWriteService;
+    @Autowired
+    private SyncParanaShopService syncParanaShopService;
 
     @Autowired
     private UcUserOperationLogic ucUserOperationLogic;
@@ -202,7 +205,13 @@ public class AdminShops {
 
             UpdateShopEvent updateShopEvent = new UpdateShopEvent(id,shop.getCompanyId(),recoverShop.getOuterId());
             eventBus.post(updateShopEvent);
+
+            //同步电商
+            syncParanaShop(recoverShop);
         }
+
+
+
 
 
         return Collections.singletonMap("id", id);
@@ -270,6 +279,9 @@ public class AdminShops {
             log.warn("shop create failed, error={}", rShop.getError());
             throw new JsonResponseException(rShop.getError());
         }
+        //同步电商
+        syncParanaShop(toCreate);
+
         return rShop.getResult();
     }
 
@@ -477,6 +489,8 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        //同步电商
+        syncParanaFrozenShop(shopId);
     }
 
     @ApiOperation("解冻门店")
@@ -490,6 +504,8 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
+        //同步电商
+        syncParanaUnFrozenShop(shopId);
 
     }
 
@@ -506,6 +522,8 @@ public class AdminShops {
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
         //同步恒康mpos门店范围
         mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
+        //同步电商
+        syncParanaCloseShop(shopId);
 
     }
 
@@ -542,6 +560,41 @@ public class AdminShops {
         }
     }
 
+
+    private void syncParanaShop(Shop shop){
+        Response<Boolean> response =  syncParanaShopService.syncShopInfo(shop);
+        if(!response.isSuccess()){
+            log.error("sync parana shop fail,error:{}",shop);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+
+    private void syncParanaFrozenShop(Long shopId){
+        Response<Boolean> response =  syncParanaShopService.frozenShop(shopId);
+        if(!response.isSuccess()){
+            log.error("sync parana frozen shop fail,error:{}",shopId);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    private void syncParanaUnFrozenShop(Long shopId){
+        Response<Boolean> response =  syncParanaShopService.unfrozenShop(shopId);
+        if(!response.isSuccess()){
+            log.error("sync parana unfrozen shop fail,error:{}",shopId);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    private void syncParanaCloseShop(Long shopId){
+        Response<Boolean> response =  syncParanaShopService.closeShop(shopId);
+        if(!response.isSuccess()){
+            log.error("sync parana close shop fail,error:{}",shopId);
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+
     @Data
     public static class ShopWithUser extends Shop {
 
@@ -554,7 +607,5 @@ public class AdminShops {
         private Long companyId;
         //公司名称
         private String companyName;
-
-
     }
 }

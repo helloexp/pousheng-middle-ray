@@ -15,6 +15,7 @@ import io.terminus.parana.shop.service.ShopWriteService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -34,6 +35,8 @@ public class CreateOpenShopRelationListener {
     private ShopReadService shopReadService;
     @RpcConsumer
     private ShopWriteService shopWriteService;
+    @Value("${open.api.gateway}")
+    private String gateway;
 
 
     @PostConstruct
@@ -55,11 +58,11 @@ public class CreateOpenShopRelationListener {
 
         OpenShop openShop = new OpenShop();
         openShop.setChannel(ShopConstants.CHANNEL);
-        openShop.setShopName(exist.getName());
+        openShop.setShopName("mpos-"+exist.getName());
         openShop.setAccessToken("xxx");
-        openShop.setAppKey("xxx");
-        openShop.setGateway("xxx");
-        openShop.setSecret("xxx");
+        openShop.setAppKey(exist.getOuterId());
+        openShop.setGateway(gateway);
+        openShop.setSecret(exist.getOuterId()+"93204aefe45d47f6e488");
 
         Response<Long> openShopRes = openShopWriteService.create(openShop);
         if(!openShopRes.isSuccess()){

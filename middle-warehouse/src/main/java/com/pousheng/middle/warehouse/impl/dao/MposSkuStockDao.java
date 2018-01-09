@@ -80,7 +80,7 @@ public class MposSkuStockDao extends MyBatisDao<MposSkuStock> {
      * @return 是否操作成功
      */
     public boolean lockStockShop(Long shopId, String skuCode, Integer quantity) {
-        return this.sqlSession.update(sqlId("lockStock"),
+        return this.sqlSession.update(sqlId("lockStockShop"),
                 ImmutableMap.of("shopId", shopId, "skuCode", skuCode, "quantity", quantity))
                 == 1;
     }

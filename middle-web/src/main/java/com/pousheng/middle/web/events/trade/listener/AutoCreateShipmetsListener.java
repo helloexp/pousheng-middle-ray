@@ -63,13 +63,13 @@ public class AutoCreateShipmetsListener {
         // 如果是Mpos订单，进行派单
         if (ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())) {
             shipmentWiteLogic.toDispatchOrder(shopOrder);
-        } else {
+        }else{
             //如果是京东货到付款，默认展示京东快递
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
+                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
                 Map<String, String> extraMap = shopOrder.getExtra();
                 extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
-                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME, "京东快递");
+                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,"京东快递");
                 Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
                 if (!rltRes.isSuccess()) {
                     log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());

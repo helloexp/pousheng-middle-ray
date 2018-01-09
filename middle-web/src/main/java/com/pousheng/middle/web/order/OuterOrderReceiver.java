@@ -15,12 +15,16 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.center.job.aftersale.api.AfterSaleReceiver;
 import io.terminus.open.client.center.job.order.api.OrderReceiver;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
+import io.terminus.open.client.parana.component.ParanaAfterSaleConverter;
 import io.terminus.open.client.parana.component.ParanaOrderConverter;
 import io.terminus.open.client.parana.dto.OrderInfo;
+import io.terminus.open.client.parana.dto.ParanaAfterSaleOrderInfo;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
@@ -65,7 +69,10 @@ public class OuterOrderReceiver {
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private OrderReadLogic orderReadLogic;
-
+    @Autowired
+    private ParanaAfterSaleConverter paranaAfterSaleConverter;
+    @Autowired
+    private AfterSaleReceiver afterSaleReceiver;
 
     @ApiOperation("创建外部订单")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -138,4 +145,40 @@ public class OuterOrderReceiver {
 
     }
 
+
+
+
+//    @ApiOperation("创建外部售后单")
+//    @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+//    public Response<Boolean> createOuterShopOrder(@RequestBody ParanaAfterSaleOrderInfo afterSaleOrderInfo) {
+//
+//        AfterSale mposAfterSale = afterSaleOrderInfo.getAfterSale();
+//
+//        //判断门店是否存在
+//        val rExist = shopReadService.findById(mposAfterSale.getShopId());
+//        if (!rExist.isSuccess()) {
+//            log.error("find shop by id:{} fail,error:{}",mposAfterSale.getShopId(),rExist.getError());
+//            throw new JsonResponseException(rExist.getError());
+//        }
+//        Shop exist = rExist.getResult();
+//        ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+//        //获取对应的open shop id
+//        Long openShopId = extraInfo.getOpenShopId();
+//        if(Arguments.isNull(openShopId)){
+//            log.error("create outer order fail,because shop(id:{}) not find open shop record",exist.getId());
+//            return Response.fail("not.find.open.shop");
+//        }
+//        //封装open shop info
+//        OpenClientShop openClientShop = new OpenClientShop();
+//        openClientShop.setChannel(ShopConstants.CHANNEL);
+//        openClientShop.setOpenShopId(openShopId);
+//        openClientShop.setShopName(exist.getName());
+//
+//
+//        OpenClientAfterSale openClientAfterSale = new OpenClientAfterSale();//paranaAfterSaleConverter.from(null,null);改造成ParanaAfterSaleOrderInfo
+//        //处理售后单据
+//        afterSaleReceiver.receiveAfterSale(openClientShop, Lists.newArrayList(openClientAfterSale));
+//
+//        return Response.ok(Boolean.TRUE);
+//    }
 }

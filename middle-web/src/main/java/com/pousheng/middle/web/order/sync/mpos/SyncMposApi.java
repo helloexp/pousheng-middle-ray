@@ -18,7 +18,7 @@ public class SyncMposApi {
     //@Value("mpos.gateway")
     private String mposGateway = "http://api-test-mpos.pousheng.com";
 
-    //private String mposGateway = "http://30.40.87.77:8089";
+    //private String mposGateway = "http://30.40.86.253:8089";
 
     /**
      * 同步发货单到mpos
@@ -43,7 +43,7 @@ public class SyncMposApi {
     public String syncShipmentShippedToMpos(Map<String,Serializable> param){
         log.info("sync shipment shipped to mpos,param:{}",param);
         String gateWay = mposGateway + "/api/order/sync/shipment/express";
-        String responseBody = HttpRequest.post(gateWay,param,true)
+        String responseBody = HttpRequest.put(gateWay,param,true)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
         log.info("response:{}",responseBody);
@@ -51,7 +51,7 @@ public class SyncMposApi {
     }
 
     /**
-     * 商品派不出去或连续被拒单，同步mpos
+     * 商品派不出去，同步mpos
      * @param param 参数
      * @return
      */

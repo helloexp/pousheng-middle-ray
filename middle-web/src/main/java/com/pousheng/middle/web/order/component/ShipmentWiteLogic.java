@@ -23,6 +23,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -96,6 +97,8 @@ public class ShipmentWiteLogic {
     private RefundWriteService refundWriteService;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -663,6 +666,8 @@ public class ShipmentWiteLogic {
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
         shipmentExtra.setWarehouseId(deliverShopId);
         shipmentExtra.setWarehouseName(deliverShopName);
+        shipmentExtra.setTakeWay(shopOrder.getExtra().get(TradeConstants.IS_SINCE));
+        shipmentExtra.setIsAppint(shopOrder.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
 
         //下单店铺代码（绩效店铺在接单后保存）
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
@@ -693,6 +698,7 @@ public class ShipmentWiteLogic {
 
         return shipment;
     }
+
 
 
     /**
@@ -966,7 +972,7 @@ public class ShipmentWiteLogic {
                 }
                 Shipment shipment = shipmentRes.getResult();
                 this.syncShipmentToMpos(shipment);
-                //同步恒康
+                //发货单同步恒康
                 log.info("sync shipment(id:{}) to hk");
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
                 if (!syncRes.isSuccess()) {
@@ -982,14 +988,32 @@ public class ShipmentWiteLogic {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                 }
                 Shipment shipment = shipmentRes.getResult();
+                //发货单同步mpos
                 this.syncShipmentToMpos(shipment);
             }
         }
-        for (SkuCodeAndQuantity skuCodeAndQuantity : dispatchOrderItemInfo.getSkuCodeAndQuantities()) {
-            //todo 1，同步给mpos 2.修改本地状态
-            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-            orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
-        }
+
+//        List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
+//        if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
+//            Long shipmentId = this.createRefundShipment(shopOrder,skuOrders,skuCodeAndQuantityList);
+//            if(shipmentId == null){
+//                log.error("create refund shipment fail");
+//                throw new JsonResponseException("create refund fail");
+//            }
+//            SubmitRefundInfo submitRefundInfo = new SubmitRefundInfo();
+//            submitRefundInfo.setOrderId(shopOrder.getId());
+//            submitRefundInfo.setRefundType(MiddleRefundType.ON_SALES_REFUND.value());
+//            submitRefundInfo.setShipmentId(shipmentId);
+//            submitRefundInfo.setMiddleChangeReceiveInfo(null);
+//            Long refundId = refundWriteLogic.createRefund(submitRefundInfo);
+//            //售后单同步mpos
+//            syncMposOrderLogic.syncAfterSaleToMpos(shopOrder.getId(),refundId,skuCodeAndQuantityList);
+//            //更新子单状态
+//            for (SkuCodeAndQuantity skuCodeAndQuantity : dispatchOrderItemInfo.getSkuCodeAndQuantities()) {
+//                SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+//                orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
+//            }
+//        }
     }
 
     /**

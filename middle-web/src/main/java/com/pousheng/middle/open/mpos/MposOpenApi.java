@@ -2,6 +2,7 @@ package com.pousheng.middle.open.mpos;
 
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -13,7 +14,9 @@ import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -55,7 +58,10 @@ public class MposOpenApi {
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private OrderWriteService orderWriteService;
-
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
@@ -71,24 +77,26 @@ public class MposOpenApi {
      *  修改中台发货单状态
      * @param shipmentId 发货单id
      * @param status 状态
-     * @param extra 扩展信息
+     * @param extraJson 扩展信息
      * @return
      */
     @ApiOperation("发货单状态更新")
     @RequestMapping(value = "/shipment/{shipmentId}/update",method = RequestMethod.PUT)
-    public Response<Boolean> updateOuterShipment(@PathVariable Long shipmentId, @RequestParam String status, @RequestParam(required = false) Map<String,String> extra){
+    public Response<Boolean> updateOuterShipment(@PathVariable Long shipmentId, @RequestParam String status, @RequestParam(required = false) String extraJson){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
+        Map<String,String> extra = mapper.fromJson(extraJson,Map.class);
         MiddleOrderEvent orderEvent;
         Shipment update = null;
         switch (status){
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
+                shipmentExtra.setReceiveStaff(extra.get(TradeConstants.MPOS_RECEIVE_STAFF));
                 break;
             case TradeConstants.MPOS_SHIPMENT_REJECT:
                 orderEvent = MiddleOrderEvent.MPOS_REJECT;
-
+                shipmentExtra.setRejectReason(extra.get(TradeConstants.MPOS_REJECT_REASON));
                 break;
             case TradeConstants.MPOS_SHIPMENT_SHIPPED:
                 orderEvent = MiddleOrderEvent.SHIP;
@@ -201,4 +209,68 @@ public class MposOpenApi {
         }
         return Response.ok(true);
     }
+
+    @ApiOperation("接收mpos退款成功通知")
+    @RequestMapping(value = "/refund/confirm",method = RequestMethod.PUT)
+    public Response<Boolean> RefundConfirm(Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
+        String orderType = refund.getExtra().get("orderType");
+        if(Arguments.isNull(refund)){
+            log.error("not find order refund by refund id:{}");
+            throw new JsonResponseException("refund.order.not.exist");
+        }
+        try {
+            int count =0;
+            if (Objects.equals(orderType, "1")) {
+                //整单退款,调用整单退款的逻辑
+                log.info("try to auto cancel shop order shopOrderId is {}",orderRefund.getOrderId());
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                try {
+                    Map<String,String> shopOrderExtra = shopOrder.getExtra();
+                    shopOrderExtra.put(TradeConstants.SHOP_ORDER_CANCEL_REASON,"电商取消同步");
+                    orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP,shopOrderExtra);
+                }catch (Exception e){
+                    log.error("add shop order cancel reason failed,shop order id is {}",shopOrder.getId());
+                }
+                orderWriteLogic.autoCancelShopOrder(orderRefund.getOrderId());
+            } else if (Objects.equals(orderType, "2")) {
+                log.info("try to auto cancel sku order shopOrderId is {}",orderRefund.getOrderId());
+                List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+                for (RefundItem refundItem : refundItems) {
+                    //子单退款,调用子单退款的逻辑
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    //判断该店铺订单是否存在取消失败的子单
+                    if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CANCEL_FAILED.getValue())){
+                        count++;
+                        continue;
+                    }
+                    SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(orderRefund.getOrderId(),refundItem.getSkuCode());
+                    try {
+                        Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                        skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,"电商取消同步");
+                        orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                    }catch (Exception e){
+                        log.error("add sku order cancel reason failed,sku order id is {}",skuOrder.getId());
+                    }
+                    orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode());
+                }
+            }else{
+                throw new ServiceException("error.order.type");
+            }
+            if (count==0){ //表明该店铺订单中没有取消失败的发货单
+                Refund updateRefund = new Refund();
+                updateRefund.setId(refund.getId());
+                updateRefund.setTradeNo(TradeConstants.REFUND_CANCELED);//借用tradeNo字段来标记售中退款的逆向单是否已处理
+                Response<Boolean> updateRes = refundWriteLogic.update(updateRefund);
+                if(!updateRes.isSuccess()){
+                    log.error("update refund:{} fail,error:{}",updateRefund,updateRes.getError());
+                }
+            }
+        } catch (Exception e) {
+            log.error("on sale refund failed,cause by {}",e.getMessage());
+        }
+        return Response.ok(true);
+    }
+
 }

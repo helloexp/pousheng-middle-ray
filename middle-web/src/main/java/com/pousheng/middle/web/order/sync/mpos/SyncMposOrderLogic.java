@@ -46,6 +46,13 @@ public class SyncMposOrderLogic {
         return Response.ok(true);
     }
 
+    /**
+     * 组装参数
+     * @param orderId                订单id
+     * @param afterSaleId            售后单id
+     * @param skuCodeAndQuantityList 商品代码和数量
+     * @return
+     */
     private Map<String,Serializable> assembAfterSaleParam(Long orderId,Long afterSaleId,List<SkuCodeAndQuantity> skuCodeAndQuantityList){
         Map<String,Serializable> param = Maps.newHashMap();
         param.put("orderId",orderId);

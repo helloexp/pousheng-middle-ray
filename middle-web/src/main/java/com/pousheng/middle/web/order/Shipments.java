@@ -25,6 +25,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -108,6 +109,8 @@ public class Shipments {
     private PermissionUtil permissionUtil;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -270,6 +273,17 @@ public class Shipments {
             if (!orderReadLogic.validateCompanyCode(warehouseId,shopOrder.getShopId())){
                 throw new JsonResponseException("warehouse.must.be.in.one.company");
             }
+            //判断是否可以生成发货单
+            for (Long skuOrderId:skuOrderIdAndQuantity.keySet()){
+                SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId,OrderLevel.SKU);
+                Map<String,String> skuOrderExtraMap = skuOrder.getExtra();
+                Integer waitHandleNumber = Integer.valueOf(skuOrderExtraMap.get(TradeConstants.WAIT_HANDLE_NUMBER));
+                if (waitHandleNumber <= 0) {
+                    log.error("sku order(id:{}) extra wait handle number:{} ,not enough to ship", skuOrder.getId(), waitHandleNumber);
+                    throw new ServiceException("wait.handle.number.is.zero.can.not.create.shipment");
+                }
+            }
+
             //获取子单商品
             List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
             skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
@@ -410,6 +424,9 @@ public class Shipments {
             }
             if (Objects.equals(shipType,3)){
                 refundChangeItems = refundReadLogic.findRefundLostItems(refund);
+            }
+            if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems)){
+                throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
             }
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
@@ -980,5 +997,20 @@ public class Shipments {
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
         return shipmentItems;
+    }
+
+    /**
+     * 同步发货单到mpos
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/sync/mpos",method = RequestMethod.PUT)
+    @OperationLogType("同步发货单到恒康")
+    public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncMposShipmentLogic.syncShipmentToMpos(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
     }
 }

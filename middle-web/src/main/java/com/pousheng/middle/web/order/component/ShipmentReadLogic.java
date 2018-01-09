@@ -499,7 +499,7 @@ public class ShipmentReadLogic {
             return false;
         }
         List<Integer> orderShipmentStatus = orderShipments.stream().filter(Objects::nonNull)
-                .filter(status->!Objects.equals(status,MiddleShipmentsStatus.CANCELED.getValue()))
+                .filter(orderShipment->!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()))
                 .map(OrderShipment::getStatus).collect(Collectors.toList());
         List<Integer> canRevokeStatus = Lists.newArrayList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()
                 ,MiddleShipmentsStatus.ACCEPTED.getValue(), MiddleShipmentsStatus.WAIT_SHIP.getValue(),
@@ -543,14 +543,14 @@ public class ShipmentReadLogic {
             shopShipment.setShopId(shipmentExtra.getWarehouseId());
             shopShipment.setShopName(shipmentExtra.getWarehouseName());
             shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(CollectionUtils.arrayToList(shopShipment));
+            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
         }
         if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_WAREHOUSE_DELIVER)){
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());
             warehouseShipment.setWarehouseName(shipmentExtra.getWarehouseName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setWarehouseShipments(CollectionUtils.arrayToList(warehouseShipment));
+            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }
         return dispatchOrderItemInfo;
     }

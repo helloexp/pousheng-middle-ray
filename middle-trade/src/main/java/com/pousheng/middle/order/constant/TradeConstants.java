@@ -149,6 +149,8 @@ public class TradeConstants {
     public static final String IS_ASSIGN_SHOP = "isAssignShop";
     //指定门店id
     public static final String ASSIGN_SHOP_ID = "assignShopId";
+    //1 门店发货 2 门店自提
+    public static final String IS_SINCE = "isSince";
     //订单取消
     public static final String ORDER_CANCEL = "order";
     //发货单取消
@@ -165,5 +167,9 @@ public class TradeConstants {
     public static final String WAREHOUSE_RETURNWAREHOUSECODE = "returnWarehouseCode";
     //仓库退货仓名称
     public static final String WAREHOUSE_RETURNWAREHOUSENAME = "returnWarehouseName";
+    //mpos接单员工
+    public static final String MPOS_RECEIVE_STAFF = "mposReceiceStaff";
+    //mpos拒绝原因
+    public static final String MPOS_REJECT_REASON = "mposRejectReason";
 
 }

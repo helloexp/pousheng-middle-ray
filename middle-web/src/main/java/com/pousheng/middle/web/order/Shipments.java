@@ -510,7 +510,6 @@ public class Shipments {
     }
 
 
-
     /**
      * 取消发货单,这个时候没有同步到恒康
      * @param shipmentId 发货单id
@@ -1004,7 +1003,7 @@ public class Shipments {
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/sync/mpos",method = RequestMethod.PUT)
-    @OperationLogType("同步发货单到恒康")
+    @OperationLogType("同步发货单到mpos")
     public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncMposShipmentLogic.syncShipmentToMpos(shipment);

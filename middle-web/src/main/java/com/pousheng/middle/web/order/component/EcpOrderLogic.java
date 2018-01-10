@@ -96,36 +96,17 @@ public class EcpOrderLogic {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取第一个返货单生成时冗余的发货单id
         String shipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
-
-        List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-
-        List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-        //判断该订单下所有发货单的状态
-        List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());;
-        //判断订单是否已经全部发货了
-        int count=0;
-        for (Integer status:orderShipMentStatusList){
-            if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                count++;
-            }
+        Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(shipmentId));
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
+        //最后一个发货单发货完成之后需要将订单同步到电商
+        String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
+        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
+            syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+        }else{
+            syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
         }
-        //如果已经全部发货了并且电商已经无任何发货单要生成了,则通知电商平台状态为已收货,将第一个发货的发货单的运单号之类的传给电商
-        Flow flow = flowPicker.pickOrder();
-        if (count==0&&(shopOrder.getStatus()>= MiddleOrderStatus.WAIT_SHIP.getValue()
-                ||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL_FAILED.getValue())
-                ||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.REVOKE_FAILED.getValue()))){
-            Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(shipmentId));
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
-            //最后一个发货单发货完成之后需要将订单同步到电商
-            String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
-                syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
-            }else{
-                syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
-            }
-        }
+
     }
 
 }

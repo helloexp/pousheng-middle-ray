@@ -89,23 +89,6 @@ public class AdminOrderWriter {
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-
-        List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-        //判断该订单下所有发货单的状态
-        List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-        //判断订单是否已经全部发货了
-        int count=0;
-        for (Integer status:orderShipMentStatusList){
-            if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                count++;
-            }
-        }
-        //必须所有的发货单发货完成之后才能通知电商
-        if (count>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
-            throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
-        }
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);

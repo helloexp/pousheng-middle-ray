@@ -223,6 +223,8 @@ public class ExportController {
                     }
 //                    payment.ifPresent(p -> export.setPaymentDate(p.getPaidAt()));
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
+                    //外部订单号
+                    export.setOutId(shopOrder.getOutId());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
 //                    export.setShipFee(skuOrder.getShipFee());

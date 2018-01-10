@@ -65,12 +65,11 @@ public class SyncOrderToEcpLogic {
      */
     public Response<Boolean> syncOrderToECP(ShopOrder shopOrder,String expressCompayCode,Long shipmentId)
     {
-        //更新状态为同步中
         try {
             //获取ecpOrderStatus
             String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-            //如果此时同步电商订单状态不是待同步电商平台直接忽略
-            if (!Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())){
+            //如果此时同步电商订单状态不是待同步电商平台或者同步电商失败直接忽略
+            if (!Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())&&!Objects.equals(status, EcpOrderStatus.SYNC_ECP_FAIL.getValue())){
                 return Response.ok(Boolean.TRUE);
             }
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
@@ -121,11 +120,12 @@ public class SyncOrderToEcpLogic {
      */
     public Response<Boolean> syncShipmentsToEcp(ShopOrder shopOrder)
     {
-        //更新状态为同步中
-        OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
-        orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
 
         try {
+            //更新状态为同步中
+            OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
+            orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
+
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());

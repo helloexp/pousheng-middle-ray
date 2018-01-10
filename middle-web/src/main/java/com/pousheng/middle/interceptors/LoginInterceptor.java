@@ -15,7 +15,6 @@ import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Splitters;
 import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.common.enums.UserType;
@@ -24,7 +23,6 @@ import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
@@ -32,9 +30,7 @@ import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Pattern;
 
 /**
  * Author:  songrenfei
@@ -50,8 +46,6 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
     private PsUserReadService userReadService;
     @RpcConsumer
     private OperatorReadService operatorReadService;
-    @Value("${mpos.white.url.list}")
-    private String mopsWhiteList;
 
     @PostConstruct
     public void init() {
@@ -67,11 +61,6 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HttpSession session = request.getSession(false);
         if (session != null) {
-            String requestURI = request.getRequestURI().substring(request.getContextPath().length());
-            //mpos的url直接跳过
-            if(isMposCallApi(requestURI)){
-                return Boolean.TRUE;
-            }
             Object userIdInSession = session.getAttribute(Constants.SESSION_USER_ID);
             if (userIdInSession != null) {
 
@@ -113,14 +102,4 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
         UserUtil.clearCurrentUser();
     }
 
-    private Boolean isMposCallApi(String url){
-        List<String> mposApis = Splitters.COMMA.splitToList(mopsWhiteList);
-        for (String  api : mposApis){
-            Pattern urlPattern = Pattern.compile("^" + api + "$");
-            if(urlPattern.matcher(url).find()){
-                return Boolean.TRUE;
-            }
-        }
-        return Boolean.FALSE;
-    }
 }

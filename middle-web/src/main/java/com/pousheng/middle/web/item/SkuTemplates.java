@@ -9,6 +9,7 @@ import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
+import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -31,7 +32,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -53,6 +53,8 @@ public class SkuTemplates {
     private SpuReadService spuReadService;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private PushMposItemComponent pushMposItemComponent;
 
 
 
@@ -172,6 +174,9 @@ public class SkuTemplates {
         //更新搜索
         postUpdateSearchEvent(id);
 
+        //同步电商
+        pushMposItemComponent.push(exist);
+
     }
 
     @ApiOperation("取消货品mops打标")
@@ -196,6 +201,9 @@ public class SkuTemplates {
         }
         //更新搜索
         postUpdateSearchEvent(id);
+
+        //同步电商
+        pushMposItemComponent.del(Lists.newArrayList(exist));
     }
 
 
@@ -225,6 +233,9 @@ public class SkuTemplates {
             log.error("update SkuTemplate failed error={}",resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
+
+        //同步电商
+        pushMposItemComponent.updatePrice(Lists.newArrayList(exist),toUpdate.getPrice());
     }
 
     @ApiOperation("对mpos货品批量设置折扣")
@@ -262,11 +273,22 @@ public class SkuTemplates {
         if(Strings.isNullOrEmpty(imageUrl)){
             throw new JsonResponseException("image.url.invalid");
         }
+
+        Response<List<SkuTemplate>> skuTemplateRes =  skuTemplateReadService.findByIds(ids);
+        if(!skuTemplateRes.isSuccess()){
+            log.error("failed to find skuTemplate: by ids:{}, error:{}", ids, skuTemplateRes.getError());
+            throw new JsonResponseException(skuTemplateRes.getError());
+        }
+
         Response<Boolean> response = psSkuTemplateWriteService.updateImageByIds(ids,imageUrl);
         if(!response.isSuccess()){
             log.error("failed to update skuTemplate:(ids:{}) image to:{}, error:{}", ids,imageUrl, response.getError());
             throw new JsonResponseException(response.getError());
         }
+
+        //同步电商
+        pushMposItemComponent.updateImage(skuTemplateRes.getResult(),imageUrl);
+
     }
 
     @ApiOperation("异步对货品批量mpos打标")

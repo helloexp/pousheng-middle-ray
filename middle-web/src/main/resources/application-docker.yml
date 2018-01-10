@@ -151,3 +151,6 @@ index.queue.size: 500000
 
 # mpos系统调用的api白名单
 mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}

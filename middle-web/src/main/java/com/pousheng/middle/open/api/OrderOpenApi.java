@@ -101,8 +101,13 @@ public class OrderOpenApi {
                 Long shipmentId = result.getEcShipmentId();
                 Boolean handleResult = result.getSuccess();
                 String hkShipmentId = result.getHkShipmentId();
-                Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-
+                Shipment shipment = null;
+                try{
+                    shipment  = shipmentReadLogic.findShipmentById(shipmentId);
+                }catch (ServiceException e){
+                    log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+                    continue;
+                }
                 //冗余恒康发货单号
                 //更新发货单的状态
                 if (handleResult){
@@ -172,7 +177,13 @@ public class OrderOpenApi {
         try {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
-           Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            Shipment shipment = null;
+            try{
+                shipment  = shipmentReadLogic.findShipmentById(shipmentId);
+            }catch (ServiceException e){
+                log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+                return;
+            }
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
             OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
@@ -357,7 +368,14 @@ public class OrderOpenApi {
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
             PoushengSettlementPos pos = new PoushengSettlementPos();
             if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
-                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+                OrderShipment orderShipment = null;
+                try{
+                    orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+
+                }catch (ServiceException e){
+                    log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,e.getMessage());
+                    return;
+                }
                 if (Objects.equals(orderShipment.getType(),1)){
                     pos.setOrderId(orderShipment.getOrderId());
                     pos.setShipType(1);
@@ -377,7 +395,13 @@ public class OrderOpenApi {
 
 
             }else if (Objects.equals(orderType,"2")){
-                Refund refund = refundReadLogic.findRefundById(orderId);
+                Refund refund = null;
+                try{
+                    refund = refundReadLogic.findRefundById(orderId);
+                }catch (ServiceException e){
+                    log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
+                    return;
+                }
                 pos.setOrderId(refund.getId());
                 String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(amt));

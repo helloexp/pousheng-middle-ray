@@ -122,24 +122,13 @@ public class SyncOrderToEcpLogic {
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-
-            // /判断该订单下所有发货单的状态
-            List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-            //判断订单是否已经全部发货了
-            int number=0;
-            for (Integer status:orderShipMentStatusList){
-                if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                    number++;
-                }
-            }
-            //必须所有的发货单发货完成之后才能通知电商
-            if (number>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
-                throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
-            }
-
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));
+                //如果发货单的发货状态不是已发货的，跳过
+                if (!Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue())){
+                    continue;
+                }
                 ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                 List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
                 try{

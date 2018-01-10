@@ -7,10 +7,7 @@ package com.pousheng.middle.order.enums;
 import com.google.common.base.Objects;
 
 /**
- * 电商订单状态
- *
- * Author:  songrenfei
- * Date: 2017-05-23
+ * 同步电商状态
  */
 public enum EcpOrderStatus {
 

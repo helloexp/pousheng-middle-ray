@@ -5,6 +5,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
@@ -66,6 +67,12 @@ public class SyncOrderToEcpLogic {
     {
         //更新状态为同步中
         try {
+            //获取ecpOrderStatus
+            String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+            //如果此时同步电商订单状态不是待同步电商平台直接忽略
+            if (!Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())){
+                return Response.ok(Boolean.TRUE);
+            }
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
@@ -102,7 +109,7 @@ public class SyncOrderToEcpLogic {
             return Response.fail("sync.ecp.failed");
         }
 
-        return Response.ok();
+        return Response.ok(Boolean.TRUE);
     }
 
 

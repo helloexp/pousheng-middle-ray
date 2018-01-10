@@ -53,7 +53,7 @@ public class SkuTemplates {
     private SpuReadService spuReadService;
     @Autowired
     private EventBus eventBus;
-    @Autowire
+    @Autowired
     private PushMposItemComponent pushMposItemComponent;
 
 

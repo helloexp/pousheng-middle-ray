@@ -260,14 +260,10 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
                     MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue());
-            //受理失败 --> 受理成功 --> 待接单
+            //受理失败 --> 同步Mpos --> 同步中
             addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
-                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation(),
-                    MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue());
-            //受理失败 --> 受理失败 --> 受理失败
-            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
-                    MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation(),
-                    MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue());
+                    MiddleOrderEvent.SYNC_MPOS.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ING.getValue());
             //待接单 --> 接单 --> 待发货
             addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
                     MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation(),

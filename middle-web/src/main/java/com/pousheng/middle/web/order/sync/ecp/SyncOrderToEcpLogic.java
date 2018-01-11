@@ -5,6 +5,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.SyncTaobaoStatus;
@@ -64,8 +65,13 @@ public class SyncOrderToEcpLogic {
      */
     public Response<Boolean> syncOrderToECP(ShopOrder shopOrder,String expressCompayCode,Long shipmentId)
     {
-        //更新状态为同步中
         try {
+            //获取ecpOrderStatus
+            String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+            //如果此时同步电商订单状态不是待同步电商平台或者同步电商失败直接忽略
+            if (!Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())&&!Objects.equals(status, EcpOrderStatus.SYNC_ECP_FAIL.getValue())){
+                return Response.ok(Boolean.TRUE);
+            }
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
@@ -102,7 +108,7 @@ public class SyncOrderToEcpLogic {
             return Response.fail("sync.ecp.failed");
         }
 
-        return Response.ok();
+        return Response.ok(Boolean.TRUE);
     }
 
 
@@ -114,32 +120,22 @@ public class SyncOrderToEcpLogic {
      */
     public Response<Boolean> syncShipmentsToEcp(ShopOrder shopOrder)
     {
-        //更新状态为同步中
-        OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
-        orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
 
         try {
+            //更新状态为同步中
+            OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
+            orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
+
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
                     .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-
-            // /判断该订单下所有发货单的状态
-            List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-            //判断订单是否已经全部发货了
-            int number=0;
-            for (Integer status:orderShipMentStatusList){
-                if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                    number++;
-                }
-            }
-            //必须所有的发货单发货完成之后才能通知电商
-            if (number>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
-                throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
-            }
-
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));
+                //如果发货单的发货状态不是已发货的，跳过
+                if (!Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue())){
+                    continue;
+                }
                 ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                 List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
                 try{

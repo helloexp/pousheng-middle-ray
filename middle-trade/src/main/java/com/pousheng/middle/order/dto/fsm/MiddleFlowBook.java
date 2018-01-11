@@ -59,7 +59,10 @@ public class MiddleFlowBook {
             addTransition(EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
                     MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
                     EcpOrderStatus.SYNC_ECP_ING.getValue());
-
+            //待收货->同步->同步中
+            addTransition(EcpOrderStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue(),
+                    MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_ING.getValue());
             //同步中 -->同步成功 --> 待收货
             addTransition(EcpOrderStatus.SYNC_ECP_ING.getValue(),
                     MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),

@@ -120,4 +120,7 @@ public class OrderExportEntity {
 
     @ExportTitle("绩效店铺码")
     private String performanceShopCode;
+
+    @ExportTitle("第三方或官网订单号")
+    private String outId;
 }

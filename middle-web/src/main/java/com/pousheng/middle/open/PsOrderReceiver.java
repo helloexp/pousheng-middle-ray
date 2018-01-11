@@ -15,6 +15,7 @@ import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
+import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
@@ -232,6 +233,17 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
 
         //初始化店铺订单的extra
+        Map<String,String> tempExtra = Maps.newHashMap();
+        if(Objects.equals(openClientShop.getChannel(), ShopConstants.CHANNEL)){
+//            if(richSkusByShop.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+                tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
+                tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,richSkusByShop.getExtra().get(TradeConstants.ASSIGN_SHOP_ID));
+                tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
+                richSkusByShop.setExtra(tempExtra);
+//            }
+        }else {
+            richSkusByShop.setExtra(null);
+        }
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         //添加绩效店铺编码,通过openClient获取

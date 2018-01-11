@@ -50,6 +50,11 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue());
 
+            // 待发货 --> 同步成功 --> 待收货（mpos发货，不需要在订单级别同步mpos）
+            addTransition(EcpOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
+                    EcpOrderStatus.SYNC_ECP_SUCCESS_WAIT_RECEIVED.getValue());
+
             //待同步电商平台 -->同步 --> 同步中
             addTransition(EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue(),
                     MiddleOrderEvent.SYNC_ECP.toOrderOperation(),
@@ -272,6 +277,10 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
                     MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),
                     MiddleShipmentsStatus.REJECTED.getValue());
+            //待接单 --> 发货 -- >待收货 （针对定时拉取，可能出现的状态脱离情况，在极短的时间内，接单并发货）
+            addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
+                    MiddleOrderEvent.SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.SHIPPED.getValue());
             //待发货 --> 发货 --> 待收货
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),

@@ -10,7 +10,6 @@ import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.shop.constant.ShopConstants;
@@ -88,12 +87,12 @@ public class AdminOrderReader {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
 
-//        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-//        if (middleOrderCriteria.getShopId() == null) {
-//            middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
-//        } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
-//            throw new JsonResponseException("permission.check.query.deny");
-//        }
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (middleOrderCriteria.getShopId() == null) {
+            middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
           middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
         }

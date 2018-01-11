@@ -12,7 +12,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -108,7 +107,7 @@ public class AdminOrderReader {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
             //如果是mpos订单，不允许有其他操作。
-            if(!Objects.equals(shopOrder.getOutFrom(), ShopConstants.CHANNEL)){
+            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
                 String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
                 shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
                         ?flow.availableOperations(shopOrder.getStatus())

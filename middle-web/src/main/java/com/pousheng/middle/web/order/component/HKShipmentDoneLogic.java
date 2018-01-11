@@ -8,8 +8,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -64,6 +67,8 @@ public class HKShipmentDoneLogic {
     private RefundWriteService refundWriteService;
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
 
     public void doneShipment(Shipment shipment) {
         log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
@@ -89,9 +94,14 @@ public class HKShipmentDoneLogic {
                     }
                 }
             }
-            //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
             log.info("wait to notify ecp,shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
-            ecpOrderLogic.shipToEcp(shipment.getId());
+            if(Objects.equals(shopOrder.getOutFrom(), ShopConstants.CHANNEL)){
+                //如果是mpos订单,一旦有发货单发货，就通知mpos
+                syncMposShipmentLogic.syncShippedToMpos(shipment);
+            }else {
+                //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
+                ecpOrderLogic.shipToEcp(shipment.getId());
+            }
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

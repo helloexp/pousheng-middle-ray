@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.shop.constant.ShopConstants;
@@ -23,12 +22,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 /**
  * Created by penghui on 2018/1/10

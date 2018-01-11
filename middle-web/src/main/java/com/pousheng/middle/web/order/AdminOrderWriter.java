@@ -92,7 +92,7 @@ public class AdminOrderWriter {
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
 
         List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus()) && !Objects.equals(MiddleShipmentsStatus.REJECTED.getValue(),it.getStatus())).collect(Collectors.toList());
         //判断该订单下所有发货单的状态
         List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
         //判断订单是否已经全部发货了

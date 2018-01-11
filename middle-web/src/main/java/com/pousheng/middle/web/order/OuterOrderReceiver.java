@@ -9,6 +9,10 @@ import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposApi;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -70,9 +74,11 @@ public class OuterOrderReceiver {
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
-    private ParanaAfterSaleConverter paranaAfterSaleConverter;
+    private SyncMposApi syncMposApi;
     @Autowired
-    private AfterSaleReceiver afterSaleReceiver;
+    private SyncMposShipmentLogic syncMposShipmentLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     @ApiOperation("创建外部订单")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -145,40 +151,15 @@ public class OuterOrderReceiver {
 
     }
 
+    @RequestMapping(value = "/test/ship",method = RequestMethod.GET)
+    public void testShip(@RequestParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        syncMposShipmentLogic.syncShipmentToMpos(shipment);
+    }
 
-
-
-//    @ApiOperation("创建外部售后单")
-//    @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-//    public Response<Boolean> createOuterShopOrder(@RequestBody ParanaAfterSaleOrderInfo afterSaleOrderInfo) {
-//
-//        AfterSale mposAfterSale = afterSaleOrderInfo.getAfterSale();
-//
-//        //判断门店是否存在
-//        val rExist = shopReadService.findById(mposAfterSale.getShopId());
-//        if (!rExist.isSuccess()) {
-//            log.error("find shop by id:{} fail,error:{}",mposAfterSale.getShopId(),rExist.getError());
-//            throw new JsonResponseException(rExist.getError());
-//        }
-//        Shop exist = rExist.getResult();
-//        ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(exist.getExtra());
-//        //获取对应的open shop id
-//        Long openShopId = extraInfo.getOpenShopId();
-//        if(Arguments.isNull(openShopId)){
-//            log.error("create outer order fail,because shop(id:{}) not find open shop record",exist.getId());
-//            return Response.fail("not.find.open.shop");
-//        }
-//        //封装open shop info
-//        OpenClientShop openClientShop = new OpenClientShop();
-//        openClientShop.setChannel(ShopConstants.CHANNEL);
-//        openClientShop.setOpenShopId(openShopId);
-//        openClientShop.setShopName(exist.getName());
-//
-//
-//        OpenClientAfterSale openClientAfterSale = new OpenClientAfterSale();//paranaAfterSaleConverter.from(null,null);改造成ParanaAfterSaleOrderInfo
-//        //处理售后单据
-//        afterSaleReceiver.receiveAfterSale(openClientShop, Lists.newArrayList(openClientAfterSale));
-//
-//        return Response.ok(Boolean.TRUE);
-//    }
+    @RequestMapping(value = "/test/shipped",method = RequestMethod.GET)
+    public void testShipped(@RequestParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        syncMposShipmentLogic.syncShippedToMpos(shipment);
+    }
 }

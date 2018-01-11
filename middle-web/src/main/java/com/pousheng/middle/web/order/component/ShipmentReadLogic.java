@@ -436,7 +436,7 @@ public class ShipmentReadLogic {
         }
         //获取有效的销售发货单
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).
+                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).
                 filter(it->Objects.equals(it.getType(), ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
         int count =0;
         for (Shipment shipment:shipments){
@@ -499,7 +499,7 @@ public class ShipmentReadLogic {
             return false;
         }
         List<Integer> orderShipmentStatus = orderShipments.stream().filter(Objects::nonNull)
-                .filter(orderShipment->!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()))
+                .filter(orderShipment->!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .map(OrderShipment::getStatus).collect(Collectors.toList());
         List<Integer> canRevokeStatus = Lists.newArrayList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue()
                 ,MiddleShipmentsStatus.ACCEPTED.getValue(), MiddleShipmentsStatus.WAIT_SHIP.getValue(),

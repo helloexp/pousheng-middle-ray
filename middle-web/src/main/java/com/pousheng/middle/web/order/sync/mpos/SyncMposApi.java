@@ -1,7 +1,9 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
 import com.github.kevinsawicki.http.HttpRequest;
+import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -15,22 +17,17 @@ import java.util.Map;
 @Slf4j
 public class SyncMposApi {
 
-    //@Value("mpos.gateway")
-    private String mposGateway = "http://api-test-mpos.pousheng.com";
-
-    //private String mposGateway = "http://30.40.86.253:8089";
+    @Autowired
+    private ParanaClient paranaClient;
 
     /**
      * 同步发货单到mpos
      * @param param 参数
      * @return
      */
-    public String syncShipmentToMpos(Map<String,Serializable> param){
+    public String syncShipmentToMpos(Map<String,Object> param){
         log.info("sync shipments to mpos,param:{}",param);
-        String gateway = mposGateway + "/api/order/sync/shipment";
-        String responseBody = HttpRequest.post(gateway,param,true)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
+        String responseBody = paranaClient.post("mpos.order.ship.api",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }
@@ -40,12 +37,9 @@ public class SyncMposApi {
      * @param param 参数
      * @return
      */
-    public String syncShipmentShippedToMpos(Map<String,Serializable> param){
+    public String syncShipmentShippedToMpos(Map<String,Object> param){
         log.info("sync shipment shipped to mpos,param:{}",param);
-        String gateWay = mposGateway + "/api/order/sync/shipment/express";
-        String responseBody = HttpRequest.put(gateWay,param,true)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
+        String responseBody = paranaClient.post("mpos.order.ship.express",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }
@@ -55,12 +49,9 @@ public class SyncMposApi {
      * @param param 参数
      * @return
      */
-    public String syncAfterSaleToMpos(Map<String,Serializable> param){
+    public String syncNotDispatcherSkuToMpos(Map<String,Object> param){
         log.info("sync shipments to mpos,param:{}",param);
-        String gateway = mposGateway + "/api/order/sync";
-        String responseBody = HttpRequest.post(gateway,param,true)
-                .connectTimeout(10000).readTimeout(10000)
-                .body();
+        String responseBody = paranaClient.post("",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

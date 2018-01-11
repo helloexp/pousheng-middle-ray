@@ -29,6 +29,9 @@ public enum MiddleShipmentsStatus {
     CONFIRMED_FAIL(-6), //恒康确认收货失败
     REJECTED(-7); //mpos拒单
 
+    //同步mpos失败
+
+
 
 
     private final int value;

@@ -151,15 +151,4 @@ public class OuterOrderReceiver {
 
     }
 
-    @RequestMapping(value = "/test/ship",method = RequestMethod.GET)
-    public void testShip(@RequestParam Long shipmentId){
-        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        syncMposShipmentLogic.syncShipmentToMpos(shipment);
-    }
-
-    @RequestMapping(value = "/test/shipped",method = RequestMethod.GET)
-    public void testShipped(@RequestParam Long shipmentId){
-        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        syncMposShipmentLogic.syncShippedToMpos(shipment);
-    }
 }

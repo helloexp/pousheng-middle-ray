@@ -104,7 +104,7 @@ public class OrderOpenApi {
                 Shipment shipment = null;
                 try{
                     shipment  = shipmentReadLogic.findShipmentById(shipmentId);
-                }catch (ServiceException e){
+                }catch (Exception e){
                     log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
                     continue;
                 }
@@ -180,7 +180,7 @@ public class OrderOpenApi {
             Shipment shipment = null;
             try{
                 shipment  = shipmentReadLogic.findShipmentById(shipmentId);
-            }catch (ServiceException e){
+            }catch (Exception e){
                 log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
                 return;
             }
@@ -372,7 +372,7 @@ public class OrderOpenApi {
                 try{
                     orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
 
-                }catch (ServiceException e){
+                }catch (Exception e){
                     log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }
@@ -398,7 +398,7 @@ public class OrderOpenApi {
                 Refund refund = null;
                 try{
                     refund = refundReadLogic.findRefundById(orderId);
-                }catch (ServiceException e){
+                }catch (Exception e){
                     log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }

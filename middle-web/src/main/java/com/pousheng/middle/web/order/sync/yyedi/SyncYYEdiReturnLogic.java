@@ -87,7 +87,7 @@ public class SyncYYEdiReturnLogic {
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
         try {
-           /* Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -96,21 +96,36 @@ public class SyncYYEdiReturnLogic {
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
             refund.setStatus(targetStatus);
-*/
+
             //要根据不同步的售后单类型来决定同步成功或失败的状态
             YYEdiReturnInfo returnInfo =   this.makeSyncYYEdiRefund(refund);
             String response = sycYYEdiRefundOrderApi.doSyncRefundOrder(Lists.newArrayList(returnInfo));
             YYEdiResponse yyEdiResponse =JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
             if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
-
+                //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
+                OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
+                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+                if (!updateStatusRes.isSuccess()) {
+                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
+                    return Response.fail(updateSyncStatusRes.getError());
+                }
+                Refund update = new Refund();
+                update.setId(refund.getId());
+              /*  SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
+                Map<String,String> extraMap = refund.getExtra();
+                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
+                update.setExtra(extraMap);
+                return refundWriteLogic.update(update);*/
             }else{
-
+                //更新同步状态
+                updateRefundSyncFial(refund);
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (Exception e) {
-            /*log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
             //更新同步状态
             updateRefundSyncFial(refund);
-            return Response.fail("sync.hk.refund.fail");*/
+            return Response.fail("sync.hk.refund.fail");
         }
 
         return Response.ok(Boolean.TRUE);

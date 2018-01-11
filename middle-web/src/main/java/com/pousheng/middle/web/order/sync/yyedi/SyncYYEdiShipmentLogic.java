@@ -139,7 +139,7 @@ public class SyncYYEdiShipmentLogic {
      */
     public Response<Boolean> syncShipmentCancelToYYEdi(Shipment shipment) {
         try {
-            /*//更新状态为同步中
+            //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
             Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
             if (!updateStatusRes.isSuccess()) {
@@ -158,27 +158,27 @@ public class SyncYYEdiShipmentLogic {
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
             YYEdiCancelResponse yyEdiCancelShipmentResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiCancelResponse.class);
             if (Objects.equals(yyEdiCancelShipmentResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
-              /*  OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
+                OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     return Response.fail(updateStatusRes.getError());
-                }*/
+                }
             } else {
-            /*    //更新状态取消失败
+               //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("订单派发中心返回信息:"+yyEdiCancelShipmentResponse.getDescription());*/
+                return Response.fail("订单派发中心返回信息:"+yyEdiCancelShipmentResponse.getDescription());
             }
         } catch (ServiceException e1) {
-        /*    log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
-            return Response.fail(e1.getMessage());*/
+            return Response.fail(e1.getMessage());
         } catch (Exception e) {
-            /*log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
-            return Response.fail("sync.hk.cancel.shipment.failed");*/
+            return Response.fail("sync.yyedi.cancel.shipment.failed");
         }
         return Response.ok(Boolean.TRUE);
     }

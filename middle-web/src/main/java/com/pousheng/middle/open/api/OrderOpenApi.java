@@ -158,7 +158,7 @@ public class OrderOpenApi {
         try {
 
             DateTime dt = DateTime.parse(shipmentDate, DFT);
-           Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             //判断状态及获取接下来的状态
             Flow flow = flowPicker.pickShipments();
             OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();

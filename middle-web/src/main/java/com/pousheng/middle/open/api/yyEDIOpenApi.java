@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -29,7 +30,7 @@ public class yyEDIOpenApi {
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
     public void receiveYYEDIShipmentResult(List<YyEdiShipInfo> shipInfo){
        try{
-
+        log.info("YYEDI.SHIPMENT.INFO=======>{}",shipInfo);
        }catch (JsonResponseException | ServiceException e) {
         log.error("hk shipment handle result to pousheng fail,error:{}", e.getMessage());
         throw new OPServerException(200,e.getMessage());
@@ -39,14 +40,21 @@ public class yyEDIOpenApi {
        }
     }
 
-    @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
-            "receivedDate","itemCode","quantity"
-    }, httpMethods = RequestMethod.POST)
+    /**
+     * yyEDi回传售后单信息
+     * @param refundOrderId
+     * @param yyEDIRefundOrderId
+     * @param receivedDate
+     * @param itemInfo
+     */
+    @OpenMethod(key = "yyEDI.refund.confirm.received.api", paramNames = {"refundOrderId", "yyEDIRefundOrderId", "itemInfo",
+            "receivedDate"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(Long refundOrderId,
-                                   @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
-                                   @NotEmpty(message = "item.info.empty") String itemInfo,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate
+                                   @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
+                                   @NotEmpty(message = "received.date.empty") String receivedDate,
+                                   List<YYEdiRefundConfirmItem> itemInfo
     ) {
-
+        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+                refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
     }
 }

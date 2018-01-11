@@ -95,13 +95,8 @@ public class HKShipmentDoneLogic {
                 }
             }
             log.info("wait to notify ecp,shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
-            if(Objects.equals(shopOrder.getOutFrom(), ShopConstants.CHANNEL)){
-                //如果是mpos订单,一旦有发货单发货，就通知mpos
-                syncMposShipmentLogic.syncShippedToMpos(shipment);
-            }else {
                 //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
                 ecpOrderLogic.shipToEcp(shipment.getId());
-            }
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

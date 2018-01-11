@@ -26,4 +26,6 @@ public class SycHkRefund implements Serializable{
     private String logisticsCompany;
     private String logisticsCode;
     private String memo;
+    private String onlineType;
+    private String onlineOrderNo;
 }

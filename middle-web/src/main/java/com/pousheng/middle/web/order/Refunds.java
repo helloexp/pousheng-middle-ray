@@ -9,7 +9,6 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
-import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
@@ -84,12 +83,12 @@ public class Refunds {
         }
         criteria.setExcludeRefundType(MiddleRefundType.ON_SALES_REFUND.value());
 
-//        List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
-//        if (criteria.getShopId() == null) {
-//            criteria.setShopIds(currentUserCanOperateShopIds);
-//        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
-//            throw new JsonResponseException("permission.check.query.deny");
-//        }
+        List<Long> currentUserCanOperateShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (criteria.getShopId() == null) {
+            criteria.setShopIds(currentUserCanOperateShopIds);
+        } else if (!currentUserCanOperateShopIds.contains(criteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
 
 
         Response<Paging<RefundPaging>> pagingRes = refundReadLogic.refundPaging(criteria);
@@ -226,10 +225,6 @@ public class Refunds {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @OperationLogType("创建售后单")
     public Long createRefund(@RequestBody @PermissionCheckParam("orderId") SubmitRefundInfo submitRefundInfo) {
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
-        if(Objects.equals(shopOrder.getOutFrom(), ShopConstants.CHANNEL)){
-            throw new JsonResponseException("mpos.order.create.refund.fail");
-        }
         if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             return refundWriteLogic.createRefundForLost(submitRefundInfo);
         }else{

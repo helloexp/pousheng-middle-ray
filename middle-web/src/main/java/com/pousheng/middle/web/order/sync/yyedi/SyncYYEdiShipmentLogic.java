@@ -90,7 +90,7 @@ public class SyncYYEdiShipmentLogic {
      */
     public Response<Boolean> syncShipmentToYYEdi(Shipment shipment) {
         try {
-            /*//更新状态为同步中
+            //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_YYEDI.toOrderOperation();
             Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
             if (!updateStatusRes.isSuccess()) {
@@ -100,31 +100,31 @@ public class SyncYYEdiShipmentLogic {
 
             Flow flow = flowPicker.pickShipments();
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
-            shipment.setStatus(targetStatus);*/
+            shipment.setStatus(targetStatus);
             List<YYEdiShipmentInfo> list = this.makeShipmentOrderDtoList(shipment,shipment.getType());
             YYEdiResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycYYEdiShipmentOrderApi.doSyncShipmentOrder(list),YYEdiResponse.class);
             if (Objects.equals(response.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
-                /*//整体成功
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
+                //整体成功
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
-                }*/
+                }
             }else{
-             /*   //整体失败
-                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
+               //整体失败
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
-                }*/
+                }
             }
         } catch (Exception e) {
-            /*log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
-            return Response.fail("sync.hk.shipment.fail");*/
+            return Response.fail("sync.hk.shipment.fail");
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -412,7 +412,7 @@ public class SyncYYEdiShipmentLogic {
      */
     private void updateShipmetSyncFail(Shipment shipment){
         //更新发货单的状态
-        OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
+        OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
         Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             //这里失败只打印日志即可

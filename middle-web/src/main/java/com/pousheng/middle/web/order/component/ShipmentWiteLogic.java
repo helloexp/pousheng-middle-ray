@@ -155,7 +155,7 @@ public class ShipmentWiteLogic {
             }
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
+                Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentCancelToYYEdi(shipment);
                 if(!syncRes.isSuccess()){
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipment.getId(),syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());

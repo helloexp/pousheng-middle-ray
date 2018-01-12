@@ -8,6 +8,7 @@ import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -29,7 +30,7 @@ import java.util.List;
  */
 @RestController
 @Slf4j
-@RequestMapping("/api/task")
+@RequestMapping("/api/middle/task")
 public class FireCall {
 
     private final SpuImporter spuImporter;
@@ -125,10 +126,13 @@ public class FireCall {
     }
 
     @RequestMapping(value="/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<HkSkuStockInfo> queryStock(@RequestParam String stockCodes,
+    public List<HkSkuStockInfo> queryStock(@RequestParam(required = false) String stockCodes,
                                            @RequestParam String skuCodes,
-                                           @RequestParam Integer stockType){
-        List<String> stockCodesList = Splitters.COMMA.splitToList(stockCodes);
+                                           @RequestParam(required = false,defaultValue = "0") Integer stockType){
+        List<String> stockCodesList = null;
+        if(!Strings.isNullOrEmpty(stockCodes)){
+            stockCodesList = Splitters.COMMA.splitToList(stockCodes);
+        }
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
         return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
     }

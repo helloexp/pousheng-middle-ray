@@ -57,8 +57,10 @@ public class QueryHkWarhouseOrShopStockApi {
      */
     public List<HkSkuStockInfo> doQueryStockInfo(List<String> stockCodes, List<String> skuCodes, Integer stockType){
         Map<String,String> map= Maps.newHashMap();
-        map.put("stock_ids",Joiners.COMMA.join(stockCodes));
-        map.put("material_ids",Joiners.COMMA.join(skuCodes));
+        if(!CollectionUtils.isEmpty(stockCodes)){
+            map.put("stock_codes",Joiners.COMMA.join(stockCodes));
+        }
+        map.put("barcodes",Joiners.COMMA.join(skuCodes));
         map.put("stock_type",stockType.toString());
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);

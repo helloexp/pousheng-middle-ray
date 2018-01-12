@@ -20,6 +20,7 @@ import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
 import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.web.item.batchhandle.ExcelUtil;
+import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.utils.export.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -32,23 +33,22 @@ import io.terminus.parana.spu.model.SpuAttribute;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.poi.openxml4j.exceptions.OpenXML4JException;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.xml.sax.SAXException;
 import redis.clients.jedis.Jedis;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
-import javax.xml.parsers.ParserConfigurationException;
 import java.io.File;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 监听异步处理mpos相关事件
@@ -79,6 +79,9 @@ public class BatchAsyncHandleMposListener {
 
     @Autowired
     private AzureOSSBlobClient azureOssBlobClient;
+
+    @Autowired
+    private PushMposItemComponent pushMposItemComponent;
 
     private static final Integer BATCH_SIZE = 100;
 
@@ -182,6 +185,13 @@ public class BatchAsyncHandleMposListener {
             helper.appendToExcel(ar);
         }
         postUpdateSearchEvent(id);
+
+        //同步电商
+        if(Objects.equals(PsItemConstants.MPOS_ITEM,operateType)){
+            pushMposItemComponent.push(exist);
+        }else{
+            pushMposItemComponent.del(Lists.newArrayList(exist));
+        }
     }
 
     /**
@@ -358,13 +368,20 @@ public class BatchAsyncHandleMposListener {
         SkuTemplate exist = rExist.getResult();
         Map<String,String> extra = setMopsDiscount(exist,discount);
         SkuTemplate toUpdate = new SkuTemplate();
+        Integer originPrice = 0;
+        if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+            originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+        }
         toUpdate.setId(exist.getId());
         toUpdate.setExtra(extra);
+        toUpdate.setPrice(calculatePrice(discount,originPrice));
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
             throw new JsonResponseException(PsItemConstants.ERROR_UPDATE_FAIL);
         }
+        //同步电商
+        pushMposItemComponent.updatePrice(Lists.newArrayList(exist),toUpdate.getPrice());
     }
 
     /**
@@ -380,6 +397,13 @@ public class BatchAsyncHandleMposListener {
         }
         extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
         return extra;
+    }
+
+    private static Integer calculatePrice(Integer discount, Integer originPrice){
+        BigDecimal ratio = new BigDecimal("100");  // 百分比的倍率
+        BigDecimal discountDecimal = new BigDecimal(discount);
+        BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
+        return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
     }
 
     /**

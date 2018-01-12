@@ -82,7 +82,7 @@ public class yyEDIOpenApi {
         for (YyEdiShipInfo yyEdiShipInfo:results){
 
             try{
-                DateTime dt = DateTime.parse(yyEdiShipInfo.getShipmentDate(), DFT);
+                DateTime dt = new DateTime();
                 Long shipmentId = yyEdiShipInfo.getShipmentId();
                 Shipment shipment  = shipmentReadLogic.findShipmentById(shipmentId);
                 //判断状态及获取接下来的状态

@@ -1,8 +1,10 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
@@ -21,6 +23,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -32,7 +35,6 @@ import java.util.concurrent.TimeUnit;
  * 定时拉取Mpos订单跟踪发货单状态
  */
 @Slf4j
-@Component
 public class MposJob {
 
     @Autowired
@@ -56,14 +58,15 @@ public class MposJob {
     private Integer orderFetchSize;
 
 
-    public MposJob(@Value("${order.queue.size: 200000}") int queueSizeOfOrder){
+    @Autowired
+    public MposJob(@Value("${order.queue.size: 2000}") int queueSizeOfOrder){
         this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
-                new ThreadFactoryBuilder().setNameFormat("order-fetcher-%d").build(),
+                new ThreadFactoryBuilder().setNameFormat("mpos-order-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
     }
 
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */500 * * * ?")
     public void syncMposOrder() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -73,7 +76,7 @@ public class MposJob {
         DateTime startAt = now.minusMinutes(syncAllOrderDurationInMinute);
         Stopwatch stopwatch = Stopwatch.createStarted();
         log.info("start to sync mpos order...");
-        Response<List<OpenClientShop>> findR =  openShopReadService.search(ShopConstants.CHANNEL,"");
+        Response<List<OpenClientShop>> findR =  openShopReadService.search(MiddleChannel.OFFICIAL.getValue(),"mpos");
         if (!findR.isSuccess()) {
             log.error("fail to find mpos shops when sync order,cause:{}", findR.getError());
             return;
@@ -124,4 +127,11 @@ public class MposJob {
             orderHandleLogic.specialHandleOrder(openClientFullOrders);
         }
     }
+
+    @PreDestroy
+    public void shutdown() {
+        this.executorService.shutdown();
+    }
+
+
 }

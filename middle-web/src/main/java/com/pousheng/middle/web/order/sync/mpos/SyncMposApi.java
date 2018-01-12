@@ -4,6 +4,7 @@ import com.github.kevinsawicki.http.HttpRequest;
 import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.Serializable;
@@ -20,6 +21,9 @@ public class SyncMposApi {
     @Autowired
     private ParanaClient paranaClient;
 
+    @Value("${mpos.open.shop.id:180}")
+    private Long shopId;
+
     /**
      * 同步发货单到mpos
      * @param param 参数
@@ -27,7 +31,7 @@ public class SyncMposApi {
      */
     public String syncShipmentToMpos(Map<String,Object> param){
         log.info("sync shipments to mpos,param:{}",param);
-        String responseBody = paranaClient.post("mpos.order.ship.api",param);
+        String responseBody = paranaClient.post(shopId,"mpos.order.ship.api",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

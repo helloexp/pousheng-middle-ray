@@ -76,6 +76,8 @@ public class SyncRefundLogic {
     private EventBus eventBus;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -268,6 +270,8 @@ public class SyncRefundLogic {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
         SycHkRefund sycHkRefund = new SycHkRefund();
         //中台退换货单号
         sycHkRefund.setRefundNo(String.valueOf(refund.getId()));
@@ -301,7 +305,10 @@ public class SyncRefundLogic {
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
         sycHkRefund.setLogisticsCompany(refundExtra.getShipmentCorpCode());
-
+        //订单来源
+        sycHkRefund.setOnlineType(String.valueOf(syncShipmentLogic.getHkOnlinePay(shopOrder).getValue()));
+        //电商订单号
+        sycHkRefund.setOnlineOrderNo(shopOrder.getOutId());
         sycHkRefund.setMemo(refund.getBuyerNote());
         return sycHkRefund;
     }

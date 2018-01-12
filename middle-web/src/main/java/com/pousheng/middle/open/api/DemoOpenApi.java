@@ -1,5 +1,8 @@
 package com.pousheng.middle.open.api;
 
+import com.google.common.collect.Lists;
+import com.pousheng.middle.open.api.dto.SkuIsMposDto;
+import io.terminus.common.utils.Splitters;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.parana.user.model.User;
@@ -8,6 +11,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
+import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/10
@@ -23,6 +27,24 @@ public class DemoOpenApi {
 
         log.info("HK-HELLER-WORLD-END");
         return "hello world:" + name;
+    }
+
+
+    @OpenMethod(key = "check.sku.is.mpos.api", paramNames = {"barcodes"}, httpMethods = RequestMethod.POST)
+    public List<SkuIsMposDto> helloWord(@NotEmpty(message = "barcodes.empty") String barcodes) {
+        log.info("HK-CHECK-MPOS-START param barcodes is:{} ", barcodes);
+        List<String> barcodeList = Splitters.COMMA.splitToList(barcodes);
+
+        List<SkuIsMposDto> skuIsMposDtos = Lists.newArrayListWithCapacity(barcodeList.size());
+        for (String barcode : barcodeList){
+            SkuIsMposDto skuIsMposDto = new SkuIsMposDto();
+            skuIsMposDto.setBarcode(barcode);
+            skuIsMposDto.setIsMpos(Boolean.TRUE);
+            skuIsMposDtos.add(skuIsMposDto);
+        }
+
+        log.info("HK-CHECK-MPOS-END");
+        return skuIsMposDtos;
     }
 
 

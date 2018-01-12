@@ -12,6 +12,7 @@ import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.cache.ShopCacher;
@@ -59,6 +60,10 @@ public class QueryHkWarhouseOrShopStockApi {
         Map<String,String> map= Maps.newHashMap();
         if(!CollectionUtils.isEmpty(stockCodes)){
             map.put("stock_codes",Joiners.COMMA.join(stockCodes));
+        }
+        if(CollectionUtils.isEmpty(skuCodes)){
+            log.error("sku code info invalid");
+            throw new ServiceException("sku.code.invalid");
         }
         map.put("barcodes",Joiners.COMMA.join(skuCodes));
         map.put("stock_type",stockType.toString());

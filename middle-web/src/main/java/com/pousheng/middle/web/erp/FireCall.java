@@ -149,6 +149,30 @@ public class FireCall {
     }
 
 
+
+    @RequestMapping(value="/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long countStock(@RequestParam(required = false) String stockCodes,
+                                           @RequestParam String skuCodes,
+                                           @RequestParam(required = false,defaultValue = "0") Integer stockType){
+        Long total = 0L;
+        List<String> stockCodesList = null;
+        if(!Strings.isNullOrEmpty(stockCodes)){
+            stockCodesList = Splitters.COMMA.splitToList(stockCodes);
+        }
+        List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                total+=skuAndQuantityInfo.getQuantity();
+            }
+        }
+        return total;
+    }
+
+
+
+
+
 }
 
 

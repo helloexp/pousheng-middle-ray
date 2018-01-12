@@ -155,9 +155,9 @@ public class yyEDIOpenApi {
             "receivedDate"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(Long refundOrderId,
                                    @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
-                                   @NotEmpty(message = "received.date.empty") String receivedDate,
-                                   String itemInfo
-    ) {
+                                   String itemInfo,
+                                   @NotEmpty(message = "received.date.empty") String receivedDate
+                                   ) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
         try {

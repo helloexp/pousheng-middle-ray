@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -74,10 +75,11 @@ public class yyEDIOpenApi {
      * @param shipInfo
      */
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
-    public void receiveYYEDIShipmentResult(List<YyEdiShipInfo> shipInfo){
+    public void receiveYYEDIShipmentResult(String shipInfo){
        try{
         log.info("YYEDI-SHIPMENT-INFO-start param=======>{}",shipInfo);
-        for (YyEdiShipInfo yyEdiShipInfo:shipInfo){
+        List<YyEdiShipInfo> results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YyEdiShipInfo.class));
+        for (YyEdiShipInfo yyEdiShipInfo:results){
 
             try{
                 DateTime dt = DateTime.parse(yyEdiShipInfo.getShipmentDate(), DFT);
@@ -154,11 +156,12 @@ public class yyEDIOpenApi {
     public void syncHkRefundStatus(Long refundOrderId,
                                    @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
                                    @NotEmpty(message = "received.date.empty") String receivedDate,
-                                   List<YYEdiRefundConfirmItem> itemInfo
+                                   String itemInfo
     ) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
         try {
+            List<YYEdiRefundConfirmItem> results = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YYEdiRefundConfirmItem.class));
             if (refundOrderId == null) {
                 return;
             }

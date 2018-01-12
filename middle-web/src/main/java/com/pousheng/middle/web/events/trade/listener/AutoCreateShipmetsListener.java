@@ -61,7 +61,7 @@ public class AutoCreateShipmetsListener {
             }
         }
         // 如果是Mpos订单，进行派单
-        if (ShopConstants.CHANNEL.equals(shopOrder.getOutFrom())) {
+        if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             shipmentWiteLogic.toDispatchOrder(shopOrder);
         }else{
             //如果是京东货到付款，默认展示京东快递

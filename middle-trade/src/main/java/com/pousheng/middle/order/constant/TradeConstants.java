@@ -171,5 +171,11 @@ public class TradeConstants {
     public static final String MPOS_RECEIVE_STAFF = "mposReceiceStaff";
     //mpos拒绝原因
     public static final String MPOS_REJECT_REASON = "mposRejectReason";
+    //快递单号
+    public static final String SHIP_SERIALNO = "shipmentSerialNo";
+    //快递代码
+    public static final String SHIP_CORP_CODE = "shipmentCorpCode";
+    //发货时间
+    public static final String SHIP_DATE = "shipmentDate";
 
 }

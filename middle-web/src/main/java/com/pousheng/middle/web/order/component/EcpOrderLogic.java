@@ -96,6 +96,7 @@ public class EcpOrderLogic {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取第一个返货单生成时冗余的发货单id
         String shipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
+
         Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(shipmentId));
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());

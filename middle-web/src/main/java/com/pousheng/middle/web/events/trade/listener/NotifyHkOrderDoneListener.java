@@ -2,6 +2,8 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
@@ -9,6 +11,7 @@ import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderShipment;
@@ -41,7 +44,8 @@ public class NotifyHkOrderDoneListener {
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @Autowired
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
-
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -56,9 +60,18 @@ public class NotifyHkOrderDoneListener {
                 .filter(orderShipment -> Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.SHIPPED.getValue()))
                 .collect(Collectors.toList());
         for (OrderShipment orderShipment:orderShipmentsFilter){
-            //通知恒康已经发货
             Long shipmentId = orderShipment.getShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            //如果是店发，直接更改发货单状态，不用通知恒康（针对mpos订单）
+            if(Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)){
+                Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation());
+                if(!res.isSuccess()){
+                    log.error("shipment(id:{}) confirm failed,cause:{}",shipment.getId(),res.getError());
+                }
+                continue ;
+            }
+            //通知恒康已经发货
             Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()){
                 log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());

@@ -73,7 +73,7 @@ public class SyncMposShipmentLogic{
             return Response.fail(updateStatusRes.getError());
         }
         shipment = shipmentReadLogic.findShipmentById(shipment.getId());
-        Map<String,Serializable> param = this.assembShipmentParam(shipment);
+        Map<String,Object> param = this.assembShipmentParam(shipment);
         MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
         if(!res.isSuccess()){
             log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
@@ -101,7 +101,7 @@ public class SyncMposShipmentLogic{
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             return Response.fail(updateSyncStatusRes.getError());
         }
-        //如果指定门店，状态未待发货
+        //如果指定门店，状态流向待发货
         if(Objects.equals(shipmentExtra.getIsAppint(),"1")){
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
             OrderOperation syncOrderOperation1 = MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation();
@@ -111,7 +111,7 @@ public class SyncMposShipmentLogic{
                 return Response.fail(updateSyncStatusRes1.getError());
             }
         }
-        //如果门店自提，状态改为待收货
+        //如果门店自提，状态流向待收货
         if(Objects.equals(shipmentExtra.getTakeWay(),"2")){
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
             OrderOperation syncOrderOperation1 = MiddleOrderEvent.SHIP.toOrderOperation();
@@ -128,30 +128,19 @@ public class SyncMposShipmentLogic{
     /**
      * 恒康发货通知mpos
      * @param shipment  发货单
-     * @param shopOrder 订单
      * @return
      */
-    public Response<Boolean> syncShippedToMpos(Shipment shipment,ShopOrder shopOrder){
+    public Response<Boolean> syncShippedToMpos(Shipment shipment){
         try {
-            // 更新本地ECP状态为同步中
-            OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
-            orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
-            Map<String,Serializable> param = this.assembShipShipmentParam(shipment);
+            Map<String,Object> param = this.assembShipShipmentParam(shipment);
             MposResponse resp = mapper.fromJson(syncMposApi.syncShipmentShippedToMpos(param),MposResponse.class);
             if (!resp.isSuccess()) {
-                // 同步失败
-                OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
                 return Response.fail(resp.getError());
             }
-            // 同步成功
-            OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-            orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
         }catch (Exception e) {
-            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());
-            OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-            orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-            return Response.fail("sync.ecp.failed");
+            log.error("sync shipment shipped failed,shipmentId is({}),cause by {}", shipment.getId(), e.getMessage());
+            return Response.fail("sync.shipment.ship.failed");
         }
         return Response.ok(true);
     }
@@ -161,8 +150,8 @@ public class SyncMposShipmentLogic{
      * @param shipment 发货单
      * @return
      */
-    private Map<String,Serializable> assembShipmentParam(Shipment shipment){
-        Map<String,Serializable> param = Maps.newHashMap();
+    private Map<String,Object> assembShipmentParam(Shipment shipment){
+        Map<String,Object> param = Maps.newHashMap();
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -170,7 +159,7 @@ public class SyncMposShipmentLogic{
         param.put("id",shipmentExtra.getWarehouseId());
         param.put("name",shipmentExtra.getWarehouseName());
         param.put("shipmentType",shipmentExtra.getShipmentWay());
-        param.put("outShipmentId",shipment.getId());
+        param.put("outerShipmentId",shipment.getId());
         param.put("outOrderId",shopOrder.getId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         List<String> skuCodes = Lists.transform(shipmentItems, new Function<ShipmentItem, String>() {
@@ -189,8 +178,8 @@ public class SyncMposShipmentLogic{
      * @param shipment   发货单
      * @return
      */
-    private Map<String,Serializable> assembShipShipmentParam(Shipment shipment){
-        Map<String,Serializable> param = Maps.newHashMap();
+    private Map<String,Object> assembShipShipmentParam(Shipment shipment){
+        Map<String,Object> param = Maps.newHashMap();
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         param.put("shipmentId",shipmentExtra.getOutShipmentId());
         param.put("shipmentCorpCode",shipmentExtra.getShipmentCorpCode());

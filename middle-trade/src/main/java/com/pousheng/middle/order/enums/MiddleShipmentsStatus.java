@@ -31,6 +31,7 @@ public enum MiddleShipmentsStatus {
 
 
 
+
     private final int value;
 
     MiddleShipmentsStatus(int value) {

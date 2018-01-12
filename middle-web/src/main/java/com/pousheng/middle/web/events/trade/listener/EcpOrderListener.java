@@ -99,7 +99,7 @@
 //                }
 //            }
 //            if(Objects.equals(shopOrder.getChannel(), ShopConstants.CHANNEL)){
-//                syncMposShipmentLogic.syncShippedToMpos(shipment,shopOrder);
+//                syncMposShipmentLogic.syncShippedToMpos(shipment);
 //            }else{
 //                //同步订单信息到电商平台
 //                this.syncEcpShipmentInfos(shopOrder.getId());

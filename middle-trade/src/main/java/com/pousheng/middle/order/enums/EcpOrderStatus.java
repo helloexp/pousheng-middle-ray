@@ -12,7 +12,7 @@ import com.google.common.base.Objects;
 public enum EcpOrderStatus {
 
     WAIT_SHIP(0),    //待发货
-    SHIPPED_WAIT_SYNC_ECP(1),      //已发货，待同步电商平台
+    SHIPPED_WAIT_SYNC_ECP(1),      //有订单发货
     SYNC_ECP_ING(2),    //同步电商平台中（此状态前端可不用关心，只是为了后端flow通顺）
     SYNC_ECP_SUCCESS_WAIT_RECEIVED(3), //待收货
     CONFIRMED(4),         //确认收货，已完成

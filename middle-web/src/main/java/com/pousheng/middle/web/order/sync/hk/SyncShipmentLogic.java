@@ -318,8 +318,6 @@ public class SyncShipmentLogic {
         tradeOrder.setVendCustCode(shipmentExtra.getVendCustID());
         //订单来源
         tradeOrder.setOnlineType(String.valueOf(this.getHkOnlinePay(shopOrder).getValue()));
-        //电商订单号
-        tradeOrder.setOnlineOrderNo(shopOrder.getOutId());
 
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
@@ -354,6 +352,8 @@ public class SyncShipmentLogic {
             //总价(销售价格*数量)
             item.setTotalPrice(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //赠品(1),非赠品(2)默认填写非赠品
+            //电商订单号
+            item.setOnlineOrderNo(shipmentDetail.getShopOrder().getOutId());
             item.setIsGifts(2);
             items.add(item);
         }

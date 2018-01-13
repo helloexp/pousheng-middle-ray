@@ -21,4 +21,5 @@ public class SycHkRefundItem implements Serializable {
     private String salePrice;
     private String refundAmount;
     private String itemName;
+    private String onlineOrderNo;
 }

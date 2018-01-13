@@ -21,4 +21,5 @@ public class SycHkShipmentItem implements Serializable{
     private String salePrice;
     private String totalPrice;
     private Integer isGifts;
+    private String onlineOrderNo;
 }

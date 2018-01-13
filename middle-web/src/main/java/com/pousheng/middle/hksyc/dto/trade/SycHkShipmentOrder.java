@@ -30,7 +30,6 @@ public class SycHkShipmentOrder implements Serializable {
     private String taxNo;
     private String shopId;
     private String onlineType;
-    private String onlineOrderNo;
     private String performanceShopId;
     private String stockId;
     @JsonProperty(value = "VendCustCode")
@@ -198,11 +197,4 @@ public class SycHkShipmentOrder implements Serializable {
         this.onlineType = onlineType;
     }
 
-    public String getOnlineOrderNo() {
-        return onlineOrderNo;
-    }
-
-    public void setOnlineOrderNo(String onlineOrderNo) {
-        this.onlineOrderNo = onlineOrderNo;
-    }
 }

@@ -1,27 +1,18 @@
 package com.pousheng.middle.hksyc.component;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.github.kevinsawicki.http.HttpRequest;
-import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
-import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.parana.cache.ShopCacher;
-import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
-import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 

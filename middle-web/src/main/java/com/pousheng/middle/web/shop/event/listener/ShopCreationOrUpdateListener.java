@@ -23,6 +23,8 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.parana.item.SyncParanaShopService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopWriteService;
 import lombok.extern.slf4j.Slf4j;
@@ -57,6 +59,10 @@ public class ShopCreationOrUpdateListener {
     private DispatchComponent dispatchComponent;
     @Autowired
     private MposWarehousePusher mposWarehousePusher;
+    @Autowired
+    private ShopCacher shopCacher;
+    @Autowired
+    private SyncParanaShopService syncParanaShopService;
 
     @PostConstruct
     private void register() {
@@ -87,6 +93,15 @@ public class ShopCreationOrUpdateListener {
             log.error("sync hk shop(id:{}) range fail,cause:{}",event.getShopId(),Throwables.getStackTraceAsString(e));
         }
 
+        //同步电商最新的门店地址
+        Shop shop = shopCacher.findShopById(event.getShopId());
+        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),
+                addressGps.getProvince(),addressGps.getCity(),addressGps.getRegion(),addressGps.getDetail());
+        if(!syncParanaAddressRes.isSuccess()){
+            log.error("sync shop(id:{}) address to parana fail,error:{}",shop.getId(),syncParanaAddressRes.getError());
+        }
+
+
     }
 
 
@@ -111,7 +126,16 @@ public class ShopCreationOrUpdateListener {
 
         //4、更新门店地址信息
         updateShopAddress(event.getShopId(),addressGps.getDetail());
-        
+
+        //同步电商最新的门店地址
+        Shop shop = shopCacher.findShopById(event.getShopId());
+        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),
+                addressGps.getProvince(),addressGps.getCity(),addressGps.getRegion(),addressGps.getDetail());
+        if(!syncParanaAddressRes.isSuccess()){
+            log.error("sync shop(id:{}) address to parana fail,error:{}",shop.getId(),syncParanaAddressRes.getError());
+        }
+
+
     }
 
     private void updateShopAddress(Long shopId,String address){

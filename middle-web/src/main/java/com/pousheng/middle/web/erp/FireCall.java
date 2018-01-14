@@ -1,12 +1,21 @@
 package com.pousheng.middle.web.erp;
 
+import com.google.common.collect.Maps;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.item.dto.ItemNameAndStock;
+import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.item.model.Sku;
+import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.assertj.core.util.Strings;
@@ -16,14 +25,13 @@ import org.joda.time.format.DateTimeFormatterBuilder;
 import org.joda.time.format.DateTimeParser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -44,6 +52,9 @@ public class FireCall {
     private final MposWarehousePusher mposWarehousePusher;
 
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+
+    @RpcConsumer
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
 
     private final DateTimeFormatter dft;
@@ -169,6 +180,45 @@ public class FireCall {
         return total;
     }
 
+
+    /**
+     * 根据货号和尺码查询
+     * @param materialId 货号
+     * @param size 尺码
+     * @return 商品信息
+     */
+    @RequestMapping(value="/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size){
+        //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
+        String templateName = "search.mustache";
+        Map<String,String> params = Maps.newHashMap();
+        params.put("spuCode",materialId);
+        params.put("attrs","尺码:"+size);
+        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);
+        if(!response.isSuccess()){
+            log.error("query sku template by materialId:{} and size:{} fail,error:{}",materialId,size,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
+        if(CollectionUtils.isEmpty(searchSkuTemplates)){
+            return new ItemNameAndStock();
+        }
+        SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
+        ItemNameAndStock itemNameAndStock = new ItemNameAndStock();
+        itemNameAndStock.setName(searchSkuTemplate.getName());
+        String skuCode = searchSkuTemplate.getSkuCode();
+        Long total = 0L;
+        List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodesList,0);
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                total+=skuAndQuantityInfo.getQuantity();
+            }
+        }
+        itemNameAndStock.setStockQuantity(total);
+        return itemNameAndStock;
+    }
 
 
 

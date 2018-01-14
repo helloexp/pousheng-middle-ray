@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
+import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
@@ -36,6 +37,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -402,15 +404,25 @@ public class AdminShops {
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
         if (existShopExtraInfo != null) {
             existShopExtraInfo.setExpresssCompanyJson(expresssCompanyJson);
-        }
+            Shop toUpdate = new Shop();
+            toUpdate.setId(shopId);
+            toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
+            Response<Boolean> resp = shopWriteService.update(toUpdate);
+            if (!resp.isSuccess()) {
+                log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
+                throw new JsonResponseException(500, resp.getError());
+            }
 
-        Shop toUpdate = new Shop();
-        toUpdate.setId(shopId);
-        toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
-        Response<Boolean> resp = shopWriteService.update(toUpdate);
-        if (!resp.isSuccess()) {
-            log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
-            throw new JsonResponseException(500, resp.getError());
+
+            //同步电商更新门店物流公司信息
+            if(!CollectionUtils.isEmpty(existShopExtraInfo.getExpresssCompanyList())){
+                ShopExpresssCompany shopExpresssCompany = existShopExtraInfo.getExpresssCompanyList().get(0);
+                Response<Boolean> syncParanaExpressRes = syncParanaShopService.syncShopExpress(exist.getOuterId(),shopExpresssCompany.getCode(),shopExpresssCompany.getName());
+                if(!syncParanaExpressRes.isSuccess()){
+                    log.error("sync parana shop(id:{}) express code:{} name:{} fail,error:{}",shopId,shopExpresssCompany.getName(),shopExpresssCompany.getName());
+                }
+            }
+
         }
     }
 
@@ -490,7 +502,7 @@ public class AdminShops {
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
         //同步电商
-        syncParanaFrozenShop(shopId);
+        syncParanaFrozenShop(exist.getOuterId());
     }
 
     @ApiOperation("解冻门店")
@@ -505,7 +517,7 @@ public class AdminShops {
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
         //同步电商
-        syncParanaUnFrozenShop(shopId);
+        syncParanaUnFrozenShop(exist.getOuterId());
 
     }
 
@@ -523,7 +535,7 @@ public class AdminShops {
         //同步恒康mpos门店范围
         mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
         //同步电商
-        syncParanaCloseShop(shopId);
+        syncParanaCloseShop(exist.getOuterId());
 
     }
 
@@ -570,26 +582,26 @@ public class AdminShops {
     }
 
 
-    private void syncParanaFrozenShop(Long shopId){
-        Response<Boolean> response =  syncParanaShopService.frozenShop(shopId);
+    private void syncParanaFrozenShop(String outerId){
+        Response<Boolean> response =  syncParanaShopService.frozenShop(outerId);
         if(!response.isSuccess()){
-            log.error("sync parana frozen shop fail,error:{}",shopId);
+            log.error("sync parana frozen shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());
         }
     }
 
-    private void syncParanaUnFrozenShop(Long shopId){
-        Response<Boolean> response =  syncParanaShopService.unfrozenShop(shopId);
+    private void syncParanaUnFrozenShop(String outerId){
+        Response<Boolean> response =  syncParanaShopService.unfrozenShop(outerId);
         if(!response.isSuccess()){
-            log.error("sync parana unfrozen shop fail,error:{}",shopId);
+            log.error("sync parana unfrozen shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());
         }
     }
 
-    private void syncParanaCloseShop(Long shopId){
-        Response<Boolean> response =  syncParanaShopService.closeShop(shopId);
+    private void syncParanaCloseShop(String outerId){
+        Response<Boolean> response =  syncParanaShopService.closeShop(outerId);
         if(!response.isSuccess()){
-            log.error("sync parana close shop fail,error:{}",shopId);
+            log.error("sync parana close shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());
         }
     }

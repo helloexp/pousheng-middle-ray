@@ -152,7 +152,7 @@ index.queue.size: 500000
 open.client.sync.item.mapping.job.enable: true
 
 # mpos系统调用的api白名单
-mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*,/api/middle/task/count/stock/for/mpos'
 
 # mpos总单OpenShopId
 mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}

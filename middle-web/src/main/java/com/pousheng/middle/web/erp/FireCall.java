@@ -14,7 +14,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
-import io.terminus.parana.item.model.Sku;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -27,7 +26,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
 import java.util.List;
@@ -192,6 +194,7 @@ public class FireCall {
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
         Map<String,String> params = Maps.newHashMap();
+        params.put("type","1");
         params.put("spuCode",materialId);
         params.put("attrs","尺码:"+size);
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);

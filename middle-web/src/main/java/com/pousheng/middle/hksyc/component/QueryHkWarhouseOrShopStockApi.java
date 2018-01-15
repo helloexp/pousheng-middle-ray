@@ -67,6 +67,9 @@ public class QueryHkWarhouseOrShopStockApi {
         map.put("stock_type",stockType.toString());
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
+
+        List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
+
         for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList){
             if(Objects.equal(2,stockType)){
                 //todo 待roger返回 company_id
@@ -79,7 +82,7 @@ public class QueryHkWarhouseOrShopStockApi {
                 }
                 if(CollectionUtils.isEmpty(warehouseRes.getResult())){
                     log.error("not find warehouse by fuzzy code:{} fail",skuStockInfo.getStock_code());
-                    throw new ServiceException("warehouse.not.exist");
+                    continue;
                 }
                 Warehouse warehouse = warehouseRes.getResult().get(0);
                 skuStockInfo.setBusinessId(warehouse.getId());
@@ -89,9 +92,10 @@ public class QueryHkWarhouseOrShopStockApi {
                 skuStockInfo.setBusinessId(shop.getId());
                 skuStockInfo.setBusinessName(shop.getName());
             }
+            middleStockList.add(skuStockInfo);
         }
 
-        return hkSkuStockInfoList;
+        return middleStockList;
     }
 
 

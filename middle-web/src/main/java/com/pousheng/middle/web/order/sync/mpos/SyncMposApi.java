@@ -1,13 +1,11 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
-import com.github.kevinsawicki.http.HttpRequest;
 import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.Serializable;
 import java.util.Map;
 
 /**
@@ -54,8 +52,20 @@ public class SyncMposApi {
      * @return
      */
     public String syncNotDispatcherSkuToMpos(Map<String,Object> param){
-        log.info("sync shipments to mpos,param:{}",param);
-        String responseBody = paranaClient.post("",param);
+        log.info("sync not dispatcher sku to mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"mpos.reject.afterSales",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    /**
+     * 拉取mpos发货单状态
+     * @param param
+     * @return
+     */
+    public String syncShipmentStatus(Map<String,Object> param){
+        log.info("sync shipments status from mpos,param:{}",param);
+        String responseBody = paranaClient.get(shopId,"mpos.query.ship.status",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

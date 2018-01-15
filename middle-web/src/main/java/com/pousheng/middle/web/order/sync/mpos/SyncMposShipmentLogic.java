@@ -4,7 +4,9 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.mpos.dto.MposPaginationResponse;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
+import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
@@ -14,6 +16,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -21,11 +24,14 @@ import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -58,6 +64,8 @@ public class SyncMposShipmentLogic{
     private EventBus eventBus;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+    private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
     /**
      * 同步发货单至mpos
@@ -143,6 +151,31 @@ public class SyncMposShipmentLogic{
             return Response.fail("sync.shipment.ship.failed");
         }
         return Response.ok(true);
+    }
+
+    /**
+     * 拉取mpos发货单状态更新
+     * @param pageNo
+     * @param pageSize
+     * @return
+     */
+    public Paging<MposShipmentExtra> syncMposShimentStatus(Integer pageNo, Integer pageSize, Date startAt, Date endAt){
+        try {
+            Map<String,Object> param = Maps.newHashMap();
+            param.put("pageNo",pageNo);
+            param.put("pageSize",pageSize);
+            param.put("startAt",DFT.print(new DateTime(startAt)));
+            param.put("endAt",DFT.print(new DateTime(endAt)));
+            MposPaginationResponse resp = mapper.fromJson(syncMposApi.syncShipmentStatus(param),MposPaginationResponse.class);
+            if (!resp.getSuccess()) {
+                log.error("sync mpos shipment status fail,cause:{}",resp.getError());
+                return null;
+            }
+            return resp.getResult();
+        }catch (Exception e) {
+            log.error("sync mpos shipment status fail,cause by {}", e.getMessage());
+            return null;
+        }
     }
 
     /**

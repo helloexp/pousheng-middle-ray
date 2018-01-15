@@ -66,6 +66,7 @@ public class QueryHkWarhouseOrShopStockApi {
         map.put("barcodes",Joiners.COMMA.join(skuCodes));
         map.put("stock_type",stockType.toString());
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
+        log.info("query hk stock success result:{}",responseBody);
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
 
         List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());

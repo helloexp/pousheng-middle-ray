@@ -7,6 +7,7 @@ import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfoBody;
+import com.pousheng.middle.yyedisyc.dto.trade.YYediShipmentInfoRequest;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -37,7 +38,9 @@ public class SycYYEdiShipmentOrderApi {
 
         YYEdiShipmentInfoBody body = new YYEdiShipmentInfoBody();
         body.setRequestData(requestData);
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
+        YYediShipmentInfoRequest request = new YYediShipmentInfoRequest();
+        request.setBody(body);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
         log.info("yyedi.paramJson:{}",paramJson);
         String gateway =hkGateway + "/commonerp/erp/sal/addorder";
         String responseBody = HttpRequest.post(gateway)

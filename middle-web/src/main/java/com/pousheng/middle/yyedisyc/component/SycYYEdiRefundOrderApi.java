@@ -7,6 +7,7 @@ import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfoBody;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEditReturnInfoRequest;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -38,8 +39,9 @@ public class SycYYEdiRefundOrderApi {
 
         YYEdiReturnInfoBody body = new YYEdiReturnInfoBody();
         body.setRequestData(requestData);
-
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
+        YYEditReturnInfoRequest request = new YYEditReturnInfoRequest();
+        request.setBody(body);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
         log.info("paramJson:{}",paramJson);
         String gateway =hkGateway+"/commonerp/erp/sal/addrefund";
         String responseBody = HttpRequest.post(gateway)

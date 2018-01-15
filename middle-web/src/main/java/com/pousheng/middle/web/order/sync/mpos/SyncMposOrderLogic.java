@@ -66,7 +66,7 @@ public class SyncMposOrderLogic {
                 return skuCodeAndQuantity.getSkuCode();
             }
         });
-        param.put("outerSkuCodes",mapper.toJson(skuCodes));
+        param.put("skuCodeList",mapper.toJson(skuCodes));
         return param;
     }
 

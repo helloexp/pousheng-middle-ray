@@ -124,11 +124,11 @@ public class TradeConstants {
      * mpos 状态
      */
     //发货单接单,待发货
-    public static final String MPOS_SHIPMENT_WAIT_SHIP = "wait_ship";
+    public static final String MPOS_SHIPMENT_WAIT_SHIP = "1";
     //发货单拒单
-    public static final String MPOS_SHIPMENT_REJECT = "reject";
+    public static final String MPOS_SHIPMENT_REJECT = "-1";
     //发货单发货,待收货
-    public static final String MPOS_SHIPMENT_SHIPPED = "shipped";
+    public static final String MPOS_SHIPMENT_SHIPPED = "2";
     //店铺发货
     public static final String MPOS_SHOP_DELIVER = "1";
     //仓库发货

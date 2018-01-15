@@ -1,19 +1,13 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
-import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.shop.constant.ShopConstants;
-import io.terminus.common.model.Response;
-import io.terminus.open.client.center.order.service.OrderServiceCenter;
-import io.terminus.open.client.common.Pagination;
-import io.terminus.open.client.common.shop.dto.OpenClientShop;
-import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
-import io.terminus.open.client.order.dto.OpenClientFullOrder;
-import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import io.terminus.common.model.Paging;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -22,41 +16,49 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Created by penghui on 2018/1/10
+ * Created by ph on 2018/1/10
  * 定时拉取Mpos订单跟踪发货单状态
  */
 @Slf4j
+@Component
+@RestController
 public class MposJob {
 
     @Autowired
     private HostLeader hostLeader;
 
     @Autowired
-    private OrderServiceCenter orderServiceCenter;
+    private MposOrderHandleLogic orderHandleLogic;
+
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
+
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
+
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     private final ExecutorService executorService;
 
-    @Autowired
-    private OpenShopReadService openShopReadService;
-
-    @Autowired
-    private MposOrderHandleLogic orderHandleLogic;
-
-    @Value("${open.client.sync.all.order.duration.in.minute:1440}")
+    @Value("${open.client.sync.all.order.duration.in.minute:3000}")
     private Integer syncAllOrderDurationInMinute;
 
-    @Value("${open.client.sync.order.fetch.size:20}")
-    private Integer orderFetchSize;
-
+    @Value("${open.client.sync.order.fetch.size:200}")
+    private Integer shipmentFetchSize;
 
     @Autowired
     public MposJob(@Value("${order.queue.size: 2000}") int queueSizeOfOrder){
@@ -66,8 +68,11 @@ public class MposJob {
                 (r, executor) -> log.error("task {} is rejected", r));
     }
 
-    @Scheduled(cron = "0 */500 * * * ?")
-    public void syncMposOrder() {
+    /**
+     * 每隔5分钟拉取一次mpos发货单
+     */
+    @Scheduled(cron = "0 */5 * * * ?")
+    public void syncMposShipment() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
@@ -75,56 +80,43 @@ public class MposJob {
         DateTime now = DateTime.now();
         DateTime startAt = now.minusMinutes(syncAllOrderDurationInMinute);
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("start to sync mpos order...");
-        Response<List<OpenClientShop>> findR =  openShopReadService.search(MiddleChannel.OFFICIAL.getValue(),"mpos");
-        if (!findR.isSuccess()) {
-            log.error("fail to find mpos shops when sync order,cause:{}", findR.getError());
-            return;
-        }
-        List<OpenClientShop> openClientShops = findR.getResult();
-        if(CollectionUtils.isEmpty(openClientShops)) {
-            return ;
-        }
-        for (OpenClientShop openClientShop: openClientShops) {
-            OpenShop openShop = openShopReadService.findById(openClientShop.getOpenShopId()).getResult();
-            if (!openShop.enable()) continue ;
+        log.info("start to sync mpos shipment...");
             int pageNo = 1;
             while (true) {
-                Response<Pagination<OpenClientFullOrder>> findResp = orderServiceCenter.searchOrder(openShop.getId(), OpenClientOrderStatus.PAID,
-                        startAt.toDate(), now.toDate(), pageNo, orderFetchSize);
-                if (!findResp.isSuccess()) {
-                    log.error("fail to find order for open shop(id={}) with status={},pageNo={},pageSize={},cause:{}",
-                            openShop.getId(), null, pageNo, orderFetchSize, findResp.getError());
-                    break;
-                }
-                Pagination<OpenClientFullOrder> pagination = findResp.getResult();
-                final List<OpenClientFullOrder> fullOrders = pagination.getData();
-                if (CollectionUtils.isEmpty(fullOrders)) {
+                Paging<MposShipmentExtra> pagination = syncMposShipmentLogic.syncMposShimentStatus(pageNo,shipmentFetchSize,startAt.toDate(),now.toDate());
+                final List<MposShipmentExtra> mposShipmentExtras = pagination.getData();
+                if (CollectionUtils.isEmpty(mposShipmentExtras)) {
                     break;
                 }
                 //异步处理
-                executorService.submit(new OrderHandleTask(fullOrders));
-                if (!pagination.isHasNext()) {
+                executorService.submit(new OrderHandleTask(mposShipmentExtras));
+                if (!Objects.equals(mposShipmentExtras.size(),shipmentFetchSize)) {
                     break;
                 }
                 pageNo++;
+                break;
             }
-        }
         stopwatch.stop();
-        log.info("end to sync mpos order,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
+        log.info("end to sync mpos shipment,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
+
+    @RequestMapping(value = "api/mpos/sync/shipment/job",method = RequestMethod.GET)
+    public void test(){
+        this.syncMposShipment();
+    }
+
 
     private class OrderHandleTask implements Runnable{
 
-        private final List<OpenClientFullOrder> openClientFullOrders;
+        private final List<MposShipmentExtra> mposShipmentExtras;
 
-        public OrderHandleTask(List<OpenClientFullOrder> openClientFullOrders){
-            this.openClientFullOrders = openClientFullOrders;
+        public OrderHandleTask(List<MposShipmentExtra> mposShipmentExtras){
+            this.mposShipmentExtras = mposShipmentExtras;
         }
 
         @Override
         public void run() {
-            orderHandleLogic.specialHandleOrder(openClientFullOrders);
+            orderHandleLogic.handleOrder(mposShipmentExtras);
         }
     }
 
@@ -132,6 +124,5 @@ public class MposJob {
     public void shutdown() {
         this.executorService.shutdown();
     }
-
 
 }

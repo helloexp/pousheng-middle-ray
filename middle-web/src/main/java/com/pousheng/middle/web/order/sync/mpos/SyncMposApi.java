@@ -55,7 +55,19 @@ public class SyncMposApi {
      */
     public String syncNotDispatcherSkuToMpos(Map<String,Object> param){
         log.info("sync shipments to mpos,param:{}",param);
-        String responseBody = paranaClient.post("",param);
+        String responseBody = paranaClient.post(shopId,"mpos.reject.afterSales",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    /**
+     * 拉取mpos发货单状态
+     * @param param
+     * @return
+     */
+    public String syncShipmentStatus(Map<String,Object> param){
+        log.info("sync shipments to mpos,param:{}",param);
+        String responseBody = paranaClient.get(shopId,"mpos.query.ship.status",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

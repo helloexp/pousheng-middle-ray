@@ -288,6 +288,12 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     private String ERPModifyTime;
 
     /**
+     * 渠道
+     */
+    @JsonProperty(value = "Channel")
+    private String Channel;
+
+    /**
      * 明细
      */
     private List<YYEdiShipmentItem> items;
@@ -702,5 +708,13 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
 
     public void setItems(List<YYEdiShipmentItem> items) {
         this.items = items;
+    }
+
+    public String getChannel() {
+        return Channel;
+    }
+
+    public void setChannel(String channel) {
+        Channel = channel;
     }
 }

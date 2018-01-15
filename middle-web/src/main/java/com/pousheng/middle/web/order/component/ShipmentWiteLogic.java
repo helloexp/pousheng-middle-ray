@@ -273,7 +273,7 @@ public class ShipmentWiteLogic {
                         continue;
                     }
                 }
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipmentRes.getResult());
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }

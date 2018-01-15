@@ -304,6 +304,8 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPromZRAmount(new BigDecimal(0.00));
         //运费到付
         shipmentInfo.setFreightPay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
+        //渠道
+        shipmentInfo.setChannel(shopOrder.getOutFrom());
         //获取发货单中对应的sku列表
         List<YYEdiShipmentItem> items = this.getSyncYYEdiShipmentItem(shipment, shipmentDetail);
         int quantity = 0;

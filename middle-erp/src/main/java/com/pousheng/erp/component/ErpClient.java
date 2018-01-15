@@ -64,6 +64,7 @@ public class ErpClient {
 
         HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .header("verifycode", accessKey)
+                .trustAllHosts().trustAllCerts()
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {

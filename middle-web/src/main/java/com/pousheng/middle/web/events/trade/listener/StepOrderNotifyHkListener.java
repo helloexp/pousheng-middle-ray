@@ -4,14 +4,11 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.model.OrderLevel;
@@ -22,7 +19,6 @@ import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
@@ -45,7 +41,7 @@ public class StepOrderNotifyHkListener {
     @RpcConsumer
     private OrderWriteService orderWriteService;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
@@ -75,7 +71,7 @@ public class StepOrderNotifyHkListener {
         for (OrderShipment orderShipment : orderShipmentFilter) {
             try {
                 Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
                 log.info("auto create shipment,step xxx");
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());

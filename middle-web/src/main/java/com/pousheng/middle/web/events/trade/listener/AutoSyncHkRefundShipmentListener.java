@@ -4,8 +4,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -25,9 +24,7 @@ public class AutoSyncHkRefundShipmentListener {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
-    @Autowired
-    private SyncYYEdiShipmentLogic syncYYEdiShipmentLogic;
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private EventBus eventBus;
 
@@ -40,7 +37,7 @@ public class AutoSyncHkRefundShipmentListener {
     public void autoSyncHkRefundShipment(RefundShipmentEvent refundShipmentEvent) {
         Long shipmentId = refundShipmentEvent.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
+        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
         if(!syncRes.isSuccess()){
             log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
         }

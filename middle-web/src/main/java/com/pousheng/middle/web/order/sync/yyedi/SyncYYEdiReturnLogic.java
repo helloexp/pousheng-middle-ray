@@ -2,16 +2,11 @@ package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
-import com.pousheng.middle.hksyc.dto.HkResponseHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkRefundResponseBody;
-import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.HkRefundType;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -27,7 +22,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.attribute.dto.SkuAttribute;
-import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
@@ -41,9 +35,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
-import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
@@ -122,10 +114,10 @@ public class SyncYYEdiReturnLogic {
                 return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (Exception e) {
-            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
             //更新同步状态
             updateRefundSyncFial(refund);
-            return Response.fail("sync.hk.refund.fail");
+            return Response.fail("sync.yyedi.refund.fail");
         }
 
         return Response.ok(Boolean.TRUE);

@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -14,7 +15,7 @@ import com.pousheng.middle.order.enums.RefundSource;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -30,8 +31,7 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -63,7 +63,7 @@ public class RefundWriteLogic {
     @Autowired
     private WarehouseReadService warehouseReadService;
     @Autowired
-    private SyncRefundLogic syncRefundLogic;
+    private SyncErpReturnLogic syncErpReturnLogic;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
 
@@ -331,7 +331,7 @@ public class RefundWriteLogic {
         //如果是手工创建的售后单是点击的提交，直接同步恒康
         if(Objects.equals(submitRefundInfo.getOperationType(),2)){
             Refund newRefund = refundReadLogic.findRefundById(refund.getId());
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(newRefund);
+            Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(newRefund);
             if (!syncRes.isSuccess()) {
                 log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
             }

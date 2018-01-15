@@ -6,7 +6,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
@@ -32,7 +32,7 @@ public class NotifyHkOrderDoneListener {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -50,7 +50,7 @@ public class NotifyHkOrderDoneListener {
             //通知恒康已经发货
             Long shipmentId = orderShipment.getShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+            Response<Boolean> response= syncErpShipmentLogic.syncShipmentDone(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()){
                 log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());
             }

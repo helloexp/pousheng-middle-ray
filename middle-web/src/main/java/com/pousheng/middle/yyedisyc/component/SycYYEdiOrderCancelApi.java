@@ -4,6 +4,7 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelBody;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelRequest;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -38,7 +39,9 @@ public class SycYYEdiOrderCancelApi {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         YYEdiCancelBody body = new YYEdiCancelBody();
         body.setRequestData(reqeustData);
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
+        YYEdiCancelRequest request = new YYEdiCancelRequest();
+        request.setBody(body);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
         log.info("paramJson:{}",paramJson);
         String gateway = hkGateway+"/common/yyedi/default/cancelorder";
         String responseBody = HttpRequest.post(gateway)

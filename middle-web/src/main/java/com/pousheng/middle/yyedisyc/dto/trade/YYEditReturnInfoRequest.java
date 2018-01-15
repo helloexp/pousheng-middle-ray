@@ -10,5 +10,6 @@ import lombok.Data;
 @Data
 public class YYEditReturnInfoRequest  implements java.io.Serializable {
 
+   private static final long serialVersionUID = -319550678072480358L;
    private  YYEdiReturnInfoBody body;
 }

@@ -23,6 +23,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * mpos商品库存操作
@@ -115,7 +116,12 @@ public class MposSkuStockLogic {
             @Nullable
             @Override
             public String apply(@Nullable Warehouse input) {
-                return input.getCode();//todo 需要确认什么code
+                Map<String, String> extra = input.getExtra();
+                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+                    log.error("warehouse(id:{}) out code invalid",input.getId());
+                    throw new ServiceException("warehouse.out.code.invalid");
+                }
+                return extra.get("outCode");
             }
         });
 

@@ -92,6 +92,8 @@ public class DispatchComponent {
         return locationRes.getResult();
     }
 
+
+
     public Long getMposSkuWarehouseLockStock(Long warehouseId,String skuCode){
 
         Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);

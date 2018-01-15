@@ -25,6 +25,11 @@ public class HkSkuStockInfo implements Serializable{
     private String businessName;
 
     /**
+     * 公司 id
+     */
+    private String company_id;
+
+    /**
      * 仓库 id
      */
     private String stock_id;

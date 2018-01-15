@@ -120,7 +120,7 @@ public class MposJob {
     /**
      * 自动同步失败任务
      */
-    @Scheduled(cron = "0 */30 * * * ?")
+    @Scheduled(cron = "0 */15 * * * ?")
     public void autoCompensateSyncMposFailTask(){
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -134,7 +134,7 @@ public class MposJob {
         param.put("status",0);
         int pageNo = 1;
         while (true) {
-            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,shipmentFetchSize,param);
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,20,param);
             if(!response.isSuccess()){
                 log.error("fail to find compensation task");
                 return ;

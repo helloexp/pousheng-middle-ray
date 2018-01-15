@@ -4,21 +4,17 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.model.AutoCompensation;
-import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.order.service.AutoCompensationWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.parana.component.ParanaClient;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Nullable;
-import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,7 +53,6 @@ public class SyncMposOrderLogic {
      */
     public Response<Boolean> syncNotDispatcherSkuToMpos(Map<String,Object> param,Long id){
         try{
-            //MposResponse response = mapper.fromJson(syncMposApi.syncNotDispatcherSkuToMpos(param),MposResponse.class);
             Response<Boolean> response = mapper.fromJson(syncMposApi.syncNotDispatcherSkuToMpos(param),Response.class);
             if(!response.isSuccess() || Objects.equals(response.getResult(),false)){
                 log.error("sync not dispatched sku to mpos fail,cause:{}",response.getError());

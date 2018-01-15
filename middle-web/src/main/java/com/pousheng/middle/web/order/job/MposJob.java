@@ -1,13 +1,17 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.order.model.AutoCompensation;
+import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -22,6 +26,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -50,18 +55,20 @@ public class MposJob {
     private SyncMposOrderLogic syncMposOrderLogic;
 
     @Autowired
-    private OrderReadLogic orderReadLogic;
+    private AutoCompensationReadService autoCompensationReadService;
 
     private final ExecutorService executorService;
 
-    @Value("${open.client.sync.all.order.duration.in.minute:3000}")
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+    @Value("${open.client.sync.all.order.duration.in.minute:5}")
     private Integer syncAllOrderDurationInMinute;
 
     @Value("${open.client.sync.order.fetch.size:200}")
     private Integer shipmentFetchSize;
 
     @Autowired
-    public MposJob(@Value("${order.queue.size: 2000}") int queueSizeOfOrder){
+    public MposJob(@Value("${order.queue.size: 20000}") int queueSizeOfOrder){
         this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
                 new ThreadFactoryBuilder().setNameFormat("mpos-order-fetcher-%d").build(),
@@ -105,6 +112,52 @@ public class MposJob {
         this.syncMposShipment();
     }
 
+    @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
+    public void test1(){
+        this.autoCompensateSyncMposFailTask();
+    }
+
+    /**
+     * 自动同步失败任务
+     */
+    @Scheduled(cron = "0 */30 * * * ?")
+    public void autoCompensateSyncMposFailTask(){
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        log.info("start to compensate mpos not dispatcher sku...");
+
+        Map<String,Object> param = Maps.newHashMap();
+        param.put("type",1);
+        param.put("status",0);
+        int pageNo = 1;
+        while (true) {
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,shipmentFetchSize,param);
+            if(!response.isSuccess()){
+                log.error("fail to find compensation task");
+                return ;
+            }
+            Paging<AutoCompensation> pagination = response.getResult();
+            final List<AutoCompensation> autoCompensations = pagination.getData();
+            if (CollectionUtils.isEmpty(autoCompensations)) {
+                break;
+            }
+            //异步处理
+            executorService.submit(new CompensationTask(autoCompensations));
+            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
+                break;
+            }
+            pageNo++;
+            break;
+        }
+
+        stopwatch.stop();
+        log.info("end to compensate not dispatcher sku to mpos,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
+    }
+
+
 
     private class OrderHandleTask implements Runnable{
 
@@ -118,6 +171,27 @@ public class MposJob {
         public void run() {
             orderHandleLogic.handleOrder(mposShipmentExtras);
         }
+    }
+
+    private class CompensationTask implements Runnable{
+        private final List<AutoCompensation> autoCompensations;
+
+        public CompensationTask(List<AutoCompensation> autoCompensations){
+            this.autoCompensations = autoCompensations;
+        }
+
+        @Override
+        public void run() {
+            if(!CollectionUtils.isEmpty(autoCompensations)){
+                autoCompensations.forEach(autoCompensation -> {
+                    Map<String,String> extra = autoCompensation.getExtra();
+                    if(Objects.nonNull(extra.get("param"))){
+                        syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                    }
+                });
+            }
+        }
+
     }
 
     @PreDestroy

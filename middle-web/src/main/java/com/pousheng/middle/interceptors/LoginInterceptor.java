@@ -61,10 +61,8 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         HttpSession session = request.getSession(false);
-        log.info("=========session=============={}",session);
         if (session != null) {
             Object userIdInSession = session.getAttribute(Constants.SESSION_USER_ID);
-            log.info("===========userIdInSession=============={}",userIdInSession);
             if (userIdInSession != null) {
 
                 final Long userId = Long.valueOf(userIdInSession.toString());

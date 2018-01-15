@@ -27,10 +27,10 @@ public class SycYYEdiRefundOrderApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${gateway.hk.host}")
+    @Value("${gateway.yyedi.host}")
     private String hkGateway;
 
-    @Value("${gateway.hk.accessKey}")
+    @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
     public String doSyncRefundOrder(List<YYEdiReturnInfo> requestData){
@@ -43,7 +43,7 @@ public class SycYYEdiRefundOrderApi {
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
         log.info("paramJson:{}",paramJson);
-        String gateway =hkGateway+"/commonerp/erp/sal/addrefund";
+        String gateway =hkGateway+"/common/yyedi/default/pushrefunds";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

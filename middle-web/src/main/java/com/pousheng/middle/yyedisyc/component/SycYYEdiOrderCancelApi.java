@@ -22,10 +22,10 @@ public class SycYYEdiOrderCancelApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${gateway.hk.host}")
+    @Value("${gateway.yyedi.host}")
     private String hkGateway;
 
-    @Value("${gateway.hk.accessKey}")
+    @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
     /**
@@ -40,7 +40,7 @@ public class SycYYEdiOrderCancelApi {
         body.setRequestData(reqeustData);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
         log.info("paramJson:{}",paramJson);
-        String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
+        String gateway = hkGateway+"/common/yyedi/default/cancelorder";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

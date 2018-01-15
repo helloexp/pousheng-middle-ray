@@ -1,5 +1,6 @@
 package com.pousheng.middle.yyedisyc.dto.trade;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -15,18 +16,20 @@ public class YYEdiCancelInfo implements java.io.Serializable{
     @JsonProperty(value = "ReMark")
     private String ReMark;
 
+    @JsonIgnore
     public String getBillNo() {
         return BillNo;
     }
 
+    @JsonIgnore
     public void setBillNo(String billNo) {
         BillNo = billNo;
     }
-
+    @JsonIgnore
     public String getReMark() {
         return ReMark;
     }
-
+    @JsonIgnore
     public void setReMark(String reMark) {
         ReMark = reMark;
     }

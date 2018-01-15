@@ -1,5 +1,6 @@
 package com.pousheng.middle.yyedisyc.dto.trade;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -72,226 +73,227 @@ public class YYEdiReturnInfo implements java.io.Serializable{
 
     private List<YYEdiReturnItem> items;
 
+    @JsonIgnore
     public String getCompanyCode() {
         return CompanyCode;
     }
-
+    @JsonIgnore
     public void setCompanyCode(String companyCode) {
         CompanyCode = companyCode;
     }
-
+    @JsonIgnore
     public String getBillNo() {
         return BillNo;
     }
-
+    @JsonIgnore
     public void setBillNo(String billNo) {
         BillNo = billNo;
     }
-
+    @JsonIgnore
     public String getSourceBillNo() {
         return SourceBillNo;
     }
-
+    @JsonIgnore
     public void setSourceBillNo(String sourceBillNo) {
         SourceBillNo = sourceBillNo;
     }
-
+    @JsonIgnore
     public String getShopBillNo() {
         return ShopBillNo;
     }
-
+    @JsonIgnore
     public void setShopBillNo(String shopBillNo) {
         ShopBillNo = shopBillNo;
     }
-
+    @JsonIgnore
     public String getBillType() {
         return BillType;
     }
-
+    @JsonIgnore
     public void setBillType(String billType) {
         BillType = billType;
     }
-
+    @JsonIgnore
     public String getShopCode() {
         return ShopCode;
     }
-
+    @JsonIgnore
     public void setShopCode(String shopCode) {
         ShopCode = shopCode;
     }
-
+    @JsonIgnore
     public String getShopName() {
         return ShopName;
     }
-
+    @JsonIgnore
     public void setShopName(String shopName) {
         ShopName = shopName;
     }
-
+    @JsonIgnore
     public String getBCMemberName() {
         return BCMemberName;
     }
-
+    @JsonIgnore
     public void setBCMemberName(String BCMemberName) {
         this.BCMemberName = BCMemberName;
     }
-
+    @JsonIgnore
     public String getStockCode() {
         return StockCode;
     }
-
+    @JsonIgnore
     public void setStockCode(String stockCode) {
         StockCode = stockCode;
     }
-
+    @JsonIgnore
     public String getCustomerCode() {
         return CustomerCode;
     }
-
+    @JsonIgnore
     public void setCustomerCode(String customerCode) {
         CustomerCode = customerCode;
     }
-
+    @JsonIgnore
     public String getCustomerName() {
         return CustomerName;
     }
-
+    @JsonIgnore
     public void setCustomerName(String customerName) {
         CustomerName = customerName;
     }
-
+    @JsonIgnore
     public String getExpressBillNo() {
         return ExpressBillNo;
     }
-
+    @JsonIgnore
     public void setExpressBillNo(String expressBillNo) {
         ExpressBillNo = expressBillNo;
     }
-
+    @JsonIgnore
     public int getIsRefundInvoice() {
         return IsRefundInvoice;
     }
-
+    @JsonIgnore
     public void setIsRefundInvoice(int isRefundInvoice) {
         IsRefundInvoice = isRefundInvoice;
     }
-
+    @JsonIgnore
     public int getRefundChangeType() {
         return RefundChangeType;
     }
-
+    @JsonIgnore
     public void setRefundChangeType(int refundChangeType) {
         RefundChangeType = refundChangeType;
     }
-
+    @JsonIgnore
     public BigDecimal getCollectionAmount() {
         return CollectionAmount;
     }
-
+    @JsonIgnore
     public void setCollectionAmount(BigDecimal collectionAmount) {
         CollectionAmount = collectionAmount;
     }
-
+    @JsonIgnore
     public BigDecimal getExpressAmount() {
         return ExpressAmount;
     }
-
+    @JsonIgnore
     public void setExpressAmount(BigDecimal expressAmount) {
         ExpressAmount = expressAmount;
     }
-
+    @JsonIgnore
     public int getFreightPay() {
         return FreightPay;
     }
-
+    @JsonIgnore
     public void setFreightPay(int freightPay) {
         FreightPay = freightPay;
     }
-
+    @JsonIgnore
     public String getSendContact() {
         return SendContact;
     }
-
+    @JsonIgnore
     public void setSendContact(String sendContact) {
         SendContact = sendContact;
     }
-
+    @JsonIgnore
     public String getSendContactTel() {
         return SendContactTel;
     }
-
+    @JsonIgnore
     public void setSendContactTel(String sendContactTel) {
         SendContactTel = sendContactTel;
     }
-
+    @JsonIgnore
     public String getSendProvince() {
         return SendProvince;
     }
-
+    @JsonIgnore
     public void setSendProvince(String sendProvince) {
         SendProvince = sendProvince;
     }
-
+    @JsonIgnore
     public String getSendCity() {
         return SendCity;
     }
-
+    @JsonIgnore
     public void setSendCity(String sendCity) {
         SendCity = sendCity;
     }
-
+    @JsonIgnore
     public String getSendArea() {
         return SendArea;
     }
-
+    @JsonIgnore
     public void setSendArea(String sendArea) {
         SendArea = sendArea;
     }
-
+    @JsonIgnore
     public String getSendAddress() {
         return SendAddress;
     }
-
+    @JsonIgnore
     public void setSendAddress(String sendAddress) {
         SendAddress = sendAddress;
     }
-
+    @JsonIgnore
     public String getZipCode() {
         return ZipCode;
     }
-
+    @JsonIgnore
     public void setZipCode(String zipCode) {
         ZipCode = zipCode;
     }
-
+    @JsonIgnore
     public String getAddress() {
         return Address;
     }
-
+    @JsonIgnore
     public void setAddress(String address) {
         Address = address;
     }
-
+    @JsonIgnore
     public int getExpectQty() {
         return ExpectQty;
     }
-
+    @JsonIgnore
     public void setExpectQty(int expectQty) {
         ExpectQty = expectQty;
     }
-
+    @JsonIgnore
     public int getTdq() {
         return Tdq;
     }
-
+    @JsonIgnore
     public void setTdq(int tdq) {
         Tdq = tdq;
     }
-
+    @JsonIgnore
     public Date getERPModifyTime() {
         return ERPModifyTime;
     }
-
+    @JsonIgnore
     public void setERPModifyTime(Date ERPModifyTime) {
         this.ERPModifyTime = ERPModifyTime;
     }

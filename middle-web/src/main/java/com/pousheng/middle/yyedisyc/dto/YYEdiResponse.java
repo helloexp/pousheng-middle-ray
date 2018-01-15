@@ -1,5 +1,6 @@
 package com.pousheng.middle.yyedisyc.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
@@ -11,7 +12,7 @@ import java.util.List;
  * Created by tony on 2017/7/26.
  * pousheng-middle
  */
-@Data
+
 public class YYEdiResponse implements Serializable{
     private static final long serialVersionUID = -4030774668654863201L;
     //200:整体成功,100:部分成功,-100:整体失败
@@ -19,6 +20,30 @@ public class YYEdiResponse implements Serializable{
 
     private String description;
     private List<YYEdiResponseField> fields;
+
+    public String getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(String errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<YYEdiResponseField> getFields() {
+        return fields;
+    }
+
+    public void setFields(List<YYEdiResponseField> fields) {
+        this.fields = fields;
+    }
 
     /**
      * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -39,5 +64,37 @@ public class YYEdiResponse implements Serializable{
         private String Status;
         @JsonProperty(value = "ErrorMsg")
         private String ErrorMsg;
+
+        public String getCompanyCode() {
+            return CompanyCode;
+        }
+        @JsonIgnore
+        public void setCompanyCode(String companyCode) {
+            CompanyCode = companyCode;
+        }
+        @JsonIgnore
+        public String getBillNo() {
+            return BillNo;
+        }
+        @JsonIgnore
+        public void setBillNo(String billNo) {
+            BillNo = billNo;
+        }
+        @JsonIgnore
+        public String getStatus() {
+            return Status;
+        }
+        @JsonIgnore
+        public void setStatus(String status) {
+            Status = status;
+        }
+        @JsonIgnore
+        public String getErrorMsg() {
+            return ErrorMsg;
+        }
+        @JsonIgnore
+        public void setErrorMsg(String errorMsg) {
+            ErrorMsg = errorMsg;
+        }
     }
 }

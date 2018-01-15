@@ -374,7 +374,10 @@ public class SyncYYEdiShipmentLogic {
             item.setPayAmount(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //吊牌价
             Map<String,Integer> extraPrice = skuTemplate.getExtraPrice();
-            int originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
+            int originPrice = 0;
+            if (extraPrice!=null){
+                originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
+            }
             item.setRetailPrice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             items.add(item);
         }

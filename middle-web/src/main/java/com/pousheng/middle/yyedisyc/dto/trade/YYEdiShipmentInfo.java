@@ -1,5 +1,6 @@
 package com.pousheng.middle.yyedisyc.dto.trade;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -302,404 +303,413 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
         return serialVersionUID;
     }
 
+    @JsonIgnore
     public String getCompanyCode() {
         return CompanyCode;
     }
-
+    @JsonIgnore
     public void setCompanyCode(String companyCode) {
         CompanyCode = companyCode;
     }
-
+    @JsonIgnore
     public String getBillNo() {
         return BillNo;
     }
-
+    @JsonIgnore
     public void setBillNo(String billNo) {
         BillNo = billNo;
     }
-
+    @JsonIgnore
     public String getBillType() {
         return BillType;
     }
-
+    @JsonIgnore
     public void setBillType(String billType) {
         BillType = billType;
     }
-
+    @JsonIgnore
     public String getSourceBillNo() {
         return SourceBillNo;
     }
-
+    @JsonIgnore
     public void setSourceBillNo(String sourceBillNo) {
         SourceBillNo = sourceBillNo;
     }
-
+    @JsonIgnore
     public String getShopBillNo() {
         return ShopBillNo;
     }
-
+    @JsonIgnore
     public void setShopBillNo(String shopBillNo) {
         ShopBillNo = shopBillNo;
     }
-
+    @JsonIgnore
     public String getShopCode() {
         return ShopCode;
     }
-
+    @JsonIgnore
     public void setShopCode(String shopCode) {
         ShopCode = shopCode;
     }
-
+    @JsonIgnore
     public String getShopName() {
         return ShopName;
     }
-
+    @JsonIgnore
     public void setShopName(String shopName) {
         ShopName = shopName;
     }
-
+    @JsonIgnore
     public String getStockCode() {
         return StockCode;
     }
-
+    @JsonIgnore
     public void setStockCode(String stockCode) {
         StockCode = stockCode;
     }
-
+    @JsonIgnore
     public int getRefundChangeType() {
         return RefundChangeType;
     }
-
+    @JsonIgnore
     public void setRefundChangeType(int refundChangeType) {
         RefundChangeType = refundChangeType;
     }
-
+    @JsonIgnore
     public int getExpectQty() {
         return ExpectQty;
     }
-
+    @JsonIgnore
     public void setExpectQty(int expectQty) {
         ExpectQty = expectQty;
     }
-
+    @JsonIgnore
     public Date getPaymentDate() {
         return PaymentDate;
     }
-
+    @JsonIgnore
     public void setPaymentDate(Date paymentDate) {
         PaymentDate = paymentDate;
     }
-
+    @JsonIgnore
     public String getCustomerCode() {
         return CustomerCode;
     }
-
+    @JsonIgnore
     public void setCustomerCode(String customerCode) {
         CustomerCode = customerCode;
     }
-
+    @JsonIgnore
     public String getCustomerName() {
         return CustomerName;
     }
-
+    @JsonIgnore
     public void setCustomerName(String customerName) {
         CustomerName = customerName;
     }
-
+    @JsonIgnore
     public String getFreightCompany() {
         return FreightCompany;
     }
-
+    @JsonIgnore
     public void setFreightCompany(String freightCompany) {
         FreightCompany = freightCompany;
     }
-
+    @JsonIgnore
     public String getExpressType() {
         return ExpressType;
     }
-
+    @JsonIgnore
     public void setExpressType(String expressType) {
         ExpressType = expressType;
     }
-
+    @JsonIgnore
     public int getIsInvoice() {
         return IsInvoice;
     }
-
+    @JsonIgnore
     public void setIsInvoice(int isInvoice) {
         IsInvoice = isInvoice;
     }
-
+    @JsonIgnore
     public int getIsPrintInvoice() {
         return IsPrintInvoice;
     }
-
+    @JsonIgnore
     public void setIsPrintInvoice(int isPrintInvoice) {
         IsPrintInvoice = isPrintInvoice;
     }
-
+    @JsonIgnore
     public int getIstrave() {
         return Istrave;
     }
-
+    @JsonIgnore
     public void setIstrave(int istrave) {
         Istrave = istrave;
     }
-
+    @JsonIgnore
     public String getInvoiceName() {
         return InvoiceName;
     }
-
+    @JsonIgnore
     public void setInvoiceName(String invoiceName) {
         InvoiceName = invoiceName;
     }
-
+    @JsonIgnore
     public int getInvoiceType() {
         return InvoiceType;
     }
-
+    @JsonIgnore
     public void setInvoiceType(int invoiceType) {
         InvoiceType = invoiceType;
     }
-
+    @JsonIgnore
     public String getVATNumber() {
         return VATNumber;
     }
-
+    @JsonIgnore
     public void setVATNumber(String VATNumber) {
         this.VATNumber = VATNumber;
     }
-
+    @JsonIgnore
     public String getInvoiceContent() {
         return InvoiceContent;
     }
-
+    @JsonIgnore
     public void setInvoiceContent(String invoiceContent) {
         InvoiceContent = invoiceContent;
     }
-
+    @JsonIgnore
     public String getInvoiceEmail() {
         return InvoiceEmail;
     }
-
+    @JsonIgnore
     public void setInvoiceEmail(String invoiceEmail) {
         InvoiceEmail = invoiceEmail;
     }
-
+    @JsonIgnore
     public String getConsigneeName() {
         return ConsigneeName;
     }
-
+    @JsonIgnore
     public void setConsigneeName(String consigneeName) {
         ConsigneeName = consigneeName;
     }
-
+    @JsonIgnore
     public String getProvince() {
         return Province;
     }
-
+    @JsonIgnore
     public void setProvince(String province) {
         Province = province;
     }
-
+    @JsonIgnore
     public String getCity() {
         return City;
     }
-
+    @JsonIgnore
     public void setCity(String city) {
         City = city;
     }
-
+    @JsonIgnore
     public String getArea() {
         return Area;
     }
-
+    @JsonIgnore
     public void setArea(String area) {
         Area = area;
     }
-
+    @JsonIgnore
     public String getAddress() {
         return Address;
     }
-
+    @JsonIgnore
     public void setAddress(String address) {
         Address = address;
     }
-
+    @JsonIgnore
     public String getZipCode() {
         return ZipCode;
     }
-
+    @JsonIgnore
     public void setZipCode(String zipCode) {
         ZipCode = zipCode;
     }
-
+    @JsonIgnore
     public String getBuyerTel() {
         return BuyerTel;
     }
-
+    @JsonIgnore
     public void setBuyerTel(String buyerTel) {
         BuyerTel = buyerTel;
     }
-
+    @JsonIgnore
     public String getBuyerMobileTel() {
         return BuyerMobileTel;
     }
-
+    @JsonIgnore
     public void setBuyerMobileTel(String buyerMobileTel) {
         BuyerMobileTel = buyerMobileTel;
     }
-
+    @JsonIgnore
     public String getSendContact() {
         return SendContact;
     }
-
+    @JsonIgnore
     public void setSendContact(String sendContact) {
         SendContact = sendContact;
     }
-
+    @JsonIgnore
     public String getSendContactTel() {
         return SendContactTel;
     }
-
+    @JsonIgnore
     public void setSendContactTel(String sendContactTel) {
         SendContactTel = sendContactTel;
     }
-
+    @JsonIgnore
     public String getSendProvince() {
         return SendProvince;
     }
-
+    @JsonIgnore
     public void setSendProvince(String sendProvince) {
         SendProvince = sendProvince;
     }
-
+    @JsonIgnore
     public String getSendCity() {
         return SendCity;
     }
-
+    @JsonIgnore
     public void setSendCity(String sendCity) {
         SendCity = sendCity;
     }
-
+    @JsonIgnore
     public String getSendArea() {
         return SendArea;
     }
-
+    @JsonIgnore
     public void setSendArea(String sendArea) {
         SendArea = sendArea;
     }
-
+    @JsonIgnore
     public String getSendAddress() {
         return SendAddress;
     }
-
+    @JsonIgnore
     public void setSendAddress(String sendAddress) {
         SendAddress = sendAddress;
     }
-
+    @JsonIgnore
     public String getBCMemberName() {
         return BCMemberName;
     }
-
+    @JsonIgnore
     public void setBCMemberName(String BCMemberName) {
         this.BCMemberName = BCMemberName;
     }
-
+    @JsonIgnore
     public String getBCMemberCard() {
         return BCMemberCard;
     }
-
+    @JsonIgnore
     public void setBCMemberCard(String BCMemberCard) {
         this.BCMemberCard = BCMemberCard;
     }
-
+    @JsonIgnore
     public int getPaymenttype() {
         return Paymenttype;
     }
-
+    @JsonIgnore
     public void setPaymenttype(int paymenttype) {
         Paymenttype = paymenttype;
     }
-
+    @JsonIgnore
     public BigDecimal getCollectionAmount() {
         return CollectionAmount;
     }
-
+    @JsonIgnore
     public void setCollectionAmount(BigDecimal collectionAmount) {
         CollectionAmount = collectionAmount;
     }
-
+    @JsonIgnore
     public String getPayAmount() {
         return PayAmount;
     }
-
+    @JsonIgnore
     public void setPayAmount(String payAmount) {
         PayAmount = payAmount;
     }
-
+    @JsonIgnore
     public BigDecimal getExpressAmount() {
         return ExpressAmount;
     }
-
+    @JsonIgnore
     public void setExpressAmount(BigDecimal expressAmount) {
         ExpressAmount = expressAmount;
     }
-
+    @JsonIgnore
     public BigDecimal getPayAmountBakUp() {
         return PayAmountBakUp;
     }
-
+    @JsonIgnore
     public void setPayAmountBakUp(BigDecimal payAmountBakUp) {
         PayAmountBakUp = payAmountBakUp;
     }
-
+    @JsonIgnore
     public BigDecimal getExchangeIntegral() {
         return ExchangeIntegral;
     }
-
+    @JsonIgnore
     public void setExchangeIntegral(BigDecimal exchangeIntegral) {
         ExchangeIntegral = exchangeIntegral;
     }
-
+    @JsonIgnore
     public BigDecimal getRptAmount() {
         return RptAmount;
     }
-
+    @JsonIgnore
     public void setRptAmount(BigDecimal rptAmount) {
         RptAmount = rptAmount;
     }
-
+    @JsonIgnore
     public BigDecimal getPromZRAmount() {
         return PromZRAmount;
     }
-
+    @JsonIgnore
     public void setPromZRAmount(BigDecimal promZRAmount) {
         PromZRAmount = promZRAmount;
     }
-
+    @JsonIgnore
     public int getFreightPay() {
         return FreightPay;
     }
-
+    @JsonIgnore
     public void setFreightPay(int freightPay) {
         FreightPay = freightPay;
     }
-
+    @JsonIgnore
     public int getTdq() {
         return Tdq;
     }
-
+    @JsonIgnore
     public void setTdq(int tdq) {
         Tdq = tdq;
     }
-
+    @JsonIgnore
     public String getERPModifyTime() {
         return ERPModifyTime;
     }
-
+    @JsonIgnore
     public void setERPModifyTime(String ERPModifyTime) {
         this.ERPModifyTime = ERPModifyTime;
+    }
+    @JsonIgnore
+    public String getChannel() {
+        return Channel;
+    }
+    @JsonIgnore
+    public void setChannel(String channel) {
+        Channel = channel;
     }
 
     public List<YYEdiShipmentItem> getItems() {
@@ -708,13 +718,5 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
 
     public void setItems(List<YYEdiShipmentItem> items) {
         this.items = items;
-    }
-
-    public String getChannel() {
-        return Channel;
-    }
-
-    public void setChannel(String channel) {
-        Channel = channel;
     }
 }

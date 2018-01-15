@@ -1,5 +1,6 @@
 package com.pousheng.middle.yyedisyc.dto.trade;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -76,91 +77,91 @@ public class YYEdiShipmentItem implements java.io.Serializable {
      */
     @JsonProperty(value = "BalaPrice")
     private BigDecimal BalaPrice;
-
+    @JsonIgnore
     public String getRowNo() {
         return RowNo;
     }
-
+    @JsonIgnore
     public void setRowNo(String rowNo) {
         RowNo = rowNo;
     }
-
+    @JsonIgnore
     public String getCompanyCode() {
         return CompanyCode;
     }
-
+    @JsonIgnore
     public void setCompanyCode(String companyCode) {
         CompanyCode = companyCode;
     }
-
+    @JsonIgnore
     public String getBillNo() {
         return BillNo;
     }
-
+    @JsonIgnore
     public void setBillNo(String billNo) {
         BillNo = billNo;
     }
-
+    @JsonIgnore
     public String getSKU() {
         return SKU;
     }
-
+    @JsonIgnore
     public void setSKU(String SKU) {
         this.SKU = SKU;
     }
-
+    @JsonIgnore
     public String getMaterialCode() {
         return MaterialCode;
     }
-
+    @JsonIgnore
     public void setMaterialCode(String materialCode) {
         MaterialCode = materialCode;
     }
-
+    @JsonIgnore
     public String getSizeName() {
         return SizeName;
     }
-
+    @JsonIgnore
     public void setSizeName(String sizeName) {
         SizeName = sizeName;
     }
-
+    @JsonIgnore
     public int getExpectQty() {
         return ExpectQty;
     }
-
+    @JsonIgnore
     public void setExpectQty(int expectQty) {
         ExpectQty = expectQty;
     }
-
+    @JsonIgnore
     public String getShopBillNo() {
         return ShopBillNo;
     }
-
+    @JsonIgnore
     public void setShopBillNo(String shopBillNo) {
         ShopBillNo = shopBillNo;
     }
-
+    @JsonIgnore
     public BigDecimal getPayAmount() {
         return PayAmount;
     }
-
+    @JsonIgnore
     public void setPayAmount(BigDecimal payAmount) {
         PayAmount = payAmount;
     }
-
+    @JsonIgnore
     public BigDecimal getRetailPrice() {
         return RetailPrice;
     }
-
+    @JsonIgnore
     public void setRetailPrice(BigDecimal retailPrice) {
         RetailPrice = retailPrice;
     }
-
+    @JsonIgnore
     public BigDecimal getBalaPrice() {
         return BalaPrice;
     }
-
+    @JsonIgnore
     public void setBalaPrice(BigDecimal balaPrice) {
         BalaPrice = balaPrice;
     }

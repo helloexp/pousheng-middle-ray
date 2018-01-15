@@ -247,7 +247,7 @@ public class SyncYYEdiShipmentLogic {
         //是否货票同行
         shipmentInfo.setIstrave(0);
         //发票抬头
-        shipmentInfo.setInvoiceName("0");
+        shipmentInfo.setInvoiceName("");
         //发票类型
         shipmentInfo.setInvoiceType(1);
         //增值税号

@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
@@ -16,6 +17,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -92,7 +94,12 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             @Nullable
             @Override
             public String apply(@Nullable Warehouse input) {
-                return input.getCode();//todo 需要确认什么code
+                Map<String, String>  extra = input.getExtra();
+                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+                    log.error("warehouse(id:{}) out code invalid",input.getId());
+                    throw new ServiceException("warehouse.out.code.invalid");
+                }
+                return extra.get("outCode");
             }
         });
 

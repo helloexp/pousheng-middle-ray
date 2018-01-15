@@ -76,7 +76,7 @@ public class QueryHkWarhouseOrShopStockApi {
                 //todo 待roger返回 company_id
                // String company_id = "";
                // Warehouse warehouse = warehouseCacher.findByCode(company_id+"-"+skuStockInfo.getStock_id());
-                Response<List<Warehouse>> warehouseRes = warehouseReadService.findByFuzzyCode(skuStockInfo.getStock_code());
+                Response<List<Warehouse>> warehouseRes = warehouseReadService.findByFuzzyCode(skuStockInfo.getStock_id());
                 if(!warehouseRes.isSuccess()){
                     log.error("find warehouse by fuzzy code:{} fail,error:{}",skuStockInfo.getStock_code(),warehouseRes.getError());
                     throw new ServiceException(warehouseRes.getError());

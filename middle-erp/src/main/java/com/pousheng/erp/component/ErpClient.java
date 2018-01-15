@@ -67,7 +67,7 @@ public class ErpClient {
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {
-            log.info("request success!");
+            log.info("request success! result:{}",r.body());
             return handleResponse(path, params, r.body());
         } else {
             int code = r.code();

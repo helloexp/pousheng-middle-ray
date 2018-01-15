@@ -13,6 +13,7 @@ import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
@@ -46,6 +47,8 @@ public class NotifyHkOrderDoneListener {
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -72,7 +75,7 @@ public class NotifyHkOrderDoneListener {
                 continue ;
             }
             //通知恒康已经发货
-            Response<Boolean> response= syncShipmentLogic.syncShipmentDoneToHk(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+            Response<Boolean> response= syncErpShipmentLogic.syncShipmentDone(shipment,2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()){
                 log.error("notify hk order confirm failed,shipment id is ({}),caused by {}",shipment.getId(),response.getError());
             }

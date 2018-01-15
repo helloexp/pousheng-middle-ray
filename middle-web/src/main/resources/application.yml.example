@@ -47,6 +47,9 @@ gateway:
   hk:
     host: http://esbt.pousheng.com
     accessKey: 646edef40c9c481fb9cd9c61a41dabc1
+  yyedi:
+      host: https://esbt.pousheng.com
+      accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
 
 open.api.app.key: terminus
 open.api.secret: anywhere

@@ -91,6 +91,9 @@ gateway:
     accessKey: ${HK_ACCESS_KEY}
   parana:
     host: ${PARANA_HOST}
+  yyedi:
+      host: ${YYEDI_HOST}
+      accessKey: ${YYEDI_ACCESS_KEY}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}

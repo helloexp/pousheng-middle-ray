@@ -27,7 +27,7 @@ import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -101,7 +101,7 @@ public class Shipments {
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private WarehouseSkuWriteService warehouseSkuWriteService;
     @RpcConsumer
@@ -387,7 +387,7 @@ public class Shipments {
                     continue;
                 }
             }
-            Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+            Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
             if (!syncRes.isSuccess()) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }
@@ -398,7 +398,6 @@ public class Shipments {
 
 
     /**
-     * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
      * 生成换货发货单
      * 发货成功：
      * 1. 更新子单的处理数量
@@ -492,7 +491,7 @@ public class Shipments {
     }
 
     /**
-     * 同步发货单到恒康
+     * 同步发货单到erp
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
@@ -511,7 +510,7 @@ public class Shipments {
             }
         }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
         if(!syncRes.isSuccess()){
             log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -547,7 +546,7 @@ public class Shipments {
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId){
         log.info("try to auto cancel shipment,shipment id is {},operationType is {}",shipmentId,0);
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment,0);
+        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment,0);
         if(!syncRes.isSuccess()){
             log.error("sync cancel shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -565,7 +564,7 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/done/sync/hk",method = RequestMethod.PUT)
     public void syncShipmentDoneToHk(@PathVariable(value="id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncShipmentLogic.syncShipmentDoneToHk(shipment,2,MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());
+        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentDone(shipment,2,MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());
         if(!syncRes.isSuccess()){
             log.error("sync  shipment(id:{}) done to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -1132,12 +1131,24 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{id}/sync/mpos",method = RequestMethod.PUT)
     @OperationLogType("同步发货单到mpos")
-    public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+    public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncMposShipmentLogic.syncShipmentToMpos(shipment);
-        if(!syncRes.isSuccess()){
-            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+        if (!syncRes.isSuccess()) {
+            log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
+
+    }
+     /**
+     * 订单派发中心取消发货单
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "api/shipment/cancel/{id}/to/yyedi", method = RequestMethod.GET)
+    public boolean cancelShipmentForEdi(@PathVariable("id") Long id){
+        Shipment shipment = shipmentReadLogic.findShipmentById(id);
+        Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment,1);
+        return r.getResult();
     }
 }

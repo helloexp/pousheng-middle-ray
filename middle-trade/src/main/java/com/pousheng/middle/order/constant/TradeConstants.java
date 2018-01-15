@@ -178,4 +178,20 @@ public class TradeConstants {
     //发货时间
     public static final String SHIP_DATE = "shipmentDate";
 
+    //货号
+    public static final String HK_MATRIAL_CODE="materialCode";
+
+    //电商销售单
+    public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
+    //线下门店
+    public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
+    //退货类型
+    public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
+    //yyedi返回结果:整体成功
+    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
+    //yyedi返回结果:部分成功
+    public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
+    //yyedi返回结果:整体失败
+    public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
+    public static final String  ERP_SYNC_TYPE="erpSyncType";
 }

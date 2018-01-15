@@ -8,7 +8,7 @@ import lombok.Data;
  * pousheng-middle
  */
 @Data
-public class YYediShipmentInfoRequest implements java.io.Serializable {
-    private static final long serialVersionUID = 4200752925257126761L;
-    private YYEdiShipmentInfoBody body;
+public class YYEdiCancelRequest implements java.io.Serializable {
+    private static final long serialVersionUID = -6726056782396873832L;
+    private YYEdiCancelBody body;
 }

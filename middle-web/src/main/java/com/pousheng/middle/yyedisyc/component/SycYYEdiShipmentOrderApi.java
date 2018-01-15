@@ -38,7 +38,7 @@ public class SycYYEdiShipmentOrderApi {
         YYEdiShipmentInfoBody body = new YYEdiShipmentInfoBody();
         body.setRequestData(requestData);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
-        log.info("paramJson:{}",paramJson);
+        log.info("yyedi.paramJson:{}",paramJson);
         String gateway =hkGateway + "/commonerp/erp/sal/addorder";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)

@@ -121,10 +121,10 @@ public class SyncYYEdiShipmentLogic {
                 }
             }
         } catch (Exception e) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
-            return Response.fail("sync.hk.shipment.fail");
+            return Response.fail("sync.yyedi.shipment.fail");
         }
         return Response.ok(Boolean.TRUE);
     }

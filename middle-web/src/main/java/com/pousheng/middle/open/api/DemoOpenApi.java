@@ -30,22 +30,7 @@ public class DemoOpenApi {
     }
 
 
-    @OpenMethod(key = "check.sku.is.mpos.api", paramNames = {"barcodes"}, httpMethods = RequestMethod.POST)
-    public List<SkuIsMposDto> helloWord(@NotEmpty(message = "barcodes.empty") String barcodes) {
-        log.info("HK-CHECK-MPOS-START param barcodes is:{} ", barcodes);
-        List<String> barcodeList = Splitters.COMMA.splitToList(barcodes);
 
-        List<SkuIsMposDto> skuIsMposDtos = Lists.newArrayListWithCapacity(barcodeList.size());
-        for (String barcode : barcodeList){
-            SkuIsMposDto skuIsMposDto = new SkuIsMposDto();
-            skuIsMposDto.setBarcode(barcode);
-            skuIsMposDto.setIsMpos(Boolean.TRUE);
-            skuIsMposDtos.add(skuIsMposDto);
-        }
-
-        log.info("HK-CHECK-MPOS-END");
-        return skuIsMposDtos;
-    }
 
 
 

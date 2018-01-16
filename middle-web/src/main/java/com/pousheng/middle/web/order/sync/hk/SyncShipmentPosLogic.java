@@ -76,6 +76,7 @@ public class SyncShipmentPosLogic {
 
     private HkShipmentPosRequestData makeHkShipmentPosRequestData(Shipment shipment){
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
+        requestData.setTranReqDate(formatter.print(new Date().getTime()));
         requestData.setSid("PS_ERP_POS_netsalshop");//店发
         HkShipmentPosContent bizContent = makeHkShipmentPosContent(shipment);
         requestData.setBizContent(bizContent);
@@ -97,13 +98,16 @@ public class SyncShipmentPosLogic {
         HkShipmentPosContent posContent = new HkShipmentPosContent();
 
         posContent.setChanneltype("b2c");//订单来源类型, 是b2b还是b2c
-        Shop shop = shopCacher.findShopById(Long.valueOf(shipmentExtra.getWarehouseId()));
-        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-        posContent.setCompanyid(shopExtraInfo.getCompanyId().toString());//实际发货账套id
-        posContent.setShopcode(shop.getOuterId());//实际发货店铺code
+        Shop receivershop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+        ShopExtraInfo receiverShopExtraInfo = ShopExtraInfo.fromJson(receivershop.getExtra());
+        posContent.setCompanyid(receiverShopExtraInfo.getCompanyId().toString());//实际发货账套id
+        posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
         posContent.setVoidstockcode("WH000127");//todo 实际发货账套的虚拟仓代码
-        posContent.setNetcompanyid("");//线上店铺所属公司id
-        posContent.setNetshopcode("");//线上店铺code
+
+        Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(receivershop.getExtra());
+        posContent.setNetcompanyid(shopExtraInfo.getCompanyId().toString());//线上店铺所属公司id
+        posContent.setNetshopcode(shop.getOuterId());//线上店铺code
         posContent.setNetstockcode("WH350078");//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
         posContent.setSourcebillno("");//订单来源单号

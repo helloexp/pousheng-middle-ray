@@ -18,7 +18,7 @@ public class HkShipmentPosRequestData implements Serializable{
     private String sid;
 
     //请求时间
-    private Date tranReqDate = new Date();
+    private String tranReqDate;
 
     private HkShipmentPosContent bizContent;
 }

@@ -107,7 +107,7 @@ public class AdminOrderReader {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
             //如果是mpos订单，不允许有其他操作。
-            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+            if(!shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
                 String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
                 shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
                         ?flow.availableOperations(shopOrder.getStatus())

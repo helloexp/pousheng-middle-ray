@@ -24,10 +24,10 @@ public class SycHkShipmentPosApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-    @Value("${gateway.hk.host}")
+    @Value("${gateway.erp.host}")
     private String hkGateway;
 
-    @Value("${gateway.hk.accessKey}")
+    @Value("${gateway.erp.accessKey}")
     private String accessKey;
 
     public String doSyncShipmentPos(HkShipmentPosRequestData requestData){

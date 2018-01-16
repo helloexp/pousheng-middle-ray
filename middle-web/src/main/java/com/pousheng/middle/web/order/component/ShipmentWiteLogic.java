@@ -924,8 +924,8 @@ public class ShipmentWiteLogic {
             //============ 测试数据 ===============
             dispatchOrderItemInfo = new DispatchOrderItemInfo();
             ShopShipment shopShipment1 = new ShopShipment();
-            shopShipment1.setShopId(121l);
-            shopShipment1.setShopName("京昌平阳光AS");
+            shopShipment1.setShopId(128l);
+            shopShipment1.setShopName("京六里桥胜道乔丹");
             shopShipment1.setSkuCodeAndQuantities(skuCodeAndQuantities);
             dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment1));
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList());

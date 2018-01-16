@@ -13,7 +13,6 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.model.Paging;
@@ -23,6 +22,8 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -58,7 +59,7 @@ public class SyncMposShipmentLogic{
     private OrderReadLogic orderReadLogic;
 
     @Autowired
-    private OrderWriteLogic orderWriteLogic;
+    private ShopReadService shopReadService;
 
     @Autowired
     private EventBus eventBus;
@@ -189,9 +190,14 @@ public class SyncMposShipmentLogic{
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         param.put("orderId",shopOrder.getOutId());
-        param.put("id",shipmentExtra.getWarehouseId());
-        param.put("name",shipmentExtra.getWarehouseName());
-        param.put("shipmentType",shipmentExtra.getShipmentWay());
+        if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+            Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+            if(shopResponse.isSuccess()){
+                Shop shop = shopResponse.getResult();
+                param.put("shopOuterId",shop.getOuterId());
+            }
+        }
+        param.put("shopName",shipmentExtra.getWarehouseName());
         param.put("outerShipmentId",shipment.getId());
         param.put("outOrderId",shopOrder.getId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);

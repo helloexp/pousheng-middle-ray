@@ -14,14 +14,17 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -51,6 +54,8 @@ public class SyncShipmentPosLogic {
     private SycHkShipmentPosApi sycHkShipmentPosApi;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @RpcConsumer
+    private ShopReadService shopReadService;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -104,8 +109,14 @@ public class SyncShipmentPosLogic {
         posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
         posContent.setVoidstockcode("WH000127");//todo 实际发货账套的虚拟仓代码
 
-        Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(receivershop.getExtra());
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
+        Response<Shop> shopRes = shopReadService.findByOuterId(openShop.getAppKey());
+        if(!shopRes.isSuccess()){
+            log.error("find shop by outer id:{} fail,error:{}",openShop.getAppKey(),shopRes.getError());
+            throw new ServiceException(shopRes.getError());
+        }
+        Shop shop = shopRes.getResult();
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         posContent.setNetcompanyid(shopExtraInfo.getCompanyId().toString());//线上店铺所属公司id
         posContent.setNetshopcode(shop.getOuterId());//线上店铺code
         posContent.setNetstockcode("WH350078");//todo 线上店铺所属公司的虚拟仓代码

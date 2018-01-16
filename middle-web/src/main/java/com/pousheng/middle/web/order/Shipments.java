@@ -1020,7 +1020,7 @@ public class Shipments {
      * 测试同步发货单到恒康开pos单
      * @param shipmentId 发货单id
      */
-    @RequestMapping(value = "api/shipment/{id}/sync/hk/pos",method = RequestMethod.PUT)
+    @RequestMapping(value = "api/shipment/{id}/sync/hk/pos",method = RequestMethod.GET)
     @OperationLogType("同步发货单到恒康开pos单")
     public void syncShipmentToHk(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);

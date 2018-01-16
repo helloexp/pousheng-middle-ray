@@ -12,10 +12,13 @@ import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.shop.model.Shop;
@@ -46,6 +49,8 @@ public class SyncShipmentPosLogic {
     private ShopCacher shopCacher;
     @Autowired
     private SycHkShipmentPosApi sycHkShipmentPosApi;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -130,8 +135,8 @@ public class SyncShipmentPosLogic {
 
     private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail) {
 
-        Payment payment = shipmentDetail.getPayment();
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        OpenClientPaymentInfo openClientPaymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
         ReceiverInfo receiverInfo = shipmentDetail.getReceiverInfo();
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         List<Invoice> invoices = shipmentDetail.getInvoices();
@@ -143,7 +148,7 @@ public class SyncShipmentPosLogic {
         posInfo.setOrdertype("");  //订单类型
         posInfo.setOrdercustomercode(""); //订单标记code
         posInfo.setAppamtsourceshop(""); //业绩来源店铺
-        posInfo.setPaymentdate(formatter.print(payment.getPaidAt().getTime())); //付款时间
+        posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
         posInfo.setCardcode(""); //会员卡号
         posInfo.setBuyercode(shopOrder.getBuyerName());//买家昵称
         posInfo.setBuyermobiletel(shopOrder.getOutBuyerId()); //买家手机
@@ -181,7 +186,12 @@ public class SyncShipmentPosLogic {
         posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
         posInfo.setExpressbillno(shipmentExtra.getShipmentSerialNo()); //物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
-        posInfo.setConsignmentdate(formatter.print(shipmentExtra.getShipmentDate().getTime())); //发货时间
+        if(Arguments.isNull(shipmentExtra.getShipmentDate())){
+            posInfo.setConsignmentdate(formatter.print(new Date().getTime())); //发货时间
+        }else {
+            posInfo.setConsignmentdate(formatter.print(shipmentExtra.getShipmentDate().getTime())); //发货时间
+
+        }
 
         return posInfo;
     }

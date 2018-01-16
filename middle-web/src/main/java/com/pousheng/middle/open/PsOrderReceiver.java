@@ -46,6 +46,8 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
@@ -101,6 +103,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+
+    @Autowired
+    private ShopReadService shopReadService;
 
     /**
      * 天猫加密字段占位符
@@ -254,8 +259,16 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         Map<String,String> tempExtra = Maps.newHashMap();
         if(richSkusByShop.getExtra() != null && richSkusByShop.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
-            tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,richSkusByShop.getExtra().get(TradeConstants.ASSIGN_SHOP_ID));
-            tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
+            if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
+                //修改，mpos传来outerId
+                String outerId = richSkusByShop.getExtra().get(TradeConstants.ASSIGN_SHOP_ID);
+                Response<Shop> shopResponse =  shopReadService.findByOuterId(outerId);
+                if(shopResponse.isSuccess()){
+                    Shop shop = shopResponse.getResult();
+                    tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,shop.getId().toString());
+                    tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
+                }
+            }
             richSkusByShop.setExtra(tempExtra);
         }else {
             richSkusByShop.setExtra(null);

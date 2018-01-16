@@ -76,6 +76,7 @@ public class SyncShipmentPosLogic {
 
     private HkShipmentPosRequestData makeHkShipmentPosRequestData(Shipment shipment){
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
+        requestData.setTranReqDate(formatter.print(new Date().getTime()));
         requestData.setSid("PS_ERP_POS_netsalshop");//店发
         HkShipmentPosContent bizContent = makeHkShipmentPosContent(shipment);
         requestData.setBizContent(bizContent);

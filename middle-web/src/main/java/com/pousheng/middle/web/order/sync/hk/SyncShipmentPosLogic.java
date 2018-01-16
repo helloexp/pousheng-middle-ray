@@ -4,10 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
-import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosContent;
-import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosInfo;
-import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosItem;
-import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosRequestData;
+import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
@@ -70,6 +67,11 @@ public class SyncShipmentPosLogic {
         try {
             HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(shipment);
             String result = sycHkShipmentPosApi.doSyncShipmentPos(requestData);
+            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
+            if(Objects.equal(response.getCode(),"00000")){
+                log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
+                return Response.fail(response.getMessage());
+            }
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -107,7 +109,7 @@ public class SyncShipmentPosLogic {
         ShopExtraInfo receiverShopExtraInfo = ShopExtraInfo.fromJson(receivershop.getExtra());
         posContent.setCompanyid(receiverShopExtraInfo.getCompanyId().toString());//实际发货账套id
         posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
-        posContent.setVoidstockcode("WH000127");//todo 实际发货账套的虚拟仓代码
+            posContent.setVoidstockcode("WH110010");//todo 实际发货账套的虚拟仓代码
 
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
         Response<Shop> shopRes = shopReadService.findByOuterId(openShop.getAppKey());
@@ -119,7 +121,7 @@ public class SyncShipmentPosLogic {
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         posContent.setNetcompanyid(shopExtraInfo.getCompanyId().toString());//线上店铺所属公司id
         posContent.setNetshopcode(shop.getOuterId());//线上店铺code
-        posContent.setNetstockcode("WH350078");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode("WH110011");//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
         posContent.setSourcebillno("");//订单来源单号
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期

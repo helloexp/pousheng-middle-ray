@@ -66,22 +66,24 @@ public class QueryHkWarhouseOrShopStockApi {
         map.put("barcodes",Joiners.COMMA.join(skuCodes));
         map.put("stock_type",stockType.toString());
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
+        log.info("query hk stock success result:{}",responseBody);
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
+
+        List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
+
         for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList){
             if(Objects.equal(2,stockType)){
-                //todo 待roger返回 company_id
-               // String company_id = "";
-               // Warehouse warehouse = warehouseCacher.findByCode(company_id+"-"+skuStockInfo.getStock_id());
-                Response<List<Warehouse>> warehouseRes = warehouseReadService.findByFuzzyCode(skuStockInfo.getStock_code());
+                Warehouse warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id()+"-"+skuStockInfo.getStock_id());
+               /* Response<List<Warehouse>> warehouseRes = warehouseReadService.findByFuzzyCode(skuStockInfo.getStock_id());
                 if(!warehouseRes.isSuccess()){
                     log.error("find warehouse by fuzzy code:{} fail,error:{}",skuStockInfo.getStock_code(),warehouseRes.getError());
                     throw new ServiceException(warehouseRes.getError());
                 }
                 if(CollectionUtils.isEmpty(warehouseRes.getResult())){
                     log.error("not find warehouse by fuzzy code:{} fail",skuStockInfo.getStock_code());
-                    throw new ServiceException("warehouse.not.exist");
+                    continue;
                 }
-                Warehouse warehouse = warehouseRes.getResult().get(0);
+                Warehouse warehouse = warehouseRes.getResult().get(0);*/
                 skuStockInfo.setBusinessId(warehouse.getId());
                 skuStockInfo.setBusinessName(warehouse.getName());
             }else {
@@ -89,9 +91,10 @@ public class QueryHkWarhouseOrShopStockApi {
                 skuStockInfo.setBusinessId(shop.getId());
                 skuStockInfo.setBusinessName(shop.getName());
             }
+            middleStockList.add(skuStockInfo);
         }
 
-        return hkSkuStockInfoList;
+        return middleStockList;
     }
 
 

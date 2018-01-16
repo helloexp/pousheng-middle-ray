@@ -68,10 +68,11 @@ public class SyncShipmentPosLogic {
             HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(shipment);
             String result = sycHkShipmentPosApi.doSyncShipmentPos(requestData);
             SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
-            if(Objects.equal(response.getCode(),"00000")){
+            if(!Objects.equal(response.getCode(),"00000")){
                 log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
                 return Response.fail(response.getMessage());
             }
+            //网店零售订单号
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -172,7 +173,7 @@ public class SyncShipmentPosLogic {
         posInfo.setBuyertel(""); //买家座机
         posInfo.setBuyerremark(shopOrder.getBuyerNote()); //买家留言
         posInfo.setConsigneename(receiverInfo.getReceiveUserName());//收货人姓名
-        posInfo.setPayamountbakup(new BigDecimal(shipmentExtra.getShipmentTotalFee()==null?0:shipmentExtra.getShipmentTotalFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString()); //线上实付金额
+        posInfo.setPayamountbakup(new BigDecimal(shipmentExtra.getShipmentTotalPrice()==null?0:shipmentExtra.getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString()); //线上实付金额
         posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee()==null?0:shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());//邮费成本
         posInfo.setCodcharges("0");//货到付款服务费
         posInfo.setPreremark(""); ; //优惠信息

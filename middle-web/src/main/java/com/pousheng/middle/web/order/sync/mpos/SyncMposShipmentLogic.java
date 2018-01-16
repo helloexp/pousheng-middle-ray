@@ -83,26 +83,32 @@ public class SyncMposShipmentLogic{
         }
         shipment = shipmentReadLogic.findShipmentById(shipment.getId());
         Map<String,Object> param = this.assembShipmentParam(shipment);
-        MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
-        if(!res.isSuccess()){
-            log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
+        Shipment update = new Shipment();
+        log.info("sync shipment:（id:{}) to mpos success",shipment.getId());
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Map<String, String> extraMap = shipment.getExtra();
+        try{
+            MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+            if(!res.isSuccess()){
+                log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
+                // 同步失败
+                OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation();
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                if (!updateSyncStatusRes.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+                }
+                return Response.fail(res.getError());
+            }
+            shipmentExtra.setOutShipmentId(res.getResult());
+        }catch(Exception e){
             // 同步失败
             OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation();
             Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             }
-            return Response.fail(res.getError());
+            return Response.fail("sync.shipment.mpos.fail");
         }
-        Map<String, String> extraMap = shipment.getExtra();
-        Shipment update = new Shipment();
-        log.info("sync shipment:（id:{}) to mpos success",shipment.getId());
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-        shipmentExtra.setOutShipmentId(res.getResult());
-        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-        update.setId(shipment.getId());
-        update.setExtra(extraMap);
-        shipmentWiteLogic.update(update);
         // 同步成功
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation();
         Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -129,8 +135,13 @@ public class SyncMposShipmentLogic{
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 return Response.fail(updateSyncStatusRes1.getError());
             }
+            shipmentExtra.setShipmentDate(new Date());
             eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
         }
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+        update.setId(shipment.getId());
+        update.setExtra(extraMap);
+        shipmentWiteLogic.update(update);
         return Response.ok(true);
     }
 

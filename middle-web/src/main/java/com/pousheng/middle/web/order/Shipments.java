@@ -556,7 +556,7 @@ public class Shipments {
      * 发货单确认收货失败通知恒康
      * @param shipmentId 发货单id
      */
-    @RequestMapping(value = "api/shipment/{id}/done/sync/hk",method = RequestMethod.PUT)
+    @RequestMapping(value = "api/shipment/{id}/done/sync/hk/pos",method = RequestMethod.PUT)
     public void syncShipmentDoneToHk(@PathVariable(value="id") Long shipmentId){
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncShipmentLogic.syncShipmentDoneToHk(shipment,2,MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());

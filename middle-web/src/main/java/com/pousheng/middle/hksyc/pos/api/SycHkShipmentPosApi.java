@@ -30,13 +30,13 @@ public class SycHkShipmentPosApi {
     @Value("${gateway.erp.accessKey}")
     private String accessKey;
 
-    public String doSyncShipmentPos(HkShipmentPosRequestData requestData){
+    public String doSyncShipmentPos(HkShipmentPosRequestData requestData,String url){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
         log.info("paramJson:{}",paramJson);
-        String gateway =hkGateway + "/common/erp/pos/addnetsalshop";
+        String gateway =hkGateway + url;
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

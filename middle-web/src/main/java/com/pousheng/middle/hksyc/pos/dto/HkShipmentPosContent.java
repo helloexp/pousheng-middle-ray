@@ -16,7 +16,8 @@ public class HkShipmentPosContent implements Serializable{
 
     private String channeltype = "b2c"; //订单来源类型, 是b2b还是b2c
     private String companyid; //实际发货账套id
-    private String shopcode;  //实际发货店铺code
+    private String shopcode;  //实际发货店铺code for店发
+    private String stockcode;  //实际发货店铺code for仓发
     private String voidstockcode;//实际发货账套的虚拟仓代码
     private String netcompanyid;  //线上店铺所属公司id
     private String netshopcode;  //线上店铺code

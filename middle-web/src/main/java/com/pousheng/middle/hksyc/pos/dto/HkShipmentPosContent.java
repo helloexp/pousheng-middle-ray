@@ -23,7 +23,7 @@ public class HkShipmentPosContent implements Serializable{
     private String netstockcode;//线上店铺所属公司的虚拟仓代码
     private String netbillno; //端点唯一订单号
     private String sourcebillno; //订单来源单号
-    private Date billdate;  //订单日期
+    private String billdate;  //订单日期
     private String operator;  //线上店铺帐套操作人code
     private String remark; //备注
 

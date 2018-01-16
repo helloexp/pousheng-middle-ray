@@ -84,7 +84,6 @@ public class SyncMposShipmentLogic{
         shipment = shipmentReadLogic.findShipmentById(shipment.getId());
         Map<String,Object> param = this.assembShipmentParam(shipment);
         Shipment update = new Shipment();
-        log.info("sync shipment:（id:{}) to mpos success",shipment.getId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
         try{
@@ -110,6 +109,7 @@ public class SyncMposShipmentLogic{
             return Response.fail("sync.shipment.mpos.fail");
         }
         // 同步成功
+        log.info("sync shipment:（id:{}) to mpos success",shipment.getId());
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation();
         Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {

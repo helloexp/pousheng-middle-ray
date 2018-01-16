@@ -95,13 +95,6 @@ public class yyEDIOpenApi {
                 }
                 Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
                 ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-
-                if (!Objects.equals(yyEdiShipInfo.getYyEDIShipmentId(), shipmentExtra.getOutShipmentId())) {
-                    log.error("yyedi shipment id:{} not equal middle shipment(id:{} ) out shipment id:{}", yyEdiShipInfo.getYyEDIShipmentId(), shipment.getId(), shipmentExtra.getOutShipmentId());
-                    throw new ServiceException("yyedi.shipment.id.not.matching");
-                }
-
-
                 //封装更新信息
                 Shipment update = new Shipment();
                 update.setId(shipment.getId());
@@ -112,6 +105,7 @@ public class yyEDIOpenApi {
                 ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
                 shipmentExtra.setShipmentCorpName(expressCode.getName());
                 shipmentExtra.setShipmentDate(dt.toDate());
+                shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
 

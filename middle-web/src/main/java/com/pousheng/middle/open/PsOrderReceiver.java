@@ -261,7 +261,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
             if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
                 //修改，mpos传来outerId
-                String outerId = richSkusByShop.getExtra().get(TradeConstants.ASSIGN_SHOP_ID);
+                String outerId = richSkusByShop.getExtra().get("assignShopOuterId");
                 Response<Shop> shopResponse =  shopReadService.findByOuterId(outerId);
                 if(shopResponse.isSuccess()){
                     Shop shop = shopResponse.getResult();

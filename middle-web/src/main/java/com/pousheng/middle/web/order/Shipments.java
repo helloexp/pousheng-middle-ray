@@ -28,6 +28,7 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -120,6 +121,8 @@ public class Shipments {
     private RefundReadService refundReadService;
     @Autowired
     private SyncMposShipmentLogic syncMposShipmentLogic;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -1134,8 +1137,23 @@ public class Shipments {
     public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         Response<Boolean> syncRes = syncMposShipmentLogic.syncShipmentToMpos(shipment);
-        if (!syncRes.isSuccess()) {
-            log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to mpos fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+    /**
+     * 测试同步发货单到恒康开pos单
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/sync/hk",method = RequestMethod.PUT)
+    @OperationLogType("同步发货单到恒康开pos单")
+    public void syncShipmentToHk(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
 
@@ -1152,3 +1170,5 @@ public class Shipments {
         return r.getResult();
     }
 }
+
+

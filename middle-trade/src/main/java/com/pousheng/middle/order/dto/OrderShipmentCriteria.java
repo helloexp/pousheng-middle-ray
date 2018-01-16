@@ -65,6 +65,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Integer orderType;
 
+    /**
+     * 订单来源
+     */
+    private Long shopId;
+
 
 
     /**

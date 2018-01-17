@@ -104,6 +104,47 @@ public class SyncShipmentPosLogic {
     }
 
 
+
+    /**
+     * 同步发货单收货信息到恒康
+     *
+     * @param shipment 发货单
+     * @return 同步成功true, 同步失败false
+     */
+    public Response<Boolean> syncShipmentDoneToHk(Shipment shipment) {
+        try {
+
+            String url ="/common/erp/pos/addnetsalshop";
+            HkShimentDoneRequestData requestData = new HkShimentDoneRequestData();
+            requestData.setTranReqDate(formatter.print(new Date().getTime()));
+
+            HkShimentDoneInfo doneInfo = new HkShimentDoneInfo();
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            if(Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())||Arguments.isNull(shipment.getConfirmAt())){
+                log.error("shipment(id:{}) sync hk confirm fail,param invalid");
+                return Response.fail("shipment.confirm.param.invalid");
+            }
+            doneInfo.setNetbillno(shipmentExtra.getHkResaleOrderId());
+            doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
+
+            requestData.setBizContent(Lists.newArrayList(doneInfo));
+
+            String result = sycHkShipmentPosApi.doSyncShipmentDone(requestData,url);
+            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
+            if(!Objects.equal(response.getCode(),"00000")){
+                log.error("sync shipment confirm at to hk fail,error:{}",response.getMessage());
+                return Response.fail(response.getMessage());
+            }
+            return Response.ok();
+        } catch (Exception e) {
+            log.error("sync hk shipment confirm at failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            return Response.fail("sync.hk.shipment.confirm.at.fail");
+        }
+
+    }
+
+
+
     private HkShipmentPosRequestData makeHkShipmentPosRequestData(ShipmentDetail shipmentDetail,String shipmentWay){
 
 

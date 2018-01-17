@@ -185,7 +185,8 @@ public class SyncRefundPosLogic {
         posInfo.setBuyerremark(shopOrder.getBuyerNote()); //买家留言
         posInfo.setConsigneename(receiverInfo.getReceiveUserName());//收货人姓名
         posInfo.setPayamountbakup(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString()); //线上实付金额
-        //posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee()==null?0:shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());//邮费成本
+        posInfo.setZramount("0");
+        posInfo.setExpresscost("0");//邮费成本
         posInfo.setCodcharges("0");//货到付款服务费
         posInfo.setPreremark(""); //优惠信息
         if(CollectionUtils.isEmpty(invoices)){

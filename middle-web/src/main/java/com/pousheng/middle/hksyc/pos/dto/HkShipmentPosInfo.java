@@ -27,6 +27,7 @@ public class HkShipmentPosInfo implements Serializable{
     private String     buyerremark; //买家留言
     private String     consigneename;  //收货人姓名
     private String     payamountbakup; //线上实付金额
+    private String     zramount; //优惠金额
     private String     expresscost; //邮费成本
     private String     codcharges; //货到付款服务费
     private String     preremark; //优惠信息

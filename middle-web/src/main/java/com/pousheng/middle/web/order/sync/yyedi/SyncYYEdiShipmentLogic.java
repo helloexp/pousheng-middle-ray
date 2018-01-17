@@ -228,8 +228,8 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setSourceBillNo("");
         //网店交易单号
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
-        //恒康店铺码
-        shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopCode());
+        //恒康店铺码--传外码
+        shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
         //恒康店铺名称
         shipmentInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
         //出库单类型

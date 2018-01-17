@@ -24,11 +24,14 @@ public class ShipmentExtra implements Serializable{
     private String erpPerformanceShopName;
     //绩效店铺编码
     private String erpPerformanceShopCode;
+    //绩效店铺外码
+    private String erpPerformanceShopOutCode;
     //下单店铺名称
     private String erpOrderShopName;
     //下单店铺编码
     private String erpOrderShopCode;
-
+    //下单店铺外码
+    private String erpOrderShopOutCode;
     //发货单商品金额
     private Long shipmentItemFee;
     //发货单运费金额

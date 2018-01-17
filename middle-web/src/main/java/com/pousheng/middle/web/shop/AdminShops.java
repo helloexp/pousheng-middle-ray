@@ -175,6 +175,7 @@ public class AdminShops {
         shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
         ShopExtraInfo shopExtraInfo = new ShopExtraInfo();
         shopExtraInfo.setCompanyId(shop.getCompanyId());
+        shopExtraInfo.setShopInnerCode(shop.getStoreId());
         shopExtraInfo.setCompanyName(shop.getCompanyName());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
@@ -619,5 +620,8 @@ public class AdminShops {
         private Long companyId;
         //公司名称
         private String companyName;
+
+        //店铺内码
+        private String storeId;
     }
 }

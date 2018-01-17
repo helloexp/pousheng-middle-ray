@@ -21,7 +21,6 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
@@ -467,6 +466,19 @@ public class ShipmentWiteLogic {
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
             throw new JsonResponseException(createResp.getError());
         }
+        //生成发货单之后需要将发货单id添加到子单中
+        for (SkuOrder skuOrder : skuOrdersShipment) {
+            try {
+                Map<String, String> skuOrderExtra = skuOrder.getExtra();
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
+                if (!response.isSuccess()) {
+                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
+                }
+            } catch (Exception e) {
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), createResp.getResult(), e.getMessage());
+            }
+        }
         return createResp.getResult();
     }
 
@@ -623,12 +635,14 @@ public class ShipmentWiteLogic {
         shipmentExtra.setTakeWay(shopOrder.getExtra().get(TradeConstants.IS_SINCE));
         shipmentExtra.setIsAppint(shopOrder.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
 
-        //下单店铺代码（绩效店铺在接单后保存）
+        //下单店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额

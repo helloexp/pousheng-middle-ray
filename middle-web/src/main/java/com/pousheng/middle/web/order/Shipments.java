@@ -137,9 +137,12 @@ public class Shipments {
         if(shipmentCriteria.getEndAt()!=null){
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
-
-        shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
-
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (shipmentCriteria.getShopId() == null) {
+            shipmentCriteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(shipmentCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         //判断查询的发货单类型
         if (Objects.equals(shipmentCriteria.getType(),ShipmentType.EXCHANGE_SHIP.value())){
             shipmentCriteria.setAfterSaleOrderId(shipmentCriteria.getOrderId());

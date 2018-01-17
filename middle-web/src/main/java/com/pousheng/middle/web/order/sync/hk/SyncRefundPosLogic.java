@@ -103,7 +103,7 @@ public class SyncRefundPosLogic {
 
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
         requestData.setTranReqDate(formatter.print(new Date().getTime()));
-        requestData.setSid("PS_ERP_POS_netsalshop");
+        requestData.setSid("PS_ERP_POS_netsalreturnstock");
         HkShipmentPosContent bizContent = makeHkShipmentPosContent(refund);
         requestData.setBizContent(bizContent);
         return requestData;
@@ -112,6 +112,10 @@ public class SyncRefundPosLogic {
     private HkShipmentPosContent makeHkShipmentPosContent(Refund refund) {
 
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        if(Arguments.isNull(refundExtra.getShipmentId())){
+            log.error("refund(id:{}) shipment id invalid");
+            throw new ServiceException("refund.shipment.id.invalid");
+        }
         //获取发货单详情
         ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(refundExtra.getShipmentId());
         HkShipmentPosContent posContent = new HkShipmentPosContent();

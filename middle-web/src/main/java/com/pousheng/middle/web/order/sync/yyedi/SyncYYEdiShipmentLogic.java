@@ -218,6 +218,8 @@ public class SyncYYEdiShipmentLogic {
         YYEdiShipmentInfo shipmentInfo = new YYEdiShipmentInfo();
         //公司内码
         shipmentInfo.setCompanyCode(warehouse.getCompanyCode());
+        //仓库
+        shipmentInfo.setStockCode(warehouse.getInnerCode());
         //erp单号
         shipmentInfo.setBillNo(String.valueOf(shipment.getId()));
         //单据类型

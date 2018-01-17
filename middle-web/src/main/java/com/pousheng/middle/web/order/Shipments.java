@@ -129,8 +129,9 @@ public class Shipments {
         if(shipmentCriteria.getEndAt()!=null){
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
-
-        shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        if(Objects.isNull(shipmentCriteria.getShopId())){
+            shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        }
 
         //判断查询的发货单类型
         if (Objects.equals(shipmentCriteria.getType(),ShipmentType.EXCHANGE_SHIP.value())){

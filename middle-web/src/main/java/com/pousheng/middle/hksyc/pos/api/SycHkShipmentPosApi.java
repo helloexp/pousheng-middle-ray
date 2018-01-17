@@ -33,11 +33,15 @@ public class SycHkShipmentPosApi {
 
     public String doSyncShipmentPos(HkShipmentPosRequestData requestData,String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
+        log.info("paramJson:{}",paramJson);
+
         return doRequest(paramJson,url);
     }
 
     public String doSyncRefundPos(HkShipmentPosRequestData requestData,String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
+        log.info("paramJson:{}",paramJson);
+
         return doRequest(paramJson,url);
     }
 

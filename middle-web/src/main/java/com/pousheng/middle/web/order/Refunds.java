@@ -14,6 +14,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -55,6 +56,8 @@ public class Refunds {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private SyncRefundPosLogic syncRefundPosLogic;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -647,5 +650,21 @@ public class Refunds {
         Response<Boolean> r = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
         return Response.ok(r.isSuccess());
     }
+
+
+    /**
+     * 同步售后单到恒康开pos
+     * @param id 售后单id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/sync/hk/pos",method = RequestMethod.GET)
+    @OperationLogType("同步售后单到恒康开pos")
+    public Response<Boolean> syncRefundToHkPos(@PathVariable("id") @OperationLogParam Long id){
+        Refund refund = refundReadLogic.findRefundById(id);
+        return syncRefundPosLogic.syncRefundPosToHk(refund);
+    }
+
+
+
 
 }

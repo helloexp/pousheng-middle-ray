@@ -65,8 +65,8 @@ public class SyncMposOrderLogic {
             log.error("sync not dispatched sku to mpos fail,cause:{}", Throwables.getStackTraceAsString(e));
             if(Objects.isNull(id)){
                 this.createNewAutoCompensationTask(param);
-                return Response.fail("sync.not.dispatcher.sku.fail");
             }
+            return Response.fail("sync.not.dispatcher.sku.fail");
         }
         if(!Objects.isNull(id))
             this.updateAutoCompensationTask(id);

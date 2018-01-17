@@ -127,7 +127,7 @@ public class SyncShipmentPosLogic {
     public Response<Boolean> syncShipmentDoneToHk(Shipment shipment) {
         try {
 
-            String url ="common/erp/pos/updatenetsalreceiptdate";
+            String url ="/common/erp/pos/updatenetsalreceiptdate";
             HkShimentDoneRequestData requestData = new HkShimentDoneRequestData();
             requestData.setTranReqDate(formatter.print(new Date().getTime()));
 

@@ -14,7 +14,7 @@ public class HkShimentDoneRequestData implements Serializable{
 
     private static final long serialVersionUID = 3755663716401859167L;
 
-    private String sid = "PS_ERP_POS_netsalReceiptDate";
+    private String sid = "PS_ERP_POS_netsalreceiptdate";
     private String tranReqDate;
     private List<HkShimentDoneInfo> bizContent;
 }

@@ -1169,6 +1169,23 @@ public class Shipments {
         Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment,1);
         return r.getResult();
     }
+
+    /**
+     * 测试同步发货单到恒康开pos单
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/confirm/at/sync/hk",method = RequestMethod.GET)
+    @OperationLogType("同步发货单确认收货时间到恒康")
+    public void syncShipmentDoneToHkForPos(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+
 }
 
 

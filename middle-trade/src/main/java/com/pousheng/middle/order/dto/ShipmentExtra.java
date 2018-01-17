@@ -81,4 +81,7 @@ public class ShipmentExtra implements Serializable{
     private String takeWay;
     //是否指定门店
     private String isAppint;
+
+    //网店零售订单号 当同步发货单到恒康开pos单同步成功时恒康返回的id
+    private String hkResaleOrderId;
 }

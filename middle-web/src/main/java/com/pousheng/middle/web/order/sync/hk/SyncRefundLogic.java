@@ -76,6 +76,8 @@ public class SyncRefundLogic {
     private EventBus eventBus;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -268,6 +270,8 @@ public class SyncRefundLogic {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
         SycHkRefund sycHkRefund = new SycHkRefund();
         //中台退换货单号
         sycHkRefund.setRefundNo(String.valueOf(refund.getId()));
@@ -301,7 +305,8 @@ public class SyncRefundLogic {
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
         sycHkRefund.setLogisticsCompany(refundExtra.getShipmentCorpCode());
-
+        //订单来源
+        sycHkRefund.setOnlineType(String.valueOf(syncShipmentLogic.getHkOnlinePay(shopOrder).getValue()));
         sycHkRefund.setMemo(refund.getBuyerNote());
         return sycHkRefund;
     }
@@ -315,6 +320,8 @@ public class SyncRefundLogic {
     private List<SycHkRefundItem> makeSycHkRefundItemList(Refund refund) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
         List<SycHkRefundItem> items = Lists.newArrayList();
         for (RefundItem refundItem : refundItems) {
             SycHkRefundItem item = new SycHkRefundItem();
@@ -334,6 +341,8 @@ public class SyncRefundLogic {
             item.setRefundAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //商品名称
             item.setItemName(refundItem.getSkuName());
+            //外部订单号
+            item.setOnlineOrderNo(shopOrder.getOutId());
             items.add(item);
         }
 

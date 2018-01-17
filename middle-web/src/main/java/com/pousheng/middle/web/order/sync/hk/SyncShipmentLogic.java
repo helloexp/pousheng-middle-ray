@@ -11,10 +11,7 @@ import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.HKInvoiceType;
-import com.pousheng.middle.order.enums.HkPayType;
-import com.pousheng.middle.order.enums.MiddleInvoiceType;
-import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
@@ -37,6 +34,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.CannotSerializeTransactionException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -318,6 +316,8 @@ public class SyncShipmentLogic {
         tradeOrder.setStockId(warehouse.getInnerCode());
         //京东快递,自选快递
         tradeOrder.setVendCustCode(shipmentExtra.getVendCustID());
+        //订单来源
+        tradeOrder.setOnlineType(String.valueOf(this.getHkOnlinePay(shopOrder).getValue()));
 
         //获取发货单中对应的sku列表
         List<SycHkShipmentItem> items = this.getSycHkShipmentItems(shipment, shipmentDetail);
@@ -352,6 +352,8 @@ public class SyncShipmentLogic {
             //总价(销售价格*数量)
             item.setTotalPrice(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //赠品(1),非赠品(2)默认填写非赠品
+            //电商订单号
+            item.setOnlineOrderNo(shipmentDetail.getShopOrder().getOutId());
             item.setIsGifts(2);
             items.add(item);
         }
@@ -510,6 +512,34 @@ public class SyncShipmentLogic {
             throw new ServiceException("find.warehouse.failed");
         }
         return response.getResult().getCode();
+    }
+    /**
+     * 中台支付类型映射为恒康支付类型
+     *
+     * @param shopOrder 店铺订单
+     * @return
+     */
+    public HkOnlineType getHkOnlinePay(ShopOrder shopOrder) {
+        MiddleChannel middleChannel = MiddleChannel.from(shopOrder.getOutFrom());
+        if (Arguments.isNull(middleChannel)) {
+            log.error("shopOrder (id:{})invalid", shopOrder.getId());
+            throw new ServiceException("shoporder.channel.invalid");
+        }
+        switch (middleChannel) {
+            case TAOBAO:
+                return HkOnlineType.TAOBAO;
+            case JD:
+                return HkOnlineType.JINGDONG;
+            case SUNING:
+                return HkOnlineType.SUNING;
+            case OFFICIAL:
+                return HkOnlineType.OFFICIAL;
+            case FENQILE:
+                return HkOnlineType.FENQILE;
+            default:
+                log.error("shopOrder (id:{}) invalid", shopOrder.getId());
+                throw new ServiceException("shoporder.channel.invalid");
+        }
     }
 
 }

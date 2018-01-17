@@ -154,7 +154,7 @@ public class SyncRefundPosLogic {
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
         for (RefundItem refundItem : refundItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
-            hkShipmentPosItem.setMatbarcode(returnWarehouseCode);
+            hkShipmentPosItem.setStockcode(returnWarehouseCode);
             hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             hkShipmentPosItem.setQty(refundItem.getQuantity());

@@ -6,7 +6,7 @@ package com.pousheng.middle.item.impl.service;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.PsItemTool;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
@@ -60,7 +60,7 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         indexedSkuTemplate.setSpuId(spu.getId());
         indexedSkuTemplate.setSpuCode(materialId);//货号
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
-        if(isMopsItem(skuTemplate)){
+        if(PsItemTool.isMopsItem(skuTemplate)){
             indexedSkuTemplate.setType(1);
         }else {
             indexedSkuTemplate.setType(0);
@@ -144,17 +144,5 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         return true;
     }
 
-    //是否为mPos商品
-    private Boolean isMopsItem(SkuTemplate exist){
-        Map<String,String> extra = exist.getExtra();
-        if(CollectionUtils.isEmpty(extra)){
-            return Boolean.FALSE;
-        }
-        if(!extra.containsKey(PsItemConstants.MPOS_FLAG)){
-            return Boolean.FALSE;
-        }
-        String flag = extra.get(PsItemConstants.MPOS_FLAG);
-        return Objects.equal(flag,PsItemConstants.MPOS_ITEM);
 
-    }
 }

@@ -128,7 +128,7 @@ public class TradeConstants {
     //发货单拒单
     public static final String MPOS_SHIPMENT_REJECT = "-1";
     //发货单发货,待收货
-    public static final String MPOS_SHIPMENT_SHIPPED = "2";
+    public static final String MPOS_SHIPMENT_SHIPPED = "3";
     //店铺发货
     public static final String MPOS_SHOP_DELIVER = "1";
     //仓库发货

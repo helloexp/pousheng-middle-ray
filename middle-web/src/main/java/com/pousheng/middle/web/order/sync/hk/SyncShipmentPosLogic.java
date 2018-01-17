@@ -164,10 +164,10 @@ public class SyncShipmentPosLogic {
             posContent.setNetcompanyid(shopExtraInfo.getCompanyId().toString());//线上店铺所属公司id
             posContent.setNetshopcode(shop.getOuterId());//线上店铺code
         }
-        posContent.setVoidstockcode("WH110010");//todo 实际发货账套的虚拟仓代码
+        posContent.setVoidstockcode("MPOSEDI");//todo 实际发货账套的虚拟仓代码
 
 
-        posContent.setNetstockcode("WH110011");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
         posContent.setSourcebillno("");//订单来源单号
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期

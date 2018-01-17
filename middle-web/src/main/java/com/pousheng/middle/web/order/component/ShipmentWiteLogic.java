@@ -39,6 +39,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -101,6 +102,8 @@ public class ShipmentWiteLogic {
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+    @RpcConsumer
+    private ShopReadService shopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 

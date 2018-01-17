@@ -36,6 +36,12 @@ public class SycHkShipmentPosApi {
         return doRequest(paramJson,url);
     }
 
+    public String doSyncRefundPos(HkShipmentPosRequestData requestData,String url){
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
+        return doRequest(paramJson,url);
+    }
+
+
 
     public String doSyncShipmentDone(HkShimentDoneRequestData requestData, String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);

@@ -17,8 +17,8 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HkRefundType;
 import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
@@ -78,6 +78,8 @@ public class SyncRefundLogic {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -280,15 +282,8 @@ public class SyncRefundLogic {
         //中台店铺id
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
         //退货仓
-        if (refundExtra.getWarehouseId()!=null){
-            Response<Warehouse> response = warehouseReadService.findById(refundExtra.getWarehouseId());
-            if (!response.isSuccess()){
-                log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
-                throw new ServiceException(response.getError());
-            }
-            Warehouse warehouse = response.getResult();
-            sycHkRefund.setStockId(warehouse.getInnerCode());
-        }
+        Warehouse warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
+        sycHkRefund.setStockId(warehouse.getInnerCode());
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
         //退款金额为页面上申请的退款金额
         sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());

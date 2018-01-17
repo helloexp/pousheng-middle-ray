@@ -6,6 +6,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
@@ -14,17 +15,20 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.constants.JacksonType;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.Invoice;
+import io.terminus.parana.order.model.ReceiverInfo;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +40,6 @@ import org.springframework.util.CollectionUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +55,8 @@ public class SyncShipmentPosLogic {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
     private ShopCacher shopCacher;
     @Autowired
     private SycHkShipmentPosApi sycHkShipmentPosApi;
@@ -63,7 +68,7 @@ public class SyncShipmentPosLogic {
     private WarehouseCacher warehouseCacher;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
-    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+    private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
     /**
      * 同步发货单到恒康
@@ -93,8 +98,16 @@ public class SyncShipmentPosLogic {
                 log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
                 return Response.fail(response.getMessage());
             }
+
             //网店零售订单号
             String billNo = getBillNo(response.getReturnJson());
+            shipmentExtra.setHkResaleOrderId(billNo);
+            Map<String,String> extraMap = shipment.getExtra();
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
+            //更新extra
+            shipmentWiteLogic.updateExtra(shipment.getId(),extraMap);
+
+
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -114,7 +127,7 @@ public class SyncShipmentPosLogic {
     public Response<Boolean> syncShipmentDoneToHk(Shipment shipment) {
         try {
 
-            String url ="/common/erp/pos/addnetsalshop";
+            String url ="common/erp/pos/updatenetsalreceiptdate";
             HkShimentDoneRequestData requestData = new HkShimentDoneRequestData();
             requestData.setTranReqDate(formatter.print(new Date().getTime()));
 
@@ -214,7 +227,6 @@ public class SyncShipmentPosLogic {
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
         posContent.setRemark(shopOrder.getBuyerNote());//备注
-
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail);
         List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(shipmentDetail);

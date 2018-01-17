@@ -582,27 +582,12 @@ public class ShipmentWiteLogic {
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         log.info("auto create shipment,step seven");
-        if (shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)) {
-            Response<Shop> response = shopReadService.findByOuterId(openShop.getAppKey());
-            if(response.isSuccess()){
-                Shop shop = response.getResult();
-                ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                ShopServerInfo shopServerInfo = existShopExtraInfo.getShopServerInfo();
-                if(shopServerInfo != null){
-                    shipmentExtra.setErpOrderShopCode(shopOrder.getShopId().toString());
-                    shipmentExtra.setErpOrderShopName(shopOrder.getShopName());
-                    shipmentExtra.setErpPerformanceShopCode(shopServerInfo.getVirtualShopCode());
-                    shipmentExtra.setErpPerformanceShopName(shopServerInfo.getVirtualShopName());
-                }
-            }
-        }else{
-            String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
-            String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
-            shipmentExtra.setErpOrderShopCode(shopCode);
-            shipmentExtra.setErpOrderShopName(shopName);
-            shipmentExtra.setErpPerformanceShopCode(shopCode);
-            shipmentExtra.setErpPerformanceShopName(shopName);
-        }
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        shipmentExtra.setErpOrderShopCode(shopCode);
+        shipmentExtra.setErpOrderShopName(shopName);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
@@ -658,21 +643,12 @@ public class ShipmentWiteLogic {
 
         //下单店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
-        Response<Shop> response = shopReadService.findByOuterId(openShop.getAppKey());
-        if(response.isSuccess()){
-            Shop shop = response.getResult();
-            ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            ShopServerInfo shopServerInfo = existShopExtraInfo.getShopServerInfo();
-            if(shopServerInfo != null){
-                shipmentExtra.setErpOrderShopCode(shopOrder.getShopId().toString());
-                shipmentExtra.setErpOrderShopName(shopOrder.getShopName());
-                shipmentExtra.setErpPerformanceShopCode(shopServerInfo.getVirtualShopCode());
-                shipmentExtra.setErpPerformanceShopName(shopServerInfo.getVirtualShopName());
-            }
-
-        }else{
-            log.error("shop is not exists,outerId:{},cause:{}",openShop.getAppKey(),response.getError());
-        }
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        shipmentExtra.setErpOrderShopCode(shopCode);
+        shipmentExtra.setErpOrderShopName(shopName);
+        shipmentExtra.setErpPerformanceShopCode(shopCode);
+        shipmentExtra.setErpPerformanceShopName(shopName);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额

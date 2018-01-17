@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Created by songrenfei on 2018/1/16
@@ -47,7 +48,7 @@ public class ItemOpenApi {
             log.error("find sku template by barcodes:{} fail,error:{}",barcodeList,skuTemplatesRes.getError());
             throw new OPServerException(skuTemplatesRes.getError());
         }
-        List<SkuTemplate> skuTemplates = skuTemplatesRes.getResult();
+        List<SkuTemplate> skuTemplates = skuTemplatesRes.getResult().stream().filter(skuTemplate -> !Objects.equal(skuTemplate.getStatus(),-3)).collect(Collectors.toList());
 
         if(!Objects.equal(skuTemplates.size(),barcodeList.size())){
             log.error("some barcode:{} middle not exist",barcodeList);

@@ -140,20 +140,22 @@ public class SyncRefundPosLogic {
         posContent.setRemark(refund.getBuyerNote());//备注
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,refund);
-        List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(refund);
+        List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getId(),extra.get("outCode"));
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);
 
         return posContent;
     }
 
-    private List<HkShipmentPosItem> makeHkShipmentPosItem(Refund refund) {
+    private List<HkShipmentPosItem> makeHkShipmentPosItem(Refund refund,Long shipmentId,String returnWarehouseCode) {
 
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
         for (RefundItem refundItem : refundItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
+            hkShipmentPosItem.setMatbarcode(returnWarehouseCode);
+            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             hkShipmentPosItem.setQty(refundItem.getQuantity());
             hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());

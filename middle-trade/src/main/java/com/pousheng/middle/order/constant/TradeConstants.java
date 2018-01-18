@@ -179,6 +179,10 @@ public class TradeConstants {
     public static final String SHIP_CORP_CODE = "shipmentCorpCode";
     //发货时间
     public static final String SHIP_DATE = "shipmentDate";
+    //同步无法派单产品失败
+    public static final Integer FAIL_NOT_DISPATCHER_SKU_TO_MPOS = 1;
+    //同步退货单收货失败
+    public static final Integer FAIL_REFUND_RECEIVE_TO_MPOS = 2;
 
     //货号
     public static final String HK_MATRIAL_CODE="materialCode";

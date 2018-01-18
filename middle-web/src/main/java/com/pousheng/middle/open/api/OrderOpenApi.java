@@ -17,6 +17,7 @@ import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -78,6 +79,8 @@ public class OrderOpenApi {
     private HKShipmentDoneLogic hkShipmentDoneLogic;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -305,11 +308,11 @@ public class OrderOpenApi {
                 }
             }
             //如果是苏宁的售后单，将会主动查询售后单的状态
-            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+            if (StringUtils.hasText(outId)&&outId.contains("suning")) {
                 String channel = refundReadLogic.getOutChannelSuning(outId);
                 if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
-                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                        && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                    Refund newRefund = refundReadLogic.findRefundById(refund.getId());
                     OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
                     ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
                     TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
@@ -319,6 +322,10 @@ public class OrderOpenApi {
                     event.setOpenOrderId(shopOrder.getOutId());
                     eventBus.post(event);
                 }
+            }
+            // 通知mpos收到退货
+            if(refund.getShopName().startsWith("mpos")){
+                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId(),receivedDate);
             }
 
         } catch (JsonResponseException | ServiceException e) {

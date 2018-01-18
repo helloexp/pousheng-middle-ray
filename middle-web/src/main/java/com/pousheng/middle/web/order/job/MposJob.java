@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -184,9 +185,17 @@ public class MposJob {
         public void run() {
             if(!CollectionUtils.isEmpty(autoCompensations)){
                 autoCompensations.forEach(autoCompensation -> {
-                    Map<String,String> extra = autoCompensation.getExtra();
-                    if(Objects.nonNull(extra.get("param"))){
-                        syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                    if(Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS)){
+                        Map<String,String> extra = autoCompensation.getExtra();
+                        if(Objects.nonNull(extra.get("param"))){
+                            syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                        }
+                    }
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS)){
+                        Map<String,String> extra = autoCompensation.getExtra();
+                        if(Objects.nonNull(extra.get("param"))){
+                            syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                        }
                     }
                 });
             }

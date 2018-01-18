@@ -490,6 +490,7 @@ public class AdminShops {
         }
         if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
             toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdateServerInfo.setVirtualShopName(shopServerInfo.getVirtualShopName());
             toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
             toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
             toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());

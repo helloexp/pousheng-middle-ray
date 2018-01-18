@@ -3,6 +3,11 @@ package com.pousheng.middle.web.erp;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -17,6 +22,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -34,8 +41,8 @@ public class FireCall {
     private final WarehouseImporter warehouseImporter;
 
     private final DateTimeFormatter dft;
-
-
+    @RpcConsumer
+    private MappingReadService mappingReadService;
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
                     WarehouseImporter warehouseImporter) {
@@ -103,6 +110,31 @@ public class FireCall {
         return "ok";
     }
 
+    /**
+     * 根据店铺id拉取基础货品信息
+     * @param openShopId
+     * @return
+     */
+    @RequestMapping(value = "/sku/code/by/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam Long openShopId){
+        int pageNo = 0;
+        int pageSize= 40;
+        while(true){
+            Response<Paging<ItemMapping>> r =  mappingReadService.findByOpenShopId(openShopId,pageNo,pageSize);
+            Paging<ItemMapping> itemMappingPaging = r.getResult();
+            List<ItemMapping> itemMappingList = itemMappingPaging.getData();
+            if (itemMappingList.isEmpty()){
+                break;
+            }
+            for (ItemMapping itemMapping:itemMappingList){
+                if (!Objects.equals(itemMapping.getStatus(),-1)){
+                    int spuCount =spuImporter.processPullMarterials(itemMapping.getSkuCode());
+                    log.info("synchronized {} spus", spuCount);
+                }
+            }
+        }
+        return "ok";
+    }
 }
 
 

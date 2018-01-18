@@ -157,7 +157,7 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             hkShipmentPosItem.setQty(refundItem.getApplyQuantity());
-            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getCleanPrice()==null?0:refundItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;

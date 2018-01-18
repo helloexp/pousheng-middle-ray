@@ -931,14 +931,13 @@ public class ShipmentWiteLogic {
                 skuCodeAndQuantities.add(skuCodeAndQuantity);
             }
         }
-        DispatchOrderItemInfo dispatchOrderItemInfo = null;
-        //如果指定门店
+
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
             throw new JsonResponseException(response.getError());
         }
-        dispatchOrderItemInfo = response.getResult();
+        DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
 
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);

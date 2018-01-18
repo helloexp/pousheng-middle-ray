@@ -150,14 +150,13 @@ public class SyncRefundPosLogic {
     private List<HkShipmentPosItem> makeHkShipmentPosItem(Refund refund,Long shipmentId,String returnWarehouseCode) {
 
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
         for (RefundItem refundItem : refundItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setStockcode(returnWarehouseCode);
             hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
-            hkShipmentPosItem.setQty(refundItem.getQuantity());
+            hkShipmentPosItem.setQty(refundItem.getApplyQuantity());
             hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }

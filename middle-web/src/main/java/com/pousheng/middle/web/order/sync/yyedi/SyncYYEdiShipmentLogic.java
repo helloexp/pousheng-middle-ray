@@ -8,18 +8,17 @@ import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderResponseBody;
 import com.pousheng.middle.hksyc.dto.trade.SycHkUserAddress;
 import com.pousheng.middle.hksyc.dto.trade.SycShipmentOrderResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HkPayType;
 import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiShipmentOrderApi;
 import com.pousheng.middle.yyedisyc.dto.YYEdiCancelResponse;
@@ -35,9 +34,8 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.enums.ShipmentType;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -46,11 +44,13 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * 同步恒康发货单逻辑
@@ -78,6 +78,8 @@ public class SyncYYEdiShipmentLogic {
     private MiddleOrderFlowPicker flowPicker;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -224,12 +226,43 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setBillNo(String.valueOf(shipment.getId()));
         //单据类型
         shipmentInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_ON_LINE);
-        //来源单号 todo
-        shipmentInfo.setSourceBillNo("");
+        //来源单号
+        if (Objects.equals(shipmentType,1)){
+            shipmentInfo.setSourceBillNo("");
+        }
+        //换货单号
+        if (Objects.equals(shipmentType,2)){
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+            Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+            RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            shipmentInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+        }
+        //补发类型
+        if (Objects.equals(shipmentType,3)){
+            //获取该订单号下面的所有的销售发货单
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+            List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(orderShipment.getOrderId());
+            List<Shipment> shipmentList = shipments.stream().filter(Objects::nonNull)
+                    .filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                    .filter(it->Objects.equals(it.getType(), ShipmentType.SALES_SHIP.value())).collect(Collectors.toList());
+
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+            List<String> skuCodes = shipmentItems.stream().filter(Objects::nonNull).map(ShipmentItem::getSkuCode).collect(Collectors.toList());
+            Set<String> shipmentIds = new HashSet<>();
+            for (Shipment s:shipmentList){
+                List<ShipmentItem> shipmentItemList = shipmentReadLogic.getShipmentItems(s);
+                for (ShipmentItem item:shipmentItemList){
+                    if (skuCodes.contains(item.getSkuCode())){
+                        shipmentIds.add(String.valueOf(s.getId()));
+                    }
+                }
+            }
+            shipmentInfo.setSourceBillNo("");
+        }
         //网店交易单号
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
-        //恒康店铺码
-        shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopCode());
+        //恒康店铺码--传外码
+        shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
         //恒康店铺名称
         shipmentInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
         //出库单类型

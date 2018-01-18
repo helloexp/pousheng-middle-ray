@@ -581,12 +581,15 @@ public class ShipmentWiteLogic {
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         log.info("auto create shipment,step seven");
-        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
-        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
+        shipmentExtra.setErpOrderShopOutCode(shopOutCode);
+        shipmentExtra.setErpPerformanceShopOutCode(shopOutCode);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额

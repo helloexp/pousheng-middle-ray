@@ -13,6 +13,10 @@ public class ShopServerInfo implements Serializable{
 
     private static final long serialVersionUID = 9077504691689733436L;
 
+    //公司id
+    private String companyId;
+    //虚拟店内码
+    private String virtualShopInnerCode;
     //虚拟店code
     private String virtualShopCode;
     //虚拟店名称

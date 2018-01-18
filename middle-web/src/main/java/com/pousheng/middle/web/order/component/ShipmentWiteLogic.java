@@ -978,7 +978,7 @@ public class ShipmentWiteLogic {
                 SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
                 orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
             }
-            //todo 商品派不出去通知mpos
+            // 商品派不出去通知mpos
             syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
         }
         this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());

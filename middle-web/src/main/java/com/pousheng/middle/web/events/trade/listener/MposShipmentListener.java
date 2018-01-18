@@ -17,6 +17,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -61,6 +62,10 @@ public class MposShipmentListener {
     @Autowired
     private OrderWriteLogic orderWriteLogic;
 
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
+
+
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -83,7 +88,8 @@ public class MposShipmentListener {
                 //扣减库存
                 DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
                 mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
-                //todo 发货推送信息给恒康
+                // 发货推送pos信息给恒康
+                syncShipmentPosLogic.syncShipmentPosToHk(shipment);
             }
             this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());
         }
@@ -93,10 +99,6 @@ public class MposShipmentListener {
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
         }
-//        if(event.getMiddleOrderEvent() == MiddleOrderEvent.CANCEL){
-//            shipmentWiteLogic.cancelShipment(shipment,0);
-//            this.syncOrderStatus(shipment,MiddleShipmentsStatus.CANCELED.getValue(),MiddleOrderStatus.CANCEL.getValue());
-//        }
     }
 
 

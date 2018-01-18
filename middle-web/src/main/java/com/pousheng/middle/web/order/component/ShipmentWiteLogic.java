@@ -933,25 +933,13 @@ public class ShipmentWiteLogic {
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = null;
         //如果指定门店
-        if(Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_ASSIGN_SHOP),"1")){
-            Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
-            if (!response.isSuccess()) {
-                log.error("dispatch fail,error:{}", response.getError());
-                throw new JsonResponseException(response.getError());
-            }
-            dispatchOrderItemInfo = response.getResult();
-        }else{
-            //============ 测试数据 ===============
-            dispatchOrderItemInfo = new DispatchOrderItemInfo();
-            ShopShipment shopShipment1 = new ShopShipment();
-            shopShipment1.setShopId(121l);
-            shopShipment1.setShopName("京昌平阳光AS");
-            shopShipment1.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment1));
-            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList());
-            dispatchOrderItemInfo.setSkuCodeAndQuantities(Lists.newArrayList());
-            //============ 测试数据 ===============
+        Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
+        if (!response.isSuccess()) {
+            log.error("dispatch fail,error:{}", response.getError());
+            throw new JsonResponseException(response.getError());
         }
+        dispatchOrderItemInfo = response.getResult();
+
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             if (shipmentId != null) {

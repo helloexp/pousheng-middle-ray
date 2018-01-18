@@ -941,6 +941,7 @@ public class ShipmentWiteLogic {
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
+        log.info("MPOS DISPATCH SUCCESS result:{}",dispatchOrderItemInfo);
 
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);

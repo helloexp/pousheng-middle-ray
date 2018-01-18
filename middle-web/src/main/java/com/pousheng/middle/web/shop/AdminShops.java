@@ -469,7 +469,10 @@ public class AdminShops {
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
 
-        ShopServerInfo toUpdateServerInfo = new ShopServerInfo();
+        ShopServerInfo toUpdateServerInfo = existShopExtraInfo.getShopServerInfo();
+        if(Arguments.isNull(toUpdateServerInfo)){
+            toUpdateServerInfo = new ShopServerInfo();
+        }
         if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
             toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
             toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());

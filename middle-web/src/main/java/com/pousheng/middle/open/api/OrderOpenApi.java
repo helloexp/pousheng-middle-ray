@@ -13,6 +13,7 @@ import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -70,6 +71,8 @@ public class OrderOpenApi {
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -274,6 +277,10 @@ public class OrderOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
+            }
+            // 通知mpos收到退货
+            if(refund.getShopName().startsWith("mpos")){
+                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId(),receivedDate);
             }
 
         } catch (JsonResponseException | ServiceException e) {

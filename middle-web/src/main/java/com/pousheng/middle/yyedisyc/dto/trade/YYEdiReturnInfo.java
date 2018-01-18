@@ -2,6 +2,7 @@ package com.pousheng.middle.yyedisyc.dto.trade;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -69,7 +70,11 @@ public class YYEdiReturnInfo implements java.io.Serializable{
     @JsonProperty(value = "Tdq")
     private int Tdq;
     @JsonProperty(value = "ERPModifyTime")
-    private Date ERPModifyTime;
+    private String ERPModifyTime;
+
+    @JsonProperty(value = "EDIBillNo")
+    private String EDIBillNo;
+
 
     private List<YYEdiReturnItem> items;
 
@@ -290,11 +295,11 @@ public class YYEdiReturnInfo implements java.io.Serializable{
         Tdq = tdq;
     }
     @JsonIgnore
-    public Date getERPModifyTime() {
+    public String getERPModifyTime() {
         return ERPModifyTime;
     }
     @JsonIgnore
-    public void setERPModifyTime(Date ERPModifyTime) {
+    public void setERPModifyTime(String ERPModifyTime) {
         this.ERPModifyTime = ERPModifyTime;
     }
 
@@ -304,5 +309,13 @@ public class YYEdiReturnInfo implements java.io.Serializable{
 
     public void setItems(List<YYEdiReturnItem> items) {
         this.items = items;
+    }
+    @JsonIgnore
+    public String getEDIBillNo() {
+        return EDIBillNo;
+    }
+    @JsonIgnore
+    public void setEDIBillNo(String EDIBillNo) {
+        this.EDIBillNo = EDIBillNo;
     }
 }

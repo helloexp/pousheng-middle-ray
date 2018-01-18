@@ -165,10 +165,6 @@ public class yyEDIOpenApi {
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
-          /*  List<YYEdiRefundConfirmItem> hkConfirmReturnItemInfos = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
-
-           // refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
-*/
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
@@ -187,7 +183,6 @@ public class yyEDIOpenApi {
             Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
-                //这就就不抛出错了，中台自己处理即可。
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk shipment handle result to pousheng fail,error:{}", e.getMessage());
@@ -207,7 +202,7 @@ public class yyEDIOpenApi {
             throw new JsonResponseException("refund.type.invalid");
         }
         switch (middleRefundType) {
-            case AFTER_SALES_REFUND:
+            case AFTER_SALES_RETURN:
                 log.error("refund(id:{}) type:{} not allow hk confirm", refund.getId(), refund.getRefundType());
                 throw new JsonResponseException("refund.not.allow.hk.confirm");
             case AFTER_SALES_CHANGE:

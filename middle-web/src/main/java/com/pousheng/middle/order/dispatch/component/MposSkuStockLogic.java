@@ -128,7 +128,7 @@ public class MposSkuStockLogic {
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
         if(CollectionUtils.isEmpty(skuStockInfos)){
             log.error("not find stock info by stockCodes:{} and skuCodes:{}",stockCodes,skuCodes);
-            throw new ServiceException("query.hk.stock.fail");
+            return;
         }
 
         List<StockDto> stockDtos = Lists.newArrayList();

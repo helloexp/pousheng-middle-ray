@@ -17,6 +17,7 @@ import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -100,6 +101,12 @@ public class QueryHkWarhouseOrShopStockApi {
 
 
     private List<HkSkuStockInfo> readStockFromJson(String json) {
+
+        if(Strings.isNullOrEmpty(json)){
+            log.warn("not query stock from hk");
+            return Lists.newArrayList();
+        }
+
         try {
             return JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(json, LIST_OF_SKU_STOCK);
         } catch (IOException e) {

@@ -192,7 +192,7 @@ public class SyncYYEdiReturnLogic {
         //单据类型
         refundInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_RETURN);
         //店铺内码
-        refundInfo.setShopCode(shipmentExtra.getErpPerformanceShopCode());
+        refundInfo.setShopCode(shipmentExtra.getErpOrderShopOutCode());
         //店铺名称
         refundInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
         //买家用户名

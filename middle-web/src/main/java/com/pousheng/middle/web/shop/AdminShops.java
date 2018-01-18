@@ -480,19 +480,19 @@ public class AdminShops {
             toUpdateServerInfo = new ShopServerInfo();
         }
         if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
-            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
-            toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
-            toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
-            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
+            toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
+            toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
 
             openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId().toString());
             openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
             openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
         }
         if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
-            toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
-            toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
-            toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
+            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
+            toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
+            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
 
             openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
             openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());

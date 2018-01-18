@@ -226,14 +226,19 @@ public class SyncYYEdiReturnLogic {
         refundInfo.setSendAddress("");
         //寄件邮编
         refundInfo.setZipCode("");
-        //预期数量 todo
-        refundInfo.setExpectQty(0);
-        //总行数
-        refundInfo.setTdq(0);
         //最近修改时间
         refundInfo.setERPModifyTime(new Date());
         //明细记录
-        refundInfo.setItems(this.makeSycYYEdiRefundItemList(refund,warehouse,shopOrder));
+        List<YYEdiReturnItem> items = this.makeSycYYEdiRefundItemList(refund,warehouse,shopOrder);
+        refundInfo.setItems(items);
+        int quantity = 0;
+        for (YYEdiReturnItem returnItem:items){
+            quantity =quantity+returnItem.getExpectQty();
+        }
+        //预期数量
+        refundInfo.setExpectQty(quantity);
+        //总行数
+        refundInfo.setTdq(items.size());
         return refundInfo;
     }
 

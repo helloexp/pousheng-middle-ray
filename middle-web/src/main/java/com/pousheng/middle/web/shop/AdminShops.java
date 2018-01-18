@@ -469,19 +469,19 @@ public class AdminShops {
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
 
-        ShopServerInfo toUpdate = new ShopServerInfo();
+        ShopServerInfo toUpdateServerInfo = new ShopServerInfo();
         if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
-            toUpdate.setCompanyId(shopServerInfo.getCompanyId());
-            toUpdate.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
-            toUpdate.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
-            toUpdate.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
+            toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
+            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
         }
         if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
-            toUpdate.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
-            toUpdate.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
-            toUpdate.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
+            toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
+            toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
+            toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
         }
-        existShopExtraInfo.setShopServerInfo(toUpdate);
+        existShopExtraInfo.setShopServerInfo(toUpdateServerInfo);
         if(Arguments.isNull(existShopExtraInfo.getOpenShopId())){
             log.error("shop(id:{}) not related open shop",shopId);
             throw new JsonResponseException("shop.not.related.open.shop");

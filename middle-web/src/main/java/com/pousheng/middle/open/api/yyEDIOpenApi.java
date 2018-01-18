@@ -203,8 +203,7 @@ public class yyEDIOpenApi {
         }
         switch (middleRefundType) {
             case AFTER_SALES_RETURN:
-                log.error("refund(id:{}) type:{} not allow hk confirm", refund.getId(), refund.getRefundType());
-                throw new JsonResponseException("refund.not.allow.hk.confirm");
+                return MiddleOrderEvent.RETURN.toOrderOperation();
             case AFTER_SALES_CHANGE:
                 return MiddleOrderEvent.RETURN_CHANGE.toOrderOperation();
             default:

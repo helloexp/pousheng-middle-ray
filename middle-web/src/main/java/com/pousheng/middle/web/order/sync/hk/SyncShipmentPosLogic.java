@@ -197,7 +197,7 @@ public class SyncShipmentPosLogic {
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
             Map<String,String> extraMap = openShop.getExtra();
             String companyId = extraMap.get("companyCode");
-            String code = extraMap.get("hkPerformanceShopCode");
+            String code = extraMap.get("hkPerformanceShopOutCode");
 
             posContent.setNetcompanyid(companyId);//线上店铺所属公司id
             posContent.setNetshopcode(code);//线上店铺code

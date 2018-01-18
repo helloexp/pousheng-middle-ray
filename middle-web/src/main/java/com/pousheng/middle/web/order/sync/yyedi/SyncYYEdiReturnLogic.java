@@ -192,7 +192,7 @@ public class SyncYYEdiReturnLogic {
         //单据类型
         refundInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_RETURN);
         //店铺内码
-        refundInfo.setShopCode(shipmentExtra.getErpOrderShopOutCode());
+        refundInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
         //店铺名称
         refundInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
         //买家用户名
@@ -227,7 +227,7 @@ public class SyncYYEdiReturnLogic {
         //寄件邮编
         refundInfo.setZipCode("");
         //最近修改时间
-        refundInfo.setERPModifyTime(new Date());
+        //refundInfo.setERPModifyTime(formatter.print(refund.getCreatedAt().getTime()));
         //明细记录
         List<YYEdiReturnItem> items = this.makeSycYYEdiRefundItemList(refund,warehouse,shopOrder);
         refundInfo.setItems(items);
@@ -239,6 +239,8 @@ public class SyncYYEdiReturnLogic {
         refundInfo.setExpectQty(quantity);
         //总行数
         refundInfo.setTdq(items.size());
+        //yyedi订单号
+        refundInfo.setEDIBillNo(shipmentExtra.getOutShipmentId());
         return refundInfo;
     }
 
@@ -251,6 +253,8 @@ public class SyncYYEdiReturnLogic {
     private List<YYEdiReturnItem> makeSycYYEdiRefundItemList(Refund refund,Warehouse warehouse,ShopOrder shopOrder) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         List<YYEdiReturnItem> items = Lists.newArrayList();
         int count= 0;
         for (RefundItem refundItem : refundItems) {
@@ -299,6 +303,8 @@ public class SyncYYEdiReturnLogic {
             Map<String,Integer> extraPrice = skuTemplate.getExtraPrice();
             int originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
             item.setRetailPrice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            //edi订单号
+            item.setEDIBillNo(shipmentExtra.getOutShipmentId());
             items.add(item);
             count++;
         }

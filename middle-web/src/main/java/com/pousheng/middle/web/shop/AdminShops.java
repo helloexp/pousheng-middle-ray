@@ -503,6 +503,7 @@ public class AdminShops {
 
         Shop toUpdate = new Shop();
         toUpdate.setId(shopId);
+        existShopExtraInfo.setShopServerInfo(toUpdateServerInfo);
         toUpdate.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),existShopExtraInfo));
         Response<Boolean> resp = shopWriteService.update(toUpdate);
         if (!resp.isSuccess()) {

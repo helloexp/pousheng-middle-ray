@@ -125,7 +125,7 @@ public class yyEDIOpenApi {
                 //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
                 hkShipmentDoneLogic.doneShipment(shipment);
             }catch (Exception e){
-                log.error("");
+                log.error("update shipment failed,shipment id is {},caused by {}",yyEdiShipInfo.getShipmentId(),e.getMessage());
                 continue;
             }
         }

@@ -469,6 +469,12 @@ public class AdminShops {
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
 
+        OpenShop openShop = openShopCacher.findById(existShopExtraInfo.getOpenShopId());
+        Map<String,String> openExtra = openShop.getExtra();
+        if(CollectionUtils.isEmpty(openExtra)){
+            openExtra = Maps.newHashMap();
+        }
+
         ShopServerInfo toUpdateServerInfo = existShopExtraInfo.getShopServerInfo();
         if(Arguments.isNull(toUpdateServerInfo)){
             toUpdateServerInfo = new ShopServerInfo();
@@ -478,17 +484,22 @@ public class AdminShops {
             toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
             toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
             toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+
+            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId().toString());
+            openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
+            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
         }
         if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
             toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
             toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
             toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
+
+            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
+            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());
+            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,shopServerInfo.getVirtualShopCode());
+            openExtra.put(TradeConstants.HK_COMPANY_CODE,shopServerInfo.getCompanyId());
         }
-        existShopExtraInfo.setShopServerInfo(toUpdateServerInfo);
-        if(Arguments.isNull(existShopExtraInfo.getOpenShopId())){
-            log.error("shop(id:{}) not related open shop",shopId);
-            throw new JsonResponseException("shop.not.related.open.shop");
-        }
+
 
         Shop toUpdate = new Shop();
         toUpdate.setId(shopId);
@@ -497,21 +508,6 @@ public class AdminShops {
         if (!resp.isSuccess()) {
             log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
-        }
-
-        OpenShop openShop = openShopCacher.findById(existShopExtraInfo.getOpenShopId());
-        Map<String,String> openExtra = openShop.getExtra();
-        if(CollectionUtils.isEmpty(openExtra)){
-            openExtra = Maps.newHashMap();
-        }
-        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
-        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());
-        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,shopServerInfo.getVirtualShopCode());
-        openExtra.put(TradeConstants.HK_COMPANY_CODE,shopServerInfo.getCompanyId());
-        if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
-            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId().toString());
-            openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
-            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
         }
 
         OpenShop toUpdateOpenShop = new OpenShop();

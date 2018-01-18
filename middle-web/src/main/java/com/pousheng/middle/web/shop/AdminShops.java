@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
@@ -25,6 +26,9 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
@@ -77,6 +81,10 @@ public class AdminShops {
     private ParanaUserOperationLogic paranaUserOperationLogic;
     @Autowired
     private MposWarehousePusher mposWarehousePusher;
+    @Autowired
+    private OpenShopCacher openShopCacher;
+    @RpcConsumer
+    private OpenShopWriteService openShopWriteService;
 
 
 
@@ -460,8 +468,10 @@ public class AdminShops {
         Shop exist = rExist.getResult();
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
-        if (existShopExtraInfo != null) {
-            existShopExtraInfo.setShopServerInfo(shopServerInfo);
+        existShopExtraInfo.setShopServerInfo(shopServerInfo);
+        if(Arguments.isNull(existShopExtraInfo.getOpenShopId())){
+            log.error("shop(id:{}) not related open shop",shopId);
+            throw new JsonResponseException("shop.not.related.open.shop");
         }
 
         Shop toUpdate = new Shop();
@@ -471,6 +481,31 @@ public class AdminShops {
         if (!resp.isSuccess()) {
             log.error("update shop extra:{} failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
+        }
+
+        OpenShop openShop = openShopCacher.findById(existShopExtraInfo.getOpenShopId());
+        Map<String,String> openExtra = openShop.getExtra();
+        if(CollectionUtils.isEmpty(openExtra)){
+            openExtra = Maps.newHashMap();
+        }
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,shopServerInfo.getVirtualShopCode());
+        openExtra.put(TradeConstants.HK_COMPANY_CODE,shopServerInfo.getCompanyId());
+        if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
+            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId().toString());
+            openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
+            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
+        }
+
+        OpenShop toUpdateOpenShop = new OpenShop();
+        toUpdateOpenShop.setId(existShopExtraInfo.getOpenShopId());
+        toUpdateOpenShop.setExtra(openExtra);
+
+        Response<Boolean>  updateRes = openShopWriteService.update(toUpdateOpenShop);
+        if(!updateRes.isSuccess()){
+            log.error("update open shop(id:{}) extra fail,error:{}",existShopExtraInfo.getOpenShopId(),updateRes.getError());
+            throw new JsonResponseException(updateRes.getError());
         }
     }
 

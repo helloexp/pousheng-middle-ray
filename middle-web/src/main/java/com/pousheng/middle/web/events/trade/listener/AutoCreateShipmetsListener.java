@@ -64,7 +64,7 @@ public class AutoCreateShipmetsListener {
         if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
-            log.info("MPOS-ORDER-DISPATCH-END success...");
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
 
         }else{
             //如果是京东货到付款，默认展示京东快递

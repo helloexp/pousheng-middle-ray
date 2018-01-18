@@ -468,7 +468,20 @@ public class AdminShops {
         Shop exist = rExist.getResult();
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
-        existShopExtraInfo.setShopServerInfo(shopServerInfo);
+
+        ShopServerInfo toUpdate = new ShopServerInfo();
+        if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
+            toUpdate.setCompanyId(shopServerInfo.getCompanyId());
+            toUpdate.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
+            toUpdate.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
+            toUpdate.setCompanyId(shopServerInfo.getCompanyId());
+        }
+        if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
+            toUpdate.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
+            toUpdate.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
+            toUpdate.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
+        }
+        existShopExtraInfo.setShopServerInfo(toUpdate);
         if(Arguments.isNull(existShopExtraInfo.getOpenShopId())){
             log.error("shop(id:{}) not related open shop",shopId);
             throw new JsonResponseException("shop.not.related.open.shop");

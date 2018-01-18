@@ -18,6 +18,8 @@ import io.terminus.open.client.common.mappings.service.MappingWriteService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.item.dto.ItemResult;
 import io.terminus.open.client.item.dto.OpenClientSkuAttribute;
+import io.terminus.open.client.item.model.PushedItem;
+import io.terminus.open.client.item.service.PushedItemWriteService;
 import io.terminus.open.client.parana.component.ParanaClient;
 import io.terminus.open.client.parana.dto.ParanaCallResult;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -51,6 +53,8 @@ public class PushMposItemComponent {
     private OpenShopCacher openShopCacher;
     @RpcConsumer
     private MappingWriteService mappingWriteService;
+    @RpcConsumer
+    private PushedItemWriteService pushedItemWriteService;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -102,9 +106,30 @@ public class PushMposItemComponent {
             if (!createItemMappingsR.isSuccess()) {
                 log.error("fail to create item mappings:{},cause:{}", createdItemMappings, createItemMappingsR.getError());
             }
+
+            PushedItem pushedItem = new PushedItem();
+            if (addR.isSuccess()) {
+                pushedItem.setStatus(1);
+                pushedItem.setSyncOpenIdStatus(itemResult.isNeedSyncOpenId() ? 0 : 1);
+                pushedItem.setChannelItemId(itemResult.getOpenItemId());
+                pushedItem.setCause("");
+            } else {
+                pushedItem.setStatus(-1);
+                pushedItem.setSyncOpenIdStatus(-1);
+                pushedItem.setCause(addR.getError());
+            }
+            createOrUpdatePushedItem(pushedItem);
         }
 
     }
+
+    private void createOrUpdatePushedItem(PushedItem pushedItem) {
+        Response<Boolean> r = pushedItemWriteService.createOrUpdate(pushedItem);
+        if (!r.isSuccess()) {
+            log.error("fail to create pushed item:{},cause:{}", pushedItem, r.getError());
+        }
+    }
+
 
 
 

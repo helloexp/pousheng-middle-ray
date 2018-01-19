@@ -77,7 +77,7 @@ public class SyncMposApi {
      */
     public String syncRefundReceive(Map<String,Object> param){
         log.info("sync shipments status from mpos,param:{}",param);
-        String responseBody = paranaClient.get(shopId,"",param);
+        String responseBody = paranaClient.post(shopId,"mpos.seller.confirm.afterSales",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

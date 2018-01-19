@@ -81,6 +81,8 @@ public class OrderOpenApi {
     private EventBus eventBus;
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -325,7 +327,7 @@ public class OrderOpenApi {
             }
             // 通知mpos收到退货
             if(refund.getShopName().startsWith("mpos")){
-                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId(),receivedDate);
+               syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
 
         } catch (JsonResponseException | ServiceException e) {

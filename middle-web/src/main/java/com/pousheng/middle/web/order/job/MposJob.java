@@ -8,11 +8,15 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -23,6 +27,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
@@ -57,6 +62,15 @@ public class MposJob {
 
     @Autowired
     private AutoCompensationReadService autoCompensationReadService;
+
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
+
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
+
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     private final ExecutorService executorService;
 
@@ -115,14 +129,19 @@ public class MposJob {
 
     @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
     public void test1(){
-        this.autoCompensateSyncMposFailTask();
+        this.autoCompensateMposFailTask();
+    }
+
+    @RequestMapping(value = "api/mpos/refund/received",method = RequestMethod.GET)
+    public void test2(@RequestParam String outerId){
+        syncMposOrderLogic.notifyMposRefundReceived(outerId);
     }
 
     /**
      * 自动同步失败任务
      */
     @Scheduled(cron = "0 */15 * * * ?")
-    public void autoCompensateSyncMposFailTask(){
+    public void autoCompensateMposFailTask(){
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
@@ -131,7 +150,6 @@ public class MposJob {
         log.info("start to compensate mpos not dispatcher sku...");
 
         Map<String,Object> param = Maps.newHashMap();
-        param.put("type",1);
         param.put("status",0);
         int pageNo = 1;
         while (true) {
@@ -188,15 +206,46 @@ public class MposJob {
                     if(Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS)){
                         Map<String,String> extra = autoCompensation.getExtra();
                         if(Objects.nonNull(extra.get("param"))){
-                            syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                            Response<Boolean> response = syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class));
+                            if(response.isSuccess()){
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
                         }
                     }
                     if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS)){
                         Map<String,String> extra = autoCompensation.getExtra();
                         if(Objects.nonNull(extra.get("param"))){
-                            syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class),autoCompensation.getId());
+                            Response<Boolean> response = syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class));
+                            if(response.isSuccess()){
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
                         }
                     }
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_POS_TO_HK)){
+                        Map<String,String> extra = autoCompensation.getExtra();
+                        if(Objects.nonNull(extra.get("param"))){
+                            Map<String,Object> param = mapper.fromJson(extra.get("param"),Map.class);
+                            Shipment shipment = shipmentReadLogic.findShipmentById((Long)param.get("shipmentId"));
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                            if(response.isSuccess()){
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
+                        }
+                    }
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK)){
+                        Map<String,String> extra = autoCompensation.getExtra();
+                        if(Objects.nonNull(extra.get("param"))){
+                            Map<String,Object> param = mapper.fromJson(extra.get("param"),Map.class);
+                            Shipment shipment = shipmentReadLogic.findShipmentById((Long)param.get("shipmentId"));
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                            if(response.isSuccess()){
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
+                        }
+                    }
+//                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_TO_HK)){
+//
+//                    }
                 });
             }
         }

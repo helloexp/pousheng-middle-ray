@@ -1,13 +1,11 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.model.AutoCompensation;
-import com.pousheng.middle.order.service.AutoCompensationWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.ShopOrder;
@@ -15,10 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 同步mpos订单状态
@@ -33,7 +31,7 @@ public class SyncMposOrderLogic {
     private SyncMposApi syncMposApi;
 
     @Autowired
-    private AutoCompensationWriteService autoCompensationWriteService;
+    private AutoCompensateLogic autoCompensateLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -43,76 +41,63 @@ public class SyncMposOrderLogic {
      * @param skuCodeAndQuantityList    商品编码及数量
      * @return
      */
-    public Response<Boolean> syncNotDispatcherSkuToMpos(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantityList){
+    public void syncNotDispatcherSkuToMpos(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantityList){
         Map<String,Object> param = this.assembNotDispatcherSkuParam(shopOrder,skuCodeAndQuantityList);
-        return this.syncNotDispatcherSkuToMpos(param,null);
+        Response<Boolean> response = this.syncNotDispatcherSkuToMpos(param);
+        if(!response.isSuccess()){
+            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS);
+        }
     }
 
     /**
      * 同步无法派出商品至mpos
      * @return
      */
-    public Response<Boolean> syncNotDispatcherSkuToMpos(Map<String,Object> param,Long id){
+    public Response<Boolean> syncNotDispatcherSkuToMpos(Map<String,Object> param){
         try{
             Response<Boolean> response = mapper.fromJson(syncMposApi.syncNotDispatcherSkuToMpos(param),Response.class);
             if(!response.isSuccess() || Objects.equals(response.getResult(),false)){
                 log.error("sync not dispatched sku to mpos fail,cause:{}",response.getError());
-                if(Objects.isNull(id)){
-                    this.createNewAutoCompensationTask(param, TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS);
-                }
-                return Response.fail("sync.not.dispatcher.sku.fail");
+                throw new ServiceException("sync.not.dispatcher.sku.fail");
             }
         }catch (Exception e){
             log.error("sync not dispatched sku to mpos fail,cause:{}", Throwables.getStackTraceAsString(e));
-            if(Objects.isNull(id)){
-                this.createNewAutoCompensationTask(param,TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS);
-            }
             return Response.fail("sync.not.dispatcher.sku.fail");
         }
-        if(!Objects.isNull(id))
-            this.updateAutoCompensationTask(id);
         return Response.ok(true);
     }
 
     /**
      * 恒康收到退货 --> 中台 --> mpos
      * @param outerId
-     * @param receiveDate
      * @return
      */
-    public Response<Boolean> notifyMposRefundReceived(String outerId,String receiveDate){
-        outerId = outerId.substring(outerId.indexOf("_"));
+    public void notifyMposRefundReceived(String outerId){
+        outerId = outerId.substring(outerId.indexOf("_")+1);
         Map<String,Object> param = Maps.newHashMap();
-        param.put("afterSaleId",outerId);
-        param.put("receiveData",receiveDate);
-       return this.notifyMposRefundReceived(param,null);
+        param.put("afterSalesId",outerId);
+        Response<Boolean> response = this.notifyMposRefundReceived(param);;
+        if(!response.isSuccess()){
+            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS);
+        }
     }
 
     /**
      * 恒康收到退货 --> 中台 --> mpos
      * @param param
-     * @param id
      * @return
      */
-    public Response<Boolean> notifyMposRefundReceived(Map<String,Object> param,Long id){
+    public Response<Boolean> notifyMposRefundReceived(Map<String,Object> param){
         try{
             Response<Boolean> response = mapper.fromJson(syncMposApi.syncRefundReceive(param),Response.class);
             if(!response.isSuccess() || Objects.equals(response.getResult(),false)){
                 log.error("sync refund receive to mpos fail,cause:{}",response.getError());
-                if(Objects.isNull(id)){
-                    this.createNewAutoCompensationTask(param,TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS);
-                }
-                return Response.fail("sync.refund.receive.fail");
+                throw new ServiceException("sync.refund.receive.fail");
             }
         }catch (Exception e){
             log.error("sync refund receive to mpos fail,cause:{}", Throwables.getStackTraceAsString(e));
-            if(Objects.isNull(id)){
-                this.createNewAutoCompensationTask(param,TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS);
-            }
             return Response.fail("sync.refund.receive.fail");
         }
-        if(!Objects.isNull(id))
-            this.updateAutoCompensationTask(id);
         return Response.ok(true);
     }
 
@@ -125,39 +110,9 @@ public class SyncMposOrderLogic {
     private Map<String,Object> assembNotDispatcherSkuParam(ShopOrder shopOrder,List<SkuCodeAndQuantity> skuCodeAndQuantityList){
         Map<String,Object> param = Maps.newHashMap();
         param.put("orderId",shopOrder.getOutId());
-        List<String> skuCodes = Lists.transform(skuCodeAndQuantityList, new Function<SkuCodeAndQuantity, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable SkuCodeAndQuantity skuCodeAndQuantity) {
-                return skuCodeAndQuantity.getSkuCode();
-            }
-        });
+        List<String> skuCodes = skuCodeAndQuantityList.stream().map(SkuCodeAndQuantity::getSkuCode).collect(Collectors.toList());
         param.put("skuCodeList",mapper.toJson(skuCodes));
         return param;
     }
 
-    /**
-     * 同步失败，创建自动补偿任务
-     * @param param
-     */
-    private void createNewAutoCompensationTask(Map<String,Object> param,Integer type){
-            AutoCompensation autoCompensation = new AutoCompensation();
-            Map<String,String> extra = Maps.newHashMap();
-            extra.put("param",mapper.toJson(param));
-            autoCompensation.setType(type);
-            autoCompensation.setStatus(0);
-            autoCompensation.setExtra(extra);
-            autoCompensationWriteService.create(autoCompensation);
-    }
-
-    /**
-     * 同步成功，修改任务状态
-     * @param id
-     */
-    private void updateAutoCompensationTask(Long id){
-        AutoCompensation autoCompensation = new AutoCompensation();
-        autoCompensation.setId(id);
-        autoCompensation.setStatus(1);
-        autoCompensationWriteService.update(autoCompensation);
-    }
 }

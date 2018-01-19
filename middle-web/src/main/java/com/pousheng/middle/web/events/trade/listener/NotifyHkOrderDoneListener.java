@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -10,6 +11,7 @@ import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -52,6 +55,8 @@ public class NotifyHkOrderDoneListener {
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -69,13 +74,18 @@ public class NotifyHkOrderDoneListener {
             Long shipmentId = orderShipment.getShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            //如果是店发，回传pos信息给hk（针对mpos订单）
+            //如果是店发，通知给hk（针对mpos订单）
             if(Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)){
                 Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation());
                 if(!res.isSuccess()){
                     log.error("shipment(id:{}) confirm failed,cause:{}",shipment.getId(),res.getError());
                 }
-                syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                if(!response.isSuccess()){
+                    Map<String,Object> param = Maps.newHashMap();
+                    param.put("shipmentId",shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK);
+                }
                 continue ;
             }
             //通知恒康已经发货

@@ -14,20 +14,16 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
-import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.model.Invoice;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -52,22 +48,15 @@ public class SyncRefundPosLogic {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private ShipmentWiteLogic shipmentWiteLogic;
-    @Autowired
-    private ShopCacher shopCacher;
-    @Autowired
     private SycHkShipmentPosApi sycHkShipmentPosApi;
     @Autowired
     private OrderReadLogic orderReadLogic;
-    @RpcConsumer
-    private ShopReadService shopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
     @Autowired
     private RefundReadLogic refundReadLogic;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
-    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     /**

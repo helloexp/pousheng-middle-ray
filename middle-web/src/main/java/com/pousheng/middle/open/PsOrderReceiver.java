@@ -122,7 +122,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             return null;
         }
         Spu spu = findR.getResult();
-
+        if (spu==null){
+            Item item = new Item();
+            item.setId(0L);
+        }
         Item item = new Item();
         item.setId(spu.getId());
         item.setName(spu.getName());
@@ -141,7 +144,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
         Optional<SkuTemplate> skuTemplateOptional = findR.getResult();
         if (!skuTemplateOptional.isPresent()) {
-            return null;
+            Sku sku = new Sku();
+            sku.setId(0L);
+            return sku;
         }
         SkuTemplate skuTemplate = skuTemplateOptional.get();
 
@@ -150,6 +155,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         sku.setName(skuTemplate.getName());
         sku.setPrice(skuTemplate.getPrice());
         sku.setSkuCode(skuTemplate.getSkuCode());
+        sku.setItemId(skuTemplate.getSpuId());
         try {
             sku.setExtraPrice(skuTemplate.getExtraPrice());
         } catch (Exception e) {
@@ -162,7 +168,20 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
-        return OpenClientOrderStatus.PAID.getValue();
+        switch (clientOrderStatus){
+            case PAID:
+                return OpenClientOrderStatus.PAID.getValue();
+            case SHIPPED:
+                return OpenClientOrderStatus.SHIPPED.getValue();
+            case NOT_PAID:
+                return OpenClientOrderStatus.NOT_PAID.getValue();
+            case CANCEL:
+                return OpenClientOrderStatus.CANCEL.getValue();
+            case CONFIRMED:
+                return OpenClientOrderStatus.CONFIRMED.getValue();
+            default:
+                return OpenClientOrderStatus.CANCEL.getValue();
+        }
     }
 
     @Override
@@ -372,12 +391,15 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected void saveParanaOrder(RichOrder richOrder) {
-        super.saveParanaOrder(richOrder);
+        RichSkusByShop orginRichSkusByShop = richOrder.getRichSkusByShops().get(0);
+        if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())){
+            super.saveParanaOrder(richOrder);
 
-        for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
-            //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
-            if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
-                syncReceiverInfo(richSkusByShop);
+            for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
+                //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
+                if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
+                    syncReceiverInfo(richSkusByShop);
+                }
             }
         }
     }

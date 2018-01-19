@@ -4,10 +4,12 @@ import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
+import com.pousheng.middle.order.enums.Municipality;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenFullOrderAddress;
 import io.terminus.parana.order.model.ReceiverInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,9 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+
+import static com.pousheng.middle.order.enums.Municipality.SHANGHAI;
 
 /**
  * Created by cp on 9/4/17
@@ -31,6 +36,15 @@ public class ReceiverInfoCompleter {
         ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
         handleResult.setSuccess(Boolean.TRUE);
         List<String> errors = Lists.newArrayList();
+        //特殊处理直辖市,京东市一级的地址是区，用省的字段填充市
+        List<String> municipalities = Lists.newArrayList(Municipality.SHANGHAI.getName(),Municipality.SHANGHAI.getDesc(),Municipality.BEIJING.getName(),Municipality.BEIJING.getDesc()
+                ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
+        if (municipalities.contains(receiverInfo.getProvince())){
+            if (!municipalities.contains(receiverInfo.getCity())){
+                receiverInfo.setRegion(receiverInfo.getCity());
+                receiverInfo.setCity(receiverInfo.getProvince());
+            }
+        }
 
         //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
         Long provinceId = queryAddressId(1L,receiverInfo.getProvince());
@@ -46,7 +60,7 @@ public class ReceiverInfoCompleter {
             receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
         }else {
             handleResult.setSuccess(Boolean.FALSE);
-            errors.add("第三方渠道市："+receiverInfo.getProvince()+"未匹配到中台的市");
+            errors.add("第三方渠道市："+receiverInfo.getCity()+"未匹配到中台的市");
         }
 
         if (StringUtils.hasText(receiverInfo.getRegion())){
@@ -55,16 +69,45 @@ public class ReceiverInfoCompleter {
                 receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
             }else {
                 handleResult.setSuccess(Boolean.FALSE);
-                errors.add("第三方渠道区："+receiverInfo.getProvince()+"未匹配到中台的区");
+                errors.add("第三方渠道区："+receiverInfo.getRegion()+"未匹配到中台的区");
             }
         }
-        
+
         handleResult.setErrors(errors);
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
         receiverInfo.setExtra(extraMap);
     }
+    public void completePushOrderAddress(OpenFullOrderAddress address){
+        ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
+        handleResult.setSuccess(Boolean.TRUE);
+        List<String> errors = Lists.newArrayList();
+        //特殊处理直辖市,京东市一级的地址是区，用省的字段填充市
+        List<String> municipalities = Lists.newArrayList(Municipality.SHANGHAI.getName(),Municipality.SHANGHAI.getDesc(),Municipality.BEIJING.getName(),Municipality.BEIJING.getDesc()
+                ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
+        if (municipalities.contains(address.getProvince())){
+            if (!municipalities.contains(address.getCity())){
+                address.setRegion(address.getCity());
+                address.setCity(address.getProvince());
+            }
+        }
+        //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
+        Long provinceId = queryAddressId(1L,address.getProvince());
+        if(Arguments.notNull(provinceId)){
+            address.setProvinceId(provinceId);
+        }
+        Long cityId = queryAddressId(provinceId,address.getCity());
+        if(Arguments.notNull(cityId)){
+            address.setCityId(cityId);
+        }
 
+        if (StringUtils.hasText(address.getRegion())){
+            Long regionId = queryAddressId(cityId,address.getRegion());
+            if(Arguments.notNull(regionId)){
+                address.setRegionId(regionId);
+            }
+        }
+    }
     private Long queryAddressId(Long pid,String name){
         //pid为null则直接返回null
         if(Arguments.isNull(pid)){

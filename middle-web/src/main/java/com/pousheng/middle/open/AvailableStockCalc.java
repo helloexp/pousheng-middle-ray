@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 计算某个店铺中某个sku的可用库存
@@ -58,10 +59,9 @@ public class AvailableStockCalc {
                 log.error("failed to find available stock for sku(code={}) in warehouse(id={}), error code:{}",
                         skuCode, warehouseId, r.getError());
             }else{
-                //获取mpos仓占用库存
-                //Long lockStock = dispatchComponent.getMposSkuWarehouseLockStock(warehouseId,skuCode);
-                //减去mpos仓商品占用库存
-                quantity= quantity+ r.getResult().getAvailStock();
+                if (Objects.nonNull(r.getResult())){
+                    quantity= quantity+ (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock());
+                }
             }
         }
         return quantity;

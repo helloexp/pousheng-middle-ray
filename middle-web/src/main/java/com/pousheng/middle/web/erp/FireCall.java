@@ -15,6 +15,10 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
+import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.joda.time.format.DateTimeFormat;
@@ -33,6 +37,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -59,8 +64,8 @@ public class FireCall {
 
 
     private final DateTimeFormatter dft;
-
-
+    @RpcConsumer
+    private MappingReadService mappingReadService;
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
                     WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi) {
@@ -123,6 +128,12 @@ public class FireCall {
 
     }
 
+    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
+        int spuCount =spuImporter.processPullMarterials(skuCode);
+        log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
 
     @RequestMapping(value="/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String syncMposWarehouse(@RequestParam String companyId,
@@ -214,6 +225,31 @@ public class FireCall {
 
 
 
+    /**
+     * 根据店铺id拉取基础货品信息
+     * @param openShopId
+     * @return
+     */
+    @RequestMapping(value = "/sku/code/by/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam Long openShopId){
+        int pageNo = 0;
+        int pageSize= 40;
+        while(true){
+            Response<Paging<ItemMapping>> r =  mappingReadService.findByOpenShopId(openShopId,pageNo,pageSize);
+            Paging<ItemMapping> itemMappingPaging = r.getResult();
+            List<ItemMapping> itemMappingList = itemMappingPaging.getData();
+            if (itemMappingList.isEmpty()){
+                break;
+            }
+            for (ItemMapping itemMapping:itemMappingList){
+                if (!Objects.equals(itemMapping.getStatus(),-1)){
+                    int spuCount =spuImporter.processPullMarterials(itemMapping.getSkuCode());
+                    log.info("synchronized {} spus", spuCount);
+                }
+            }
+        }
+        return "ok";
+    }
 }
 
 

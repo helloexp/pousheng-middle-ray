@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -321,4 +323,39 @@ public class RefundReadLogic {
         }
         return count==0;
     }
+    /**
+     * 通过outId获取渠道
+     *
+     * @return 获取渠道
+     */
+    public String getOutChannelTaobao(String outId) {
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(0);
+        }
+        return null;
+    }
+
+    /**
+     * 通过outId获取渠道
+     *
+     * @return 获取渠道
+     */
+    public String getOutafterSaleIdTaobao(String outId) {
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(1);
+        }
+        return null;
+    }
+    /**
+     * 通过outId获取渠道
+     *
+     * @return 获取渠道
+     */
+    public String getOutChannelSuning(String outId) {
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(3).splitToList(outId).get(0);
+        }
+        return null;
+    }
+
 }

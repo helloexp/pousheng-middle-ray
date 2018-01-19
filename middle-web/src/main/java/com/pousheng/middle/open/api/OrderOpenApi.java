@@ -1,18 +1,23 @@
 package com.pousheng.middle.open.api;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
+import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
+import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -27,8 +32,10 @@ import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -36,6 +43,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
@@ -72,6 +80,8 @@ public class OrderOpenApi {
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
+    @Autowired
+    private EventBus eventBus;
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
     @Autowired
@@ -284,6 +294,37 @@ public class OrderOpenApi {
             // 通知mpos收到退货
             if(refund.getShopName().startsWith("mpos")){
                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
+            }
+            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            String outId = refund.getOutId();
+            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+                String channel = refundReadLogic.getOutChannelTaobao(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                    eventBus.post(event);
+                }
+            }
+            //如果是苏宁的售后单，将会主动查询售后单的状态
+            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+                String channel = refundReadLogic.getOutChannelSuning(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenOrderId(shopOrder.getOutId());
+                    eventBus.post(event);
+                }
             }
 
         } catch (JsonResponseException | ServiceException e) {

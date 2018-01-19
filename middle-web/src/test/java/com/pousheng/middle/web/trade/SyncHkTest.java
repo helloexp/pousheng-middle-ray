@@ -66,6 +66,7 @@ public class SyncHkTest {
         OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
         OpenFullOrder openFullOrder = new OpenFullOrder();
         openFullOrder.setBuyerMobile("15152306789");
+        openFullOrder.setBuyerName("taoshenyi");
         openFullOrder.setOutOrderId("123456");
         openFullOrder.setCompanyCode("244");
         openFullOrder.setMemberCardId("0");

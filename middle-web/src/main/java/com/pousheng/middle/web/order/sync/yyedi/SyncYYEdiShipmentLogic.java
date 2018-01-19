@@ -279,7 +279,7 @@ public class SyncYYEdiShipmentLogic {
         //出库单类型
         shipmentInfo.setRefundChangeType(shipmentType);
         //付款时间
-        shipmentInfo.setPaymentDate(new Date());
+        shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
         //客户供应商快递代码
         shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
         //客户供应商快递公司名称

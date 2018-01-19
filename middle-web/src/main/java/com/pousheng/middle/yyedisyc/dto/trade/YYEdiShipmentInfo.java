@@ -80,7 +80,7 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      *付款时间
      */
     @JsonProperty(value = "PaymentDate")
-    private Date PaymentDate;
+    private String PaymentDate;
 
     /**
      * 客户供应商快递公司内码
@@ -384,11 +384,11 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
         ExpectQty = expectQty;
     }
     @JsonIgnore
-    public Date getPaymentDate() {
+    public String getPaymentDate() {
         return PaymentDate;
     }
     @JsonIgnore
-    public void setPaymentDate(Date paymentDate) {
+    public void setPaymentDate(String paymentDate) {
         PaymentDate = paymentDate;
     }
     @JsonIgnore

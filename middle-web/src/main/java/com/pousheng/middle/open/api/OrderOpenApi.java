@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
@@ -73,6 +74,8 @@ public class OrderOpenApi {
     private HKShipmentDoneLogic hkShipmentDoneLogic;
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -280,7 +283,7 @@ public class OrderOpenApi {
             }
             // 通知mpos收到退货
             if(refund.getShopName().startsWith("mpos")){
-                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId(),receivedDate);
+               syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
 
         } catch (JsonResponseException | ServiceException e) {

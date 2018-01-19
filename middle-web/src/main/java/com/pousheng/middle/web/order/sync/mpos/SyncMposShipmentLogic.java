@@ -145,25 +145,25 @@ public class SyncMposShipmentLogic{
         return Response.ok(true);
     }
 
-    /**
-     * 恒康发货通知mpos
-     * @param shipment  发货单
-     * @return
-     */
-    public Response<Boolean> syncShippedToMpos(Shipment shipment){
-        try {
-            Map<String,Object> param = this.assembShipShipmentParam(shipment);
-            MposResponse resp = mapper.fromJson(syncMposApi.syncShipmentShippedToMpos(param),MposResponse.class);
-            if (!resp.isSuccess()) {
-                return Response.fail(resp.getError());
-            }
-            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
-        }catch (Exception e) {
-            log.error("sync shipment shipped failed,shipmentId is({}),cause by {}", shipment.getId(), e.getMessage());
-            return Response.fail("sync.shipment.ship.failed");
-        }
-        return Response.ok(true);
-    }
+//    /**
+//     * 恒康发货通知mpos
+//     * @param shipment  发货单
+//     * @return
+//     */
+//    public Response<Boolean> syncShippedToMpos(Shipment shipment){
+//        try {
+//            Map<String,Object> param = this.assembShipShipmentParam(shipment);
+//            MposResponse resp = mapper.fromJson(syncMposApi.syncShipmentShippedToMpos(param),MposResponse.class);
+//            if (!resp.isSuccess()) {
+//                return Response.fail(resp.getError());
+//            }
+//            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
+//        }catch (Exception e) {
+//            log.error("sync shipment shipped failed,shipmentId is({}),cause by {}", shipment.getId(), e.getMessage());
+//            return Response.fail("sync.shipment.ship.failed");
+//        }
+//        return Response.ok(true);
+//    }
 
     /**
      * 拉取mpos发货单状态更新
@@ -223,19 +223,19 @@ public class SyncMposShipmentLogic{
         return param;
     }
 
-    /**
-     * 组装发货单发货参数
-     * @param shipment   发货单
-     * @return
-     */
-    private Map<String,Object> assembShipShipmentParam(Shipment shipment){
-        Map<String,Object> param = Maps.newHashMap();
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-        param.put("shipmentId",shipmentExtra.getOutShipmentId());
-        param.put("shipmentCorpCode",shipmentExtra.getShipmentCorpCode());
-        param.put("shipmentSerialNo",shipmentExtra.getShipmentSerialNo());
-        param.put("shipmentDate",shipmentExtra.getShipmentDate());
-        return param;
-    }
+//    /**
+//     * 组装发货单发货参数
+//     * @param shipment   发货单
+//     * @return
+//     */
+//    private Map<String,Object> assembShipShipmentParam(Shipment shipment){
+//        Map<String,Object> param = Maps.newHashMap();
+//        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+//        param.put("shipmentId",shipmentExtra.getOutShipmentId());
+//        param.put("shipmentCorpCode",shipmentExtra.getShipmentCorpCode());
+//        param.put("shipmentSerialNo",shipmentExtra.getShipmentSerialNo());
+//        param.put("shipmentDate",shipmentExtra.getShipmentDate());
+//        return param;
+//    }
 
 }

@@ -2,6 +2,7 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -13,10 +14,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -30,6 +28,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -65,6 +64,8 @@ public class MposShipmentListener {
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
 
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
     @PostConstruct
     public void init() {
@@ -89,7 +90,12 @@ public class MposShipmentListener {
                 DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
                 mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
                 // 发货推送pos信息给恒康
-                syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                if(!response.isSuccess()){
+                    Map<String,Object> param = Maps.newHashMap();
+                    param.put("shipmentId",shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                }
             }
             this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());
         }

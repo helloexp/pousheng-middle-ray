@@ -183,5 +183,12 @@ public class TradeConstants {
     public static final Integer FAIL_NOT_DISPATCHER_SKU_TO_MPOS = 1;
     //同步退货单收货失败
     public static final Integer FAIL_REFUND_RECEIVE_TO_MPOS = 2;
+    //同步发货单pos信息给恒康失败
+    public static final Integer FAIL_SYNC_POS_TO_HK = 3;
+    //同步发货单收货给恒康失败
+    public static final Integer FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK = 4;
+    //同步退货单给恒康失败
+    public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
+
 
 }

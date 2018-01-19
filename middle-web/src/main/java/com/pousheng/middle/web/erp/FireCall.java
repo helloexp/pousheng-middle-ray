@@ -247,6 +247,7 @@ public class FireCall {
                     log.info("synchronized {} spus", spuCount);
                 }
             }
+            pageNo++;
         }
         return "ok";
     }

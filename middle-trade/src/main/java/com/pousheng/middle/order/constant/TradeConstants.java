@@ -79,9 +79,11 @@ public class TradeConstants {
     public static final String HK_PERFORMANCE_SHOP_NAME="hkPerformanceShopName";
     //hk绩效店铺代码
     public static final String HK_PERFORMANCE_SHOP_CODE="hkPerformanceShopCode";
+    //hk绩效店铺外码
+    public static final String HK_PERFORMANCE_SHOP_OUT_CODE="hkPerformanceShopOutCode";
     //中台换货收货地址
     public static final String MIDDLE_CHANGE_RECEIVE_INFO="middleChangeReceiveInfo";
-    //默认退货藏id
+    //默认退货仓id
     public static final String DEFAULT_REFUND_WAREHOUSE_ID="defaultReWarehouseId";
     //默认退货仓名称
     public static final String DEFAULT_REFUND_WAREHOUSE_NAME="defaultReWarehouseName";

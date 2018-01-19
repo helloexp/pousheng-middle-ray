@@ -31,7 +31,7 @@ public class AutoCompensationReadServiceImpl implements AutoCompensationReadServ
             return Response.ok(list);
         } catch (Exception e) {
             log.error("failed to find autoCompensation task, type={},statu={}, cause:{}", type,status, Throwables.getStackTraceAsString(e));
-            return Response.fail("paging.expressCode.find.fail");
+            return Response.fail("paging.autoCompensation.find.fail");
         }
     }
 
@@ -42,9 +42,9 @@ public class AutoCompensationReadServiceImpl implements AutoCompensationReadServ
             Paging<AutoCompensation> p = autoCompensationDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), param);
             return Response.ok(p);
         }catch (Exception e){
-            log.error("failed to pagination warehouse with params:{}, cause:{}",
+            log.error("failed to pagination autoCompensation with params:{}, cause:{}",
                     param, Throwables.getStackTraceAsString(e));
-            return Response.fail("warehouse.find.fail");
+            return Response.fail("autoCompensation.find.fail");
         }
     }
 }

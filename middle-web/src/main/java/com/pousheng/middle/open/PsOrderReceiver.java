@@ -192,6 +192,21 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
+
+            //如果是mpos订单并且是自提,将待发货状态改为待收货
+            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP) && Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_SINCE),2)){
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue());
+                if (skuOrders.size() == 0) {
+                    return;
+                }
+                for (SkuOrder skuOrder : skuOrders) {
+                    Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue(), MiddleOrderStatus.SHIPPED.getValue());
+                    if (!updateRlt.getResult()) {
+                        log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                    }
+                }
+            }
+
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
             if (skuOrders.size() == 0) {
                 return;

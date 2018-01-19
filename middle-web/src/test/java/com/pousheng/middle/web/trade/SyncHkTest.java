@@ -118,7 +118,7 @@ public class SyncHkTest {
         address.setPostcode("214092");
         openFullOrderInfo.setOrder(openFullOrder);
         openFullOrderInfo.setItem(items);
-        openFullOrderInfo.setAdderss(address);
+        openFullOrderInfo.setAddress(address);
         openFullOrderInfo.setInvoice(invoice);
         orderInfos.add(openFullOrderInfo);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderInfos);

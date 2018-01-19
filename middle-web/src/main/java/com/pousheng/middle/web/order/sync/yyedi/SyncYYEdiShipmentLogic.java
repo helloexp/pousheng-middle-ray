@@ -236,6 +236,7 @@ public class SyncYYEdiShipmentLogic {
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             shipmentInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+
         }
         //补发类型
         if (Objects.equals(shipmentType,3)){
@@ -257,7 +258,17 @@ public class SyncYYEdiShipmentLogic {
                     }
                 }
             }
-            shipmentInfo.setSourceBillNo("");
+            StringBuffer stringBuffer = new StringBuffer();
+            int count=0;
+            for (String str:shipmentIds){
+                if(count==(shipmentIds.size()-1)){
+                    stringBuffer.append(str);
+                }else{
+                    stringBuffer.append(str).append(",");
+                }
+                count++;
+            }
+            shipmentInfo.setSourceBillNo(stringBuffer.toString());
         }
         //网店交易单号
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
@@ -268,7 +279,7 @@ public class SyncYYEdiShipmentLogic {
         //出库单类型
         shipmentInfo.setRefundChangeType(shipmentType);
         //付款时间
-        shipmentInfo.setPaymentDate(new Date());
+        shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
         //客户供应商快递代码
         shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
         //客户供应商快递公司名称

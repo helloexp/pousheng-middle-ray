@@ -68,6 +68,7 @@ public class SyncHkTest {
         openFullOrder.setBuyerMobile("15152306789");
         openFullOrder.setOutOrderId("123456");
         openFullOrder.setCompanyCode("244");
+        openFullOrder.setMemberCardId("0");
         openFullOrder.setOutId("244-123456");
         openFullOrder.setShopCode("SP110074");
         openFullOrder.setPerformanceShopCode("SP110074");

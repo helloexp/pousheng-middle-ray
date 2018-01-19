@@ -33,9 +33,9 @@ public class PsOrderPusher extends DefaultOrderPusher {
              * 添加地址id
              */
             for (OpenFullOrderInfo openFullOrderInfo:openFullOrderInfos){
-                OpenFullOrderAddress address = openFullOrderInfo.getAdderss();
+                OpenFullOrderAddress address = openFullOrderInfo.getAddress();
                 receiverInfoCompleter.completePushOrderAddress(address);
-                openFullOrderInfo.setAdderss(address);
+                openFullOrderInfo.setAddress(address);
             }
 
             Response<Boolean> r =  orderServiceCenter.syncOrderToEcp(openClientShop.getOpenShopId(),openFullOrderInfos);

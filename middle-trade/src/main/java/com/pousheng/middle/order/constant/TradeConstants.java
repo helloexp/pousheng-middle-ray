@@ -83,7 +83,7 @@ public class TradeConstants {
     public static final String HK_PERFORMANCE_SHOP_OUT_CODE="hkPerformanceShopOutCode";
     //中台换货收货地址
     public static final String MIDDLE_CHANGE_RECEIVE_INFO="middleChangeReceiveInfo";
-    //默认退货藏id
+    //默认退货仓id
     public static final String DEFAULT_REFUND_WAREHOUSE_ID="defaultReWarehouseId";
     //默认退货仓名称
     public static final String DEFAULT_REFUND_WAREHOUSE_NAME="defaultReWarehouseName";
@@ -179,6 +179,17 @@ public class TradeConstants {
     public static final String SHIP_CORP_CODE = "shipmentCorpCode";
     //发货时间
     public static final String SHIP_DATE = "shipmentDate";
+    //同步无法派单产品失败
+    public static final Integer FAIL_NOT_DISPATCHER_SKU_TO_MPOS = 1;
+    //同步退货单收货失败
+    public static final Integer FAIL_REFUND_RECEIVE_TO_MPOS = 2;
+    //同步发货单pos信息给恒康失败
+    public static final Integer FAIL_SYNC_POS_TO_HK = 3;
+    //同步发货单收货给恒康失败
+    public static final Integer FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK = 4;
+    //同步退货单给恒康失败
+    public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
+
 
     //货号
     public static final String HK_MATRIAL_CODE="materialCode";

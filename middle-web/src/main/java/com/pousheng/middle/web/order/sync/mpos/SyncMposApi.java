@@ -69,4 +69,16 @@ public class SyncMposApi {
         log.info("response:{}",responseBody);
         return responseBody;
     }
+
+    /**
+     * 恒康收到退货后，通知mpos退款
+     * @param param
+     * @return
+     */
+    public String syncRefundReceive(Map<String,Object> param){
+        log.info("sync shipments status from mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"mpos.seller.confirm.afterSales",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
 }

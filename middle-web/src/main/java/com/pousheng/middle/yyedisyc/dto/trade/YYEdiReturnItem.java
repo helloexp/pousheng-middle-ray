@@ -73,6 +73,9 @@ public class YYEdiReturnItem implements java.io.Serializable{
     @JsonProperty(value = "RetailPrice")
     private BigDecimal RetailPrice;
 
+    @JsonProperty(value = "EDIBillNo")
+    private String EDIBillNo;
+
     /**
      * 结算价(单价)
      */
@@ -165,5 +168,13 @@ public class YYEdiReturnItem implements java.io.Serializable{
     @JsonIgnore
     public void setBalaPrice(BigDecimal balaPrice) {
         BalaPrice = balaPrice;
+    }
+    @JsonIgnore
+    public String getEDIBillNo() {
+        return EDIBillNo;
+    }
+    @JsonIgnore
+    public void setEDIBillNo(String EDIBillNo) {
+        this.EDIBillNo = EDIBillNo;
     }
 }

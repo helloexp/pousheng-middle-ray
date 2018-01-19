@@ -934,27 +934,15 @@ public class ShipmentWiteLogic {
                 skuCodeAndQuantities.add(skuCodeAndQuantity);
             }
         }
-        DispatchOrderItemInfo dispatchOrderItemInfo = null;
-        //如果指定门店
-        if(Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_ASSIGN_SHOP),"1")){
-            Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
-            if (!response.isSuccess()) {
-                log.error("dispatch fail,error:{}", response.getError());
-                throw new JsonResponseException(response.getError());
-            }
-            dispatchOrderItemInfo = response.getResult();
-        }else{
-            //============ 测试数据 ===============
-            dispatchOrderItemInfo = new DispatchOrderItemInfo();
-            ShopShipment shopShipment1 = new ShopShipment();
-            shopShipment1.setShopId(121l);
-            shopShipment1.setShopName("京昌平阳光AS");
-            shopShipment1.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment1));
-            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList());
-            dispatchOrderItemInfo.setSkuCodeAndQuantities(Lists.newArrayList());
-            //============ 测试数据 ===============
+
+        Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
+        if (!response.isSuccess()) {
+            log.error("dispatch fail,error:{}", response.getError());
+            throw new JsonResponseException(response.getError());
         }
+        DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
+        log.info("MPOS DISPATCH SUCCESS result:{}",dispatchOrderItemInfo);
+
         for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
             if (shipmentId != null) {
@@ -993,7 +981,7 @@ public class ShipmentWiteLogic {
                 SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
                 orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
             }
-            //todo 商品派不出去通知mpos
+            // 商品派不出去通知mpos
             syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
         }
         this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());

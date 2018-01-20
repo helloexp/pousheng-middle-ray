@@ -34,13 +34,13 @@ public class ItemOpenApi {
 
     /**
      * 判断多个sku是否参与mpos
-     * @param barcodes 商品编码，多个用逗号隔开 ,约定单笔最大500个
+     * @param barCodes 商品编码，多个用逗号隔开 ,约定单笔最大500个
      * @return 各个商品是否参与mpos
      */
-    @OpenMethod(key = "check.sku.is.mpos.api", paramNames = {"barcodes"}, httpMethods = RequestMethod.POST)
-    public List<SkuIsMposDto> helloWord(@NotEmpty(message = "barcodes.empty") String barcodes) {
-        log.info("HK-CHECK-MPOS-START param barcodes is:{} ", barcodes);
-        List<String> barcodeList = Splitters.COMMA.splitToList(barcodes);
+    @OpenMethod(key = "check.sku.is.mpos.api", paramNames = {"barCodes"}, httpMethods = RequestMethod.POST)
+    public List<SkuIsMposDto> helloWord(@NotEmpty(message = "barCodes.empty") String barCodes) {
+        log.info("HK-CHECK-MPOS-START param barcodes is:{} ", barCodes);
+        List<String> barcodeList = Splitters.COMMA.splitToList(barCodes);
 
         //以查询的sku一定是中台已经有的前提
         Response<List<SkuTemplate>> skuTemplatesRes = skuTemplateReadService.findBySkuCodes(barcodeList);

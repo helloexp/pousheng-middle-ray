@@ -82,6 +82,7 @@ public class NotifyHkOrderDoneListener {
                 }
                 Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                 if(!response.isSuccess()){
+                    log.error("shipment(id:{}) notify hk failed,cause:{}",response.getError());
                     Map<String,Object> param = Maps.newHashMap();
                     param.put("shipmentId",shipment.getId());
                     autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK);

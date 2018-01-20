@@ -126,44 +126,12 @@ public class SyncMposShipmentLogic{
                 return Response.fail(updateSyncStatusRes1.getError());
             }
         }
-        //如果门店自提，状态流向待收货
-        if(Objects.equals(shipmentExtra.getTakeWay(),"2")){
-            Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
-            OrderOperation syncOrderOperation1 = MiddleOrderEvent.SHIP.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes1 = shipmentWiteLogic.updateStatus(shipment1, syncOrderOperation1);
-            if (!updateSyncStatusRes1.isSuccess()) {
-                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                return Response.fail(updateSyncStatusRes1.getError());
-            }
-            shipmentExtra.setShipmentDate(new Date());
-            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
-        }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
         update.setId(shipment.getId());
         update.setExtra(extraMap);
         shipmentWiteLogic.update(update);
         return Response.ok(true);
     }
-
-//    /**
-//     * 恒康发货通知mpos
-//     * @param shipment  发货单
-//     * @return
-//     */
-//    public Response<Boolean> syncShippedToMpos(Shipment shipment){
-//        try {
-//            Map<String,Object> param = this.assembShipShipmentParam(shipment);
-//            MposResponse resp = mapper.fromJson(syncMposApi.syncShipmentShippedToMpos(param),MposResponse.class);
-//            if (!resp.isSuccess()) {
-//                return Response.fail(resp.getError());
-//            }
-//            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),MiddleOrderEvent.SHIP));
-//        }catch (Exception e) {
-//            log.error("sync shipment shipped failed,shipmentId is({}),cause by {}", shipment.getId(), e.getMessage());
-//            return Response.fail("sync.shipment.ship.failed");
-//        }
-//        return Response.ok(true);
-//    }
 
     /**
      * 拉取mpos发货单状态更新

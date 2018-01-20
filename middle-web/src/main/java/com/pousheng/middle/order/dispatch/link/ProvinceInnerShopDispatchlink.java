@@ -57,6 +57,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
 
         //省内的mpos门店,如果没有则进入下个规则
+        //todo 冻结或删除的门店需要过滤掉
         List<AddressGps> addressGpses = shopAddressComponent.findShopAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;

@@ -66,7 +66,7 @@ public class ItemOpenApi {
             log.info("HK-CHECK-MPOS-END");
             return skuIsMposDtos;
         }catch (Exception e){
-            log.error("create open  order failed,caused by {}", e.getCause());
+            log.error("find mpos sku codes failed,caused by {}", e.getCause());
             throw new OPServerException(200, e.getMessage());
         }
     }

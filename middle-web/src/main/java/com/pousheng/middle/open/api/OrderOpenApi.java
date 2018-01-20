@@ -294,6 +294,10 @@ public class OrderOpenApi {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
                 //这就就不抛出错了，中台自己处理即可。
             }
+            // 通知mpos收到退货
+            if(refund.getShopName().startsWith("mpos")){
+               syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
+            }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             String outId = refund.getOutId();
             if (StringUtils.hasText(outId)&&outId.contains("taobao")){
@@ -324,10 +328,6 @@ public class OrderOpenApi {
                     event.setOpenOrderId(shopOrder.getOutId());
                     eventBus.post(event);
                 }
-            }
-            // 通知mpos收到退货
-            if(refund.getShopName().startsWith("mpos")){
-               syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
 
         } catch (JsonResponseException | ServiceException e) {

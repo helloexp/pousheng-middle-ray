@@ -27,7 +27,7 @@ import java.util.Objects;
 
 /**
  * Created by ph on 2018/1/10
- * 处理mpos订单状态改变
+ * 处理mpos发货单状态改变
  */
 @Slf4j
 @Component
@@ -67,7 +67,7 @@ public class MposOrderHandleLogic {
                     this.deal(shipment,mposShipmentExtra.getStatus().toString(),shipExtra);
                 }
             }catch (Exception e){
-                log.error(e.getMessage());
+                log.error("handle shipment status fail,cause:{}",e.getMessage());
             }
         }
     }

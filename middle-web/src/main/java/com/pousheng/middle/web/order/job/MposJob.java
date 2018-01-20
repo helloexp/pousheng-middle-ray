@@ -176,8 +176,9 @@ public class MposJob {
         log.info("end to compensate not dispatcher sku to mpos,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
-
-
+    /**
+     * 处理发货单状态更新任务
+     */
     private class OrderHandleTask implements Runnable{
 
         private final List<MposShipmentExtra> mposShipmentExtras;
@@ -192,6 +193,9 @@ public class MposJob {
         }
     }
 
+    /**
+     * 自动补偿任务
+     */
     private class CompensationTask implements Runnable{
         private final List<AutoCompensation> autoCompensations;
 
@@ -243,9 +247,6 @@ public class MposJob {
                             }
                         }
                     }
-//                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_TO_HK)){
-//
-//                    }
                 });
             }
         }

@@ -149,7 +149,7 @@ public class MposShipmentListener {
                 }
             }
             //如果订单状态变成已发货，同步ecpstatus
-            if(Objects.equals(expectOrderStatus,MiddleOrderStatus.SHIPPED)){
+            if(Objects.equals(expectOrderStatus,MiddleOrderStatus.SHIPPED.getValue())){
                 OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
             }

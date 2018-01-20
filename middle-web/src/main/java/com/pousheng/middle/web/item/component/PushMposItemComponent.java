@@ -9,6 +9,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaFullItem;
+import io.terminus.open.client.center.item.dto.ParanaItem;
 import io.terminus.open.client.center.item.dto.ParanaSku;
 import io.terminus.open.client.center.item.dto.ParanaSkuAttribute;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
@@ -63,6 +64,8 @@ public class PushMposItemComponent {
     public void push(SkuTemplate skuTemplate){
 
         ParanaFullItem paranaFullItem = mposParanaFullItemMaker.make(skuTemplate);
+        ParanaItem paranaItem = paranaFullItem.getItem();
+
         Response<ItemResult> addR = itemServiceCenter.addItem(mposOpenShopId, paranaFullItem);
         if (!addR.isSuccess()) {
             log.error("fail to add item:{} for openShop(id={}),cause:{}", paranaFullItem, mposOpenShopId, addR.getError());
@@ -108,6 +111,11 @@ public class PushMposItemComponent {
             }
 
             PushedItem pushedItem = new PushedItem();
+            pushedItem.setChannel(openShop.getChannel());
+            pushedItem.setOpenShopId(openShop.getId());
+            pushedItem.setOpenShopName(openShop.getShopName());
+            pushedItem.setItemId(paranaItem.getItemId());
+            pushedItem.setItemName(paranaItem.getName());
             if (addR.isSuccess()) {
                 pushedItem.setStatus(1);
                 pushedItem.setSyncOpenIdStatus(itemResult.isNeedSyncOpenId() ? 0 : 1);

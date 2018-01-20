@@ -1,10 +1,12 @@
 package com.pousheng.middle.web.item.component;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
@@ -15,6 +17,7 @@ import io.terminus.open.client.center.item.dto.ParanaSkuAttribute;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.mappings.service.MappingWriteService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.item.dto.ItemResult;
@@ -54,6 +57,8 @@ public class PushMposItemComponent {
     private OpenShopCacher openShopCacher;
     @RpcConsumer
     private MappingWriteService mappingWriteService;
+    @RpcConsumer
+    private MappingReadService mappingReadService;
     @RpcConsumer
     private PushedItemWriteService pushedItemWriteService;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -103,6 +108,11 @@ public class PushMposItemComponent {
                     }
                     itemMapping.setSkuAttributes(skuAttributes);
                 }
+
+                //判断是否已经存在
+                if(mappingIsExist(itemMapping)){
+                    continue;
+                }
                 createdItemMappings.add(itemMapping);
             }
             Response<Boolean> createItemMappingsR = mappingWriteService.createItemMappings(createdItemMappings);
@@ -131,6 +141,26 @@ public class PushMposItemComponent {
 
     }
 
+    private Boolean mappingIsExist(ItemMapping itemMapping){
+        Optional<ItemMapping> optional = findMapping(itemMapping.getSkuCode(),itemMapping.getOpenShopId());
+        if(optional.isPresent()){
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
+    }
+
+    private Optional<ItemMapping> findMapping(String skuCode,Long mposOpenShopId){
+        Response<Optional<ItemMapping>> response = mappingReadService.findBySkuCodeAndOpenShopId(skuCode,mposOpenShopId);
+        if(!response.isSuccess()){
+            log.error("find item mapping by sku code:{} open shop id:{} fail,error:{}",skuCode,mposOpenShopId,response.getError());
+            throw new ServiceException(response.getError());
+        }
+
+        return response.getResult();
+    }
+
+
+
     private void createOrUpdatePushedItem(PushedItem pushedItem) {
         Response<Boolean> r = pushedItemWriteService.createOrUpdate(pushedItem);
         if (!r.isSuccess()) {
@@ -156,9 +186,26 @@ public class PushMposItemComponent {
             ParanaCallResult result = mapper.fromJson(paranaClient.systemPost("del.mpos.sku.api",params),ParanaCallResult.class);
             if(!result.getSuccess()){
                 log.error("sync del mpos skuTemplates:{} to parana fail,error:{}",skuTemplates, result.getError());
+                return;
             }
+
+            //删除映射关系
+            delItemMapping(skuTemplates);
+
         }catch (Exception e){
             log.error("sync del mpos skuTemplate:{} to parana fail,cause:{}",skuTemplates, Throwables.getStackTraceAsString(e));
+        }
+    }
+
+    private void delItemMapping(List<SkuTemplate> skuTemplates){
+        for (SkuTemplate skuTemplate : skuTemplates){
+            Optional<ItemMapping> optional = findMapping(skuTemplate.getSkuCode(),mposOpenShopId);
+            if(!optional.isPresent()){
+                log.error("not find item mapping by sku code :{} and open shop id:{}",skuTemplate.getSkuCode(),mposOpenShopId);
+                continue;
+            }
+            ItemMapping itemMapping = optional.get();
+            mappingWriteService.delete(itemMapping.getId());
         }
     }
 

@@ -67,8 +67,7 @@ public class AddressGpss {
         if(!shopsRes.isSuccess()){
             throw new JsonResponseException(shopsRes.getError());
         }
-        List<Shop> shops = shopsRes.getResult().stream().filter(shop -> !Objects.equals(shop.getStatus(),-2)).collect(Collectors.toList());
-        return shops;
+        return shopsRes.getResult().stream().filter(shop -> Objects.equals(shop.getStatus(),1)).collect(Collectors.toList());
 
     }
 

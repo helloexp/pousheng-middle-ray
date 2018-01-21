@@ -47,13 +47,13 @@ public class ItemOpenApi {
             Response<List<SkuTemplate>> skuTemplatesRes = skuTemplateReadService.findBySkuCodes(barcodeList);
             if(!skuTemplatesRes.isSuccess()){
                 log.error("find sku template by barcodes:{} fail,error:{}",barcodeList,skuTemplatesRes.getError());
-                throw new OPServerException(skuTemplatesRes.getError());
+                throw new OPServerException(200,skuTemplatesRes.getError());
             }
             List<SkuTemplate> skuTemplates = skuTemplatesRes.getResult().stream().filter(skuTemplate -> !Objects.equal(skuTemplate.getStatus(),-3)).collect(Collectors.toList());
 
             if(!Objects.equal(skuTemplates.size(),barcodeList.size())){
                 log.error("some barcode:{} middle not exist",barcodeList);
-                throw new OPServerException("some.barcode.middle.not.exist");
+                throw new OPServerException(200,"some.barcode.middle.not.exist");
             }
 
             List<SkuIsMposDto> skuIsMposDtos = Lists.newArrayListWithCapacity(barcodeList.size());

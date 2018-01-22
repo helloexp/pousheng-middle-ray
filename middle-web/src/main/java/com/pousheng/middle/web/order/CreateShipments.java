@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -118,10 +119,13 @@ public class CreateShipments {
             shipmentPreview.setWarehouseId(warehouse.getId());
             shipmentPreview.setWarehouseName(warehouse.getName());
             //判断所选仓库是否数据下单店铺的账套
-            if (!orderReadLogic.validateCompanyCode(warehouseId,shipmentPreview.getShopId())){
-                throw new JsonResponseException("warehouse.must.be.in.one.company");
-            }
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
+            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);
+            if (StringUtils.isEmpty(erpType)||Objects.equals(erpType,"hk")){
+                if (!orderReadLogic.validateCompanyCode(warehouseId,shipmentPreview.getShopId())){
+                    throw new JsonResponseException("warehouse.must.be.in.one.company");
+                }
+            }
             String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
             String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
             shipmentPreview.setErpOrderShopCode(shopCode);

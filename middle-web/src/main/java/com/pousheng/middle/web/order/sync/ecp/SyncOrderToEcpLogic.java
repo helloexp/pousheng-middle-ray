@@ -128,7 +128,7 @@ public class SyncOrderToEcpLogic {
 
             List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
             List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                    .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
+                    .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus()) && !Objects.equals(MiddleShipmentsStatus.REJECTED.getValue(),it.getStatus())).collect(Collectors.toList());
             int count = 0;//判断是否存在同步淘宝失败的发货单
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(orderShipment.getShipmentId()));

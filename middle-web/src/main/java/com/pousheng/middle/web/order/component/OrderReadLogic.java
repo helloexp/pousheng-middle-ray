@@ -509,7 +509,7 @@ public class OrderReadLogic {
             return false;
         }
         List<OrderShipment> orderShipmentList =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-        List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+        List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         if (orderShipments.isEmpty()){
            return true;
         }

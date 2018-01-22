@@ -91,7 +91,7 @@ public class Warehouse implements Serializable {
     private Boolean isDefault;
 
     /**
-     * 是否mpos
+     * 是否mpos 1:mpos 0:非mpos
      */
     @Setter
     private Integer isMpos;

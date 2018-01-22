@@ -217,11 +217,12 @@ public class SyncYYEdiShipmentLogic {
             throw new ServiceException("");
         }
         Warehouse warehouse = rW.getResult();
+        Map<String,String> warehouseExtraMap = warehouse.getExtra();
         YYEdiShipmentInfo shipmentInfo = new YYEdiShipmentInfo();
         //公司内码
         shipmentInfo.setCompanyCode(warehouse.getCompanyCode());
         //仓库
-        shipmentInfo.setStockCode(warehouse.getInnerCode());
+        shipmentInfo.setStockCode(warehouseExtraMap.get("outCode"));
         //erp单号
         shipmentInfo.setBillNo(String.valueOf(shipment.getId()));
         //单据类型

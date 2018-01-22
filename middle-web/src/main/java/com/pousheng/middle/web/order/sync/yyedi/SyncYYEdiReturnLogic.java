@@ -178,10 +178,11 @@ public class SyncYYEdiReturnLogic {
                 throw new ServiceException(response.getError());
             }
             warehouse = response.getResult();
+            Map<String,String> warehouseExtraMap = warehouse.getExtra();
             //公司码
             refundInfo.setCompanyCode(warehouse.getCompanyCode());
-            //仓库内码
-            refundInfo.setStockCode(warehouse.getInnerCode());
+            //仓库
+            refundInfo.setStockCode(warehouseExtraMap.get("outCode"));
         }
         //退货单号
         refundInfo.setBillNo(String.valueOf(refund.getId()));

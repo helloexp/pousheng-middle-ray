@@ -3,6 +3,7 @@ package com.pousheng.middle.web.shop;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -551,6 +552,12 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        try {
+            //同步恒康mpos门店范围
+            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
+        }catch (Exception e){
+            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
+        }
         //同步电商
         syncParanaFrozenShop(exist.getOuterId());
     }
@@ -566,6 +573,12 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
+        try {
+            //同步恒康mpos门店范围
+            mposWarehousePusher.addWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
+        }catch (Exception e){
+            log.error("sync hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
+        }
         //同步电商
         syncParanaUnFrozenShop(exist.getOuterId());
 
@@ -582,8 +595,12 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.close(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
-        //同步恒康mpos门店范围
-        mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
+        try {
+            //同步恒康mpos门店范围
+            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
+        }catch (Exception e){
+            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
+        }
         //同步电商
         syncParanaCloseShop(exist.getOuterId());
 

@@ -1128,7 +1128,7 @@ public class Shipments {
         //获取订单下的所有发货单
         List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
         List<Shipment> shipments = originShipments.stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);

@@ -93,6 +93,7 @@ public class SyncShipmentPosLogic {
                 url="/common/erp/pos/addnetsalstock";
             }
             String result = sycHkShipmentPosApi.doSyncShipmentPos(requestData,url);
+            log.info("sync shipment pos to hk,response:{}",result);
             SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
             if(!Objects.equal(response.getCode(),"00000")){
                 log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
@@ -134,7 +135,7 @@ public class SyncShipmentPosLogic {
             HkShimentDoneInfo doneInfo = new HkShimentDoneInfo();
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             if(Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())||Arguments.isNull(shipment.getConfirmAt())){
-                log.error("shipment(id:{}) sync hk confirm fail,param invalid");
+                log.error("shipment(id:{}) sync hk confirm fail,param invalid",shipment.getId());
                 return Response.fail("shipment.confirm.param.invalid");
             }
             doneInfo.setNetbillno(shipmentExtra.getHkResaleOrderId());

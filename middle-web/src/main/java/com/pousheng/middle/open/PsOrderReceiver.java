@@ -271,8 +271,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
 
         //初始化店铺订单的extra
-        Map<String,String> tempExtra = Maps.newHashMap();
         if(richSkusByShop.getExtra() != null && richSkusByShop.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+            Map<String,String> tempExtra = richSkusByShop.getExtra();
             tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
             if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
                 //修改，mpos传来outerId
@@ -285,8 +285,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }
             }
             richSkusByShop.setExtra(tempExtra);
-        }else {
-            richSkusByShop.setExtra(null);
         }
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));

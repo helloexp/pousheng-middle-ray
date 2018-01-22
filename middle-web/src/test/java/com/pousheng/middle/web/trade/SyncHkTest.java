@@ -66,11 +66,11 @@ public class SyncHkTest {
         OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
         OpenFullOrder openFullOrder = new OpenFullOrder();
         openFullOrder.setBuyerMobile("15152306789");
-        openFullOrder.setOutOrderId("123");
+        openFullOrder.setOutOrderId("1334");
         openFullOrder.setCompanyCode("244");
-        openFullOrder.setOutId("244-123");
-        openFullOrder.setShopCode("SP110174");
-        openFullOrder.setPerformanceShopCode("SP110174");
+        openFullOrder.setOutId("244-1334");
+        openFullOrder.setShopCode("SP110073");
+        openFullOrder.setPerformanceShopCode("SP110073");
         openFullOrder.setFee(28800L);
         openFullOrder.setOriginFee(28800L);
         openFullOrder.setDiscount(0L);
@@ -88,7 +88,7 @@ public class SyncHkTest {
         openFullOrder.setCreatedAt("20180101123302");
         List<OpenFullOrderItem> items =  Lists.newArrayList();
         OpenFullOrderItem item = new OpenFullOrderItem();
-        item.setOutSkuorderId("1234");
+        item.setOutSkuorderId("1334");
         item.setSkuCode("4057289618927");
         item.setItemType("01");
         item.setItemName("测试商品");

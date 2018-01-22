@@ -89,8 +89,14 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
         List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
+        //过滤掉非mpos仓
+        List<Warehouse> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
+        if(CollectionUtils.isEmpty(mposWarehouses)){
+            return Boolean.TRUE;
+        }
+
         //查询仓代码
-        List<String> stockCodes = Lists.transform(warehouses, new Function<Warehouse, String>() {
+        List<String> stockCodes = Lists.transform(mposWarehouses, new Function<Warehouse, String>() {
             @Nullable
             @Override
             public String apply(@Nullable Warehouse input) {

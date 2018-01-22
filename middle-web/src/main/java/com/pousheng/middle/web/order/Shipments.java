@@ -284,8 +284,12 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
             ShopOrder shopOrder =  orderReadLogic.findShopOrderById(shopOrderId);
-            if (!orderReadLogic.validateCompanyCode(warehouseId,shopOrder.getShopId())){
-                throw new JsonResponseException("warehouse.must.be.in.one.company");
+            OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
+            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);
+            if (StringUtils.isEmpty(erpType)||Objects.equals(erpType,"hk")){
+                if (!orderReadLogic.validateCompanyCode(warehouseId,shopOrder.getShopId())){
+                    throw new JsonResponseException("warehouse.must.be.in.one.company");
+                }
             }
             //判断是否可以生成发货单
             for (Long skuOrderId:skuOrderIdAndQuantity.keySet()){
@@ -424,8 +428,12 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
             Refund refund = refundReadLogic.findRefundById(refundId);
-            if (!orderReadLogic.validateCompanyCode(warehouseId,refund.getShopId())){
-                throw new JsonResponseException("warehouse.must.be.in.one.company");
+            OpenShop openShop = orderReadLogic.findOpenShopByShopId(refund.getShopId());
+            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);
+            if (StringUtils.isEmpty(erpType)||Objects.equals(erpType,"hk")){
+                if (!orderReadLogic.validateCompanyCode(warehouseId,refund.getShopId())){
+                    throw new JsonResponseException("warehouse.must.be.in.one.company");
+                }
             }
             //只有售后类型是换货的,并且处理状态为待发货的售后单才能创建发货单
             if (!validateCreateShipment4Refund(refund)) {

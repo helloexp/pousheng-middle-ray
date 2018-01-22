@@ -40,6 +40,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.Jedis;
+import springfox.documentation.spring.web.json.Json;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -330,6 +331,9 @@ public class BatchAsyncHandleMposListener {
                     strs[14] = "";
                     Long id = Long.parseLong(strs[0].replace("\"",""));
                     Integer discount = Integer.valueOf(strs[11].replace("\"",""));
+                    if(discount > 100 || discount < 1){
+                        throw new JsonResponseException(PsItemConstants.ERROR_NUMBER_ILLEGAL);
+                    }
                     setDiscount(id,discount);
                 }catch (NumberFormatException nfe){
                     log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[11], Throwables.getStackTraceAsString(nfe));

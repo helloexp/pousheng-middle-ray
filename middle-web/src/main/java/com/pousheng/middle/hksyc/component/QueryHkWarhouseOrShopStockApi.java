@@ -5,7 +5,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.erp.component.ErpClientStock;
+import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -35,7 +35,7 @@ public class QueryHkWarhouseOrShopStockApi {
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @Autowired
-    private ErpClientStock erpClient;
+    private ErpClient erpClient;
 
     @Autowired
     private MiddleShopCacher middleShopCacher;

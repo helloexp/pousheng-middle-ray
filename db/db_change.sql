@@ -171,3 +171,15 @@ CREATE TABLE `pousheng_auto_compensation` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
+
+drop table if exists `open_push_order_task`;
+CREATE TABLE `open_push_order_task` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `source_order_id` VARCHAR(200) NOT NULL COMMENT '来源单号',
+  `channel` VARCHAR(50) NOT NULL COMMENT '渠道',
+  `extra_json` mediumtext NOT NULL COMMENT '额外信息,json表示',
+  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='外部订单处理失败补偿任务表';

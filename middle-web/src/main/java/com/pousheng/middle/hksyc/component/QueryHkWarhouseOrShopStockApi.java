@@ -5,14 +5,13 @@ import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.erp.component.ErpClient;
+import com.pousheng.erp.component.ErpClientStock;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.shop.model.Shop;
@@ -36,7 +35,7 @@ public class QueryHkWarhouseOrShopStockApi {
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @Autowired
-    private ErpClient erpClient;
+    private ErpClientStock erpClient;
 
     @Autowired
     private MiddleShopCacher middleShopCacher;
@@ -98,6 +97,9 @@ public class QueryHkWarhouseOrShopStockApi {
 
         return middleStockList;
     }
+
+
+
 
 
     private List<HkSkuStockInfo> readStockFromJson(String json) {

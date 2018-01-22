@@ -70,7 +70,6 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
-
         List<Long> shopIds = Lists.transform(rangeInnerAddressGps, new Function<AddressGps, Long>() {
             @Nullable
             @Override
@@ -81,8 +80,13 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
 
         List<Shop> shops = shopAddressComponent.findShopByIds(shopIds);
 
+        //过滤掉省内已删除或已冻结的门店
+        List<Shop> validShops = shops.stream().filter(shop -> Objects.equal(shop.getStatus(),1)).collect(Collectors.toList());
+        if(CollectionUtils.isEmpty(validShops)){
+            return Boolean.TRUE;
+        }
         //查询仓代码
-        List<String> stockCodes = Lists.transform(shops, new Function<Shop, String>() {
+        List<String> stockCodes = Lists.transform(validShops, new Function<Shop, String>() {
             @Nullable
             @Override
             public String apply(@Nullable Shop input) {

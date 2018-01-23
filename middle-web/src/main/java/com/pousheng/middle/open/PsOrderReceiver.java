@@ -18,10 +18,7 @@ import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
-import com.pousheng.middle.web.order.component.PsGiftActivityStrategy;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -40,10 +37,7 @@ import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Invoice;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.shop.model.Shop;
@@ -106,6 +100,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ShopReadService shopReadService;
+
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
+
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
     /**
      * 天猫加密字段占位符
@@ -194,7 +194,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
 
             //如果是mpos订单并且是自提,将待发货状态改为待收货
-            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP) && Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_SINCE),2)){
+            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP) && Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_SINCE),"2")){
                 List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue());
                 if (skuOrders.size() == 0) {
                     return;
@@ -205,6 +205,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                         log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                     }
                 }
+                OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+                Shipment shipment = shipments.get(0);
+                shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.SHIP.toOrderOperation());
             }
 
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());

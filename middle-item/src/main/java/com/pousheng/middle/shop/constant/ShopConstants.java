@@ -12,7 +12,7 @@ public class ShopConstants {
 
 
     //渠道
-    public static final String CHANNEL = "mpos";
+    public static final String CHANNEL = "official";
 
 
 

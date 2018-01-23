@@ -209,6 +209,6 @@ public class TradeConstants {
     public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
 
     //同步退货单pos给恒康失败
-    public static final Integer FAIL_SYNC_REFUND_POS_TO_HK = 5;
+    public static final Integer FAIL_SYNC_REFUND_POS_TO_HK = 6;
 
 }

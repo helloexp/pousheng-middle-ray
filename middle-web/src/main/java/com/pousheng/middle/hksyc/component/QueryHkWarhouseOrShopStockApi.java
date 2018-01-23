@@ -73,24 +73,23 @@ public class QueryHkWarhouseOrShopStockApi {
         List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
 
         for (HkSkuStockInfo skuStockInfo : hkSkuStockInfoList){
-            if(Objects.equal(2,stockType)){
-                Warehouse warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id()+"-"+skuStockInfo.getStock_id());
-               /* Response<List<Warehouse>> warehouseRes = warehouseReadService.findByFuzzyCode(skuStockInfo.getStock_id());
-                if(!warehouseRes.isSuccess()){
-                    log.error("find warehouse by fuzzy code:{} fail,error:{}",skuStockInfo.getStock_code(),warehouseRes.getError());
-                    throw new ServiceException(warehouseRes.getError());
+            if(Objects.equal(2,Integer.valueOf(skuStockInfo.getStock_type()))){
+                try {
+                    Warehouse warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id()+"-"+skuStockInfo.getStock_id());
+                    skuStockInfo.setBusinessId(warehouse.getId());
+                    skuStockInfo.setBusinessName(warehouse.getName());
+                }catch (Exception e){
+                    log.error("find warehouse by company id:{} and stock id:{} fail,cause:{}",skuStockInfo.getCompany_id(),skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
                 }
-                if(CollectionUtils.isEmpty(warehouseRes.getResult())){
-                    log.error("not find warehouse by fuzzy code:{} fail",skuStockInfo.getStock_code());
-                    continue;
-                }
-                Warehouse warehouse = warehouseRes.getResult().get(0);*/
-                skuStockInfo.setBusinessId(warehouse.getId());
-                skuStockInfo.setBusinessName(warehouse.getName());
             }else {
-                Shop shop = middleShopCacher.findShopByOuterId(skuStockInfo.getStock_code());
-                skuStockInfo.setBusinessId(shop.getId());
-                skuStockInfo.setBusinessName(shop.getName());
+                try {
+                    Shop shop = middleShopCacher.findShopByOuterId(skuStockInfo.getStock_code());
+                    skuStockInfo.setBusinessId(shop.getId());
+                    skuStockInfo.setBusinessName(shop.getName());
+                }catch (Exception e){
+                    log.error("find shop by outer id:{} fail,cause:{}",skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
+                }
+
             }
             middleStockList.add(skuStockInfo);
         }

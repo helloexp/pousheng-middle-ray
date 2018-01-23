@@ -8,13 +8,16 @@ import com.pousheng.middle.open.mpos.dto.MposPaginationResponse;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -60,6 +63,15 @@ public class SyncMposShipmentLogic{
 
     @Autowired
     private ShopReadService shopReadService;
+
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
+
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
+
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
     @Autowired
     private EventBus eventBus;
@@ -124,6 +136,19 @@ public class SyncMposShipmentLogic{
             if (!updateSyncStatusRes1.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 return Response.fail(updateSyncStatusRes1.getError());
+            }
+            //如果是自提，直接扣库存
+            if(Objects.equals(shipmentExtra.getTakeWay(),"2")){
+                //扣减库存
+                DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+                mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
+                // 发货推送pos信息给恒康
+                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                if(!response.isSuccess()){
+                    Map<String,Object> param1 = Maps.newHashMap();
+                    param1.put("shipmentId",shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                }
             }
         }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));

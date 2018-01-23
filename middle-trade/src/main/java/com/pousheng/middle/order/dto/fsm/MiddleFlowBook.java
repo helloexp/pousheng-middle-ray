@@ -288,6 +288,11 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.SHIPPED.getValue());
+
+            //待发货 -->确认收货成功 --> 已完成(针对mpos自提流程)
+            addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.CONFIRM.toOrderOperation(),
+                    MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue());
             //待收货 --> 确认收货成功 --> 已完成
             addTransition(MiddleShipmentsStatus.SHIPPED.getValue(),
                     MiddleOrderEvent.CONFIRM.toOrderOperation(),

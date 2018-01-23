@@ -49,4 +49,6 @@ public class PsItemConstants {
 
     public static final String ERROR_FORMATE_ERROR = "格式错误";
 
+    public static final String ERROR_NUMBER_ILLEGAL = "数字不在区间内";
+
 }

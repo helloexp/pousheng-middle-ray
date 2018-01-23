@@ -37,6 +37,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -81,7 +82,7 @@ public class SyncShipmentPosLogic {
             //获取发货单详情
             ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
             ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
-            String shipmentWay = shipmentExtra.getShipmentWay();
+            String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay())?"2":shipmentExtra.getShipmentWay();
             if(Strings.isNullOrEmpty(shipmentWay)){
                 log.error("shipment(id:{}) shipment way invalid",shipment.getId());
                 throw new ServiceException("shipment.way.invalid");

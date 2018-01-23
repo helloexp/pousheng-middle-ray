@@ -179,7 +179,6 @@ public class SyncRefundLogic {
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }
-
     }
 
     //获取同步成功事件

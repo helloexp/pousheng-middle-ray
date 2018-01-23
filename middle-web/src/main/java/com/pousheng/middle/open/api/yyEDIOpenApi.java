@@ -1,9 +1,11 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
+import com.pousheng.middle.open.api.dto.YyEdiResponseDetail;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -16,6 +18,7 @@ import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentItem;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -91,11 +94,13 @@ public class yyEDIOpenApi {
      */
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
     public void receiveYYEDIShipmentResult(String shipInfo){
-       try{
+        List<YyEdiShipInfo> results = null;
+        List<YyEdiResponseDetail> fields = null;
+        try{
         log.info("YYEDI-SHIPMENT-INFO-start param=======>{}",shipInfo);
-        List<YyEdiShipInfo> results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YyEdiShipInfo.class));
+        results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YyEdiShipInfo.class));
+        fields = Lists.newArrayList();
         for (YyEdiShipInfo yyEdiShipInfo:results){
-
             try{
                 DateTime dt = new DateTime();
                 Long shipmentId = yyEdiShipInfo.getShipmentId();
@@ -123,14 +128,7 @@ public class yyEDIOpenApi {
                 shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
-
-                //更新状态
-                Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
-                if (!updateStatusRes.isSuccess()) {
-                    log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                    throw new ServiceException(updateStatusRes.getError());
-                }
-
+                update.setStatus(targetStatus);
                 //更新基本信息
                 Response<Boolean> updateRes = shipmentWriteService.update(update);
                 if (!updateRes.isSuccess()) {
@@ -148,15 +146,31 @@ public class yyEDIOpenApi {
                 }
             }catch (Exception e){
                 log.error("update shipment failed,shipment id is {},caused by {}",yyEdiShipInfo.getShipmentId(),e.getMessage());
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                fields.add(field);
                 continue;
             }
         }
        }catch (JsonResponseException | ServiceException e) {
-        log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
-        throw new OPServerException(200,e.getMessage());
+            log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
+            if (fields.size()>0&&results.size() ==fields.size()){
+                throw new OPServerException(200,e.getMessage());
+            }
+            if(fields.size()>0&&results.size()>fields.size()){
+                String reason =  JsonMapper.nonEmptyMapper().toJson(fields);
+                throw new OPServerException(100,reason,e.getMessage());
+            }
        }catch (Exception e){
-        log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
-        throw new OPServerException(200,"sync.fail");
+            log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
+            if (fields.size()>0&&results.size() ==fields.size()){
+                throw new OPServerException(200,"sync.fail");
+            }
+            if(fields.size()>0&&results.size()>fields.size()){
+                String reason =  JsonMapper.nonEmptyMapper().toJson(fields);
+                throw new OPServerException(100,reason,"sync.fail");
+            }
        }
     }
 

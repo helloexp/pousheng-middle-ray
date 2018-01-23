@@ -138,7 +138,6 @@ public class SyncErpShipmentLogic {
                     Map<String,Object> param = Maps.newHashMap();
                     param.put("shipmentId",shipment.getId());
                     autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK);
-
                     updateShipmetDoneToHkFail(shipment,MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
                     return Response.fail("恒康返回信息:"+r.getError());
                 }

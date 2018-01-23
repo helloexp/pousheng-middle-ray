@@ -101,13 +101,6 @@ public class SyncYYEdiReturnLogic {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
-                Refund update = new Refund();
-                update.setId(refund.getId());
-              /*  SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
-                Map<String,String> extraMap = refund.getExtra();
-                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
-                update.setExtra(extraMap);
-                return refundWriteLogic.update(update);*/
             }else{
                 //更新同步状态
                 updateRefundSyncFial(refund);

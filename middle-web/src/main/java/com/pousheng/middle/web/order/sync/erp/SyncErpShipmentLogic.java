@@ -1,9 +1,14 @@
 package com.pousheng.middle.web.order.sync.erp;
 
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -39,6 +44,12 @@ public class SyncErpShipmentLogic {
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private OpenShopReadService openShopReadService;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
     /**
      * 根据配置渠道确定将发货单同步到hk还是订单派发中心
@@ -113,10 +124,35 @@ public class SyncErpShipmentLogic {
         switch (erpSyncType){
             case "hk":
                 return syncShipmentLogic.syncShipmentDoneToHk(shipment,operationType,syncOrderOperation);
-            default:
+            case "yyEdi":
+                Response<Boolean> r = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                if (r.isSuccess()){
+                    OrderOperation operation = MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation();
+                    Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                    if (!updateStatus.isSuccess()) {
+                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
+                        return Response.fail(updateStatus.getError());
+                    }
+                }else{
+                    log.error("shipment(id:{}) notify hk failed,cause:{}",r.getError());
+                    Map<String,Object> param = Maps.newHashMap();
+                    param.put("shipmentId",shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK);
+
+                    updateShipmetDoneToHkFail(shipment,MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+                    return Response.fail("恒康返回信息:"+r.getError());
+                }
                 return Response.ok(Boolean.TRUE);
+            default:
+                return syncShipmentLogic.syncShipmentDoneToHk(shipment,operationType,syncOrderOperation);
         }
     }
-
+    private void updateShipmetDoneToHkFail(Shipment shipment,OrderOperation syncOrderOperation){
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            //这里失败只打印日志即可
+            log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+        }
+    }
 
 }

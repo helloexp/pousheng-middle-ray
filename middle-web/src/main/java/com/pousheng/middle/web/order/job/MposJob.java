@@ -9,13 +9,16 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
@@ -71,6 +74,10 @@ public class MposJob {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private SyncRefundPosLogic syncRefundPosLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
     private final ExecutorService executorService;
 
@@ -243,6 +250,17 @@ public class MposJob {
                             Shipment shipment = shipmentReadLogic.findShipmentById((Long)param.get("shipmentId"));
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                             if(response.isSuccess()){
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
+                        }
+                    }
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Object> param = mapper.fromJson(extra.get("param"), Map.class);
+                            Refund refund = refundReadLogic.findRefundById((Long) param.get("refundId"));
+                            Response<Boolean> response = syncRefundPosLogic.syncRefundPosToHk(refund);
+                            if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                             }
                         }

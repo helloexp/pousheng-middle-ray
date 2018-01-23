@@ -95,15 +95,15 @@ public class ShipmentWiteLogic {
     @RpcConsumer
     private RefundWriteService refundWriteService;
     @Autowired
-    private MposSkuStockLogic mposSkuStockLogic;
-    @Autowired
-    private SyncMposOrderLogic syncMposOrderLogic;
-    @Autowired
-    private SyncErpShipmentLogic syncErpShipmentLogic;
-    @Autowired
     private SyncShipmentLogic syncShipmentLogic;
     @RpcConsumer
     private ShopReadService shopReadService;
+    @Autowired
+    private SyncErpShipmentLogic syncErpShipmentLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -170,6 +170,7 @@ public class ShipmentWiteLogic {
                 Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, type);
                 if (!syncRes.isSuccess()) {
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
                 }
             }
             //解锁库存

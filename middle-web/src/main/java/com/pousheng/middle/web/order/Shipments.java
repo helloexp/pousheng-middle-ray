@@ -1143,7 +1143,7 @@ public class Shipments {
         return shipmentItems;
     }
 
-    /**
+    /*
      * 同步发货单到mpos
      * @param shipmentId 发货单id
      */
@@ -1199,8 +1199,6 @@ public class Shipments {
             throw new JsonResponseException(syncRes.getError());
         }
     }
-
-
 }
 
 

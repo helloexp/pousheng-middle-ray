@@ -57,6 +57,12 @@ public class OpenPushOrderTaskJob {
                 Response<Boolean> response =  orderServiceCenter.syncOrderToEcp(openClientShop.getOpenShopId(),openFullOrderInfos);
                 if (!response.isSuccess()) {
                     log.error("sync order to out failed,openShopId is {},orders are {},caused by {}", openClientShop.getOpenShopId(), openFullOrderInfos, r.getError());
+                }else {
+                    openPushOrderTask.setStatus(1);
+                    Response<Boolean> updateResponse = openPushOrderTaskWriteService.update(openPushOrderTask);
+                    if (!updateResponse.isSuccess()){
+                        log.error("update open push order task failed,openPushOrderTaskId is {},caused by {}",openPushOrderTask.getId(),updateResponse.getError());
+                    }
                 }
             }catch (Exception e){
                 e.printStackTrace();

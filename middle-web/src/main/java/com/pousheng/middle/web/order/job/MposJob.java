@@ -247,6 +247,17 @@ public class MposJob {
                             }
                         }
                     }
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Object> param = mapper.fromJson(extra.get("param"), Map.class);
+                            Shipment shipment = shipmentReadLogic.findShipmentById((Long) param.get("refundId"));
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }
+                        }
+                    }
                 });
             }
         }

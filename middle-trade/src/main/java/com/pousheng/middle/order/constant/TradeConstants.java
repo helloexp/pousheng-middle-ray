@@ -63,6 +63,8 @@ public class TradeConstants {
     public static final String CUSTOMER_SERVICE_NOTE="customerServiceNote";
     //恒康售后单id
     public static final String HK_REFUND_ID="hkRefundId";
+    //yyedi售后单id
+    public static final String YYEDI_REFUND_ID="yyediRefundId";
     //京东物流编码
     public static final String JD_VEND_CUST_ID="JDCOD";
     //自选物流编码
@@ -205,5 +207,8 @@ public class TradeConstants {
     public static final Integer FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK = 4;
     //同步退货单给恒康失败
     public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
+
+    //同步退货单pos给恒康失败
+    public static final Integer FAIL_SYNC_REFUND_POS_TO_HK = 5;
 
 }

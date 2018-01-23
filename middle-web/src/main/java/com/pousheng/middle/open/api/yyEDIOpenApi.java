@@ -1,18 +1,21 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
-import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
+import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -24,8 +27,10 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -33,6 +38,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
@@ -65,6 +71,15 @@ public class yyEDIOpenApi {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncRefundPosLogic syncRefundPosLogic;
+    @Autowired
+    private EventBus eventBus;
+
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -124,16 +139,23 @@ public class yyEDIOpenApi {
                 }
                 //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
                 hkShipmentDoneLogic.doneShipment(shipment);
+                //同步pos单到恒康
+                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                if(!response.isSuccess()){
+                    Map<String,Object> param1 = Maps.newHashMap();
+                    param1.put("shipmentId",shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                }
             }catch (Exception e){
                 log.error("update shipment failed,shipment id is {},caused by {}",yyEdiShipInfo.getShipmentId(),e.getMessage());
                 continue;
             }
         }
        }catch (JsonResponseException | ServiceException e) {
-        log.error("hk shipment handle result to pousheng fail,error:{}", e.getMessage());
+        log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
         throw new OPServerException(200,e.getMessage());
        }catch (Exception e){
-        log.error("hk shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
+        log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
         throw new OPServerException(200,"sync.fail");
        }
     }
@@ -152,7 +174,7 @@ public class yyEDIOpenApi {
                                    String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
                                    ) {
-        log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+        log.info("YYEDI-SYNC-REFUND-STATUS-START param refundOrderId is:{} yyediRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
         try {
             List<YYEdiRefundConfirmItem> results = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YYEdiRefundConfirmItem.class));
@@ -160,11 +182,10 @@ public class yyEDIOpenApi {
                 return;
             }
             Refund refund = refundReadLogic.findRefundById(refundOrderId);
-            Map<String, String> extraMap = refund.getExtra();
-            String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
+            refundExtra.setYyediRefundId(yyEDIRefundOrderId);
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
@@ -184,11 +205,55 @@ public class yyEDIOpenApi {
             if (!updateExtraRes.isSuccess()) {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
             }
+            //同步pos单到恒康
+            try{
+                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                if (!r.isSuccess()){
+                    Map<String,Object> param1 = Maps.newHashMap();
+                    param1.put("refundId",refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
+                }
+            }catch (Exception e){
+                Map<String,Object> param1 = Maps.newHashMap();
+                param1.put("refundId",refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
+            }
+            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            String outId = refund.getOutId();
+            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+                String channel = refundReadLogic.getOutChannelTaobao(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                    eventBus.post(event);
+                }
+            }
+            //如果是苏宁的售后单，将会主动查询售后单的状态
+            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+                String channel = refundReadLogic.getOutChannelSuning(outId);
+                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                    event.setRefundId(refund.getId());
+                    event.setChannel(channel);
+                    event.setOpenShopId(newRefund.getShopId());
+                    event.setOpenOrderId(shopOrder.getOutId());
+                    eventBus.post(event);
+                }
+            }
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk shipment handle result to pousheng fail,error:{}", e.getMessage());
+            log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
             throw new OPServerException(200, e.getMessage());
         } catch (Exception e) {
-            log.error("hk shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
+            log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
     }

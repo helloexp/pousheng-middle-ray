@@ -100,6 +100,9 @@ public class MposShipmentListener {
             this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());
         }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT){
+            //解锁库存
+            DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+            mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);

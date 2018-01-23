@@ -20,6 +20,11 @@ public class PoushengWarehouse implements Serializable {
     private String company_id;
 
     /**
+     * 公司名称
+     */
+    private String company_name;
+
+    /**
      * 仓库内码
      */
     private String stock_id;
@@ -44,6 +49,11 @@ public class PoushengWarehouse implements Serializable {
      * 仓库地址
      */
     private String stock_address;
+
+    /**
+     * 仓库地址省市区信息 例如：上海直辖市.上海市.虹口区
+     */
+    private String area_full_name;
 
     /**
      * 仓库类型

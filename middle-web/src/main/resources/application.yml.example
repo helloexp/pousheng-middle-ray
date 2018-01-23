@@ -82,3 +82,24 @@ ych.token:
 taobao.token:
   appKey: xxx
   appName: 端点中台
+
+search:
+  host: 127.0.0.1
+  port: 9200
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: xxx
+
+
+

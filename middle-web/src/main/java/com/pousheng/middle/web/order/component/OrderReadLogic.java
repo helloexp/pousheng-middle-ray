@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -66,6 +67,8 @@ public class OrderReadLogic {
     private WarehouseReadService warehouseReadService;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -367,7 +370,7 @@ public class OrderReadLogic {
             throw new JsonResponseException("find.shipnent.failed");
         }
         List<Shipment> shipments = response.getResult().stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         if (shipments.size()>0){
             return Boolean.FALSE;
@@ -388,7 +391,7 @@ public class OrderReadLogic {
             throw new JsonResponseException("find.shipnent.failed");
         }
         List<Shipment> shipments = response.getResult().stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         if (shipments.size()>0){
             return Boolean.FALSE;
@@ -492,5 +495,29 @@ public class OrderReadLogic {
         }
         String currentCompanyCode = warehouseRes.getResult().getCompanyCode();
         return Objects.equals(currentCompanyCode,comanyCode);
+    }
+
+    /**
+     * 根据订单以及相应的发货单状态来判断此时退款单是售中退款还是退货退款，如果订单没有发货此时算售中退款
+     * @param shopOrderId
+     * @return true 售中退款，false 售后退款
+     */
+    public boolean isOnSaleRefund(Long shopOrderId){
+        ShopOrder shopOrder = this.findShopOrderById(shopOrderId);
+        //首先判断订单状态，如果订单状态是已发货，肯定是售后退款
+        if (shopOrder.getStatus()>=MiddleOrderStatus.SHIPPED.getValue()){
+            return false;
+        }
+        List<OrderShipment> orderShipmentList =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);
+        List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
+        if (orderShipments.isEmpty()){
+           return true;
+        }
+        for (OrderShipment orderShipment:orderShipments){
+            if (orderShipment.getStatus()>=MiddleShipmentsStatus.SHIPPED.getValue()){
+                return false;
+            }
+        }
+        return true;
     }
 }

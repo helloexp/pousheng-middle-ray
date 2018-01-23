@@ -88,8 +88,9 @@ public class UcUserOperationLogic {
     }
     public Response<UcUserInfo> createUcUserForShop(String name, String password){
         Map<String, Object> metadata = Maps.newHashMap();
-        metadata.put("rolesJson","[\"SHOP\"]");
-        return createUcUser(name,password,4, metadata);
+        //metadata.put("rolesJson","[\"BUYER\",\"SELLER\"]");
+        metadata.put("rolesJson","[\"SELLER\"]");
+        return createUcUser(name,password,2, metadata);
     }
 
 

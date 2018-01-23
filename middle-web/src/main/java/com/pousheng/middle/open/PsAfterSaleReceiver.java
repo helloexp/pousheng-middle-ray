@@ -7,10 +7,7 @@ import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.RefundSource;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
@@ -100,10 +97,36 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         RefundExtra refundExtra = new RefundExtra();
         refundExtra.setReceiverInfo(receiverInfo);
 
+        if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
+            //借用tradeNo字段来标记售中退款的逆向单是否已处理
+            refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
+
+        //判断售后单对应的是否是天猫订单
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+            //如果天猫拉取过来的仅退款的售后单就是success,这个时候中台做一下特殊处理
+            if (Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND.getValue())){
+                //判断此时的订单以及发货单的状态
+                refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+                //判断是否是售中退款
+                if (orderReadLogic.isOnSaleRefund(shopOrder.getId())){
+                    refund.setRefundType(MiddleRefundType.ON_SALES_REFUND.value());
+                    refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
+                }
+            }
+        }
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //如果天猫拉取过来的退货退款的售后单就是success,这个时候中台做一下特殊处理
+                refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
+        //苏宁售后近退款单子到中台订单状态做初始化
+        if (Objects.equals(shopOrder.getOutFrom(),MiddleChannel.SUNING.getValue())&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
         if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
             return;
         }
-
         Response<Optional<SkuTemplate>> findR = middleSpuService.findBySkuCode(skuOfRefund.getSkuCode());
         if (!findR.isSuccess()) {
             log.error("fail to find sku template by skuCode={},cause:{}",
@@ -176,10 +199,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
         refund.setExtra(extraMap);
         refund.setTags(tagMap);
-        if(Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(),refund.getRefundType())){
-            //借用tradeNo字段来标记售中退款的逆向单是否已处理
-            refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
-        }
     }
 
 
@@ -293,6 +312,18 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (afterSale.getStatus() != OpenClientAfterSaleStatus.SUCCESS) {
             return;
         }
+        //淘宝苏宁仅退款的订单做特殊处理
+        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
+                Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
+                &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())){
+            return;
+        }
+        //淘宝的退货退款单只有订单退货完成待退款才可以更新发货单状态
+        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
+                Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
+                &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())){
+            return;
+        }
         Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.REFUND.getValue());
         if (!updateR.isSuccess()) {
             log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",
@@ -315,7 +346,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             throw new ServiceException("find.shipment.failed");
         }
         List<Shipment> shipments = response.getResult().stream().filter(Objects::nonNull).
-                filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         for (Shipment shipment : shipments) {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<ShipmentItem> shipmentItemFilters = shipmentItems.stream().

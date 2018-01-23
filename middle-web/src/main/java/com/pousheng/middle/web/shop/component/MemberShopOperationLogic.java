@@ -5,6 +5,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.MemberSportCity;
+import com.pousheng.middle.shop.enums.MemberFromType;
+import com.pousheng.middle.web.shop.dto.MemberCenterAddressDto;
 import com.pousheng.middle.web.user.component.MemberCenterClient;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -90,6 +92,34 @@ public class MemberShopOperationLogic {
             return Response.fail("find.sport.city.failed");
         }
     }
+
+
+    /**
+     * 查询门店地址
+     *
+     * @param companyId 查询条件
+     * @param storeCode 查询条件
+     * @param type 查询条件{@link MemberFromType}
+     * @return 门店地址信息
+     */
+    public Response<MemberCenterAddressDto> findShopAddress(String companyId, String storeCode, Integer type) {
+        try {
+            Map<String, String> criteria = new HashMap<>();
+            criteria.put("companyId",companyId);
+            criteria.put("storeCode",storeCode);
+            criteria.put("type",type.toString());
+
+            String result = mcClient.doGet("/api/member/pousheng/area/get-area-info",criteria);
+            if (Strings.isNullOrEmpty(result)) {
+                return Response.fail("not.find.address.info");
+            }
+            return Response.ok(jsonToObject(result, new TypeReference<MemberCenterAddressDto>() {}));
+        } catch (Exception e) {
+            log.error("failed to find shop address by company id:{} code:{} type:{}, cause: {}", companyId,storeCode,type, Throwables.getStackTraceAsString(e));
+            return Response.fail("find.member.center.shop.address.failed");
+        }
+    }
+
 
     private Paging convertStringToPaging(String data) throws IOException {
         return JsonMapper.JSON_NON_DEFAULT_MAPPER.getMapper().readValue(data, Paging.class);

@@ -25,6 +25,8 @@ import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -108,6 +110,10 @@ public class Shipments {
     private PermissionUtil permissionUtil;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
 
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -123,9 +129,12 @@ public class Shipments {
         if(shipmentCriteria.getEndAt()!=null){
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
-
-        shipmentCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
-
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (shipmentCriteria.getShopId() == null) {
+            shipmentCriteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(shipmentCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         //判断查询的发货单类型
         if (Objects.equals(shipmentCriteria.getType(),ShipmentType.EXCHANGE_SHIP.value())){
             shipmentCriteria.setAfterSaleOrderId(shipmentCriteria.getOrderId());
@@ -336,7 +345,6 @@ public class Shipments {
                 log.error("this shipment can not unlock stock,shipment id is :{}",shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
             }
-
             //创建发货单
             Response<Long> createResp = shipmentWriteService.create(shipment, Lists.newArrayList(shopOrderId), OrderLevel.SHOP);
             if (!createResp.isSuccess()) {
@@ -513,7 +521,6 @@ public class Shipments {
             throw new JsonResponseException(syncRes.getError());
         }
     }
-
 
 
     /**
@@ -1001,7 +1008,7 @@ public class Shipments {
         //获取订单下的所有发货单
         List<Shipment> originShipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
         List<Shipment> shipments = originShipments.stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
@@ -1019,4 +1026,50 @@ public class Shipments {
         Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment,1);
         return r.getResult();
     }
+    /*
+     * 同步发货单到mpos
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/sync/mpos",method = RequestMethod.PUT)
+    @OperationLogType("同步发货单到mpos")
+    public void syncMposShipment(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncMposShipmentLogic.syncShipmentToMpos(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to mpos fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+    /**
+     * 测试同步发货单到恒康开pos单
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/sync/hk/pos",method = RequestMethod.GET)
+    @OperationLogType("同步发货单到恒康开pos单")
+    public void syncShipmentToHk(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
+
+    /**
+     * 测试同步发货单到恒康开pos单
+     * @param shipmentId 发货单id
+     */
+    @RequestMapping(value = "api/shipment/{id}/confirm/at/sync/hk",method = RequestMethod.GET)
+    @OperationLogType("同步发货单确认收货时间到恒康")
+    public void syncShipmentDoneToHkForPos(@PathVariable(value = "id")@OperationLogParam Long shipmentId){
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> syncRes = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+        if(!syncRes.isSuccess()){
+            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
+            throw new JsonResponseException(syncRes.getError());
+        }
+    }
 }
+
+

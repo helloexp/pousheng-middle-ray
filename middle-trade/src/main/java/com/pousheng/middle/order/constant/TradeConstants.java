@@ -83,7 +83,7 @@ public class TradeConstants {
     public static final String HK_PERFORMANCE_SHOP_OUT_CODE="hkPerformanceShopOutCode";
     //中台换货收货地址
     public static final String MIDDLE_CHANGE_RECEIVE_INFO="middleChangeReceiveInfo";
-    //默认退货藏id
+    //默认退货仓id
     public static final String DEFAULT_REFUND_WAREHOUSE_ID="defaultReWarehouseId";
     //默认退货仓名称
     public static final String DEFAULT_REFUND_WAREHOUSE_NAME="defaultReWarehouseName";
@@ -122,6 +122,20 @@ public class TradeConstants {
 
     public static final String ACTIVITY_SHOP="activityShops";
 
+    /**
+     * mpos 状态
+     */
+    //发货单接单,待发货
+    public static final String MPOS_SHIPMENT_WAIT_SHIP = "1";
+    //发货单拒单
+    public static final String MPOS_SHIPMENT_REJECT = "-1";
+    //发货单发货,待收货
+    public static final String MPOS_SHIPMENT_SHIPPED = "3";
+    //店铺发货
+    public static final String MPOS_SHOP_DELIVER = "1";
+    //仓库发货
+    public static final String MPOS_WAREHOUSE_DELIVER = "2";
+
     //活动赠品id
     public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
     //活动赠品名称
@@ -149,4 +163,47 @@ public class TradeConstants {
     //yyedi返回结果:整体失败
     public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
     public static final String  ERP_SYNC_TYPE="erpSyncType";
+    //是否指定门店 1 指定 2 未指定
+    public static final String IS_ASSIGN_SHOP = "isAssignShop";
+    //指定门店id
+    public static final String ASSIGN_SHOP_ID = "assignShopId";
+    //1 门店发货 2 门店自提
+    public static final String IS_SINCE = "isSince";
+    //订单取消
+    public static final String ORDER_CANCEL = "order";
+    //发货单取消
+    public static final String SHIPMENT_CANCEL = "shipment";
+    //仓库安全库存
+    public static final String WAREHOUSE_SAFESTOCK = "safeStock";
+    //仓库虚拟店编码
+    public static final String WAREHOUSE_VIRTUALSHOPCODE = "virtualShopCode";
+    //仓库虚拟店名称
+    public static final String WAREHOUSE_VIRTUALSHOPNAME = "virtualShopName";
+    //仓库退货仓id
+    public static final String WAREHOUSE_RETURNWAREHOUSEID = "returnWarehouseId";
+    //仓库退货仓编码
+    public static final String WAREHOUSE_RETURNWAREHOUSECODE = "returnWarehouseCode";
+    //仓库退货仓名称
+    public static final String WAREHOUSE_RETURNWAREHOUSENAME = "returnWarehouseName";
+    //mpos接单员工
+    public static final String MPOS_RECEIVE_STAFF = "mposReceiceStaff";
+    //mpos拒绝原因
+    public static final String MPOS_REJECT_REASON = "mposRejectReason";
+    //快递单号
+    public static final String SHIP_SERIALNO = "shipmentSerialNo";
+    //快递代码
+    public static final String SHIP_CORP_CODE = "shipmentCorpCode";
+    //发货时间
+    public static final String SHIP_DATE = "shipmentDate";
+    //同步无法派单产品失败
+    public static final Integer FAIL_NOT_DISPATCHER_SKU_TO_MPOS = 1;
+    //同步退货单收货失败
+    public static final Integer FAIL_REFUND_RECEIVE_TO_MPOS = 2;
+    //同步发货单pos信息给恒康失败
+    public static final Integer FAIL_SYNC_POS_TO_HK = 3;
+    //同步发货单收货给恒康失败
+    public static final Integer FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK = 4;
+    //同步退货单给恒康失败
+    public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
+
 }

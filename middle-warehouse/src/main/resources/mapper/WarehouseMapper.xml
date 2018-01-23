@@ -12,12 +12,14 @@
         <result column="type" property="type"/>
         <result column="status" property="status"/>
         <result column="address" property="address"/>
+        <result column="company_id" property="companyId" />
+        <result column="company_name" property="companyName" />
         <result column="owner_id" property="ownerId"/>
         <result column="is_default" property="isDefault"/>
+        <result column="is_mpos" property="isMpos" />
         <result column="extra_json" property="extraJson"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-
     </resultMap>
 
     <sql id="tb">
@@ -30,11 +32,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        code, name, `type`, `status`, address, owner_id, is_default, extra_json, created_at, updated_at
+        code, name, `type`, `status`, address, company_id,company_name, owner_id, is_default,is_mpos, extra_json, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{code}, #{name},#{type}, #{status}, #{address}, #{ownerId}, #{isDefault}, #{extraJson}, now(), now()
+        #{code}, #{name},#{type}, #{status}, #{address}, #{companyId}, #{companyName}, #{ownerId}, #{isDefault}, #{isMpos}, #{extraJson}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -45,9 +47,15 @@
 
         <if test="name != null">and `name` LIKE CONCAT(#{name}, '%')</if>
 
+        <if test="companyId != null"> and company_id = #{companyId} </if>
+
+        <if test="companyName != null"> and company_name = #{companyName} </if>
+
         <if test="ownerId != null">and `owner_id` = #{ownerId}</if>
 
         <if test="isDefault != null">and `is_default` = #{isDefault}</if>
+
+        <if test="isMpos != null">and is_mpos = #{isMpos}</if>
 
         <if test="outCode!=null"> and `extra_json` like concat('%',#{outCode}, '%') </if>
     </sql>
@@ -110,8 +118,11 @@
             <if test="type!=null">`type`=#{type},</if>
             <if test="name != null">name = #{name},</if>
             <if test="address!=null">address=#{address},</if>
+            <if test="companyId != null">company_id = #{companyId},</if>
+            <if test="companyName != null">company_name = #{companyName},</if>
             <if test="ownerId != null">owner_id = #{ownerId},</if>
             <if test="isDefault != null">is_default = #{isDefault},</if>
+            <if test="isMpos != null">is_mpos = #{isMpos},</if>
             <if test="extraJson != null">extra_json = #{extraJson},</if>
             updated_at=now()
         </set>

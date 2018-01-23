@@ -1,0 +1,59 @@
+{
+  "skutemplate": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "name": {
+        "type": "text",
+        "analyzer": "ngram_tokenizer_analyzer",
+        "search_analyzer": "keyword",
+        "index_options": "offsets"
+      },
+      "spuCode": {
+        "type": "keyword"
+      },
+      "skuCode": {
+        "type": "keyword"
+      },
+      "spuId": {
+        "type": "long"
+      },
+      "brandId": {
+        "type": "long"
+      },
+      "brandName": {
+        "type": "keyword"
+      },
+      "mainImage": {
+        "type": "keyword",
+        "index": false
+      },
+      "price": {
+        "type": "integer"
+      },
+      "specification":{
+        "type": "keyword"
+      },
+      "type": {
+        "type": "integer"
+      },
+      "categoryIds":{
+        "type": "integer"
+      },
+      "categoryName": {
+        "type": "keyword",
+        "index": false
+      },
+      "attributes": {
+        "type": "keyword"
+      },
+      "updatedAt": {
+        "type": "date"
+      }
+    }
+  }
+}

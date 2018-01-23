@@ -48,6 +48,8 @@ public class PoushengMaterial implements Serializable {
 
     private String sex_name; //性别
 
+    private String season_name; //季节
+
     private Integer year_no; //年份
 
     private String inv_spec; //规格

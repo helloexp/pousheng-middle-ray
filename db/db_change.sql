@@ -151,3 +151,23 @@ create table `pousheng_gift_activity`
   PRIMARY KEY(`id`),
   KEY `index_middle_gift_name` (`name`)
 )COMMENT='宝胜中台赠品活动表';
+
+-- 库存表添加mpos标识,公司代码，公司名称。
+alter table `pousheng_warehouses` add `is_mpos` tinyint default 0 after `is_default`;
+alter table `pousheng_warehouses` add `company_id` varchar(64) after `address`;
+alter table `pousheng_warehouses` add `company_name` varchar(64) after `company_id`;
+alter table `pousheng_warehouses` add index `index_middle_warehouse_company` (`company_id`);
+
+-- 增大shop表extra字段长度
+alter table `parana_shops` modify column `extra_json` varchar(2048);
+
+drop table if exists `pousheng_auto_compensation`;
+CREATE TABLE `pousheng_auto_compensation` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `type` tinyint(4) NOT NULL COMMENT '任务类型 1:同步无法派单商品至mpos',
+  `extra_json` varchar(2048) NOT NULL COMMENT '额外信息,json表示',
+  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';

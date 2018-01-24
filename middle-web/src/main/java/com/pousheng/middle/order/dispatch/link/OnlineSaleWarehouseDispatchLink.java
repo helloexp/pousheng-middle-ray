@@ -67,7 +67,9 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
         //收货地址明细
         String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();
+        String addressRegion = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion();
         context.put(DispatchContants.BUYER_ADDRESS,address);
+        context.put(DispatchContants.BUYER_ADDRESS_REGION,addressRegion);
 
         //查找该批商品中电商在售的
         List<SkuCodeAndQuantity> onlineSaleSku = getOnlineSaleSku(skuCodeAndQuantities);

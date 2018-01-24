@@ -74,17 +74,27 @@ public class ShopAddressComponent {
      * 获取距离用户收货地址最近的门店
      * @param shopShipments 发货门店集合
      * @param address 用户收货地址
+     * @param addressRegion 用户收货地址到区
      * @return 距离最近的发货门店
      */
-    public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address){
+    public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address,String addressRegion){
 
+        Location location;
         //1、调用高德地图查询地址坐标
         Optional<Location>  locationOp = dispatchComponent.getLocation(address);
         if(!locationOp.isPresent()){
             log.error("not find location by address:{}",address);
-            throw new ServiceException("buyer.receive.info.address.invalid");
+            //如果根据详细地址查询不到则用粗粒度的地址
+            Optional<Location>  locationRegionOp = dispatchComponent.getLocation(addressRegion);
+            if(!locationRegionOp.isPresent()){
+                log.error("not find location by address:{}",addressRegion);
+                throw new ServiceException("buyer.receive.info.address.invalid");
+            }
+
+            location = locationRegionOp.get();
+        }else {
+            location = locationOp.get();
         }
-        Location location = locationOp.get();
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());
         for (ShopShipment shopShipment : shopShipments){

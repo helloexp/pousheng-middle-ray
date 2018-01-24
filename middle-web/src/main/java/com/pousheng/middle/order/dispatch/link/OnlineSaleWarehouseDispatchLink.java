@@ -63,7 +63,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-
+        log.info("DISPATCH-OnlineSaleWarehouseDispatchLink-2 start...");
 
         //收货地址明细
         String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();

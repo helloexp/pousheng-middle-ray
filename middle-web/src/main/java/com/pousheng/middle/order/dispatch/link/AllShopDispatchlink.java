@@ -12,6 +12,7 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -94,6 +95,10 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
         ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
+        if(Arguments.isNull(shopShipment)){
+            log.error("not find nearest shop by:{} fail,",shopShipments);
+            throw new ServiceException("find.nearest.shop.fail");
+        }
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 
         return Boolean.FALSE;

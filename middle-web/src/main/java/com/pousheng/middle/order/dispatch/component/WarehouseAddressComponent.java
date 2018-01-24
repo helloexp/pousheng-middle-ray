@@ -99,7 +99,7 @@ public class WarehouseAddressComponent {
                 .collect(Collectors.toMap(WarehouseShipment::getWarehouseId, it -> it));
 
 
-        return warehouseShipmentMap.get(sortDistance.get(0));
+        return warehouseShipmentMap.get(sortDistance.get(0).getId());
 
     }
 

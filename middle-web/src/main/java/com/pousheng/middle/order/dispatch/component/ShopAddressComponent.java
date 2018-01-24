@@ -109,7 +109,7 @@ public class ShopAddressComponent {
                 .collect(Collectors.toMap(ShopShipment::getShopId, it -> it));
 
 
-        return shopShipmentMap.get(sortDistance.get(0));
+        return shopShipmentMap.get(sortDistance.get(0).getId());
 
     }
 

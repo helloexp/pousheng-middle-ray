@@ -11,6 +11,7 @@ import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
 import com.pousheng.middle.hksyc.component.SycHkShipmentOrderApi;
 import com.pousheng.middle.hksyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.*;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
@@ -48,6 +49,81 @@ public class SyncHkTest {
         params.put("posAmt","234.75");
         params.put("posCreatedAt","20170625224210");
         String sign = sign("middle");
+        System.out.println("==============sign: "+sign);
+        params.put("sign",sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));;
+        post(middleUrl());
+
+    }
+
+    @Test
+    public void testHkSyncOrderToEcp(){
+
+        params.put("appKey","pousheng");
+        params.put("pampasCall","push.out.open.order.api");
+        List<OpenFullOrderInfo> orderInfos = Lists.newArrayList();
+        OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
+        OpenFullOrder openFullOrder = new OpenFullOrder();
+        openFullOrder.setBuyerMobile("15152306789");
+        openFullOrder.setOutOrderId("123456");
+        openFullOrder.setCompanyCode("244");
+        openFullOrder.setMemberCardId("0");
+        openFullOrder.setOutId("244-123456");
+        openFullOrder.setShopCode("SP110074");
+        openFullOrder.setPerformanceShopCode("SP110074");
+        openFullOrder.setFee(28800L);
+        openFullOrder.setOriginFee(28800L);
+        openFullOrder.setDiscount(0L);
+        openFullOrder.setShipFee(0L);
+        openFullOrder.setOriginShipFee(0L);
+        openFullOrder.setIntegral(0L);
+        openFullOrder.setShipmentType(1);
+        openFullOrder.setPayType(1);
+        openFullOrder.setOrderChannel(1);
+        openFullOrder.setType(1);
+        openFullOrder.setBuyerNote("");
+        openFullOrder.setStatus(1);
+        openFullOrder.setChannel("hk");
+        openFullOrder.setPaymentChannelName("支付宝");
+        openFullOrder.setPaymentSerialNo("123435664636");
+        openFullOrder.setPaymentDate("20180101123402");
+        openFullOrder.setCreatedAt("20180101123302");
+        List<OpenFullOrderItem> items =  Lists.newArrayList();
+        OpenFullOrderItem item = new OpenFullOrderItem();
+        item.setOutSkuorderId("1234");
+        item.setSkuCode("4057289618927");
+        item.setItemType("01");
+        item.setItemName("测试商品");
+        item.setQuantity(1);
+        item.setOriginFee(28800L);
+        item.setDiscount(0L);
+        item.setCleanPrice(28800L);
+        item.setCleanFee(28800L);
+        items.add(item);
+        OpenFullOrderInvoice invoice = new OpenFullOrderInvoice();
+        invoice.setInvoiceType("1");
+        invoice.setTitleType("1");
+
+        OpenFullOrderAddress address = new OpenFullOrderAddress();
+        address.setProvince("江苏省");
+        address.setCity("南京市");
+        address.setRegion("江宁区");
+        address.setStreet("");
+        address.setDetail("胜利路89号");
+        address.setEmail("zhaoxiaotao@terminus.io");
+        address.setMobile("18021529596");
+        address.setPhone("02512345678");
+        address.setReceiveUserName("一秋寒");
+        address.setPostcode("214092");
+        openFullOrderInfo.setOrder(openFullOrder);
+        openFullOrderInfo.setItem(items);
+        openFullOrderInfo.setAddress(address);
+        openFullOrderInfo.setInvoice(invoice);
+        orderInfos.add(openFullOrderInfo);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(orderInfos);
+        params.put("orderInfo",paramJson);
+        String sign = sign("6a0e@93204aefe45d47f6e488");
         System.out.println("==============sign: "+sign);
         params.put("sign",sign);
 
@@ -168,7 +244,7 @@ public class SyncHkTest {
 
     public String middleUrl() {
         String suffix = Joiner.on('&').withKeyValueSeparator("=").join(params);
-        String url =  "http://127.0.0.1:8092/api/gateway" + "?" + suffix;
+        String url =  "http://127.0.0.1:8095/api/gateway" + "?" + suffix;
         System.out.println(url);
         return url;
     }

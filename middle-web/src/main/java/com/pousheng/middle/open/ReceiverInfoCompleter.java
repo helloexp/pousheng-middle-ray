@@ -9,6 +9,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenFullOrderAddress;
 import io.terminus.parana.order.model.ReceiverInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -77,7 +78,36 @@ public class ReceiverInfoCompleter {
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
         receiverInfo.setExtra(extraMap);
     }
+    public void completePushOrderAddress(OpenFullOrderAddress address){
+        ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
+        handleResult.setSuccess(Boolean.TRUE);
+        List<String> errors = Lists.newArrayList();
+        //特殊处理直辖市,京东市一级的地址是区，用省的字段填充市
+        List<String> municipalities = Lists.newArrayList(Municipality.SHANGHAI.getName(),Municipality.SHANGHAI.getDesc(),Municipality.BEIJING.getName(),Municipality.BEIJING.getDesc()
+                ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
+        if (municipalities.contains(address.getProvince())){
+            if (!municipalities.contains(address.getCity())){
+                address.setRegion(address.getCity());
+                address.setCity(address.getProvince());
+            }
+        }
+        //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
+        Long provinceId = queryAddressId(1L,address.getProvince());
+        if(Arguments.notNull(provinceId)){
+            address.setProvinceId(provinceId);
+        }
+        Long cityId = queryAddressId(provinceId,address.getCity());
+        if(Arguments.notNull(cityId)){
+            address.setCityId(cityId);
+        }
 
+        if (StringUtils.hasText(address.getRegion())){
+            Long regionId = queryAddressId(cityId,address.getRegion());
+            if(Arguments.notNull(regionId)){
+                address.setRegionId(regionId);
+            }
+        }
+    }
     private Long queryAddressId(Long pid,String name){
         //pid为null则直接返回null
         if(Arguments.isNull(pid)){

@@ -18,6 +18,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -174,12 +175,12 @@ public class SyncMposShipmentLogic{
             MposPaginationResponse resp = mapper.fromJson(syncMposApi.syncShipmentStatus(param),MposPaginationResponse.class);
             if (!resp.getSuccess()) {
                 log.error("sync mpos shipment status fail,cause:{}",resp.getError());
-                return null;
+                throw new ServiceException(resp.getError());
             }
             return resp.getResult();
         }catch (Exception e) {
             log.error("sync mpos shipment status fail,cause by {}", e.getMessage());
-            return null;
+            return Paging.empty(MposShipmentExtra.class);
         }
     }
 

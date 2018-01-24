@@ -94,7 +94,7 @@ public class MposShipmentListener {
                 if(!response.isSuccess()){
                     Map<String,Object> param = Maps.newHashMap();
                     param.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
                 }
             }
             this.syncOrderStatus(shipment,MiddleShipmentsStatus.SHIPPED.getValue(),MiddleOrderStatus.SHIPPED.getValue());

@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
@@ -179,6 +180,11 @@ public class SkuTemplates {
 
         //更新搜索
         postUpdateSearchEvent(id);
+
+        // MPOS打标后默认折扣为1，即不设折扣不打折
+        if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            setDiscount(id,100);
+        }
 
         //同步电商
         pushMposItemComponent.push(exist);

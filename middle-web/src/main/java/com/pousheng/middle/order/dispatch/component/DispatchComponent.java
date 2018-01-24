@@ -324,8 +324,9 @@ public class DispatchComponent {
      */
     public List<Long> findRejectedShop(Long shopOrderId){
         List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrderId);
-        if(CollectionUtils.isEmpty(shipments))
+        if(CollectionUtils.isEmpty(shipments)){
             return Lists.newArrayList();
+        }
         List<Shipment> rejectedShipment = shipments.stream().filter(shipment -> Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         if(!CollectionUtils.isEmpty(rejectedShipment)){
             List<Long> rejectedList = Lists.newArrayList();

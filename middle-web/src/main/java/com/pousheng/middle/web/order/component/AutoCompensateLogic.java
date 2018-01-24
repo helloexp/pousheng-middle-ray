@@ -24,10 +24,11 @@ public class AutoCompensateLogic {
      * 同步失败，创建自动补偿任务
      * @param param
      */
-    public void createAutoCompensationTask(Map<String,Object> param, Integer type){
+    public void createAutoCompensationTask(Map<String,Object> param, Integer type,String error){
         AutoCompensation autoCompensation = new AutoCompensation();
         Map<String,String> extra = Maps.newHashMap();
         extra.put("param",mapper.toJson(param));
+        extra.put("error",error);
         autoCompensation.setType(type);
         autoCompensation.setStatus(0);
         autoCompensation.setExtra(extra);

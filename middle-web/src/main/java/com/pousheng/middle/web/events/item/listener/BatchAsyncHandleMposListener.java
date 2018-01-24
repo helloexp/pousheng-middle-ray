@@ -189,6 +189,10 @@ public class BatchAsyncHandleMposListener {
 
         //同步电商
         if(Objects.equals(PsItemConstants.MPOS_ITEM,operateType)){
+            //mpos打标设置默认折扣
+            if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+                setDiscount(id,100);
+            }
             pushMposItemComponent.push(exist);
         }else{
             pushMposItemComponent.del(Lists.newArrayList(exist));

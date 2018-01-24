@@ -48,7 +48,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-        log.info("DISPATCH-AllShopDispatchlink-6 start...");
+        log.info("DISPATCH-AllShopDispatchlink-6  order(id:{}) start...",shopOrder.getId());
 
         //拒绝过发货单的mpos门店
         List<Long> rejectShopIds = (List<Long>) context.get(DispatchContants.REJECT_SHOP_IDS);

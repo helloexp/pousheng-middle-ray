@@ -51,7 +51,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-        log.info("DISPATCH-ProvinceInnerShopDispatchlink-5 start...");
+        log.info("DISPATCH-ProvinceInnerShopDispatchlink-5  order(id:{}) start...",shopOrder.getId());
 
         //拒绝过的门店
         List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());

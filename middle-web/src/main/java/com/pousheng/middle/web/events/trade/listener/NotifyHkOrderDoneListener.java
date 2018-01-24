@@ -85,7 +85,7 @@ public class NotifyHkOrderDoneListener {
                     log.error("shipment(id:{}) notify hk failed,cause:{}",response.getError());
                     Map<String,Object> param = Maps.newHashMap();
                     param.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK,response.getError());
                 }
                 continue ;
             }

@@ -49,7 +49,7 @@ public class DispatchOrderEngine {
             boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context);
 
             if(success){
-                log.info("dispatchOrderItemInfo: " ,dispatchOrderItemInfo);
+                log.info("dispatchOrderItemInfo:{}" ,dispatchOrderItemInfo);
                 //锁定库存及更新电商在售库存（当mpos仓和电商仓交集时）
                 Response<Boolean> lockRes = mposSkuStockLogic.lockStock(dispatchOrderItemInfo);
                 if(!lockRes.isSuccess()){
@@ -58,7 +58,7 @@ public class DispatchOrderEngine {
                 }
                 return Response.ok(dispatchOrderItemInfo);
             }
-            log.error("order:{} not matching any dispatch link",shopOrder.getId());
+            log.error("order id:{} not matching any dispatch link",shopOrder.getId());
             return Response.fail("dispatch.order.fail");
 
         }catch (Exception e){

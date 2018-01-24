@@ -93,7 +93,7 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
             mposSkuStockManager.lockStockShop(shopShipments);
             return Response.ok();
         }catch (Exception e){
-            log.error("mpos failed to lock shop stock for {}", shopShipments, Throwables.getStackTraceAsString(e));
+            log.error("mpos failed to lock shop stock for {},cause:{}", shopShipments, Throwables.getStackTraceAsString(e));
             return Response.fail("shop.stock.lock.fail");
         }
     }

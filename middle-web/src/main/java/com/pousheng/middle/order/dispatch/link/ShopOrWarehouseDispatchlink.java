@@ -57,6 +57,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
+        log.info("DISPATCH-ShopOrWarehouseDispatchlink-7 start...");
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
 

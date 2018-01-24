@@ -58,7 +58,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-        log.info("DISPATCH-AllWarehouseDispatchLink-4 start...");
+        log.info("DISPATCH-AllWarehouseDispatchLink-4  order(id:{}) start...",shopOrder.getId());
 
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){

@@ -144,7 +144,7 @@ public class yyEDIOpenApi {
                 if(!response.isSuccess()){
                     Map<String,Object> param1 = Maps.newHashMap();
                     param1.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
                 }
             }catch (Exception e){
                 log.error("update shipment failed,shipment id is {},caused by {}",yyEdiShipInfo.getShipmentId(),e.getMessage());
@@ -211,12 +211,12 @@ public class yyEDIOpenApi {
                 if (!r.isSuccess()){
                     Map<String,Object> param1 = Maps.newHashMap();
                     param1.put("refundId",refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
                 }
             }catch (Exception e){
                 Map<String,Object> param1 = Maps.newHashMap();
                 param1.put("refundId",refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
+                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,"同步逆向pos到恒康失败");
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             String outId = refund.getOutId();

@@ -338,11 +338,21 @@ public class SyncYYEdiShipmentLogic {
         //支付类型在中台是1:在线支付,2:货到付款,同步给订单派发中心时时需要变为0:在线支付,1:货到付款
         shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
         //代收金额:商品总金额+运费
-        shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
+            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        }else{
+            shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+        }
         //买家邮费
         shipmentInfo.setExpressAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        //结算金额
+        shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //线上实付金额
-        shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())) {
+            shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+        }else{
+            shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
+        }
         //会员兑换积分
         shipmentInfo.setExchangeIntegral(new BigDecimal(0.00));
         //红包支付金额
@@ -350,6 +360,15 @@ public class SyncYYEdiShipmentLogic {
         //促销优惠金额
         shipmentInfo.setPromZRAmount(new BigDecimal(0.00));
         //运费到付
+        if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
+            //货到付款运费金额为0则运费到付传0
+             shipmentInfo.setFreightPay(0);
+            //货到付款运费金额不为0则运费到付传1
+            shipmentInfo.setFreightPay(1);
+        }else{
+            //在线支付传0
+            shipmentInfo.setFreightPay(0);
+        }
         shipmentInfo.setFreightPay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
         //渠道
         shipmentInfo.setChannel(shopOrder.getOutFrom());

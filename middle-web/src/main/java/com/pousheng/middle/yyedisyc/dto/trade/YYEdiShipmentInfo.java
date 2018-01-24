@@ -246,7 +246,7 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
      * 结算金额
      */
     @JsonProperty(value = "PayAmount")
-    private String PayAmount;
+    private BigDecimal PayAmount;
     /**
      * 买家邮费
      */
@@ -632,11 +632,11 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
         CollectionAmount = collectionAmount;
     }
     @JsonIgnore
-    public String getPayAmount() {
+    public BigDecimal getPayAmount() {
         return PayAmount;
     }
     @JsonIgnore
-    public void setPayAmount(String payAmount) {
+    public void setPayAmount(BigDecimal payAmount) {
         PayAmount = payAmount;
     }
     @JsonIgnore

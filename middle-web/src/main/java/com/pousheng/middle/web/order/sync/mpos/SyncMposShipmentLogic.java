@@ -148,7 +148,7 @@ public class SyncMposShipmentLogic{
                 if(!response.isSuccess()){
                     Map<String,Object> param1 = Maps.newHashMap();
                     param1.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
                 }
             }
         }

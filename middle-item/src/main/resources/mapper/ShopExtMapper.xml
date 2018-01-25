@@ -8,7 +8,7 @@
 
 <mapper namespace="Shop">
 
-    <select id="findByOuterIdAndBusinessId" parameterType="string" resultMap="ShopMap">
+    <select id="findByOuterIdAndBusinessId" parameterType="map" resultMap="ShopMap">
         SELECT * FROM
         <include refid="tb"/>
         WHERE outer_id=#{outerId} AND business_id =#{businessId}

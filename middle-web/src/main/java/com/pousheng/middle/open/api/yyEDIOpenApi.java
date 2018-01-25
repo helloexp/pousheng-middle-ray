@@ -117,6 +117,12 @@ public class yyEDIOpenApi {
                         throw new ServiceException("shipment.current.status.not.allow.ship");
                     }
                     Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+                    //更新状态
+                    Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
+                    if (!updateStatusRes.isSuccess()) {
+                        log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
+                        throw new ServiceException(updateStatusRes.getError());
+                    }
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                     //封装更新信息
                     Shipment update = new Shipment();
@@ -131,7 +137,6 @@ public class yyEDIOpenApi {
                     shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                     update.setExtra(extraMap);
-                    update.setStatus(targetStatus);
                     //更新基本信息
                     Response<Boolean> updateRes = shipmentWriteService.update(update);
                     if (!updateRes.isSuccess()) {

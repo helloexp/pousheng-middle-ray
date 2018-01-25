@@ -897,6 +897,15 @@ public class ShipmentWiteLogic {
      * @param shopOrder  订单
      */
     public void toDispatchOrder(ShopOrder shopOrder){
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
+                MiddleOrderStatus.WAIT_HANDLE.getValue());
+        if (skuOrders.size() == 0) {
+            return;
+        }
+        //判断是否满足自动生成发货单
+        if (!commValidateOfOrder(shopOrder, skuOrders)) {
+            return;
+        }
         this.toDispatchOrder(shopOrder,Collections.EMPTY_LIST);
     }
 
@@ -914,8 +923,10 @@ public class ShipmentWiteLogic {
         if (!receiveInfosRes.isSuccess()) {
             throw new JsonResponseException(receiveInfosRes.getError());
         }
+        //是否首次派单
+        boolean isFirst = CollectionUtils.isEmpty(skuCodeAndQuantities);
         List<SkuOrder> skuOrders = skuOrdersRes.getResult();
-        if(CollectionUtils.isEmpty(skuCodeAndQuantities)){
+        if(isFirst){
             //获取skuCode,数量的集合
             skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
             for (SkuOrder skuOrder:skuOrders) {
@@ -925,7 +936,6 @@ public class ShipmentWiteLogic {
                 skuCodeAndQuantities.add(skuCodeAndQuantity);
             }
         }
-
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
@@ -942,7 +952,8 @@ public class ShipmentWiteLogic {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                 }
                 Shipment shipment = shipmentRes.getResult();
-                orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                if(isFirst)
+                    orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                 //发货单同步恒康
                 log.info("sync shipment(id:{}) to hk");
                 Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
@@ -959,7 +970,8 @@ public class ShipmentWiteLogic {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                 }
                 Shipment shipment = shipmentRes.getResult();
-                orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                if(isFirst)
+                    orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                 //发货单同步mpos
                 this.syncShipmentToMpos(shipment);
                 //todo 发货单同步订单派发中心
@@ -970,12 +982,13 @@ public class ShipmentWiteLogic {
             //取消子单
             for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
                 SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.CANCEL.getValue());
+                orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
             }
             // 商品派不出去通知mpos
             syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
         }
-        this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+        if(isFirst)
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
     }
 
     /**

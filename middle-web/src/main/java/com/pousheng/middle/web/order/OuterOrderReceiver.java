@@ -18,7 +18,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.job.order.api.OrderReceiver;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.parana.component.ParanaOrderConverter;
 import io.terminus.open.client.parana.dto.OrderInfo;
@@ -53,8 +52,6 @@ public class OuterOrderReceiver {
     private ParanaOrderConverter paranaOrderConverter;
     @RpcConsumer
     private ShopReadService shopReadService;
-    @RpcConsumer
-    private OpenShopReadService openShopReadService;
     @Autowired
     private OrderReceiver orderReceiver;
     @Autowired

@@ -78,6 +78,10 @@ public class ExcelExportHelper<T> {
                             cell.setCellValue(value.toString());
                         if (sheet.getProtect() && exportField.isCanWrite())
                             cell.setCellStyle(unLockStyle);
+                        if(Objects.equals(exportField.getName(),"price")){
+                            String formula = "L" + pos + " * " + "M" + pos + " * " + 0.01;
+                            cell.setCellFormula(formula);
+                        }
                     } catch (NoSuchFieldException e) {
                         log.error("fail find field {} in {} class",exportField.getName(),t.getClass().getName());
                         throw new JsonResponseException("fail append to excel");

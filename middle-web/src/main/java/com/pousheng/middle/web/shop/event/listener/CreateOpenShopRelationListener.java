@@ -60,7 +60,7 @@ public class CreateOpenShopRelationListener {
         openShop.setChannel(ShopConstants.CHANNEL);
         openShop.setShopName("mpos-"+exist.getName());
         openShop.setAccessToken("xxx");
-        openShop.setAppKey(exist.getOuterId());
+        openShop.setAppKey(exist.getBusinessId()+"-"+exist.getOuterId());
         openShop.setGateway(gateway);
         openShop.setSecret(exist.getOuterId()+"93204aefe45d47f6e488");
 

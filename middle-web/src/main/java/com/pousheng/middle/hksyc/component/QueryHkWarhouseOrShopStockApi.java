@@ -69,6 +69,7 @@ public class QueryHkWarhouseOrShopStockApi {
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
         log.info("[QUERY-STOCK]query hk stock success result:{}",responseBody);
         //当查询商品的在各个门店后仓的库存未0，则返回接口为空
+        //当查询某个门店中的三个sku，如果只有两个sku有库存则只返回这两个有库存的sku
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
 
         List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());

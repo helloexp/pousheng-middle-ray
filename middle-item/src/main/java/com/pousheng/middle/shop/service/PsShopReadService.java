@@ -1,5 +1,6 @@
 package com.pousheng.middle.shop.service;
 
+import com.google.common.base.Optional;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.shop.model.Shop;
@@ -23,5 +24,7 @@ public interface PsShopReadService {
      * @return 分页结果
      */
     Response<Paging<Shop>> pagination(String name, Long userId, Integer type, Integer status,String outerId,Long businessId, Integer pageNo, Integer pageSize);
+
+    Response<Optional<Shop>> findByOuterIdAndBusinessId(String outerId, Long businessId);
 
 }

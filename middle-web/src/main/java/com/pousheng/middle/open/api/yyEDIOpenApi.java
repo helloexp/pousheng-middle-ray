@@ -1,9 +1,12 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
+import com.pousheng.middle.open.api.dto.YyEdiResponse;
+import com.pousheng.middle.open.api.dto.YyEdiResponseDetail;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -87,81 +90,93 @@ public class yyEDIOpenApi {
 
     /**
      * yyEDI回传发货信息
+     *
      * @param shipInfo
      */
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
-    public void receiveYYEDIShipmentResult(String shipInfo){
-       try{
-        log.info("YYEDI-SHIPMENT-INFO-start param=======>{}",shipInfo);
-        List<YyEdiShipInfo> results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YyEdiShipInfo.class));
-        for (YyEdiShipInfo yyEdiShipInfo:results){
+    public void receiveYYEDIShipmentResult(String shipInfo) {
+        List<YyEdiShipInfo> results = null;
+        List<YyEdiResponseDetail> fields = null;
+        YyEdiResponse error = new YyEdiResponse();
+        try {
+            log.info("YYEDI-SHIPMENT-INFO-start param=======>{}", shipInfo);
+            results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YyEdiShipInfo.class));
+            fields = Lists.newArrayList();
+            int count = 0;
+            for (YyEdiShipInfo yyEdiShipInfo : results) {
+                try {
+                    DateTime dt = new DateTime();
+                    Long shipmentId = yyEdiShipInfo.getShipmentId();
+                    Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+                    //判断状态及获取接下来的状态
+                    Flow flow = flowPicker.pickShipments();
+                    OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
+                    if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+                        log.error("shipment(id={})'s status({}) not fit for ship",
+                                shipment.getId(), shipment.getStatus());
+                        throw new ServiceException("shipment.current.status.not.allow.ship");
+                    }
+                    Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+                    //更新状态
+                    Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
+                    if (!updateStatusRes.isSuccess()) {
+                        log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
+                        throw new ServiceException(updateStatusRes.getError());
+                    }
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                    //封装更新信息
+                    Shipment update = new Shipment();
+                    update.setId(shipment.getId());
+                    Map<String, String> extraMap = shipment.getExtra();
+                    shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
+                    shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
+                    //通过恒康代码查找快递名称
+                    ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
+                    shipmentExtra.setShipmentCorpName(expressCode.getName());
+                    shipmentExtra.setShipmentDate(dt.toDate());
+                    shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                    update.setExtra(extraMap);
+                    //更新基本信息
+                    Response<Boolean> updateRes = shipmentWriteService.update(update);
+                    if (!updateRes.isSuccess()) {
+                        log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
+                        throw new ServiceException(updateRes.getError());
+                    }
+                    //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
+                    hkShipmentDoneLogic.doneShipment(shipment);
+                    //同步pos单到恒康
+                    Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                    if (!response.isSuccess()) {
+                        Map<String, Object> param1 = Maps.newHashMap();
+                        param1.put("shipmentId", shipment.getId());
+                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
+                    }
+                } catch (Exception e) {
+                    log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
+                    continue;
 
-            try{
-                DateTime dt = new DateTime();
-                Long shipmentId = yyEdiShipInfo.getShipmentId();
-                Shipment shipment  = shipmentReadLogic.findShipmentById(shipmentId);
-                //判断状态及获取接下来的状态
-                Flow flow = flowPicker.pickShipments();
-                OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
-                if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
-                    log.error("shipment(id={})'s status({}) not fit for ship",
-                            shipment.getId(), shipment.getStatus());
-                    throw new ServiceException("shipment.current.status.not.allow.ship");
                 }
-                Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
-                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                //封装更新信息
-                Shipment update = new Shipment();
-                update.setId(shipment.getId());
-                Map<String, String> extraMap = shipment.getExtra();
-                shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
-                shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
-                //通过恒康代码查找快递名称
-                ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
-                shipmentExtra.setShipmentCorpName(expressCode.getName());
-                shipmentExtra.setShipmentDate(dt.toDate());
-                shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                update.setExtra(extraMap);
-
-                //更新状态
-                Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
-                if (!updateStatusRes.isSuccess()) {
-                    log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                    throw new ServiceException(updateStatusRes.getError());
-                }
-
-                //更新基本信息
-                Response<Boolean> updateRes = shipmentWriteService.update(update);
-                if (!updateRes.isSuccess()) {
-                    log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                    throw new ServiceException(updateRes.getError());
-                }
-                //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
-                hkShipmentDoneLogic.doneShipment(shipment);
-                //同步pos单到恒康
-                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                if(!response.isSuccess()){
-                    Map<String,Object> param1 = Maps.newHashMap();
-                    param1.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-                }
-            }catch (Exception e){
-                log.error("update shipment failed,shipment id is {},caused by {}",yyEdiShipInfo.getShipmentId(),e.getMessage());
-                continue;
             }
+            if (count > 0) {
+                throw new ServiceException("shipment.receive.shipinfo.failed");
+            }
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
+            error.setFields(fields);
+            String reason = JsonMapper.nonEmptyMapper().toJson(error);
+            throw new OPServerException(200, reason);
+        } catch (Exception e) {
+            log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
+            error.setFields(fields);
+            String reason = JsonMapper.nonEmptyMapper().toJson(error);
+            throw new OPServerException(200, reason);
         }
-       }catch (JsonResponseException | ServiceException e) {
-        log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
-        throw new OPServerException(200,e.getMessage());
-       }catch (Exception e){
-        log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
-        throw new OPServerException(200,"sync.fail");
-       }
     }
 
     /**
      * yyEDi回传售后单信息
+     *
      * @param refundOrderId
      * @param yyEDIRefundOrderId
      * @param receivedDate
@@ -173,11 +188,11 @@ public class yyEDIOpenApi {
                                    @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
                                    String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
-                                   ) {
+    ) {
         log.info("YYEDI-SYNC-REFUND-STATUS-START param refundOrderId is:{} yyediRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
         try {
-            List<YYEdiRefundConfirmItem> results = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,YYEdiRefundConfirmItem.class));
+            List<YYEdiRefundConfirmItem> results = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
             if (refundOrderId == null) {
                 return;
             }
@@ -206,25 +221,25 @@ public class yyEDIOpenApi {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
             }
             //同步pos单到恒康
-            try{
+            try {
                 Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-                if (!r.isSuccess()){
-                    Map<String,Object> param1 = Maps.newHashMap();
-                    param1.put("refundId",refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
+                if (!r.isSuccess()) {
+                    Map<String, Object> param1 = Maps.newHashMap();
+                    param1.put("refundId", refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
                 }
-            }catch (Exception e){
-                Map<String,Object> param1 = Maps.newHashMap();
-                param1.put("refundId",refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,"同步逆向pos到恒康失败");
+            } catch (Exception e) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,e.getMessage());
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             String outId = refund.getOutId();
-            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
+            if (StringUtils.hasText(outId) && outId.contains("taobao")) {
                 String channel = refundReadLogic.getOutChannelTaobao(outId);
                 if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
-                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                        && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                    Refund newRefund = refundReadLogic.findRefundById(refund.getId());
                     TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
                     event.setRefundId(refund.getId());
                     event.setChannel(channel);
@@ -234,11 +249,11 @@ public class yyEDIOpenApi {
                 }
             }
             //如果是苏宁的售后单，将会主动查询售后单的状态
-            if (StringUtils.hasText(outId)&&outId.contains("suning")){
+            if (StringUtils.hasText(outId) && outId.contains("suning")) {
                 String channel = refundReadLogic.getOutChannelSuning(outId);
                 if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
-                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
+                        && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                    Refund newRefund = refundReadLogic.findRefundById(refund.getId());
                     OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
                     ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
                     TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
@@ -259,7 +274,7 @@ public class yyEDIOpenApi {
     }
 
 
-        //获取同步成功事件
+    //获取同步成功事件
     private OrderOperation getSyncConfirmSuccessOperation(Refund refund) {
         MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
         if (Arguments.isNull(middleRefundType)) {

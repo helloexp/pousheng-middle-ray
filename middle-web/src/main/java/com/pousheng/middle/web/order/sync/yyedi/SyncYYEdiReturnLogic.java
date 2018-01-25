@@ -24,10 +24,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -101,13 +98,6 @@ public class SyncYYEdiReturnLogic {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
-                Refund update = new Refund();
-                update.setId(refund.getId());
-              /*  SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
-                Map<String,String> extraMap = refund.getExtra();
-                extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
-                update.setExtra(extraMap);
-                return refundWriteLogic.update(update);*/
             }else{
                 //更新同步状态
                 updateRefundSyncFial(refund);
@@ -212,11 +202,14 @@ public class SyncYYEdiReturnLogic {
         //中台没有运费到付,所以填0
         refundInfo.setFreightPay(0);
         //寄件人信息
-        refundInfo.setSendContact("");
-        //寄件人姓名
-        refundInfo.setSendContactTel("");
+        ReceiverInfo receiverInfo = refundExtra.getReceiverInfo();
+        if (!Objects.isNull(receiverInfo)){
+            refundInfo.setSendContact(receiverInfo.getReceiveUserName());
+        }else{
+            refundInfo.setSendContact("");
+        }
         //寄件人电话
-        refundInfo.setSendProvince("");
+        refundInfo.setSendContactTel("");
         //寄件省
         refundInfo.setSendProvince("");
         //寄件市

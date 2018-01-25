@@ -77,7 +77,6 @@ public class SyncRefundPosLogic {
                 log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
                 return Response.fail(response.getMessage());
             }
-
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos refund failed,shipmentId is({}) cause by({})", refund.getId(), e.getMessage());

@@ -34,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -235,8 +236,8 @@ public class MposJob {
                     if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_POS_TO_HK)){
                         Map<String,String> extra = autoCompensation.getExtra();
                         if(Objects.nonNull(extra.get("param"))){
-                            Map<String,Object> param = mapper.fromJson(extra.get("param"),Map.class);
-                            Shipment shipment = shipmentReadLogic.findShipmentById((Long)param.get("shipmentId"));
+                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
@@ -246,8 +247,8 @@ public class MposJob {
                     if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK)){
                         Map<String,String> extra = autoCompensation.getExtra();
                         if(Objects.nonNull(extra.get("param"))){
-                            Map<String,Object> param = mapper.fromJson(extra.get("param"),Map.class);
-                            Shipment shipment = shipmentReadLogic.findShipmentById((Long)param.get("shipmentId"));
+                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
@@ -257,8 +258,8 @@ public class MposJob {
                     if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK)) {
                         Map<String, String> extra = autoCompensation.getExtra();
                         if (Objects.nonNull(extra.get("param"))) {
-                            Map<String, Object> param = mapper.fromJson(extra.get("param"), Map.class);
-                            Refund refund = refundReadLogic.findRefundById((Long) param.get("refundId"));
+                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
                             Response<Boolean> response = syncRefundPosLogic.syncRefundPosToHk(refund);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());

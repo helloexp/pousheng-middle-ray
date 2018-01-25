@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.erp;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MposWarehousePusher;
@@ -9,6 +10,7 @@ import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.item.dto.ItemNameAndStock;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -66,6 +68,9 @@ public class FireCall {
     private final DateTimeFormatter dft;
     @RpcConsumer
     private MappingReadService mappingReadService;
+    @Autowired
+    private StockPusher stockPusher;
+
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
                     WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi) {
@@ -254,6 +259,17 @@ public class FireCall {
             }
             pageNo++;
         }
+        return "ok";
+    }
+
+    /**
+     * 根据skuCode推送库存到第三方或者官网
+     * @param skuCode
+     * @return
+     */
+    @RequestMapping(value = "/sync/stock/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeStockBySkuCode(@RequestParam String skuCode){
+        stockPusher.submit(Lists.newArrayList(skuCode));
         return "ok";
     }
 }

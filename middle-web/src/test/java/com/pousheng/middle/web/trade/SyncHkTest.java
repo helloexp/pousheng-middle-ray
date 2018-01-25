@@ -66,12 +66,11 @@ public class SyncHkTest {
         OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
         OpenFullOrder openFullOrder = new OpenFullOrder();
         openFullOrder.setBuyerMobile("15152306789");
-        openFullOrder.setOutOrderId("123456");
+        openFullOrder.setOutOrderId("1334");
         openFullOrder.setCompanyCode("244");
-        openFullOrder.setMemberCardId("0");
-        openFullOrder.setOutId("244-123456");
-        openFullOrder.setShopCode("SP110074");
-        openFullOrder.setPerformanceShopCode("SP110074");
+        openFullOrder.setOutId("244-1334");
+        openFullOrder.setShopCode("SP110073");
+        openFullOrder.setPerformanceShopCode("SP110073");
         openFullOrder.setFee(28800L);
         openFullOrder.setOriginFee(28800L);
         openFullOrder.setDiscount(0L);
@@ -85,13 +84,11 @@ public class SyncHkTest {
         openFullOrder.setBuyerNote("");
         openFullOrder.setStatus(1);
         openFullOrder.setChannel("hk");
-        openFullOrder.setPaymentChannelName("支付宝");
-        openFullOrder.setPaymentSerialNo("123435664636");
-        openFullOrder.setPaymentDate("20180101123402");
+        openFullOrder.setPaymentDate("20180101123302");
         openFullOrder.setCreatedAt("20180101123302");
         List<OpenFullOrderItem> items =  Lists.newArrayList();
         OpenFullOrderItem item = new OpenFullOrderItem();
-        item.setOutSkuorderId("1234");
+        item.setOutSkuorderId("1334");
         item.setSkuCode("4057289618927");
         item.setItemType("01");
         item.setItemName("测试商品");
@@ -101,10 +98,6 @@ public class SyncHkTest {
         item.setCleanPrice(28800L);
         item.setCleanFee(28800L);
         items.add(item);
-        OpenFullOrderInvoice invoice = new OpenFullOrderInvoice();
-        invoice.setInvoiceType("1");
-        invoice.setTitleType("1");
-
         OpenFullOrderAddress address = new OpenFullOrderAddress();
         address.setProvince("江苏省");
         address.setCity("南京市");
@@ -114,12 +107,11 @@ public class SyncHkTest {
         address.setEmail("zhaoxiaotao@terminus.io");
         address.setMobile("18021529596");
         address.setPhone("02512345678");
-        address.setReceiveUserName("一秋寒");
+        address.setReceiveUserName("易秋涵");
         address.setPostcode("214092");
         openFullOrderInfo.setOrder(openFullOrder);
         openFullOrderInfo.setItem(items);
         openFullOrderInfo.setAddress(address);
-        openFullOrderInfo.setInvoice(invoice);
         orderInfos.add(openFullOrderInfo);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderInfos);
         params.put("orderInfo",paramJson);
@@ -244,7 +236,7 @@ public class SyncHkTest {
 
     public String middleUrl() {
         String suffix = Joiner.on('&').withKeyValueSeparator("=").join(params);
-        String url =  "http://127.0.0.1:8095/api/gateway" + "?" + suffix;
+        String url =  "http://middle-api-test.pousheng.com/api/gateway" + "?" + suffix;
         System.out.println(url);
         return url;
     }

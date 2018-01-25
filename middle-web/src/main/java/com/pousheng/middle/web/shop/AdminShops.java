@@ -1,9 +1,6 @@
 package com.pousheng.middle.web.shop;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
+import com.google.common.base.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -177,8 +174,8 @@ public class AdminShops {
             throw new JsonResponseException("shop.mobile.invalid");
         }
 
-        //交易门店外码是否正确
-        Shop recoverShop = checkOuterId(shop.getOuterId());
+        //判断是否已创建
+        Shop recoverShop = checkOuterId(shop.getOuterId(),shop.getCompanyId());
 
         //创建门店
         shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
@@ -193,7 +190,8 @@ public class AdminShops {
         Long id;
         if(Arguments.isNull(recoverShop)){
             //创建门店用户
-            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(shop.getOuterId(),password);
+            String userNmae = shop.getCompanyId()+"-"+shop.getOuterId();
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(userNmae,password);
             if(!userInfoRes.isSuccess()){
                 log.error("create user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
                 throw new JsonResponseException(userInfoRes.getError());
@@ -205,7 +203,8 @@ public class AdminShops {
             eventBus.post(addressEvent);
         }else {
             //更新门店用户
-            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(recoverShop.getUserId(),shop.getUserName(),password);
+            String userNmae = shop.getCompanyId()+"-"+shop.getOuterId();
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(recoverShop.getUserId(),userNmae,password);
             if(!userInfoRes.isSuccess()){
                 log.error("update user(name:{}) fail,error:{}",recoverShop.getOuterId(),userInfoRes.getError());
                 throw new JsonResponseException(userInfoRes.getError());
@@ -229,20 +228,26 @@ public class AdminShops {
         return Collections.singletonMap("id", id);
     }
 
-    private Shop checkOuterId(String outerId){
+    private Shop checkOuterId(String outerId,Long companyId){
         if(Strings.isNullOrEmpty(outerId)){
             log.error("shop outer id is null");
             throw new JsonResponseException("shop.outer.in.invalid");
         }
-        Response<Shop> shopRes = shopReadService.findByOuterId(outerId);
-        if(shopRes.isSuccess()){
-            Shop shop = shopRes.getResult();
-            log.warn("shop(id:{}) ,status:{} exist outer id:{}",shop.getId(),shop.getStatus(),outerId);
-            if(Objects.equal(shop.getStatus(),-1)){
-                log.warn("shop(id:{}),status:{} exist outer id:{} ,so to recover status 1",shop.getId(),shop.getStatus(),outerId);
-                return shop;
+        Response<Optional<Shop>> shopRes = psShopReadService.findByOuterIdAndBusinessId(outerId,companyId);
+        if(!shopRes.isSuccess()){
+           log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopRes.getError());
+            throw new JsonResponseException(shopRes.getError());
+        }else {
+            Optional<Shop> shopOptional = shopRes.getResult();
+            if(shopOptional.isPresent()){
+                Shop shop = shopOptional.get();
+                log.warn("shop(id:{}) ,status:{} exist outer id:{}",shop.getId(),shop.getStatus(),outerId);
+                if(Objects.equal(shop.getStatus(),-1)){
+                    log.warn("shop(id:{}),status:{} exist outer id:{} ,so to recover status 1",shop.getId(),shop.getStatus(),outerId);
+                    return shop;
+                }
+                throw new JsonResponseException("duplicate.shop.outer.id");
             }
-            throw new JsonResponseException("duplicate.shop.outer.id");
         }
 
         return null;

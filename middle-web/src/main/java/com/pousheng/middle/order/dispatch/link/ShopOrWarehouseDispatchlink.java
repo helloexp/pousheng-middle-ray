@@ -60,6 +60,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
         log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...",shopOrder.getId());
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
 
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();
@@ -81,12 +82,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
         //调用高德地图查询地址坐标
-        Optional<Location> locationOp = dispatchComponent.getLocation(address);
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
-            throw new ServiceException("buyer.receive.info.address.invalid");
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(address,addressRegion);
 
         ListMultimap<Long, String> byWarehouseId = ArrayListMultimap.create();
         //最少拆单中发货件数最多的仓
@@ -107,8 +103,8 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             allDispatchWithPriorities.add(dispatchWithPriority);
             //添加到 allSkuCodeQuantityTable
             for (String skuCode : current.elementSet()) {
-                Integer stock = 0;
                 Object stockObject = warehouseSkuCodeQuantityTable.get(warehouseId,skuCode);
+                Integer stock = 0;
                 if(!Arguments.isNull(stockObject)){
                     stock = (Integer) stockObject;
                 }
@@ -151,7 +147,11 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             allDispatchWithPriorities.add(dispatchWithPriority);
             //添加到 allSkuCodeQuantityTable
             for (String skuCode : current.elementSet()) {
-                int stock =shopSkuCodeQuantityTable.get(shopId,skuCode);
+                Object stockObject =shopSkuCodeQuantityTable.get(shopId,skuCode);
+                Integer stock = 0;
+                if(Arguments.notNull(stockObject)){
+                    stock = (Integer) stockObject;
+                }
                 allSkuCodeQuantityTable.put(warehouseOrShopId,skuCode,stock);
             }
         }

@@ -153,6 +153,7 @@ public class StockPusher {
                 try {
                     //计算每个店铺的可用库存
                     Long stock = availableStockCalc.availableStock(shopId, skuCode);
+                    log.info("search sku stock by skuCode is {},shopId is {},stock is {}",skuCode,shopId,stock);
                     Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
                     if (!rShopStockRule.isSuccess()) {
                         log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
@@ -201,6 +202,7 @@ public class StockPusher {
                 paranaSkuStock.setStock(skuStockMap.get(skuCode));
                 paranaSkuStocks.add(paranaSkuStock);
             }
+            log.info("search sku stock by shopId  is {},paranaSkuStocks is {}",shopId,paranaSkuStocks);
             Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
             if (!r.isSuccess()) {
                 log.error("failed to push stocks {} to shop(id={}), error code{}",

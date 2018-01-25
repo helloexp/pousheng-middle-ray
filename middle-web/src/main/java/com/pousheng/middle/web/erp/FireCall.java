@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.component.SpuImporter;
+import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
@@ -48,6 +49,9 @@ public class FireCall {
     private final DateTimeFormatter dft;
     @RpcConsumer
     private MappingReadService mappingReadService;
+    @Autowired
+    private StockPusher stockPusher;
+
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
                     WarehouseImporter warehouseImporter,MaterialPusher materialPusher) {
@@ -153,6 +157,17 @@ public class FireCall {
             }
             pageNo++;
         }
+        return "ok";
+    }
+
+    /**
+     * 根据skuCode推送库存到第三方或者官网
+     * @param skuCode
+     * @return
+     */
+    @RequestMapping(value = "/sync/stock/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeStockBySkuCode(@RequestParam String skuCode){
+        stockPusher.submit(Lists.newArrayList(skuCode));
         return "ok";
     }
 }

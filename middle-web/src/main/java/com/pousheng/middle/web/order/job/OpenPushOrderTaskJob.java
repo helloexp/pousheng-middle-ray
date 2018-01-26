@@ -13,6 +13,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,7 @@ import java.util.Map;
  */
 @Component
 @Slf4j
+@RestController
 public class OpenPushOrderTaskJob {
     @Autowired
     private HostLeader hostLeader;
@@ -35,12 +39,13 @@ public class OpenPushOrderTaskJob {
     private OrderServiceCenter orderServiceCenter;
 
     @Scheduled(cron = "0 */15 * * * ?")
-    public void doGiftActvity() {
+    public void doProcessFailedOpenPushOrderTask() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
         log.info("START SCHEDULE ON OPEN PUSH ORDER TASK");
+        //获取待处理的失败任务
         Response<List<OpenPushOrderTask>> r =  openPushOrderTaskReadService.findByStatus(0);
         if (!r.isSuccess()){
             log.error("find open push order task failed");
@@ -67,8 +72,15 @@ public class OpenPushOrderTaskJob {
             }catch (Exception e){
                 e.printStackTrace();
             }
-}
+        }
         log.info("END SCHEDULE ON OPEN PUSH ORDER TASK");
+    }
 
+    /**
+     * 手动补偿任务
+     */
+    @RequestMapping(value = "api/hk/pos/task",method = RequestMethod.GET)
+    public void test2(){
+       this.doProcessFailedOpenPushOrderTask();
     }
 }

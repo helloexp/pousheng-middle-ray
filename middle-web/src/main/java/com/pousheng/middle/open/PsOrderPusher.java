@@ -75,6 +75,7 @@ public class PsOrderPusher extends DefaultOrderPusher {
                         OpenPushOrderTask openPushOrderTask =  new OpenPushOrderTask();
                         openPushOrderTask.setChannel(openFullOrderInfo.getOrder().getChannel());
                         openPushOrderTask.setSourceOrderId(openFullOrderInfo.getOrder().getOutId());
+                        //待处理的失败任务
                         openPushOrderTask.setStatus(0);
                         Map<String, String> extra = Maps.newHashMap();
                         String openClientShopJson = JsonMapper.nonEmptyMapper().toJson(openClientShop);

@@ -197,7 +197,7 @@ public class AdminShops {
                 throw new JsonResponseException(userInfoRes.getError());
             }
             //创建门店信息
-            id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
+            id = createShop(shop, userInfoRes.getResult().getUserId(), userNmae);
 
             CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId(),shop.getOuterId());
             eventBus.post(addressEvent);

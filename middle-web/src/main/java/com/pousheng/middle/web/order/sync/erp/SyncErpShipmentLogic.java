@@ -62,10 +62,11 @@ public class SyncErpShipmentLogic {
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
         if (!openShopResponse.isSuccess()){
             log.error("find open shop by openShopId {} failed,caused by {}",shopOrder.getShopId(),openShopResponse.getError());
+            return Response.fail(openShopResponse.getError());
         }
         OpenShop openShop = openShopResponse.getResult();
         Map<String, String> openShopExtra =  openShop.getExtra();
-        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
+        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE)==null?"hk":openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         switch (erpSyncType){
             case "hk":
                 return syncShipmentLogic.syncShipmentToHk(shipment);
@@ -92,7 +93,7 @@ public class SyncErpShipmentLogic {
         }
         OpenShop openShop = openShopResponse.getResult();
         Map<String, String> openShopExtra =  openShop.getExtra();
-        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
+        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE)==null?"hk":openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         switch (erpSyncType){
             case "hk":
                 return syncShipmentLogic.syncShipmentCancelToHk(shipment,operationType);
@@ -120,7 +121,7 @@ public class SyncErpShipmentLogic {
         }
         OpenShop openShop = openShopResponse.getResult();
         Map<String, String> openShopExtra =  openShop.getExtra();
-        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
+        String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE)==null?"hk":openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         switch (erpSyncType){
             case "hk":
                 return syncShipmentLogic.syncShipmentDoneToHk(shipment,operationType,syncOrderOperation);

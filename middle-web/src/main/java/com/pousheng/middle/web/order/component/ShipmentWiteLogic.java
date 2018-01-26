@@ -21,9 +21,8 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.events.trade.MposShipmentCreateEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
-import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -79,8 +78,6 @@ public class ShipmentWiteLogic {
     @Autowired
     private ObjectMapper objectMapper;
     @Autowired
-    private SyncMposShipmentLogic syncMposShipmentLogic;
-    @Autowired
     private SkuOrderReadService skuOrderReadService;
     @Autowired
     private DispatchOrderEngine dispatchOrderEngine;
@@ -96,8 +93,6 @@ public class ShipmentWiteLogic {
     private RefundWriteService refundWriteService;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
-    @Autowired
-    private SyncMposOrderLogic syncMposOrderLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -954,12 +949,8 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                //发货单同步恒康
-                log.info("sync shipment(id:{}) to hk");
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                }
+                //异步操作发货单
+                eventBus.post(new MposShipmentCreateEvent(shipment,1));
             }
         }
         for (ShopShipment shopShipment : dispatchOrderItemInfo.getShopShipments()) {
@@ -972,9 +963,8 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                //发货单同步mpos
-                this.syncShipmentToMpos(shipment);
-                //todo 发货单同步订单派发中心
+                //异步操作发货单
+                eventBus.post(new MposShipmentCreateEvent(shipment,2));
             }
         }
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
@@ -985,26 +975,12 @@ public class ShipmentWiteLogic {
                 orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
             }
             // 商品派不出去通知mpos
-            syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
+            eventBus.post(new MposShipmentCreateEvent(shopOrder,skuCodeAndQuantityList));
         }
         if(isFirst)
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
     }
 
-    /**
-     * 同步发货单至mpos
-     * @param shipment
-     */
-    private Boolean syncShipmentToMpos(Shipment shipment) {
-        //同步mpos
-        log.info("sync shipment(id:{}) to mpos", shipment.getId());
-        Response response = syncMposShipmentLogic.syncShipmentToMpos(shipment);
-        if (!response.isSuccess()) {
-            log.error("sync shipment(id:{}) to mpos fail", shipment.getId());
-            return false;
-        }
-        return true;
-    }
 
      /** 单个发货单撤销
      * @param shipmentId 发货单主键

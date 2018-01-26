@@ -45,12 +45,18 @@ public class ItemOpenApi {
      */
     @OpenMethod(key = "check.sku.is.mpos.api", paramNames = {"barCodes","companyId","shopOuterCode"}, httpMethods = RequestMethod.POST)
     public List<SkuIsMposDto> helloWord(@NotEmpty(message = "barCodes.empty") String barCodes,
-                                        @NotNull(message = "company.id.empty") Long companyId,
+                                        @NotEmpty(message = "company.id.empty") String companyId,
                                         @NotEmpty(message = "shop.outer.code.empty") String shopOuterCode) {
         log.info("HK-CHECK-MPOS-START param barcodes is:{} companyId is:{} shopOuterCode is:{} ", barCodes,companyId,shopOuterCode);
         try{
 
-            Response<Optional<Shop>> response = psShopReadService.findByOuterIdAndBusinessId(shopOuterCode,companyId);
+            boolean isNumber=companyId.matches("[0-9]+");
+            if(!isNumber){
+                log.error("company id:{} not number",companyId);
+                throw new OPServerException(200,"company.id.non-numeric");
+            }
+
+            Response<Optional<Shop>> response = psShopReadService.findByOuterIdAndBusinessId(shopOuterCode,Long.valueOf(companyId));
             if(!response.isSuccess()){
                 log.error("find shop by outer id:{} business id:{} fail,error:{}",shopOuterCode,companyId,response.getError());
                 throw new OPServerException(200,response.getError());

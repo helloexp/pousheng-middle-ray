@@ -39,6 +39,8 @@ public class TradeConstants {
     public static final String REFUND_LOST_ITEM_INFO="refundLostItemInfo";
     //逆向单商品信息
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
+    //订饭派发中心过来的item
+    public static final String REFUND_YYEDI_RECEIVED_ITEM_INFO="yyediReceivedItemInfo";
     //通知电商平台状态
     public static final String ECP_ORDER_STATUS = "ecpOrderStatus";
     //冗余的shipmentId
@@ -151,7 +153,8 @@ public class TradeConstants {
     public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
     //货号
     public static final String HK_MATRIAL_CODE="materialCode";
-
+    //sizeId
+    public static final String HK_SIZE_ID = "sizeId";
     //电商销售单
     public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
     //线下门店

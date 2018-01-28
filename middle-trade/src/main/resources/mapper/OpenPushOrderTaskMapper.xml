@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="OpenPushOrderTask">
+    <resultMap id="OpenPushOrderTaskMap" type="OpenPushOrderTask">
+        <id column="id" property="id"/>
+        <result column="source_order_id" property="sourceOrderId"/>
+        <result column="channel" property="channel"/>
+        <result column="status" property="status"/>
+        <result column="extra_json" property="extraJson"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        
+    </resultMap>
+
+    <sql id="tb">
+        open_push_order_task
+    </sql>
+
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        source_order_id, channel, status, extra_json, created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{sourceOrderId}, #{channel}, #{status}, #{extraJson}, now(), now()
+    </sql>
+
+    <insert id="create" parameterType="OperationLog" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="OpenPushOrderTaskMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE id = #{id}
+    </select>
+
+    <select id="findByStatus" parameterType="int" resultMap="OpenPushOrderTaskMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE status = #{status}
+    </select>
+
+    <update id="update" parameterType="OperationLog">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="status != null">status = #{status},</if>
+            updated_at=now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE id = #{id}
+    </delete>
+</mapper>

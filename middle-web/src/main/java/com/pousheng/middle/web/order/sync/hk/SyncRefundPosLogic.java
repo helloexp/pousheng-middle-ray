@@ -128,6 +128,7 @@ public class SyncRefundPosLogic {
         posContent.setRemark(refund.getBuyerNote());//备注
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,refund);
+        //对于订单派发中心来说，可能有多个仓库，传订单派发中心的吧
         List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getId(),extra.get("outCode"));
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);

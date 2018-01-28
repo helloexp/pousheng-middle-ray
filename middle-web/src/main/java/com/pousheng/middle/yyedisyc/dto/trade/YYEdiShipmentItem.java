@@ -49,6 +49,12 @@ public class YYEdiShipmentItem implements java.io.Serializable {
     private String SizeName;
 
     /**
+     * 中台尺码id
+     */
+    @JsonProperty(value = "SizeCode")
+    private String SizeCode;
+
+    /**
      * 预期数量
      */
     @JsonProperty(value = "ExpectQty")
@@ -164,5 +170,14 @@ public class YYEdiShipmentItem implements java.io.Serializable {
     @JsonIgnore
     public void setBalaPrice(BigDecimal balaPrice) {
         BalaPrice = balaPrice;
+    }
+
+    @JsonIgnore
+    public String getSizeCode() {
+        return SizeCode;
+    }
+    @JsonIgnore
+    public void setSizeCode(String sizeCode) {
+        SizeCode = sizeCode;
     }
 }

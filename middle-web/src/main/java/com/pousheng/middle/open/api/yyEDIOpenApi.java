@@ -114,7 +114,14 @@ public class yyEDIOpenApi {
                     if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
                         log.error("shipment(id={})'s status({}) not fit for ship",
                                 shipment.getId(), shipment.getStatus());
-                        throw new ServiceException("shipment.current.status.not.allow.ship");
+                        YyEdiResponseDetail field = new YyEdiResponseDetail();
+                        field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                        field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                        field.setErrorCode("100");
+                        field.setErrorMsg("已经发货完成，请勿再次发货");
+                        fields.add(field);
+                        count++;
+                        continue;
                     }
                     Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
                     //更新状态
@@ -191,8 +198,10 @@ public class yyEDIOpenApi {
     ) {
         log.info("YYEDI-SYNC-REFUND-STATUS-START param refundOrderId is:{} yyediRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
+        List<YyEdiResponseDetail> fields = null;
+        YyEdiResponse error = new YyEdiResponse();
         try {
-            List<YYEdiRefundConfirmItem> results = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
+            List<YYEdiRefundConfirmItem> items = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
             if (refundOrderId == null) {
                 return;
             }
@@ -206,14 +215,18 @@ public class yyEDIOpenApi {
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setErrorCode("100");
+                field.setErrorMsg("已经通知中台退货，请勿再次通知");
+                fields.add(field);
                 throw new ServiceException(updateStatusRes.getError());
             }
-
             //更新扩展信息
             Refund update = new Refund();
             update.setId(refundOrderId);
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+            extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO,mapper.toJson(items));
             update.setExtra(extra);
 
             Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
@@ -266,7 +279,13 @@ public class yyEDIOpenApi {
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
-            throw new OPServerException(200, e.getMessage());
+            if (!fields.isEmpty()){
+                error.setFields(fields);
+                String reason = JsonMapper.nonEmptyMapper().toJson(error);
+                throw new OPServerException(200, reason);
+            }else{
+                throw new OPServerException(200, e.getMessage());
+            }
         } catch (Exception e) {
             log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");

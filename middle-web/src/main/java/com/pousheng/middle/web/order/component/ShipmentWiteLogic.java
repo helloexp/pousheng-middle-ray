@@ -967,19 +967,22 @@ public class ShipmentWiteLogic {
                 eventBus.post(new MposShipmentCreateEvent(shipment,2));
             }
         }
-        List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
-        if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
-            //取消子单
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
-                //添加取消原因
-                Map<String,String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
-                orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+        //如果是恒康pos订单，暂不处理
+        if(!shopOrder.getExtra().containsKey("isHkPosOrder")){
+            List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
+            if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
+                //取消子单
+                for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
+                    SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+                    orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
+                    //添加取消原因
+                    Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                    skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
+                    orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                }
+                // 商品派不出去通知mpos
+                eventBus.post(new MposShipmentCreateEvent(shopOrder,skuCodeAndQuantityList));
             }
-            // 商品派不出去通知mpos
-            eventBus.post(new MposShipmentCreateEvent(shopOrder,skuCodeAndQuantityList));
         }
         if(isFirst)
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());

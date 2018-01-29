@@ -353,8 +353,6 @@ public class SyncYYEdiShipmentLogic {
         }else{
             shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
         }
-        //会员兑换积分
-        shipmentInfo.setExchangeIntegral(new BigDecimal(0.00));
         //红包支付金额
         shipmentInfo.setRptAmount(new BigDecimal(0.00));
         //促销优惠金额
@@ -373,11 +371,15 @@ public class SyncYYEdiShipmentLogic {
         //渠道
         shipmentInfo.setChannel(shopOrder.getOutFrom());
         //获取发货单中对应的sku列表
-        List<YYEdiShipmentItem> items = this.getSyncYYEdiShipmentItem(shipment, shipmentDetail);
+        //积分
+        int integral = 0;
+        List<YYEdiShipmentItem> items = this.getSyncYYEdiShipmentItem(shipment, shipmentDetail,integral);
         int quantity = 0;
         for (YYEdiShipmentItem item:items){
             quantity = quantity +item.getExpectQty();
         }
+        //会员兑换积分
+        shipmentInfo.setExchangeIntegral(new BigDecimal(integral));
         //总行数
         shipmentInfo.setTdq(items.size());
         //预期数量
@@ -391,9 +393,10 @@ public class SyncYYEdiShipmentLogic {
      *
      * @param shipment
      * @param shipmentDetail
+     * @param integral 积分
      * @return
      */
-    private List<YYEdiShipmentItem> getSyncYYEdiShipmentItem(Shipment shipment, ShipmentDetail shipmentDetail) {
+    private List<YYEdiShipmentItem> getSyncYYEdiShipmentItem(Shipment shipment, ShipmentDetail shipmentDetail,int integral) {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         Response<Warehouse> rW  = warehouseReadService.findById(shipmentExtra.getWarehouseId());
@@ -450,6 +453,8 @@ public class SyncYYEdiShipmentLogic {
                 originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
             }
             item.setRetailPrice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            //积分
+            integral = shipmentItem.getIntegral()==null?0:shipmentItem.getIntegral()+integral;
             items.add(item);
         }
         return items;

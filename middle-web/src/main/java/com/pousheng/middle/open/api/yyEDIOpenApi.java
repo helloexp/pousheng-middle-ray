@@ -96,7 +96,7 @@ public class yyEDIOpenApi {
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
     public void receiveYYEDIShipmentResult(String shipInfo) {
         List<YyEdiShipInfo> results = null;
-        List<YyEdiResponseDetail> fields = null;
+        List<YyEdiResponseDetail> fields = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
         try {
             log.info("YYEDI-SHIPMENT-INFO-start param=======>{}", shipInfo);
@@ -206,12 +206,12 @@ public class yyEDIOpenApi {
             "receivedDate"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(Long refundOrderId,
                                    @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
-                                   String itemInfo,
+                                   @NotEmpty(message = "itemInfo.is.null") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
     ) {
         log.info("YYEDI-SYNC-REFUND-STATUS-START param refundOrderId is:{} yyediRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
-        List<YyEdiResponseDetail> fields = null;
+        List<YyEdiResponseDetail> fields = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
         try {
             List<YYEdiRefundConfirmItem> items = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
@@ -260,36 +260,7 @@ public class yyEDIOpenApi {
                 autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-            String outId = refund.getOutId();
-            if (StringUtils.hasText(outId) && outId.contains("taobao")) {
-                String channel = refundReadLogic.getOutChannelTaobao(outId);
-                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
-                    Refund newRefund = refundReadLogic.findRefundById(refund.getId());
-                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                    event.setRefundId(refund.getId());
-                    event.setChannel(channel);
-                    event.setOpenShopId(newRefund.getShopId());
-                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
-                    eventBus.post(event);
-                }
-            }
-            //如果是苏宁的售后单，将会主动查询售后单的状态
-            if (StringUtils.hasText(outId) && outId.contains("suning")) {
-                String channel = refundReadLogic.getOutChannelSuning(outId);
-                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
-                    Refund newRefund = refundReadLogic.findRefundById(refund.getId());
-                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
-                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                    event.setRefundId(refund.getId());
-                    event.setChannel(channel);
-                    event.setOpenShopId(newRefund.getShopId());
-                    event.setOpenOrderId(shopOrder.getOutId());
-                    eventBus.post(event);
-                }
-            }
+            refundWriteLogic.getThirdRefundResult(refund);
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
             if (!fields.isEmpty()){

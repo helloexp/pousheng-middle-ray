@@ -110,36 +110,7 @@ public class SyncErpReturnLogic {
         Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
         if (r.isSuccess()){
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-            String outId = refund.getOutId();
-            if (StringUtils.hasText(outId)&&outId.contains("taobao")){
-                String channel = refundReadLogic.getOutChannelTaobao(outId);
-                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        &&Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
-                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
-                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                    event.setRefundId(refund.getId());
-                    event.setChannel(channel);
-                    event.setOpenShopId(newRefund.getShopId());
-                    event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
-                    eventBus.post(event);
-                }
-            }
-            //如果是苏宁的售后单，将会主动查询售后单的状态
-            if (StringUtils.hasText(outId)&&outId.contains("suning")){
-                String channel = refundReadLogic.getOutChannelSuning(outId);
-                if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                        &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
-                    Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
-                    OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
-                    TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                    event.setRefundId(refund.getId());
-                    event.setChannel(channel);
-                    event.setOpenShopId(newRefund.getShopId());
-                    event.setOpenOrderId(shopOrder.getOutId());
-                    eventBus.post(event);
-                }
-            }
+            refundWriteLogic.getThirdRefundResult(refund);
             return Response.ok(Boolean.TRUE);
         }else{
             updateRefundSyncFial(refund);

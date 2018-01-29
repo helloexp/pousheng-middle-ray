@@ -4,6 +4,7 @@ import com.google.common.base.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -197,7 +198,7 @@ public class AdminShops {
                 throw new JsonResponseException(userInfoRes.getError());
             }
             //创建门店信息
-            id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
+            id = createShop(shop, userInfoRes.getResult().getUserId(), userNmae);
 
             CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId(),shop.getOuterId());
             eventBus.post(addressEvent);
@@ -347,8 +348,12 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
+        LoginTokenInfo token = ucUserOperationLogic.getUserToken(exist.getUserName(),password);
+        if(token.getError() == null){
+            log.error("new password can not same as old password");
+            throw new JsonResponseException("modify.password.fail");
+        }
         judgePassword(password);
-
         //更新用户中心用户信息
         Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(exist.getUserId(), exist.getUserName(), password);
         if (!ucUserInfoRes.isSuccess()) {

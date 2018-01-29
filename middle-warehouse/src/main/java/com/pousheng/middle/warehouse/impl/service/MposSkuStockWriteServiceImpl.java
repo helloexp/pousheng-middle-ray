@@ -101,6 +101,9 @@ public class MposSkuStockWriteServiceImpl implements MposSkuStockWriteService {
     @Override
     public Response<Boolean> unLockStockShop(List<ShopShipment> shopShipments) {
         try {
+            if(CollectionUtils.isEmpty(shopShipments)){
+                return Response.ok();
+            }
             mposSkuStockManager.unLockStockShop(shopShipments);
             return Response.ok();
         }catch (Exception e){

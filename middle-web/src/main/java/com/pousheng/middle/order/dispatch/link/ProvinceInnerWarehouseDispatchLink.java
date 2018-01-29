@@ -97,18 +97,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         //查询仓代码
-        List<String> stockCodes = Lists.transform(mposWarehouses, new Function<Warehouse, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable Warehouse input) {
-                Map<String, String>  extra = input.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",input.getId());
-                    throw new ServiceException("warehouse.out.code.invalid");
-                }
-                return extra.get("outCode");
-            }
-        });
+        List<String> stockCodes = dispatchComponent.getWarehouseOutCode(mposWarehouses);
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 

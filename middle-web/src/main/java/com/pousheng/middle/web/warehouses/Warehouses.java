@@ -297,18 +297,20 @@ public class Warehouses {
         }
         Warehouse exist = res.getResult();
         Map<String,String> extra = exist.getExtra();
+        Map<String,String> tags = exist.getTags() == null ? Maps.newHashMap() : exist.getTags();
         if(StringUtils.hasText(warehouseServerInfo.getVirtualShopCode())){
             extra.put(TradeConstants.WAREHOUSE_VIRTUALSHOPCODE,warehouseServerInfo.getVirtualShopCode());
             extra.put(TradeConstants.WAREHOUSE_VIRTUALSHOPNAME,warehouseServerInfo.getVirtualShopName());
         }
         if(StringUtils.hasText(warehouseServerInfo.getReturnWarehouseCode())){
-            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSECODE,warehouseServerInfo.getReturnWarehouseCode());
-            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSENAME,warehouseServerInfo.getReturnWarehouseName());
-            extra.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSEID,warehouseServerInfo.getReturnWarehouseId().toString());
+            tags.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSECODE,warehouseServerInfo.getReturnWarehouseCode());
+            tags.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSENAME,warehouseServerInfo.getReturnWarehouseName());
+            tags.put(TradeConstants.WAREHOUSE_RETURNWAREHOUSEID,warehouseServerInfo.getReturnWarehouseId().toString());
         }
         Warehouse update = new Warehouse();
         update.setId(warehouseId);
         update.setExtra(extra);
+        update.setTags(tags);
         Response<Boolean> r = warehouseWriteService.update(update);
         if(!r.isSuccess()){
             log.error("fail to update warehouse id:{},cause:{}",warehouseId,r.getError());

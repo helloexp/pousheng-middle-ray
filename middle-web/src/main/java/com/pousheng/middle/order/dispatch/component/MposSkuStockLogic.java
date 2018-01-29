@@ -29,9 +29,9 @@ import java.util.Map;
  * mpos商品库存操作
  * mpos仓发的商品的库存全部放在WarehouseSkuStock,和电商公用
  * 在发货单发货锁定库存时 先拉取当前发货仓及商品对应的库存
- * 1、当没有电商没有在售时mpos在售则先拉对应的库存到WarehouseSkuStock，然后再进行锁定
+ * 1、当没有电商在售时mpos在售则先拉对应的库存到WarehouseSkuStock，然后再进行锁定
  * 2、电商在售时，则同步最新的库存到WarehouseSkuStock后，然后再进行锁定
- * 3、锁定后对应对应的商品进行尝试推电商最新库存
+ * 3、锁定后对应的商品进行尝试推电商最新库存
  *
  * 仓发释放库存则直接释放即可
  * 仓发扣减库存则直接扣减即可
@@ -74,26 +74,30 @@ public class MposSkuStockLogic {
 
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
+        //如果没有仓发则直接返回
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Response.ok();
+        }
+
         List<String> skuCodes = dispatchComponent.getWarehouseSkuCodes(warehouseShipments);
-        //1、先同步恒康最新库存到中台
+        //1、先同步恒康最新库存到中台（这里可以不用担心拉取不到库存，因为既然可以仓发，说明恒康一定有库存）
         syncStock(warehouseShipments,skuCodes);
         //2、锁定库存
-        if(!CollectionUtils.isEmpty(warehouseShipments)){
-            //锁定电商库存
-            Response<Boolean> response = warehouseSkuWriteService.lockStock(warehouseShipments);
-            if(!response.isSuccess()){
-                log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,response.getError());
-                return response;
-            }
-
-            //3、触发库存推送
-            stockPusher.submit(skuCodes);
+        //锁定电商库存
+        Response<Boolean> response = warehouseSkuWriteService.lockStock(warehouseShipments);
+        if(!response.isSuccess()){
+            log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,response.getError());
+            return response;
         }
+
+        //3、触发库存推送
+        stockPusher.submit(skuCodes);
 
         return Response.ok();
     }
 
 
+    //同步最新的仓库商品库存到中台
     private void syncStock(List<WarehouseShipment> warehouseShipments,List<String> skuCodes){
 
         if(CollectionUtils.isEmpty(warehouseShipments)){
@@ -112,18 +116,7 @@ public class MposSkuStockLogic {
         List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //查询仓代码
-        List<String> stockCodes = Lists.transform(warehouses, new Function<Warehouse, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable Warehouse input) {
-                Map<String, String> extra = input.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",input.getId());
-                    throw new ServiceException("warehouse.out.code.invalid");
-                }
-                return extra.get("outCode");
-            }
-        });
+        List<String> stockCodes = dispatchComponent.getWarehouseOutCode(warehouses);
 
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
         if(CollectionUtils.isEmpty(skuStockInfos)){
@@ -133,7 +126,6 @@ public class MposSkuStockLogic {
 
         List<StockDto> stockDtos = Lists.newArrayList();
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-
             List<HkSkuStockInfo.SkuAndQuantityInfo> skuAndQuantityInfos =hkSkuStockInfo.getMaterial_list();
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : skuAndQuantityInfos){
                 StockDto stockDto = new StockDto();
@@ -163,7 +155,7 @@ public class MposSkuStockLogic {
 
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
-        //锁定mpos门店库存
+        //解锁锁mpos门店库存
         Response<Boolean> updateStockRes = mposSkuStockWriteService.unLockStockShop(shopShipments);
         if(!updateStockRes.isSuccess()){
             log.error("lock mpos sku stock for shopShipments:{} fail,error:{} ",shopShipments,updateStockRes.getError());
@@ -172,7 +164,6 @@ public class MposSkuStockLogic {
 
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
-
         return warehouseSkuWriteService.unlockStock(warehouseShipments);
 
     }

@@ -187,3 +187,5 @@ CREATE TABLE `open_push_order_task` (
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
 
+-- 库存表存储退货仓信息
+alter table `pousheng_warehouses` add `tags_json` VARCHAR(2048) NULL COMMENT 'tag信息, json表示' after `extra_json`;

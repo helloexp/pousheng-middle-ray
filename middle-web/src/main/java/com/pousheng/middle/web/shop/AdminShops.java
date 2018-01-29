@@ -351,7 +351,7 @@ public class AdminShops {
         LoginTokenInfo token = ucUserOperationLogic.getUserToken(exist.getUserName(),password);
         if(token.getError() == null){
             log.error("new password can not same as old password");
-            throw new JsonResponseException("密码无效，请重新录入");
+            throw new JsonResponseException("modify.password.fail");
         }
         judgePassword(password);
         //更新用户中心用户信息

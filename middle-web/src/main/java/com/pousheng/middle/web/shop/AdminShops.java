@@ -27,6 +27,7 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.common.utils.Iters;
@@ -80,8 +81,8 @@ public class AdminShops {
     private ParanaUserOperationLogic paranaUserOperationLogic;
     @Autowired
     private MposWarehousePusher mposWarehousePusher;
-    @Autowired
-    private OpenShopCacher openShopCacher;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     @RpcConsumer
     private OpenShopWriteService openShopWriteService;
 
@@ -475,7 +476,16 @@ public class AdminShops {
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
 
-        OpenShop openShop = openShopCacher.findById(existShopExtraInfo.getOpenShopId());
+        Response<OpenShop> openShopRes = openShopReadService.findById(existShopExtraInfo.getOpenShopId());
+        if(!openShopRes.isSuccess()){
+            log.error("find open shop by id:{} fail,error:{}",existShopExtraInfo.getOpenShopId(),openShopRes.getError());
+            throw new JsonResponseException(openShopRes.getError());
+        }
+        OpenShop openShop = openShopRes.getResult();
+        if(Arguments.isNull(openShop)){
+            log.error("not find open shop by id:{}",existShopExtraInfo.getOpenShopId());
+            throw new JsonResponseException("open.shop.not.exist");
+        }
         Map<String,String> openExtra = openShop.getExtra();
         if(CollectionUtils.isEmpty(openExtra)){
             openExtra = Maps.newHashMap();

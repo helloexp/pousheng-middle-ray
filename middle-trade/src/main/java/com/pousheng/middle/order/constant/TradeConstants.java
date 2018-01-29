@@ -190,5 +190,7 @@ public class TradeConstants {
     //同步退货单给恒康失败
     public static final Integer FAIL_SYNC_REFUND_TO_HK = 5;
 
+    public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
+
 
 }

@@ -11,6 +11,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
+import com.pousheng.middle.item.component.BatchIndexTask;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.impl.dao.SkuTemplateExtDao;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
@@ -68,6 +69,8 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     private SearchSkuTemplateProperties searchSkuTemplateProperties;
     @Autowired
     private IndexedSkuTemplateGuarder indexedSkuTemplateGuarder;
+    @Autowired
+    private BatchIndexTask batchIndexTask;
 
 
 
@@ -87,7 +90,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                     .withTimeAtStartOfDay()
                     .minusDays(fullDumpRange));
             Stopwatch watch = Stopwatch.createStarted();
-            int allIndexed = doIndex(since);
+            int allIndexed = doIndex(since,Boolean.TRUE);
             watch.stop();
             log.info("item full dump end, cost: {} ms, dumped {} items",
                     watch.elapsed(TimeUnit.MILLISECONDS), allIndexed);
@@ -112,7 +115,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             Stopwatch watch = Stopwatch.createStarted();
             // interval分钟前的时间
             String since = DATE_TIME_FORMAT.print(new DateTime().minusMinutes(interval));
-            int allIndexed = doIndex(since);
+            int allIndexed = doIndex(since,Boolean.FALSE);
 
             watch.stop();
             log.info("item delta dump end, cost: {} ms, dumped {} items",
@@ -124,17 +127,12 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         }
     }
 
-    private int doIndex(String since) {
+    private int doIndex(String since,Boolean isFullDump) {
         // 最大的商品id
         Long lastId = skuTemplateExtDao.maxId() + 1;
         // 计数本次full dump的商品数
         int allIndexed = 0;
         while (true) {
-                try {
-                    Thread.sleep(1500);
-                } catch (InterruptedException e) {
-                    log.error("delayed error:{}",Throwables.getStackTraceAsString(e));
-                }
             List<SkuTemplate> skuTemplates = skuTemplateExtDao.listSince(lastId, since, searchSkuTemplateProperties.getBatchSize());
             if (Iterables.isEmpty(skuTemplates)) {
                 break;
@@ -166,9 +164,10 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                 }
             });
 
-            for (SkuTemplate skuTemplate : skuTemplates) {
-                try {
-                    if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {  //更新
+            if(isFullDump){
+                List<IndexedSkuTemplate> indexedSkuTemplates = Lists.newArrayListWithCapacity(skuTemplates.size());
+                for (SkuTemplate skuTemplate : skuTemplates) {
+                    try {
                         Map<String,String> extra = skuTemplate.getExtra();
                         //当没找到sku对应的货号时跳过
                         if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
@@ -176,16 +175,38 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                             continue;
                         }
                         IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
-                        IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
-                        indexExecutor.submit(indexTask);
-                    } else { //删除
-                        IndexTask indexTask = indexedItemIndexAction.deleteTask(skuTemplate.getId());
-                        indexExecutor.submit(indexTask);
+                        indexedSkuTemplates.add(indexedItem);
+                    } catch (Exception e) {
+                        log.error("failed to index skuTemplate(id={}),cause:{}", skuTemplate.getId(), Throwables.getStackTraceAsString(e));
                     }
-                } catch (Exception e) {
-                    log.error("failed to index skuTemplate(id={}),cause:{}", skuTemplate.getId(), Throwables.getStackTraceAsString(e));
                 }
+                batchIndexTask.batchDump(indexedSkuTemplates);
+            }else {
+                for (SkuTemplate skuTemplate : skuTemplates) {
+                    try {
+                        if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {  //更新
+                            Map<String,String> extra = skuTemplate.getExtra();
+                            //当没找到sku对应的货号时跳过
+                            if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
+                                log.warn("sku template(id:{}) not find material id so skip create search index",skuTemplate.getId());
+                                continue;
+                            }
+                            IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
+                            batchIndexTask.batchDump(Lists.newArrayList(indexedItem));
+                        /*IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
+                        indexExecutor.submit(indexTask);*/
+                        } else { //删除
+                            IndexTask indexTask = indexedItemIndexAction.deleteTask(skuTemplate.getId());
+                            indexExecutor.submit(indexTask);
+                        }
+                    } catch (Exception e) {
+                        log.error("failed to index skuTemplate(id={}),cause:{}", skuTemplate.getId(), Throwables.getStackTraceAsString(e));
+                    }
+                }
+
+
             }
+
 
             allIndexed += skuTemplates.size();
             log.info("has indexed {} items,and last handled id is {}", allIndexed, lastId);

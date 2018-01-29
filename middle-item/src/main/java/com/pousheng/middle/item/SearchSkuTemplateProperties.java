@@ -41,5 +41,5 @@ public class SearchSkuTemplateProperties {
     /**
      * 每次批量处理多少个商品
      */
-    private Integer batchSize = 100;
+    private Integer batchSize = 5000;
 }

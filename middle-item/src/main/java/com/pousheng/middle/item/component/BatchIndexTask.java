@@ -1,5 +1,6 @@
 package com.pousheng.middle.item.component;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
@@ -30,21 +31,27 @@ public class BatchIndexTask {
 
     public void batchDump(List<IndexedSkuTemplate> indexedSkuTemplates){
 
-        StringBuilder str = new StringBuilder();
-        if (notNull(indexedSkuTemplates)) {
-            for (IndexedSkuTemplate index : indexedSkuTemplates) {
-                str.append(JsonMapper.nonEmptyMapper().toJson(
-                        ImmutableMap.of("index", ImmutableMap.of("_id", index.getId()))));
-                str.append("\n");
-                str.append(JsonMapper.nonEmptyMapper().toJson(index));
-                str.append("\n");
+        String dumpBodyJson;
+        try {
+            StringBuilder str = new StringBuilder();
+            if (notNull(indexedSkuTemplates)) {
+                for (IndexedSkuTemplate index : indexedSkuTemplates) {
+                    str.append(JsonMapper.nonEmptyMapper().toJson(
+                            ImmutableMap.of("index", ImmutableMap.of("_id", index.getId()))));
+                    str.append("\n");
+                    str.append(JsonMapper.nonEmptyMapper().toJson(index));
+                    str.append("\n");
+                }
+
+                 dumpBodyJson = str.toString();
+
+                log.info("start batch dump size:{}",indexedSkuTemplates.size());
+                esClient.bulk(searchItemProperties.getIndexName(),searchItemProperties.getIndexType(),dumpBodyJson);
+                log.info("end batch dump");
             }
 
-            String dumpBodyJson = str.toString();
-
-            log.info("start batch dump json:{}",dumpBodyJson);
-            esClient.bulk(searchItemProperties.getIndexName(),searchItemProperties.getIndexType(),dumpBodyJson);
-            log.info("end batch dump");
+        }catch (Exception e){
+            log.error("batch dump json:{} fail,cause:{}",dumpBodyJson, Throwables.getStackTraceAsString(e));
         }
     }
 

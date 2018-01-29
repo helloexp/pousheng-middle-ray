@@ -31,7 +31,7 @@ public class BatchIndexTask {
 
     public void batchDump(List<IndexedSkuTemplate> indexedSkuTemplates){
 
-        String dumpBodyJson;
+        String dumpBodyJson="";
         try {
             StringBuilder str = new StringBuilder();
             if (notNull(indexedSkuTemplates)) {

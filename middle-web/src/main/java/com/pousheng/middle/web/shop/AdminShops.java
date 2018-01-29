@@ -170,11 +170,6 @@ public class AdminShops {
         String password = Strings.nullToEmpty(shop.getUserPassword());
         judgePassword(password);
 
-        if(Strings.isNullOrEmpty(shop.getPhone())){
-            log.error("shop phone is null");
-            throw new JsonResponseException("shop.mobile.invalid");
-        }
-
         //判断是否已创建
         Shop recoverShop = checkOuterId(shop.getOuterId(),shop.getCompanyId());
 

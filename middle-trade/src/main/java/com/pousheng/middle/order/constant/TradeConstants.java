@@ -217,5 +217,7 @@ public class TradeConstants {
     //yyedi返回结果:整体失败
     public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
     public static final String  ERP_SYNC_TYPE="erpSyncType";
+    public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
+
 
 }

@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -163,6 +164,19 @@ public class RefundReadLogic {
             return Lists.newArrayList(new RefundItem());
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
+    }
+
+    public List<YYEdiRefundConfirmItem> findRefundYYEdiConfirmItems(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.warn("refund(id:{}) extra field is null",refund.getId());
+            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+        }
+        if(!extraMap.containsKey(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO)){
+            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
+            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO),mapper.createCollectionType(List.class,YYEdiRefundConfirmItem.class));
     }
 
 

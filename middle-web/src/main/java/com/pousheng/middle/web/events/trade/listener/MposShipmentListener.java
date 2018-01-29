@@ -93,9 +93,6 @@ public class MposShipmentListener {
     @Subscribe
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
-        if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_RECEIVE){
-            this.syncOrderStatus(shipment,MiddleShipmentsStatus.WAIT_SHIP.getValue(),MiddleOrderStatus.WAIT_SHIP.getValue());
-        }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             if(Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)){

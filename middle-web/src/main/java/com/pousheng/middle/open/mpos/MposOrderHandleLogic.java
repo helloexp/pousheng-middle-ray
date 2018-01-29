@@ -118,7 +118,8 @@ public class MposOrderHandleLogic {
         }
         if(Objects.nonNull(update))
             shipmentWiteLogic.update(update);
-        eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),orderEvent));
+        if(!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE))
+            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),orderEvent));
         log.info("sync shipment(id:{}) success",shipment.getId());
     }
 }

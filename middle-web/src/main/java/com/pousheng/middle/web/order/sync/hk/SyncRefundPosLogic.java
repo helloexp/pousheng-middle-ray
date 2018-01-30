@@ -184,7 +184,7 @@ public class SyncRefundPosLogic {
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
         for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
-            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarehouseCode());
+            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
             hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
             hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
             hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));

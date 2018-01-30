@@ -5,6 +5,7 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -63,7 +64,7 @@ public class MposOrderHandleLogic {
             try{
                 Map<String,String> shipExtra = mposShipmentExtra.transToMap();
                 Shipment shipment = shipmentReadLogic.findShipmentById(mposShipmentExtra.getOuterShipmentId());
-                if(shipment != null){
+                if(shipment != null && idempotencyValidate(shipment.getStatus(),mposShipmentExtra.getStatus().toString())){
                     this.deal(shipment,mposShipmentExtra.getStatus().toString(),shipExtra);
                 }
             }catch (Exception e){
@@ -121,5 +122,31 @@ public class MposOrderHandleLogic {
         if(!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE))
             eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),orderEvent));
         log.info("sync shipment(id:{}) success",shipment.getId());
+    }
+
+    /**
+     * 确保幂等性
+     * @param status     中台发货单状态
+     * @param shipStatus mpos发货单状态
+     * @return
+     */
+    private Boolean idempotencyValidate(Integer status,String shipStatus){
+        switch (shipStatus){
+            case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
+                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue()))
+                    return false;
+                break;
+            case TradeConstants.MPOS_SHIPMENT_REJECT:
+                if(Objects.equals(status, MiddleShipmentsStatus.REJECTED.getValue()))
+                    return false;
+                break;
+            case TradeConstants.MPOS_SHIPMENT_SHIPPED:
+                if(Objects.equals(status, MiddleShipmentsStatus.SHIPPED.getValue()))
+                    return false;
+                break;
+            default:
+                return false;
+        }
+        return true;
     }
 }

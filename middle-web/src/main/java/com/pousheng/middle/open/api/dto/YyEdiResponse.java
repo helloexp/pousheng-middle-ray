@@ -13,4 +13,5 @@ import java.util.List;
 public class YyEdiResponse implements java.io.Serializable {
     private static final long serialVersionUID = -5062603184685687802L;
     List<YyEdiResponseDetail> fields;
+    YyEdiResponseDetail field;
 }

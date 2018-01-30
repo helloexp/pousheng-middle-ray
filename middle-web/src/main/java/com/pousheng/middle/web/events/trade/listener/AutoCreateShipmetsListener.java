@@ -77,8 +77,8 @@ public class AutoCreateShipmetsListener {
                 if (!rltRes.isSuccess()) {
                     log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
                 }
-                shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
+            shipmentWiteLogic.doAutoCreateShipment(shopOrder);
         }
     }
 }

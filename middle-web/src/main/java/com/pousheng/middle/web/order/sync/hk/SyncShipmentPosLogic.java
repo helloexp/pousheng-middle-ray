@@ -227,7 +227,7 @@ public class SyncShipmentPosLogic {
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
         String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");
         if (!StringUtils.isEmpty(isHkPosOrder)&&Objects.equal(isHkPosOrder,"true")){
-            String outOrderId = shopOrderExtra.get("outOrderId");
+            String outOrderId = shopOrderExtra.get("hkOutOrderId");
             posContent.setSourcebillno(outOrderId==null?"":outOrderId);//订单来源单号
         }else{
             posContent.setSourcebillno("");//订单来源单号

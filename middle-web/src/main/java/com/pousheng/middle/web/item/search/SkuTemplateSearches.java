@@ -11,10 +11,12 @@ import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.web.item.component.SkutemplateScrollSearcher;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.search.dto.SearchedItem;
@@ -22,8 +24,11 @@ import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.SpuAttribute;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import io.terminus.search.api.model.Pagination;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.joda.time.DateTime;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -49,6 +54,8 @@ public class SkuTemplateSearches {
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
     private PsSpuAttributeReadService psSpuAttributeReadService;
+    @Autowired
+    private SkutemplateScrollSearcher skutemplateScrollSearcher;
 
     /**
      * 搜索商品, 并且包括属性导航, 面包屑等(主搜)
@@ -76,6 +83,35 @@ public class SkuTemplateSearches {
         }
 
         return response;
+    }
+
+
+    @RequestMapping(value = "/api/middle/sku/template/scroll/search", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Long searchItemWithScroll(@RequestParam Map<String,String> params){
+        String templateName = "search.mustache";
+        if(params.containsKey("q")){
+            String q = params.get("q");
+            params.put("q",q.toLowerCase());
+        }
+
+        Integer pageNo =1;
+        Integer pageSize = 100;
+        String contextId= String.valueOf(DateTime.now().getMillis());
+        Long totalCount;
+        while (true) {
+            Response<? extends Pagination<SearchSkuTemplate>> response =skutemplateScrollSearcher.searchWithScroll(contextId,pageNo,pageSize, templateName, params, SearchSkuTemplate.class);
+            if(!response.isSuccess()){
+                throw new JsonResponseException(response.getError());
+            }
+            Pagination<SearchSkuTemplate> paging = response.getResult();
+            if (paging.getData().isEmpty()) {
+                totalCount = paging.getTotal();
+                break;
+            }
+            pageNo++;
+        }
+
+        return totalCount;
     }
 
     //封装价格 和 销售属性信息

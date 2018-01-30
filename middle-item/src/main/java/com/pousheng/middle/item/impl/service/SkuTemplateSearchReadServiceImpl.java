@@ -9,15 +9,18 @@ import com.pousheng.middle.item.SearchSkuTemplateProperties;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
+import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.cache.CategoryBindingCacher;
 import io.terminus.parana.cache.FrontCategoryCacher;
 import io.terminus.parana.category.dto.FrontCategoryTree;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.search.item.impl.BaseItemQueryBuilder;
 import io.terminus.search.api.Searcher;
+import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
 import io.terminus.search.api.query.Criterias;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -98,13 +101,21 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
         return Response.ok(searchedItemWithAggs);
     }
 
+    @Override
+    public <T> Response<? extends Pagination<T>> searchWithScroll(String scrollId,Integer pageNo, Integer pageSize,
+                                                                          String templateName, Map<String, String> params,
+                                                                          Class<T> clazz) {
+        Pagination<T> withAggs = doSearchWithScroll(scrollId,pageNo, pageSize, templateName, params, clazz);
+        return Response.ok(withAggs);
+    }
+
 
     private String makeAggSpecifiers(String brandId) {
         StringBuilder sb = new StringBuilder(ATTR_AGGS + ":attributes:300");
 
         //如果指定了品牌, 则品牌不需要计算聚合了
         if (!StringUtils.hasText(brandId)) {
-            sb.append("$" + BRAND_AGGS + ":brandId:"+Integer.MAX_VALUE);
+            sb.append("$" + BRAND_AGGS + ":brandId-:"+Integer.MAX_VALUE);
         }
         //sb.append("$" + CAT_AGGS + ":categoryIds:"+Integer.MAX_VALUE);
         return sb.toString();
@@ -131,6 +142,20 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
                 clazz);
     }
 
+    private <T> Pagination<T> doSearchWithScroll(String scrollId,Integer pageNo, Integer pageSize,
+                                                 String templateName, Map<String, String> params,
+                                                 Class<T> clazz) {
+
+        //构建搜索条件并进行搜索
+        Criterias criterias = itemQueryBuilder.makeCriterias(pageNo, pageSize, params);
+        return searcher.searchWithScroll(
+                searchSkuTemplateProperties.getIndexName(),
+                searchSkuTemplateProperties.getIndexType(),
+                templateName,
+                criterias,
+                clazz,Boolean.TRUE,scrollId,2);
+    }
+
     /**
      * 获取指定前台类目树的所有叶子节点
      *
@@ -149,5 +174,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
             }
         }
     }
+
+
 
 }

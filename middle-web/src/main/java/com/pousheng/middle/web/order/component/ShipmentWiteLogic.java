@@ -977,10 +977,11 @@ public class ShipmentWiteLogic {
                 eventBus.post(new MposShipmentCreateEvent(shipment,2));
             }
         }
-        //如果是恒康pos订单，暂不处理
-        if(!shopOrder.getExtra().containsKey("isHkPosOrder")){
-            List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
-            if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
+
+        List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
+        if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
+            //如果是恒康pos订单，暂不处理
+            if(!shopOrder.getExtra().containsKey("isHkPosOrder")){
                 //取消子单
                 for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
                     SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
@@ -992,6 +993,21 @@ public class ShipmentWiteLogic {
                 }
                 // 商品派不出去通知mpos
                 eventBus.post(new MposShipmentCreateEvent(shopOrder,skuCodeAndQuantityList));
+            }else{
+                if(!isFirst){
+                    //如果不是第一次派单，将订单状态恢复至待处理
+                    for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
+                        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+                        orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
+                        Map<String, String> extraMap = skuOrder.getExtra();
+                        Integer waitHandleNumber = skuOrder.getQuantity();
+                        extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
+                        Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+                        if (!response1.isSuccess()) {
+                            log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
+                        }
+                    }
+                }
             }
         }
         if(isFirst)

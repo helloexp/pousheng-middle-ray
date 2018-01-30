@@ -58,7 +58,7 @@ public class PsOrderPusher extends DefaultOrderPusher {
                 }
                 //如果买家手机号为空，则使用地址中的手机号
                 if (!StringUtils.hasText(order.getBuyerMobile())){
-                    order.setBuyerMobile(address.getPhone());
+                    order.setBuyerMobile(address.getMobile());
                 }
                 //如果会员卡号为空，则默认传入0
                 if (!StringUtils.hasText(order.getMemberCardId())){

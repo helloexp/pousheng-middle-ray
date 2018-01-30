@@ -10,6 +10,6 @@ import lombok.Data;
 @Data
 public class YYEdiRefundConfirmItem implements java.io.Serializable{
     private String itemCode;
-    private String warehouseCode;
+    private String warhouseCode;
     private String quantity;
 }

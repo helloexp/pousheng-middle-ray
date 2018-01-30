@@ -65,9 +65,6 @@ public class BatchAsyncHandleMposListener {
     private EventBus eventBus;
 
     @RpcConsumer
-    private SkuTemplateSearchReadService skuTemplateSearchReadService;
-
-    @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
 
     @RpcConsumer
@@ -134,6 +131,7 @@ public class BatchAsyncHandleMposListener {
                     skuTemplateIds.clear();
                 }
             }
+            skuTemplateDumpService.batchDump(skuTemplateIds);
             //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
             if(helper.size() > 0){
                 String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -169,7 +167,8 @@ public class BatchAsyncHandleMposListener {
             return Boolean.FALSE;
         }
         for (SearchSkuTemplate searchSkuTemplate:searchSkuTemplates) {
-            operateMposFlag(searchSkuTemplate.getId(),operateType,helper,skuTemplateIds);
+            operateMposFlag(searchSkuTemplate.getId(),operateType,helper);
+            skuTemplateIds.add(searchSkuTemplate.getId());
         }
         int current = searchSkuTemplates.size();
         return current == size;
@@ -181,7 +180,7 @@ public class BatchAsyncHandleMposListener {
      * @param operateType   0 打标 1 取消打标
      * @param helper        导出excel辅助类
      */
-    private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper,List<Long> skuTemplateIds){
+    private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper){
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -200,7 +199,6 @@ public class BatchAsyncHandleMposListener {
             ar.setReason(resp.getError());
             helper.appendToExcel(ar);
         }
-        skuTemplateIds.add(id);
         //同步电商
         if(Objects.equals(PsItemConstants.MPOS_ITEM,operateType)){
             //mpos打标设置默认折扣
@@ -226,17 +224,6 @@ public class BatchAsyncHandleMposListener {
         extra.put(PsItemConstants.MPOS_FLAG,type);
         return extra;
     }
-
-    /**
-     * 更新搜索
-     * @param skuTemplateId skuId
-     */
-    private void postUpdateSearchEvent(Long skuTemplateId){
-        SkuTemplateUpdateEvent updateEvent = new SkuTemplateUpdateEvent();
-        updateEvent.setSkuTemplateId(skuTemplateId);
-        eventBus.post(updateEvent);
-    }
-
 
     /**
      * 监听导出文件事件
@@ -288,9 +275,12 @@ public class BatchAsyncHandleMposListener {
         }
         assembleSkuInfo(searchSkuTemplates);
         for (SearchSkuTemplate searchSkuTemplate:searchSkuTemplates) {
-            //转换成符合格式的实体类
-            SearchSkuTemplateEntity entity = new SearchSkuTemplateEntity(searchSkuTemplate);
-            helper.appendToExcel(entity);
+            //过滤掉价格为空的数据
+            if(searchSkuTemplate.getOriginPrice() != null && searchSkuTemplate.getOriginPrice() > 0){
+                //转换成符合格式的实体类
+                SearchSkuTemplateEntity entity = new SearchSkuTemplateEntity(searchSkuTemplate);
+                helper.appendToExcel(entity);
+            }
         }
         int current = searchSkuTemplates.size();
         return current == size;

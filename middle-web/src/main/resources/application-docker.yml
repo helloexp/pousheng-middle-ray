@@ -140,7 +140,7 @@ skutemplate:
     index-type: skutemplate
     mapping-path: ps_sku_template_mapping.json
     full-dump-range: -1
-    batch-size: 100
+    batch-size: 1000
 
 gd_map:
   searchApi: 'http://restapi.amap.com/v3/place/text'

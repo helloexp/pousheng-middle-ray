@@ -224,7 +224,14 @@ public class SyncShipmentPosLogic {
 
         posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
-        posContent.setSourcebillno("");//订单来源单号
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");
+        if (!StringUtils.isEmpty(isHkPosOrder)&&Objects.equal(isHkPosOrder,"true")){
+            String outOrderId = shopOrderExtra.get("outOrderId");
+            posContent.setSourcebillno(outOrderId==null?"":outOrderId);//订单来源单号
+        }else{
+            posContent.setSourcebillno("");//订单来源单号
+        }
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
         posContent.setRemark(shopOrder.getBuyerNote());//备注

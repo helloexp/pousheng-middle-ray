@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.erp;
 
 import com.google.common.collect.Lists;
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MposWarehousePusher;
@@ -11,11 +12,16 @@ import com.pousheng.middle.item.dto.ItemNameAndStock;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.warehouse.model.MposSkuStock;
+import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
+import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
@@ -61,6 +67,10 @@ public class FireCall {
 
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
+    private final WarehouseSkuReadService warehouseSkuReadService;
+
+    private final MposSkuStockReadService mposSkuStockReadService;
+
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
@@ -73,12 +83,14 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi) {
+                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
         this.mposWarehousePusher = mposWarehousePusher;
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
+        this.warehouseSkuReadService = warehouseSkuReadService;
+        this.mposSkuStockReadService = mposSkuStockReadService;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
@@ -224,12 +236,54 @@ public class FireCall {
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodesList,0);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                total+=skuAndQuantityInfo.getQuantity();
+            //仓
+            if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                    Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
+                    total+=skuAndQuantityInfo.getQuantity()-lockStock;
+                }
+            }else {
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                    Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
+                    total+=skuAndQuantityInfo.getQuantity()-lockStock;
+                }
             }
+
         }
         itemNameAndStock.setStockQuantity(total);
         return itemNameAndStock;
+    }
+
+
+    private Long findWarehouseSkuStockLockQuantity(Long warehouseId,String skuCode){
+        Response<WarehouseSkuStock> response =  warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
+        if(!response.isSuccess()){
+            log.error("find warehouse sku stock by warehouse id:{} sku code:{} fail,error:{}",warehouseId,skuCode,response.getError());
+            return 0L;
+        }
+        Long lockQuantity =  response.getResult().getLockedStock();
+        if(Arguments.isNull(lockQuantity)){
+            return 0L;
+        }
+        return lockQuantity;
+    }
+
+    private Long findMposSkuStockLockQuantity(Long shopId, String skuCode){
+        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(shopId,skuCode);
+        if(!response.isSuccess()){
+            log.error("find mpos sku sotck by shop id:{} sku code:{} fail,error:{}",shopId,skuCode,response.getError());
+            return 0L;
+        }
+        Optional<MposSkuStock> stockOptional = response.getResult();
+        if(!stockOptional.isPresent()){
+            return 0L;
+        }
+        Long lockQuantity =  stockOptional.get().getLockedStock();
+        if(Arguments.isNull(lockQuantity)){
+            return 0L;
+        }
+        return lockQuantity;
+
     }
 
 

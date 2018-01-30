@@ -86,6 +86,11 @@ public class QueryHkWarhouseOrShopStockApi {
             }else {
                 try {
                     Shop shop = middleShopCacher.findShopByOuterId(skuStockInfo.getStock_code());
+                    //过滤掉已冻结或已删除的店铺
+                    if(!Objects.equal(shop.getStatus(),1)){
+                        log.warn("current shop(id:{}) status:{} invalid,so skip",shop.getId(),shop.getStatus());
+                        continue;
+                    }
                     skuStockInfo.setBusinessId(shop.getId());
                     skuStockInfo.setBusinessName(shop.getName());
                 }catch (Exception e){

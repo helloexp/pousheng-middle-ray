@@ -108,6 +108,11 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.DISPATCHER_FAIL.toOrderOperation(),
                     MiddleOrderStatus.CANCEL.getValue());
 
+            //待发货 --> 派单失败 --> 待处理（针对pos单，手动处理情况）
+            addTransition(MiddleOrderStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.DISPATCHER_FAIL.toOrderOperation(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
+
             //处理中 -->处理 -> 处理中
             addTransition(MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                     MiddleOrderEvent.HANDLE.toOrderOperation(),

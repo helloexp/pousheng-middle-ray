@@ -9,6 +9,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -156,6 +157,19 @@ public class MposShipmentListener {
      * @param expectOrderStatus   期望订单状态
      */
     private void syncOrderStatus(Shipment shipment,Integer targetStatus,Integer expectOrderStatus){
+
+        //更新子单状态
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        List<Long> skuOrderIds = shipmentItems.stream().map(ShipmentItem::getSkuOrderId).collect(Collectors.toList());
+        List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        for (SkuOrder skuOrder : skuOrderList) {
+            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), expectOrderStatus);
+            if (!updateRlt.getResult()) {
+                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                throw new JsonResponseException("update.sku.order.status.error");
+            }
+        }
+
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         long orderShopId = orderShipment.getOrderId();
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
@@ -172,6 +186,7 @@ public class MposShipmentListener {
                 return orderShipment.getStatus();
             }
         });
+
         //判断订单是否已经全部更新状态了
         int count=0;
         for (Integer status:orderShipmentStatusList){
@@ -180,15 +195,6 @@ public class MposShipmentListener {
             }
         }
         if (count==0) {
-            //更新订单状态
-            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderShopId, shopOrder.getStatus());
-            for (SkuOrder skuOrder : skuOrders) {
-                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), expectOrderStatus);
-                if (!updateRlt.getResult()) {
-                    log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
-                    throw new JsonResponseException("update.sku.order.status.error");
-                }
-            }
             //如果订单状态变成已发货，同步ecpstatus
             if(Objects.equals(expectOrderStatus,MiddleOrderStatus.SHIPPED.getValue())){
                 OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();

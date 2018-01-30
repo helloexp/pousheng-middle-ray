@@ -397,7 +397,7 @@ public class Shipments {
                     continue;
                 }
             }
-            Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
+            Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
             if (!syncRes.isSuccess()) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }

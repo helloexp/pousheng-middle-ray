@@ -11,6 +11,7 @@ import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
+import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
@@ -21,16 +22,17 @@ import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
 import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.web.item.batchhandle.ExcelUtil;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
+import com.pousheng.middle.web.item.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.web.utils.export.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.common.utils.Arguments;
-import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.SpuAttribute;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import io.terminus.search.api.model.Pagination;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.joda.time.DateTime;
@@ -40,7 +42,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 import redis.clients.jedis.Jedis;
-import springfox.documentation.spring.web.json.Json;
 
 import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
@@ -84,6 +85,13 @@ public class BatchAsyncHandleMposListener {
     @Autowired
     private PushMposItemComponent pushMposItemComponent;
 
+    @Autowired
+    private SkutemplateScrollSearcher skutemplateScrollSearcher;
+
+    @Autowired
+    private SkuTemplateDumpService skuTemplateDumpService;
+
+
     private static final Integer BATCH_SIZE = 100;
 
     private static final int BATCH_RECORD_EXPIRE_TIME = 2592000;
@@ -108,16 +116,23 @@ public class BatchAsyncHandleMposListener {
         String operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
         ExcelExportHelper<AbnormalRecord> helper;
+        String contextId= String.valueOf(DateTime.now().getMillis());
+        List<Long> skuTemplateIds = Lists.newArrayList();
         try{
             helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
             log.info("async handle mpos flag task start");
             //1.开始的时候记录状态
             recordToRedis(key,PsItemConstants.EXECUTING,userId);
-            boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper);
-            while(next && pageNo < 100){
+            boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper,contextId,skuTemplateIds);
+            while(next){
                 pageNo++;
-                next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper);
+                next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper,contextId,skuTemplateIds);
                 log.info("async handle mpos flag " + pageNo * 100);
+                if(pageNo % 10 == 0){
+                    skuTemplateDumpService.batchDump(skuTemplateIds);
+                    log.info("update sku template index...");
+                    skuTemplateIds.clear();
+                }
             }
             //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
             if(helper.size() > 0){
@@ -142,19 +157,19 @@ public class BatchAsyncHandleMposListener {
      * @param operateType
      * @return
      */
-    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,String operateType,ExcelExportHelper helper){
+    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,String operateType,ExcelExportHelper helper,String contextId,List<Long> skuTemplateIds){
         String templateName = "search.mustache";
-        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response = skuTemplateSearchReadService.searchWithAggs(pageNo,size, templateName, params, SearchSkuTemplate.class);
+        Response<? extends Pagination<SearchSkuTemplate>> response =skutemplateScrollSearcher.searchWithScroll(contextId,pageNo,size, templateName, params, SearchSkuTemplate.class);
         if(!response.isSuccess()){
             log.error("fail to batch handle mpos flag，param={},cause:{}",params,response.getError());
             return Boolean.FALSE;
         }
-        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
-        if(response.getResult().getEntities().getTotal().equals(0L) || CollectionUtils.isEmpty(searchSkuTemplates)){
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getData();
+        if(response.getResult().getTotal().equals(0L) || CollectionUtils.isEmpty(searchSkuTemplates)){
             return Boolean.FALSE;
         }
         for (SearchSkuTemplate searchSkuTemplate:searchSkuTemplates) {
-            operateMposFlag(searchSkuTemplate.getId(),operateType,helper);
+            operateMposFlag(searchSkuTemplate.getId(),operateType,helper,skuTemplateIds);
         }
         int current = searchSkuTemplates.size();
         return current == size;
@@ -166,7 +181,7 @@ public class BatchAsyncHandleMposListener {
      * @param operateType   0 打标 1 取消打标
      * @param helper        导出excel辅助类
      */
-    private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper){
+    private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper,List<Long> skuTemplateIds){
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -185,8 +200,7 @@ public class BatchAsyncHandleMposListener {
             ar.setReason(resp.getError());
             helper.appendToExcel(ar);
         }
-        postUpdateSearchEvent(id);
-
+        skuTemplateIds.add(id);
         //同步电商
         if(Objects.equals(PsItemConstants.MPOS_ITEM,operateType)){
             //mpos打标设置默认折扣
@@ -238,17 +252,13 @@ public class BatchAsyncHandleMposListener {
         log.info("async export mpos task start");
         String fileName = DateTime.now().toString("yyyyMMddHHmmss") + ".xls";
         String key = toUploadKey(userId,fileName,PsItemConstants.EXPORT_TASK);
+        String contextId= String.valueOf(DateTime.now().getMillis());
         recordToRedis(key,PsItemConstants.EXECUTING,userId);
-        boolean next = batchExportMposDiscount(pageNo,BATCH_SIZE,params,helper);
-        while(next && pageNo < 100){
+        boolean next = batchExportMposDiscount(pageNo,BATCH_SIZE,params,helper,contextId);
+        while(next){
             pageNo++;
-            next = batchExportMposDiscount(pageNo,BATCH_SIZE, params,helper);
+            next = batchExportMposDiscount(pageNo,BATCH_SIZE, params,helper,contextId);
             log.debug(pageNo + "exported");
-        }
-        try {
-            Thread.sleep(10000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
         File file = helper.transformToFile(fileName);
         String uploadUrl = this.uploadToAzureOSS(file);
@@ -263,15 +273,17 @@ public class BatchAsyncHandleMposListener {
      * @param params
      * @return
      */
-    public Boolean batchExportMposDiscount(int pageNo, int size, Map<String,String> params, ExcelExportHelper helper){
+    public Boolean batchExportMposDiscount(int pageNo, int size, Map<String,String> params, ExcelExportHelper helper,String contextId){
         String templateName = "search.mustache";
-        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(pageNo,size, templateName, params, SearchSkuTemplate.class);
+
+        Response<? extends Pagination<SearchSkuTemplate>> response =skutemplateScrollSearcher.searchWithScroll(contextId,pageNo,size, templateName, params, SearchSkuTemplate.class);
+
         if(!response.isSuccess()){
             log.error("fail to batch handle mpos flag，param={},cause:{}",params,response.getError());
             return Boolean.FALSE;
         }
-        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
-        if(response.getResult().getEntities().getTotal().equals(0L) || CollectionUtils.isEmpty(searchSkuTemplates)){
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getData();
+        if(response.getResult().getTotal().equals(0L) || CollectionUtils.isEmpty(searchSkuTemplates)){
             return Boolean.FALSE;
         }
         assembleSkuInfo(searchSkuTemplates);

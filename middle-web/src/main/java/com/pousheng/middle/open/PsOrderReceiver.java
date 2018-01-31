@@ -110,7 +110,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected Item findItemById(Long paranaItemId) {
         //TODO use cache
-
+       if (Objects.isNull(paranaItemId)){
+            Item item = new Item();
+            item.setId(0L);
+            item.setName("默认商品(缺映射关系)");
+            return item;
+        }
         Response<Spu> findR = spuReadService.findById(paranaItemId);
         if (!findR.isSuccess()) {
             log.error("fail to find spu by id={},cause:{}", paranaItemId, findR.getError());
@@ -130,7 +135,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Sku findSkuByCode(String skuCode) {
-        //TODO use cache
+        if (!StringUtils.hasText(skuCode)){
+            Sku sku = new Sku();
+            sku.setId(0L);
+            sku.setName("默认商品(缺映射关系)");
+            return sku;
+        }
         Response<Optional<SkuTemplate>> findR = middleSpuService.findBySkuCode(skuCode);
         if (!findR.isSuccess()) {
             log.error("fail to find sku template by code={},cause:{}",

@@ -117,7 +117,7 @@ public class yyEDIOpenApi {
                         YyEdiResponseDetail field = new YyEdiResponseDetail();
                         field.setShipmentId(yyEdiShipInfo.getShipmentId());
                         field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                        field.setErrorCode("100");
+                        field.setErrorCode("300");
                         field.setErrorMsg("已经发货完成，请勿再次发货");
                         fields.add(field);
                         count++;
@@ -227,7 +227,7 @@ public class yyEDIOpenApi {
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
-                error.setErrorCode("100");
+                error.setErrorCode("300");
                 error.setErrorMsg("已经通知中台退货，请勿再次通知");
                 throw new ServiceException(updateStatusRes.getError());
             }
@@ -264,11 +264,17 @@ public class yyEDIOpenApi {
                 String reason = JsonMapper.nonEmptyMapper().toJson(error);
                 throw new OPServerException(200, reason);
             }else{
+                error.setErrorCode("-100");
+                error.setErrorMsg(e.getMessage());
+                String reason = JsonMapper.nonEmptyMapper().toJson(error);
                 throw new OPServerException(200, e.getMessage());
             }
         } catch (Exception e) {
             log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200, "sync.fail");
+            error.setErrorCode("-100");
+            error.setErrorMsg(e.getMessage());
+            String reason = JsonMapper.nonEmptyMapper().toJson(error);
+            throw new OPServerException(200, reason);
         }
     }
 

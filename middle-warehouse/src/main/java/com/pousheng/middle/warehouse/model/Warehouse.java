@@ -47,6 +47,18 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private String name;
+
+    /**
+     * 公司代码
+     */
+    @Setter
+    private String companyId;
+
+    /**
+     * 公司名称
+     */
+    @Setter
+    private String companyName;
     
     /**
      * 负责人id
@@ -77,6 +89,12 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Boolean isDefault;
+
+    /**
+     * 是否mpos 1:mpos 0:非mpos
+     */
+    @Setter
+    private Integer isMpos;
     
     /**
      * 附加信息
@@ -85,6 +103,14 @@ public class Warehouse implements Serializable {
 
 
     private Map<String, String> extra;
+
+    /**
+     * tag信息
+     */
+    private String tagsJson;
+
+
+    private Map<String,String> tags;
 
 
     @Setter
@@ -109,6 +135,29 @@ public class Warehouse implements Serializable {
         }else{
             try {
                 this.extraJson = objectMapper.writeValueAsString(extra);
+            } catch (Exception e) {
+                //ignore this fuck exception
+            }
+        }
+    }
+
+
+    public void setTagsJson(String tagsJson) throws Exception{
+        this.tagsJson = tagsJson;
+        if(Strings.isNullOrEmpty(tagsJson)){
+            this.tags= Collections.emptyMap();
+        } else{
+            this.tags = objectMapper.readValue(tagsJson, MAP_OF_STRING);
+        }
+    }
+
+    public void setTags(Map<String, String> tags) {
+        this.tags = tags;
+        if(tags ==null ||tags.isEmpty()){
+            this.tagsJson = null;
+        }else{
+            try {
+                this.tagsJson = objectMapper.writeValueAsString(tags);
             } catch (Exception e) {
                 //ignore this fuck exception
             }

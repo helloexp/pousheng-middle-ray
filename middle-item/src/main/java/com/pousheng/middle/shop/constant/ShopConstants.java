@@ -11,4 +11,10 @@ public class ShopConstants {
     public static final String SHOP_EXTRA_INFO = "shopExtraInfo";
 
 
+    //渠道
+    public static final String CHANNEL = "official";
+
+
+
+
 }

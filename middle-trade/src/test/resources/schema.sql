@@ -322,3 +322,52 @@ create table `pousheng_gift_activity`
   PRIMARY KEY(`id`),
   KEY `index_middle_gift_name` (`name`)
 )COMMENT='宝胜中台赠品活动表';
+
+
+drop table if exists `parana_address_gpss`;
+CREATE TABLE `parana_address_gpss` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `business_id` bigint(20) NOT NULL COMMENT '业务ID',
+  `business_type` tinyint(4) NOT NULL COMMENT '业务类型，1：门店，2：仓库',
+  `longitude` varchar(32) NOT NULL COMMENT '经度',
+  `latitude` varchar(32) NOT NULL DEFAULT '' COMMENT '纬度',
+  `province` varchar(50) NOT NULL COMMENT '省',
+  `province_id` bigint(20)  NULL COMMENT '省ID',
+  `city` varchar(50)  NULL COMMENT '市',
+  `city_id` bigint(20)  NULL COMMENT '市ID',
+  `region` varchar(50)  NULL COMMENT '区',
+  `region_id` bigint(20)  NULL COMMENT '区ID',
+  `street` varchar(50) DEFAULT NULL COMMENT '街道，可以为空',
+  `street_id` bigint(20) DEFAULT NULL COMMENT '街道ID，可以为空',
+  `detail` varchar(256) NOT NULL COMMENT '详细地址',
+  `extra_json` varchar(1024)  NULL COMMENT '额外信息',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)COMMENT='地址定位信息表';
+create index idx_parana_address_gpss_business_id on parana_address_gpss(business_id);
+create index idx_parana_address_gpss_type on parana_address_gpss(business_type);
+
+drop table if exists `pousheng_auto_compensation`;
+CREATE TABLE `pousheng_auto_compensation` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `type` tinyint(4) NOT NULL COMMENT '任务类型 1:同步无法派单商品至mpos',
+  `extra_json` varchar(2048) NOT NULL COMMENT '额外信息,json表示',
+  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
+
+
+drop table if exists `open_push_order_task`;
+CREATE TABLE `open_push_order_task` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `source_order_id` VARCHAR(200) NOT NULL COMMENT '来源单号',
+  `channel` VARCHAR(50) NOT NULL COMMENT '渠道',
+  `extra_json` mediumtext NOT NULL COMMENT '额外信息,json表示',
+  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='外部订单处理失败补偿任务表';

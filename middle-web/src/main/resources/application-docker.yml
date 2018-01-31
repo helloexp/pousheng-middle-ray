@@ -89,6 +89,8 @@ gateway:
   hk:
     host: ${HK_HOST}
     accessKey: ${HK_ACCESS_KEY}
+  parana:
+    host: ${PARANA_HOST}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
@@ -128,3 +130,29 @@ open.client.import.enable: true
 
 ## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
 open.client.sync.item.mapping.job.enable: true
+
+
+search:
+  host: ${POUSHENG_ES_HOST}
+  port: ${POUSHENG_ES_PORT}
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 1000
+
+gd_map:
+  searchApi: 'http://restapi.amap.com/v3/place/text'
+  districtApi: 'http://restapi.amap.com/v3/place/text'
+  webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
+
+index.queue.size: 500000
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*,/api/middle/task/count/stock/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}

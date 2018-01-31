@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -58,11 +57,6 @@ public class OrderWriteLogic {
 
 
 
-
-    @Autowired
-    private EventBus eventBus;
-
-    public static final Integer BATCH_SIZE = 100;     // 批处理数量
 
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {
@@ -212,7 +206,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("find.shipment.failed");
         }
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //取消发货单
         int count=0;//判断是否存在取消失败的发货单
         for (Shipment shipment:shipments){
@@ -253,7 +247,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("find.shipment.failed");
         }
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //取消发货单
         int count=0;//判断是否存在取消失败的发货单
         for (Shipment shipment:shipments){
@@ -308,7 +302,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("find.shipment.failed");
         }
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //其他需要恢复成待处理状态的子单
         List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getId(),skuOrder.getId())).collect(Collectors.toList());
 
@@ -364,7 +358,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("find.shipment.failed");
         }
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //获取需要恢复成待处理状态的子单
         List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getId(),skuOrder.getId())).collect(Collectors.toList());
         int count=0;//计数器用来记录是否有发货单取消失败
@@ -418,7 +412,7 @@ public class OrderWriteLogic {
             throw new JsonResponseException("find.shipment.failed");
         }
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+                filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
 
         //取消发货单
         int count= 0 ;//计数器用来记录是否有发货单取消失败的

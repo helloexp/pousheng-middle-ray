@@ -41,6 +41,17 @@ public class WarehouseReadServiceImpl implements WarehouseReadService {
         }
     }
 
+    @Override
+    public Response<List<Warehouse>> findByIds(List<Long> Ids) {
+
+        try {
+            return Response.ok(warehouseDao.findByIds(Ids));
+        } catch (Exception e) {
+            log.error("find warehouse by ids :{} failed,  cause:{}", Ids, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.find.fail");
+        }
+    }
+
     /**
      * 仓库列表
      *

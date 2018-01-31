@@ -370,7 +370,7 @@ public class OrderReadLogic {
             throw new JsonResponseException("find.shipnent.failed");
         }
         List<Shipment> shipments = response.getResult().stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         if (shipments.size()>0){
             return Boolean.FALSE;
@@ -391,7 +391,7 @@ public class OrderReadLogic {
             throw new JsonResponseException("find.shipnent.failed");
         }
         List<Shipment> shipments = response.getResult().stream().
-                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()))
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue()))
                 .collect(Collectors.toList());
         if (shipments.size()>0){
             return Boolean.FALSE;
@@ -509,7 +509,7 @@ public class OrderReadLogic {
             return false;
         }
         List<OrderShipment> orderShipmentList =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-        List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+        List<OrderShipment> orderShipments = orderShipmentList.stream().filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         if (orderShipments.isEmpty()){
            return true;
         }

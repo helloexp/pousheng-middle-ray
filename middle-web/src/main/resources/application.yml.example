@@ -82,3 +82,24 @@ taobao.token:
 
 ## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
 open.client.sync.item.mapping.job.enable: false
+
+search:
+  host: 127.0.0.1
+  port: 9200
+
+skutemplate:
+  search:
+    index-name: skutemplates
+    index-type: skutemplate
+    mapping-path: ps_sku_template_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+
+# mpos系统调用的api白名单
+mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*'
+
+# mpos总单OpenShopId
+mpos.open.shop.id: xxx
+
+
+

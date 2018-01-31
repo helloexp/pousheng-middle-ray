@@ -29,6 +29,7 @@
         <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
         <apache-poi.version>3.16</apache-poi.version>
         <azure-storage.version>5.4.0</azure-storage.version>
+        <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
     </properties>
 
     <dependencies>
@@ -72,6 +73,13 @@
                 <groupId>io.terminus.boot</groupId>
                 <artifactId>terminus-spring-boot-starter-redis</artifactId>
                 <version>${terminus-boot.version}</version>
+            </dependency>
+
+            <!-- terminus-search -->
+            <dependency>
+                <groupId>io.terminus.search</groupId>
+                <artifactId>search-api</artifactId>
+                <version>${terminus-search.version}</version>
             </dependency>
 
             <dependency>

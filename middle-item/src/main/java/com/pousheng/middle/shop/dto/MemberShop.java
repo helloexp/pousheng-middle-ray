@@ -29,6 +29,8 @@ public class MemberShop implements Serializable {
 
     private String companyId;
 
+    private String companyName;
+
     private String mainBrandName;
 
     private String regionId;

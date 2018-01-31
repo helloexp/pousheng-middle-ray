@@ -15,13 +15,11 @@ import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
-import com.pousheng.middle.web.order.component.PsGiftActivityStrategy;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -40,17 +38,17 @@ import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Invoice;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -101,6 +99,18 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ReceiverInfoCompleter receiverInfoCompleter;
+
+    @Autowired
+    private ShopReadService shopReadService;
+
+    @RpcConsumer
+    private PsShopReadService psShopReadService;
+
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
+
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
     /**
      * 天猫加密字段占位符
@@ -187,6 +197,26 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
+
+            //如果是mpos订单并且是自提,将待发货状态改为待收货
+            if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP) && Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_SINCE),"2")){
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue());
+                if (skuOrders.size() == 0) {
+                    return;
+                }
+                for (SkuOrder skuOrder : skuOrders) {
+                    Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), MiddleOrderStatus.WAIT_SHIP.getValue(), MiddleOrderStatus.SHIPPED.getValue());
+                    if (!updateRlt.getResult()) {
+                        log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                    }
+                }
+                OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+                Shipment shipment = shipments.get(0);
+                shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.SHIP.toOrderOperation());
+            }
+
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());
             if (skuOrders.size() == 0) {
                 return;
@@ -251,6 +281,37 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
 
         //初始化店铺订单的extra
+        if(richSkusByShop.getExtra() != null && richSkusByShop.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+            Map<String,String> tempExtra = richSkusByShop.getExtra();
+            tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
+            if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
+                //修改，mpos传来outerId
+                String outerId = richSkusByShop.getExtra().get("assignShopOuterId");
+                if(Strings.isNullOrEmpty(outerId)){
+                    log.error("current order is assign shop,but shop out id is null");
+                    throw new ServiceException("assign.shop.out.id.invalid");
+                }
+                String companyId = richSkusByShop.getExtra().get("assignShopCompanyId");
+                if(Strings.isNullOrEmpty(companyId)){
+                    log.error("current order is assign shop,but shop company id is null");
+                    throw new ServiceException("assign.shop.company.id.invalid");
+                }
+                Response<Optional<Shop>> shopResponse =  psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                if(!shopResponse.isSuccess()){
+                    log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopResponse.getError());
+                    throw new ServiceException(shopResponse.getError());
+                }
+                Optional<Shop> shopOptional = shopResponse.getResult();
+                if(!shopOptional.isPresent()){
+                    log.error("not find shop by outer id:{} and business id:{}",outerId,companyId);
+                    throw new ServiceException("assign.shop.not.exst");
+                }
+                Shop shop = shopOptional.get();
+                tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,shop.getId().toString());
+                tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
+            }
+            richSkusByShop.setExtra(tempExtra);
+        }
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
         //添加绩效店铺编码,通过openClient获取

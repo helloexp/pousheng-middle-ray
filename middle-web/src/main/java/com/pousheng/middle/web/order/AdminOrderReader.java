@@ -10,11 +10,8 @@ import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
-import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -24,7 +21,6 @@ import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.channel.OpenClientChannel;
@@ -75,8 +71,7 @@ public class AdminOrderReader {
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-    @Autowired
-    private WarehouseAddressCacher warehouseAddressCacher;
+
     @Autowired
     private EventBus eventBus;
 
@@ -111,10 +106,13 @@ public class AdminOrderReader {
         shopOrders.forEach(shopOrder -> {
             ShopOrderPagingInfo shopOrderPagingInfo = new ShopOrderPagingInfo();
             shopOrderPagingInfo.setShopOrder(shopOrder);
-            String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
-            shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
-                    ?flow.availableOperations(shopOrder.getStatus())
-                    :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
+            //如果是mpos订单，不允许有其他操作。
+            if(!shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+                String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
+                shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
+                        ?flow.availableOperations(shopOrder.getStatus())
+                        :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
+            }
             pagingInfos.add(shopOrderPagingInfo);
         });
         //撤销时必须保证订单没有发货
@@ -259,24 +257,7 @@ public class AdminOrderReader {
         return count <= 0;
 
     }
-    /**
-     * 根据pid获取下级地址信息
-     * @param id
-     * @return
-     */
-    @RequestMapping(value = "/api/warehouse/address/{id}/children",method = RequestMethod.GET,produces=MediaType.APPLICATION_JSON_VALUE)
-    public Response<List<WarehouseAddress>> findWarehouseAddressByPid(@PathVariable("id")long id){
-        try{
-            List<WarehouseAddress> warehouseAddress= warehouseAddressCacher.findByPid(id);
-            return Response.ok(warehouseAddress);
-        }catch (ServiceException e){
-            log.error("address.found.failed", e.getMessage());
-            return Response.fail(e.getMessage());
-        }catch (Exception e){
-            log.error("address.found.failed", e.getMessage());
-            return Response.fail(e.getMessage());
-        }
-    }
+
 
     /**
      * 根据店铺订单id获取所关联的发货单id(不包括已取消)
@@ -287,7 +268,7 @@ public class AdminOrderReader {
     public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id")Long shopOrderId){
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
-                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
+                filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
         return  Response.ok(shipmentIds);
     }
 

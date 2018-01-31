@@ -60,13 +60,14 @@ public class ErpClient {
             params.put("page_size", pageSize.toString());
         }
 
-        log.info("request to {} with params: {}", host + "/" + path, params);
+        log.info("start request to {} with params: {}", host + "/" + path, params);
 
         HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .header("verifycode", accessKey)
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {
+            log.info("request success!");
             return handleResponse(path, params, r.body());
         } else {
             int code = r.code();

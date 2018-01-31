@@ -20,13 +20,17 @@ CREATE TABLE `pousheng_warehouses` (
   `type` tinyint(4)  NULL COMMENT '仓库类型',
   `status` tinyint(4) NOT NULL COMMENT '仓库状态',
   `address` varchar(128) NULL COMMENT '仓库地址',
+  `company_id` varchar(64) NULL COMMENT '公司编码',
+  `company_name` varchar(64) NULL COMMENT '公司名称',
   `owner_id` bigint(20)  NULL COMMENT '负责人id',
   `is_default` tinyint(4) NULL COMMENT '是否默认发货仓',
+  `is_mpos` tinyint(4) DEFAULT 0 COMMENT '是否为mpos仓库',
   `extra_json` varchar(2048) NULL COMMENT '附加信息',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
-  KEY `idx_warehouse_code` (`code`)
+  KEY `idx_warehouse_code` (`code`),
+  KEY `index_middle_warehouse_company` (`company_id`)
 ) COMMENT='仓库';
 
 
@@ -157,3 +161,21 @@ CREATE TABLE `pousheng_stock_push_logs`
   KEY `index_stock_push_shop_id` (`shop_id`),
   KEY `index_stock_push_sku_code` (`sku_code`)
 )COMMENT='宝胜库存推送日志';
+
+
+
+drop table if exists `pousheng_mpos_sku_stocks`;
+
+CREATE TABLE `pousheng_mpos_sku_stocks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `warehouse_id` bigint(20)  NULL COMMENT '仓库id',
+  `shop_id` bigint(20)  NULL COMMENT '店铺id',
+  `sku_code` varchar(64) NOT NULL COMMENT 'sku标识',
+  `locked_stock` bigint(20) DEFAULT 0 COMMENT '当前锁定库存',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_mss_skus_code` (`sku_code`),
+  KEY `idx_mss_shop_id` (`shop_id`),
+  KEY `idx_mss_warehouse_id` (`warehouse_id`)
+)COMMENT='mpos下单sku锁定库存情况';

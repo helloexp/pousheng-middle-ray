@@ -11,6 +11,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -91,6 +92,9 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
     @Override
     public Response<Boolean> unlockStock(List<WarehouseShipment> warehouseShipments) {
         try {
+            if(CollectionUtils.isEmpty(warehouseShipments)){
+                return Response.ok();
+            }
             warehouseSkuStockManager.unlockStock(warehouseShipments);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {

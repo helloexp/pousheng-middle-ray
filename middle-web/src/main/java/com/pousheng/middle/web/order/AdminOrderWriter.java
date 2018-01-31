@@ -8,7 +8,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -89,23 +88,6 @@ public class AdminOrderWriter {
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
-
-        List<OrderShipment> orderShipmentsFilter = orderShipments.stream().filter(Objects::nonNull)
-                .filter(it->!Objects.equals(MiddleShipmentsStatus.CANCELED.getValue(),it.getStatus())).collect(Collectors.toList());
-        //判断该订单下所有发货单的状态
-        List<Integer> orderShipMentStatusList = orderShipmentsFilter.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-        //判断订单是否已经全部发货了
-        int count=0;
-        for (Integer status:orderShipMentStatusList){
-            if (!Objects.equals(status,MiddleShipmentsStatus.SHIPPED.getValue())){
-                count++;
-            }
-        }
-        //必须所有的发货单发货完成之后才能通知电商
-        if (count>0||shopOrder.getStatus()< MiddleOrderStatus.WAIT_SHIP.getValue()){
-            throw new JsonResponseException("all.shipments.must.be.shipped.can.sync.ecp");
-        }
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
@@ -223,7 +205,7 @@ public class AdminOrderWriter {
      * @param skuCode 中台条码
      */
     @RequestMapping(value ="/api/sku/order/{id}/update/sku/code",method = RequestMethod.PUT)
-    @OperationLogType("修改中台条码")
+    @OperationLogType("修改货品条码")
     public void  updateSkuOrderCodeAndSkuId(@PathVariable("id")@OperationLogParam Long id, @RequestParam("skuCode") String skuCode){
         //判断该订单是否生成过发货单
         Boolean result = orderReadLogic.isShipmentCreated(id);
@@ -273,8 +255,8 @@ public class AdminOrderWriter {
      * @return true (更新成功)or false (更新失败)
      */
     @RequestMapping(value = "/api/order/{id}/edit/receiver/info",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("修改订单收货地址")
-    public void editReceiverInfos(@PathVariable("id")Long id, @RequestParam("data")String data,@RequestParam(value = "buyerNote",required = false) String buyerNote){
+    @OperationLogType("修改订单收货信息")
+    public void editReceiverInfos(@PathVariable("id")@OperationLogParam Long id, @RequestParam("data")String data,@RequestParam(value = "buyerNote",required = false) String buyerNote){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
@@ -302,7 +284,7 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/edit/invoice",method = RequestMethod.PUT,produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑订单发票信息")
+    @OperationLogType("修改发票信息")
     public void editInvoiceInfos(@PathVariable("id")@OperationLogParam Long id,@RequestParam("data")String data,@RequestParam(value = "title",required = false) String title){
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result){

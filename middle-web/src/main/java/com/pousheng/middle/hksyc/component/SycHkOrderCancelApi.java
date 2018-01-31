@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.Map;
 
 /**
+ * 查询恒康仓或门店商品库存信息
  * Created by songrenfei on 2017/7/19
  */
 @Component

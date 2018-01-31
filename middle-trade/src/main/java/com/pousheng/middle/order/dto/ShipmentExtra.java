@@ -65,10 +65,26 @@ public class ShipmentExtra implements Serializable{
     private String vendCustID;
     //同步淘宝的状态,仅限于淘宝使用
     private Integer syncTaobaoStatus;
+    //发货方式 1店发 2仓发
+    private String shipmentWay;
     //仓库外码
     private String warehouseOutCode;
     //中台选择的恒康快递代码
     private String orderHkExpressCode;
     //中台选择的快递名称
     private String orderHkExpressName;
+    //mpos接单员工
+    private String receiveStaff;
+    //mpos拒绝原因
+    private String rejectReason;
+    //取货方式
+    private String takeWay;
+    //是否指定门店
+    private String isAppint;
+
+    //网店零售订单号 当同步发货单到恒康开pos单同步成功时恒康返回的id
+    private String hkResaleOrderId;
+
+    //mpos发货单号
+    private String mposShipmentId;
 }

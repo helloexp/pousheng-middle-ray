@@ -12,11 +12,9 @@ import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
-import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
 import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
 import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
@@ -110,14 +108,14 @@ public class BatchAsyncHandleMposListener {
         int pageNo = 1;
         Map<String,String> params = batchMakeMposFlagEvent.getParams();
         Long userId = batchMakeMposFlagEvent.getCurrentUserId();
-        String operateType = batchMakeMposFlagEvent.getType();
+        Integer operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
         ExcelExportHelper<AbnormalRecord> helper;
         String contextId= String.valueOf(DateTime.now().getMillis());
         List<Long> skuTemplateIds = Lists.newArrayList();
         try{
             helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-            log.info("async handle mpos flag task start");
+            log.info("async handle mpos flag task start......");
             //1.开始的时候记录状态
             recordToRedis(key,PsItemConstants.EXECUTING,userId);
             boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper,contextId,skuTemplateIds);
@@ -126,11 +124,16 @@ public class BatchAsyncHandleMposListener {
                 next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper,contextId,skuTemplateIds);
                 log.info("async handle mpos flag " + pageNo * 100);
                 if(pageNo % 10 == 0){
+                    log.info("update mysql and es start...");
+                    psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
                     skuTemplateDumpService.batchDump(skuTemplateIds);
-                    log.info("update sku template index...");
+                    log.info("update mysql and es over...");
                     skuTemplateIds.clear();
                 }
             }
+            //批量保存打标记录入库
+            psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
+            //批量更新es
             skuTemplateDumpService.batchDump(skuTemplateIds);
             //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
             if(helper.size() > 0){
@@ -140,7 +143,7 @@ public class BatchAsyncHandleMposListener {
             }else{
                 recordToRedis(key,PsItemConstants.EXECUTED,userId);
             }
-            log.info("async handle mpos flag task end");
+            log.info("async handle mpos flag task end......");
         }catch (Exception e){
             log.error("async handle mpos flag task error",Throwables.getStackTraceAsString(e));
             recordToRedis(key,PsItemConstants.SYSTEM_ERROR + "~" + e.getMessage(),userId);
@@ -155,7 +158,7 @@ public class BatchAsyncHandleMposListener {
      * @param operateType
      * @return
      */
-    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,String operateType,ExcelExportHelper helper,String contextId,List<Long> skuTemplateIds){
+    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,Integer operateType,ExcelExportHelper helper,String contextId,List<Long> skuTemplateIds){
         String templateName = "search.mustache";
         Response<? extends Pagination<SearchSkuTemplate>> response =skutemplateScrollSearcher.searchWithScroll(contextId,pageNo,size, templateName, params, SearchSkuTemplate.class);
         if(!response.isSuccess()){
@@ -167,7 +170,7 @@ public class BatchAsyncHandleMposListener {
             return Boolean.FALSE;
         }
         for (SearchSkuTemplate searchSkuTemplate:searchSkuTemplates) {
-            operateMposFlag(searchSkuTemplate.getId(),operateType,helper);
+            operateMposFlag(searchSkuTemplate.getId(),operateType);
             skuTemplateIds.add(searchSkuTemplate.getId());
         }
         int current = searchSkuTemplates.size();
@@ -178,29 +181,17 @@ public class BatchAsyncHandleMposListener {
      * 打标／取消打标
      * @param id            货品ID
      * @param operateType   0 打标 1 取消打标
-     * @param helper        导出excel辅助类
      */
-    private void operateMposFlag(Long id, String operateType, ExcelExportHelper helper){
+    private void operateMposFlag(Long id, Integer operateType){
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = operationMopsFlag(exist, operateType);
-        SkuTemplate toUpdate = new SkuTemplate();
-        toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
-        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
-        if (!resp.isSuccess()) {
-            log.error("update SkuTemplate failed,cause:{}",resp.getError());
-            AbnormalRecord ar = new AbnormalRecord();
-            ar.setCode(exist.getExtra().get("materialCode"));
-            ar.setReason(resp.getError());
-            helper.appendToExcel(ar);
-        }
+        Map<String,String> extra = exist.getExtra();
         //同步电商
-        if(Objects.equals(PsItemConstants.MPOS_ITEM,operateType)){
+        if(Objects.equals(1,operateType)){
             //mpos打标设置默认折扣
             if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 setDiscount(id,100);
@@ -209,20 +200,6 @@ public class BatchAsyncHandleMposListener {
         }else{
             pushMposItemComponent.del(Lists.newArrayList(exist));
         }
-    }
-
-    /**
-     * 封装货品mpos类型
-     * @param exist 货品
-     * @param type  类型
-     */
-    private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
-        Map<String,String> extra = exist.getExtra();
-        if(org.springframework.util.CollectionUtils.isEmpty(extra)){
-            extra = Maps.newHashMap();
-        }
-        extra.put(PsItemConstants.MPOS_FLAG,type);
-        return extra;
     }
 
     /**
@@ -503,7 +480,7 @@ public class BatchAsyncHandleMposListener {
      * @param operatorType
      * @return
      */
-    private String toFlagKey(Long userId,String operatorType){
+    private String toFlagKey(Long userId,Integer operatorType){
         return "mpos:" + userId + ":flag:" + operatorType + "~" + DateTime.now().toDate().getTime();
     }
 

@@ -61,6 +61,10 @@ public class GDMapSearchService {
 
             String result = request.body();
             MapSearchResponse response = JsonMapper.nonEmptyMapper().fromJson(result, MapSearchResponse.class);
+            if(Arguments.isNull(response)){
+                log.error("amap response poi is empty, resp = {}", result);
+                return Response.fail("amap.response.status.failed");
+            }
             if (Objects.equal(response.getStatus(), MapSearchResponse.Status.FAILED.value())) {
                 log.error("amap response poi is empty, resp = {}", result);
                 return Response.fail("amap.response.status.failed");

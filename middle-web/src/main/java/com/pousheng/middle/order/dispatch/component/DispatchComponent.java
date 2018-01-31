@@ -86,7 +86,8 @@ public class DispatchComponent {
         Response<Optional<Location>> locationRes = gdMapSearchService.searchByAddress(address);
         if(!locationRes.isSuccess()){
             log.error("find location by address:{} fail,error:{}",address,locationRes.getError());
-            throw new ServiceException(locationRes.getError());
+            return Optional.absent();
+            //throw new ServiceException(locationRes.getError());
         }
 
         return locationRes.getResult();

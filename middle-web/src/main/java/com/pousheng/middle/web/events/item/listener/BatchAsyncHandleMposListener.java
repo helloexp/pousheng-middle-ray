@@ -13,9 +13,11 @@ import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
+import com.pousheng.middle.web.events.item.BatchAsyncImportMposFlagEvent;
 import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
 import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
@@ -28,6 +30,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.common.utils.Arguments;
+import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.SpuAttribute;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -86,6 +89,8 @@ public class BatchAsyncHandleMposListener {
 
     @Autowired
     private SkuTemplateDumpService skuTemplateDumpService;
+    @RpcConsumer
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
 
     private static final Integer BATCH_SIZE = 100;
@@ -132,10 +137,15 @@ public class BatchAsyncHandleMposListener {
                     skuTemplateIds.clear();
                 }
             }
-            //批量保存打标记录入库
-            psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
-            //批量更新es
-            skuTemplateDumpService.batchDump(skuTemplateIds);
+
+            //非1000条的更新下
+            if(!CollectionUtils.isEmpty(skuTemplateIds)){
+                //批量保存打标记录入库
+                psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
+                //批量更新es
+                skuTemplateDumpService.batchDump(skuTemplateIds);
+            }
+
             //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
             if(helper.size() > 0){
                 String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -171,7 +181,7 @@ public class BatchAsyncHandleMposListener {
             return Boolean.FALSE;
         }
         for (SearchSkuTemplate searchSkuTemplate:searchSkuTemplates) {
-            operateMposFlag(searchSkuTemplate.getId(),operateType);
+            syncParanaMposSku(searchSkuTemplate.getId(),operateType);
             skuTemplateIds.add(searchSkuTemplate.getId());
         }
         int current = searchSkuTemplates.size();
@@ -181,9 +191,9 @@ public class BatchAsyncHandleMposListener {
     /**
      * 打标／取消打标
      * @param id            货品ID
-     * @param operateType   0 打标 1 取消打标
+     * @param operateType   1 非mpos 2mpos
      */
-    private void operateMposFlag(Long id, Integer operateType){
+    private void syncParanaMposSku(Long id, Integer operateType){
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -340,6 +350,88 @@ public class BatchAsyncHandleMposListener {
             recordToRedis(key,PsItemConstants.EXECUTED,userId);
         }
         log.info("async import mpos discount task end");
+    }
+
+
+
+
+    /**
+     * 监听导入文件打标事件
+     * @param event
+     */
+    @Subscribe
+    public void onImportMposFlag(BatchAsyncImportMposFlagEvent event) {
+        log.info("async import mpos flag task start");
+        MultipartFile file = event.getFile();
+        Long userId = event.getCurrentUserId();
+        String key = toImportKey(userId,file.getOriginalFilename());
+        ExcelExportHelper<AbnormalRecord> helper;
+        List<String[]> list;
+        try{
+            recordToRedis(key,PsItemConstants.EXECUTING,userId);
+            helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
+            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",15);
+            if(CollectionUtils.isEmpty(list)){
+                log.error("import excel is empty so skip");
+                return;
+            }
+        }catch (Exception e){
+            log.error("illegal file");
+            recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
+            throw new JsonResponseException("illegal file");
+        }
+
+        List<Long> skuTemplateIds = Lists.newArrayList();
+
+        for (int i = 1;i<list.size();i++) {
+            String[] strs = list.get(i);
+            if(!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3])){
+                try{
+                    //sku编码
+                    String skuCode = strs[3].replace("\"","");
+
+                    Long skuTemplateId = findMposSkuTemplateId(skuCode);
+
+                    //不存在跳过
+                    if(Arguments.isNull(skuTemplateId)){
+                        continue;
+                    }
+                    //同步电商
+                    syncParanaMposSku(skuTemplateId,PsSpuType.MPOS.value());
+
+                    skuTemplateIds.add(skuTemplateId);
+
+                    //每1000条更新下mysql和search
+                    if(i%1000==0){
+                        psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,PsSpuType.MPOS.value());
+                        skuTemplateDumpService.batchDump(skuTemplateIds);
+                        skuTemplateIds.clear();
+                    }
+
+                }catch (NumberFormatException nfe){
+                    log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[11], Throwables.getStackTraceAsString(nfe));
+                }catch (JsonResponseException jre){
+
+                }finally{
+
+                }
+
+            }
+        }
+
+        //非1000条的更新下
+        if(!CollectionUtils.isEmpty(skuTemplateIds)){
+            psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,PsSpuType.MPOS.value());
+            skuTemplateDumpService.batchDump(skuTemplateIds);
+        }
+        if(helper.size() > 0){
+            String url = this.uploadToAzureOSS(helper.transformToFile());
+            recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
+            log.error("async import mpos discount task abnormality");
+        }else{
+            recordToRedis(key,PsItemConstants.EXECUTED,userId);
+        }
+        log.info("async import mpos flag task end");
     }
 
     /**
@@ -516,5 +608,26 @@ public class BatchAsyncHandleMposListener {
                 }
             }
         });
+    }
+
+    private Long findMposSkuTemplateId(String skuCode){
+
+        //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
+        String templateName = "search.mustache";
+        Map<String,String> params = Maps.newHashMap();
+        params.put("skuCode",skuCode);
+        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);
+        if(!response.isSuccess()){
+            log.error("query sku template by skuCode:{} fail,error:{}",skuCode,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+
+        List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
+        if(CollectionUtils.isEmpty(searchSkuTemplates)){
+            return null;
+        }
+
+        return searchSkuTemplates.get(0).getId();
+
     }
 }

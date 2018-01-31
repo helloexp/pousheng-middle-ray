@@ -6,10 +6,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
-import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
+import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -301,6 +298,25 @@ public class SkuTemplates {
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
         event.setType(PsSpuType.MPOS.value());
+        event.setCurrentUserId(UserUtil.getUserId());
+        eventBus.post(event);
+    }
+
+
+    @ApiOperation("导入文件-商品打标")
+    @RequestMapping(value = "/api/sku-template/batch/import/file/mpos/flag",method = RequestMethod.POST)
+    public void asyncImportMposFlageFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+        if(multipartFile == null){
+            log.error("the upload file is null");
+            throw new JsonResponseException("the upload file is null");
+        }
+        String fileName = multipartFile.getOriginalFilename();
+        if(!fileName.endsWith(".xls") && !fileName.endsWith(".xlsx")){
+            log.error("the upload file is not a excel");
+            throw new JsonResponseException("the upload file is not a excel");
+        }
+        BatchAsyncImportMposFlagEvent event = new BatchAsyncImportMposFlagEvent();
+        event.setFile(multipartFile);
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }

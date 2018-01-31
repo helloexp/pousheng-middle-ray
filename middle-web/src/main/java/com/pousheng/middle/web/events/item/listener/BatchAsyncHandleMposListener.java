@@ -9,6 +9,7 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
@@ -191,7 +192,7 @@ public class BatchAsyncHandleMposListener {
         SkuTemplate exist = rExist.getResult();
         Map<String,String> extra = exist.getExtra();
         //同步电商
-        if(Objects.equals(1,operateType)){
+        if(Objects.equals(PsSpuType.MPOS.value(),operateType)){
             //mpos打标设置默认折扣
             if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
                 setDiscount(id,100);

@@ -300,7 +300,7 @@ public class SkuTemplates {
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
-        event.setType(1);
+        event.setType(PsSpuType.MPOS.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
@@ -310,7 +310,7 @@ public class SkuTemplates {
     public void asyncCancelMposFlag(@RequestParam Map<String,String> params){
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
-        event.setType(0);
+        event.setType(PsSpuType.POUSHENG.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }

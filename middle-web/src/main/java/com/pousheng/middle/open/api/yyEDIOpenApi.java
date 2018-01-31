@@ -254,7 +254,7 @@ public class yyEDIOpenApi {
                 error.setErrorCode("-100");
                 error.setErrorMsg(e.getMessage());
                 String reason = JsonMapper.nonEmptyMapper().toJson(error);
-                throw new OPServerException(200, e.getMessage());
+                throw new OPServerException(200, reason);
             }
         } catch (Exception e) {
             log.error("yyedi shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));

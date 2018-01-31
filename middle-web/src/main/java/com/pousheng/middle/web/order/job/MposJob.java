@@ -78,7 +78,7 @@ public class MposJob {
     @Value("${open.client.sync.all.order.duration.in.minute:20}")
     private Integer syncAllOrderDurationInMinute;
 
-    @Value("${open.client.sync.order.fetch.size:200}")
+    @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
 
     @Autowired

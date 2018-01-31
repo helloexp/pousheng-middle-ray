@@ -60,13 +60,8 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         indexedSkuTemplate.setSpuId(spu.getId());
         indexedSkuTemplate.setSpuCode(materialId);//货号
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
-        if(PsItemTool.isMopsItem(skuTemplate)){
-            indexedSkuTemplate.setType(1);
-        }else {
-            indexedSkuTemplate.setType(0);
-        }
+        indexedSkuTemplate.setType(skuTemplate.getType());
         indexedSkuTemplate.setUpdatedAt(skuTemplate.getUpdatedAt());
-
         final Long brandId = spu.getBrandId();
         if (brandId != null) {
             Brand brand = brandCacher.findBrandById(brandId);

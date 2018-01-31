@@ -4,8 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
-import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
@@ -161,11 +161,10 @@ public class SkuTemplates {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.MPOS_ITEM);
 
         SkuTemplate toUpdate = new SkuTemplate();
         toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
+        toUpdate.setType(PsSpuType.MPOS.value());
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
@@ -175,6 +174,7 @@ public class SkuTemplates {
         //更新搜索
         postUpdateSearchEvent(id);
 
+        Map<String,String> extra = getSkuTemplateExtra(exist);
         // MPOS打标后默认折扣为1，即不设折扣不打折
         if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
             setDiscount(id,100);
@@ -195,11 +195,9 @@ public class SkuTemplates {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.NOT_MPOS_ITEM);
-
         SkuTemplate toUpdate = new SkuTemplate();
         toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
+        toUpdate.setType(PsSpuType.POUSHENG.value());
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
@@ -345,12 +343,11 @@ public class SkuTemplates {
     }
 
     //打标或取消打标
-    private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
+    private Map<String,String> getSkuTemplateExtra(SkuTemplate exist){
         Map<String,String> extra = exist.getExtra();
         if(CollectionUtils.isEmpty(extra)){
             extra = Maps.newHashMap();
         }
-        extra.put(PsItemConstants.MPOS_FLAG,type);
         return extra;
 
     }

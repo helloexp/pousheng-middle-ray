@@ -364,16 +364,16 @@ public class BatchAsyncHandleMposListener {
         log.info("async import mpos flag task start");
         MultipartFile file = event.getFile();
         Long userId = event.getCurrentUserId();
-        String key = toImportKey(userId,file.getOriginalFilename());
+        String key = toFlagKey(userId,2);
         ExcelExportHelper<AbnormalRecord> helper;
         List<String[]> list;
         try{
             recordToRedis(key,PsItemConstants.EXECUTING,userId);
             helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",15);
+            list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",5);
             if(CollectionUtils.isEmpty(list)){
                 log.error("import excel is empty so skip");
-                return;
+                throw new JsonResponseException("illegal file");
             }
         }catch (Exception e){
             log.error("illegal file");
@@ -386,34 +386,38 @@ public class BatchAsyncHandleMposListener {
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3])){
-                try{
+                try {
                     //sku编码
-                    String skuCode = strs[3].replace("\"","");
+                    String skuCode = strs[3].replace("\"", "");
 
-                    Long skuTemplateId = findMposSkuTemplateId(skuCode);
-
-                    //不存在跳过
-                    if(Arguments.isNull(skuTemplateId)){
-                        continue;
+                    SearchSkuTemplate searchSkuTemplate = findMposSkuTemplateId(skuCode);
+                    //不存在记录日志
+                    if (Arguments.isNull(searchSkuTemplate)) {
+                        throw new JsonResponseException("中台不存在该商品");
                     }
+                    Long skuTemplateId = searchSkuTemplate.getId();
+
                     //同步电商
-                    syncParanaMposSku(skuTemplateId,PsSpuType.MPOS.value());
+                    syncParanaMposSku(skuTemplateId, PsSpuType.MPOS.value());
 
                     skuTemplateIds.add(skuTemplateId);
 
+                    //设置默认折扣
+                    if (searchSkuTemplate.getDiscount() == null || searchSkuTemplate.getDiscount() == 0l) {
+                        setDiscount(skuTemplateId, 100);
+                    }
                     //每1000条更新下mysql和search
-                    if(i%1000==0){
-                        psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,PsSpuType.MPOS.value());
+                    if (i % 1000 == 0) {
+                        psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
                         skuTemplateDumpService.batchDump(skuTemplateIds);
                         skuTemplateIds.clear();
                     }
-
-                }catch (NumberFormatException nfe){
-                    log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[11], Throwables.getStackTraceAsString(nfe));
-                }catch (JsonResponseException jre){
-
-                }finally{
-
+                }catch (Exception jre){
+                    AbnormalRecord abnormalRecord = new AbnormalRecord();
+                    abnormalRecord.setCode(strs[0].replace("\"", ""));
+                    abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
+                    abnormalRecord.setReason(jre.getMessage());
+                    helper.appendToExcel(abnormalRecord);
                 }
 
             }
@@ -452,6 +456,8 @@ public class BatchAsyncHandleMposListener {
         if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
             originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
         }
+        if(Objects.isNull(originPrice))
+            return ;
         toUpdate.setId(exist.getId());
         toUpdate.setExtra(extra);
         toUpdate.setPrice(calculatePrice(discount,originPrice));
@@ -610,7 +616,7 @@ public class BatchAsyncHandleMposListener {
         });
     }
 
-    private Long findMposSkuTemplateId(String skuCode){
+    private SearchSkuTemplate findMposSkuTemplateId(String skuCode){
 
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
@@ -627,7 +633,7 @@ public class BatchAsyncHandleMposListener {
             return null;
         }
 
-        return searchSkuTemplates.get(0).getId();
+        return searchSkuTemplates.get(0);
 
     }
 }

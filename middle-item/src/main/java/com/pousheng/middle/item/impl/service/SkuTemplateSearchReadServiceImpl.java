@@ -115,7 +115,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
         //如果指定了品牌, 则品牌不需要计算聚合了
         if (!StringUtils.hasText(brandId)) {
-            sb.append("$" + BRAND_AGGS + ":brandId-:"+Integer.MAX_VALUE);
+            sb.append("$" + BRAND_AGGS + ":brandId:"+Integer.MAX_VALUE);
         }
         //sb.append("$" + CAT_AGGS + ":categoryIds:"+Integer.MAX_VALUE);
         return sb.toString();

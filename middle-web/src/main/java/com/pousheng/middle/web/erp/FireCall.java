@@ -9,6 +9,7 @@ import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.item.dto.ItemNameAndStock;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
@@ -204,7 +205,7 @@ public class FireCall {
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
         Map<String,String> params = Maps.newHashMap();
-        params.put("type","1");
+        params.put("type", String.valueOf(PsSpuType.MPOS.value()));
         params.put("spuCode",materialId);
         params.put("attrs","尺码:"+size);
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);

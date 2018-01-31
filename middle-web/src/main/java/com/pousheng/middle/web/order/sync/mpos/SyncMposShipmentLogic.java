@@ -112,7 +112,7 @@ public class SyncMposShipmentLogic{
                 }
                 return Response.fail(res.getError());
             }
-            shipmentExtra.setOutShipmentId(res.getResult());
+            shipmentExtra.setMposShipmentId(res.getResult());
         }catch(Exception e){
             // 同步失败
             log.error("sync shipment(id:{}) to mpos failed,cause:{}",shipment.getId(), Throwables.getStackTraceAsString(e));

@@ -82,4 +82,7 @@ public class ShipmentExtra implements Serializable{
 
     //网店零售订单号 当同步发货单到恒康开pos单同步成功时恒康返回的id
     private String hkResaleOrderId;
+
+    //mpos发货单号
+    private String mposShipmentId;
 }

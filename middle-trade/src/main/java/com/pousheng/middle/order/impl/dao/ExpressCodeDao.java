@@ -18,6 +18,9 @@ public class ExpressCodeDao extends MyBatisDao<ExpressCode> {
     public ExpressCode findByOfficalCode(String officialCode) {
         return getSqlSession().selectOne(sqlId("findByOfficalCode"), officialCode);
     }
+    public ExpressCode findByMposCode(String mposCode) {
+        return getSqlSession().selectOne(sqlId("findByMposCode"), mposCode);
+    }
 
     public List<ExpressCode> findAllByName(String name) {
         return getSqlSession().selectList(sqlId("findAll"),name);

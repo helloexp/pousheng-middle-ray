@@ -520,4 +520,26 @@ public class OrderReadLogic {
         }
         return true;
     }
+
+
+
+    /**
+     * 根据mpos快递代码
+     * @param mposExpressCode mpos快递代码
+     * @return  快递管理对象
+     */
+    public ExpressCode makeExpressNameByMposCode(String mposExpressCode) {
+        ExpressCodeCriteria criteria = new ExpressCodeCriteria();
+        criteria.setMposCode(mposExpressCode);
+        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
+        if (!response.isSuccess()) {
+            log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getData().size() == 0) {
+            log.error("there is not any express info by mposExpressCode:{}", mposExpressCode);
+            throw new JsonResponseException("express.info.is.not.exist");
+        }
+        return response.getResult().getData().get(0);
+    }
 }

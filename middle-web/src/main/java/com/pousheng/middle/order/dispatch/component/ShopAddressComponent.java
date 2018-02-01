@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
@@ -83,8 +84,13 @@ public class ShopAddressComponent {
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());
         for (ShopShipment shopShipment : shopShipments){
-            AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(shopShipment.getShopId(),AddressBusinessType.SHOP.getValue());
-            distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            try {
+                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(shopShipment.getShopId(),AddressBusinessType.SHOP.getValue());
+                distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            }catch (Exception e){
+                log.error("find address gps by business id:{} and type:{} fail,cause:{}",shopShipment.getShopId(),AddressBusinessType.SHOP.getValue(), Throwables.getStackTraceAsString(e));
+                throw new ServiceException("address.gps.not.found");
+            }
         }
 
         //增序

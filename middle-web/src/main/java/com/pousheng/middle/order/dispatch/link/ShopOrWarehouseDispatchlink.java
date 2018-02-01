@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
@@ -266,8 +267,12 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
      */
     public double getDistance(Long businessId,AddressBusinessType addressBusinessType, Location location){
 
-
-        AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(businessId, addressBusinessType.getValue());
-        return dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()).getDistance();
+        try {
+            AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(businessId, addressBusinessType.getValue());
+            return dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()).getDistance();
+        }catch (Exception e){
+            log.error("find address gps by business id:{} and type:{} fail,cause:{}",businessId,AddressBusinessType.SHOP.getValue(), Throwables.getStackTraceAsString(e));
+            throw new ServiceException("address.gps.not.found");
+        }
     }
 }

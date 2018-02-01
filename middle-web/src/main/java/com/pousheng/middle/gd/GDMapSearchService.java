@@ -77,8 +77,8 @@ public class GDMapSearchService {
                     location = new Location();
                     location.setLon(locations.get(0));
                     location.setLat(locations.get(1));
-                    location.setProvinceId(response.getPois().get(0).getPcode());
-                    location.setRegionId(response.getPois().get(0).getAdcode());
+                    //location.setProvinceId(response.getPois().get(0).getPcode());
+                    //location.setRegionId(response.getPois().get(0).getAdcode());
                 }
             }
             return Response.ok(Optional.fromNullable(location));

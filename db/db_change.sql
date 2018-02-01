@@ -205,3 +205,6 @@ CREATE TABLE `open_push_order_task` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
+
+-- 添加mpos快递码
+alter table `pousheng_trade_express_code` add `mpos_code` VARCHAR(64) NULL COMMENT 'mpos快递代码' after `fenqile_code`;

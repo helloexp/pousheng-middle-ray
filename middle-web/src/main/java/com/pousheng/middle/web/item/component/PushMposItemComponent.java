@@ -5,6 +5,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.web.item.batchhandle.BatchHandleMposLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -28,6 +30,7 @@ import io.terminus.open.client.item.service.PushedItemWriteService;
 import io.terminus.open.client.parana.component.ParanaClient;
 import io.terminus.open.client.parana.dto.ParanaCallResult;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -37,6 +40,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 推送mpos商品
@@ -64,6 +68,9 @@ public class PushMposItemComponent {
     private MappingReadService mappingReadService;
     @RpcConsumer
     private PushedItemWriteService pushedItemWriteService;
+    @Autowired
+    private BatchHandleMposLogic batchHandleMposLogic;
+
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -72,6 +79,28 @@ public class PushMposItemComponent {
         itemExecutor.submit(new ItemPushTask(skuTemplate));
     }
 
+    /**
+     * 批量设置默认折扣
+     * @param skuTemplateIds
+     */
+    public void batchSetDiscount(List<Long> skuTemplateIds){
+        for (Long skuTemplateId: skuTemplateIds) {
+            itemExecutor.submit(new ItemSetDiscountTask(skuTemplateId));
+        }
+    }
+
+    private class ItemSetDiscountTask implements  Runnable {
+        private final Long skuTemplateId;
+
+        public ItemSetDiscountTask(Long skuTemplateId) {
+            this.skuTemplateId = skuTemplateId;
+        }
+
+        @Override
+        public void run() {
+            batchHandleMposLogic.setDefaultDiscount(skuTemplateId);
+        }
+    }
 
     private class ItemPushTask implements Runnable {
 

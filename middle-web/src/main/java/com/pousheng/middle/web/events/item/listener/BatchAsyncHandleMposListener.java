@@ -20,6 +20,7 @@ import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposFlagEvent;
 import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
+import com.pousheng.middle.web.item.batchhandle.BatchHandleMposLogic;
 import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.web.item.batchhandle.ExcelUtil;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
@@ -49,7 +50,6 @@ import javax.annotation.Nullable;
 import javax.annotation.PostConstruct;
 import java.io.File;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -92,6 +92,9 @@ public class BatchAsyncHandleMposListener {
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
+    @Autowired
+    private BatchHandleMposLogic batchHandleMposLogic;
+
 
     private static final Integer BATCH_SIZE = 100;
 
@@ -133,6 +136,8 @@ public class BatchAsyncHandleMposListener {
                     log.info("update mysql and es start...");
                     psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
                     skuTemplateDumpService.batchDump(skuTemplateIds);
+                    if(Objects.equals(operateType,PsSpuType.MPOS.value()))
+                        pushMposItemComponent.batchSetDiscount(skuTemplateIds);
                     log.info("update mysql and es over...");
                     skuTemplateIds.clear();
                 }
@@ -144,6 +149,9 @@ public class BatchAsyncHandleMposListener {
                 psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
                 //批量更新es
                 skuTemplateDumpService.batchDump(skuTemplateIds);
+                //批量更新折扣
+                if(Objects.equals(operateType,PsSpuType.MPOS.value()))
+                    pushMposItemComponent.batchSetDiscount(skuTemplateIds);
             }
 
             //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
@@ -200,13 +208,8 @@ public class BatchAsyncHandleMposListener {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = exist.getExtra();
         //同步电商
         if(Objects.equals(PsSpuType.MPOS.value(),operateType)){
-            //mpos打标设置默认折扣
-            if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
-                setDiscount(id,100);
-            }
             pushMposItemComponent.push(exist);
         }else{
             pushMposItemComponent.del(Lists.newArrayList(exist));
@@ -328,7 +331,7 @@ public class BatchAsyncHandleMposListener {
                     if(discount > 100 || discount < 1){
                         throw new JsonResponseException(PsItemConstants.ERROR_NUMBER_ILLEGAL);
                     }
-                    setDiscount(id,discount);
+                    batchHandleMposLogic.setDiscount(id,discount);
                 }catch (NumberFormatException nfe){
                     log.error("set discount fail,spucode={},discount={},cause:{}",strs[1],strs[11], Throwables.getStackTraceAsString(nfe));
                     strs[14] = PsItemConstants.ERROR_FORMATE_ERROR;
@@ -402,14 +405,14 @@ public class BatchAsyncHandleMposListener {
 
                     skuTemplateIds.add(skuTemplateId);
 
-                    //设置默认折扣
-                    if (searchSkuTemplate.getDiscount() == null || searchSkuTemplate.getDiscount() == 0l) {
-                        setDiscount(skuTemplateId, 100);
-                    }
                     //每1000条更新下mysql和search
                     if (i % 1000 == 0) {
+                        //更新mysql
                         psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
+                        //更新es
                         skuTemplateDumpService.batchDump(skuTemplateIds);
+                        //设置默认折扣
+                        pushMposItemComponent.batchSetDiscount(skuTemplateIds);
                         skuTemplateIds.clear();
                     }
                 }catch (Exception jre){
@@ -427,6 +430,7 @@ public class BatchAsyncHandleMposListener {
         if(!CollectionUtils.isEmpty(skuTemplateIds)){
             psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,PsSpuType.MPOS.value());
             skuTemplateDumpService.batchDump(skuTemplateIds);
+            pushMposItemComponent.batchSetDiscount(skuTemplateIds);
         }
         if(helper.size() > 0){
             String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -438,59 +442,7 @@ public class BatchAsyncHandleMposListener {
         log.info("async import mpos flag task end");
     }
 
-    /**
-     * 设置折扣
-     * @param id        货品id
-     * @param discount  折扣
-     */
-    private void setDiscount(Long id, Integer discount) {
-        val rExist = skuTemplateReadService.findById(id);
-        if (!rExist.isSuccess()) {
-            log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
-            throw new JsonResponseException(PsItemConstants.ERROR_NOT_FIND);
-        }
-        SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = setMopsDiscount(exist,discount);
-        SkuTemplate toUpdate = new SkuTemplate();
-        Integer originPrice = 0;
-        if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
-            originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
-        }
-        if(Objects.isNull(originPrice))
-            return ;
-        toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
-        toUpdate.setPrice(calculatePrice(discount,originPrice));
-        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
-        if (!resp.isSuccess()) {
-            log.error("update SkuTemplate failed error={}",resp.getError());
-            throw new JsonResponseException(PsItemConstants.ERROR_UPDATE_FAIL);
-        }
-        //同步电商
-        pushMposItemComponent.updatePrice(Lists.newArrayList(exist),toUpdate.getPrice());
-    }
 
-    /**
-     * 设置折扣
-     * @param exist     货品
-     * @param discount  折扣
-     * @return
-     */
-    private Map<String,String> setMopsDiscount(SkuTemplate exist,Integer discount){
-        Map<String,String> extra = exist.getExtra();
-        if(CollectionUtils.isEmpty(extra)){
-            extra = Maps.newHashMap();
-        }
-        extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
-        return extra;
-    }
-
-    private static Integer calculatePrice(Integer discount, Integer originPrice){
-        BigDecimal ratio = new BigDecimal("100");  // 百分比的倍率
-        BigDecimal discountDecimal = new BigDecimal(discount);
-        BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
-        return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
-    }
 
     /**
      *  封装价格和销售属性信息

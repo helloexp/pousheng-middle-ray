@@ -42,6 +42,7 @@ import io.terminus.parana.order.service.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -99,6 +100,8 @@ public class ShipmentWiteLogic {
     private SyncMposShipmentLogic syncMposShipmentLogic;
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
+    @Autowired
+    private MessageSource messageSource;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -940,6 +943,13 @@ public class ShipmentWiteLogic {
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
+            //记录未处理原因
+            Map<String, String> extraMap = shopOrder.getExtra();
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, messageSource.getMessage(response.getError(),null,Locale.CHINA));
+            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+            if (!rltRes.isSuccess()) {
+                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
+            }
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();

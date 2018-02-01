@@ -109,14 +109,16 @@ public class MposOrderHandleLogic {
                 shipmentExtra.setShipmentCorpCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
                     try{
-                        ExpressCode expressCode =  orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
+
+                        ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                         shipmentExtra.setShipmentCorpName(expressCode.getName());
+                        DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
+                        shipmentExtra.setShipmentDate(dt.toDate());
+
                     }catch (Exception e){
                         log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
                     }
                 }
-                DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
-                shipmentExtra.setShipmentDate(dt.toDate());
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
                 break;

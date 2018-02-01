@@ -10,6 +10,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -306,7 +307,12 @@ public class SyncShipmentPosLogic {
         posInfo.setSellremark(sellerNote);//卖家备注
         posInfo.setSellcode(shopOrder.getBuyerName()); //卖家昵称
         posInfo.setExpresstype("express");//物流方式
-        posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
+        try{
+            ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shipmentExtra.getShipmentCorpCode());
+            posInfo.setVendcustcode(expressCode.getHkCode());  //物流公司代码
+        }catch (Exception e){
+            log.error("find express code failed,mposShipmentCorpCode is {}",shipmentExtra.getShipmentCorpCode());
+        }
         posInfo.setExpressbillno(shipmentExtra.getShipmentSerialNo()); //物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
         if(Arguments.isNull(shipmentExtra.getShipmentDate())){

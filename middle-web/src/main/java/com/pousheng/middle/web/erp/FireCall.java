@@ -1,12 +1,17 @@
 package com.pousheng.middle.web.erp;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.erp.component.SpuImporter;
+import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.item.dto.ItemNameAndStock;
@@ -24,6 +29,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
@@ -44,6 +50,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -66,6 +75,8 @@ public class FireCall {
 
     private final MaterialPusher materialPusher;
 
+    private final ErpBrandCacher brandCacher;
+
     private final MposWarehousePusher mposWarehousePusher;
 
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
@@ -86,11 +97,12 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService) {
+                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
         this.materialPusher = materialPusher;
+        this.brandCacher = brandCacher;
         this.mposWarehousePusher = mposWarehousePusher;
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
         this.warehouseSkuReadService = warehouseSkuReadService;
@@ -100,6 +112,40 @@ public class FireCall {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
                 DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
         dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
+    }
+
+
+
+    @RequestMapping(value="/spu/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String spuInput(@RequestParam String file){
+        try {
+            ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
+            String path = "/Users/songrenfei/Downloads/";
+            path=path+file+".txt";
+
+            log.info("handle process {}", path);
+            File file1 = new File(path);
+            String content = readFile(file1);
+            JsonNode root = mapper.readTree(content);
+            boolean success = root.findPath("retCode").asInt() == 0;
+            if (!success) {
+                log.error(root.findPath("retMessage").textValue());
+                return "fail";
+            }
+            List<PoushengMaterial> poushengMaterials = mapper.readValue(root.findPath("list").toString(),
+                    new TypeReference<List<PoushengMaterial>>() {
+                    });
+
+            return String.valueOf(poushengMaterials.size());
+            /*for (PoushengMaterial poushengMaterial : poushengMaterials) {
+                Brand brand = brandCacher.findByCardName(poushengMaterial.getCard_name());
+                spuImporter.doProcess(poushengMaterial, brand);
+            }*/
+
+        } catch (Exception e) {
+            log.error("failed to sync material from erp ", e);
+        }
+        return "ok";
     }
 
     @RequestMapping(value = "/brand", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -338,6 +384,22 @@ public class FireCall {
         stockPusher.submit(Lists.newArrayList(skuCode));
         return "ok";
     }
+
+    public static String readFile(File file){
+        StringBuilder result = new StringBuilder();
+        try{
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            while((s = br.readLine())!=null){//使用readLine方法，一次读一行
+                result.append(System.lineSeparator()+s);
+            }
+            br.close();
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+        return result.toString();
+    }
+
 }
 
 

@@ -109,13 +109,8 @@ public class MposOrderHandleLogic {
                 shipmentExtra.setShipmentCorpCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
                     try{
-                        ExpressCodeCriteria expressCodeCriteria = new ExpressCodeCriteria();
-                        expressCodeCriteria.setPoushengCode(extra.get(TradeConstants.SHIP_CORP_CODE));
-                        Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(expressCodeCriteria);
-                        if(response.isSuccess()){
-                            ExpressCode expressCode = response.getResult().getData().get(0);
-                            shipmentExtra.setShipmentCorpName(expressCode.getName());
-                        }
+                        ExpressCode expressCode =  orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
+                        shipmentExtra.setShipmentCorpName(expressCode.getName());
                     }catch (Exception e){
                         log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
                     }

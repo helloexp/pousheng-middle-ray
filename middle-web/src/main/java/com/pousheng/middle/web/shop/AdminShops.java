@@ -98,6 +98,17 @@ public class AdminShops {
         return rShop.getResult();
     }
 
+    @ApiOperation("根据门店id调用会员中心查询门店地址信息")
+    @RequestMapping(value = "/address/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Shop findShopAddress(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+        return rShop.getResult();
+    }
+
+
 
     @ApiOperation("根据用户id查询门店信息")
     @RequestMapping(value = "/user/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

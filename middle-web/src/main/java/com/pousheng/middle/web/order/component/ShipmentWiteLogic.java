@@ -951,6 +951,10 @@ public class ShipmentWiteLogic {
             if (!rltRes.isSuccess()) {
                 log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
             }
+            if(!isFirst){
+                //如果不是第一次派单，将订单状态恢复至待处理
+                this.makeSkuOrderWaitHandle(skuCodeAndQuantities,skuOrders);
+            }
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
@@ -1000,17 +1004,7 @@ public class ShipmentWiteLogic {
             }else{
                 if(!isFirst){
                     //如果不是第一次派单，将订单状态恢复至待处理
-                    for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                        orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
-                        Map<String, String> extraMap = skuOrder.getExtra();
-                        Integer waitHandleNumber = skuOrder.getQuantity();
-                        extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
-                        Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
-                        if (!response1.isSuccess()) {
-                            log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
-                        }
-                    }
+                    this.makeSkuOrderWaitHandle(skuCodeAndQuantityList,skuOrders);
                 }
             }
         }
@@ -1018,6 +1012,30 @@ public class ShipmentWiteLogic {
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
     }
 
+    /**
+     * 将子单置为待处理
+     * @param skuCodeAndQuantities
+     * @param skuOrders
+     */
+    private void makeSkuOrderWaitHandle(List<SkuCodeAndQuantity> skuCodeAndQuantities,List<SkuOrder> skuOrders){
+        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+            orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
+            Map<String, String> extraMap = skuOrder.getExtra();
+            Integer waitHandleNumber = skuOrder.getQuantity();
+            extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
+            Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+            if (!response1.isSuccess()) {
+                log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
+            }
+        }
+    }
+
+    /**
+     * 处理同步发货单
+     * @param shipment
+     * @param type
+     */
     private void handleSyncShipment(Shipment shipment,Integer type){
         try{
             if(Objects.equals(type,1)){

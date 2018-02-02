@@ -115,6 +115,7 @@ public class MposParanaFullItemMaker {
             originPrice = skuTemplate.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
         }
         ParanaSku paranaSku = new ParanaSku();
+        //todo 这里默认销售价和原价一样
         paranaSku.setMarketPrice(originPrice);
         paranaSku.setPrice(paranaSku.getMarketPrice());
         paranaSku.setStockQuantity(0);

@@ -44,7 +44,7 @@ public class SkuTemplateDumps {
         log.info("sku template full dump end");
     }
 
-    //@Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "0 */15 * * * ?")
     @RequestMapping(value = "delta", produces = MediaType.APPLICATION_JSON_VALUE)
     public void deltaDump(){ //每隔15分钟执行一次
         if(!hostLeader.isLeader()) {

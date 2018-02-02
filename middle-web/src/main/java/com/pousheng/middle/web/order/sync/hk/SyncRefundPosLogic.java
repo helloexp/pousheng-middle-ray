@@ -30,6 +30,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -57,6 +58,9 @@ public class SyncRefundPosLogic {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private RefundReadLogic refundReadLogic;
+
+    @Value("${pos.stock.code}")
+    private String posStockCode;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -125,7 +129,7 @@ public class SyncRefundPosLogic {
         Map<String,String> openShopExtra = openShop.getExtra();
         posContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));//线上店铺code
 
-        posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(refund.getId().toString());//端点唯一订单号
         posContent.setSourcebillno("");//订单来源单号
         posContent.setBilldate(formatter.print(refund.getCreatedAt().getTime()));//订单日期

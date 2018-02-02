@@ -100,3 +100,5 @@ mpos.open.shop.id: xxx
 
 
 
+# pos单仓库
+pos.stock.code: ${POS.STOCK.CODE}

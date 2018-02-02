@@ -376,12 +376,12 @@ public class BatchAsyncHandleMposListener {
             list = ExcelUtil.readerExcel(file.getInputStream(),"Sheet0",5);
             if(CollectionUtils.isEmpty(list)){
                 log.error("import excel is empty so skip");
-                throw new JsonResponseException("illegal file");
+                throw new JsonResponseException("excel.content.is.empty");
             }
         }catch (Exception e){
-            log.error("illegal file");
+            log.error("read import excel file fail,causeL:{}",Throwables.getStackTraceAsString(e));
             recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
-            throw new JsonResponseException("illegal file");
+            throw new JsonResponseException("read.excel.fail");
         }
 
         List<Long> skuTemplateIds = Lists.newArrayList();

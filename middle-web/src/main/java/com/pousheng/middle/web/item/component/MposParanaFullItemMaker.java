@@ -2,6 +2,7 @@ package com.pousheng.middle.web.item.component;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.item.constant.PsItemConstants;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -108,8 +109,14 @@ public class MposParanaFullItemMaker {
 
 
         List<ParanaSku> paranaSkus = Lists.newArrayListWithCapacity(skuTemplates.size());
+
+        Integer originPrice = 0;
+        if (skuTemplate.getExtraPrice() != null&&skuTemplate.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+            originPrice = skuTemplate.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+        }
         ParanaSku paranaSku = new ParanaSku();
-        paranaSku.setMarketPrice(skuTemplate.getPrice());
+        //todo 这里默认销售价和原价一样
+        paranaSku.setMarketPrice(originPrice);
         paranaSku.setPrice(paranaSku.getMarketPrice());
         paranaSku.setStockQuantity(0);
         paranaSku.setImage(skuTemplate.getImage());

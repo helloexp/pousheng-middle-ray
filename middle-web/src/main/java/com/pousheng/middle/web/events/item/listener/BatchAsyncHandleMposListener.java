@@ -119,49 +119,32 @@ public class BatchAsyncHandleMposListener {
         Long userId = batchMakeMposFlagEvent.getCurrentUserId();
         Integer operateType = batchMakeMposFlagEvent.getType();
         String key = toFlagKey(userId,operateType);
-        ExcelExportHelper<AbnormalRecord> helper;
         String contextId= String.valueOf(DateTime.now().getMillis());
         List<Long> skuTemplateIds = Lists.newArrayList();
         try{
-            helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
             log.info("async handle mpos flag task start......");
             //1.开始的时候记录状态
             recordToRedis(key,PsItemConstants.EXECUTING,userId);
-            boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,helper,contextId,skuTemplateIds);
+            boolean next = batchHandleMposFlag(pageNo,BATCH_SIZE,params,operateType,contextId,skuTemplateIds);
             while(next){
                 pageNo++;
-                next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,helper,contextId,skuTemplateIds);
+                next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,contextId,skuTemplateIds);
                 log.info("async handle mpos flag " + pageNo * 100);
                 if(pageNo % 10 == 0){
-                    log.info("update mysql and es start...");
-                    psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
                     skuTemplateDumpService.batchDump(skuTemplateIds);
-                    if(Objects.equals(operateType,PsSpuType.MPOS.value()))
-                        pushMposItemComponent.batchSetDiscount(skuTemplateIds);
-                    log.info("update mysql and es over...");
+                    pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
                     skuTemplateIds.clear();
                 }
             }
 
             //非1000条的更新下
             if(!CollectionUtils.isEmpty(skuTemplateIds)){
-                //批量保存打标记录入库
-                psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,operateType);
                 //批量更新es
                 skuTemplateDumpService.batchDump(skuTemplateIds);
-                //批量更新折扣
-                if(Objects.equals(operateType,PsSpuType.MPOS.value()))
-                    pushMposItemComponent.batchSetDiscount(skuTemplateIds);
+                //批量打标
+                pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
             }
-
-            //3.结束后判断是否有异常记录，无显示完成，有显示有异常，并显示异常记录。
-            if(helper.size() > 0){
-                String url = this.uploadToAzureOSS(helper.transformToFile());
-                recordToRedis(key,PsItemConstants.EXECUTE_ERROR + "~" + url,userId);
-                log.error("async handle mpos flag task abnormality");
-            }else{
-                recordToRedis(key,PsItemConstants.EXECUTED,userId);
-            }
+            recordToRedis(key,PsItemConstants.EXECUTED,userId);
             log.info("async handle mpos flag task end......");
         }catch (Exception e){
             log.error("async handle mpos flag task error",Throwables.getStackTraceAsString(e));
@@ -177,7 +160,7 @@ public class BatchAsyncHandleMposListener {
      * @param operateType
      * @return
      */
-    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,Integer operateType,ExcelExportHelper helper,String contextId,List<Long> skuTemplateIds){
+    private Boolean batchHandleMposFlag(int pageNo,int size,Map<String,String> params,Integer operateType,String contextId,List<Long> skuTemplateIds){
         String templateName = "search.mustache";
         Response<? extends Pagination<SearchSkuTemplate>> response =skutemplateScrollSearcher.searchWithScroll(contextId,pageNo,size, templateName, params, SearchSkuTemplate.class);
         if(!response.isSuccess()){
@@ -378,6 +361,7 @@ public class BatchAsyncHandleMposListener {
                 log.error("import excel is empty so skip");
                 throw new JsonResponseException("excel.content.is.empty");
             }
+            log.info("import excel size:{}",list.size());
         }catch (Exception e){
             log.error("read import excel file fail,causeL:{}",Throwables.getStackTraceAsString(e));
             recordToRedis(key,PsItemConstants.IMPORT_FILE_ILLEGAL,userId);
@@ -393,7 +377,7 @@ public class BatchAsyncHandleMposListener {
                     String skuCode = strs[3].replace("\"", "");
                 try {
 
-                    SearchSkuTemplate searchSkuTemplate = findMposSkuTemplateId(skuCode);
+                    SearchSkuTemplate searchSkuTemplate = findMposSkuTemplate(skuCode);
                     //不存在记录日志
                     if (Arguments.isNull(searchSkuTemplate)) {
                         throw new JsonResponseException("中台不存在该商品");
@@ -408,11 +392,11 @@ public class BatchAsyncHandleMposListener {
                     //每1000条更新下mysql和search
                     if (i % 1000 == 0) {
                         //更新mysql
-                        psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
+                        //psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
                         //更新es
                         skuTemplateDumpService.batchDump(skuTemplateIds);
-                        //设置默认折扣
-                        pushMposItemComponent.batchSetDiscount(skuTemplateIds);
+                        //设置默认折扣 目前由于批量打标默认折扣为1，所以就先手动执行sql脚本把价格维护好，这里就不调用了
+                        pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
                         skuTemplateIds.clear();
                     }
                 }catch (Exception jre){
@@ -428,9 +412,8 @@ public class BatchAsyncHandleMposListener {
 
         //非1000条的更新下
         if(!CollectionUtils.isEmpty(skuTemplateIds)){
-            psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds,PsSpuType.MPOS.value());
             skuTemplateDumpService.batchDump(skuTemplateIds);
-            pushMposItemComponent.batchSetDiscount(skuTemplateIds);
+            pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
         }
         if(helper.size() > 0){
             String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -568,7 +551,7 @@ public class BatchAsyncHandleMposListener {
         });
     }
 
-    private SearchSkuTemplate findMposSkuTemplateId(String skuCode){
+    private SearchSkuTemplate findMposSkuTemplate(String skuCode){
 
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";

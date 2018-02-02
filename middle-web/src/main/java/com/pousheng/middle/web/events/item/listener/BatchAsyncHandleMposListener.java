@@ -386,7 +386,7 @@ public class BatchAsyncHandleMposListener {
 
         List<Long> skuTemplateIds = Lists.newArrayList();
 
-        for (int i = 1;i<list.size();i++) {
+        for (int i = 0;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3])){
                     //sku编码

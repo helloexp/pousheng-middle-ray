@@ -135,9 +135,9 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     public MultipartConfigElement multipartConfigElement() {
         MultipartConfigFactory factory = new MultipartConfigFactory();
         //文件最大
-        factory.setMaxFileSize("10240KB"); //KB,MB
+        factory.setMaxFileSize("20480KB"); //KB,MB
         /// 设置总上传数据总大小
-        factory.setMaxRequestSize("102400KB");
+        factory.setMaxRequestSize("204800KB");
         return factory.createMultipartConfig();
     }
 

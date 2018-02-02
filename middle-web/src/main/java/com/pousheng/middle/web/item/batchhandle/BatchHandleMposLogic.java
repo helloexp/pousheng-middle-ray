@@ -183,9 +183,12 @@ public class BatchHandleMposLogic {
             if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
                 originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
             }
-            if(!Objects.isNull(originPrice)){
-                toUpdate.setPrice(originPrice);
+
+            if(Objects.equals(originPrice,0)){
+                log.error("[PRICE-INVALID]:sku template:(id:{}) price  code:{} invalid",exist.getId(),exist.getSkuCode());
             }
+
+            toUpdate.setPrice(originPrice);
         }
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {

@@ -391,9 +391,11 @@ public class BatchAsyncHandleMposListener {
 
                     //每1000条更新下mysql和search
                     if (i % 1000 == 0) {
+                        //更新mysql
+                        //psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
                         //更新es
                         skuTemplateDumpService.batchDump(skuTemplateIds);
-                        //设置默认折扣
+                        //设置默认折扣 目前由于批量打标默认折扣为1，所以就先手动执行sql脚本把价格维护好，这里就不调用了
                         pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
                         skuTemplateIds.clear();
                     }

@@ -17,6 +17,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
@@ -32,6 +33,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.msg.service.MsgService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -39,6 +41,8 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +50,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -102,6 +107,10 @@ public class ShipmentWiteLogic {
     private SyncMposOrderLogic syncMposOrderLogic;
     @Autowired
     private MessageSource messageSource;
+    @Autowired
+    private MsgService msgService;
+    @Autowired
+    private ShopReadService shopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -969,7 +978,7 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                this.handleSyncShipment(shipment,1);
+                this.handleSyncShipment(shipment,1,shopOrder);
             }
         }
         for (ShopShipment shopShipment : dispatchOrderItemInfo.getShopShipments()) {
@@ -982,7 +991,7 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                this.handleSyncShipment(shipment,2);
+                this.handleSyncShipment(shipment,2,shopOrder);
             }
         }
 
@@ -1035,7 +1044,7 @@ public class ShipmentWiteLogic {
      * @param shipment
      * @param type
      */
-    private void handleSyncShipment(Shipment shipment,Integer type){
+    private void handleSyncShipment(Shipment shipment,Integer type,ShopOrder shopOrder){
         try{
             if(Objects.equals(type,1)){
                 //发货单同步恒康
@@ -1050,6 +1059,22 @@ public class ShipmentWiteLogic {
                 Response response = syncMposShipmentLogic.syncShipmentToMpos(shipment);
                 if (!response.isSuccess()) {
                     log.error("sync shipment(id:{}) to mpos fail", shipment.getId());
+                }else{
+                    //邮件提醒接单店铺
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                    Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+                    if(!shopResponse.isSuccess()){
+                        log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
+                        throw new ServiceException("find.shop.not.exists");
+                    }
+                    Shop shop = shopResponse.getResult();
+                    ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                    if(extraInfo.getEmail() != null){
+                        Map<String,Serializable> context = Maps.newHashMap();
+                        context.put("shopName",shop.getName());
+                        context.put("orderId",shopOrder.getOutId());
+                        msgService.send(extraInfo.getEmail(),"email.order.confirm",context,null);
+                    }
                 }
             }
         }catch (Exception e){

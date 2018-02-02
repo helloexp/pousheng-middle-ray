@@ -110,6 +110,14 @@
             <version>1.9.2</version>
         </dependency>
 
+        <dependency>
+            <groupId>io.terminus.msg</groupId>
+            <artifactId>terminus-msg-email-javax</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.msg</groupId>
+            <artifactId>terminus-msg-light</artifactId>
+        </dependency>
 
 
         <!-- open platform -->

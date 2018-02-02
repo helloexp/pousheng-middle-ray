@@ -5,6 +5,7 @@
 package com.pousheng.middle.item.impl.service;
 
 import com.google.common.base.Function;
+import com.google.common.base.Objects;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
@@ -212,6 +213,12 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             List<IndexedSkuTemplate> indexedSkuTemplates = Lists.newArrayListWithCapacity(skuTemplates.size());
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
+
+                    if(!Objects.equal(skuTemplate.getStatus(),1)){
+                        log.warn("sku template(id:{}) status:{} invalid so skip create search index",skuTemplate.getId(),skuTemplate.getStatus());
+                        continue;
+                    }
+
                     Map<String,String> extra = skuTemplate.getExtra();
                     //当没找到sku对应的货号时跳过
                     if(Arguments.isNull(extra)||!extra.containsKey("materialId")){

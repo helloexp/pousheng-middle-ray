@@ -8,11 +8,13 @@ import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
@@ -85,6 +87,8 @@ public class AdminShops {
     private OpenShopReadService openShopReadService;
     @RpcConsumer
     private OpenShopWriteService openShopWriteService;
+    @Autowired
+    private MemberShopOperationLogic memberShopOperationLogic;
 
 
 
@@ -97,6 +101,18 @@ public class AdminShops {
         }
         return rShop.getResult();
     }
+
+    @ApiOperation("根据门店id调用会员中心查询门店地址信息")
+    @RequestMapping(value = "/address/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressGps findShopAddress(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+        Shop shop = rShop.getResult();
+        return memberShopOperationLogic.getAddressGps(shopId,String.valueOf(shop.getBusinessId()),shop.getOuterId());
+    }
+
 
 
     @ApiOperation("根据用户id查询门店信息")

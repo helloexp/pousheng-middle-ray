@@ -36,4 +36,20 @@
             #{id}
         </foreach>
     </update>
+
+
+
+    <update id="updateTypeByIds" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET `type` = #{type}, updated_at = now()
+        WHERE id IN
+        <foreach collection="ids" separator="," open="("
+                 close=")" item="id">
+            #{id}
+        </foreach>
+    </update>
+
+
+
 </mapper>

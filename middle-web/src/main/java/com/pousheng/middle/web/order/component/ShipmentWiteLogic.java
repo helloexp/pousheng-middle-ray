@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -22,8 +23,9 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
-import com.pousheng.middle.web.events.trade.MposShipmentCreateEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -42,6 +44,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -99,6 +102,12 @@ public class ShipmentWiteLogic {
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
+    @Autowired
+    private SyncMposOrderLogic syncMposOrderLogic;
+    @Autowired
+    private MessageSource messageSource;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -944,6 +953,17 @@ public class ShipmentWiteLogic {
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
+            //记录未处理原因
+            Map<String, String> extraMap = shopOrder.getExtra();
+            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, messageSource.getMessage(response.getError(),null,Locale.CHINA));
+            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
+            if (!rltRes.isSuccess()) {
+                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
+            }
+            if(!isFirst){
+                //如果不是第一次派单，将订单状态恢复至待处理
+                this.makeSkuOrderWaitHandle(skuCodeAndQuantities,skuOrders);
+            }
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
@@ -959,8 +979,7 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                //异步操作发货单
-                eventBus.post(new MposShipmentCreateEvent(shipment,1));
+                this.handleSyncShipment(shipment,1);
             }
         }
         for (ShopShipment shopShipment : dispatchOrderItemInfo.getShopShipments()) {
@@ -973,8 +992,7 @@ public class ShipmentWiteLogic {
                 Shipment shipment = shipmentRes.getResult();
                 if(isFirst)
                     orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                //异步操作发货单
-                eventBus.post(new MposShipmentCreateEvent(shipment,2));
+                this.handleSyncShipment(shipment,2);
             }
         }
 
@@ -991,22 +1009,11 @@ public class ShipmentWiteLogic {
                     skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
                     orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
                 }
-                // 商品派不出去通知mpos
-                eventBus.post(new MposShipmentCreateEvent(shopOrder,skuCodeAndQuantityList));
+                syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
             }else{
                 if(!isFirst){
                     //如果不是第一次派单，将订单状态恢复至待处理
-                    for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                        orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
-                        Map<String, String> extraMap = skuOrder.getExtra();
-                        Integer waitHandleNumber = skuOrder.getQuantity();
-                        extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
-                        Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
-                        if (!response1.isSuccess()) {
-                            log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
-                        }
-                    }
+                    this.makeSkuOrderWaitHandle(skuCodeAndQuantityList,skuOrders);
                 }
             }
         }
@@ -1014,8 +1021,54 @@ public class ShipmentWiteLogic {
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
     }
 
+    /**
+     * 将子单置为待处理
+     * @param skuCodeAndQuantities
+     * @param skuOrders
+     */
+    private void makeSkuOrderWaitHandle(List<SkuCodeAndQuantity> skuCodeAndQuantities,List<SkuOrder> skuOrders){
+        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+            orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
+            Map<String, String> extraMap = skuOrder.getExtra();
+            Integer waitHandleNumber = skuOrder.getQuantity();
+            extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
+            Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+            if (!response1.isSuccess()) {
+                log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
+            }
+        }
+    }
 
-     /** 单个发货单撤销
+    /**
+     * 处理同步发货单
+     * @param shipment
+     * @param type
+     */
+    private void handleSyncShipment(Shipment shipment,Integer type){
+        try{
+            if(Objects.equals(type,1)){
+                //发货单同步恒康
+                log.info("sync shipment(id:{}) to hk",shipment.getId());
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                }
+            }else if(Objects.equals(type,2)){
+                //同步mpos
+                log.info("sync shipment(id:{}) to mpos", shipment.getId());
+                Response response = syncMposShipmentLogic.syncShipmentToMpos(shipment);
+                if (!response.isSuccess()) {
+                    log.error("sync shipment(id:{}) to mpos fail", shipment.getId());
+                }
+            }
+        }catch (Exception e){
+            log.error("sync shipment(id:{}) failed,cause:{}",shipment.getId(), Throwables.getStackTraceAsString(e));
+        }
+    }
+
+
+    /** 单个发货单撤销
      * @param shipmentId 发货单主键
      * @return
      */

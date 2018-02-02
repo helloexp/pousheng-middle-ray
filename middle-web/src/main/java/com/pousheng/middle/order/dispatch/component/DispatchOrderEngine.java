@@ -7,6 +7,7 @@ import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -61,6 +62,9 @@ public class DispatchOrderEngine {
             log.error("order id:{} not matching any dispatch link",shopOrder.getId());
             return Response.fail("dispatch.order.fail");
 
+        }catch (ServiceException e){
+            log.error("dispatch order:{} fail,error:{}",shopOrder.getId(), e.getMessage());
+            return Response.fail(e.getMessage());
         }catch (Exception e){
             log.error("dispatch order:{} fail,cause:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("dispatch.order.fail");

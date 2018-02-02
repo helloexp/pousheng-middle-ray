@@ -175,6 +175,11 @@ CREATE TABLE `pousheng_auto_compensation` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
 
+
+-- 库存表存储退货仓信息
+alter table `pousheng_warehouses` add `tags_json` VARCHAR(2048) NULL COMMENT 'tag信息, json表示' after `extra_json`;
+
+
 drop table if exists `open_push_order_task`;
 CREATE TABLE `open_push_order_task` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -187,5 +192,9 @@ CREATE TABLE `open_push_order_task` (
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
 
+
 -- 库存表存储退货仓信息
 alter table `pousheng_warehouses` add `tags_json` VARCHAR(2048) NULL COMMENT 'tag信息, json表示' after `extra_json`;
+
+-- 添加mpos快递码
+alter table `pousheng_trade_express_code` add `mpos_code` VARCHAR(64) NULL COMMENT 'mpos快递代码' after `fenqile_code`;

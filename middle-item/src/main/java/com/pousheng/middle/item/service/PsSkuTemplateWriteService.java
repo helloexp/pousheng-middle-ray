@@ -27,4 +27,13 @@ public interface PsSkuTemplateWriteService {
     Response<Boolean> updateImageByIds(List<Long> ids, String imageUrl);
 
 
+    /**
+     * 批量更新类型
+     * @param ids id集合
+     * @param type 类型 {@link com.pousheng.middle.item.enums.PsSpuType}
+     * @return 是否成功
+     */
+    Response<Boolean> updateTypeByIds(List<Long> ids, Integer type);
+
+
 }

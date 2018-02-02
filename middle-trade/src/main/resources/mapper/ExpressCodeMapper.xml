@@ -13,6 +13,7 @@
         <result column="taobao_code" property="taobaoCode"/>
         <result column="suning_code" property="suningCode"/>
         <result column="fenqile_code" property="fenqileCode"/>
+        <result column="mpos_code" property="mposCode"/>
         <result column="hk_code" property="hkCode"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -27,11 +28,11 @@
 
     <sql id="cols_exclude_id">
         name, offical_code,pousheng_code,jd_code, taobao_code,suning_code,
-        fenqile_code,hk_code,created_at, updated_at
+        fenqile_code,mpos_code,hk_code,created_at, updated_at
     </sql>
     <sql id="vals">
          #{name}, #{officalCode},#{poushengCode}, #{jdCode},#{taobaoCode},
-        #{suningCode},#{fenqileCode},#{hkCode}, now(), now()
+        #{suningCode},#{fenqileCode},#{mposCode},#{hkCode}, now(), now()
     </sql>
     <sql id="queryCondition">
 
@@ -48,6 +49,8 @@
         <if test="suningCode != null">and `suning_code` = #{suningCode}</if>
 
         <if test="fenqileCode != null">and `fenqile_code` = #{fenqileCode}</if>
+
+        <if test="mposCode != null">and `mpos_code` = #{mposCode}</if>
 
         <if test="hkCode != null">and `hk_code` = #{hkCode}</if>
     </sql>
@@ -78,6 +81,11 @@
         FROM <include refid="tb" />
         WHERE offical_code = #{officalCode}
     </select>
+    <select id="findByMposCode" parameterType="string" resultMap="ExpressCodeMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE mpos_code = #{mposCode}
+    </select>
     <update id="update" parameterType="ExpressCode">
         UPDATE
         <include refid="tb"/>
@@ -89,6 +97,7 @@
             <if test="taobaoCode != null">taobao_code = #{taobaoCode},</if>
             <if test="suningCode != null">suning_code = #{suningCode},</if>
             <if test="fenqileCode != null">fenqile_code = #{fenqileCode},</if>
+            <if test="mposCode != null">mpos_code = #{mposCode},</if>
             <if test="hkCode != null">hk_code = #{hkCode},</if>
             updated_at=now()
         </set>

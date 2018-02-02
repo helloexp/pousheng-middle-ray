@@ -46,4 +46,10 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
     }
 
 
+    public Boolean updateTypeByIds(List<Long> ids,Integer type){
+        return getSqlSession().update(sqlId("updateTypeByIds"),ImmutableMap.of("ids",ids,"type",type))>0;
+
+    }
+
+
 }

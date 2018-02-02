@@ -1,16 +1,20 @@
 package com.pousheng.middle.open.mpos;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Shipment;
@@ -42,6 +46,9 @@ public class MposOrderHandleLogic {
 
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+
+    @Autowired
+    private ExpressCodeReadService expressCodeReadService;
 
     @Autowired
     private EventBus eventBus;
@@ -101,11 +108,17 @@ public class MposOrderHandleLogic {
                 shipmentExtra.setShipmentSerialNo(extra.get(TradeConstants.SHIP_SERIALNO));
                 shipmentExtra.setShipmentCorpCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
-                    ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(extra.get(TradeConstants.SHIP_CORP_CODE));
-                    shipmentExtra.setShipmentCorpName(expressCode.getName());
+                    try{
+
+                        ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
+                        shipmentExtra.setShipmentCorpName(expressCode.getName());
+                        DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
+                        shipmentExtra.setShipmentDate(dt.toDate());
+
+                    }catch (Exception e){
+                        log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
+                    }
                 }
-                DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
-                shipmentExtra.setShipmentDate(dt.toDate());
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
                 break;

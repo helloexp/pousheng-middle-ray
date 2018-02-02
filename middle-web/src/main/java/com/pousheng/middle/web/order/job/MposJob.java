@@ -83,10 +83,10 @@ public class MposJob {
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
-    @Value("${open.client.sync.all.order.duration.in.minute:360}")
+    @Value("${open.client.sync.all.order.duration.in.minute:20}")
     private Integer syncAllOrderDurationInMinute;
 
-    @Value("${open.client.sync.order.fetch.size:200}")
+    @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
 
     @Autowired
@@ -98,9 +98,9 @@ public class MposJob {
     }
 
     /**
-     * 每隔5分钟拉取一次mpos发货单
+     * 每隔3分钟拉取一次mpos发货单
      */
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */3 * * * ?")
     public void syncMposShipment() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());

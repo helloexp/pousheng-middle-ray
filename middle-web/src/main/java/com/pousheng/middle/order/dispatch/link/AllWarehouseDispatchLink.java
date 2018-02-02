@@ -60,6 +60,8 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-AllWarehouseDispatchLink-4  order(id:{}) start...",shopOrder.getId());
 
+
+
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
@@ -81,9 +83,11 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQueryWarehouseSkuCodeQuantityTable(skuStockInfos,warehouseSkuCodeQuantityTable);
         if(CollectionUtils.isEmpty(filterSkuStockInfos)){
             return Boolean.TRUE;
+        }else {
+            return Boolean.TRUE;
         }
 
-        // 放入 warehouseSkuCodeQuantityTable
+       /* // 放入 warehouseSkuCodeQuantityTable
         dispatchComponent.completeWarehouseTab(filterSkuStockInfos,warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
@@ -105,7 +109,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
         dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
 
-        return Boolean.FALSE;
+        return Boolean.FALSE;*/
     }
 
 

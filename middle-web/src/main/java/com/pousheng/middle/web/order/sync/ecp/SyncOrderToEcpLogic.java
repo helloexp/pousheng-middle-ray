@@ -68,38 +68,37 @@ public class SyncOrderToEcpLogic {
         try {
             //获取ecpOrderStatus
             String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-            //如果此时同步电商订单状态不是待同步电商平台或者同步电商失败直接忽略
-            if (!Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())&&!Objects.equals(status, EcpOrderStatus.SYNC_ECP_FAIL.getValue())){
-                return Response.ok(Boolean.TRUE);
-            }
-            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
-            orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
-            OpenClientOrderShipment orderShipment = new OpenClientOrderShipment();
-            orderShipment.setOuterOrderId(shopOrder.getOutId());
-            orderShipment.setLogisticsCompany(expressCompayCode);
-            //填写运单号
-            orderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
-            //目前苏宁需要传入商品编码
-            List<String> outSkuCodes = Lists.newArrayList();
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())){
-                for (ShipmentItem shipmentItem:shipmentItems){
-                    outSkuCodes.add(shipmentItem.getOutSkuCode());
+            //只有待同步电商平台或者是同步电商失败的才可以同步到苏宁京东
+            if (Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())||Objects.equals(status, EcpOrderStatus.SYNC_ECP_FAIL.getValue())){
+                Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+                OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
+                OpenClientOrderShipment orderShipment = new OpenClientOrderShipment();
+                orderShipment.setOuterOrderId(shopOrder.getOutId());
+                orderShipment.setLogisticsCompany(expressCompayCode);
+                //填写运单号
+                orderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
+                //目前苏宁需要传入商品编码
+                List<String> outSkuCodes = Lists.newArrayList();
+                if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())){
+                    for (ShipmentItem shipmentItem:shipmentItems){
+                        outSkuCodes.add(shipmentItem.getOutSkuCode());
+                    }
+                    orderShipment.setOuterSkuCodes(outSkuCodes);
                 }
-                orderShipment.setOuterSkuCodes(outSkuCodes);
-            }
-            Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), orderShipment);
-            if (response.isSuccess()) {
-                //同步成功
-                OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
-            } else {
-                //同步失败
-                OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-                return Response.fail(response.getError());
+                Response<Boolean> response = orderServiceCenter.ship(shopOrder.getShopId(), orderShipment);
+                if (response.isSuccess()) {
+                    //同步成功
+                    OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                } else {
+                    //同步失败
+                    OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                    orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
+                    return Response.fail(response.getError());
+                }
             }
         }catch (Exception e) {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());

@@ -69,7 +69,7 @@ public class SyncOrderToEcpLogic {
             //获取ecpOrderStatus
             String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
             //只有待同步电商平台或者是同步电商失败的才可以同步到苏宁京东
-            if (Objects.equals(status, EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue())||Objects.equals(status, EcpOrderStatus.SYNC_ECP_FAIL.getValue())){
+            if (Objects.equals(status, String.valueOf(EcpOrderStatus.SHIPPED_WAIT_SYNC_ECP.getValue()))||Objects.equals(status, String.valueOf(EcpOrderStatus.SYNC_ECP_FAIL.getValue()))){
                 Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
                 ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                 List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);

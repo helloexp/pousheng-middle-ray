@@ -389,9 +389,9 @@ public class BatchAsyncHandleMposListener {
         for (int i = 1;i<list.size();i++) {
             String[] strs = list.get(i);
             if(!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3])){
-                try {
                     //sku编码
                     String skuCode = strs[3].replace("\"", "");
+                try {
 
                     SearchSkuTemplate searchSkuTemplate = findMposSkuTemplateId(skuCode);
                     //不存在记录日志
@@ -421,8 +421,8 @@ public class BatchAsyncHandleMposListener {
                     abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
                     abnormalRecord.setReason(jre.getMessage());
                     helper.appendToExcel(abnormalRecord);
+                    log.error("import make sku code:{} flag fail, cause:{}",skuCode,Throwables.getStackTraceAsString(jre));
                 }
-
             }
         }
 

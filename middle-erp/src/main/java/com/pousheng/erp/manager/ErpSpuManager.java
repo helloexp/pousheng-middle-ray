@@ -327,6 +327,7 @@ public class ErpSpuManager {
             skuTemplate.setExtraPrice(extraPrice);
             skuTemplate.setStatus(1);
             skuTemplate.setStockType(1);
+            skuTemplate.setType(1);
 
             Map<String, String> extra = Maps.newHashMap();
             extra.put("colorId", poushengSku.getColorId());

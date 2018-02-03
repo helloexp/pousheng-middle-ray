@@ -1041,8 +1041,9 @@ public class ShipmentWiteLogic {
 
     /**
      * 处理同步发货单
-     * @param shipment
-     * @param type
+     * @param shipment  发货单
+     * @param type      类型 1.仓发 2.店发
+     * @param shopOrder 订单
      */
     private void handleSyncShipment(Shipment shipment,Integer type,ShopOrder shopOrder){
         try{
@@ -1064,8 +1065,7 @@ public class ShipmentWiteLogic {
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                     Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
                     if(!shopResponse.isSuccess()){
-                        log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
-                        throw new ServiceException("find.shop.not.exists");
+                        log.error("email notify shop(id:{}) failed,cause:{}",shipmentExtra.getWarehouseId(),shopResponse.getError());
                     }
                     Shop shop = shopResponse.getResult();
                     ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(shop.getExtra());

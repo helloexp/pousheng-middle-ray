@@ -656,6 +656,7 @@ public class AdminShops {
             log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
             throw new JsonResponseException(response.getError());
         }
+        log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
     }
 
 

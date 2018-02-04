@@ -1061,6 +1061,10 @@ public class ShipmentWiteLogic {
                 if (!response.isSuccess()) {
                     log.error("sync shipment(id:{}) to mpos fail", shipment.getId());
                 }else{
+                    //指定门店暂不处理
+                    if(Objects.equals(shopOrder.getExtra().get(TradeConstants.IS_ASSIGN_SHOP),1)) {
+                        return ;
+                    }
                     //邮件提醒接单店铺
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                     Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());

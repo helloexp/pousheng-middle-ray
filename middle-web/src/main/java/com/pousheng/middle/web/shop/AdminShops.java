@@ -9,6 +9,7 @@ import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
@@ -89,6 +90,8 @@ public class AdminShops {
     private OpenShopWriteService openShopWriteService;
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
 
@@ -637,6 +640,36 @@ public class AdminShops {
         syncParanaCloseShop(exist.getOuterId());
 
     }
+
+    @ApiOperation("设置邮箱")
+    @RequestMapping(value = "/{shopId}/email",method = RequestMethod.PUT)
+    public void setEmail(@PathVariable Long shopId,@RequestParam String email){
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        shopExtraInfo.setEmail(email);
+        Shop update = new Shop();
+        update.setId(exist.getId());
+        update.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),shopExtraInfo));
+        Response<Boolean> response = shopWriteService.update(update);
+        if(!response.isSuccess()){
+            log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
+    }
+
+
+    @RequestMapping(value = "/{outerId}/cache", method = RequestMethod.GET)
+    public Shop testClearCache(@PathVariable String outerId ) {
+        return middleShopCacher.findShopByOuterId(outerId);
+    }
+
+
 
 
     private void checkShopNameIfDuplicated(Long currentShopId,String updatedShopName) {

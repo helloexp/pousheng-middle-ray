@@ -9,6 +9,7 @@ import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
@@ -89,6 +90,8 @@ public class AdminShops {
     private OpenShopWriteService openShopWriteService;
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
 
@@ -637,6 +640,14 @@ public class AdminShops {
         syncParanaCloseShop(exist.getOuterId());
 
     }
+
+
+    @RequestMapping(value = "/{outerId}/cache", method = RequestMethod.GET)
+    public Shop testClearCache(@PathVariable String outerId ) {
+        return middleShopCacher.findShopByOuterId(outerId);
+    }
+
+
 
 
     private void checkShopNameIfDuplicated(Long currentShopId,String updatedShopName) {

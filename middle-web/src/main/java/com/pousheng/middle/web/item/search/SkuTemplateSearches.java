@@ -76,6 +76,7 @@ public class SkuTemplateSearches {
             String q = params.get("q");
             params.put("q",q.toLowerCase());
         }
+        params.put("sort","0_0_0_2");
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(pageNo,pageSize, templateName, params, SearchSkuTemplate.class);
         if(response.isSuccess()){
             //封装信息

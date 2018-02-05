@@ -185,6 +185,10 @@ public class DispatchComponent {
             Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
 
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            if(Arguments.isNull(shopExtraInfo)){
+                log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+                throw new ServiceException("shop.extra.info.invalid");
+            }
             //安全库存
             Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){

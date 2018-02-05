@@ -641,6 +641,28 @@ public class AdminShops {
 
     }
 
+    @ApiOperation("设置邮箱")
+    @RequestMapping(value = "/{shopId}/email",method = RequestMethod.PUT)
+    public void setEmail(@PathVariable Long shopId,@RequestParam String email){
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        shopExtraInfo.setEmail(email);
+        Shop update = new Shop();
+        update.setId(exist.getId());
+        update.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),shopExtraInfo));
+        Response<Boolean> response = shopWriteService.update(update);
+        if(!response.isSuccess()){
+            log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
+    }
+
 
     @RequestMapping(value = "/{outerId}/cache", method = RequestMethod.GET)
     public Shop testClearCache(@PathVariable String outerId ) {

@@ -292,7 +292,7 @@ public class FireCall {
                     //锁定库存
                     Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
 
-                    total+=skuAndQuantityInfo.getQuantity()-lockStock;
+                    total+=skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
                 }
             //店
             }else {

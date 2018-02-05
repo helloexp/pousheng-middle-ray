@@ -116,3 +116,6 @@ msg.template.list:
 
 # pos单仓库
 pos.stock.code: ${POS.STOCK.CODE}
+
+# mpos邮件组
+pousheng.order.email.confirm.group:

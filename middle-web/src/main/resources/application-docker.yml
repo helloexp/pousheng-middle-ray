@@ -173,3 +173,6 @@ msg.template.list:
     title: 派单提醒
     content: >
         {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+
+# mpos邮件组
+pousheng.order.email.confirm.group:

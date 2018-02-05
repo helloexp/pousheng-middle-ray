@@ -1073,7 +1073,7 @@ public class ShipmentWiteLogic {
                     }
                     Shop shop = shopResponse.getResult();
                     ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                    if(extraInfo.getEmail() != null){
+                    if(StringUtils.isNotEmpty(extraInfo.getEmail())){
                         Map<String,Serializable> context = Maps.newHashMap();
                         context.put("shopName",shop.getName());
                         context.put("orderId",shopOrder.getOutId());

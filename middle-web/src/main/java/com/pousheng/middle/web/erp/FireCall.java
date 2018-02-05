@@ -262,6 +262,7 @@ public class FireCall {
 
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
         if(CollectionUtils.isEmpty(searchSkuTemplates)){
+            log.error("middle not find sku template by materialId:{} and size:{} ",materialId,size);
             return new ItemNameAndStock();
         }
         SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);

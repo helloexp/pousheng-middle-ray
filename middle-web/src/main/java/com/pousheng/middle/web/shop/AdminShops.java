@@ -33,6 +33,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.shop.model.Shop;
@@ -80,6 +81,8 @@ public class AdminShops {
     private UcUserOperationLogic ucUserOperationLogic;
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private ShopCacher shopCacher;
     @Autowired
     private ParanaUserOperationLogic paranaUserOperationLogic;
     @Autowired
@@ -402,6 +405,9 @@ public class AdminShops {
             log.error("update shop extra:{}failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
+
+        //刷新缓存
+        shopCacher.refreshShopById(shopId);
     }
 
 
@@ -664,9 +670,14 @@ public class AdminShops {
     }
 
 
-    @RequestMapping(value = "/{outerId}/cache", method = RequestMethod.GET)
-    public Shop testClearCache(@PathVariable String outerId ) {
-        return middleShopCacher.findShopByOuterId(outerId);
+    @RequestMapping(value = "/{outerId}/cache/{businessId}", method = RequestMethod.GET)
+    public Shop testCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+        return middleShopCacher.findByOuterIdAndBusinessId(outerId,businessId);
+    }
+
+    @RequestMapping(value = "/{outerId}/cache/{businessId}/clear", method = RequestMethod.GET)
+    public void testClearCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+         middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
     }
 
 

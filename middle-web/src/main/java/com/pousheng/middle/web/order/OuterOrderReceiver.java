@@ -159,7 +159,7 @@ public class OuterOrderReceiver {
             skuCodeAndQuantity.setQuantity(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
-        shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
+        shipmentWiteLogic.toDispatchOrder(shopOrder,null);
     }
 
 

@@ -53,6 +53,11 @@ public class ShopExtraInfo implements Serializable{
     @Getter
     private String expressCompanyJson;
 
+    //邮箱
+    private String email;
+
+    //手机号
+    private String phone;
 
 
     public void setExpresssCompanyJson(String expressCompanyJson){

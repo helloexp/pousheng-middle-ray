@@ -30,6 +30,7 @@
         <apache-poi.version>3.16</apache-poi.version>
         <azure-storage.version>5.4.0</azure-storage.version>
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
+        <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
     </properties>
 
     <dependencies>
@@ -86,6 +87,22 @@
                 <groupId>io.terminus.boot</groupId>
                 <artifactId>terminus-spring-boot-starter-session</artifactId>
                 <version>1.6.1.RELEASE</version>
+            </dependency>
+            <!-- terminus-msg -->
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-api</artifactId>
+                <version>${terminus-msg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-light</artifactId>
+                <version>${terminus-msg.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.terminus.msg</groupId>
+                <artifactId>terminus-msg-email-javax</artifactId>
+                <version>${terminus-msg.version}</version>
             </dependency>
 
             <dependency>

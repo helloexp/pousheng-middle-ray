@@ -638,8 +638,6 @@ public class AdminShops {
     }
 
 
-
-
     private void checkShopNameIfDuplicated(Long currentShopId,String updatedShopName) {
         if (!StringUtils.hasText(updatedShopName)) {
             return;

@@ -15,6 +15,7 @@ import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -60,6 +61,8 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-AllWarehouseDispatchLink-4  order(id:{}) start...",shopOrder.getId());
 
+
+
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
@@ -83,11 +86,40 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.TRUE;
         }
 
+        List<Long> warehouseIds = Lists.transform(filterSkuStockInfos, new Function<HkSkuStockInfo, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable HkSkuStockInfo input) {
+                return input.getBusinessId();
+            }
+        });
+
+        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
+
+        //过滤掉非mpos仓
+        List<Warehouse> isMposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
+        //没有有效的则跳过
+        if(CollectionUtils.isEmpty(isMposWarehouses)){
+            return Boolean.TRUE;
+        }
+
+        List<Long> isMposIds = Lists.transform(isMposWarehouses, new Function<Warehouse, Long>() {
+            @Nullable
+            @Override
+            public Long apply(@Nullable Warehouse input) {
+                return input.getId();
+            }
+        });
+
+        //有效
+        List<HkSkuStockInfo> validSkuStockInfos = filterSkuStockInfos.stream().filter(hkSkuStockInfo -> isMposIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
+
+
         // 放入 warehouseSkuCodeQuantityTable
-        dispatchComponent.completeWarehouseTab(filterSkuStockInfos,warehouseSkuCodeQuantityTable);
+        dispatchComponent.completeWarehouseTab(validSkuStockInfos,warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
-        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(filterSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(validSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(warehouseShipments)){

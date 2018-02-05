@@ -11,7 +11,6 @@ import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -36,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -68,6 +68,9 @@ public class SyncShipmentPosLogic {
     private ShopReadService shopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
+
+    @Value("${pos.stock.code}")
+    private String posStockCode;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -219,10 +222,10 @@ public class SyncShipmentPosLogic {
             posContent.setNetcompanyid(companyId);//线上店铺所属公司id
             posContent.setNetshopcode(code);//线上店铺code
         }
-        posContent.setVoidstockcode("MPOSEDI");//todo 实际发货账套的虚拟仓代码
+        posContent.setVoidstockcode(posStockCode);//todo 实际发货账套的虚拟仓代码
 
 
-        posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
         String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");

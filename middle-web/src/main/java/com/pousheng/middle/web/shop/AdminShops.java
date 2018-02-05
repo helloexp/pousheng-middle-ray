@@ -196,6 +196,7 @@ public class AdminShops {
         shopExtraInfo.setCompanyId(shop.getCompanyId());
         shopExtraInfo.setShopInnerCode(shop.getStoreId());
         shopExtraInfo.setCompanyName(shop.getCompanyName());
+        shopExtraInfo.setEmail(shop.getEmail());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
 
@@ -718,5 +719,8 @@ public class AdminShops {
 
         //店铺内码
         private String storeId;
+
+        //店铺邮箱
+        private String email;
     }
 }

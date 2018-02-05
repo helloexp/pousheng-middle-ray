@@ -47,6 +47,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -116,6 +117,9 @@ public class ShipmentWiteLogic {
     private ShopReadService shopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
+
+    @Value("${pousheng.order.email.confirm.group}")
+    private String mposEmailGroup;
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
 
@@ -1080,12 +1084,16 @@ public class ShipmentWiteLogic {
                     }
                     Shop shop = shopResponse.getResult();
                     ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                    if(StringUtils.isNotEmpty(extraInfo.getEmail())){
-                        Map<String,Serializable> context = Maps.newHashMap();
-                        context.put("shopName",shop.getName());
-                        context.put("orderId",shopOrder.getOutId());
-                        msgService.send(extraInfo.getEmail(),"email.order.confirm",context,null);
-                    }
+                    Map<String,Serializable> context = Maps.newHashMap();
+                    context.put("shopName",shop.getName());
+                    context.put("orderId",shopOrder.getOutId());
+                    List<String> list = Lists.newArrayList();
+                    if(StringUtils.isNotEmpty(extraInfo.getEmail()))
+                        list.add(extraInfo.getEmail());
+                    if(StringUtils.isNotEmpty(mposEmailGroup))
+                        list.add(mposEmailGroup);
+                    if(list.size() > 0)
+                        msgService.send(JSON_MAPPER.toJson(list),"email.order.confirm",context,null);
                 }
             }
         }catch (Exception e){

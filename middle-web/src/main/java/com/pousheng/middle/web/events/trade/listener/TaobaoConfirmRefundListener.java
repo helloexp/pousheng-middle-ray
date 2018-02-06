@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -47,6 +48,7 @@ public class TaobaoConfirmRefundListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void updateRefundStatusForTaobao(TaobaoConfirmRefundEvent event){
         //天猫渠道
         if (Objects.equals(event.getChannel(),MiddleChannel.TAOBAO.getValue())){

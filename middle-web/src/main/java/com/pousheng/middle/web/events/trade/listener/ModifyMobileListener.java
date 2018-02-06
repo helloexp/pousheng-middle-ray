@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -36,6 +37,7 @@ public class ModifyMobileListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void modifyMobile(ModifyMobileEvent event){
         Long shopOrderId = event.getShopOrderId();
         Response<OrderDetail> rltRes =  orderReadService.findOrderDetailById(shopOrderId);

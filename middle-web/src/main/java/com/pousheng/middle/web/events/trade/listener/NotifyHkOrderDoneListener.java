@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -52,6 +53,7 @@ public class NotifyHkOrderDoneListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void notifyHkOrderConfirmed(NotifyHkOrderDoneEvent event) {
         Long shopOrderId = event.getShopOrderId();
         List<OrderShipment> orderShipments =  shipmentReadLogic.findByOrderIdAndType(shopOrderId);

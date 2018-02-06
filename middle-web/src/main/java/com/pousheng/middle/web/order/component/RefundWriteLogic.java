@@ -266,6 +266,8 @@ public class RefundWriteLogic {
         //申请数量是否有效
         List<RefundItem> refundItems = checkRefundQuantity(submitRefundInfo,shipmentItems);
         completeSkuAttributeInfo(refundItems);
+        //更新金额
+        this.calcRefundItemFees(refundItems,submitRefundInfo.getFee());
         for (EditSubmitRefundItem editSubmitRefundItem:submitRefundInfo.getEditSubmitRefundItems()){
             updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity(),shipmentItems);
         }
@@ -376,8 +378,10 @@ public class RefundWriteLogic {
             //更新发货商品中的已退货数量
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItems);
             completeSkuAttributeInfo(currentRefundItems);
-            extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
         }
+        //更新金额
+        this.calcRefundItemFees(currentRefundItems,submitRefundInfo.getFee());
+        extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
 
         //判断换货货商品及数量是否有变化
         Boolean isChangeItemChanged = changeItemIsChanged(refund,submitRefundInfo);
@@ -402,9 +406,8 @@ public class RefundWriteLogic {
         if(!Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
             //如果只是改了退款金额，则要更新退货商品中的退款金额
             if(!isRefundItemChanged){
-                //currentRefundItem.setFee(submitRefundInfo.getFee());
-                //extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
-
+                //因为现在是可能有多个商品申请售后，因此退款金额按照商品净价乘以数量的比例分摊
+                submitRefundInfo.getEditSubmitRefundItems();
             }
 
             //如果只是改了退款金额,则更新换货商品中的退款金额
@@ -678,6 +681,7 @@ public class RefundWriteLogic {
                 ShipmentItem shipmentItem = skuCodesAndShipmentItems.get(editSubmitRefundItem.getRefundSkuCode());
                 BeanMapper.copy(shipmentItem,refundItem);
                 refundItem.setApplyQuantity(editSubmitRefundItem.getRefundQuantity());
+                refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
                 refundItems.add(refundItem);
             }else{
                 count++;
@@ -962,4 +966,22 @@ public class RefundWriteLogic {
         return new ArrayList<>(intersection);
     }
 
+    /**
+     * 售后单分配售后金额
+     * @param refundItems
+     * @param fee
+     * @return
+     */
+    private List<RefundItem> calcRefundItemFees(List<RefundItem> refundItems,Long fee){
+        Long totalRefundAmount = 0L;
+        for (RefundItem refundItem :refundItems){
+            totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+        }
+        //计算比例
+        for (RefundItem refundItem:refundItems){
+            Long itemFee = ((refundItem.getCleanFee()*refundItem.getApplyQuantity()*fee)/totalRefundAmount);
+            refundItem.setFee(itemFee);
+        }
+        return refundItems;
+    }
 }

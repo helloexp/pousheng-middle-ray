@@ -78,7 +78,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         dispatchComponent.completeShopTab(filterSkuStockInfos,shopSkuCodeQuantityTable);
 
         //判断是否有整单
-        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(filterSkuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(shopShipments)){

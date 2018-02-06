@@ -17,4 +17,14 @@ public class OnSaleSku implements Serializable{
 
     private String skuCode;
 
+    /**
+     * 货号
+     */
+    private String materialId;
+
+    /**
+     * 尺码
+     */
+    private String size;
+
 }

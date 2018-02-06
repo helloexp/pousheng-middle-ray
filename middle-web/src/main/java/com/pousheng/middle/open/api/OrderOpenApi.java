@@ -89,6 +89,41 @@ public class OrderOpenApi {
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
 
+    /**
+     * 第三方ERP同步发货单处理结果
+     *
+     * @param data 处理结果
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "erp.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void syncErpHandleResult(@NotNull(message = "handle.data.is.null") String data) {
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ", data);
+        this.syncHkHandleResult(data);
+    }
+
+
+    /**
+     * 第三方ERP同步发货完成状态到中台
+     *
+     * @param shipmentId       中台发货单号
+     * @param shipmentId     第三方ERP发货单号
+     * @param shipmentCorpCode 物流公司代码
+     * @param shipmentSerialNo 物流单号
+     * @param shipmentDate     发货时间
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "erp.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
+            "shipmentCorpCode", "shipmentSerialNo",
+            "shipmentDate"}, httpMethods = RequestMethod.POST)
+    public void syncErpShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
+                                     @NotEmpty(message = "erp.shipment.id.is.null") String erpShipmentId,
+                                     @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
+                                     @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
+                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate
+    ) {
+        this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+    }
+
 
 
     /**

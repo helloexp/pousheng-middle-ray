@@ -119,7 +119,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         dispatchComponent.completeWarehouseTab(validSkuStockInfos,warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
-        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(validSkuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(warehouseShipments)){

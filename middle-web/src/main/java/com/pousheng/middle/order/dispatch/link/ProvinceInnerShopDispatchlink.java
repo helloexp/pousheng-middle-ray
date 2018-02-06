@@ -108,7 +108,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         dispatchComponent.completeShopTab(skuStockInfos,shopSkuCodeQuantityTable);
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单
-        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(skuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(shopShipments)){

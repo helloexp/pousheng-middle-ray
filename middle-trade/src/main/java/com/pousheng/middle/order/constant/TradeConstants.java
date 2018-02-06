@@ -218,6 +218,13 @@ public class TradeConstants {
     public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
     public static final String  ERP_SYNC_TYPE="erpSyncType";
     public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
-
+    //导出订单
+    public static final String EXPORT_ORDER = "order";
+    //导出售后单
+    public static final String EXPORT_REFUND = "refund";
+    //导出发货单
+    public static final String EXPORT_SHIPMENT = "shipment";
+    //导出pos单
+    public static final String EXPORT_POS = "pos";
 
 }

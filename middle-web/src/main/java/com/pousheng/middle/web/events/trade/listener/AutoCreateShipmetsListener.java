@@ -4,6 +4,7 @@
 
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -50,6 +51,7 @@ public class AutoCreateShipmetsListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void onShipment(OpenClientOrderSyncEvent event) {
         log.info("try to auto create shipment,shopOrder id is {}", event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());

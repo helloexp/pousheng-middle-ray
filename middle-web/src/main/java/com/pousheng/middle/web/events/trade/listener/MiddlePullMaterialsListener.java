@@ -1,9 +1,9 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.erp.component.SpuImporter;
-import com.pousheng.middle.web.events.trade.HkShipmentDoneEvent;
 import io.terminus.open.client.center.event.OpenClientPullBarCodeEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +31,7 @@ public class MiddlePullMaterialsListener {
 
 
     @Subscribe
+    @AllowConcurrentEvents
     public void doneShipment(OpenClientPullBarCodeEvent event) {
         log.info("try to pull spus from erp ,where skucCode is {}",event.getSkuCode());
 

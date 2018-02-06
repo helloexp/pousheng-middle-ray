@@ -47,7 +47,8 @@ public class SkxItemOpenApi {
 
 
     @OpenMethod(key = "query.erp.on.sale.item.api", paramNames = {"pageNo","pageSize","startAt","endAt"}, httpMethods = RequestMethod.GET)
-    public Paging<OnSaleItem> getOnSaleItem(Integer pageNo, Integer pageSize, String startAt, String endAt) {
+    public Paging<OnSaleItem> getOnSaleItem(@NotNull(message = "page.no.is.null") Integer pageNo,@NotNull(message = "page.size.is.null")  Integer pageSize,
+                                            @NotEmpty(message = "start.at.empty")  String startAt,@NotEmpty(message = "end.at.empty") String endAt) {
         log.info("QUERY-ERP-ON-SALE-ITEM-START param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} ", pageNo,pageSize,startAt,endAt);
 
         Date startDate = DFT.parseDateTime(startAt).toDate();

@@ -134,7 +134,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     }
 
     @Override
-    public Response<Boolean> batchDump(List<Long> skuTemplateIds) {
+    public Response<Boolean> batchDump(List<Long> skuTemplateIds,Integer type) {
         try {
 
             if(CollectionUtils.isEmpty(skuTemplateIds)){
@@ -149,7 +149,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
 
             List<SkuTemplate> skuTemplateLists = listRes.getResult();
 
-            toDump(skuTemplateLists,Boolean.TRUE);
+            toDump(skuTemplateLists,Boolean.TRUE,type);
 
             return Response.ok();
         }catch (Exception e){
@@ -168,7 +168,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             if (Iterables.isEmpty(skuTemplates)) {
                 break;
             }
-            toDump(skuTemplates,isFullDump);
+            toDump(skuTemplates,isFullDump,0);
             allIndexed += skuTemplates.size();
             log.info("has indexed {} items,and last handled id is {}", allIndexed, lastId);
             lastId = Iterables.getLast(skuTemplates).getId();
@@ -180,7 +180,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         return allIndexed;
     }
 
-    private void toDump(List<SkuTemplate> skuTemplates,Boolean isFullDump){
+    private void toDump(List<SkuTemplate> skuTemplates,Boolean isFullDump,Integer type){
 
 
         List<Long> spuIds = Lists.transform(skuTemplates, new Function<SkuTemplate, Long>() {
@@ -231,7 +231,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                     log.error("failed to index skuTemplate(id={}),cause:{}", skuTemplate.getId(), Throwables.getStackTraceAsString(e));
                 }
             }
-            batchIndexTask.batchDump(indexedSkuTemplates);
+            batchIndexTask.batchDump(indexedSkuTemplates,type);
         }else {
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
@@ -243,7 +243,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                             continue;
                         }
                         IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
-                        batchIndexTask.batchDump(Lists.newArrayList(indexedItem));
+                        batchIndexTask.batchDump(Lists.newArrayList(indexedItem),type);
                         /*IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                         indexExecutor.submit(indexTask);*/
                     } else { //删除

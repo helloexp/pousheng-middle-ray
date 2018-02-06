@@ -14,10 +14,7 @@ import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
-import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncImportMposFlagEvent;
+import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.export.SearchSkuTemplateEntity;
 import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
 import com.pousheng.middle.web.item.batchhandle.BatchHandleMposLogic;
@@ -131,7 +128,7 @@ public class BatchAsyncHandleMposListener {
                 next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,contextId,skuTemplateIds);
                 log.info("async handle mpos flag " + pageNo * 100);
                 if(pageNo % 10 == 0){
-                    skuTemplateDumpService.batchDump(skuTemplateIds);
+                    skuTemplateDumpService.batchDump(skuTemplateIds,operateType);
                     pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
                     skuTemplateIds.clear();
                 }
@@ -140,7 +137,7 @@ public class BatchAsyncHandleMposListener {
             //非1000条的更新下
             if(!CollectionUtils.isEmpty(skuTemplateIds)){
                 //批量更新es
-                skuTemplateDumpService.batchDump(skuTemplateIds);
+                skuTemplateDumpService.batchDump(skuTemplateIds,operateType);
                 //批量打标
                 pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
             }
@@ -394,7 +391,7 @@ public class BatchAsyncHandleMposListener {
                         //更新mysql
                         //psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
                         //更新es
-                        skuTemplateDumpService.batchDump(skuTemplateIds);
+                        skuTemplateDumpService.batchDump(skuTemplateIds,2);
                         //设置默认折扣 目前由于批量打标默认折扣为1，所以就先手动执行sql脚本把价格维护好，这里就不调用了
                         pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
                         skuTemplateIds.clear();
@@ -412,7 +409,7 @@ public class BatchAsyncHandleMposListener {
 
         //非1000条的更新下
         if(!CollectionUtils.isEmpty(skuTemplateIds)){
-            skuTemplateDumpService.batchDump(skuTemplateIds);
+            skuTemplateDumpService.batchDump(skuTemplateIds,2);
             pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
         }
         if(helper.size() > 0){

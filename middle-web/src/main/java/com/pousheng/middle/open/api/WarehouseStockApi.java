@@ -35,4 +35,12 @@ public class WarehouseStockApi {
 
     }
 
+
+    @OpenMethod(key = "erp.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
+    public void onSyncErpStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
+        log.info("ERPSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
+        this.onStockChanged(total,data);
+
+    }
+
 }

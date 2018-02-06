@@ -14,6 +14,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.item.BatchSyncStockEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
@@ -103,6 +104,7 @@ public class BatchSyncStockListener {
                 result.add(stockDto);
             } catch (Exception e) {
                 log.error("failed to sync {}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
+                throw new ServiceException("make.middle.data.fail");
             }
         }
         return result;

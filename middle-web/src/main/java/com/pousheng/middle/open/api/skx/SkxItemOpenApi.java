@@ -113,7 +113,7 @@ public class SkxItemOpenApi {
             }
 
             onSaleSku.setSkuId(skuTemplate.getId());
-            onSaleSku.setSkuCode(skuTemplate.getSkuCode());
+            onSaleSku.setBarCode(skuTemplate.getSkuCode());
             onSaleSkus.add(onSaleSku);
         }
 

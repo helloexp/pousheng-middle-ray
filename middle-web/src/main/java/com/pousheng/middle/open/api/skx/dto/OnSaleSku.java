@@ -15,7 +15,7 @@ public class OnSaleSku implements Serializable{
 
     private Long skuId;
 
-    private String skuCode;
+    private String barCode;
 
     /**
      * 货号

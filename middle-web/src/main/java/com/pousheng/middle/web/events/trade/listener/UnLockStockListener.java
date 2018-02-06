@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.StockPusher;
@@ -45,6 +46,7 @@ public class UnLockStockListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void doUnLockStock(UnLockStockEvent event){
 
         Shipment shipment = event.getShipment();

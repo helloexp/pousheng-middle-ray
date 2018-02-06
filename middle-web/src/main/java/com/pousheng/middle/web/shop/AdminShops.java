@@ -9,6 +9,7 @@ import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
@@ -32,6 +33,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.shop.model.Shop;
@@ -80,6 +82,8 @@ public class AdminShops {
     @Autowired
     private EventBus eventBus;
     @Autowired
+    private ShopCacher shopCacher;
+    @Autowired
     private ParanaUserOperationLogic paranaUserOperationLogic;
     @Autowired
     private MposWarehousePusher mposWarehousePusher;
@@ -89,6 +93,8 @@ public class AdminShops {
     private OpenShopWriteService openShopWriteService;
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
 
@@ -196,6 +202,7 @@ public class AdminShops {
         shopExtraInfo.setCompanyId(shop.getCompanyId());
         shopExtraInfo.setShopInnerCode(shop.getStoreId());
         shopExtraInfo.setCompanyName(shop.getCompanyName());
+        shopExtraInfo.setEmail(shop.getEmail());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
 
@@ -398,6 +405,9 @@ public class AdminShops {
             log.error("update shop extra:{}failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
+
+        //刷新缓存
+        shopCacher.refreshShopById(shopId);
     }
 
 
@@ -637,6 +647,39 @@ public class AdminShops {
 
     }
 
+    @ApiOperation("设置邮箱")
+    @RequestMapping(value = "/{shopId}/email",method = RequestMethod.PUT)
+    public void setEmail(@PathVariable Long shopId,@RequestParam String email){
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        shopExtraInfo.setEmail(email);
+        Shop update = new Shop();
+        update.setId(exist.getId());
+        update.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),shopExtraInfo));
+        Response<Boolean> response = shopWriteService.update(update);
+        if(!response.isSuccess()){
+            log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
+    }
+
+
+    @RequestMapping(value = "/{outerId}/cache/{businessId}", method = RequestMethod.GET)
+    public Shop testCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+        return middleShopCacher.findByOuterIdAndBusinessId(outerId,businessId);
+    }
+
+    @RequestMapping(value = "/{outerId}/cache/{businessId}/clear", method = RequestMethod.GET)
+    public void testClearCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+         middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
+    }
+
 
 
 
@@ -720,5 +763,8 @@ public class AdminShops {
 
         //店铺内码
         private String storeId;
+
+        //店铺邮箱
+        private String email;
     }
 }

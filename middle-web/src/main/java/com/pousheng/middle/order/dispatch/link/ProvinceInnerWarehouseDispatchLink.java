@@ -112,13 +112,12 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
         //判断是否有整单
 
-        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(skuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Boolean.TRUE;
         }
-
 
 
         //如果只有一个

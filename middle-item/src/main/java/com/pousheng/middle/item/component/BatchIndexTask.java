@@ -29,13 +29,15 @@ public class BatchIndexTask {
 
 
 
-    public void batchDump(List<IndexedSkuTemplate> indexedSkuTemplates){
+    public void batchDump(List<IndexedSkuTemplate> indexedSkuTemplates,Integer type){
 
         String dumpBodyJson="";
         try {
             StringBuilder str = new StringBuilder();
             if (notNull(indexedSkuTemplates)) {
                 for (IndexedSkuTemplate index : indexedSkuTemplates) {
+                    if(type != 0)
+                        index.setType(type);
                     str.append(JsonMapper.nonEmptyMapper().toJson(
                             ImmutableMap.of("index", ImmutableMap.of("_id", index.getId()))));
                     str.append("\n");

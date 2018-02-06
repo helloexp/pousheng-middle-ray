@@ -159,3 +159,22 @@ mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}
 
 # pos单仓库
 pos.stock.code: ${POS.STOCK.CODE}
+
+msg:
+  current:
+    emailService: javaxEmailService
+  javaxemail:
+    mailServerHost: smtp.163.com
+    fromAddress: yyecsys@163.com
+    userName: yyecsys
+    password: yyec1qaz2wsx
+
+
+msg.template.list:
+  - key: email.order.confirm
+    title: 派单提醒
+    content: >
+        {{shopName}} 店铺，你有一张订单待接单，订单号为:{{orderId}}，请立即处理
+
+# mpos邮件组
+pousheng.order.email.confirm.group: ${EMAIL_GROUP}

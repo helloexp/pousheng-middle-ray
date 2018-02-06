@@ -11,6 +11,7 @@ import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -185,6 +186,10 @@ public class DispatchComponent {
             Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
 
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            if(Arguments.isNull(shopExtraInfo)){
+                log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+                throw new ServiceException("shop.extra.info.invalid");
+            }
             //安全库存
             Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
@@ -202,16 +207,15 @@ public class DispatchComponent {
 
     /**
      * 获取查询roger返回的仓是否有整单发货的
-     * @param hkSkuStockInfos 仓及商品集合
      * @param widskucode2stock 仓、商品、数量的table
      * @param skuCodeAndQuantities 商品编码和数量
      * @return 可以整单发货的仓
      */
-    public List<WarehouseShipment> chooseSingleWarehouse(List<HkSkuStockInfo> hkSkuStockInfos, Table<Long, String, Integer> widskucode2stock,
+    public List<WarehouseShipment> chooseSingleWarehouse(Table<Long, String, Integer> widskucode2stock,
                                                          List<SkuCodeAndQuantity> skuCodeAndQuantities) {
-        List<WarehouseShipment> singleWarehouses = Lists.newArrayListWithCapacity(hkSkuStockInfos.size());
-        for (HkSkuStockInfo skuStockInfo : hkSkuStockInfos) {
-            List<WarehouseShipment> warehouseShipments = trySingleWarehouse(skuCodeAndQuantities, widskucode2stock, skuStockInfo);
+        List<WarehouseShipment> singleWarehouses = Lists.newArrayListWithCapacity(widskucode2stock.size());
+        for (Long warehouseId : widskucode2stock.rowKeySet()) {
+            List<WarehouseShipment> warehouseShipments = trySingleWarehouse(skuCodeAndQuantities, widskucode2stock, warehouseId);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 singleWarehouses.addAll(warehouseShipments);
             }
@@ -223,16 +227,15 @@ public class DispatchComponent {
 
     /**
      * 获取查询roger返回的门店是否有整单发货的
-     * @param hkSkuStockInfos 门店及商品集合
      * @param shopskucode2stock 门店、商品、数量的table
      * @param skuCodeAndQuantities 商品编码和数量
      * @return 可以整单发货的门店
      */
-    public List<ShopShipment> chooseSingleShop(List<HkSkuStockInfo> hkSkuStockInfos, Table<Long, String, Integer> shopskucode2stock,
+    public List<ShopShipment> chooseSingleShop(Table<Long, String, Integer> shopskucode2stock,
                                                     List<SkuCodeAndQuantity> skuCodeAndQuantities) {
-        List<ShopShipment> singleShops = Lists.newArrayListWithCapacity(hkSkuStockInfos.size());
-        for (HkSkuStockInfo skuStockInfo : hkSkuStockInfos) {
-            List<ShopShipment> shopShipments = trySingleShop(skuCodeAndQuantities, shopskucode2stock, skuStockInfo);
+        List<ShopShipment> singleShops = Lists.newArrayListWithCapacity(shopskucode2stock.size());
+        for (Long shopId : shopskucode2stock.rowKeySet()) {
+            List<ShopShipment> shopShipments = trySingleShop(skuCodeAndQuantities, shopskucode2stock, shopId);
             if (!CollectionUtils.isEmpty(shopShipments)) {
                 singleShops.addAll(shopShipments);
             }
@@ -299,13 +302,12 @@ public class DispatchComponent {
 
     private List<WarehouseShipment> trySingleWarehouse(List<SkuCodeAndQuantity> skuCodeAndQuantities,
                                                                  Table<Long, String, Integer> widskucode2stock,
-                                                       HkSkuStockInfo skuStockInfo) {
-
-        Long warehouseId = skuStockInfo.getBusinessId();
-        if (isEnough(skuCodeAndQuantities,widskucode2stock,skuStockInfo)) {
+                                                       Long warehouseId) {
+        if (isEnough(skuCodeAndQuantities,widskucode2stock,warehouseId)) {
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(warehouseId);
-            warehouseShipment.setWarehouseName(skuStockInfo.getBusinessName());
+            Warehouse warehouse = warehouseCacher.findById(warehouseId);
+            warehouseShipment.setWarehouseName(warehouse.getName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             return Lists.newArrayList(warehouseShipment);
         }
@@ -315,13 +317,13 @@ public class DispatchComponent {
 
     private List<ShopShipment> trySingleShop(List<SkuCodeAndQuantity> skuCodeAndQuantities,
                                                        Table<Long, String, Integer> widskucode2stock,
-                                                       HkSkuStockInfo skuStockInfo) {
+                                                       Long shopId) {
 
-        Long warehouseId = skuStockInfo.getBusinessId();
-        if (isEnough(skuCodeAndQuantities,widskucode2stock,skuStockInfo)) {
+        if (isEnough(skuCodeAndQuantities,widskucode2stock,shopId)) {
             ShopShipment shopShipment = new ShopShipment();
-            shopShipment.setShopId(warehouseId);
-            shopShipment.setShopName(skuStockInfo.getBusinessName());
+            shopShipment.setShopId(shopId);
+            Shop shop = shopCacher.findShopById(shopId);
+            shopShipment.setShopName(shop.getName());
             shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             return Lists.newArrayList(shopShipment);
         }
@@ -330,23 +332,17 @@ public class DispatchComponent {
 
     //是否满足整单发货
     private Boolean isEnough(List<SkuCodeAndQuantity> skuCodeAndQuantities,
-                             Table<Long, String, Integer> widskucode2stock,
-                             HkSkuStockInfo skuStockInfo){
+                             Table<Long, String, Integer> widskucode2stock,Long shopId){
 
-        List<HkSkuStockInfo.SkuAndQuantityInfo> materialList = skuStockInfo.getMaterial_list();
-        Map<String, Integer> hkSkuQuantityMap = materialList.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(HkSkuStockInfo.SkuAndQuantityInfo::getBarcode, it -> it.getQuantity()));
         boolean enough = true;
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             String skuCode = skuCodeAndQuantity.getSkuCode();
-
-            if(!hkSkuQuantityMap.containsKey(skuCode)){
+            if(!widskucode2stock.contains(shopId,skuCode)){
                 enough = false;
                 continue;
             }
 
-            int stock = hkSkuQuantityMap.get(skuCode);
-            widskucode2stock.put(skuStockInfo.getBusinessId(), skuCode, stock);
+            int stock = widskucode2stock.get(shopId,skuCode);
             if (stock < skuCodeAndQuantity.getQuantity()) {
                 enough = false;
             }

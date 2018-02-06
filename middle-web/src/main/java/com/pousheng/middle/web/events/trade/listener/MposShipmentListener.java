@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -87,6 +88,7 @@ public class MposShipmentListener {
      * @param event
      */
     @Subscribe
+    @AllowConcurrentEvents
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){

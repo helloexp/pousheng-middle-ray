@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -54,7 +55,9 @@ public class StepOrderNotifyHkListener {
     public void init() {
         eventBus.register(this);
     }
+
     @Subscribe
+    @AllowConcurrentEvents
     public void updateStepOrderStatus(StepOrderNotifyHkEvent event) {
         Long shopOrderId = event.getShopOrderId();
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);

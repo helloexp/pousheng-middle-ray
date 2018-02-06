@@ -62,33 +62,33 @@ public class ExportService {
     }
 
 
-    /**
-     * 保存至Azure
-     *
-     * @param exportContext
-     */
-    public void saveToCloud(ExportContext exportContext) {
-        log.info("just save export content to azure");
-        exportContext.setResultType(ExportContext.ResultType.BYTE_ARRAY);
-        save(exportContext);
-    }
+//    /**
+//     * 保存至Azure
+//     *
+//     * @param exportContext
+//     */
+//    public void saveToCloud(ExportContext exportContext) {
+//        log.info("just save export content to azure");
+//        exportContext.setResultType(ExportContext.ResultType.BYTE_ARRAY);
+//        save(exportContext);
+//    }
 
     /**
      * 本地存储，并保存至Azure
      *
      * @param exportContext
      */
-    public void saveToDiskAndCloud(ExportContext exportContext) {
+    public void saveToDiskAndCloud(ExportContext exportContext,Long userId) {
         log.info("save export content to local disk and azure");
         exportContext.setResultType(ExportContext.ResultType.FILE);
         if (StringUtils.isNotBlank(localFileLocation)) {
             exportContext.setPath(localFileLocation);
         }
-        save(exportContext);
+        save(exportContext,userId);
     }
 
 
-    private void save(ExportContext exportContext) {
+    private void save(ExportContext exportContext,Long userId) {
 
         try {
             if (null == exportContext.getData() || exportContext.getData().isEmpty()) {
@@ -96,7 +96,7 @@ public class ExportService {
             }
 
             ExportUtil.export(exportContext);
-            eventBus.post(new AzureOSSUploadEvent(exportContext, UserUtil.getUserId()));
+            eventBus.post(new AzureOSSUploadEvent(exportContext, userId));
 
         } catch (Exception e) {
             throw new JsonResponseException(e.getMessage());

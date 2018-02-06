@@ -19,13 +19,17 @@ import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -33,7 +37,9 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.joda.time.DateTime;
@@ -87,6 +93,8 @@ public class FireCall {
 
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
+    private final ShopCacher shopCacher;
+    private final WarehouseCacher warehouseCacher;
 
 
     private final DateTimeFormatter dft;
@@ -97,7 +105,7 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService) {
+                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
@@ -107,13 +115,15 @@ public class FireCall {
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
         this.warehouseSkuReadService = warehouseSkuReadService;
         this.mposSkuStockReadService = mposSkuStockReadService;
+        this.skuTemplateSearchReadService = skuTemplateSearchReadService;
+        this.shopCacher = shopCacher;
+        this.warehouseCacher = warehouseCacher;
 
         DateTimeParser[] parsers = {
                 DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
                 DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
         dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
     }
-
 
 
     @RequestMapping(value="/spu/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -284,6 +294,7 @@ public class FireCall {
 
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
         if(CollectionUtils.isEmpty(searchSkuTemplates)){
+            log.error("middle not find sku template by materialId:{} and size:{} ",materialId,size);
             return new ItemNameAndStock();
         }
         SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
@@ -297,13 +308,29 @@ public class FireCall {
             //仓
             if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
                 for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                    Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
+                    Map<String,String> extra = warehouse.getExtra();
+                    if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
+                        log.error("not find safe stock for warehouse:(id:{})",hkSkuStockInfo.getBusinessId());
+                        throw new ServiceException("warehouse.safe.stock.not.find");
+                    }
+                    //安全库存
+                    Integer safeStock = Integer.valueOf(extra.get("safeStock"));
+                    //锁定库存
                     Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
-                    total+=skuAndQuantityInfo.getQuantity()-lockStock;
+
+                    total+=skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
                 }
+            //店
             }else {
                 for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                    //锁定库存
                     Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
-                    total+=skuAndQuantityInfo.getQuantity()-lockStock;
+                    Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
+                    ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                    //安全库存
+                    Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
+                    total+=skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
                 }
             }
 

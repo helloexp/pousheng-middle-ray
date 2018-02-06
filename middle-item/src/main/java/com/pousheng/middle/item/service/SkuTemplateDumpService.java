@@ -29,7 +29,8 @@ public interface SkuTemplateDumpService {
     /**
      * 批量打标
      * @param skuTemplateIds skuTemplateId集合
+     * @param type 商品类型
      * @return 是否dump成功
      */
-    Response<Boolean> batchDump(List<Long> skuTemplateIds);
+    Response<Boolean> batchDump(List<Long> skuTemplateIds,Integer type);
 }

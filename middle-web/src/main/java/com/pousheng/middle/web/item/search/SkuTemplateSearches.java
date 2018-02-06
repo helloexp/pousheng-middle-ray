@@ -74,8 +74,12 @@ public class SkuTemplateSearches {
         String templateName = "search.mustache";
         if(params.containsKey("q")){
             String q = params.get("q");
+            if(q.length()>10){
+                q=q.substring(0,10);
+            }
             params.put("q",q.toLowerCase());
         }
+        params.put("sort","0_0_0_2");
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(pageNo,pageSize, templateName, params, SearchSkuTemplate.class);
         if(response.isSuccess()){
             //封装信息

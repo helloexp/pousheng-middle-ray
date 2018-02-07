@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.shop.event.listener;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.shop.constant.ShopConstants;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.Map;
 
 /**
  * @author songrenfei
@@ -60,9 +62,13 @@ public class CreateOpenShopRelationListener {
         openShop.setChannel(ShopConstants.CHANNEL);
         openShop.setShopName("mpos-"+exist.getName());
         openShop.setAccessToken("xxx");
-        openShop.setAppKey(exist.getOuterId());
+        openShop.setAppKey(exist.getBusinessId()+"-"+exist.getOuterId());
         openShop.setGateway(gateway);
         openShop.setSecret(exist.getOuterId()+"93204aefe45d47f6e488");
+        Map<String,String> openExtra = Maps.newHashMap();
+        openExtra.put("isOrderInsertMiddle","false");
+        openShop.setExtra(openExtra);
+
 
         Response<Long> openShopRes = openShopWriteService.create(openShop);
         if(!openShopRes.isSuccess()){

@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
@@ -88,8 +89,13 @@ public class WarehouseAddressComponent {
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
         for (WarehouseShipment warehouseShipment : warehouseShipments){
-            AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue());
-            distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            try {
+                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue());
+                distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            }catch (Exception e){
+                log.error("find address gps by business id:{} and type:{} fail,cause:{}",warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue(), Throwables.getStackTraceAsString(e));
+                throw new ServiceException("address.gps.not.found");
+            }
         }
 
         //增序
@@ -99,7 +105,7 @@ public class WarehouseAddressComponent {
                 .collect(Collectors.toMap(WarehouseShipment::getWarehouseId, it -> it));
 
 
-        return warehouseShipmentMap.get(sortDistance.get(0));
+        return warehouseShipmentMap.get(sortDistance.get(0).getId());
 
     }
 

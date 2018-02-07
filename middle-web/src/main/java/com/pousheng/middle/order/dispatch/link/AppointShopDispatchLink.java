@@ -34,6 +34,7 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
+        log.info("DISPATCH-AppointShopDispatchLink-1  order(id:{}) start...",shopOrder.getId());
         Map<String,String> extraMap = shopOrder.getExtra();
         if(!extraMap.containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             log.error("shop order(id:{}) extra not key:{}",shopOrder.getId(),TradeConstants.IS_ASSIGN_SHOP);

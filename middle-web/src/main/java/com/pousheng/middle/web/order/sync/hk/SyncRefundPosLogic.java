@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentDetail;
@@ -20,6 +21,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.order.model.Invoice;
@@ -30,16 +32,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 同步恒康逆向订单逻辑 for 开pos单
@@ -59,6 +60,9 @@ public class SyncRefundPosLogic {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private RefundReadLogic refundReadLogic;
+
+    @Value("${pos.stock.code}")
+    private String posStockCode;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -122,9 +126,11 @@ public class SyncRefundPosLogic {
             throw new ServiceException("warehouse.out.code.invalid");
         }
         posContent.setNetcompanyid(warehouse.getCompanyId());//线上店铺所属公司id
-        posContent.setNetshopcode(extra.get("outCode"));//线上店铺code
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentDetail.getShipment().getShopId());
+        Map<String,String> openShopExtra = openShop.getExtra();
+        posContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));//线上店铺code
 
-        posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(refund.getId().toString());//端点唯一订单号
         posContent.setSourcebillno("");//订单来源单号
         posContent.setBilldate(formatter.print(refund.getCreatedAt().getTime()));//订单日期

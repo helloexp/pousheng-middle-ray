@@ -57,12 +57,6 @@ public class AddressGpsCacher {
      * @return 对应的定位
      */
     public AddressGps findByBusinessIdAndType(Long businessId,Integer businessType){
-        try {
-            return addressGpsLoadingCache.getUnchecked(Joiners.COLON.join(businessId,businessType));
-        } catch (Exception e) {
-            Throwables.propagateIfPossible(e, ServiceException.class);
-            log.error("failed to find address gps by business id:{} and business type:{}, cause:{}", businessId,businessType, Throwables.getStackTraceAsString(e));
-            throw new ServiceException(e);
-        }
+        return addressGpsLoadingCache.getUnchecked(Joiners.COLON.join(businessId,businessType));
     }
 }

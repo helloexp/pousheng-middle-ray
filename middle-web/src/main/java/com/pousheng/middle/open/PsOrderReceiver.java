@@ -15,6 +15,7 @@ import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
@@ -47,6 +48,7 @@ import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -100,6 +102,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ShopReadService shopReadService;
+
+    @RpcConsumer
+    private PsShopReadService psShopReadService;
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
@@ -283,12 +288,28 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
                 //修改，mpos传来outerId
                 String outerId = richSkusByShop.getExtra().get("assignShopOuterId");
-                Response<Shop> shopResponse =  shopReadService.findByOuterId(outerId);
-                if(shopResponse.isSuccess()){
-                    Shop shop = shopResponse.getResult();
-                    tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,shop.getId().toString());
-                    tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
+                if(Strings.isNullOrEmpty(outerId)){
+                    log.error("current order is assign shop,but shop out id is null");
+                    throw new ServiceException("assign.shop.out.id.invalid");
                 }
+                String companyId = richSkusByShop.getExtra().get("assignShopCompanyId");
+                if(Strings.isNullOrEmpty(companyId)){
+                    log.error("current order is assign shop,but shop company id is null");
+                    throw new ServiceException("assign.shop.company.id.invalid");
+                }
+                Response<Optional<Shop>> shopResponse =  psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                if(!shopResponse.isSuccess()){
+                    log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopResponse.getError());
+                    throw new ServiceException(shopResponse.getError());
+                }
+                Optional<Shop> shopOptional = shopResponse.getResult();
+                if(!shopOptional.isPresent()){
+                    log.error("not find shop by outer id:{} and business id:{}",outerId,companyId);
+                    throw new ServiceException("assign.shop.not.exst");
+                }
+                Shop shop = shopOptional.get();
+                tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,shop.getId().toString());
+                tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
             }
             richSkusByShop.setExtra(tempExtra);
         }

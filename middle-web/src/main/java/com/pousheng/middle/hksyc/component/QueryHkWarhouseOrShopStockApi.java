@@ -68,6 +68,8 @@ public class QueryHkWarhouseOrShopStockApi {
         log.info("[QUERY-STOCK]query hk stock request param:{}",map);
         String responseBody = erpClient.get("common/erp/base/countmposinstock",map);
         log.info("[QUERY-STOCK]query hk stock success result:{}",responseBody);
+        //当查询商品的在各个门店后仓的库存未0，则返回接口为空
+        //当查询某个门店中的三个sku，如果只有两个sku有库存则只返回这两个有库存的sku
         List<HkSkuStockInfo> hkSkuStockInfoList =  readStockFromJson(responseBody);
 
         List<HkSkuStockInfo> middleStockList =  Lists.newArrayListWithCapacity(hkSkuStockInfoList.size());
@@ -83,7 +85,12 @@ public class QueryHkWarhouseOrShopStockApi {
                 }
             }else {
                 try {
-                    Shop shop = middleShopCacher.findShopByOuterId(skuStockInfo.getStock_code());
+                    Shop shop = middleShopCacher.findByOuterIdAndBusinessId(skuStockInfo.getStock_code(),Long.valueOf(skuStockInfo.getCompany_id()));
+                    //过滤掉已冻结或已删除的店铺
+                    if(!Objects.equal(shop.getStatus(),1)){
+                        log.warn("current shop(id:{}) status:{} invalid,so skip",shop.getId(),shop.getStatus());
+                        continue;
+                    }
                     skuStockInfo.setBusinessId(shop.getId());
                     skuStockInfo.setBusinessName(shop.getName());
                 }catch (Exception e){

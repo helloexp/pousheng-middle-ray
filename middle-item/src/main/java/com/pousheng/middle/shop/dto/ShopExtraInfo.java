@@ -5,6 +5,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.constant.ShopConstants;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import lombok.Data;
@@ -53,6 +54,11 @@ public class ShopExtraInfo implements Serializable{
     @Getter
     private String expressCompanyJson;
 
+    //邮箱
+    private String email;
+
+    //手机号
+    private String phone;
 
 
     public void setExpresssCompanyJson(String expressCompanyJson){
@@ -82,7 +88,12 @@ public class ShopExtraInfo implements Serializable{
             return new ShopExtraInfo();
         }
 
-        return mapper.fromJson(extraMap.get(ShopConstants.SHOP_EXTRA_INFO),ShopExtraInfo.class);
+        return   mapper.fromJson(extraMap.get(ShopConstants.SHOP_EXTRA_INFO),ShopExtraInfo.class);
+       /* if(Arguments.isNull(shopExtraInfo)){
+            log.error("not trans shop extra info by shop extra info json:{} ",extraMap);
+            throw new ServiceException("shop.extra.info.invalid");
+        }*/
+        //return shopExtraInfo;
     }
 
     public static Map<String,String> putExtraInfo(Map<String,String> extraMap,ShopExtraInfo shopExtraInfo){

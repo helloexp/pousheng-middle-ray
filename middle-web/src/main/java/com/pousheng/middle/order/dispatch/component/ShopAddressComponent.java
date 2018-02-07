@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
@@ -74,22 +75,22 @@ public class ShopAddressComponent {
      * 获取距离用户收货地址最近的门店
      * @param shopShipments 发货门店集合
      * @param address 用户收货地址
+     * @param addressRegion 用户收货地址到区
      * @return 距离最近的发货门店
      */
-    public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address){
+    public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address,String addressRegion){
 
-        //1、调用高德地图查询地址坐标
-        Optional<Location>  locationOp = dispatchComponent.getLocation(address);
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
-            throw new ServiceException("buyer.receive.info.address.invalid");
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(address,addressRegion);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());
         for (ShopShipment shopShipment : shopShipments){
-            AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(shopShipment.getShopId(),AddressBusinessType.SHOP.getValue());
-            distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            try {
+                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(shopShipment.getShopId(),AddressBusinessType.SHOP.getValue());
+                distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
+            }catch (Exception e){
+                log.error("find address gps by business id:{} and type:{} fail,cause:{}",shopShipment.getShopId(),AddressBusinessType.SHOP.getValue(), Throwables.getStackTraceAsString(e));
+                throw new ServiceException("address.gps.not.found");
+            }
         }
 
         //增序
@@ -99,7 +100,7 @@ public class ShopAddressComponent {
                 .collect(Collectors.toMap(ShopShipment::getShopId, it -> it));
 
 
-        return shopShipmentMap.get(sortDistance.get(0));
+        return shopShipmentMap.get(sortDistance.get(0).getId());
 
     }
 

@@ -116,7 +116,7 @@ public class SyncErpReturnLogic {
             updateRefundSyncFial(refund);
             Map<String,Object> param1 = Maps.newHashMap();
             param1.put("refundId",refund.getId());
-            autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK);
+            autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
             return Response.fail("sync.pos.failed");
         }
 

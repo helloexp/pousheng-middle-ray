@@ -12,6 +12,7 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -47,6 +48,8 @@ public class AllShopDispatchlink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
+        log.info("DISPATCH-AllShopDispatchlink-6  order(id:{}) start...",shopOrder.getId());
+
         //拒绝过发货单的mpos门店
         List<Long> rejectShopIds = (List<Long>) context.get(DispatchContants.REJECT_SHOP_IDS);
         if(CollectionUtils.isEmpty(rejectShopIds)){
@@ -75,7 +78,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         dispatchComponent.completeShopTab(filterSkuStockInfos,shopSkuCodeQuantityTable);
 
         //判断是否有整单
-        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(filterSkuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(shopShipments)){
@@ -89,8 +92,13 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         }
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address);
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
+        if(Arguments.isNull(shopShipment)){
+            log.error("not find nearest shop by:{} fail,",shopShipments);
+            throw new ServiceException("find.nearest.shop.fail");
+        }
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 
         return Boolean.FALSE;

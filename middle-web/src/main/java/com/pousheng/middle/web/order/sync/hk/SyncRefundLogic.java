@@ -252,8 +252,15 @@ public class SyncRefundLogic {
         //中台店铺id
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
         //退货仓
-        Warehouse warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
-        sycHkRefund.setStockId(warehouse.getInnerCode());
+        if (refundExtra.getWarehouseId()!=null){
+            Response<Warehouse> response = warehouseReadService.findById(refundExtra.getWarehouseId());
+            if (!response.isSuccess()){
+                log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
+                throw new ServiceException(response.getError());
+            }
+            Warehouse warehouse = response.getResult();
+            sycHkRefund.setStockId(warehouse.getInnerCode());
+        }
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
         //退款金额为页面上申请的退款金额
         sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());

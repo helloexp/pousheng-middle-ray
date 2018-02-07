@@ -10,7 +10,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -35,6 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -67,6 +68,9 @@ public class SyncShipmentPosLogic {
     private ShopReadService shopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
+
+    @Value("${pos.stock.code}")
+    private String posStockCode;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -196,6 +200,7 @@ public class SyncShipmentPosLogic {
             posContent.setCompanyid(warehouse.getCompanyId());//实际发货账套id
             posContent.setStockcode(extra.get("outCode"));//实际发货店铺code
 
+            //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
             Map<String,String> extraMap = openShop.getExtra();
             String companyId = extraMap.get("companyCode");
@@ -205,32 +210,36 @@ public class SyncShipmentPosLogic {
             posContent.setNetshopcode(code);//线上店铺code
         }else {
             Shop receivershop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-            ShopExtraInfo receiverShopExtraInfo = ShopExtraInfo.fromJson(receivershop.getExtra());
-            posContent.setCompanyid(receiverShopExtraInfo.getCompanyId().toString());//实际发货账套id
+            posContent.setCompanyid(receivershop.getBusinessId().toString());//实际发货账套id
             posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
 
+            //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
-            Response<Shop> shopRes = shopReadService.findByOuterId(openShop.getAppKey());
-            if(!shopRes.isSuccess()){
-                log.error("find shop by outer id:{} fail,error:{}",openShop.getAppKey(),shopRes.getError());
-                throw new ServiceException(shopRes.getError());
-            }
-            Shop shop = shopRes.getResult();
-            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            posContent.setNetcompanyid(shopExtraInfo.getCompanyId().toString());//线上店铺所属公司id
-            posContent.setNetshopcode(shop.getOuterId());//线上店铺code
+            Map<String,String> extraMap = openShop.getExtra();
+            String companyId = extraMap.get("companyCode");
+            String code = extraMap.get("hkPerformanceShopOutCode");
+
+            posContent.setNetcompanyid(companyId);//线上店铺所属公司id
+            posContent.setNetshopcode(code);//线上店铺code
         }
-        posContent.setVoidstockcode("MPOSEDI");//todo 实际发货账套的虚拟仓代码
+        posContent.setVoidstockcode(posStockCode);//todo 实际发货账套的虚拟仓代码
 
 
-        posContent.setNetstockcode("MPOSEDI");//todo 线上店铺所属公司的虚拟仓代码
+        posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
-        posContent.setSourcebillno("");//订单来源单号
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");
+        if (!StringUtils.isEmpty(isHkPosOrder)&&Objects.equal(isHkPosOrder,"true")){
+            String outOrderId = shopOrderExtra.get("hkOutOrderId");
+            posContent.setSourcebillno(outOrderId==null?"":outOrderId);//订单来源单号
+        }else{
+            posContent.setSourcebillno("");//订单来源单号
+        }
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
         posContent.setRemark(shopOrder.getBuyerNote());//备注
 
-        HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail);
+        HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,shipmentWay);
         List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(shipmentDetail);
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);
@@ -251,7 +260,7 @@ public class SyncShipmentPosLogic {
         return posItems;
     }
 
-    private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail) {
+    private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail,String shipmentWay) {
 
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
         OpenClientPaymentInfo openClientPaymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
@@ -301,7 +310,19 @@ public class SyncShipmentPosLogic {
         posInfo.setSellremark(sellerNote);//卖家备注
         posInfo.setSellcode(shopOrder.getBuyerName()); //卖家昵称
         posInfo.setExpresstype("express");//物流方式
-        posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
+        if(isWarehouseShip(shipmentWay)){
+            //仓发
+            posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
+        }else{
+            //店铺发货
+            try{
+                ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shipmentExtra.getShipmentCorpCode());
+                posInfo.setVendcustcode(expressCode.getHkCode());  //物流公司代码
+            }catch (Exception e){
+                log.error("find express code failed,mposShipmentCorpCode is {}",shipmentExtra.getShipmentCorpCode());
+            }
+
+        }
         posInfo.setExpressbillno(shipmentExtra.getShipmentSerialNo()); //物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
         if(Arguments.isNull(shipmentExtra.getShipmentDate())){

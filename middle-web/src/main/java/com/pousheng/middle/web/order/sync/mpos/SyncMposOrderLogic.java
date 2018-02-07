@@ -45,7 +45,7 @@ public class SyncMposOrderLogic {
         Map<String,Object> param = this.assembNotDispatcherSkuParam(shopOrder,skuCodeAndQuantityList);
         Response<Boolean> response = this.syncNotDispatcherSkuToMpos(param);
         if(!response.isSuccess()){
-            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS);
+            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS,response.getError());
         }
     }
 
@@ -78,7 +78,7 @@ public class SyncMposOrderLogic {
         param.put("afterSalesId",outerId);
         Response<Boolean> response = this.notifyMposRefundReceived(param);;
         if(!response.isSuccess()){
-            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS);
+            autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS,response.getError());
         }
     }
 

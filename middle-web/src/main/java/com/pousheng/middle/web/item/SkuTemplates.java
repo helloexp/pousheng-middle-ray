@@ -4,11 +4,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
-import com.pousheng.middle.web.events.item.BatchAsyncExportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncHandleMposFlagEvent;
-import com.pousheng.middle.web.events.item.BatchAsyncImportMposDiscountEvent;
-import com.pousheng.middle.web.events.item.SkuTemplateUpdateEvent;
+import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -160,11 +158,10 @@ public class SkuTemplates {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.MPOS_ITEM);
 
         SkuTemplate toUpdate = new SkuTemplate();
         toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
+        toUpdate.setType(PsSpuType.MPOS.value());
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
@@ -173,6 +170,12 @@ public class SkuTemplates {
 
         //更新搜索
         postUpdateSearchEvent(id);
+
+        Map<String,String> extra = getSkuTemplateExtra(exist);
+        // MPOS打标后默认折扣为1，即不设折扣不打折
+        if(!extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            setDiscount(id,100);
+        }
 
         //同步电商
         pushMposItemComponent.push(exist);
@@ -189,11 +192,9 @@ public class SkuTemplates {
             throw new JsonResponseException(rExist.getError());
         }
         SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = operationMopsFlag(exist,PsItemConstants.NOT_MPOS_ITEM);
-
         SkuTemplate toUpdate = new SkuTemplate();
         toUpdate.setId(exist.getId());
-        toUpdate.setExtra(extra);
+        toUpdate.setType(PsSpuType.POUSHENG.value());
         Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
@@ -296,7 +297,26 @@ public class SkuTemplates {
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
-        event.setType(PsItemConstants.MPOS_ITEM);
+        event.setType(PsSpuType.MPOS.value());
+        event.setCurrentUserId(UserUtil.getUserId());
+        eventBus.post(event);
+    }
+
+
+    @ApiOperation("导入文件-商品打标")
+    @RequestMapping(value = "/api/sku-template/batch/import/file/mpos/flag",method = RequestMethod.POST)
+    public void asyncImportMposFlageFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+        if(multipartFile == null){
+            log.error("the upload file is null");
+            throw new JsonResponseException("the upload file is null");
+        }
+        String fileName = multipartFile.getOriginalFilename();
+        if(!fileName.endsWith(".xls") && !fileName.endsWith(".xlsx")){
+            log.error("the upload file is not a excel");
+            throw new JsonResponseException("the upload file is not a excel");
+        }
+        BatchAsyncImportMposFlagEvent event = new BatchAsyncImportMposFlagEvent();
+        event.setFile(multipartFile);
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
@@ -306,7 +326,7 @@ public class SkuTemplates {
     public void asyncCancelMposFlag(@RequestParam Map<String,String> params){
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
-        event.setType(PsItemConstants.NOT_MPOS_ITEM);
+        event.setType(PsSpuType.POUSHENG.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
     }
@@ -339,12 +359,11 @@ public class SkuTemplates {
     }
 
     //打标或取消打标
-    private Map<String,String> operationMopsFlag(SkuTemplate exist,String type){
+    private Map<String,String> getSkuTemplateExtra(SkuTemplate exist){
         Map<String,String> extra = exist.getExtra();
         if(CollectionUtils.isEmpty(extra)){
             extra = Maps.newHashMap();
         }
-        extra.put(PsItemConstants.MPOS_FLAG,type);
         return extra;
 
     }

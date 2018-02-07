@@ -12,6 +12,11 @@ public class DispatchContants {
     public static final String BUYER_ADDRESS = "buyerAddress";
 
     /**
+     * 用户收货地址到区
+     */
+    public static final String BUYER_ADDRESS_REGION = "buyerAddressRegion";
+
+    /**
      * 在线销售的mpos仓
      */
     public static final String MPOS_ONLINE_SALE_WAREHOUSE = "mposOnlineSaleWarehouse";

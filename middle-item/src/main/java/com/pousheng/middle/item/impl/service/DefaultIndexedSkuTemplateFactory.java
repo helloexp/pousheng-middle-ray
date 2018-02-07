@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.item.PsItemTool;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import io.terminus.parana.attribute.dto.SkuAttribute;
@@ -60,13 +61,9 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
         indexedSkuTemplate.setSpuId(spu.getId());
         indexedSkuTemplate.setSpuCode(materialId);//货号
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
-        if(PsItemTool.isMopsItem(skuTemplate)){
-            indexedSkuTemplate.setType(1);
-        }else {
-            indexedSkuTemplate.setType(0);
-        }
+        Integer type = Arguments.isNull(skuTemplate.getType())?0:skuTemplate.getType();
+        indexedSkuTemplate.setType(type);
         indexedSkuTemplate.setUpdatedAt(skuTemplate.getUpdatedAt());
-
         final Long brandId = spu.getBrandId();
         if (brandId != null) {
             Brand brand = brandCacher.findBrandById(brandId);

@@ -2,15 +2,24 @@ package com.pousheng.middle.web.shop.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import com.pousheng.middle.gd.Location;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
+import com.pousheng.middle.order.enums.AddressBusinessType;
+import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.MemberSportCity;
 import com.pousheng.middle.shop.enums.MemberFromType;
+import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
+import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.shop.dto.MemberCenterAddressDto;
 import com.pousheng.middle.web.user.component.MemberCenterClient;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -35,6 +44,10 @@ public class MemberShopOperationLogic {
 
     @Autowired
     private MemberCenterClient mcClient;
+    @Autowired
+    private DispatchComponent dispatchComponent;
+    @Autowired
+    private WarehouseAddressCacher warehouseAddressCacher;
 
 
     private List<MemberSportCity> findSportCities(String code) {
@@ -167,6 +180,72 @@ public class MemberShopOperationLogic {
         return paging.getData();
     }
 
+
+
+    public AddressGps getAddressGps(Long shopId, String companyId, String storeCode){
+        //1、调用会员中心查询门店地址
+        Response<MemberCenterAddressDto> addressDtoRes =  this.findShopAddress(companyId,storeCode, MemberFromType.SHOP.value());
+        if(!addressDtoRes.isSuccess()){
+            log.error("find shop address by company id:{} code:{} type:{} fail,error:{}",companyId,storeCode,MemberFromType.SHOP.value(),addressDtoRes.getError());
+            return null;
+        }
+
+        MemberCenterAddressDto addressDto = addressDtoRes.getResult();
+        if(Arguments.isNull(addressDto)){
+            log.error("not find shop address by company id:{} code:{} type:{}",companyId,storeCode,MemberFromType.SHOP.value());
+            return null;
+        }
+        if(Strings.isNullOrEmpty(addressDto.getAddress())){
+            log.error("shop address is null for company id:{} code:{} type:{}",companyId,storeCode,MemberFromType.SHOP.value());
+            return null;
+        }
+
+
+        //2、调用高德地图查询地址坐标
+        Optional<Location> locationOp = dispatchComponent.getLocation(addressDto.getAddress());
+        if(!locationOp.isPresent()){
+            log.error("[ADDRESS-LOCATION]:not find shop(id:{}) location by address:{}",shopId,addressDto.getAddress());
+            return null;
+        }
+        Location location = locationOp.get();
+
+        //3、创建门店地址定位信息
+        AddressGps addressGps = new AddressGps();
+        addressGps.setLatitude(location.getLat());
+        addressGps.setLongitude(location.getLon());
+        addressGps.setBusinessId(shopId);
+        addressGps.setBusinessType(AddressBusinessType.SHOP.getValue());
+        addressGps.setDetail(addressDto.getAddress());
+        //省
+
+        log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
+        WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
+        if(Arguments.isNull(province)){
+            return null;
+        }
+        addressGps.setProvinceId(province.getId());
+        addressGps.setProvince(province.getName());
+
+        //市
+        WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
+        if(Arguments.isNull(city)){
+            return null;
+        }
+        addressGps.setCityId(city.getId());
+        addressGps.setCity(city.getName());
+
+        //区
+        WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
+        if(Arguments.isNull(region)){
+            return null;
+        }
+        addressGps.setRegionId(region.getId());
+        addressGps.setRegion(region.getName());
+
+        return addressGps;
+    }
+
+
     /**
      * 服务店铺查询
      *
@@ -211,6 +290,30 @@ public class MemberShopOperationLogic {
                     , criteria, Throwables.getStackTraceAsString(e));
             return Response.fail("find.sport.city.failed");
         }
+    }
+
+    //将会员中心的地址与中台地址做比较，转换为中台的地址
+    private WarehouseAddress transToWarehouseAddress(String code,String name){
+        try {
+            if(Strings.isNullOrEmpty(code)){
+                log.error("[QUERY-MIDDLE-ADDRESS] code is null",code,name);
+                return null;
+            }
+            Long addressId = Long.valueOf(code);
+            WarehouseAddress address = warehouseAddressCacher.findById(addressId);
+            if(Arguments.isNull(address)){
+                log.error("[QUERY-MIDDLE-ADDRESS] by code:{} name:{} not find",code,name);
+                return null;
+            }
+            return address;
+        }catch (ServiceException e){
+            log.error("check is matching warehouse address by code:{} name:{} fail,error:{}",code,name, e.getMessage());
+            return null;
+        }catch (Exception e){
+            log.error("check is matching warehouse address by code:{} name:{} fail,cause:{}",code,name, Throwables.getStackTraceAsString(e));
+            return null;
+        }
+
     }
 
 }

@@ -1,23 +1,26 @@
 package com.pousheng.middle.web.item.batchhandle;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.item.constant.PsItemConstants;
-import com.pousheng.middle.web.utils.export.FileRecord;
-import io.terminus.common.model.PageInfo;
-import io.terminus.common.model.Paging;
+import com.pousheng.middle.item.enums.PsSpuType;
+import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.web.item.component.PushMposItemComponent;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import redis.clients.jedis.Jedis;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.math.BigDecimal;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Component
@@ -26,6 +29,12 @@ public class BatchHandleMposLogic {
 
     @Autowired
     private JedisTemplate jedisTemplate;
+    @Autowired
+    private PsSkuTemplateWriteService psSkuTemplateWriteService;
+    @Autowired
+    private PushMposItemComponent pushMposItemComponent;
+    @Autowired
+    private SkuTemplateReadService skuTemplateReadService;
 
     /**
      * 获取批量打标，取消打标记录
@@ -144,40 +153,96 @@ public class BatchHandleMposLogic {
         }
     }
 
-//    /**
-//     * 查看打标，取消打标异常记录
-//     * @param taskId
-//     * @return
-//     */
-//    public Response<Paging<AbnormalRecord>> getMposAbnormalRecord(String taskId,Integer pageNo,Integer pageSize,String type){
-//        Long userId = UserUtil.getUserId();
-//        int limit = new PageInfo(pageNo,pageSize).getOffset();
-//        String key = "mpos:" + userId + ":abnormal:" + type + ":" + taskId;
-//        try{
-//            long total = jedisTemplate.execute(new JedisTemplate.JedisAction<Long>() {
-//                @Override
-//                public Long action(Jedis jedis) {
-//                    return jedis.llen(key);
-//                }
-//            });
-//            List<AbnormalRecord> list = jedisTemplate.execute(new JedisTemplate.JedisAction<List<AbnormalRecord>>() {
-//                @Override
-//                public List<AbnormalRecord> action(Jedis jedis) {
-//                    List<AbnormalRecord> records = new ArrayList<>();
-//                    jedis.lrange(key,limit,limit + pageSize).forEach(value -> {
-//                        AbnormalRecord record = new AbnormalRecord();
-//                        String[] vals = value.split("~");
-//                        record.setCode(vals[0]);
-//                        record.setReason(vals[1]);
-//                        records.add(record);
-//                    });
-//                    return records;
-//                }
-//            });
-//            return Response.ok(new Paging<>(total,list));
-//        }catch (Exception e){
-//            log.error("fail to get mpos flag record,cause:{}", Throwables.getStackTraceAsString(e));
-//            return Response.fail("fail to get mpos flag record");
-//        }
-//    }
+
+    /**
+     * 打标并设置默认折扣
+     * @param id        商品
+     * @param type      打标/取消打标
+     */
+    public void makeFlagAndSetDiscount(Long id,Integer type){
+        log.info("sku(id:{}) make flag start..",id);
+        Integer discount = 100;
+        Response<SkuTemplate> rExist = skuTemplateReadService.findById(id);
+        if(!rExist.isSuccess()){
+            log.error("sku(id:{}) make flag failed,cause:{}",id,rExist.getError());
+            return ;
+        }
+        SkuTemplate exist = rExist.getResult();
+        Map<String,String> extra = exist.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            extra = Maps.newHashMap();
+        }
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        toUpdate.setType(type);
+        //如果本来不包含折扣，默认设置折扣
+        if(Objects.equals(type,PsSpuType.MPOS.value()) && !extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
+            toUpdate.setExtra(extra);
+            Integer originPrice = 0;
+            if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+                originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+            }
+
+            if(Objects.equals(originPrice,0)){
+                log.error("[PRICE-INVALID]:sku template:(id:{}) price  code:{} invalid",exist.getId(),exist.getSkuCode());
+            }
+
+            toUpdate.setPrice(originPrice);
+        }
+        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate failed error={}",resp.getError());
+        }
+        log.info("sku(id:{}) make flag over..",exist.getId());
+    }
+
+    /**
+     * 设置折扣
+     * @param id        商品id
+     * @param discount  折扣
+     */
+    public void setDiscount(Long id,Integer discount){
+        Response<SkuTemplate> rExist = skuTemplateReadService.findById(id);
+        if(!rExist.isSuccess()){
+            log.error("find sku template by id:{} failed,cause:{}",id,rExist.getError());
+            return ;
+        }
+        SkuTemplate exist = rExist.getResult();
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        Integer originPrice = 0;
+        if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+            originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+        }
+        if(!Objects.isNull(originPrice)){
+            Map<String,String> extra = exist.getExtra();
+            if(CollectionUtils.isEmpty(extra)){
+                extra = Maps.newHashMap();
+            }
+            extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
+            toUpdate.setExtra(extra);
+            toUpdate.setPrice(calculatePrice(discount,originPrice));
+        }else{
+            return ;
+        }
+        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate failed error={}",resp.getError());
+            throw new JsonResponseException(PsItemConstants.ERROR_UPDATE_FAIL);
+        }
+        //同步电商
+        pushMposItemComponent.updatePrice(Lists.newArrayList(exist),toUpdate.getPrice());
+
+    }
+
+
+
+    private static Integer calculatePrice(Integer discount, Integer originPrice){
+        BigDecimal ratio = new BigDecimal("100");  // 百分比的倍率
+        BigDecimal discountDecimal = new BigDecimal(discount);
+        BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
+        return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
+    }
+
 }

@@ -6,6 +6,8 @@ package com.pousheng.middle.item.service;
 
 import io.terminus.common.model.Response;
 
+import java.util.List;
+
 /**
  * dump服务
  * Author:  songrenfei
@@ -22,4 +24,13 @@ public interface SkuTemplateDumpService {
      * @param interval 间隔时间(分钟)
      */
     Response<Boolean> deltaDump(Integer interval);
+
+
+    /**
+     * 批量打标
+     * @param skuTemplateIds skuTemplateId集合
+     * @param type 商品类型
+     * @return 是否dump成功
+     */
+    Response<Boolean> batchDump(List<Long> skuTemplateIds,Integer type);
 }

@@ -46,6 +46,11 @@ public class ExpressCode implements Serializable {
      * 分期乐快递代码
      */
     private String fenqileCode;
+
+    /**
+     *mpos快递代码
+     */
+    private String mposCode;
     /**
      * 恒康快递代码
      */

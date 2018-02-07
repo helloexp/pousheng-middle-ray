@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -18,6 +19,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -94,11 +96,11 @@ public class SyncMposShipmentLogic{
             return Response.fail(updateStatusRes.getError());
         }
         shipment = shipmentReadLogic.findShipmentById(shipment.getId());
-        Map<String,Object> param = this.assembShipmentParam(shipment);
         Shipment update = new Shipment();
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
         try{
+            Map<String,Object> param = this.assembShipmentParam(shipment);
             MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
             if(!res.isSuccess()){
                 log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
@@ -110,9 +112,10 @@ public class SyncMposShipmentLogic{
                 }
                 return Response.fail(res.getError());
             }
-            shipmentExtra.setOutShipmentId(res.getResult());
+            shipmentExtra.setMposShipmentId(res.getResult());
         }catch(Exception e){
             // 同步失败
+            log.error("sync shipment(id:{}) to mpos failed,cause:{}",shipment.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation();
             Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
@@ -147,7 +150,7 @@ public class SyncMposShipmentLogic{
                 if(!response.isSuccess()){
                     Map<String,Object> param1 = Maps.newHashMap();
                     param1.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK);
+                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
                 }
             }
         }
@@ -174,12 +177,12 @@ public class SyncMposShipmentLogic{
             MposPaginationResponse resp = mapper.fromJson(syncMposApi.syncShipmentStatus(param),MposPaginationResponse.class);
             if (!resp.getSuccess()) {
                 log.error("sync mpos shipment status fail,cause:{}",resp.getError());
-                return null;
+                throw new ServiceException(resp.getError());
             }
             return resp.getResult();
         }catch (Exception e) {
             log.error("sync mpos shipment status fail,cause by {}", e.getMessage());
-            return null;
+            return Paging.empty(MposShipmentExtra.class);
         }
     }
 
@@ -194,13 +197,14 @@ public class SyncMposShipmentLogic{
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         param.put("orderId",shopOrder.getOutId());
-        if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
-            Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
-            if(shopResponse.isSuccess()){
-                Shop shop = shopResponse.getResult();
-                param.put("shopOuterId",shop.getOuterId());
-            }
+        Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+        if(!shopResponse.isSuccess()){
+            log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
+            throw new ServiceException("find.shop.not.exists");
         }
+        Shop shop = shopResponse.getResult();
+        param.put("shopOuterId",shop.getOuterId());
+        param.put("businessId",shop.getBusinessId());
         param.put("shopName",shipmentExtra.getWarehouseName());
         param.put("outerShipmentId",shipment.getId());
         param.put("outOrderId",shopOrder.getId());
@@ -216,19 +220,5 @@ public class SyncMposShipmentLogic{
         return param;
     }
 
-//    /**
-//     * 组装发货单发货参数
-//     * @param shipment   发货单
-//     * @return
-//     */
-//    private Map<String,Object> assembShipShipmentParam(Shipment shipment){
-//        Map<String,Object> param = Maps.newHashMap();
-//        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-//        param.put("shipmentId",shipmentExtra.getOutShipmentId());
-//        param.put("shipmentCorpCode",shipmentExtra.getShipmentCorpCode());
-//        param.put("shipmentSerialNo",shipmentExtra.getShipmentSerialNo());
-//        param.put("shipmentDate",shipmentExtra.getShipmentDate());
-//        return param;
-//    }
 
 }

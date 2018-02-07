@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.erp.component.SpuImporter;
@@ -30,6 +31,7 @@ public class MiddlePullMaterialsListener {
 
 
     @Subscribe
+    @AllowConcurrentEvents
     public void doneShipment(OpenClientPullBarCodeEvent event) {
         log.info("try to pull spus from erp ,where skucCode is {}",event.getSkuCode());
 

@@ -51,13 +51,13 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
+        log.info("DISPATCH-ProvinceInnerShopDispatchlink-5  order(id:{}) start...",shopOrder.getId());
 
         //拒绝过的门店
         List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
         context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
 
         //省内的mpos门店,如果没有则进入下个规则
-        //todo 冻结或删除的门店需要过滤掉
         List<AddressGps> addressGpses = shopAddressComponent.findShopAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;
@@ -108,7 +108,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         dispatchComponent.completeShopTab(skuStockInfos,shopSkuCodeQuantityTable);
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单
-        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(skuStockInfos,shopSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(shopShipments)){
@@ -122,8 +122,9 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         }
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address);
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 
         return Boolean.FALSE;

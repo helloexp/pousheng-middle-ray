@@ -58,6 +58,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
+        log.info("DISPATCH-ProvinceInnerWarehouseDispatchLink-3  order(id:{}) start...",shopOrder.getId());
 
         //从上个规则传递过来。
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
@@ -96,18 +97,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         //查询仓代码
-        List<String> stockCodes = Lists.transform(mposWarehouses, new Function<Warehouse, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable Warehouse input) {
-                Map<String, String>  extra = input.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",input.getId());
-                    throw new ServiceException("warehouse.out.code.invalid");
-                }
-                return extra.get("outCode");
-            }
-        });
+        List<String> stockCodes = dispatchComponent.getWarehouseOutCode(mposWarehouses);
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
@@ -122,13 +112,12 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
         //判断是否有整单
 
-        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(skuStockInfos,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Boolean.TRUE;
         }
-
 
 
         //如果只有一个

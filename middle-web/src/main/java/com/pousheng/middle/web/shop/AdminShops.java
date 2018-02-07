@@ -1,20 +1,21 @@
 package com.pousheng.middle.web.shop;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Objects;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
+import com.google.common.base.*;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.dto.ShopPaging;
 import com.pousheng.middle.shop.dto.ShopServerInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
@@ -29,8 +30,10 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.shop.model.Shop;
@@ -79,13 +82,19 @@ public class AdminShops {
     @Autowired
     private EventBus eventBus;
     @Autowired
+    private ShopCacher shopCacher;
+    @Autowired
     private ParanaUserOperationLogic paranaUserOperationLogic;
     @Autowired
     private MposWarehousePusher mposWarehousePusher;
-    @Autowired
-    private OpenShopCacher openShopCacher;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     @RpcConsumer
     private OpenShopWriteService openShopWriteService;
+    @Autowired
+    private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
 
@@ -98,6 +107,18 @@ public class AdminShops {
         }
         return rShop.getResult();
     }
+
+    @ApiOperation("根据门店id调用会员中心查询门店地址信息")
+    @RequestMapping(value = "/address/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public AddressGps findShopAddress(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+        Shop shop = rShop.getResult();
+        return memberShopOperationLogic.getAddressGps(shopId,String.valueOf(shop.getBusinessId()),shop.getOuterId());
+    }
+
 
 
     @ApiOperation("根据用户id查询门店信息")
@@ -172,13 +193,8 @@ public class AdminShops {
         String password = Strings.nullToEmpty(shop.getUserPassword());
         judgePassword(password);
 
-        if(Strings.isNullOrEmpty(shop.getPhone())){
-            log.error("shop phone is null");
-            throw new JsonResponseException("shop.mobile.invalid");
-        }
-
-        //交易门店外码是否正确
-        Shop recoverShop = checkOuterId(shop.getOuterId());
+        //判断是否已创建
+        Shop recoverShop = checkOuterId(shop.getOuterId(),shop.getCompanyId());
 
         //创建门店
         shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
@@ -186,6 +202,7 @@ public class AdminShops {
         shopExtraInfo.setCompanyId(shop.getCompanyId());
         shopExtraInfo.setShopInnerCode(shop.getStoreId());
         shopExtraInfo.setCompanyName(shop.getCompanyName());
+        shopExtraInfo.setEmail(shop.getEmail());
         Map<String,String> extraMap = Maps.newHashMap();
         shop.setExtra(ShopExtraInfo.putExtraInfo(extraMap,shopExtraInfo));
 
@@ -193,19 +210,21 @@ public class AdminShops {
         Long id;
         if(Arguments.isNull(recoverShop)){
             //创建门店用户
-            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(shop.getOuterId(),password);
+            String userNmae = shop.getCompanyId()+"-"+shop.getOuterId();
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.createUcUserForShop(userNmae,password);
             if(!userInfoRes.isSuccess()){
                 log.error("create user(name:{}) fail,error:{}",shop.getOuterId(),userInfoRes.getError());
                 throw new JsonResponseException(userInfoRes.getError());
             }
             //创建门店信息
-            id = createShop(shop, userInfoRes.getResult().getUserId(), shop.getOuterId());
+            id = createShop(shop, userInfoRes.getResult().getUserId(), userNmae);
 
             CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getCompanyId(),shop.getOuterId(),shop.getOuterId());
             eventBus.post(addressEvent);
         }else {
             //更新门店用户
-            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(recoverShop.getUserId(),shop.getUserName(),password);
+            String userNmae = shop.getCompanyId()+"-"+shop.getOuterId();
+            Response<UcUserInfo> userInfoRes = ucUserOperationLogic.updateUcUser(recoverShop.getUserId(),userNmae,password);
             if(!userInfoRes.isSuccess()){
                 log.error("update user(name:{}) fail,error:{}",recoverShop.getOuterId(),userInfoRes.getError());
                 throw new JsonResponseException(userInfoRes.getError());
@@ -229,20 +248,26 @@ public class AdminShops {
         return Collections.singletonMap("id", id);
     }
 
-    private Shop checkOuterId(String outerId){
+    private Shop checkOuterId(String outerId,Long companyId){
         if(Strings.isNullOrEmpty(outerId)){
             log.error("shop outer id is null");
             throw new JsonResponseException("shop.outer.in.invalid");
         }
-        Response<Shop> shopRes = shopReadService.findByOuterId(outerId);
-        if(shopRes.isSuccess()){
-            Shop shop = shopRes.getResult();
-            log.warn("shop(id:{}) ,status:{} exist outer id:{}",shop.getId(),shop.getStatus(),outerId);
-            if(Objects.equal(shop.getStatus(),-1)){
-                log.warn("shop(id:{}),status:{} exist outer id:{} ,so to recover status 1",shop.getId(),shop.getStatus(),outerId);
-                return shop;
+        Response<Optional<Shop>> shopRes = psShopReadService.findByOuterIdAndBusinessId(outerId,companyId);
+        if(!shopRes.isSuccess()){
+           log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopRes.getError());
+            throw new JsonResponseException(shopRes.getError());
+        }else {
+            Optional<Shop> shopOptional = shopRes.getResult();
+            if(shopOptional.isPresent()){
+                Shop shop = shopOptional.get();
+                log.warn("shop(id:{}) ,status:{} exist outer id:{}",shop.getId(),shop.getStatus(),outerId);
+                if(Objects.equal(shop.getStatus(),-1)){
+                    log.warn("shop(id:{}),status:{} exist outer id:{} ,so to recover status 1",shop.getId(),shop.getStatus(),outerId);
+                    return shop;
+                }
+                throw new JsonResponseException("duplicate.shop.outer.id");
             }
-            throw new JsonResponseException("duplicate.shop.outer.id");
         }
 
         return null;
@@ -342,8 +367,12 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
+        LoginTokenInfo token = ucUserOperationLogic.getUserToken(exist.getUserName(),password);
+        if(token.getError() == null){
+            log.error("new password can not same as old password");
+            throw new JsonResponseException("modify.password.fail");
+        }
         judgePassword(password);
-
         //更新用户中心用户信息
         Response<UcUserInfo> ucUserInfoRes = ucUserOperationLogic.updateUcUser(exist.getUserId(), exist.getUserName(), password);
         if (!ucUserInfoRes.isSuccess()) {
@@ -376,6 +405,9 @@ public class AdminShops {
             log.error("update shop extra:{}failed, shopId={}, error={}",existShopExtraInfo, shopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
+
+        //刷新缓存
+        shopCacher.refreshShopById(shopId);
     }
 
 
@@ -470,7 +502,16 @@ public class AdminShops {
 
         ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
 
-        OpenShop openShop = openShopCacher.findById(existShopExtraInfo.getOpenShopId());
+        Response<OpenShop> openShopRes = openShopReadService.findById(existShopExtraInfo.getOpenShopId());
+        if(!openShopRes.isSuccess()){
+            log.error("find open shop by id:{} fail,error:{}",existShopExtraInfo.getOpenShopId(),openShopRes.getError());
+            throw new JsonResponseException(openShopRes.getError());
+        }
+        OpenShop openShop = openShopRes.getResult();
+        if(Arguments.isNull(openShop)){
+            log.error("not find open shop by id:{}",existShopExtraInfo.getOpenShopId());
+            throw new JsonResponseException("open.shop.not.exist");
+        }
         Map<String,String> openExtra = openShop.getExtra();
         if(CollectionUtils.isEmpty(openExtra)){
             openExtra = Maps.newHashMap();
@@ -606,6 +647,39 @@ public class AdminShops {
 
     }
 
+    @ApiOperation("设置邮箱")
+    @RequestMapping(value = "/{shopId}/email",method = RequestMethod.PUT)
+    public void setEmail(@PathVariable Long shopId,@RequestParam String email){
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(exist.getExtra());
+        shopExtraInfo.setEmail(email);
+        Shop update = new Shop();
+        update.setId(exist.getId());
+        update.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),shopExtraInfo));
+        Response<Boolean> response = shopWriteService.update(update);
+        if(!response.isSuccess()){
+            log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
+    }
+
+
+    @RequestMapping(value = "/{outerId}/cache/{businessId}", method = RequestMethod.GET)
+    public Shop testCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+        return middleShopCacher.findByOuterIdAndBusinessId(outerId,businessId);
+    }
+
+    @RequestMapping(value = "/{outerId}/cache/{businessId}/clear", method = RequestMethod.GET)
+    public void testClearCache(@PathVariable String outerId,@PathVariable Long businessId ) {
+         middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
+    }
+
 
 
 
@@ -689,5 +763,8 @@ public class AdminShops {
 
         //店铺内码
         private String storeId;
+
+        //店铺邮箱
+        private String email;
     }
 }

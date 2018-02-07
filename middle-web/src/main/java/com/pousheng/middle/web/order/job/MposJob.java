@@ -30,7 +30,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
@@ -84,24 +83,24 @@ public class MposJob {
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
-    @Value("${open.client.sync.all.order.duration.in.minute:5}")
+    @Value("${open.client.sync.all.order.duration.in.minute:20}")
     private Integer syncAllOrderDurationInMinute;
 
-    @Value("${open.client.sync.order.fetch.size:200}")
+    @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
 
     @Autowired
-    public MposJob(@Value("${order.queue.size: 20000}") int queueSizeOfOrder){
+    public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
         this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
-                new ThreadFactoryBuilder().setNameFormat("mpos-order-fetcher-%d").build(),
+                new ThreadFactoryBuilder().setNameFormat("mpos-shipment-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
     }
 
     /**
-     * 每隔5分钟拉取一次mpos发货单
+     * 每隔3分钟拉取一次mpos发货单
      */
-    @Scheduled(cron = "0 */5 * * * ?")
+    @Scheduled(cron = "0 */3 * * * ?")
     public void syncMposShipment() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -128,21 +127,6 @@ public class MposJob {
             }
         stopwatch.stop();
         log.info("end to sync mpos shipment,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
-    }
-
-    @RequestMapping(value = "api/mpos/sync/shipment/job",method = RequestMethod.GET)
-    public void test(){
-        this.syncMposShipment();
-    }
-
-    @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
-    public void test1(){
-        this.autoCompensateMposFailTask();
-    }
-
-    @RequestMapping(value = "api/mpos/refund/received",method = RequestMethod.GET)
-    public void test2(@RequestParam String outerId){
-        syncMposOrderLogic.notifyMposRefundReceived(outerId);
     }
 
     /**
@@ -182,6 +166,16 @@ public class MposJob {
 
         stopwatch.stop();
         log.info("end to compensate not dispatcher sku to mpos,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
+    }
+
+    @RequestMapping(value = "api/mpos/sync/shipment/job",method = RequestMethod.GET)
+    public void syncMposShipmentBySelf(){
+        this.syncMposShipment();
+    }
+
+    @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
+    public void autoCompensateMposFailTaskBySelf(){
+        this.autoCompensateMposFailTask();
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
@@ -34,6 +35,7 @@ public class AutoSyncHkRefundShipmentListener {
     }
 
     @Subscribe
+    @AllowConcurrentEvents
     public void autoSyncHkRefundShipment(RefundShipmentEvent refundShipmentEvent) {
         Long shipmentId = refundShipmentEvent.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);

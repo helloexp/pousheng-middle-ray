@@ -18,6 +18,8 @@ public class PsShop {
 
     private String id;
 
+    private String storeId;
+
     private String name;
 
     private String code;

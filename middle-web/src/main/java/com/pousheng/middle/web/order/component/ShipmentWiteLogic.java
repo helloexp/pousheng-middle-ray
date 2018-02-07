@@ -125,7 +125,6 @@ public class ShipmentWiteLogic {
     @RpcConsumer
     private PsShopReadService psShopReadService;
 
-
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
     @Value("${pousheng.order.email.confirm.group}")
@@ -1306,8 +1305,7 @@ public class ShipmentWiteLogic {
                 String appKey = openShop.getAppKey();
                 String outerId = appKey.substring(appKey.indexOf("-")+1);
                 String companyId = appKey.substring(0,appKey.indexOf("-"));
-
-                Response<com.google.common.base.Optional<Shop>> optionalRes = psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                Response<Optional<Shop>> optionalRes = psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
                 if(!optionalRes.isSuccess()){
                     log.error("find shop by outer id:{} business id:{} fail,error:{}",outerId,companyId,optionalRes.getError());
                     return;
@@ -1319,8 +1317,6 @@ public class ShipmentWiteLogic {
                     return;
                 }
                 Shop shop = shopOptional.get();
-
-                MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(outerId,1,companyId);
                 shopName = shop.getName();
                 ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                 shopCode = shopExtraInfo.getShopInnerCode();

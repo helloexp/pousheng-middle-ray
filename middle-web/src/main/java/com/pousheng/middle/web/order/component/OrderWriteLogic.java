@@ -561,48 +561,55 @@ public class OrderWriteLogic {
 
 
     public void updateOrderAmount(Long shopId){
-        MiddleOrderCriteria criteria = new MiddleOrderCriteria();
-        criteria.setShopId(shopId);
-        criteria.setStatus(Lists.newArrayList(1,2,3,4,5,6,7,8));
-        Response<Paging<ShopOrder>> r =  middleOrderReadService.pagingShopOrder(criteria);
-        if (r.isSuccess()){
-            Paging<ShopOrder> shopOrderPaging  = r.getResult();
-            List<ShopOrder> shopOrders  = shopOrderPaging.getData();
-            if (!shopOrders.isEmpty()){
-                for (ShopOrder shopOrder:shopOrders){
-                    Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId,shopOrder.getOutId());
-                    if (orderResponse.isSuccess()){
-                        OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
-                        ShopOrder newShopOrder = new ShopOrder();
-                        newShopOrder.setId(shopOrder.getId());
-                        newShopOrder.setFee(openClientFullOrder.getFee());
-                        newShopOrder.setOriginFee(openClientFullOrder.getOriginFee());
-                        newShopOrder.setDiscount(openClientFullOrder.getDiscount());
-                        Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
-                        if (!shopOrderR.isSuccess()){
-                            log.error("shopOrder failed,id is {}",shopOrder.getId());
-                        }else{
-                            List<OpenClientOrderItem> items = openClientFullOrder.getItems();
-                            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
-                            for (SkuOrder skuOrder:skuOrders){
-                                for (OpenClientOrderItem item:items){
-                                    if (Objects.equals(skuOrder.getSkuId(),item.getSkuId())){
-                                        SkuOrder newSkuOrder = new SkuOrder();
-                                        newSkuOrder.setId(skuOrder.getId());
-                                        newSkuOrder.setOriginFee(Long.valueOf(item.getPrice()*item.getQuantity()));
-                                        newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
-                                        newSkuOrder.setFee(newSkuOrder.getOriginFee()-newSkuOrder.getDiscount());
-                                        Response<Boolean>  skuOrderR =  middleOrderWriteService.updateSkuOrder(newSkuOrder);
-                                        if (!skuOrderR.isSuccess()){
-                                            log.error("skuOrder failed,id is",newSkuOrder.getId());
+        int pageNo=1;
+        while(true){
+            MiddleOrderCriteria criteria = new MiddleOrderCriteria();
+            criteria.setShopId(shopId);
+            criteria.setStatus(Lists.newArrayList(1,2,3,4,5,6,7,8));
+            criteria.setPageNo(pageNo);
+            Response<Paging<ShopOrder>> r =  middleOrderReadService.pagingShopOrder(criteria);
+            if (r.isSuccess()){
+                Paging<ShopOrder> shopOrderPaging  = r.getResult();
+                List<ShopOrder> shopOrders  = shopOrderPaging.getData();
+                if (!shopOrders.isEmpty()){
+                    for (ShopOrder shopOrder:shopOrders){
+                        Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId,shopOrder.getOutId());
+                        if (orderResponse.isSuccess()){
+                            OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
+                            ShopOrder newShopOrder = new ShopOrder();
+                            newShopOrder.setId(shopOrder.getId());
+                            newShopOrder.setFee(openClientFullOrder.getFee());
+                            newShopOrder.setOriginFee(openClientFullOrder.getOriginFee());
+                            newShopOrder.setDiscount(openClientFullOrder.getDiscount());
+                            Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
+                            if (!shopOrderR.isSuccess()){
+                                log.error("shopOrder failed,id is {}",shopOrder.getId());
+                            }else{
+                                List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+                                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                                for (SkuOrder skuOrder:skuOrders){
+                                    for (OpenClientOrderItem item:items){
+                                        if (Objects.equals(skuOrder.getSkuId(),item.getSkuId())){
+                                            SkuOrder newSkuOrder = new SkuOrder();
+                                            newSkuOrder.setId(skuOrder.getId());
+                                            newSkuOrder.setOriginFee(Long.valueOf(item.getPrice()*item.getQuantity()));
+                                            newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                                            newSkuOrder.setFee(newSkuOrder.getOriginFee()-newSkuOrder.getDiscount());
+                                            Response<Boolean>  skuOrderR =  middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                                            if (!skuOrderR.isSuccess()){
+                                                log.error("skuOrder failed,id is",newSkuOrder.getId());
+                                            }
                                         }
                                     }
                                 }
                             }
-                        }
 
+                        }
                     }
+                }else{
+                    break;
                 }
+                pageNo++;
             }
         }
     }

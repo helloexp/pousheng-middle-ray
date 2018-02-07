@@ -466,4 +466,15 @@ public class AdminOrderWriter {
             return Response.ok(refunds);
         }
     }
+
+
+    /**
+     * 修复订单折扣数据
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{shopId}/update/amount",method = RequestMethod.PUT)
+    public void updateOrderAmount(@PathVariable("shopId") Long shopId){
+        orderWriteLogic.updateOrderAmount(shopId);
+    }
  }

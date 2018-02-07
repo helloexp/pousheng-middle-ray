@@ -720,10 +720,11 @@ public class Shipments {
         }
 
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
-        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
-        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
         //设置绩效店铺
-        shipmentWiteLogic.defaultPerformanceShop(openShop, shopCode,shopName);
+        shipmentWiteLogic.defaultPerformanceShop(openShop, shopCode,shopName,shopOutCode);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
 

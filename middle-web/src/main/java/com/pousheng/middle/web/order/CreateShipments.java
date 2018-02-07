@@ -131,7 +131,8 @@ public class CreateShipments {
             }
             String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
             String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
-            shipmentWiteLogic.defaultPerformanceShop(openShop,shopCode,shopName);
+            String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
+            shipmentWiteLogic.defaultPerformanceShop(openShop,shopCode,shopName,shopOutCode);
             shipmentPreview.setErpOrderShopCode(shopCode);
             shipmentPreview.setErpOrderShopName(shopName);
             //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码

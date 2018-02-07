@@ -134,6 +134,7 @@ public class SyncRefundLogic {
                 return Response.fail("恒康返回信息:"+head.getMessage());
             }
         } catch (Exception e) {
+            e.printStackTrace();
             log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
             //更新同步状态
             updateRefundSyncFial(refund);

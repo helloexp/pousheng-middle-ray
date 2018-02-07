@@ -112,6 +112,7 @@ CREATE TABLE `pousheng_stock_push_logs`
   KEY `index_stock_push_shop_id` (`shop_id`),
   KEY `index_stock_push_sku_code` (`sku_code`)
 )COMMENT='宝胜库存推送日志';
+
 drop table if exists `pousheng_settlement_pos`;
 CREATE TABLE `pousheng_settlement_pos` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -130,7 +131,7 @@ CREATE TABLE `pousheng_settlement_pos` (
   PRIMARY KEY (`id`),
   KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
   KEY `index_settlement_order_id` (`order_id`)
-)COMMENT ='宝胜结算管理pos单';
+) COMMENT='宝胜结算管理pos单';
 
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`

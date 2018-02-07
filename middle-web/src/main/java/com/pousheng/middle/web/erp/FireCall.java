@@ -6,7 +6,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.component.BrandImporter;
+import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.erp.model.PoushengMaterial;
@@ -77,6 +79,10 @@ public class FireCall {
 
     private final WarehouseImporter warehouseImporter;
 
+    private final MaterialPusher materialPusher;
+
+    private final ErpBrandCacher brandCacher;
+
     private final MposWarehousePusher mposWarehousePusher;
 
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
@@ -99,10 +105,12 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
+                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
+        this.materialPusher = materialPusher;
+        this.brandCacher = brandCacher;
         this.mposWarehousePusher = mposWarehousePusher;
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
         this.warehouseSkuReadService = warehouseSkuReadService;
@@ -200,6 +208,16 @@ public class FireCall {
 
     }
 
+
+
+    @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuStock(@RequestParam Long spuId){
+        //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+        materialPusher.addSpus(Lists.newArrayList(spuId));
+        //调用恒康抓紧给我返回库存信息
+        materialPusher.pushItemForStock(spuId);
+        return "ok";
+    }
 
     @RequestMapping(value="/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String syncMposWarehouse(@RequestParam String companyId,

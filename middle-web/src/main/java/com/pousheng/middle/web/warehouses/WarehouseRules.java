@@ -18,6 +18,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -76,6 +77,9 @@ public class WarehouseRules {
         Set<String> companyCodes = new HashSet<>();
         openShops.forEach(openShop -> {
             String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+            if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+                companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
+            }
             companyCodes.add(companyCode);
         });
         if (companyCodes.size()>1){
@@ -106,6 +110,9 @@ public class WarehouseRules {
         Set<String> companyCodes = new HashSet<>();
         openShops.forEach(openShop -> {
             String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+            if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+                companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
+            }
             companyCodes.add(companyCode);
         });
         if (companyCodes.size()>1){
@@ -204,6 +211,9 @@ public class WarehouseRules {
         WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
         String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+        if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+            companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
+        }
         return companyCode;
     }
 

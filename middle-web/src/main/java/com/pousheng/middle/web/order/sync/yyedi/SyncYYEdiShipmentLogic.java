@@ -369,7 +369,13 @@ public class SyncYYEdiShipmentLogic {
         }
         shipmentInfo.setFreightPay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
         //渠道
-        shipmentInfo.setChannel(shopOrder.getOutFrom());
+        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        String isAssignShop = shopOrderExtra.get("isAssignShop");
+        if (!Objects.isNull(isAssignShop)){
+            shipmentInfo.setChannel("mpos");
+        }else{
+            shipmentInfo.setChannel(shopOrder.getOutFrom());
+        }
         //获取发货单中对应的sku列表
         //积分
         int integral = 0;

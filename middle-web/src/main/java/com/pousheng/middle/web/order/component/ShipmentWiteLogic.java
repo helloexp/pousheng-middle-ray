@@ -2,7 +2,8 @@ package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Throwables;
+import com.google.common.base.*;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -19,6 +20,7 @@ import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
@@ -55,6 +57,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -116,6 +119,8 @@ public class ShipmentWiteLogic {
     private ShopReadService shopReadService;
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @RpcConsumer
+    private PsShopReadService psShopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -597,10 +602,11 @@ public class ShipmentWiteLogic {
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         log.info("auto create shipment,step seven");
-        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
-        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
         //绩效店铺为空，默认当前店铺为绩效店铺
-        this.defaultPerformanceShop(openShop, shopCode,shopName);
+        this.defaultPerformanceShop(openShop, shopCode,shopName,shopOutCode);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -663,8 +669,9 @@ public class ShipmentWiteLogic {
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
         //绩效店铺为空，默认当前店铺为绩效店铺
-        this.defaultPerformanceShop(openShop, shopCode,shopName);
+        this.defaultPerformanceShop(openShop, shopCode,shopName,shopOutCode);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -1287,15 +1294,30 @@ public class ShipmentWiteLogic {
      * @param shopCode
      * @param shopName
      */
-    public void defaultPerformanceShop(OpenShop openShop,String shopCode,String shopName){
+    public void defaultPerformanceShop(OpenShop openShop,String shopCode,String shopName,String shopOutCode){
         if(Arguments.isNull(shopCode)){
             try{
                 String appKey = openShop.getAppKey();
                 String outerId = appKey.substring(appKey.indexOf("-")+1);
                 String companyId = appKey.substring(0,appKey.indexOf("-"));
-                MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(outerId,1,companyId);
-                shopName = memberShop.getStoreName();
-                shopCode = memberShop.getId();
+
+                Response<Optional<Shop>> optionalRes = psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                if(!optionalRes.isSuccess()){
+                    log.error("find shop by outer id:{} business id:{} fail,error:{}",outerId,companyId,optionalRes.getError());
+                    return;
+                }
+
+                Optional<Shop> shopOptional = optionalRes.getResult();
+                if(!shopOptional.isPresent()){
+                    log.error("not find shop by outer id:{} business id:{} ",outerId,companyId);
+                    return;
+                }
+                Shop shop = shopOptional.get();
+
+                shopName = shop.getName();
+                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                shopCode = shopExtraInfo.getShopInnerCode();
+                shopOutCode = shop.getOuterId();
             }catch (Exception e){
                 log.error("find member shop(openId:{}) failed,cause:{}",openShop.getId(),Throwables.getStackTraceAsString(e));
             }

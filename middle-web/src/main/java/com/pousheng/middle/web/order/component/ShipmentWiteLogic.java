@@ -6,17 +6,22 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
+import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.ShipmentAmount;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.order.service.ShipmentAmountWriteService;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -112,6 +117,8 @@ public class ShipmentWiteLogic {
     private MsgService msgService;
     @Autowired
     private ShopReadService shopReadService;
+    @Autowired
+    private ShipmentAmountWriteService shipmentAmountWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -1271,5 +1278,45 @@ public class ShipmentWiteLogic {
            }
         });
         return skuOrdersFilter;
+    }
+
+    /**
+     *
+     * @param shipmentId
+     */
+    public void shipmentAmountOrigin(Long shipmentId){
+        //获取发货单详情
+        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipmentId);
+        //获取发货单信息
+        SycHkShipmentOrder tradeOrder = syncShipmentLogic.getSycHkShipmentOrder(shipmentDetail.getShipment(), shipmentDetail);
+        List<SycHkShipmentItem> items =  tradeOrder.getItems();
+        for (SycHkShipmentItem item:items){
+            try {
+                ShipmentAmount shipmentAmount = new ShipmentAmount();
+                shipmentAmount.setBuyerNick(tradeOrder.getBuyerNick());
+                shipmentAmount.setOrderNo(tradeOrder.getOrderNo());
+                shipmentAmount.setOrderMon(tradeOrder.getOrderMon());
+                shipmentAmount.setFeeMon(tradeOrder.getFeeMon());
+                shipmentAmount.setRealMon(tradeOrder.getRealMon());
+                shipmentAmount.setShopId(tradeOrder.getShopId());
+                shipmentAmount.setPerformanceShopId(tradeOrder.getPerformanceShopId());
+                shipmentAmount.setStockId(tradeOrder.getStockId());
+                shipmentAmount.setOnlineType(tradeOrder.getOnlineType());
+                shipmentAmount.setOnlineOrderNo(item.getOnlineOrderNo());
+                shipmentAmount.setOrderSubNo(item.getOrderSubNo());
+                shipmentAmount.setBarCode(item.getBarcode());
+                shipmentAmount.setNum(String.valueOf(item.getNum()));
+                shipmentAmount.setPerferentialMon(item.getPreferentialMon());
+                shipmentAmount.setSalePrice(item.getSalePrice());
+                shipmentAmount.setTotalPrice(item.getTotalPrice());
+                Response<Long> r =   shipmentAmountWriteService.create(shipmentAmount);
+                if (!r.isSuccess()){
+                    log.error("create shipment amount failed,shipment id is {},barCode is {}",shipmentId,item.getBarcode());
+                }
+
+            }catch (Exception e){
+                log.error("create shipment amount failed,shipment id is {},barCode is {},caused by {}",shipmentId,item.getBarcode(),e.getMessage());
+            }
+        }
     }
 }

@@ -489,7 +489,7 @@ public class AdminShops {
      * @param shopId 店铺id
      * @param shopServerInfo 服务信息
      */
-    @ApiOperation("更新单个门店快递信息")
+    @ApiOperation("更新单个门店服务信息")
     @RequestMapping(value = "/{shopId}/server/info", method = RequestMethod.PUT)
     public void updateShopServerInfo(@PathVariable Long shopId, @RequestBody ShopServerInfo shopServerInfo) {
 
@@ -521,27 +521,24 @@ public class AdminShops {
         if(Arguments.isNull(toUpdateServerInfo)){
             toUpdateServerInfo = new ShopServerInfo();
         }
-        if(Arguments.notNull(shopServerInfo.getReturnWarehouseId())){
-            toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
-            toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
-            toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
+        toUpdateServerInfo.setReturnWarehouseCode(shopServerInfo.getReturnWarehouseCode());
+        toUpdateServerInfo.setReturnWarehouseId(shopServerInfo.getReturnWarehouseId());
+        toUpdateServerInfo.setReturnWarehouseName(shopServerInfo.getReturnWarehouseName());
 
-            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId().toString());
-            openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
-            openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
-        }
-        if(Arguments.notNull(shopServerInfo.getVirtualShopCode())){
-            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
-            toUpdateServerInfo.setVirtualShopName(shopServerInfo.getVirtualShopName());
-            toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
-            toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
-            toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+        openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,shopServerInfo.getReturnWarehouseId()!=null?shopServerInfo.getReturnWarehouseId().toString():null);
+        openExtra.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,shopServerInfo.getReturnWarehouseCode());
+        openExtra.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,shopServerInfo.getReturnWarehouseName());
 
-            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
-            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());
-            openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,shopServerInfo.getVirtualShopCode());
-            openExtra.put(TradeConstants.HK_COMPANY_CODE,shopServerInfo.getCompanyId());
-        }
+        toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+        toUpdateServerInfo.setVirtualShopName(shopServerInfo.getVirtualShopName());
+        toUpdateServerInfo.setVirtualShopCode(shopServerInfo.getVirtualShopCode());
+        toUpdateServerInfo.setVirtualShopInnerCode(shopServerInfo.getVirtualShopInnerCode());
+        toUpdateServerInfo.setCompanyId(shopServerInfo.getCompanyId());
+
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE,shopServerInfo.getVirtualShopInnerCode());
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME,shopServerInfo.getVirtualShopName());
+        openExtra.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,shopServerInfo.getVirtualShopCode());
+        openExtra.put(TradeConstants.HK_COMPANY_CODE,shopServerInfo.getCompanyId());
 
 
         Shop toUpdate = new Shop();

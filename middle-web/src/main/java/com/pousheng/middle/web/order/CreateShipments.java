@@ -10,6 +10,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -46,6 +47,8 @@ public class CreateShipments {
     private WarehouseReadService warehouseReadService;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
 
     /**
@@ -125,6 +128,7 @@ public class CreateShipments {
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
             String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
             String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+            shipmentWiteLogic.defaultPerformanceShop(openShop,shopCode,shopName);
             shipmentPreview.setErpOrderShopCode(shopCode);
             shipmentPreview.setErpOrderShopName(shopName);
             //如果订单extra表中存在绩效店铺编码，直接去shopOrderExtra中的绩效店铺编码

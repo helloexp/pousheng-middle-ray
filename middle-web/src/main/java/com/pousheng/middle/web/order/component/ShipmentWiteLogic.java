@@ -17,6 +17,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -26,6 +27,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -112,6 +114,8 @@ public class ShipmentWiteLogic {
     private MsgService msgService;
     @Autowired
     private ShopReadService shopReadService;
+    @Autowired
+    private MemberShopOperationLogic memberShopOperationLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -595,6 +599,8 @@ public class ShipmentWiteLogic {
         log.info("auto create shipment,step seven");
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        //绩效店铺为空，默认当前店铺为绩效店铺
+        this.defaultPerformanceShop(openShop, shopCode,shopName);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -657,6 +663,8 @@ public class ShipmentWiteLogic {
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        //绩效店铺为空，默认当前店铺为绩效店铺
+        this.defaultPerformanceShop(openShop, shopCode,shopName);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -1271,5 +1279,26 @@ public class ShipmentWiteLogic {
            }
         });
         return skuOrdersFilter;
+    }
+
+    /**
+     * 店铺没有设置虚拟店，默认为当前店铺
+     * @param openShop
+     * @param shopCode
+     * @param shopName
+     */
+    public void defaultPerformanceShop(OpenShop openShop,String shopCode,String shopName){
+        if(Arguments.isNull(shopCode)){
+            try{
+                String appKey = openShop.getAppKey();
+                String outerId = appKey.substring(appKey.indexOf("-")+1);
+                String companyId = appKey.substring(0,appKey.indexOf("-"));
+                MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(outerId,1,companyId);
+                shopName = memberShop.getStoreName();
+                shopCode = memberShop.getId();
+            }catch (Exception e){
+                log.error("find member shop(openId:{}) failed,cause:{}",openShop.getId(),Throwables.getStackTraceAsString(e));
+            }
+        }
     }
 }

@@ -18,6 +18,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
@@ -485,9 +486,12 @@ public class OrderReadLogic {
             log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
             throw new JsonResponseException("find.openShop.failed");
         }
+        OpenShop openShop = response.getResult();
         //获取openShop表中维护的账套
-        String comanyCode = this.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,response.getResult());
-
+        String comanyCode = this.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
+        if(Arguments.isNull(comanyCode) && openShop.getAppKey().contains("-")){
+            comanyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
+        }
         Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
         if(!warehouseRes.isSuccess()){
             log.error("find warehouse by id:{} fail,error:{}",warehouseId,warehouseRes.getError());

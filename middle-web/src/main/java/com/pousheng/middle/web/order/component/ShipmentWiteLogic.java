@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -23,6 +24,7 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.ShipmentAmountWriteService;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
@@ -31,6 +33,7 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -124,6 +127,10 @@ public class ShipmentWiteLogic {
     private OrderShipmentReadService orderShipmentReadService;
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
+    @Autowired
+    private MemberShopOperationLogic memberShopOperationLogic;
+    @RpcConsumer
+    private PsShopReadService psShopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -605,8 +612,11 @@ public class ShipmentWiteLogic {
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         log.info("auto create shipment,step seven");
-        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
-        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
+        String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
+        //绩效店铺为空，默认当前店铺为绩效店铺
+        this.defaultPerformanceShop(openShop, shopCode,shopName,shopOutCode);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -669,6 +679,9 @@ public class ShipmentWiteLogic {
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
         String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME, openShop);
+        String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);
+        //绩效店铺为空，默认当前店铺为绩效店铺
+        this.defaultPerformanceShop(openShop, shopCode,shopName,shopOutCode);
         shipmentExtra.setErpOrderShopCode(shopCode);
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
@@ -1289,9 +1302,9 @@ public class ShipmentWiteLogic {
      *
      * @param shopId
      */
-    public void shipmentAmountOrigin(Long shopId){
+    public void shipmentAmountOrigin(Long shopId) {
         int pageNo = 1;
-        while(true){
+        while (true) {
             OrderShipmentCriteria shipmentCriteria = new OrderShipmentCriteria();
             shipmentCriteria.setShopId(shopId);
             shipmentCriteria.setPageNo(pageNo);
@@ -1301,25 +1314,25 @@ public class ShipmentWiteLogic {
                 throw new JsonResponseException(response.getError());
             }
             List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
-            if (shipmentPagingInfos.isEmpty()){
-                log.info("all shipments done pageNo is {}",pageNo);
+            if (shipmentPagingInfos.isEmpty()) {
+                log.info("all shipments done pageNo is {}", pageNo);
                 break;
             }
-            for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
-                Shipment shipment  = shipmentPagingInfo.getShipment();
-                if (shipment.getStatus()<0){
+            for (ShipmentPagingInfo shipmentPagingInfo : shipmentPagingInfos) {
+                Shipment shipment = shipmentPagingInfo.getShipment();
+                if (shipment.getStatus() < 0) {
                     log.info("shipment status <0");
                     continue;
                 }
-                if (!Objects.equals(shipment.getType(),1)){
+                if (!Objects.equals(shipment.getType(), 1)) {
                     continue;
                 }
                 //获取发货单详情
                 ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
                 //获取发货单信息
                 SycHkShipmentOrder tradeOrder = syncShipmentLogic.getSycHkShipmentOrder(shipmentDetail.getShipment(), shipmentDetail);
-                List<SycHkShipmentItem> items =  tradeOrder.getItems();
-                for (SycHkShipmentItem item:items){
+                List<SycHkShipmentItem> items = tradeOrder.getItems();
+                for (SycHkShipmentItem item : items) {
                     try {
                         ShipmentAmount shipmentAmount = new ShipmentAmount();
                         shipmentAmount.setOrderNo(tradeOrder.getOrderNo());
@@ -1338,28 +1351,64 @@ public class ShipmentWiteLogic {
                         shipmentAmount.setSalePrice(item.getSalePrice());
                         shipmentAmount.setTotalPrice(item.getTotalPrice());
                         shipmentAmount.setHkOrderNo(shipmentDetail.getShipmentExtra().getOutShipmentId());
-                        try{
+                        try {
                             Response<PoushengSettlementPos> sR = poushengSettlementPosReadService.findByShipmentId(shipment.getId());
-                            if(!sR.isSuccess()){
+                            if (!sR.isSuccess()) {
                                 log.error("find pos failed");
                             }
                             PoushengSettlementPos poushengSettlementPos = sR.getResult();
                             shipmentAmount.setPosNo(poushengSettlementPos.getPosSerialNo());
-                        }catch (Exception e){
-                            log.error("find.pos.failed,caused by {}",e.getMessage());
+                        } catch (Exception e) {
+                            log.error("find.pos.failed,caused by {}", e.getMessage());
                         }
-                        Response<Long> r =   shipmentAmountWriteService.create(shipmentAmount);
-                        if (!r.isSuccess()){
-                            log.error("create shipment amount failed,shipment id is {},barCode is {}",shipment.getId(),item.getBarcode());
+                        Response<Long> r = shipmentAmountWriteService.create(shipmentAmount);
+                        if (!r.isSuccess()) {
+                            log.error("create shipment amount failed,shipment id is {},barCode is {}", shipment.getId(), item.getBarcode());
                         }
 
-                    }catch (Exception e){
-                        log.error("create shipment amount failed,shipment id is {},barCode is {},caused by {}",shipment.getId(),item.getBarcode(),e.getMessage());
+                    } catch (Exception e) {
+                        log.error("create shipment amount failed,shipment id is {},barCode is {},caused by {}", shipment.getId(), item.getBarcode(), e.getMessage());
                     }
                 }
             }
             pageNo++;
         }
 
+    }
+
+    /**
+     * 店铺没有设置虚拟店，默认为当前店铺
+     * @param openShop
+     * @param shopCode
+     * @param shopName
+     */
+    public void defaultPerformanceShop(OpenShop openShop,String shopCode,String shopName,String shopOutCode){
+        if(Arguments.isNull(shopCode)){
+            try{
+                String appKey = openShop.getAppKey();
+                String outerId = appKey.substring(appKey.indexOf("-")+1);
+                String companyId = appKey.substring(0,appKey.indexOf("-"));
+
+                Response<Optional<Shop>> optionalRes = psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                if(!optionalRes.isSuccess()){
+                    log.error("find shop by outer id:{} business id:{} fail,error:{}",outerId,companyId,optionalRes.getError());
+                    return;
+                }
+
+                Optional<Shop> shopOptional = optionalRes.getResult();
+                if(!shopOptional.isPresent()){
+                    log.error("not find shop by outer id:{} business id:{} ",outerId,companyId);
+                    return;
+                }
+                Shop shop = shopOptional.get();
+
+                shopName = shop.getName();
+                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                shopCode = shopExtraInfo.getShopInnerCode();
+                shopOutCode = shop.getOuterId();
+            }catch (Exception e){
+                log.error("find member shop(openId:{}) failed,cause:{}",openShop.getId(),Throwables.getStackTraceAsString(e));
+            }
+        }
     }
 }

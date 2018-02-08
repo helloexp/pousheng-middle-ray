@@ -180,6 +180,29 @@ public class MemberShopOperationLogic {
         return paging.getData();
     }
 
+    /**
+     * 查询店铺信息
+     * @param code  外码
+     * @param type  类型
+     * @param companyId 公司ID
+     */
+    public MemberShop findShopByCodeAndType(String code,Integer type,String companyId) {
+        Map<String, String> criteria = new HashMap<>();
+        criteria.put("storeCode", code);
+        Integer pageNo = 1;
+        criteria.put("pageNo", pageNo+"");
+        criteria.put("status", 1+"");
+        criteria.put("types", type+"");
+        criteria.put("companyId",companyId);
+        Response<Paging<MemberShop>> resp = findSrvShop(criteria);
+        if (!resp.isSuccess()) {
+            log.error("find shop failed, criteria = {}, cause: {}", criteria, resp.getError());
+            throw new JsonResponseException(resp.getError());
+        }
+        Paging<MemberShop> paging = resp.getResult();
+        return paging.getData().get(0);
+    }
+
 
 
     public AddressGps getAddressGps(Long shopId, String companyId, String storeCode){

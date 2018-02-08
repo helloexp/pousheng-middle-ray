@@ -46,7 +46,7 @@
         #{orderNo}, #{buyerNick}, #{orderMon}, #{feeMon},#{realMon}, #{shopId}, #{performanceShopId}, #{stockId},#{onlineType}, #{onlineOrderNo}, #{orderSubNo}, #{barCode}, #{num}, #{perferentialMon}, #{salePrice},#{totalPrice},#{hkOrderNo},#{posNo},now(), now()
     </sql>
 
-    <insert id="create" parameterType="OperationLog" keyProperty="id" useGeneratedKeys="true">
+    <insert id="create" parameterType="ShipmentAmount" keyProperty="id" useGeneratedKeys="true">
         INSERT INTO
         <include refid="tb" />
         (<include refid="cols_exclude_id" />)

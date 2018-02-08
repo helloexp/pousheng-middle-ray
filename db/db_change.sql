@@ -228,8 +228,41 @@ CREATE TABLE `shipment_amount` (
   `num` VARCHAR(50) COMMENT '数量',
   `preferential_mon` VARCHAR(50) COMMENT '中台折扣',
   `sale_price` VARCHAR(50) COMMENT '销售单价',
-  `total_price` VARCHAR(50) COMMENT '总价'
+  `total_price` VARCHAR(50) COMMENT '总价',
+  `hk_order_no` VARCHAR(50) COMMENT '恒康单号',
+  `pos_no` VARCHAR(50) COMMENT 'pos单号',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
-)  COMMENT='外部订单处理失败补偿任务表';
+)  COMMENT='发货单同步恒康数据表';
+
+
+drop table if exists `refund_amount`;
+CREATE TABLE `refund_amount` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `refund_no`VARCHAR(50) COMMENT '中台退货单号',
+  `order_no` VARCHAR(50) COMMENT '中台发货单号',
+  `shop_id` VARCHAR(50) COMMENT '下单店铺代码',
+  `performance_shop_id` VARCHAR(50) COMMENT '绩效店铺代码',
+  `stock_id` VARCHAR(50) COMMENT '仓库编码',
+  `refund_order_amount` VARCHAR(50) COMMENT '页面上的退款金额',
+  `type` VARCHAR(50) COMMENT '售后类型',
+  `total_refund` VARCHAR(50) COMMENT '总的退款金额',
+  `online_order_no` VARCHAR(50) COMMENT '来源单号',
+  `hk_order_no` VARCHAR(50) COMMENT '恒康单号',
+  `pos_no` VARCHAR(50) COMMENT 'pos单号',
+  `refund_sub_no` VARCHAR(50) COMMENT '中台退货子订单号',
+  `order_sub_no` VARCHAR(50) COMMENT '原销售子订单号',
+  `bar_code` VARCHAR(50) COMMENT '货品条码',
+  `item_num` VARCHAR(50) COMMENT '售后数量',
+  `sale_price` VARCHAR(50) COMMENT '销售价格',
+  `refund_amount` VARCHAR(50) COMMENT '商品总进价',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
+
+
+
+
+

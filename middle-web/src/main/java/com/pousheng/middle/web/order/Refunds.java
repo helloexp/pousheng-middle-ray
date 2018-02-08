@@ -666,5 +666,23 @@ public class Refunds {
 
 
 
+    /**
+     * 修复金额之前的数据或者之后的数据
+     * @param shopId
+     */
+    @RequestMapping(value = "api/refund/{shopId}/update/amount/origin",method = RequestMethod.PUT)
+    public void refundAmountOrigin(@PathVariable(value = "shopId")Long shopId) {
+        refundWriteLogic.refundAmountOrigin(shopId);
+    }
+
+
+    /**
+     * 修复金额之前的数据或者之后的数据
+     * @param shopId
+     */
+    @RequestMapping(value = "api/refund/{shopId}/update/items",method = RequestMethod.PUT)
+    public void refundAmountItems(@PathVariable(value = "shopId")Long shopId) {
+        refundWriteLogic.updateRefundInfos(shopId);
+    }
 
 }

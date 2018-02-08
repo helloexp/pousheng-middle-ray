@@ -1322,7 +1322,6 @@ public class ShipmentWiteLogic {
                 for (SycHkShipmentItem item:items){
                     try {
                         ShipmentAmount shipmentAmount = new ShipmentAmount();
-                        //shipmentAmount.setBuyerNick(tradeOrder.getBuyerNick());
                         shipmentAmount.setOrderNo(tradeOrder.getOrderNo());
                         shipmentAmount.setOrderMon(tradeOrder.getOrderMon());
                         shipmentAmount.setFeeMon(tradeOrder.getFeeMon());

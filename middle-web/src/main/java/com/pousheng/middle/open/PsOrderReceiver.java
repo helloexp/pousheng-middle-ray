@@ -308,7 +308,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                     throw new ServiceException("assign.shop.not.exst");
                 }
                 Shop shop = shopOptional.get();
-                tempExtra.put(TradeConstants.ASSIGN_SHOP_ID,shop.getId().toString());
+                tempExtra.put(TradeConstants.ASSIGN_SHOP_ID, shop.getId().toString());
                 tempExtra.put(TradeConstants.IS_SINCE,richSkusByShop.getExtra().get(TradeConstants.IS_SINCE));
             }
             richSkusByShop.setExtra(tempExtra);

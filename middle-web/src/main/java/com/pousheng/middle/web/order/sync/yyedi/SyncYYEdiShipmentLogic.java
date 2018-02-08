@@ -16,6 +16,10 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HkPayType;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.shop.dto.ShopExpresssCompany;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
@@ -26,16 +30,21 @@ import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentItem;
+import com.sun.javafx.collections.MappingChange;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +89,10 @@ public class SyncYYEdiShipmentLogic {
     private SkuTemplateReadService skuTemplateReadService;
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @Autowired
+    private PsShopReadService psShopReadService;
+    @Autowired
+    private OpenShopReadService openShopReadService;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -281,10 +294,6 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setRefundChangeType(shipmentType);
         //付款时间
         shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
-        //客户供应商快递代码
-        shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
-        //客户供应商快递公司名称
-        shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
         //快递方式
         shipmentInfo.setExpressType("Exress");
         //是否开发票
@@ -373,8 +382,45 @@ public class SyncYYEdiShipmentLogic {
         String isAssignShop = shopOrderExtra.get("isAssignShop");
         if (!Objects.isNull(isAssignShop)){
             shipmentInfo.setChannel("mpos");
+            Response<OpenShop> r = openShopReadService.findById(shipment.getShopId());
+            Map<String,String> openShopExtra = r.getResult().getExtra();
+            String shopOutCode =openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
+            String companyCode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
+            Response<com.google.common.base.Optional<Shop>> shopOptionalResponse =  psShopReadService.findByOuterIdAndBusinessId(shopOutCode,Long.valueOf(companyCode));
+            if (!shopOptionalResponse.isSuccess()){
+                log.error("find parana shop failed,shopOutCode is {},companyCode is {},caused by {}",shopOutCode,companyCode,shopOptionalResponse.getError());
+                //客户供应商快递代码
+                shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+                //客户供应商快递公司名称
+                shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
+            }else{
+                com.google.common.base.Optional<Shop> shopOptional = shopOptionalResponse.getResult();
+                if (shopOptional.isPresent()){
+                    Shop shop = shopOptional.get();
+                    ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                    if (existShopExtraInfo != null) {
+                        if(!CollectionUtils.isEmpty(existShopExtraInfo.getExpresssCompanyList())){
+                            ShopExpresssCompany shopExpresssCompany = existShopExtraInfo.getExpresssCompanyList().get(0);
+                            ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shopExpresssCompany.getCode());
+                            //客户供应商快递代码
+                            shipmentInfo.setCustomerCode(expressCode.getHkCode());
+                            //客户供应商快递公司名称
+                            shipmentInfo.setFreightCompany(expressCode.getHkCode());
+                        }
+                    }
+                }else{
+                    //客户供应商快递代码
+                    shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+                    //客户供应商快递公司名称
+                    shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
+                }
+            }
         }else{
             shipmentInfo.setChannel(shopOrder.getOutFrom());
+            //客户供应商快递代码
+            shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+            //客户供应商快递公司名称
+            shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
         }
         //获取发货单中对应的sku列表
         //积分

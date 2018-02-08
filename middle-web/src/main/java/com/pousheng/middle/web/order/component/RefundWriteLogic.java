@@ -393,7 +393,10 @@ public class RefundWriteLogic {
             completeSkuAttributeInfo(currentRefundItems);
         }
         //更新金额
-        this.calcRefundItemFees(currentRefundItems,submitRefundInfo.getFee());
+        if (!Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value()))
+        {
+            this.calcRefundItemFees(currentRefundItems,submitRefundInfo.getFee());
+        }
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(currentRefundItems));
 
         //判断换货货商品及数量是否有变化

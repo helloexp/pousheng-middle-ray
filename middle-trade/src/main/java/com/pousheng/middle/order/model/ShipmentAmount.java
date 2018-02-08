@@ -28,6 +28,8 @@ public class ShipmentAmount implements java.io.Serializable{
     private String barCode;
     private String num;
     private String perferentialMon;
+    private String hkOrderNo;
+    private String posNo;
     private String salePrice;
     private String totalPrice;
     private Date createdAt;

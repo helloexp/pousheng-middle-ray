@@ -1190,57 +1190,71 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{shopId}/update/amount",method = RequestMethod.PUT)
     public void updateShipmentsAmount(@PathVariable(value = "shopId")Long shopId){
-        OrderShipmentCriteria shipmentCriteria = new OrderShipmentCriteria();
-        shipmentCriteria.setShopId(shopId);
-        Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(shipmentCriteria);
-        if (!response.isSuccess()) {
-            log.error("find shipment by criteria:{} fail,error:{}", shipmentCriteria, response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
-        for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos) {
-            Shipment shipment  = shipmentPagingInfo.getShipment();
-            if (shipment.getStatus()<0){
-                log.info("shipment status <0");
-                continue;
+        int pageNo= 0;
+        while(true){
+            OrderShipmentCriteria shipmentCriteria = new OrderShipmentCriteria();
+            shipmentCriteria.setShopId(shopId);
+            log.info("pageNo is {}",pageNo);
+            shipmentCriteria.setPageNo(pageNo);
+            Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(shipmentCriteria);
+            if (!response.isSuccess()) {
+                log.error("find shipment by criteria:{} fail,error:{}", shipmentCriteria, response.getError());
+                throw new JsonResponseException(response.getError());
             }
-            Map<Long,Integer> skuInfos = shipment.getSkuInfos();
-            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            List<Long> skuOrderIds = skuInfos.keySet().stream().collect(Collectors.toList());
-           List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-            //运费
-            Long shipmentShipFee = shipmentExtra.getShipmentShipFee();
-            //运费优惠
-            Long shipmentShipDiscountFee = shipmentExtra.getShipmentShipDiscountFee();
-            List<ShipmentItem> newShipmentItems =  shipmentWiteLogic.makeShipmentItems(skuOrders,skuInfos);
-            //发货单商品金额
-            Long shipmentItemFee = 0L;
-            //发货单总的优惠
-            Long shipmentDiscountFee = 0L;
-            //发货单总的净价
-            Long shipmentTotalFee = 0L;
-            for (ShipmentItem shipmentItem : shipmentItems) {
-                shipmentItemFee = shipmentItem.getSkuPrice() * shipmentItem.getQuantity() + shipmentItemFee;
-                shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
-                shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
+            List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
+            if (shipmentPagingInfos.isEmpty()){
+                break;
             }
-            Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
+            for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos) {
+                try{
 
-            shipmentExtra.setShipmentItemFee(shipmentItemFee);
-            //发货单运费金额
-            shipmentExtra.setShipmentShipFee(shipmentShipFee);
-            //发货单优惠金额
-            shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
-            //发货单总的净价
-            shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
-            shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
-            shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
-            Map<String, String> extraMap = shipment.getExtra();
-            extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
-            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
-            shipment.setExtra(extraMap);
-            shipmentWiteLogic.update(shipment);
+                    Shipment shipment  = shipmentPagingInfo.getShipment();
+                    if (shipment.getStatus()<0){
+                        log.info("shipment status <0");
+                        continue;
+                    }
+                    Map<Long,Integer> skuInfos = shipment.getSkuInfos();
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                    List<Long> skuOrderIds = skuInfos.keySet().stream().collect(Collectors.toList());
+                    log.info("skuOrderIds is {}",skuOrderIds);
+                    List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                    //运费
+                    Long shipmentShipFee = shipmentExtra.getShipmentShipFee();
+                    //运费优惠
+                    Long shipmentShipDiscountFee = shipmentExtra.getShipmentShipDiscountFee();
+                    List<ShipmentItem> newShipmentItems =  shipmentWiteLogic.makeShipmentItems(skuOrders,skuInfos);
+                    //发货单商品金额
+                    Long shipmentItemFee = 0L;
+                    //发货单总的优惠
+                    Long shipmentDiscountFee = 0L;
+                    //发货单总的净价
+                    Long shipmentTotalFee = 0L;
+                    for (ShipmentItem shipmentItem : newShipmentItems) {
+                        shipmentItemFee = shipmentItem.getSkuPrice() * shipmentItem.getQuantity() + shipmentItemFee;
+                        shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
+                        shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
+                    }
+                    Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
+
+                    shipmentExtra.setShipmentItemFee(shipmentItemFee);
+                    //发货单运费金额
+                    shipmentExtra.setShipmentShipFee(shipmentShipFee);
+                    //发货单优惠金额
+                    shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
+                    //发货单总的净价
+                    shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
+                    shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
+                    shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
+                    Map<String, String> extraMap = shipment.getExtra();
+                    extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(newShipmentItems));
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+                    shipment.setExtra(extraMap);
+                    shipmentWiteLogic.update(shipment);
+                }catch (Exception e){
+
+                }
+            }
+            pageNo++;
         }
     }
 

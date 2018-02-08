@@ -567,6 +567,7 @@ public class OrderWriteLogic {
             criteria.setShopId(shopId);
             criteria.setStatus(Lists.newArrayList(1,2,3,4,5,6,7,8));
             criteria.setPageNo(pageNo);
+            log.info("pageNo i=========s {}",pageNo);
             Response<Paging<ShopOrder>> r =  middleOrderReadService.pagingShopOrder(criteria);
             if (r.isSuccess()){
                 Paging<ShopOrder> shopOrderPaging  = r.getResult();
@@ -589,7 +590,8 @@ public class OrderWriteLogic {
                                 List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
                                 for (SkuOrder skuOrder:skuOrders){
                                     for (OpenClientOrderItem item:items){
-                                        if (Objects.equals(skuOrder.getSkuId(),item.getSkuId())){
+                                        if (Objects.equals(skuOrder.getOutSkuId(),item.getSkuId())){
+                                            log.info("update skuOrder");
                                             SkuOrder newSkuOrder = new SkuOrder();
                                             newSkuOrder.setId(skuOrder.getId());
                                             newSkuOrder.setOriginFee(Long.valueOf(item.getPrice()*item.getQuantity()));
@@ -599,11 +601,15 @@ public class OrderWriteLogic {
                                             if (!skuOrderR.isSuccess()){
                                                 log.error("skuOrder failed,id is",newSkuOrder.getId());
                                             }
+                                        }else{
+                                            log.info("do not update skuOrder");
                                         }
                                     }
                                 }
                             }
 
+                        }else{
+                            log.info("shop order failed");
                         }
                     }
                 }else{

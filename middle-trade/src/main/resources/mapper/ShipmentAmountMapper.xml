@@ -23,6 +23,8 @@
         <result column="preferential_mon" property="perferentialMon"/>
         <result column="sale_price" property="salePrice"/>
         <result column="total_price" property="totalPrice"/>
+        <result column="hk_order_no" property="hkOrderNo"/>
+        <result column="pos_no" property="posNo"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
         
@@ -37,11 +39,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        order_no, buyer_nick, order_mon, fee_mon,real_mon,shop_id,performance_shop_id,stock_id,online_type,online_order_no,order_sub_no,bar_code,num,preferential_mon,sale_price,total_price, created_at, updated_at
+        order_no, buyer_nick, order_mon, fee_mon,real_mon,shop_id,performance_shop_id,stock_id,online_type,online_order_no,order_sub_no,bar_code,num,preferential_mon,sale_price,total_price,hk_order_no,pos_no,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{orderNo}, #{buyerNick}, #{orderMon}, #{feeMon},#{realMon}, #{shopId}, #{performanceShopId}, #{stockId},#{onlineType}, #{onlineOrderNo}, #{orderSubNo}, #{barCode}, #{num}, #{perferentialMon}, #{salePrice},#{totalPrice}, now(), now()
+        #{orderNo}, #{buyerNick}, #{orderMon}, #{feeMon},#{realMon}, #{shopId}, #{performanceShopId}, #{stockId},#{onlineType}, #{onlineOrderNo}, #{orderSubNo}, #{barCode}, #{num}, #{perferentialMon}, #{salePrice},#{totalPrice},#{hkOrderNo},#{posNo},now(), now()
     </sql>
 
     <insert id="create" parameterType="OperationLog" keyProperty="id" useGeneratedKeys="true">

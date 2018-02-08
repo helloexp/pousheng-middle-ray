@@ -16,9 +16,11 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.ShipmentAmount;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.ShipmentAmountWriteService;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
@@ -120,6 +122,8 @@ public class ShipmentWiteLogic {
     private ShipmentAmountWriteService shipmentAmountWriteService;
     @RpcConsumer
     private OrderShipmentReadService orderShipmentReadService;
+    @Autowired
+    private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -1307,6 +1311,9 @@ public class ShipmentWiteLogic {
                     log.info("shipment status <0");
                     continue;
                 }
+                if (!Objects.equals(shipment.getType(),1)){
+                    continue;
+                }
                 //获取发货单详情
                 ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
                 //获取发货单信息
@@ -1331,6 +1338,17 @@ public class ShipmentWiteLogic {
                         shipmentAmount.setPerferentialMon(item.getPreferentialMon());
                         shipmentAmount.setSalePrice(item.getSalePrice());
                         shipmentAmount.setTotalPrice(item.getTotalPrice());
+                        shipmentAmount.setHkOrderNo(shipmentDetail.getShipmentExtra().getOutShipmentId());
+                        try{
+                            Response<PoushengSettlementPos> sR = poushengSettlementPosReadService.findByShipmentId(shipment.getId());
+                            if(!sR.isSuccess()){
+                                log.error("find pos failed");
+                            }
+                            PoushengSettlementPos poushengSettlementPos = sR.getResult();
+                            shipmentAmount.setPosNo(poushengSettlementPos.getPosSerialNo());
+                        }catch (Exception e){
+                            log.error("find.pos.failed,caused by {}",e.getMessage());
+                        }
                         Response<Long> r =   shipmentAmountWriteService.create(shipmentAmount);
                         if (!r.isSuccess()){
                             log.error("create shipment amount failed,shipment id is {},barCode is {}",shipment.getId(),item.getBarcode());

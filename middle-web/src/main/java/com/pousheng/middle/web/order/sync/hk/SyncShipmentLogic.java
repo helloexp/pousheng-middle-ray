@@ -268,7 +268,7 @@ public class SyncShipmentLogic {
      * @param shipmentDetail
      * @return
      */
-    private SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail) {
+    public SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail) {
         SycHkShipmentOrder tradeOrder = new SycHkShipmentOrder();
         //中台主订单-发货单id
         tradeOrder.setOrderNo(String.valueOf(shipment.getId()));

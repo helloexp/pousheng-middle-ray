@@ -677,7 +677,7 @@ public class Refunds {
 
 
     /**
-     * 修复金额之前的数据或者之后的数据
+     * 修复售后单数据
      * @param shopId
      */
     @RequestMapping(value = "api/refund/{shopId}/update/items",method = RequestMethod.PUT)

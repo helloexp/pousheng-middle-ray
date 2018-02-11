@@ -187,6 +187,10 @@ public class SyncRefundPosLogic {
         }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
         for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
+            //如果退货数量是0则过滤掉
+            if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
+                continue;
+            }
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
             hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());

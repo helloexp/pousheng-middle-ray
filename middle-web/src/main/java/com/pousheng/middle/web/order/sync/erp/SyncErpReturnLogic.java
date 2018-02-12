@@ -79,7 +79,7 @@ public class SyncErpReturnLogic {
             switch (erpSyncType){
                 case "hk":
                     return syncRefundLogic.syncRefundToHk(refund);
-                case "yyedi":
+                case "yyEdi":
                     return this.syncReturnPos(refund);
                 default:
                     return syncRefundLogic.syncRefundToHk(refund);

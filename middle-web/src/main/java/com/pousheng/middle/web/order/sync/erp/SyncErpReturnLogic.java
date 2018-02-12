@@ -75,7 +75,7 @@ public class SyncErpReturnLogic {
         Map<String, String> openShopExtra =  openShop.getExtra();
         String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE)==null?"hk":openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         //售后仅退款的售后单直接同步到恒康
-        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND)){
+        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
             switch (erpSyncType){
                 case "hk":
                     return syncRefundLogic.syncRefundToHk(refund);

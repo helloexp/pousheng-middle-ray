@@ -13,7 +13,10 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -111,6 +114,12 @@ public class SyncErpReturnLogic {
             Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
             if (r.isSuccess()){
                 //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+                OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
+                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+                if (!updateStatusRes.isSuccess()) {
+                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
+                    return Response.fail(updateSyncStatusRes.getError());
+                }
                 refundWriteLogic.getThirdRefundResult(refund);
                 return Response.ok(Boolean.TRUE);
             }else{
@@ -157,6 +166,28 @@ public class SyncErpReturnLogic {
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }
+    }
+
+    //获取同步成功事件
+    private OrderOperation  getSyncSuccessOperation(Refund refund) {
+        MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
+        if (Arguments.isNull(middleRefundType)) {
+            log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
+            throw new JsonResponseException("refund.type.invalid");
+        }
+
+        switch (middleRefundType) {
+            case AFTER_SALES_RETURN:
+                return MiddleOrderEvent.SYNC_RETURN_SUCCESS.toOrderOperation();
+            case AFTER_SALES_REFUND:
+                return MiddleOrderEvent.SYNC_REFUND_SUCCESS.toOrderOperation();
+            case AFTER_SALES_CHANGE:
+                return MiddleOrderEvent.SYNC_CHANGE_SUCCESS.toOrderOperation();
+            default:
+                log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
+                throw new ServiceException("refund.type.invalid");
+        }
+
     }
 
 }

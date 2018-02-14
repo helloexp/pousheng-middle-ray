@@ -98,25 +98,30 @@ public class SyncErpReturnLogic {
 
     @NotNull
     private Response<Boolean> syncReturnPos(Refund refund) {
-        OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
-        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
-        if (!updateStatusRes.isSuccess()) {
-            log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
-            return Response.fail(updateStatusRes.getError());
-        }
-        Flow flow = flowPicker.pickAfterSales();
-        Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
-        refund.setStatus(targetStatus);
-        Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-        if (r.isSuccess()){
-            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-            refundWriteLogic.getThirdRefundResult(refund);
-            return Response.ok(Boolean.TRUE);
-        }else{
-            updateRefundSyncFial(refund);
-            Map<String,Object> param1 = Maps.newHashMap();
-            param1.put("refundId",refund.getId());
-            autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
+        try{
+            OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            if (!updateStatusRes.isSuccess()) {
+                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
+                return Response.fail(updateStatusRes.getError());
+            }
+            Flow flow = flowPicker.pickAfterSales();
+            Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+            refund.setStatus(targetStatus);
+            Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+            if (r.isSuccess()){
+                //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+                refundWriteLogic.getThirdRefundResult(refund);
+                return Response.ok(Boolean.TRUE);
+            }else{
+                updateRefundSyncFial(refund);
+            /*    Map<String,Object> param1 = Maps.newHashMap();
+                param1.put("refundId",refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());*/
+                return Response.fail("sync.pos.failed");
+            }
+        }catch (Exception e){
+            log.error("sync pos failed,caused by {}",e.getMessage());
             return Response.fail("sync.pos.failed");
         }
 

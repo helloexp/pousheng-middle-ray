@@ -14,10 +14,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.impl.dao.InvoiceDao;
-import io.terminus.parana.order.impl.dao.OrderInvoiceDao;
-import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
-import io.terminus.parana.order.impl.dao.ShopOrderDao;
+import io.terminus.parana.order.impl.dao.*;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +48,8 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     private ShopOrderExtDao shopOrderExtDao;
     @Autowired
     private ShopOrderDao shopOrderDao;
+    @Autowired
+    private SkuOrderDao skuOrderDao;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -213,6 +212,30 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
         }catch (Exception e){
             log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
                     outBuyerId, shopOrderId, Throwables.getStackTraceAsString(e));
+            return Response.fail("buyer.name.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateShopOrder(ShopOrder shopOrder) {
+        try{
+            shopOrderDao.update(shopOrder);
+            return Response.ok(Boolean.TRUE);
+        }catch (Exception e){
+            log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
+                    shopOrder.getOutId(), shopOrder.getId(), Throwables.getStackTraceAsString(e));
+            return Response.fail("buyer.name.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateSkuOrder(SkuOrder skuOrder) {
+        try{
+            skuOrderDao.update(skuOrder);
+            return Response.ok(Boolean.TRUE);
+        }catch (Exception e){
+            log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
+                    skuOrder.getOutId(), skuOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("buyer.name.update.fail");
         }
     }

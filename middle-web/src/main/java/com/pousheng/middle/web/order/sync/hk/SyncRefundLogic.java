@@ -239,7 +239,7 @@ public class SyncRefundLogic {
      * @param refund
      * @return
      */
-    private SycHkRefund makeSyncHkRefund(Refund refund) {
+    public SycHkRefund makeSyncHkRefund(Refund refund) {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -290,7 +290,7 @@ public class SyncRefundLogic {
      * @param refund
      * @return
      */
-    private List<SycHkRefundItem> makeSycHkRefundItemList(Refund refund) {
+    public List<SycHkRefundItem> makeSycHkRefundItemList(Refund refund) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());

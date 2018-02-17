@@ -377,7 +377,13 @@ public class BatchAsyncHandleMposListener {
                     SearchSkuTemplate searchSkuTemplate = findMposSkuTemplate(skuCode);
                     //不存在记录日志
                     if (Arguments.isNull(searchSkuTemplate)) {
-                        throw new JsonResponseException("中台不存在该商品");
+                        AbnormalRecord abnormalRecord = new AbnormalRecord();
+                        abnormalRecord.setCode(strs[0].replace("\"", ""));
+                        abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
+                        abnormalRecord.setReason("中台不存在该商品");
+                        helper.appendToExcel(abnormalRecord);
+                        log.error("import make sku code:{} flag fail, error:{}",skuCode,"中台不存在该商品");
+                        continue;
                     }
                     Long skuTemplateId = searchSkuTemplate.getId();
 

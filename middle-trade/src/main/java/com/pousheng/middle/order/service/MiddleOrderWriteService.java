@@ -86,4 +86,22 @@ public interface MiddleOrderWriteService {
      * @return
      */
     Response<Boolean> updateMobileByShopOrderId(Long shopOrderId,String outBuyerId);
+
+
+    /**
+     * 更新店铺订单
+     * @param shopOrder
+     * @return
+     */
+    Response<Boolean> updateShopOrder(ShopOrder shopOrder);
+
+
+
+    /**
+     * 更新子订单
+     * @param skuOrder
+     * @return
+     */
+    Response<Boolean> updateSkuOrder(SkuOrder skuOrder);
+
 }

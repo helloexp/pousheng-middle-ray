@@ -199,5 +199,7 @@ public class TradeConstants {
     public static final String EXPORT_SHIPMENT = "shipment";
     //导出pos单
     public static final String EXPORT_POS = "pos";
+    //是否参与全渠道店铺 1参与 0 不参与
+    public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
 
 }

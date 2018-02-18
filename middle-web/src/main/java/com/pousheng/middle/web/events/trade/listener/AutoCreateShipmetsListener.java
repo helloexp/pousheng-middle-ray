@@ -63,11 +63,10 @@ public class AutoCreateShipmetsListener {
             }
         }
         // 如果是Mpos订单，进行派单
-        if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+        if(isNeedMposDispatch(shopOrder)){
             log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
             log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
-
         }else{
             //如果是京东货到付款，默认展示京东快递
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
@@ -84,5 +83,17 @@ public class AutoCreateShipmetsListener {
         }
 
 
+    }
+
+    /**
+     * 是否需要用mpos派单逻辑
+     * @return 是否
+     */
+    private Boolean isNeedMposDispatch(ShopOrder shopOrder){
+
+        if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+            return Boolean.TRUE;
+        }
+        return orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId());
     }
 }

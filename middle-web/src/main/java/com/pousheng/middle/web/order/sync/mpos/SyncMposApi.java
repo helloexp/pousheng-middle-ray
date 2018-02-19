@@ -35,6 +35,17 @@ public class SyncMposApi {
     }
 
     /**
+     * 同步全渠道订单的发货单到mpos
+     * @param param
+     * @return
+     */
+    public String syncAllChannelShipmnetToMpos(Map<String,Object> param){
+        log.info("sync all-channel-order shipments to mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"sync.order.ship.api",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+    /**
      * 只有恒康发货才通知mpos状态更新
      * @param param 参数
      * @return
@@ -78,6 +89,18 @@ public class SyncMposApi {
     public String syncRefundReceive(Map<String,Object> param){
         log.info("sync shipments status from mpos,param:{}",param);
         String responseBody = paranaClient.post(shopId,"mpos.seller.confirm.afterSales",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    /**
+     * 如果是电发的发货单，在未发货之前通知mpos取消发货单
+     * @param param 通知取消发货单的参数集合
+     * @return 返回的取消结果
+     */
+    public String syncMposToCancelShipment(Map<String,Object> param){
+        log.info("sync mpos to cancel shipment,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

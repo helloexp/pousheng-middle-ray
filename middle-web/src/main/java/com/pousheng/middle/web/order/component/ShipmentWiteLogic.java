@@ -203,6 +203,14 @@ public class ShipmentWiteLogic {
                     throw new JsonResponseException(syncRes.getError());
                 }
             }
+            //对于全渠道订单，如果是门店发货的发货单则同步mpos取消发货单
+            if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())){
+                Response<Boolean> syncRes = syncMposShipmentLogic.cancelMposShipment();
+                if (!syncRes.isSuccess()) {
+                    log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
+                }
+            }
             //解锁库存
             DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
             mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);

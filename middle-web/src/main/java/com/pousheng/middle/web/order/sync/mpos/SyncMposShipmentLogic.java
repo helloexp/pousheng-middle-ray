@@ -226,18 +226,4 @@ public class SyncMposShipmentLogic{
         param.put("outerSkuCodes",mapper.toJson(skuCodes));
         return param;
     }
-
-
-    public Response<Boolean> cancelMposShipment(){
-        try{
-            log.info("begin to cancel mpos shipment");
-            Map<String,Object> param = Maps.newHashMap();
-            Response<Boolean> response = mapper.fromJson(syncMposApi.syncMposToCancelShipment(param),Response.class);
-            log.info("end to cancel mpos shipment");
-            return response;
-        }catch (Exception e){
-            log.error("sync mpos shipment status fail,cause by {}", e.getMessage());
-            return Response.fail(e.getMessage());
-        }
-    }
 }

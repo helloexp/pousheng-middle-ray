@@ -14,6 +14,7 @@ import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import com.pousheng.middle.web.warehouses.component.WarehouseRuleComponent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -24,6 +25,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
@@ -59,6 +61,8 @@ public class WarehouseRules {
     private WarehouseShopGroupReadService warehouseShopGroupReadService;
     @Autowired
     private OrderReadLogic orderReadLogic;
+    @Autowired
+    private WarehouseRuleComponent warehouseRuleComponent;
 
 
     /**
@@ -75,16 +79,28 @@ public class WarehouseRules {
         List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
         List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
         Set<String> companyCodes = new HashSet<>();
+        List<Long> allChannelShopIds = Lists.newArrayListWithCapacity(thinShops.size());
         openShops.forEach(openShop -> {
             String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
             if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
                 companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
             }
             companyCodes.add(companyCode);
+
+            if(orderReadLogic.isAllChannelOpenShop(openShop.getId())){
+                allChannelShopIds.add(openShop.getId());
+            }
+
         });
         if (companyCodes.size()>1){
             throw new JsonResponseException("shop.must.be.in.one.company");
         }
+        if(!CollectionUtils.isEmpty(allChannelShopIds)){
+            if(!Objects.equal(allChannelShopIds.size(),thinShops.size())){
+                throw new JsonResponseException("shop.must.be.all.channel");
+            }
+        }
+
         Response<Long> r = warehouseShopRuleWriteService.batchCreate(thinShops);
         if (!r.isSuccess()) {
             log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());
@@ -195,19 +211,7 @@ public class WarehouseRules {
      */
     @RequestMapping(value = "/{ruleId}/company/code",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public String getCompanyCode(@PathVariable Long ruleId){
-        Response<WarehouseRule> r = warehouseRuleReadService.findById(ruleId);
-        if (!r.isSuccess()){
-            log.error("failed to query warehouse rule (ruleId={}), error code:{}", ruleId, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        WarehouseRule warehouseRule = r.getResult();
-        Long shopGroupId = warehouseRule.getShopGroupId();
-        Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
-        if (!rwsrs.isSuccess()) {
-            log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", shopGroupId, rwsrs.getError());
-            throw new JsonResponseException(rwsrs.getError());
-        }
-        List<WarehouseShopGroup> shopGroups = rwsrs.getResult();
+        List<WarehouseShopGroup> shopGroups = warehouseRuleComponent.findWarehouseShopGropsByRuleId(ruleId);
         WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
         String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);

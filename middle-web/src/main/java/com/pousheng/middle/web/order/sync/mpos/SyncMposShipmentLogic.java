@@ -100,8 +100,14 @@ public class SyncMposShipmentLogic{
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
         try{
+            //判断该发货单是全渠道订单的店发发货单还是普通的mpos发货单
+            MposResponse res = null;
             Map<String,Object> param = this.assembShipmentParam(shipment);
-            MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())){
+                res = mapper.fromJson(syncMposApi.syncAllChannelShipmnetToMpos(param),MposResponse.class);
+            }else{
+                res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+            }
             if(!res.isSuccess()){
                 log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
                 // 同步失败
@@ -112,6 +118,7 @@ public class SyncMposShipmentLogic{
                 }
                 return Response.fail(res.getError());
             }
+
             shipmentExtra.setMposShipmentId(res.getResult());
         }catch(Exception e){
             // 同步失败
@@ -219,6 +226,4 @@ public class SyncMposShipmentLogic{
         param.put("outerSkuCodes",mapper.toJson(skuCodes));
         return param;
     }
-
-
 }

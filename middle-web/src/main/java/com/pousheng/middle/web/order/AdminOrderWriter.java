@@ -327,10 +327,16 @@ public class AdminOrderWriter {
     @OperationLogType("单个订单自动处理")
     public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
-        if (!response.isSuccess()){
-            log.error("auto handle shop order failed, order id is {}",shopOrderId);
-            throw new JsonResponseException("生成发货单失败，原因:"+response.getError());
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+            shipmentWiteLogic.toDispatchOrder(shopOrder);
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
+        }else{
+            Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+            if (!response.isSuccess()){
+                log.error("auto handle shop order failed, order id is {}",shopOrderId);
+                throw new JsonResponseException("生成发货单失败，原因:"+response.getError());
+            }
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -350,10 +356,16 @@ public class AdminOrderWriter {
         List<Long> failedShopOrderIds = Lists.newArrayList();
         for (Long shopOrderId:ids){
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-            Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
-            if (!response.isSuccess()){
-                failedShopOrderIds.add(shopOrderId);
-                continue;
+            if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+                log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+                shipmentWiteLogic.toDispatchOrder(shopOrder);
+                log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
+            }else{
+                Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+                if (!response.isSuccess()){
+                    failedShopOrderIds.add(shopOrderId);
+                    continue;
+                }
             }
             successShopOrderIds.add(shopOrderId);
         }

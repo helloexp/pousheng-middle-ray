@@ -409,6 +409,10 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.SHIPPED.getValue());
+            //----对于全渠道的订单，取消发货单不需要同步恒康或或者订单派发中心
+            addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
         }
     };
 

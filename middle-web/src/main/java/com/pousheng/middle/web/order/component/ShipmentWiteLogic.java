@@ -208,6 +208,14 @@ public class ShipmentWiteLogic {
                     throw new JsonResponseException(syncRes.getError());
                 }
             }
+            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())&&Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+                OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                if (!updateStatus.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
+                    return false;
+                }
+            }
             //解锁库存
             DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
             mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);

@@ -1029,16 +1029,19 @@ public class ShipmentWiteLogic {
         if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
             //如果是恒康pos订单，暂不处理
             if(!shopOrder.getExtra().containsKey("isHkPosOrder")){
-                //取消子单
-                for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                    SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                    orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
-                    //添加取消原因
-                    Map<String,String> skuOrderExtra = skuOrder.getExtra();
-                    skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
-                    orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                //全渠道的订单暂不处理
+                if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+                    //取消子单
+                    for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
+                        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+                        orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
+                        //添加取消原因
+                        Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                        skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
+                        orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                    }
+                    syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
                 }
-                syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
             }else{
                 if(!isFirst){
                     //如果不是第一次派单，将订单状态恢复至待处理

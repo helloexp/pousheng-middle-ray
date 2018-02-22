@@ -28,14 +28,7 @@ public class PsSkuTemplateWriteServiceImpl implements PsSkuTemplateWriteService 
 
     @Override
     public Response<Boolean> update(SkuTemplate skuTemplate) {
-        Long skuTemplateId = skuTemplate.getId();
         try {
-            SkuTemplate existed = skuTemplateDao.findById(skuTemplateId);
-            if(existed == null){
-                log.error("SkuTemplate(id={}) not exist", skuTemplateId);
-                return Response.fail("sku.template.not.found");
-            }
-
             skuTemplateDao.update(skuTemplate);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {

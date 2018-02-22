@@ -434,6 +434,10 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
+            //待发货 --> 拒单 --> 已拒绝
+            addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),
+                    MiddleShipmentsStatus.REJECTED.getValue());
         }
     };
 

@@ -984,7 +984,7 @@ public class ShipmentWiteLogic {
         }
         //是否首次派单
         boolean isFirst = CollectionUtils.isEmpty(skuCodeAndQuantities);
-        List<SkuOrder> skuOrders = skuOrdersRes.getResult();
+        List<SkuOrder> skuOrders = skuOrdersRes.getResult().stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getStatus(),MiddleOrderStatus.CANCEL.getValue())).collect(Collectors.toList());
         if(isFirst){
             //获取skuCode,数量的集合
             skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());

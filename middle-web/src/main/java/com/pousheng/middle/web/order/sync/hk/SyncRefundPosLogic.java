@@ -187,7 +187,8 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             //仅退款传到恒康是0
             hkShipmentPosItem.setQty(0);
-            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            //仅退款传到恒康是一个冲账的金额
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;

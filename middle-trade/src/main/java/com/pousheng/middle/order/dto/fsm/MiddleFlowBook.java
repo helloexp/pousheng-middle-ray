@@ -358,7 +358,23 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.CONFIRMED_FAIL.getValue(),
                     MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation(),
                     MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue());
-
+            //===========正向流程，同步订单派发中心
+            //待同步hk -->同步订单派发中心 -> 同步中
+            addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
+                    MiddleOrderEvent.SYNC_YYEDI.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ING.getValue());
+            //同步中 --同步成功 ->待发货
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation(),
+                    MiddleShipmentsStatus.WAIT_SHIP.getValue());
+            //同步中 --同步失败 ->同步失败
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_FAIL.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_FAIL.getValue());
+            //同步失败 --同步 ->同步中
+            addTransition(MiddleShipmentsStatus.SYNC_HK_FAIL.getValue(),
+                    MiddleOrderEvent.SYNC_YYEDI.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_ING.getValue());
             //===========逆向流程
 
             //在付款后发货前, 买家可申请退款
@@ -368,8 +384,13 @@ public class MiddleFlowBook {
             addTransition(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
+            //恒康同步受理失败->取消-> 已取消
             addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
+            //订单派发中心同步失败->取消-> 已取消
+            addTransition(MiddleShipmentsStatus.SYNC_HK_FAIL.getValue(),
+                    MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
             //已受理 -->取消恒康 -> 取消同步中
             addTransition(MiddleShipmentsStatus.ACCEPTED.getValue(),

@@ -118,36 +118,7 @@ public class SyncRefundLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
                 //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-                String outId = refund.getOutId();
-                if (StringUtils.hasText(outId)&&outId.contains("taobao")){
-                    String channel = refundReadLogic.getOutChannelTaobao(outId);
-                    if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                            &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
-                        Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
-                        TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                        event.setRefundId(refund.getId());
-                        event.setChannel(channel);
-                        event.setOpenShopId(newRefund.getShopId());
-                        event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
-                        eventBus.post(event);
-                    }
-                }
-                //如果是苏宁的售后单，将会主动查询售后单的状态
-                if (StringUtils.hasText(outId)&&outId.contains("suning")){
-                    String channel = refundReadLogic.getOutChannelSuning(outId);
-                    if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
-                            &&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
-                        Refund newRefund =  refundReadLogic.findRefundById(refund.getId());
-                        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
-                        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
-                        TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
-                        event.setRefundId(refund.getId());
-                        event.setChannel(channel);
-                        event.setOpenShopId(newRefund.getShopId());
-                        event.setOpenOrderId(shopOrder.getOutId());
-                        eventBus.post(event);
-                    }
-                }
+                refundWriteLogic.getThirdRefundResult(refund);
 
                 Refund update = new Refund();
                 update.setId(refund.getId());
@@ -180,11 +151,10 @@ public class SyncRefundLogic {
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }
-
     }
 
     //获取同步成功事件
-    private OrderOperation getSyncSuccessOperation(Refund refund) {
+    private OrderOperation  getSyncSuccessOperation(Refund refund) {
         MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
         if (Arguments.isNull(middleRefundType)) {
             log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());

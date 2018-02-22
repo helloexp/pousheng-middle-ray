@@ -4,15 +4,14 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.collect.Sets.SetView;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.order.enums.RefundSource;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.RefundAmount;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
@@ -20,6 +19,8 @@ import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
+import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -37,8 +38,8 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import com.google.common.collect.Sets;
-import com.google.common.collect.Sets.SetView;
+import org.springframework.util.StringUtils;
+
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -70,13 +71,17 @@ public class RefundWriteLogic {
     @Autowired
     private WarehouseReadService warehouseReadService;
     @Autowired
-    private SyncRefundLogic syncRefundLogic;
+    private SyncErpReturnLogic syncErpReturnLogic;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @Autowired
     private RefundAmountWriteService refundAmountWriteService;
+    @Autowired
+    private EventBus eventBus;
+    @Autowired
+    private SyncRefundLogic syncRefundLogic;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -346,7 +351,7 @@ public class RefundWriteLogic {
         //如果是手工创建的售后单是点击的提交，直接同步恒康
         if(Objects.equals(submitRefundInfo.getOperationType(),2)){
             Refund newRefund = refundReadLogic.findRefundById(refund.getId());
-            Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(newRefund);
+            Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(newRefund);
             if (!syncRes.isSuccess()) {
                 log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
             }
@@ -953,6 +958,43 @@ public class RefundWriteLogic {
         if(!updateRes.isSuccess()){
             log.error("delete refund(id:{}) fail,error:{}",refund.getId(),updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
+        }
+    }
+
+    /**
+     * 获取苏宁天猫的退款结果
+     * @param refund
+     */
+    public void getThirdRefundResult(Refund refund){
+        String outId = refund.getOutId();
+        if (StringUtils.hasText(outId) && outId.contains("taobao")) {
+            String channel = refundReadLogic.getOutChannelTaobao(outId);
+            if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                    && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                event.setRefundId(refund.getId());
+                event.setChannel(channel);
+                event.setOpenShopId(newRefund.getShopId());
+                event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
+                eventBus.post(event);
+            }
+        }
+        //如果是苏宁的售后单，将会主动查询售后单的状态
+        if (StringUtils.hasText(outId) && outId.contains("suning")) {
+            String channel = refundReadLogic.getOutChannelSuning(outId);
+            if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
+                    && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+                OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                event.setRefundId(refund.getId());
+                event.setChannel(channel);
+                event.setOpenShopId(newRefund.getShopId());
+                event.setOpenOrderId(shopOrder.getOutId());
+                eventBus.post(event);
+            }
         }
     }
 

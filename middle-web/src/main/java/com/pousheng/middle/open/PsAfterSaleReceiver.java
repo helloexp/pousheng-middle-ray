@@ -3,19 +3,17 @@ package com.pousheng.middle.open;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
-import com.pousheng.erp.service.PoushengMiddleSpuService;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -73,7 +71,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     @Autowired
     private RefundWriteLogic refundWriteLogic;
     @Autowired
-    private SyncRefundLogic syncRefundLogic;
+    private SyncErpReturnLogic syncErpReturnLogic;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
@@ -304,7 +302,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             }
             //已经同步恒康
             if (flow.operationAllowed(refund.getStatus(),MiddleOrderEvent.CANCEL_HK.toOrderOperation())){
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+                Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                 if (!syncRes.isSuccess()) {
                     log.error("sync cancel refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
                 }else{

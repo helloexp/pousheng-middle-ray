@@ -30,6 +30,7 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
@@ -76,8 +77,6 @@ public class ShipmentWiteLogic {
     @Autowired
     private EventBus eventBus;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
-    @Autowired
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
@@ -110,6 +109,8 @@ public class ShipmentWiteLogic {
     @RpcConsumer
     private RefundWriteService refundWriteService;
     @Autowired
+    private SyncErpShipmentLogic syncErpShipmentLogic;
+    @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private SyncMposShipmentLogic syncMposShipmentLogic;
@@ -131,6 +132,9 @@ public class ShipmentWiteLogic {
     private MemberShopOperationLogic memberShopOperationLogic;
     @RpcConsumer
     private PsShopReadService psShopReadService;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
+
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -193,11 +197,12 @@ public class ShipmentWiteLogic {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
                     throw new JsonResponseException(cancelRes.getError());
                 }
+
             }
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
             if (!Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentCancelToHk(shipment, type);
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, type);
                 if (!syncRes.isSuccess()) {
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());
@@ -314,7 +319,7 @@ public class ShipmentWiteLogic {
                         continue;
                     }
                 }
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
@@ -621,6 +626,8 @@ public class ShipmentWiteLogic {
         shipmentExtra.setErpOrderShopName(shopName);
         shipmentExtra.setErpPerformanceShopCode(shopCode);
         shipmentExtra.setErpPerformanceShopName(shopName);
+        shipmentExtra.setErpOrderShopOutCode(shopOutCode);
+        shipmentExtra.setErpPerformanceShopOutCode(shopOutCode);
 
         shipmentExtra.setShipmentItemFee(shipmentItemFee);
         //发货单运费金额
@@ -1080,7 +1087,7 @@ public class ShipmentWiteLogic {
             if(Objects.equals(type,1)){
                 //发货单同步恒康
                 log.info("sync shipment(id:{}) to hk",shipment.getId());
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                 }

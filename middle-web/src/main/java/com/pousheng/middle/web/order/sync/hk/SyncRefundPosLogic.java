@@ -3,13 +3,16 @@ package com.pousheng.middle.web.order.sync.hk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -33,10 +36,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -83,7 +86,6 @@ public class SyncRefundPosLogic {
                 log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
                 return Response.fail(response.getMessage());
             }
-
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos refund failed,shipmentId is({}) cause by({})", refund.getId(), e.getMessage());
@@ -97,7 +99,7 @@ public class SyncRefundPosLogic {
     private HkShipmentPosRequestData makeHkShipmentPosRequestData(Refund refund){
 
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
-        requestData.setTranReqDate(formatter.print(new Date().getTime()));
+        requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
         requestData.setSid("PS_ERP_POS_netsalreturnstock");
         HkShipmentPosContent bizContent = makeHkShipmentPosContent(refund);
         requestData.setBizContent(bizContent);
@@ -137,7 +139,21 @@ public class SyncRefundPosLogic {
         posContent.setRemark(refund.getBuyerNote());//备注
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,refund);
-        List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getId(),extra.get("outCode"));
+        //对于订单派发中心来说，可能有多个仓库，传订单派发中心的吧
+        ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
+        //默认走仓库发货
+        String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay())?"2":shipmentExtra.getShipmentWay();
+        List<HkShipmentPosItem> ordersizes =null;
+        if(isWarehouseShip(shipmentWay)){
+            //仓库发货以wms具体退货仓为主
+            if (Objects.equal(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
+                ordersizes = makeHKRefundPosItem(refund,shipmentDetail.getShipment().getId());
+            }else{
+                ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getId());
+            }
+        }else{
+            ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getId(),extra.get("outCode"));
+        }
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);
 
@@ -155,6 +171,55 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             hkShipmentPosItem.setQty(refundItem.getApplyQuantity());
             hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getCleanPrice()==null?0:refundItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            posItems.add(hkShipmentPosItem);
+        }
+        return posItems;
+    }
+
+    private List<HkShipmentPosItem> makeHKRefundPosItem(Refund refund,Long shipmentId) {
+
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
+        for (RefundItem refundItem : refundItems){
+            HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
+            hkShipmentPosItem.setStockcode("");
+            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
+            hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
+            //仅退款传到恒康是0
+            hkShipmentPosItem.setQty(0);
+            //仅退款传到恒康是一个冲账的金额
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            posItems.add(hkShipmentPosItem);
+        }
+        return posItems;
+    }
+
+    /**
+     * 仓库发货退货信息
+     * @param refund
+     * @param shipmentId
+     * @return
+     */
+    private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouse(Refund refund,Long shipmentId) {
+
+        List<YYEdiRefundConfirmItem> refundYYEdiConfirmItems = refundReadLogic.findRefundYYEdiConfirmItems(refund);
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
+        for (RefundItem refundItem:refundItems){
+            refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
+        }
+        List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
+        for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
+            //如果退货数量是0则过滤掉
+            if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
+                continue;
+            }
+            HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
+            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
+            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
+            hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
+            hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;
@@ -211,7 +276,7 @@ public class SyncRefundPosLogic {
         posInfo.setExpressbillno(refundExtra.getShipmentSerialNo()); //物流单号 寄回物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
         if(Arguments.isNull(shipmentExtra.getShipmentDate())){
-            posInfo.setConsignmentdate(formatter.print(new Date().getTime())); //发货时间
+            posInfo.setConsignmentdate(formatter.print(System.currentTimeMillis())); //发货时间
         }else {
             posInfo.setConsignmentdate(formatter.print(shipmentExtra.getShipmentDate().getTime())); //发货时间
 

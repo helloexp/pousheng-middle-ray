@@ -131,6 +131,8 @@ public class ShipmentWiteLogic {
     private MemberShopOperationLogic memberShopOperationLogic;
     @RpcConsumer
     private PsShopReadService psShopReadService;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -218,16 +220,22 @@ public class ShipmentWiteLogic {
      * @param shopOrder 店铺订单
      */
     public void doAutoCreateShipment(ShopOrder shopOrder) {
-        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
-                MiddleOrderStatus.WAIT_HANDLE.getValue());
-        if (skuOrders.size() == 0) {
-            return;
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+            shipmentWiteLogic.toDispatchOrder(shopOrder);
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
+        }else{
+            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
+                    MiddleOrderStatus.WAIT_HANDLE.getValue());
+            if (skuOrders.size() == 0) {
+                return;
+            }
+            //判断是否满足自动生成发货单
+            if (!commValidateOfOrder(shopOrder, skuOrders)) {
+                return;
+            }
+            this.autoCreateShipmentLogic(shopOrder, skuOrders);
         }
-        //判断是否满足自动生成发货单
-        if (!commValidateOfOrder(shopOrder, skuOrders)) {
-            return;
-        }
-        this.autoCreateShipmentLogic(shopOrder, skuOrders);
     }
 
 

@@ -92,6 +92,6 @@ public class AutoCreateShipmetsListener {
         if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             return Boolean.TRUE;
         }
-        return orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId());
+        return Boolean.FALSE;
     }
 }

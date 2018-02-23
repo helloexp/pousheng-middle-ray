@@ -350,7 +350,7 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //线上实付金额
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())) {
-            shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+            shipmentInfo.setPayAmountBakUp(new BigDecimal(0.00));
         }else{
             shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
         }
@@ -360,10 +360,13 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPromZRAmount(new BigDecimal(0.00));
         //运费到付
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            //货到付款运费金额为0则运费到付传0
-             shipmentInfo.setFreightPay(0);
-            //货到付款运费金额不为0则运费到付传1
-            shipmentInfo.setFreightPay(1);
+            if (Objects.equals(shipmentInfo.getExpressAmount().toString(),"0.00")){
+                //货到付款运费金额为0则运费到付传0
+                shipmentInfo.setFreightPay(0);
+            }else{
+                //货到付款运费金额不为0则运费到付传1
+                shipmentInfo.setFreightPay(1);
+            }
         }else{
             //在线支付传0
             shipmentInfo.setFreightPay(0);

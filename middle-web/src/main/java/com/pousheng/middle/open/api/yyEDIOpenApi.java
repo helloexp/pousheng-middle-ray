@@ -157,7 +157,8 @@ public class yyEDIOpenApi {
                     if (!response.isSuccess()) {
                         Map<String, Object> param1 = Maps.newHashMap();
                         param1.put("shipmentId", shipment.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
+                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
+
                     }
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
@@ -231,17 +232,20 @@ public class yyEDIOpenApi {
                 log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
             }
             //同步pos单到恒康
-            try {
-                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-                if (!r.isSuccess()) {
+            //判断pos单是否需要同步恒康,如果退货仓数量全是0
+            if (validateYYConfirmedItems(items)) {
+                try {
+                    Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                    if (!r.isSuccess()) {
+                        Map<String, Object> param1 = Maps.newHashMap();
+                        param1.put("refundId", refund.getId());
+                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+                    }
+                } catch (Exception e) {
                     Map<String, Object> param1 = Maps.newHashMap();
                     param1.put("refundId", refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
                 }
-            } catch (Exception e) {
-                Map<String, Object> param1 = Maps.newHashMap();
-                param1.put("refundId", refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,e.getMessage());
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
@@ -283,6 +287,23 @@ public class yyEDIOpenApi {
                 throw new JsonResponseException("refund.type.invalid");
         }
 
+    }
+    private boolean validateYYConfirmedItems( List<YYEdiRefundConfirmItem> items){
+        if (items==null||items.isEmpty()){
+            return false;
+        }else{
+            int count =0;
+            for (YYEdiRefundConfirmItem item:items){
+                if (Objects.equals(item.getQuantity(),"0")){
+                    count++;
+                }
+            }
+            if (count==items.size()){
+                return false;
+            }else{
+                return true;
+            }
+        }
     }
 
 }

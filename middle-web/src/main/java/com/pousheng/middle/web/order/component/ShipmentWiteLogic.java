@@ -1104,7 +1104,7 @@ public class ShipmentWiteLogic {
             if(Objects.equals(type,1)){
                 //发货单同步恒康
                 log.info("sync shipment(id:{}) to hk",shipment.getId());
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                 }

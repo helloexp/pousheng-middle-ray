@@ -154,7 +154,7 @@ public class SyncRefundLogic {
     }
 
     //获取同步成功事件
-    private OrderOperation getSyncSuccessOperation(Refund refund) {
+    private OrderOperation  getSyncSuccessOperation(Refund refund) {
         MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
         if (Arguments.isNull(middleRefundType)) {
             log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());

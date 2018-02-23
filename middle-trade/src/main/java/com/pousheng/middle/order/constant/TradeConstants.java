@@ -217,6 +217,7 @@ public class TradeConstants {
     //yyedi返回结果:整体失败
     public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
     public static final String  ERP_SYNC_TYPE="erpSyncType";
+
     public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
     //导出订单
     public static final String EXPORT_ORDER = "order";
@@ -226,6 +227,7 @@ public class TradeConstants {
     public static final String EXPORT_SHIPMENT = "shipment";
     //导出pos单
     public static final String EXPORT_POS = "pos";
+
     //是否参与全渠道店铺 1参与 0 不参与
     public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
 

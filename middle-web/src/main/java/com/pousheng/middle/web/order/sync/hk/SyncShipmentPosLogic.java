@@ -275,7 +275,12 @@ public class SyncShipmentPosLogic {
         posInfo.setOrdertype("");  //订单类型
         posInfo.setOrdercustomercode(""); //订单标记code
         posInfo.setAppamtsourceshop(""); //业绩来源店铺
-        posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
+        if (java.util.Objects.isNull(openClientPaymentInfo)){
+            //如果拉取不到付款信息，则使用中台订单创建的时间
+            posInfo.setPaymentdate(formatter.print(shopOrder.getCreatedAt().getTime())); //付款时间
+        }else{
+            posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
+        }
         posInfo.setCardcode(""); //会员卡号
         posInfo.setBuyercode(shopOrder.getBuyerName());//买家昵称
         posInfo.setBuyermobiletel(shopOrder.getOutBuyerId()); //买家手机

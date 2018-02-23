@@ -554,4 +554,24 @@ public class ShipmentReadLogic {
         }
         return dispatchOrderItemInfo;
     }
+
+    /**
+     * 判断订单是否有多个发货单,true 表示只有一个发货单，false
+     * @param shopOrder
+     * @return
+     */
+    public boolean isOrderHasMoreShipments(ShopOrder shopOrder){
+        try {
+            List<Shipment> shipments = findByShopOrderId(shopOrder.getId());
+            List<Shipment> shipmentsFilter = shipments.stream().filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())).collect(Collectors.toList());
+            if (shipmentsFilter.size()>1){
+                return true;
+            }else{
+                return false;
+            }
+        }catch (Exception e){
+            log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),e.getMessage());
+            return true;
+        }
+    }
 }

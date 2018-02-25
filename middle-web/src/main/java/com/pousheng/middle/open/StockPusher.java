@@ -145,7 +145,7 @@ public class StockPusher {
             if (!r.isSuccess()) {
                 log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
                         spuId, skuCode, r.getError());
-                return;
+                continue;
             }
             //计算库存分配并将库存推送到每个外部店铺去
             List<Long> shopIds = r.getResult();
@@ -158,7 +158,7 @@ public class StockPusher {
                     if (!rShopStockRule.isSuccess()) {
                         log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
                                 shopId, rShopStockRule.getError());
-                        return;
+                        continue;
                     }
                     //和安全库存进行比较, 确定推送库存数量
                     WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();

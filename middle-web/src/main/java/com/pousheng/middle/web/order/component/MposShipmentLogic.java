@@ -77,6 +77,7 @@ public class MposShipmentLogic {
      * @param event
      */
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
+        log.info("start to update order status,when mops shipped,event param{}",event.getShipmentId());
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -103,6 +104,7 @@ public class MposShipmentLogic {
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
         }
+        log.info("end to update order status,when mops shipped");
     }
 
     /**

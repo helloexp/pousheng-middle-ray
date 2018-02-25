@@ -92,8 +92,8 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
         List<Warehouse> warehouseList = findWarehouseByIds(warehouseIds);
 
-        //过滤掉非mpos仓,过滤后如果没有则进入下个规则
-        List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equals(warehouse.getIsMpos(),1)).collect(Collectors.toList());
+        //过滤掉非mpos仓,过滤后如果没有则进入下个规则,过滤掉店仓直接用总仓
+        List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equals(warehouse.getIsMpos(),1)).filter(warehouse -> Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());
         if(CollectionUtils.isEmpty(mposOnlineSaleWarehouse)){
             return Boolean.TRUE;
         }

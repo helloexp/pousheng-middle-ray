@@ -1094,7 +1094,7 @@ public class ShipmentWiteLogic {
      * @param type      类型 1.仓发 2.店发
      * @param shopOrder 订单
      */
-    private void handleSyncShipment(Shipment shipment,Integer type,ShopOrder shopOrder){
+    public void handleSyncShipment(Shipment shipment,Integer type,ShopOrder shopOrder){
         try{
             if(Objects.equals(type,1)){
                 //发货单同步恒康

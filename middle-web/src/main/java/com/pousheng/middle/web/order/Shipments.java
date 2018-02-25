@@ -533,7 +533,7 @@ public class Shipments {
         }else{
             Warehouse warehouse = rWarehosue.getResult();
             //发货仓库是mpos仓且是店仓则同步到门店
-            if (Objects.equals(warehouse.getType(),0)&&Objects.equals(warehouse.getIsMpos(),1)){
+            if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
                 log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
                 ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
                 shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;

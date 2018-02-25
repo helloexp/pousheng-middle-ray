@@ -531,10 +531,28 @@ public class Shipments {
             }
         }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
-        if(!syncRes.isSuccess()){
-            log.error("sync shipment(id:{}) to hk fail,error:{}",shipmentId,syncRes.getError());
-            throw new JsonResponseException(syncRes.getError());
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Long warehosueId = shipmentExtra.getWarehouseId();
+        Response<Warehouse> rWarehosue = warehouseReadService.findById(warehosueId);
+        if (!rWarehosue.isSuccess()){
+            log.error("find warehouse failed");
+            throw new JsonResponseException(rWarehosue.getError());
+        }else{
+            Warehouse warehouse = rWarehosue.getResult();
+            //发货仓库是mpos仓且是店仓则同步到门店
+            if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
+                log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+                shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+            }else{
+                log.info("sync shipment to hk,shipmentId is {}",shipment.getId());
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
+                }
+
+            }
         }
     }
 

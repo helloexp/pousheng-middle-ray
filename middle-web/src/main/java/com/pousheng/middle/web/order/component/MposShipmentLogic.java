@@ -1,10 +1,6 @@
-/*
-package com.pousheng.middle.web.events.trade.listener;
+package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Maps;
-import com.google.common.eventbus.AllowConcurrentEvents;
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
@@ -14,7 +10,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
-import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -22,31 +17,28 @@ import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-*/
 /**
- * Created by penghui on 2017/12/22
- * 发货单事件监听器
- *//*
-
+ * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
+ * Date: 2018/2/25
+ * pousheng-middle
+ */
 @Component
 @Slf4j
-public class MposShipmentListener {
-
-    @Autowired
-    private EventBus eventBus;
-
+public class MposShipmentLogic {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
@@ -80,20 +72,10 @@ public class MposShipmentListener {
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
 
-    @PostConstruct
-    public void init() {
-        eventBus.register(this);
-    }
-
-
-    */
-/**
+    /**
      * 判断是否所有发货单都更新了 更新订单状态
      * @param event
-     *//*
-
-    @Subscribe
-    @AllowConcurrentEvents
+     */
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
         Shipment shipment = shipmentReadLogic.findShipmentById(event.getShipmentId());
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.SHIP){
@@ -110,7 +92,7 @@ public class MposShipmentListener {
                     autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
                 }
             }
-            this.syncOrderStatus(shipment,MiddleOrderStatus.SHIPPED.getValue());
+            this.syncOrderStatus(shipment, MiddleOrderStatus.SHIPPED.getValue());
         }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT){
             //解锁库存
@@ -123,13 +105,11 @@ public class MposShipmentListener {
         }
     }
 
-    */
-/**
+    /**
      * 同步订单状态
      * @param shipment      发货单
      * @param expectOrderStatus   期望订单状态
-     *//*
-
+     */
     private void syncOrderStatus(Shipment shipment,Integer expectOrderStatus){
 
         //更新子单状态
@@ -155,5 +135,4 @@ public class MposShipmentListener {
             }
         }
     }
-
-}*/
+}

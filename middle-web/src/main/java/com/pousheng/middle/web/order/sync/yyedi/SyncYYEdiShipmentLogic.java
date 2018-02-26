@@ -124,8 +124,8 @@ public class SyncYYEdiShipmentLogic {
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateSyncStatusRes.getError());
                 }
+                return Response.fail(response.getErrorCode());
             }
         } catch (Exception e) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -317,7 +317,7 @@ public class SyncYYEdiShipmentLogic {
         //邮编
         shipmentInfo.setZipCode(receiverInfo.getPostcode());
         //收件人电话
-        shipmentInfo.setBuyerTel(receiverInfo.getPhone());
+        shipmentInfo.setBuyerTel(receiverInfo.getMobile());
         //手机号码
         shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
         //寄件人姓名

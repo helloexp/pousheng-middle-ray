@@ -317,7 +317,7 @@ public class SyncYYEdiShipmentLogic {
         //邮编
         shipmentInfo.setZipCode(receiverInfo.getPostcode());
         //收件人电话
-        shipmentInfo.setBuyerTel(receiverInfo.getPhone());
+        shipmentInfo.setBuyerTel(receiverInfo.getMobile());
         //手机号码
         shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
         //寄件人姓名

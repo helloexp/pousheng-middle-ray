@@ -398,7 +398,7 @@ public class Shipments {
                     continue;
                 }
             }
-            //手动生成销售发货单可以支持
+            //手动生成销售发货单可以支持同步到店铺
             Response<Warehouse> rWarehosue = warehouseReadService.findById(warehouseId);
             if (!rWarehosue.isSuccess()){
                 log.error("find warehouse failed");

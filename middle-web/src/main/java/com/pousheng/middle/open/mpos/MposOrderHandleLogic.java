@@ -99,12 +99,12 @@ public class MposOrderHandleLogic {
                 update.setId(shipment.getId());
                 //保存物流信息
                 shipmentExtra.setShipmentSerialNo(extra.get(TradeConstants.SHIP_SERIALNO));
-                shipmentExtra.setShipmentCorpCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
                     try{
 
                         ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                         shipmentExtra.setShipmentCorpName(expressCode.getName());
+                        shipmentExtra.setShipmentCorpCode(expressCode.getHkCode());
                         DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
                         shipmentExtra.setShipmentDate(dt.toDate());
 

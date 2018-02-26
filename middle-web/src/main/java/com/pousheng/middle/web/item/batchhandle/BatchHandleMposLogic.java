@@ -190,7 +190,8 @@ public class BatchHandleMposLogic {
 
             toUpdate.setPrice(originPrice);
         }
-        Response<Boolean> resp = psSkuTemplateWriteService.update(toUpdate);
+        //这里的折扣默认都是1
+        Response<Boolean> resp = psSkuTemplateWriteService.updateTypeAndExtraById(toUpdate.getId(),toUpdate.getType(),toUpdate.getExtraJson());
         if (!resp.isSuccess()) {
             log.error("update SkuTemplate failed error={}",resp.getError());
         }

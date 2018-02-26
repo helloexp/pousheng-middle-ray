@@ -51,5 +51,13 @@
     </update>
 
 
+    <update id="updateTypeAndExtraById" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET `type` = #{type},extra = #{extraJson}, updated_at = now()
+        WHERE id = #{id}
+    </update>
+
+
 
 </mapper>

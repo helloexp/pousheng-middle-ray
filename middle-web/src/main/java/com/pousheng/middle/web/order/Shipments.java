@@ -47,6 +47,8 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,7 +125,8 @@ public class Shipments {
     private SyncMposShipmentLogic syncMposShipmentLogic;
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
-
+    @Autowired
+    private ShopReadService shopReadService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -267,7 +270,7 @@ public class Shipments {
     }
 
     /**
-     * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
+     *
      * 生成销售发货单
      * 发货成功：
      * 1. 更新子单的处理数量
@@ -280,8 +283,10 @@ public class Shipments {
     @OperationLogType("生成销售发货单")
     public List<Long> createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
                                           @RequestParam(value = "dataList") String dataList) {
-
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
+        List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
+        //判断是否是全渠道到订单，如果不是全渠道订单不能选择店仓
+        this.validateOrderAllChannelWarehouse(warehouseIds,shopOrderId);
         List<Long> shipmentIds = Lists.newArrayList();
         //用于判断运费是否已经算过
         int shipmentFeeCount = 0;
@@ -290,6 +295,7 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+            //判断该订单是否是全渠道订单，如果不是全渠道订单不能使用店仓
             if (!orderReadLogic.validateCompanyCode(warehouseId, shopOrder.getShopId())) {
                 throw new JsonResponseException("warehouse.must.be.in.one.company");
             }
@@ -303,7 +309,6 @@ public class Shipments {
                     throw new ServiceException("wait.handle.number.is.zero.can.not.create.shipment");
                 }
             }
-
             //获取子单商品
             List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
             skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
@@ -398,23 +403,15 @@ public class Shipments {
                     continue;
                 }
             }
-            //手动生成销售发货单可以支持同步到店铺
-            Response<Warehouse> rWarehosue = warehouseReadService.findById(warehouseId);
-            if (!rWarehosue.isSuccess()){
-                log.error("find warehouse failed");
-                throw new JsonResponseException(rWarehosue.getError());
-            }else {
-                Warehouse warehouse = rWarehosue.getResult();
-                if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
-                    log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
-                    shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
-                }else{
-                    Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
-                    if (!syncRes.isSuccess()) {
-                        log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                    }
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+                log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+                shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+            }else{
+                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
-
             }
         }
         return shipmentIds;
@@ -422,7 +419,7 @@ public class Shipments {
 
 
     /**
-     * todo 发货成功调用大度仓库接口减库存 ，扣减成功再创建发货单
+     *
      * 生成换货发货单
      * 发货成功：
      * 1. 更新子单的处理数量
@@ -438,6 +435,9 @@ public class Shipments {
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
+        List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
+        //判断是否是全渠道订单的售后单，如果不是全渠道订单的售后单，不能选择店仓
+        this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
             String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
@@ -539,28 +539,22 @@ public class Shipments {
         }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-        Long warehosueId = shipmentExtra.getWarehouseId();
-        Response<Warehouse> rWarehosue = warehouseReadService.findById(warehosueId);
-        if (!rWarehosue.isSuccess()){
-            log.error("find warehouse failed");
-            throw new JsonResponseException(rWarehosue.getError());
-        }else{
-            Warehouse warehouse = rWarehosue.getResult();
-            //发货仓库是mpos仓且是店仓则同步到门店
-            if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
-                log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
-                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-                shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
-            }else{
-                log.info("sync shipment to hk,shipmentId is {}",shipment.getId());
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                    throw new JsonResponseException(syncRes.getError());
-                }
 
+        //发货仓库是mpos仓且是店仓则同步到门店
+        if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+            log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+        }else{
+            log.info("sync shipment to hk,shipmentId is {}",shipment.getId());
+            Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipment);
+            if (!syncRes.isSuccess()) {
+                log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                throw new JsonResponseException(syncRes.getError());
             }
+
         }
+
     }
 
 
@@ -744,8 +738,24 @@ public class Shipments {
         Warehouse warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
-        shipmentExtra.setWarehouseId(warehouse.getId());
+        //仓库区分是店仓还是总仓
+        if (Objects.equals(warehouse.getType(),0)){
+            //总仓
+            shipmentExtra.setWarehouseId(warehouse.getId());
+            shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
+        }else {
+            //店仓
+            String warehouseName = warehouse.getName();
+            Response<Shop> shopResponse = shopReadService.findByName(warehouseName);
+            if (!shopResponse.isSuccess()){
+                log.error("find parana shop failed,shop name is {},caused by {}",warehouseName,shopResponse.getError());
+                throw new JsonResponseException("find.parana.shop.failed");
+            }
+            shipmentExtra.setWarehouseId(shopResponse.getResult().getId());
+            shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
+        }
         shipmentExtra.setWarehouseName(warehouse.getName());
+
         Map<String, String> warehouseExtra = warehouse.getExtra();
         if (Objects.nonNull(warehouseExtra)) {
             shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode") != null ? warehouseExtra.get("outCode") : "");
@@ -1300,6 +1310,62 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{shopId}/update/amount/origin",method = RequestMethod.PUT)
     public void shipmentAmountOrigin(@PathVariable(value = "shopId")Long shopId) {
          shipmentWiteLogic.shipmentAmountOrigin(shopId);
+    }
+
+    /**
+     *全渠道订单判断是否是店仓发货
+     * @param warehouseIds 仓库列表
+     * @param shopOrderId  店铺订单id
+     */
+    private void validateOrderAllChannelWarehouse(List<Long> warehouseIds,Long shopOrderId){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
+            if (!r.isSuccess()){
+                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
+                throw new JsonResponseException("find.warehouse.failed");
+            }
+            List<Warehouse> warehouses = r.getResult();
+            int count = 0;
+            for (Warehouse warehouse:warehouses){
+                //如果是店仓
+                if (Objects.equals(warehouse.getType(),1)){
+                    count++;
+                }
+            }
+            if (count>0){
+                throw new JsonResponseException("can.not.contain.shop.warehouse");
+            }
+        }
+
+    }
+
+    /**
+     *全渠道订单判断是否是店仓发货
+     * @param warehouseIds 仓库列表
+     * @param refundId  售后订单id
+     */
+    private void validateRefundAllChannelWarehouse(List<Long> warehouseIds,Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        if (!orderReadLogic.isAllChannelOpenShop(refund.getShopId())){
+            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
+            if (!r.isSuccess()){
+                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
+                throw new JsonResponseException("find.warehouse.failed");
+            }
+            List<Warehouse> warehouses = r.getResult();
+            int count = 0;
+            for (Warehouse warehouse:warehouses){
+                //如果是店仓
+                if (Objects.equals(warehouse.getType(),1)){
+                    count++;
+                }
+            }
+            if (count>0){
+                throw new JsonResponseException("can.not.contain.shop.warehouse");
+            }
+        }
+
     }
 }
 

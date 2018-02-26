@@ -36,4 +36,7 @@ public interface PsSkuTemplateWriteService {
     Response<Boolean> updateTypeByIds(List<Long> ids, Integer type);
 
 
+    Response<Boolean>  updateTypeAndExtraById(Long id,Integer type,String extraJson);
+
+
 }

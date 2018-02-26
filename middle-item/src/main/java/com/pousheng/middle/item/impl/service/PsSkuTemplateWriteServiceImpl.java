@@ -68,7 +68,7 @@ public class PsSkuTemplateWriteServiceImpl implements PsSkuTemplateWriteService 
     }
 
     @Override
-    public Response<Boolean> updateTypeAndExtraById(Long id, Integer type, String extraJson) {
+    public Response<Boolean> updateTypeAndExtraById(Long id, Integer type,Integer price, String extraJson) {
         try {
             Boolean isUpdateSuccess = skuTemplateExtDao.updateTypeAndExtraById(id,type,extraJson);
             if(isUpdateSuccess){

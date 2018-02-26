@@ -92,4 +92,11 @@ public class SyncMposApi {
         log.info("response:{}",responseBody);
         return responseBody;
     }
+
+    public String revokeMposShipment(Map<String,Object> param){
+        log.info("revoke shipments for mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"sync.mposShipment.cancel.api",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
 }

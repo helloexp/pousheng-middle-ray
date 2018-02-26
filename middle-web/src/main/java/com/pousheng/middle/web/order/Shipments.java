@@ -405,9 +405,22 @@ public class Shipments {
                     continue;
                 }
             }
-            Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
-            if (!syncRes.isSuccess()) {
-                log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+            //手动生成销售发货单可以支持同步到店铺
+            Response<Warehouse> rWarehosue = warehouseReadService.findById(warehouseId);
+            if (!rWarehosue.isSuccess()){
+                log.error("find warehouse failed");
+                throw new JsonResponseException(rWarehosue.getError());
+            }else {
+                Warehouse warehouse = rWarehosue.getResult();
+                if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
+                    log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+                    shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+                }
+
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                }
             }
         }
         return shipmentIds;

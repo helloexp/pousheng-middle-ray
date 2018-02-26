@@ -226,4 +226,20 @@ public class SyncMposShipmentLogic{
         param.put("outerSkuCodes",mapper.toJson(skuCodes));
         return param;
     }
+
+    public boolean revokeMposShipment(Shipment shipment){
+        try {
+            Map<String,Object> param = Maps.newHashMap();
+            param.put("outerShipmentId",shipment.getId());
+            MposResponse res = mapper.fromJson(syncMposApi.revokeMposShipment(param),MposResponse.class);
+            if (res.isSuccess()){
+                return true;
+            }else{
+                return false;
+            }
+        }catch (Exception e){
+            log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),e.getMessage());
+            return false;
+        }
+    }
 }

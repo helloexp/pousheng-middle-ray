@@ -208,7 +208,20 @@ public class ShipmentWiteLogic {
                     throw new JsonResponseException(syncRes.getError());
                 }
             }
+            //
             if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())&&Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+                //撤销
+                if (Objects.equals(type,1)){
+                    boolean result = syncMposShipmentLogic.revokeMposShipment(shipment);
+                    if (!result){
+                        //撤销失败
+                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
+                        if (!updateRes.isSuccess()) {
+                            log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
+                        }
+                        return false;
+                    }
+                }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {

@@ -124,8 +124,8 @@ public class SyncYYEdiShipmentLogic {
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    return Response.fail(updateSyncStatusRes.getError());
                 }
+                return Response.fail(response.getErrorCode());
             }
         } catch (Exception e) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -317,7 +317,7 @@ public class SyncYYEdiShipmentLogic {
         //邮编
         shipmentInfo.setZipCode(receiverInfo.getPostcode());
         //收件人电话
-        shipmentInfo.setBuyerTel(receiverInfo.getPhone());
+        shipmentInfo.setBuyerTel(receiverInfo.getMobile());
         //手机号码
         shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
         //寄件人姓名
@@ -340,7 +340,13 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
         //代收金额:商品总金额+运费
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            //判断有没有拆单过
+            if (shipmentReadLogic.isOrderHasMoreShipments(shopOrder)){
+                shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            }else{
+                Long totalPrice = (shopOrder.getFee()==null?0L:shopOrder.getFee())+(shopOrder.getShipFee()==null?0L:shopOrder.getShipFee());
+                shipmentInfo.setCollectionAmount(new BigDecimal(totalPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            }
         }else{
             shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
         }
@@ -350,7 +356,7 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //线上实付金额
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())) {
-            shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+            shipmentInfo.setPayAmountBakUp(new BigDecimal(0.00));
         }else{
             shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
         }
@@ -360,10 +366,13 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPromZRAmount(new BigDecimal(0.00));
         //运费到付
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            //货到付款运费金额为0则运费到付传0
-             shipmentInfo.setFreightPay(0);
-            //货到付款运费金额不为0则运费到付传1
-            shipmentInfo.setFreightPay(1);
+            if (Objects.equals(shipmentInfo.getExpressAmount().toString(),"0.00")){
+                //货到付款运费金额为0则运费到付传0
+                shipmentInfo.setFreightPay(0);
+            }else{
+                //货到付款运费金额不为0则运费到付传1
+                shipmentInfo.setFreightPay(1);
+            }
         }else{
             //在线支付传0
             shipmentInfo.setFreightPay(0);

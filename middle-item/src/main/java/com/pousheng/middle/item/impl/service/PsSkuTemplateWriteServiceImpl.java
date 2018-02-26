@@ -66,4 +66,19 @@ public class PsSkuTemplateWriteServiceImpl implements PsSkuTemplateWriteService 
             return Response.fail("sku.template.update.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> updateTypeAndExtraById(Long id, Integer type, String extraJson) {
+        try {
+            Boolean isUpdateSuccess = skuTemplateExtDao.updateTypeAndExtraById(id,type,extraJson);
+            if(isUpdateSuccess){
+                return Response.ok(isUpdateSuccess);
+            }else {
+                return Response.fail("sku.template.update.fail");
+            }
+        } catch (Exception e) {
+            log.error("failed to update skuTemplate:(id:{}) type to:{} extra to:{}, cause:{}", id,type, extraJson,Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.template.update.fail");
+        }
+    }
 }

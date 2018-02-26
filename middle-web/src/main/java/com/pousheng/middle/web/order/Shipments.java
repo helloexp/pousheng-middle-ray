@@ -408,12 +408,13 @@ public class Shipments {
                 if (Objects.equals(warehouse.getType(),1)&&Objects.equals(warehouse.getIsMpos(),1)){
                     log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
                     shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+                }else{
+                    Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
+                    }
                 }
 
-                Response<Boolean> syncRes = syncShipmentLogic.syncShipmentToHk(shipmentRes.getResult());
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                }
             }
         }
         return shipmentIds;

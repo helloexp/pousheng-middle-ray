@@ -15,6 +15,16 @@ public class AbnormalRecord {
     @ExportTitle("货号")
     private String code;
 
+
+    //尺码
+    @ExportTitle("尺码")
+    private String size;
+
+
+    //名称
+    @ExportTitle("名称")
+    private String name;
+
     //条码
     @ExportTitle("条码")
     private String skuCode;

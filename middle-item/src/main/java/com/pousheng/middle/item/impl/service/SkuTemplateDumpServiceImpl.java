@@ -134,26 +134,16 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     }
 
     @Override
-    public Response<Boolean> batchDump(List<Long> skuTemplateIds,Integer type) {
+    public Response<Boolean> batchDump(List<SkuTemplate> skuTemplates,Integer type) {
         try {
-
-            if(CollectionUtils.isEmpty(skuTemplateIds)){
+            if(CollectionUtils.isEmpty(skuTemplates)){
                 return Response.ok();
             }
-
-            Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(skuTemplateIds);
-            if(!listRes.isSuccess()){
-                log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,listRes.getError());
-                return Response.fail(listRes.getError());
-            }
-
-            List<SkuTemplate> skuTemplateLists = listRes.getResult();
-
-            toDump(skuTemplateLists,Boolean.TRUE,type);
+            toDump(skuTemplates,Boolean.TRUE,type);
 
             return Response.ok();
         }catch (Exception e){
-            log.error("batch dump sku template ids:{} fail,cause:{}",skuTemplateIds,Throwables.getStackTraceAsString(e));
+            log.error("batch dump sku template:{} fail,cause:{}",skuTemplates,Throwables.getStackTraceAsString(e));
             return Response.fail("batch.dump.fail");
         }
     }

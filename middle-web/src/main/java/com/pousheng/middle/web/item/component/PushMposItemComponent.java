@@ -5,6 +5,9 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.enums.PsSpuType;
+import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.web.item.batchhandle.BatchHandleMposLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -39,6 +42,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 推送mpos商品
@@ -70,6 +74,8 @@ public class PushMposItemComponent {
     private PushedItemWriteService pushedItemWriteService;
     @Autowired
     private BatchHandleMposLogic batchHandleMposLogic;
+    @Autowired
+    private PsSkuTemplateWriteService psSkuTemplateWriteService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -81,18 +87,18 @@ public class PushMposItemComponent {
 
     /**
      * 批量设置默认折扣
-     * @param skuTemplateIds
+     * @param skuTemplates
      */
-    public void batchMakeFlag(List<Long> skuTemplateIds,Integer type){
+    public void batchMakeFlag(List<SkuTemplate> skuTemplates,Integer type){
 
-        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findByIds(skuTemplateIds);
-        if(!skuTemplateRes.isSuccess()){
-            log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,skuTemplateRes.getError());
-            return;
+        List<SkuTemplate> toUpdates = Lists.newArrayListWithCapacity(skuTemplates.size());
+        for (SkuTemplate skuTemplate : skuTemplates) {
+            toUpdates.add(makeUpdateSku(skuTemplate,type));
+            //itemExecutor.submit(new ItemSetDiscountTask(skuTemplate,type));
         }
-
-        for (SkuTemplate skuTemplate : skuTemplateRes.getResult()) {
-            itemExecutor.submit(new ItemSetDiscountTask(skuTemplate,type));
+        Response<Boolean> updateRes = psSkuTemplateWriteService.updateBatch(toUpdates);
+        if(!updateRes.isSuccess()){
+            log.error("batch update sku template fail,error:{} ",updateRes.getError());
         }
     }
 
@@ -108,9 +114,61 @@ public class PushMposItemComponent {
 
         @Override
         public void run() {
-            batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplate,type);
+            makeFlagAndSetDiscount(skuTemplate,type);
         }
     }
+
+
+    /**
+     * 打标并设置默认折扣
+     * @param exist        商品
+     * @param type      打标/取消打标
+     */
+    public Response<Boolean> makeFlagAndSetDiscount(SkuTemplate exist,Integer type){
+        log.info("sku(id:{}) make flag start..",exist.getId());
+
+        SkuTemplate toUpdate = makeUpdateSku(exist,type);
+        //这里的折扣默认都是1
+        Response<Boolean> resp = psSkuTemplateWriteService.updateTypeAndExtraById(toUpdate.getId(),toUpdate.getType(),toUpdate.getPrice(),toUpdate.getExtraJson());
+        if (!resp.isSuccess()) {
+            log.error("update SkuTemplate(id:{}) failed error={}",toUpdate.getId(),resp.getError());
+            return Response.fail(resp.getError());
+        }
+        log.info("sku(id:{}) make flag over..",exist.getId());
+        return Response.ok();
+    }
+
+    private SkuTemplate makeUpdateSku(SkuTemplate exist,Integer type){
+
+        Integer discount = 100;
+        Map<String,String> extra = exist.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            extra = Maps.newHashMap();
+        }
+        SkuTemplate toUpdate = new SkuTemplate();
+        toUpdate.setId(exist.getId());
+        toUpdate.setType(type);
+        //如果本来不包含折扣，默认设置折扣
+        if(Objects.equals(type, PsSpuType.MPOS.value()) && !extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+            extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
+            toUpdate.setExtra(extra);
+            Integer originPrice = 0;
+            if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+                originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+            }
+
+            if(Objects.equals(originPrice,0)){
+                log.error("[PRICE-INVALID]:sku template:(id:{}) price  code:{} invalid",exist.getId(),exist.getSkuCode());
+            }
+
+            toUpdate.setPrice(originPrice);
+        }
+
+        return toUpdate;
+
+    }
+
+
 
     private class ItemPushTask implements Runnable {
 

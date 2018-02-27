@@ -129,18 +129,33 @@ public class BatchAsyncHandleMposListener {
                 next = batchHandleMposFlag(pageNo,BATCH_SIZE, params,operateType,contextId,skuTemplateIds);
                 log.info("async handle mpos flag " + pageNo * 100);
                 if(pageNo % 10 == 0){
-                    skuTemplateDumpService.batchDump(skuTemplateIds,operateType);
-                    pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
+
+                    Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(skuTemplateIds);
+                    if(!listRes.isSuccess()){
+                        log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,listRes.getError());
+                        continue;
+                    }
+                    List<SkuTemplate> skuTemplateLists = listRes.getResult();
+                    skuTemplateDumpService.batchDump(skuTemplateLists,operateType);
+                    pushMposItemComponent.batchMakeFlag(skuTemplateLists,operateType);
                     skuTemplateIds.clear();
                 }
             }
 
             //非1000条的更新下
             if(!CollectionUtils.isEmpty(skuTemplateIds)){
+
+                Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(skuTemplateIds);
+                if(!listRes.isSuccess()){
+                    log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,listRes.getError());
+                    return;
+                }
+                List<SkuTemplate> skuTemplateLists = listRes.getResult();
+
                 //批量更新es
-                skuTemplateDumpService.batchDump(skuTemplateIds,operateType);
+                skuTemplateDumpService.batchDump(skuTemplateLists,operateType);
                 //批量打标
-                pushMposItemComponent.batchMakeFlag(skuTemplateIds,operateType);
+                pushMposItemComponent.batchMakeFlag(skuTemplateLists,operateType);
             }
             recordToRedis(key,PsItemConstants.EXECUTED,userId);
             log.info("async handle mpos flag task end......");
@@ -375,7 +390,7 @@ public class BatchAsyncHandleMposListener {
             throw new JsonResponseException("read.excel.fail");
         }
 
-        List<Long> skuTemplateIds = Lists.newArrayList();
+        List<SkuTemplate> skuTemplates = Lists.newArrayList();
 
         for (int i = 0;i<list.size();i++) {
             String[] strs = list.get(i);
@@ -412,23 +427,23 @@ public class BatchAsyncHandleMposListener {
                     }
 
                     //设置默认折扣 和价格
-                    Response<Boolean> makeFlagRes = batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplate,PsSpuType.MPOS.value());
+                    /*Response<Boolean> makeFlagRes = batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplate,PsSpuType.MPOS.value());
                     if(!makeFlagRes.isSuccess()){
                         log.error("make flag (sku template id:{}) fail",skuTemplateId);
                         appendErrorToExcel(helper,strs,"打标失败："+makeFlagRes.getError());
                         continue;
-                    }
+                    }*/
 
 
-                    skuTemplateIds.add(skuTemplateId);
+                    skuTemplates.add(skuTemplate);
 
                     //每1000条更新下mysql和search
-                    if (i % 10000 == 0) {
+                    if (i % 1000 == 0) {
                         //更新es
-                        skuTemplateDumpService.batchDump(skuTemplateIds,2);
+                        skuTemplateDumpService.batchDump(skuTemplates,2);
                         //设置默认折扣 和价格
-                        //pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
-                        skuTemplateIds.clear();
+                        pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
+                        skuTemplates.clear();
                     }
                 }catch (Exception jre){
                     appendErrorToExcel(helper,strs,"处理失败");
@@ -438,9 +453,9 @@ public class BatchAsyncHandleMposListener {
         }
 
         //非1000条的更新下
-        if(!CollectionUtils.isEmpty(skuTemplateIds)){
-            skuTemplateDumpService.batchDump(skuTemplateIds,2);
-            //pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
+        if(!CollectionUtils.isEmpty(skuTemplates)){
+            skuTemplateDumpService.batchDump(skuTemplates,2);
+            pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
         }
         if(helper.size() > 0){
             String url = this.uploadToAzureOSS(helper.transformToFile());

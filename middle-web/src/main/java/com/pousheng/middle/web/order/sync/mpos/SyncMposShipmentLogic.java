@@ -19,6 +19,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -203,8 +204,9 @@ public class SyncMposShipmentLogic{
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
         param.put("orderId",shopOrder.getOutId());
-        Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+        Response<Shop> shopResponse = shopReadService.findByName(shipmentExtra.getWarehouseName());
         if(!shopResponse.isSuccess()){
             log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
             throw new ServiceException("find.shop.not.exists");

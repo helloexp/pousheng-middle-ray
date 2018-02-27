@@ -57,6 +57,44 @@ public class SkuTemplates {
 
 
 
+    @RequestMapping(value = "/api/sku-template/batch/update", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> batchUpdate(@RequestParam String ids) {
+       List<Long> idss =  Splitters.splitToLong(ids,Splitters.COMMA);
+
+        Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(idss);
+
+        List<SkuTemplate> skuTemplates = listRes.getResult();
+
+        List<SkuTemplate> updates = Lists.newArrayListWithCapacity(skuTemplates.size());
+
+
+        for (SkuTemplate exist : skuTemplates){
+            Map<String,String> extra = exist.getExtra();
+            SkuTemplate toUpdate = new SkuTemplate();
+            toUpdate.setId(exist.getId());
+            toUpdate.setType(2);
+            //如果本来不包含折扣，默认设置折扣
+            if(Objects.equals(2,PsSpuType.MPOS.value()) && !extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
+                extra.put(PsItemConstants.MPOS_DISCOUNT,"100");
+                toUpdate.setExtra(extra);
+                Integer originPrice = 0;
+                if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
+                    originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
+                }
+
+                if(Objects.equals(originPrice,0)){
+                    log.error("[PRICE-INVALID]:sku template:(id:{}) price  code:{} invalid",exist.getId(),exist.getSkuCode());
+                }
+
+                toUpdate.setPrice(originPrice);
+            }
+            updates.add(toUpdate);
+        }
+        return psSkuTemplateWriteService.updateBatch(updates);
+    }
+
+
+
     @ApiOperation("根据id查询商品信息")
     @RequestMapping(value = "/api/sku-template/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<SkuTemplate> findShopByUserId(@PathVariable("id") Long id) {

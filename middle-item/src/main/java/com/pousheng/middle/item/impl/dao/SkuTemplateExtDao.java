@@ -51,8 +51,14 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
 
     }
 
-    public Boolean updateTypeAndExtraById(Long id,Integer type,String extraJson){
-        return getSqlSession().update(sqlId("updateTypeAndExtraById"),ImmutableMap.of("id",id,"type",type,"extraJson",extraJson))>0;
+    public Boolean updateTypeAndExtraById(Long id,Integer type,Integer price,String extraJson){
+        return getSqlSession().update(sqlId("updateTypeAndExtraById"),ImmutableMap.of("id",id,"type",type,"price",price,"extraJson",extraJson))>0;
+
+    }
+
+
+    public Boolean updateBatch(List<SkuTemplate> skuTemplates){
+        return getSqlSession().update(sqlId("updateBatch"),skuTemplates)>0;
 
     }
 

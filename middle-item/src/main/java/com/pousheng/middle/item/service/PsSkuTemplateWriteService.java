@@ -36,7 +36,10 @@ public interface PsSkuTemplateWriteService {
     Response<Boolean> updateTypeByIds(List<Long> ids, Integer type);
 
 
-    Response<Boolean>  updateTypeAndExtraById(Long id,Integer type,String extraJson);
+    Response<Boolean>  updateTypeAndExtraById(Long id,Integer type,Integer price,String extraJson);
+
+
+    Response<Boolean>  updateBatch(List<SkuTemplate> skuTemplates);
 
 
 }

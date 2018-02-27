@@ -68,9 +68,9 @@ public class PsSkuTemplateWriteServiceImpl implements PsSkuTemplateWriteService 
     }
 
     @Override
-    public Response<Boolean> updateTypeAndExtraById(Long id, Integer type, String extraJson) {
+    public Response<Boolean> updateTypeAndExtraById(Long id, Integer type,Integer price, String extraJson) {
         try {
-            Boolean isUpdateSuccess = skuTemplateExtDao.updateTypeAndExtraById(id,type,extraJson);
+            Boolean isUpdateSuccess = skuTemplateExtDao.updateTypeAndExtraById(id,type,price,extraJson);
             if(isUpdateSuccess){
                 return Response.ok(isUpdateSuccess);
             }else {
@@ -78,6 +78,21 @@ public class PsSkuTemplateWriteServiceImpl implements PsSkuTemplateWriteService 
             }
         } catch (Exception e) {
             log.error("failed to update skuTemplate:(id:{}) type to:{} extra to:{}, cause:{}", id,type, extraJson,Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.template.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateBatch(List<SkuTemplate> skuTemplates) {
+        try {
+            Boolean isUpdateSuccess = skuTemplateExtDao.updateBatch(skuTemplates);
+            if(isUpdateSuccess){
+                return Response.ok(isUpdateSuccess);
+            }else {
+                return Response.fail("sku.template.update.fail");
+            }
+        } catch (Exception e) {
+            log.error("failed to update skuTemplate, cause:{}",Throwables.getStackTraceAsString(e));
             return Response.fail("sku.template.update.fail");
         }
     }

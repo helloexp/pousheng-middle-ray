@@ -5,6 +5,7 @@
 package com.pousheng.middle.item.service;
 
 import io.terminus.common.model.Response;
+import io.terminus.parana.spu.model.SkuTemplate;
 
 import java.util.List;
 
@@ -28,9 +29,9 @@ public interface SkuTemplateDumpService {
 
     /**
      * 批量打标
-     * @param skuTemplateIds skuTemplateId集合
+     * @param skuTemplates skuTemplateId集合
      * @param type 商品类型
      * @return 是否dump成功
      */
-    Response<Boolean> batchDump(List<Long> skuTemplateIds,Integer type);
+    Response<Boolean> batchDump(List<SkuTemplate> skuTemplates, Integer type);
 }

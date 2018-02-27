@@ -53,9 +53,43 @@
 
     <update id="updateTypeAndExtraById" parameterType="map">
         UPDATE
-        <include refid="tb"/>``
+        <include refid="tb"/>
         SET `type` = #{type},extra = #{extraJson},price =#{price}, updated_at = now()
         WHERE id = #{id}
+    </update>
+
+
+    <update id="updateBatch" parameterType="list">
+        update
+        <include refid="tb"/>
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="type =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.type!=null">
+                        when id=#{i.id} then #{i.type}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix=" extra =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.extraJson!=null">
+                        when id=#{i.id} then #{i.extraJson}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="price =case" suffix="end," >
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.price!=null">
+                        when id=#{i.id} then #{i.price}
+                    </if>
+                </foreach>
+            </trim>
+        </trim>
+        where
+        <foreach collection="list" separator="or" item="i" index="index" >
+            id=#{i.id}
+        </foreach>
     </update>
 
 

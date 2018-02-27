@@ -154,49 +154,7 @@ public class BatchHandleMposLogic {
     }
 
 
-    /**
-     * 打标并设置默认折扣
-     * @param id        商品
-     * @param type      打标/取消打标
-     */
-    public void makeFlagAndSetDiscount(Long id,Integer type){
-        log.info("sku(id:{}) make flag start..",id);
-        Integer discount = 100;
-        Response<SkuTemplate> rExist = skuTemplateReadService.findById(id);
-        if(!rExist.isSuccess()){
-            log.error("sku(id:{}) make flag failed,cause:{}",id,rExist.getError());
-            return ;
-        }
-        SkuTemplate exist = rExist.getResult();
-        Map<String,String> extra = exist.getExtra();
-        if(CollectionUtils.isEmpty(extra)){
-            extra = Maps.newHashMap();
-        }
-        SkuTemplate toUpdate = new SkuTemplate();
-        toUpdate.setId(exist.getId());
-        toUpdate.setType(type);
-        //如果本来不包含折扣，默认设置折扣
-        if(Objects.equals(type,PsSpuType.MPOS.value()) && !extra.containsKey(PsItemConstants.MPOS_DISCOUNT)){
-            extra.put(PsItemConstants.MPOS_DISCOUNT,discount.toString());
-            toUpdate.setExtra(extra);
-            Integer originPrice = 0;
-            if (exist.getExtraPrice() != null&&exist.getExtraPrice().containsKey(PsItemConstants.ORIGIN_PRICE_KEY)) {
-                originPrice = exist.getExtraPrice().get(PsItemConstants.ORIGIN_PRICE_KEY);
-            }
 
-            if(Objects.equals(originPrice,0)){
-                log.error("[PRICE-INVALID]:sku template:(id:{}) price  code:{} invalid",exist.getId(),exist.getSkuCode());
-            }
-
-            toUpdate.setPrice(originPrice);
-        }
-        //这里的折扣默认都是1
-        Response<Boolean> resp = psSkuTemplateWriteService.updateTypeAndExtraById(toUpdate.getId(),toUpdate.getType(),toUpdate.getPrice(),toUpdate.getExtraJson());
-        if (!resp.isSuccess()) {
-            log.error("update SkuTemplate failed error={}",resp.getError());
-        }
-        log.info("sku(id:{}) make flag over..",exist.getId());
-    }
 
     /**
      * 设置折扣

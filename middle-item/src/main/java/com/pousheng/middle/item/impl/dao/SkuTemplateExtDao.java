@@ -57,5 +57,11 @@ public class SkuTemplateExtDao extends MyBatisDao<SkuTemplate> {
     }
 
 
+    public Boolean updateBatch(List<SkuTemplate> skuTemplates){
+        return getSqlSession().update(sqlId("updateBatch"),skuTemplates)>0;
+
+    }
+
+
 
 }

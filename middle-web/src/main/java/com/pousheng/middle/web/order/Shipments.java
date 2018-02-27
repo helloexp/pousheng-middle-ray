@@ -751,20 +751,11 @@ public class Shipments {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
-            //总仓
-            shipmentExtra.setWarehouseId(warehouse.getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
         }else {
-            //店仓
-            String warehouseName = warehouse.getName();
-            Response<Shop> shopResponse = shopReadService.findByName(warehouseName);
-            if (!shopResponse.isSuccess()){
-                log.error("find parana shop failed,shop name is {},caused by {}",warehouseName,shopResponse.getError());
-                throw new JsonResponseException("find.parana.shop.failed");
-            }
-            shipmentExtra.setWarehouseId(shopResponse.getResult().getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
         }
+        shipmentExtra.setWarehouseId(warehouse.getId());
         shipmentExtra.setWarehouseName(warehouse.getName());
 
         Map<String, String> warehouseExtra = warehouse.getExtra();

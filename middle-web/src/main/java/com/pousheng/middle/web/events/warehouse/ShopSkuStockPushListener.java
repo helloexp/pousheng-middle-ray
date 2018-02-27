@@ -63,6 +63,7 @@ public class ShopSkuStockPushListener {
             log.info("push stock pageNo is {}",pageNo);
             pageNo++;
             if(data.size()<pageSize){
+                log.info("push stock return pageNo is {}",pageNo);
                 return;
             }
         }

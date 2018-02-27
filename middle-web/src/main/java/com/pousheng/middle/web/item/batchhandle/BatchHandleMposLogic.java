@@ -156,18 +156,12 @@ public class BatchHandleMposLogic {
 
     /**
      * 打标并设置默认折扣
-     * @param id        商品
+     * @param exist        商品
      * @param type      打标/取消打标
      */
-    public void makeFlagAndSetDiscount(Long id,Integer type){
-        log.info("sku(id:{}) make flag start..",id);
+    public Response<Boolean> makeFlagAndSetDiscount(SkuTemplate exist,Integer type){
+        log.info("sku(id:{}) make flag start..",exist.getId());
         Integer discount = 100;
-        Response<SkuTemplate> rExist = skuTemplateReadService.findById(id);
-        if(!rExist.isSuccess()){
-            log.error("sku(id:{}) make flag failed,cause:{}",id,rExist.getError());
-            return ;
-        }
-        SkuTemplate exist = rExist.getResult();
         Map<String,String> extra = exist.getExtra();
         if(CollectionUtils.isEmpty(extra)){
             extra = Maps.newHashMap();
@@ -193,9 +187,11 @@ public class BatchHandleMposLogic {
         //这里的折扣默认都是1
         Response<Boolean> resp = psSkuTemplateWriteService.updateTypeAndExtraById(toUpdate.getId(),toUpdate.getType(),toUpdate.getPrice(),toUpdate.getExtraJson());
         if (!resp.isSuccess()) {
-            log.error("update SkuTemplate failed error={}",resp.getError());
+            log.error("update SkuTemplate(id:{}) failed error={}",toUpdate.getId(),resp.getError());
+            return Response.fail(resp.getError());
         }
         log.info("sku(id:{}) make flag over..",exist.getId());
+        return Response.ok();
     }
 
     /**

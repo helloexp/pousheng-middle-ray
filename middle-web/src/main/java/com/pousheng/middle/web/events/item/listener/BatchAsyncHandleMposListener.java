@@ -93,6 +93,7 @@ public class BatchAsyncHandleMposListener {
     private BatchHandleMposLogic batchHandleMposLogic;
 
 
+
     private static final Integer BATCH_SIZE = 100;
 
     private static final int BATCH_RECORD_EXPIRE_TIME = 2592000;
@@ -194,6 +195,15 @@ public class BatchAsyncHandleMposListener {
         }else{
             pushMposItemComponent.del(Lists.newArrayList(exist));
         }
+    }
+
+
+    /**
+     * 同步电商
+     * @param exist 货品
+     */
+    private Response<Boolean> syncParanaMposSku(SkuTemplate exist){
+        return pushMposItemComponent.syncParanaMposItem(exist);
     }
 
     /**
@@ -373,41 +383,55 @@ public class BatchAsyncHandleMposListener {
                     //sku编码
                     String skuCode = strs[3].replace("\"", "");
                 try {
-
                     SearchSkuTemplate searchSkuTemplate = findMposSkuTemplate(skuCode);
                     //不存在记录日志
                     if (Arguments.isNull(searchSkuTemplate)) {
-                        AbnormalRecord abnormalRecord = new AbnormalRecord();
-                        abnormalRecord.setCode(strs[0].replace("\"", ""));
-                        abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
-                        abnormalRecord.setReason("中台不存在该商品");
-                        helper.appendToExcel(abnormalRecord);
+                        appendErrorToExcel(helper,strs,"打标失败：中台不存在该商品");
                         log.error("import make sku code:{} flag fail, error:{}",skuCode,"中台不存在该商品");
                         continue;
                     }
                     Long skuTemplateId = searchSkuTemplate.getId();
 
+                    //判断商品是否有效
+                    Response<SkuTemplate> skuTemplateRes = skuTemplateReadService.findById(skuTemplateId);
+                    if(!skuTemplateRes.isSuccess()){
+                        log.error("find sku template by id:{} fail,error:{}",skuTemplateId,skuTemplateRes.getError());
+                        appendErrorToExcel(helper,strs,"打标失败："+skuTemplateRes.getError());
+                        continue;
+                    }
+
+                    SkuTemplate skuTemplate = skuTemplateRes.getResult();
+
                     //同步电商
-                    syncParanaMposSku(skuTemplateId, PsSpuType.MPOS.value());
+                    //syncParanaMposSku(skuTemplateId, PsSpuType.MPOS.value());
+                    Response<Boolean> syncParanaRes = syncParanaMposSku(skuTemplate);
+                    if(!syncParanaRes.isSuccess()){
+                        log.error("sync parana mpos item(sku template id:{}) fail",skuTemplateId);
+                        appendErrorToExcel(helper,strs,"同步电商失败："+syncParanaRes.getError());
+                        continue;
+                    }
+
+                    //设置默认折扣 和价格
+                    Response<Boolean> makeFlagRes = batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplate,PsSpuType.MPOS.value());
+                    if(!makeFlagRes.isSuccess()){
+                        log.error("make flag (sku template id:{}) fail",skuTemplateId);
+                        appendErrorToExcel(helper,strs,"打标失败："+makeFlagRes.getError());
+                        continue;
+                    }
+
 
                     skuTemplateIds.add(skuTemplateId);
 
                     //每1000条更新下mysql和search
-                    if (i % 1000 == 0) {
-                        //更新mysql
-                        //psSkuTemplateWriteService.updateTypeByIds(skuTemplateIds, PsSpuType.MPOS.value());
+                    if (i % 10000 == 0) {
                         //更新es
                         skuTemplateDumpService.batchDump(skuTemplateIds,2);
-                        //设置默认折扣 目前由于批量打标默认折扣为1，所以就先手动执行sql脚本把价格维护好，这里就不调用了
-                        pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
+                        //设置默认折扣 和价格
+                        //pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
                         skuTemplateIds.clear();
                     }
                 }catch (Exception jre){
-                    AbnormalRecord abnormalRecord = new AbnormalRecord();
-                    abnormalRecord.setCode(strs[0].replace("\"", ""));
-                    abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
-                    abnormalRecord.setReason(jre.getMessage());
-                    helper.appendToExcel(abnormalRecord);
+                    appendErrorToExcel(helper,strs,"处理失败");
                     log.error("import make sku code:{} flag fail, cause:{}",skuCode,Throwables.getStackTraceAsString(jre));
                 }
             }
@@ -416,7 +440,7 @@ public class BatchAsyncHandleMposListener {
         //非1000条的更新下
         if(!CollectionUtils.isEmpty(skuTemplateIds)){
             skuTemplateDumpService.batchDump(skuTemplateIds,2);
-            pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
+            //pushMposItemComponent.batchMakeFlag(skuTemplateIds,PsSpuType.MPOS.value());
         }
         if(helper.size() > 0){
             String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -426,6 +450,16 @@ public class BatchAsyncHandleMposListener {
             recordToRedis(key,PsItemConstants.EXECUTED,userId);
         }
         log.info("async import mpos flag task end");
+    }
+
+    private void appendErrorToExcel(ExcelExportHelper<AbnormalRecord> helper,String[] strs,String error){
+        AbnormalRecord abnormalRecord = new AbnormalRecord();
+        abnormalRecord.setCode(strs[0].replace("\"", ""));
+        abnormalRecord.setSize(strs[1].replace("\"", ""));
+        abnormalRecord.setName(strs[2].replace("\"", ""));
+        abnormalRecord.setSkuCode(strs[3].replace("\"", ""));
+        abnormalRecord.setReason(error);
+        helper.appendToExcel(abnormalRecord);
     }
 
 

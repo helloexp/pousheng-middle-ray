@@ -29,6 +29,7 @@ import io.terminus.open.client.item.service.PushedItemWriteService;
 import io.terminus.open.client.parana.component.ParanaClient;
 import io.terminus.open.client.parana.dto.ParanaCallResult;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,6 +63,8 @@ public class PushMposItemComponent {
     @RpcConsumer
     private MappingWriteService mappingWriteService;
     @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
     private MappingReadService mappingReadService;
     @RpcConsumer
     private PushedItemWriteService pushedItemWriteService;
@@ -81,24 +84,31 @@ public class PushMposItemComponent {
      * @param skuTemplateIds
      */
     public void batchMakeFlag(List<Long> skuTemplateIds,Integer type){
-        for (Long skuTemplateId: skuTemplateIds) {
-            itemExecutor.submit(new ItemSetDiscountTask(skuTemplateId,type));
+
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findByIds(skuTemplateIds);
+        if(!skuTemplateRes.isSuccess()){
+            log.error("find sku template by ids:{} fail,error:{}",skuTemplateIds,skuTemplateRes.getError());
+            return;
+        }
+
+        for (SkuTemplate skuTemplate : skuTemplateRes.getResult()) {
+            itemExecutor.submit(new ItemSetDiscountTask(skuTemplate,type));
         }
     }
 
     private class ItemSetDiscountTask implements  Runnable {
-        private final Long skuTemplateId;
+        private final SkuTemplate skuTemplate;
 
         private final Integer type;
 
-        public ItemSetDiscountTask(Long skuTemplateId,Integer type) {
-            this.skuTemplateId = skuTemplateId;
+        public ItemSetDiscountTask(SkuTemplate skuTemplate,Integer type) {
+            this.skuTemplate = skuTemplate;
             this.type = type;
         }
 
         @Override
         public void run() {
-            batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplateId,type);
+            batchHandleMposLogic.makeFlagAndSetDiscount(skuTemplate,type);
         }
     }
 
@@ -112,79 +122,86 @@ public class PushMposItemComponent {
 
         @Override
         public void run() {
+            syncParanaMposItem(skuTemplate);
+        }
+    }
 
-            ParanaFullItem paranaFullItem = mposParanaFullItemMaker.make(skuTemplate);
-            ParanaItem paranaItem = paranaFullItem.getItem();
 
-            Response<ItemResult> addR = itemServiceCenter.addItem(mposOpenShopId, paranaFullItem);
-            if (!addR.isSuccess()) {
-                log.error("fail to add item:{} for openShop(id={}),cause:{}", paranaFullItem, mposOpenShopId, addR.getError());
-            }else {
-                OpenShop openShop = openShopCacher.findById(mposOpenShopId);
-                Map<String, List<ParanaSkuAttribute>> paranaSkuAttributesBySkuCode = Maps.newHashMapWithExpectedSize(paranaFullItem.getSkus().size());
-                for (ParanaSku paranaSku : paranaFullItem.getSkus()) {
-                    paranaSkuAttributesBySkuCode.put(paranaSku.getSkuCode(), paranaSku.getSkuAttributes());
-                }
+    public Response<Boolean> syncParanaMposItem(SkuTemplate skuTemplate){
+        ParanaFullItem paranaFullItem = mposParanaFullItemMaker.make(skuTemplate);
+        ParanaItem paranaItem = paranaFullItem.getItem();
 
-                ItemResult itemResult = addR.getResult();
-                List<ItemMapping> createdItemMappings = Lists.newArrayListWithCapacity(itemResult.getOpenSkuIds().size());
-                for (Map.Entry<String, String> entry : itemResult.getOpenSkuIds().entrySet()) {
-                    ItemMapping itemMapping = new ItemMapping();
-                    itemMapping.setChannel(openShop.getChannel());
-                    itemMapping.setOpenShopId(openShop.getId());
-                    itemMapping.setOpenShopName(openShop.getShopName());
-                    itemMapping.setItemId(paranaFullItem.getItem().getItemId());
-                    itemMapping.setItemName(paranaFullItem.getItem().getName());
-                    itemMapping.setChannelItemId(itemResult.getOpenItemId());
-                    itemMapping.setSkuCode(entry.getKey());
-                    itemMapping.setChannelSkuId(entry.getValue());
-                    itemMapping.setStatus(1);
-
-                    List<ParanaSkuAttribute> paranaSkuAttributes = paranaSkuAttributesBySkuCode.get(entry.getKey());
-                    if (!CollectionUtils.isEmpty(paranaSkuAttributes)) {
-                        List<OpenClientSkuAttribute> skuAttributes = Lists.newArrayListWithCapacity(paranaSkuAttributes.size());
-                        for (ParanaSkuAttribute paranaSkuAttribute : paranaSkuAttributes) {
-                            OpenClientSkuAttribute openClientSkuAttribute = new OpenClientSkuAttribute();
-                            openClientSkuAttribute.setAttributeKeyId(paranaSkuAttribute.getAttributeKeyId());
-                            openClientSkuAttribute.setAttributeKey(paranaSkuAttribute.getAttributeKey());
-                            openClientSkuAttribute.setAttributeValueId(paranaSkuAttribute.getAttributeValueId());
-                            openClientSkuAttribute.setAttributeValue(paranaSkuAttribute.getAttributeValue());
-                            skuAttributes.add(openClientSkuAttribute);
-                        }
-                        itemMapping.setSkuAttributes(skuAttributes);
-                    }
-
-                    //判断是否已经存在
-                    if(mappingIsExist(itemMapping)){
-                        continue;
-                    }
-                    createdItemMappings.add(itemMapping);
-                }
-                Response<Boolean> createItemMappingsR = mappingWriteService.createItemMappings(createdItemMappings);
-                if (!createItemMappingsR.isSuccess()) {
-                    log.error("fail to create item mappings:{},cause:{}", createdItemMappings, createItemMappingsR.getError());
-                }
-
-                PushedItem pushedItem = new PushedItem();
-                pushedItem.setChannel(openShop.getChannel());
-                pushedItem.setOpenShopId(openShop.getId());
-                pushedItem.setOpenShopName(openShop.getShopName());
-                pushedItem.setItemId(paranaItem.getItemId());
-                pushedItem.setItemName(paranaItem.getName());
-                if (addR.isSuccess()) {
-                    pushedItem.setStatus(1);
-                    pushedItem.setSyncOpenIdStatus(itemResult.isNeedSyncOpenId() ? 0 : 1);
-                    pushedItem.setChannelItemId(itemResult.getOpenItemId());
-                    pushedItem.setCause("");
-                } else {
-                    pushedItem.setStatus(-1);
-                    pushedItem.setSyncOpenIdStatus(-1);
-                    pushedItem.setCause(addR.getError());
-                }
-                createOrUpdatePushedItem(pushedItem);
+        Response<ItemResult> addR = itemServiceCenter.addItem(mposOpenShopId, paranaFullItem);
+        if (!addR.isSuccess()) {
+            log.error("fail to add item:{} for openShop(id={}),cause:{}", paranaFullItem, mposOpenShopId, addR.getError());
+            return Response.fail(addR.getError());
+        }else {
+            OpenShop openShop = openShopCacher.findById(mposOpenShopId);
+            Map<String, List<ParanaSkuAttribute>> paranaSkuAttributesBySkuCode = Maps.newHashMapWithExpectedSize(paranaFullItem.getSkus().size());
+            for (ParanaSku paranaSku : paranaFullItem.getSkus()) {
+                paranaSkuAttributesBySkuCode.put(paranaSku.getSkuCode(), paranaSku.getSkuAttributes());
             }
 
+            ItemResult itemResult = addR.getResult();
+            List<ItemMapping> createdItemMappings = Lists.newArrayListWithCapacity(itemResult.getOpenSkuIds().size());
+            for (Map.Entry<String, String> entry : itemResult.getOpenSkuIds().entrySet()) {
+                ItemMapping itemMapping = new ItemMapping();
+                itemMapping.setChannel(openShop.getChannel());
+                itemMapping.setOpenShopId(openShop.getId());
+                itemMapping.setOpenShopName(openShop.getShopName());
+                itemMapping.setItemId(paranaFullItem.getItem().getItemId());
+                itemMapping.setItemName(paranaFullItem.getItem().getName());
+                itemMapping.setChannelItemId(itemResult.getOpenItemId());
+                itemMapping.setSkuCode(entry.getKey());
+                itemMapping.setChannelSkuId(entry.getValue());
+                itemMapping.setStatus(1);
+
+                List<ParanaSkuAttribute> paranaSkuAttributes = paranaSkuAttributesBySkuCode.get(entry.getKey());
+                if (!CollectionUtils.isEmpty(paranaSkuAttributes)) {
+                    List<OpenClientSkuAttribute> skuAttributes = Lists.newArrayListWithCapacity(paranaSkuAttributes.size());
+                    for (ParanaSkuAttribute paranaSkuAttribute : paranaSkuAttributes) {
+                        OpenClientSkuAttribute openClientSkuAttribute = new OpenClientSkuAttribute();
+                        openClientSkuAttribute.setAttributeKeyId(paranaSkuAttribute.getAttributeKeyId());
+                        openClientSkuAttribute.setAttributeKey(paranaSkuAttribute.getAttributeKey());
+                        openClientSkuAttribute.setAttributeValueId(paranaSkuAttribute.getAttributeValueId());
+                        openClientSkuAttribute.setAttributeValue(paranaSkuAttribute.getAttributeValue());
+                        skuAttributes.add(openClientSkuAttribute);
+                    }
+                    itemMapping.setSkuAttributes(skuAttributes);
+                }
+
+                //判断是否已经存在
+                if(mappingIsExist(itemMapping)){
+                    continue;
+                }
+                createdItemMappings.add(itemMapping);
+            }
+            Response<Boolean> createItemMappingsR = mappingWriteService.createItemMappings(createdItemMappings);
+            if (!createItemMappingsR.isSuccess()) {
+                log.error("fail to create item mappings:{},cause:{}", createdItemMappings, createItemMappingsR.getError());
+            }
+
+            PushedItem pushedItem = new PushedItem();
+            pushedItem.setChannel(openShop.getChannel());
+            pushedItem.setOpenShopId(openShop.getId());
+            pushedItem.setOpenShopName(openShop.getShopName());
+            pushedItem.setItemId(paranaItem.getItemId());
+            pushedItem.setItemName(paranaItem.getName());
+            if (addR.isSuccess()) {
+                pushedItem.setStatus(1);
+                pushedItem.setSyncOpenIdStatus(itemResult.isNeedSyncOpenId() ? 0 : 1);
+                pushedItem.setChannelItemId(itemResult.getOpenItemId());
+                pushedItem.setCause("");
+            } else {
+                pushedItem.setStatus(-1);
+                pushedItem.setSyncOpenIdStatus(-1);
+                pushedItem.setCause(addR.getError());
+            }
+            createOrUpdatePushedItem(pushedItem);
         }
+
+        return Response.ok();
+
     }
 
 

@@ -128,7 +128,7 @@ public class OrderOpenApi {
      * @param shipmentDate     发货时间
      * @return 是否同步成功
      */
-    @OpenMethod(key = "erp.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
+    @OpenMethod(key = "erp.shipments.api", paramNames = {"shipmentId", "erpShipmentId",
             "shipmentCorpCode", "shipmentSerialNo",
             "shipmentDate"}, httpMethods = RequestMethod.POST)
     public void syncErpShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
@@ -301,6 +301,23 @@ public class OrderOpenApi {
     }
 
     /**
+     * skx将售后单售后结果通知给中台
+     * @param refundOrderId
+     * @param erpRefundOrderId
+     * @param itemInfo
+     * @param receivedDate
+     */
+    @OpenMethod(key = "erp.refund.confirm.received.api", paramNames = {"refundOrderId", "erpRefundOrderId", "itemInfo",
+            "receivedDate"}, httpMethods = RequestMethod.POST)
+    public void syncErpRefundStatus(Long refundOrderId,
+                                   @NotEmpty(message = "hk.refund.order.id.is.null") String erpRefundOrderId,
+                                   @NotEmpty(message = "item.info.empty") String itemInfo,
+                                   @NotEmpty(message = "received.date.empty") String receivedDate
+    ) {
+        syncHkRefundStatus(refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+
+    }
+    /**
      * 恒康将售后单售后结果通知给中台
      * @param refundOrderId
      * @param hkRefundOrderId
@@ -308,8 +325,7 @@ public class OrderOpenApi {
      * @param receivedDate
      */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
-                                                                      "receivedDate","itemCode","quantity"
-                                                                      }, httpMethods = RequestMethod.POST)
+                                                                      "receivedDate"}, httpMethods = RequestMethod.POST)
     public void syncHkRefundStatus(Long refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,

@@ -32,6 +32,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -234,7 +235,12 @@ public class SyncYYEdiReturnLogic {
         //总行数
         refundInfo.setTdq(items.size());
         //yyedi订单号
-        refundInfo.setEDIBillNo(shipmentExtra.getOutShipmentId());
+        if (!StringUtils.isEmpty(shipmentExtra.getOutShipmentId())){
+            refundInfo.setEDIBillNo(shipmentExtra.getOutShipmentId());
+        }else{
+            refundInfo.setEDIBillNo(String.valueOf(shipment.getId()));
+
+        }
         return refundInfo;
     }
 

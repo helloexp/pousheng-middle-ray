@@ -5,6 +5,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -30,11 +31,17 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
 
     @Autowired
     private ShopCacher shopCacher;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
         log.info("DISPATCH-AppointShopDispatchLink-1  order(id:{}) start...",shopOrder.getId());
+        //全渠道订单不判断是否指定门店
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+            return true;
+        }
         Map<String,String> extraMap = shopOrder.getExtra();
         if(!extraMap.containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             log.error("shop order(id:{}) extra not key:{}",shopOrder.getId(),TradeConstants.IS_ASSIGN_SHOP);

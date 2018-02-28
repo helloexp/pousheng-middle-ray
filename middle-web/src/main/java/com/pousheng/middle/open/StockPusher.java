@@ -139,88 +139,97 @@ public class StockPusher {
     public void submit(List<String> skuCodes) {
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
         for (String skuCode : skuCodes) {
-            Long spuId = skuCodeCacher.getUnchecked(skuCode);
-            //找到对应的店铺id, 这些店铺需要进行库存推送
-            Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
-            if (!r.isSuccess()) {
-                log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
-                        spuId, skuCode, r.getError());
-                return;
-            }
-            //计算库存分配并将库存推送到每个外部店铺去
-            List<Long> shopIds = r.getResult();
-            for (Long shopId : shopIds) {
-                try {
-                    //计算每个店铺的可用库存
-                    Long stock = availableStockCalc.availableStock(shopId, skuCode);
-                    log.info("search sku stock by skuCode is {},shopId is {},stock is {}",skuCode,shopId,stock);
-                    Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
-                    if (!rShopStockRule.isSuccess()) {
-                        log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
-                                shopId, rShopStockRule.getError());
-                        return;
-                    }
-                    //和安全库存进行比较, 确定推送库存数量
-                    WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
-                    if (shopStockRule.getStatus() < 0) {//非启用状态
-                        continue;
-                    }
-
-                    if (shopStockRule.getSafeStock() >= stock) {
-                        log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
-                                shopId, shopStockRule.getSafeStock(), skuCode, stock);
-                        Long lastPushStock = shopStockRule.getLastPushStock();
-                        stock = 0L;
-                    }
-
-                    //按照设定的比例确定推送数量
-                    stock = stock * shopStockRule.getRatio() / 100;
-                    //判断店铺是否是官网的
-                    OpenShop openShop = openShopCacher.getUnchecked(shopId);
-                    if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
-                        shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
-                    } else {
-                        //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                        this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
-                    }
-
-
-                } catch (Exception e) {
-                    log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
-                            skuCode, shopId, Throwables.getStackTraceAsString(e));
+            try {
+                Long spuId = skuCodeCacher.getUnchecked(skuCode);
+                //找到对应的店铺id, 这些店铺需要进行库存推送
+                Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
+                if (!r.isSuccess()) {
+                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
+                            spuId, skuCode, r.getError());
+                    continue;
                 }
+                //计算库存分配并将库存推送到每个外部店铺去
+                List<Long> shopIds = r.getResult();
+                for (Long shopId : shopIds) {
+                    try {
+                        //计算每个店铺的可用库存
+                        Long stock = availableStockCalc.availableStock(shopId, skuCode);
+                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}",skuCode,shopId,stock);
+                        Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
+                        if (!rShopStockRule.isSuccess()) {
+                            log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
+                                    shopId, rShopStockRule.getError());
+                            continue;
+                        }
+                        //和安全库存进行比较, 确定推送库存数量
+                        WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
+                        if (shopStockRule.getStatus() < 0) {//非启用状态
+                            continue;
+                        }
+
+                        if (shopStockRule.getSafeStock() >= stock) {
+                            log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
+                                    shopId, shopStockRule.getSafeStock(), skuCode, stock);
+                            Long lastPushStock = shopStockRule.getLastPushStock();
+                            stock = 0L;
+                        }
+
+                        //按照设定的比例确定推送数量
+                        stock = stock * shopStockRule.getRatio() / 100;
+                        //判断店铺是否是官网的
+                        OpenShop openShop = openShopCacher.getUnchecked(shopId);
+                        if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
+                            shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
+                        } else {
+                            //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
+                            this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
+                        }
+
+
+                    } catch (Exception e) {
+                        log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
+                                skuCode, shopId, Throwables.getStackTraceAsString(e));
+                    }
+                }
+            }catch (Exception e){
+                log.error("failed to push stock,sku is {}",skuCode);
             }
         }
         //官网批量推送
         Map<Long, Map<String, Integer>> shopSkuStockMap = shopSkuStock.rowMap();
         for (Long shopId : shopSkuStockMap.keySet()) {
-            List<ParanaSkuStock> paranaSkuStocks = Lists.newArrayList();
-            Map<String, Integer> skuStockMap = shopSkuStockMap.get(shopId);
-            for (String skuCode : skuStockMap.keySet()) {
-                ParanaSkuStock paranaSkuStock = new ParanaSkuStock();
-                paranaSkuStock.setSkuCode(skuCode);
-                paranaSkuStock.setStock(skuStockMap.get(skuCode));
-                paranaSkuStocks.add(paranaSkuStock);
+            try {
+                List<ParanaSkuStock> paranaSkuStocks = Lists.newArrayList();
+                Map<String, Integer> skuStockMap = shopSkuStockMap.get(shopId);
+                for (String skuCode : skuStockMap.keySet()) {
+                    ParanaSkuStock paranaSkuStock = new ParanaSkuStock();
+                    paranaSkuStock.setSkuCode(skuCode);
+                    paranaSkuStock.setStock(skuStockMap.get(skuCode));
+                    paranaSkuStocks.add(paranaSkuStock);
+                }
+                log.info("search sku stock by shopId  is {},paranaSkuStocks is {}",shopId,paranaSkuStocks);
+                Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
+                if (!r.isSuccess()) {
+                    log.error("failed to push stocks {} to shop(id={}), error code{}",
+                            paranaSkuStocks, shopId, r.getError());
+                }
+                //添加日志到缓存中
+                List<StockPushLog> stockPushLogs = Lists.newArrayList();
+                for (ParanaSkuStock paranaSkuStock:paranaSkuStocks){
+                    StockPushLog stockPushLog = new StockPushLog();
+                    stockPushLog.setShopId(shopId);
+                    stockPushLog.setShopName(openShopCacher.getUnchecked(shopId).getShopName());
+                    stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
+                    stockPushLog.setQuantity((long) paranaSkuStock.getStock());
+                    stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
+                    stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(),null,Locale.CHINA));
+                    stockPushLogs.add(stockPushLog);
+                }
+                redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
+
+            }catch (Exception e){
+                log.error("sync offical stock failed,caused by {}",e.getMessage());
             }
-            log.info("search sku stock by shopId  is {},paranaSkuStocks is {}",shopId,paranaSkuStocks);
-            Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
-            if (!r.isSuccess()) {
-                log.error("failed to push stocks {} to shop(id={}), error code{}",
-                        paranaSkuStocks, shopId, r.getError());
-            }
-            //添加日志到缓存中
-            List<StockPushLog> stockPushLogs = Lists.newArrayList();
-            for (ParanaSkuStock paranaSkuStock:paranaSkuStocks){
-                StockPushLog stockPushLog = new StockPushLog();
-                stockPushLog.setShopId(shopId);
-                stockPushLog.setShopName(openShopCacher.getUnchecked(shopId).getShopName());
-                stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
-                stockPushLog.setQuantity((long) paranaSkuStock.getStock());
-                stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
-                stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(),null,Locale.CHINA));
-                stockPushLogs.add(stockPushLog);
-            }
-            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
         }
 
 

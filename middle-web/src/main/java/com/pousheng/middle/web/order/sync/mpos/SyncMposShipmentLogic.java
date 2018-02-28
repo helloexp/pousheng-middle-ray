@@ -19,6 +19,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -100,8 +101,14 @@ public class SyncMposShipmentLogic{
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<String, String> extraMap = shipment.getExtra();
         try{
+            //判断该发货单是全渠道订单的店发发货单还是普通的mpos发货单
+            MposResponse res = null;
             Map<String,Object> param = this.assembShipmentParam(shipment);
-            MposResponse res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())){
+                res = mapper.fromJson(syncMposApi.syncAllChannelShipmnetToMpos(param),MposResponse.class);
+            }else{
+                res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+            }
             if(!res.isSuccess()){
                 log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
                 // 同步失败
@@ -112,6 +119,7 @@ public class SyncMposShipmentLogic{
                 }
                 return Response.fail(res.getError());
             }
+
             shipmentExtra.setMposShipmentId(res.getResult());
         }catch(Exception e){
             // 同步失败
@@ -196,8 +204,9 @@ public class SyncMposShipmentLogic{
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
         param.put("orderId",shopOrder.getOutId());
-        Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+        Response<Shop> shopResponse = shopReadService.findByName(shipmentExtra.getWarehouseName());
         if(!shopResponse.isSuccess()){
             log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
             throw new ServiceException("find.shop.not.exists");
@@ -220,5 +229,19 @@ public class SyncMposShipmentLogic{
         return param;
     }
 
-
+    public boolean revokeMposShipment(Shipment shipment){
+        try {
+            Map<String,Object> param = Maps.newHashMap();
+            param.put("outerShipmentId",shipment.getId());
+            MposResponse res = mapper.fromJson(syncMposApi.revokeMposShipment(param),MposResponse.class);
+            if (res.isSuccess()){
+                return true;
+            }else{
+                return false;
+            }
+        }catch (Exception e){
+            log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),e.getMessage());
+            return false;
+        }
+    }
 }

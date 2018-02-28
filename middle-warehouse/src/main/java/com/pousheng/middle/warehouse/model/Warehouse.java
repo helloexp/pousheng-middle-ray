@@ -67,7 +67,7 @@ public class Warehouse implements Serializable {
     private Long ownerId;
 
     /**
-     * 仓库类别
+     * 仓库类别 0 总仓 1 店仓
      */
     @Setter
     private Integer type;

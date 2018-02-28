@@ -174,7 +174,7 @@ public class SyncYYEdiShipmentLogic {
             } else {
                //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getFields().get(0).getErrorMsg());
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (ServiceException e1) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());

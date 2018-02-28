@@ -125,7 +125,7 @@ public class SyncYYEdiShipmentLogic {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                return Response.fail(response.getErrorCode());
+                return Response.fail(response.getFields().get(0).getErrorMsg());
             }
         } catch (Exception e) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -163,8 +163,8 @@ public class SyncYYEdiShipmentLogic {
             cancelShipmentInfo.setBillNo(String.valueOf(shipment.getId()));
             reqeustData.add(cancelShipmentInfo);
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
-            YYEdiCancelResponse yyEdiCancelShipmentResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiCancelResponse.class);
-            if (Objects.equals(yyEdiCancelShipmentResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
+            YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {
@@ -174,7 +174,7 @@ public class SyncYYEdiShipmentLogic {
             } else {
                //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("订单派发中心返回信息:"+yyEdiCancelShipmentResponse.getDescription());
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (ServiceException e1) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
@@ -468,12 +468,12 @@ public class SyncYYEdiShipmentLogic {
             item.setSKU(shipmentItem.getSkuCode());
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(shipmentItem.getSkuCode()));
             if (!rS.isSuccess()){
-                throw new ServiceException("");
+                throw new ServiceException("find.sku.template.failed");
             }
             List<SkuTemplate> skuTemplates = rS.getResult();
             Optional<SkuTemplate> skuTemplateOptional = skuTemplates.stream().filter(skuTemplate->!Objects.equals(skuTemplate.getStatus(),-3)).findAny();
             if (!skuTemplateOptional.isPresent()){
-                throw new ServiceException("");
+                throw new ServiceException("sku.template.may.be.canceled");
             }
             SkuTemplate skuTemplate = skuTemplateOptional.get();
             Map<String,String> extraMaps = skuTemplate.getExtra();

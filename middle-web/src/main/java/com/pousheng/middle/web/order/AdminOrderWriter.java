@@ -133,8 +133,8 @@ public class AdminOrderWriter {
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
         log.info("try to roll back shop order shopOrderId is {}",shopOrderId);
-        boolean isSuccess = orderWriteLogic.rollbackShopOrder(shopOrderId);
-        if (!isSuccess){
+        Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
+        if (!response.isSuccess()){
             throw new JsonResponseException("rollback.shop.order.failed");
         }
     }
@@ -159,14 +159,14 @@ public class AdminOrderWriter {
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             log.info("try to cancel sku order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            boolean isSuccess = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
-            if (!isSuccess){
+            Response<Boolean> response = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            if (!response.isSuccess()){
                 throw new JsonResponseException("cancel.sku.order.failed");
             }
         } else {
             log.info("try to cancel shop order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            boolean isSuccess = orderWriteLogic.cancelShopOrder(shopOrderId);
-            if (!isSuccess){
+            Response<Boolean> response = orderWriteLogic.cancelShopOrder(shopOrderId);
+            if (!response.isSuccess()){
                 throw new JsonResponseException("cancel.shop.order.failed");
             }
 

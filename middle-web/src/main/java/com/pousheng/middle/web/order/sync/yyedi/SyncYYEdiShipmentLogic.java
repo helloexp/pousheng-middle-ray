@@ -125,7 +125,7 @@ public class SyncYYEdiShipmentLogic {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                return Response.fail(response.getErrorCode());
+                return Response.fail(response.getFields().get(0).getErrorMsg());
             }
         } catch (Exception e) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
@@ -468,12 +468,12 @@ public class SyncYYEdiShipmentLogic {
             item.setSKU(shipmentItem.getSkuCode());
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(shipmentItem.getSkuCode()));
             if (!rS.isSuccess()){
-                throw new ServiceException("");
+                throw new ServiceException("find.sku.template.failed");
             }
             List<SkuTemplate> skuTemplates = rS.getResult();
             Optional<SkuTemplate> skuTemplateOptional = skuTemplates.stream().filter(skuTemplate->!Objects.equals(skuTemplate.getStatus(),-3)).findAny();
             if (!skuTemplateOptional.isPresent()){
-                throw new ServiceException("");
+                throw new ServiceException("sku.template.may.be.canceled");
             }
             SkuTemplate skuTemplate = skuTemplateOptional.get();
             Map<String,String> extraMaps = skuTemplate.getExtra();

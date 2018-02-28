@@ -163,8 +163,8 @@ public class SyncYYEdiShipmentLogic {
             cancelShipmentInfo.setBillNo(String.valueOf(shipment.getId()));
             reqeustData.add(cancelShipmentInfo);
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
-            YYEdiCancelResponse yyEdiCancelShipmentResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiCancelResponse.class);
-            if (Objects.equals(yyEdiCancelShipmentResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
+            YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {
@@ -174,7 +174,7 @@ public class SyncYYEdiShipmentLogic {
             } else {
                //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("订单派发中心返回信息:"+yyEdiCancelShipmentResponse.getDescription());
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getFields().get(0).getErrorMsg());
             }
         } catch (ServiceException e1) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());

@@ -16,7 +16,7 @@
             <fileNamePattern>${LOG_PATH}/middle_%d{dd-MM-yyyy}_%i.log</fileNamePattern>
             <maxFileSize>50MB</maxFileSize>
             <maxHistory>30</maxHistory>
-            <totalSizeCap>500MB</totalSizeCap>
+            <totalSizeCap>9000MB</totalSizeCap>
         </rollingPolicy>
     </appender>
 

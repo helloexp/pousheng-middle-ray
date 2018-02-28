@@ -15,6 +15,7 @@ import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
+import io.swagger.models.auth.In;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -130,13 +131,15 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
                 Long availStock = warehouseSkuStock.getAvailStock();
                 //安全库存
                 Integer safeStock = Integer.valueOf(extra.get("safeStock"));
-                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),Integer.valueOf(availStock.toString())-safeStock);
+                Integer stock = Integer.valueOf(availStock.toString())-safeStock;
+                log.info("[ONLINE-STOCK]-warehouse(id:{}) sku code:{} availStock:{} safeStock:{} valid stock:{}",warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock,safeStock,stock);
+                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),stock);
             }
         }
         context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
 
-        //判断是否可以整单发货
-        List<WarehouseShipment> warehouseShipments = warehouseChooser.chooseMposOnlineSaleSingleWarehouse(mposOnlineSaleWarehouse,warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
+        //判断是否有整单
+        List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
         //没有整单发的
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Boolean.TRUE;

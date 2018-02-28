@@ -124,7 +124,9 @@ public class ExportTradeBillListener {
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
         middleOrderCriteria.setPageSize(500);
-
+        if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
+            middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
+        }
         List<OrderExportEntity> orderExportData = new ArrayList<>();
 
         int pageNO = 1;

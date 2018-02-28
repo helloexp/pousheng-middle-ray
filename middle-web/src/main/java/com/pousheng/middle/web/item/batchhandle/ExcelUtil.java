@@ -335,7 +335,6 @@ public class ExcelUtil {
     private OPCPackage xlsxPackage;
     private int minColumns;
     private PrintStream output;
-    private String sheetName;
 
     /**
      * Creates a new XLSX -> CSV converter
@@ -348,11 +347,10 @@ public class ExcelUtil {
      *            The minimum number of columns to output, or -1 for no minimum
      */
     public ExcelUtil(OPCPackage pkg, PrintStream output,
-                     String sheetName, int minColumns) {
+                      int minColumns) {
         this.xlsxPackage = pkg;
         this.output = output;
         this.minColumns = minColumns;
-        this.sheetName = sheetName;
     }
 
     /**
@@ -399,12 +397,9 @@ public class ExcelUtil {
         int index = 0;
         while (iter.hasNext()) {
             InputStream stream = iter.next();
-            String sheetNameTemp = iter.getSheetName();
-            if (this.sheetName.equals(sheetNameTemp)) {
-                list = processSheet(styles, strings, stream);
-                stream.close();
-                ++index;
-            }
+            list = processSheet(styles, strings, stream);
+            stream.close();
+            ++index;
         }
         return list;
     }
@@ -413,7 +408,7 @@ public class ExcelUtil {
     public static List<String[]> readerExcel(InputStream inputStream, String sheetName, int minColumns) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
         OPCPackage p = OPCPackage.open(inputStream);
         ExcelUtil xlsx2csv = new ExcelUtil(p, System.out,
-                sheetName, minColumns);
+                 minColumns);
         List<String[]> list = xlsx2csv.process();
         p.close();
         return list;

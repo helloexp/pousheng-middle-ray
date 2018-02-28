@@ -271,7 +271,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(businessId, addressBusinessType.getValue());
             return dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()).getDistance();
         }catch (Exception e){
-            log.error("find address gps by business id:{} and type:{} fail,cause:{}",businessId,AddressBusinessType.SHOP.getValue(), Throwables.getStackTraceAsString(e));
+            log.error("find address gps by business id:{} and type:{} fail,cause:{}",businessId,addressBusinessType.getValue(), Throwables.getStackTraceAsString(e));
             throw new ServiceException("address.gps.not.found");
         }
     }

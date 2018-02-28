@@ -187,7 +187,7 @@ public class ShipmentWiteLogic {
      * @param type     0 取消 1 删除
      * @return 取消成功 返回返回true,取消失败返回false
      */
-    public boolean cancelShipment(Shipment shipment, Integer type) {
+    public Response<Boolean> cancelShipment(Shipment shipment, Integer type) {
         try {
             log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipment.getId(), type);
             Flow flow = flowPicker.pickShipments();
@@ -232,10 +232,10 @@ public class ShipmentWiteLogic {
             //解锁库存
             DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
             mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
-            return true;
+            return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
-            return false;
+            return Response.fail(e.getMessage());
         }
     }
 
@@ -1162,7 +1162,7 @@ public class ShipmentWiteLogic {
      * @param shipmentId 发货单主键
      * @return
      */
-    public boolean rollbackShipment(Long shipmentId) {
+    public Response<Boolean> rollbackShipment(Long shipmentId) {
 
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
@@ -1177,7 +1177,8 @@ public class ShipmentWiteLogic {
             List<String> skuCodes = shipmentItems.stream().map(ShipmentItem::getSkuCode).collect(Collectors.toList());
             List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes,shopOrder.getId());
             int count= 0 ;//计数器用来记录是否有发货单取消失败的
-            if (!this.cancelShipment(shipment,1))
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment,1);
+            if (!cancelShipmentResponse.isSuccess())
             {
                 count++;
             }
@@ -1187,20 +1188,17 @@ public class ShipmentWiteLogic {
             }else{
                 middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
             }
-            if (count>0){
-                return false;
-            }else{
-                return true;
-            }
+            return cancelShipmentResponse;
         }
         //换货
         if (Objects.equals(orderShipment.getType(),ShipmentType.EXCHANGE_SHIP.value())){
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             if (Objects.equals(refund.getStatus(), MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue())){
-                return false;
+                return Response.fail("can.not.cancel.exchange.shipment");
             }
             int count= 0 ;//计数器用来记录是否有发货单取消失败的
-            if (!this.cancelShipment(shipment,1))
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment,1);
+            if (!cancelShipmentResponse.isSuccess())
             {
                 count++;
             }
@@ -1208,7 +1206,7 @@ public class ShipmentWiteLogic {
             if (count==0){
                 this.rollbackChangeRefund(shipment, orderShipment, refund);
             }else {
-                return false;
+                return cancelShipmentResponse;
             }
 
         }
@@ -1216,10 +1214,11 @@ public class ShipmentWiteLogic {
         if (Objects.equals(orderShipment.getType(),3)){
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             if (Objects.equals(refund.getStatus(), MiddleRefundStatus.LOST_SHIPPED.getValue())){
-                return false;
+                return Response.fail("can.not.cancel.lost.shipment");
             }
             int count= 0 ;//计数器用来记录是否有发货单取消失败的
-            if (!this.cancelShipment(shipment,1))
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment,1);
+            if (!cancelShipmentResponse.isSuccess())
             {
                 count++;
             }
@@ -1227,10 +1226,10 @@ public class ShipmentWiteLogic {
             if (count==0){
                 this.rollbackLostRefund(shipment,orderShipment,refund);
             }else{
-                return false;
+                return cancelShipmentResponse;
             }
         }
-        return true;
+        return Response.ok(Boolean.TRUE);
     }
 
     /**

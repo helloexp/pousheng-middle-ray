@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.cache;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
@@ -79,6 +80,12 @@ public class WarehouseAddressCacher {
      * @return 对应的地址信息
      */
     public Optional<WarehouseAddress> findByPidAndName(Long pid, String name){
+        if(Objects.equal("北京市",name)){
+            name = "北京";
+        }
+        if(Objects.equal("上海市",name)){
+            name = "上海";
+        }
         String pidAndName = Joiners.COLON.join(pid,name);
         if(!byPidAndName.containsKey(pidAndName)){
             log.warn("address(pid={} , name:{}) not found", pid,name);

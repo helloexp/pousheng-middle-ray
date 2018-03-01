@@ -240,7 +240,11 @@ public class SyncRefundPosLogic {
         posInfo.setOrdertype("");  //订单类型
         posInfo.setOrdercustomercode(""); //订单标记code
         posInfo.setAppamtsourceshop(""); //业绩来源店铺
-        posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
+        if (java.util.Objects.isNull(openClientPaymentInfo)){
+            posInfo.setPaymentdate(formatter.print(System.currentTimeMillis())); //付款时间
+        }else{
+            posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
+        }
         posInfo.setCardcode(""); //会员卡号
         posInfo.setBuyercode(shopOrder.getBuyerName());//买家昵称
         posInfo.setBuyermobiletel(shopOrder.getOutBuyerId()); //买家手机

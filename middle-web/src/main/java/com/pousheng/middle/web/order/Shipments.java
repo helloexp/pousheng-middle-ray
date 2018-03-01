@@ -1110,10 +1110,10 @@ public class Shipments {
     @RequestMapping(value = "api/single/shipment/{id}/rollback", method = RequestMethod.PUT)
     @OperationLogType("单个发货单取消")
     public void rollbackShopOrder(@PathVariable("id") @OperationLogParam Long shipmentId) {
-        log.info("try to cancel shipemnt, shipmentId is {}", shipmentId);
-        boolean isRollBackSuccess = shipmentWiteLogic.rollbackShipment(shipmentId);
-        if (!isRollBackSuccess) {
-            throw new JsonResponseException("cancel.shipment.failed");
+        log.info("try to cancel shipemnt, shipmentId is {}",shipmentId);
+        Response<Boolean> response = shipmentWiteLogic.rollbackShipment(shipmentId);
+        if (!response.isSuccess()){
+            throw new JsonResponseException(response.getError());
         }
     }
 

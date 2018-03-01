@@ -96,12 +96,12 @@
         <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-parana</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${open-client.version}</version>
         </dependency>
         <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-common</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${open-client.version}</version>
         </dependency>
 
         <dependency>

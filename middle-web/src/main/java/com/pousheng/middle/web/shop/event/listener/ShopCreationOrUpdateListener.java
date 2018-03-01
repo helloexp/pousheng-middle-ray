@@ -82,7 +82,7 @@ public class ShopCreationOrUpdateListener {
 
         //同步电商最新的门店地址
         Shop shop = shopCacher.findShopById(event.getShopId());
-        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),
+        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),shop.getBusinessId(),
                 addressGps.getProvince(),addressGps.getCity(),addressGps.getRegion(),addressGps.getDetail());
         if(!syncParanaAddressRes.isSuccess()){
             log.error("sync shop(id:{}) address to parana fail,error:{}",shop.getId(),syncParanaAddressRes.getError());
@@ -116,7 +116,7 @@ public class ShopCreationOrUpdateListener {
 
         //同步电商最新的门店地址
         Shop shop = shopCacher.findShopById(event.getShopId());
-        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),
+        Response<Boolean> syncParanaAddressRes = syncParanaShopService.syncShopAddress(shop.getOuterId(),shop.getBusinessId(),
                 addressGps.getProvince(),addressGps.getCity(),addressGps.getRegion(),addressGps.getDetail());
         if(!syncParanaAddressRes.isSuccess()){
             log.error("sync shop(id:{}) address to parana fail,error:{}",shop.getId(),syncParanaAddressRes.getError());

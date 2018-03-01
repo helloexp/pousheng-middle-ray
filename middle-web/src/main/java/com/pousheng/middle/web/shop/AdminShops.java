@@ -459,7 +459,7 @@ public class AdminShops {
             //同步电商更新门店物流公司信息
             if(!CollectionUtils.isEmpty(existShopExtraInfo.getExpresssCompanyList())){
                 ShopExpresssCompany shopExpresssCompany = existShopExtraInfo.getExpresssCompanyList().get(0);
-                Response<Boolean> syncParanaExpressRes = syncParanaShopService.syncShopExpress(exist.getOuterId(),shopExpresssCompany.getCode(),shopExpresssCompany.getName());
+                Response<Boolean> syncParanaExpressRes = syncParanaShopService.syncShopExpress(exist.getOuterId(),exist.getBusinessId(),shopExpresssCompany.getCode(),shopExpresssCompany.getName());
                 if(!syncParanaExpressRes.isSuccess()){
                     log.error("sync parana shop(id:{}) express code:{} name:{} fail,error:{}",shopId,shopExpresssCompany.getName(),shopExpresssCompany.getName());
                 }
@@ -588,16 +588,16 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
-        RespHelper.or500(adminShopWriteService.frozen(shopId));
-        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
-        try {
-            //同步恒康mpos门店范围
-            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
-        }catch (Exception e){
-            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
-        }
+//        RespHelper.or500(adminShopWriteService.frozen(shopId));
+//        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+//        try {
+//            //同步恒康mpos门店范围
+//            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
+//        }catch (Exception e){
+//            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
+//        }
         //同步电商
-        syncParanaFrozenShop(exist.getOuterId());
+        syncParanaFrozenShop(exist.getOuterId(),exist.getBusinessId());
     }
 
     @ApiOperation("解冻门店")
@@ -618,7 +618,7 @@ public class AdminShops {
             log.error("sync hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
         }
         //同步电商
-        syncParanaUnFrozenShop(exist.getOuterId());
+        syncParanaUnFrozenShop(exist.getOuterId(),exist.getBusinessId());
 
     }
 
@@ -640,13 +640,13 @@ public class AdminShops {
             log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
         }
         //同步电商
-        syncParanaCloseShop(exist.getOuterId());
+        syncParanaCloseShop(exist.getOuterId(),exist.getBusinessId());
 
     }
 
-    @ApiOperation("设置邮箱")
-    @RequestMapping(value = "/{shopId}/email",method = RequestMethod.PUT)
-    public void setEmail(@PathVariable Long shopId,@RequestParam String email){
+    @ApiOperation("设置邮箱和手机号")
+    @RequestMapping(value = "/{shopId}/communication",method = RequestMethod.PUT)
+    public void setCommunication(@PathVariable Long shopId,@RequestParam String email,@RequestParam String phone){
         val rExist = shopReadService.findById(shopId);
         if (!rExist.isSuccess()) {
             log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
@@ -658,12 +658,15 @@ public class AdminShops {
         Shop update = new Shop();
         update.setId(exist.getId());
         update.setExtra(ShopExtraInfo.putExtraInfo(exist.getExtra(),shopExtraInfo));
+        update.setPhone(phone);
         Response<Boolean> response = shopWriteService.update(update);
         if(!response.isSuccess()){
             log.error("update shop(id:{}) failed,cause:{}",shopId,response.getError());
             throw new JsonResponseException(response.getError());
         }
         log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
+        if(!Objects.equal(exist.getPhone(),phone))
+            syncParanaShopPhone(exist.getOuterId(),exist.getBusinessId(),phone);
     }
 
 
@@ -720,24 +723,32 @@ public class AdminShops {
     }
 
 
-    private void syncParanaFrozenShop(String outerId){
-        Response<Boolean> response =  syncParanaShopService.frozenShop(outerId);
+    private void syncParanaFrozenShop(String outerId,Long businessId){
+        Response<Boolean> response =  syncParanaShopService.frozenShop(outerId,businessId);
         if(!response.isSuccess()){
             log.error("sync parana frozen shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());
         }
     }
 
-    private void syncParanaUnFrozenShop(String outerId){
-        Response<Boolean> response =  syncParanaShopService.unfrozenShop(outerId);
+    private void syncParanaUnFrozenShop(String outerId,Long businessId){
+        Response<Boolean> response =  syncParanaShopService.unfrozenShop(outerId,businessId);
         if(!response.isSuccess()){
             log.error("sync parana unfrozen shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());
         }
     }
 
-    private void syncParanaCloseShop(String outerId){
-        Response<Boolean> response =  syncParanaShopService.closeShop(outerId);
+    private void syncParanaCloseShop(String outerId,Long businessId){
+        Response<Boolean> response =  syncParanaShopService.closeShop(outerId,businessId);
+        if(!response.isSuccess()){
+            log.error("sync parana close shop(outerId:{}) fail,error:{}",outerId,response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+    private void syncParanaShopPhone(String outerId,Long busienssId,String phone){
+        Response<Boolean> response =  syncParanaShopService.syncShopPhone(outerId,busienssId,phone);
         if(!response.isSuccess()){
             log.error("sync parana close shop(outerId:{}) fail,error:{}",outerId,response.getError());
             throw new JsonResponseException(response.getError());

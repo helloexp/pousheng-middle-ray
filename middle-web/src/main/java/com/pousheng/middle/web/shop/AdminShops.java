@@ -588,14 +588,14 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
-//        RespHelper.or500(adminShopWriteService.frozen(shopId));
-//        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
-//        try {
-//            //同步恒康mpos门店范围
-//            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
-//        }catch (Exception e){
-//            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
-//        }
+        RespHelper.or500(adminShopWriteService.frozen(shopId));
+        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        try {
+            //同步恒康mpos门店范围
+            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
+        }catch (Exception e){
+            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
+        }
         //同步电商
         syncParanaFrozenShop(exist.getOuterId(),exist.getBusinessId());
     }

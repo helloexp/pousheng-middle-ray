@@ -86,8 +86,13 @@ public class AvailableStockCalc {
                     outCode = warehouseExtra.get("outCode") != null ? warehouseExtra.get("outCode") : "";
                 }
                 String companyCode =  warehouse.getCompanyCode();
-                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(companyCode));
-                lockedStock = dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
+                try{
+                    Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(companyCode));
+                    lockedStock = dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
+                }catch (Exception e){
+                    log.error("find shop sku stock failed,warehouse id is {},caused by {}",warehouseId,e.getMessage());
+
+                }
             }
 
             Response<WarehouseSkuStock> r =  warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);

@@ -70,31 +70,37 @@ public class PsOrderPusher extends DefaultOrderPusher {
             if (!r.isSuccess()){
                 log.error("sync order to out failed,openShopId is {},orders are {},caused by {}",openClientShop.getOpenShopId(),openFullOrderInfos,r.getError());
                 //补偿任务
-                for (OpenFullOrderInfo openFullOrderInfo:openFullOrderInfos){
-                    try{
-                        OpenPushOrderTask openPushOrderTask =  new OpenPushOrderTask();
-                        openPushOrderTask.setChannel(openFullOrderInfo.getOrder().getChannel());
-                        openPushOrderTask.setSourceOrderId(openFullOrderInfo.getOrder().getOutId());
-                        //待处理的失败任务
-                        openPushOrderTask.setStatus(0);
-                        Map<String, String> extra = Maps.newHashMap();
-                        String openClientShopJson = JsonMapper.nonEmptyMapper().toJson(openClientShop);
-                        String openFullOrderInfosJson = JsonMapper.nonEmptyMapper().toJson(Lists.newArrayList(openFullOrderInfo));
-                        extra.put("openClientShop",openClientShopJson);
-                        extra.put("orderInfos",openFullOrderInfosJson);
-                        openPushOrderTask.setExtra(extra);
-                        Response<Long> response = openPushOrderTaskWriteService.create(openPushOrderTask);
-                        if (!response.isSuccess()){
-                            log.error("create open push order task failed,openShopId is {},orders are {},caused by {}",openClientShop.getOpenShopId(),openFullOrderInfo,r.getError());
-                        }
-                    }catch (Exception e){
-                        e.printStackTrace();
-                    }
-                }
+                createPushTask(openClientShop, openFullOrderInfos);
             }
 
         }catch (Exception e){
             log.error("sync order to out failed,openShopId is {},orders are {},caused by {}",openClientShop.getOpenShopId(),openFullOrderInfos,e.getMessage());
+            //补偿任务
+            createPushTask(openClientShop, openFullOrderInfos);
+        }
+    }
+
+    private void createPushTask(OpenClientShop openClientShop, List<OpenFullOrderInfo> openFullOrderInfos) {
+        for (OpenFullOrderInfo openFullOrderInfo : openFullOrderInfos) {
+            try {
+                OpenPushOrderTask openPushOrderTask = new OpenPushOrderTask();
+                openPushOrderTask.setChannel(openFullOrderInfo.getOrder().getChannel());
+                openPushOrderTask.setSourceOrderId(openFullOrderInfo.getOrder().getOutId());
+                //待处理的失败任务
+                openPushOrderTask.setStatus(0);
+                Map<String, String> extra = Maps.newHashMap();
+                String openClientShopJson = JsonMapper.nonEmptyMapper().toJson(openClientShop);
+                String openFullOrderInfosJson = JsonMapper.nonEmptyMapper().toJson(Lists.newArrayList(openFullOrderInfo));
+                extra.put("openClientShop", openClientShopJson);
+                extra.put("orderInfos", openFullOrderInfosJson);
+                openPushOrderTask.setExtra(extra);
+                Response<Long> response = openPushOrderTaskWriteService.create(openPushOrderTask);
+                if (!response.isSuccess()) {
+                    log.error("create open push order task failed,openShopId is {},orders are {},caused by {}", openClientShop.getOpenShopId(), openFullOrderInfo, response.getError());
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
     }
 }

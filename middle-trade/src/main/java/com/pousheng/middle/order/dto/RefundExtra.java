@@ -34,7 +34,7 @@ public class RefundExtra implements Serializable{
 
     //处理完成时间
     private Date handleDoneAt;
-    //恒康同步退货完成时间
+    //yyedi同步退货完成时间
     private Date hkReturnDoneAt;
     //换货发货单创建时间
     private Date changeShipmentAt;

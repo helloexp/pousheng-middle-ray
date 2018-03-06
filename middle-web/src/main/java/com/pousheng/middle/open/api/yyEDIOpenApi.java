@@ -137,6 +137,11 @@ public class yyEDIOpenApi {
                     Map<String, String> extraMap = shipment.getExtra();
                     shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
                     shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
+                    if (Objects.isNull(yyEdiShipInfo.getWeight())){
+                        shipmentExtra.setWeight(0L);
+                    }else{
+                        shipmentExtra.setWeight(yyEdiShipInfo.getWeight());
+                    }
                     //通过恒康代码查找快递名称
                     ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
                     shipmentExtra.setShipmentCorpName(expressCode.getName());

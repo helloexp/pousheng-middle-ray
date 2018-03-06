@@ -29,4 +29,9 @@ public class YyEdiShipInfo {
      * 发货时间
      */
     private String shipmentDate;
+
+    /**
+     * 发货重量
+     */
+    private Long weight;
 }

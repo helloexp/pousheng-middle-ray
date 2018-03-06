@@ -90,4 +90,7 @@ public class ShipmentExtra implements Serializable{
 
     //mpos发货单号
     private String mposShipmentId;
+
+    //重量
+    private Long weight;
 }

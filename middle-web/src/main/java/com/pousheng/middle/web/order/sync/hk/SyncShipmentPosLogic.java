@@ -339,8 +339,10 @@ public class SyncShipmentPosLogic {
         //添加重量
         if (java.util.Objects.isNull(shipmentExtra.getWeight())){
             posInfo.setWeight("0.00");
+            posInfo.setParcelweight("0.00");
         }else{
             posInfo.setWeight(String.valueOf(shipmentExtra.getWeight()));
+            posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
         }
         return posInfo;
     }

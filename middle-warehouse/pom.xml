@@ -49,7 +49,7 @@
         <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-mapping</artifactId>
-            <version>1.0-SNAPSHOT</version>
+            <version>${open-client.version}</version>
         </dependency>
     </dependencies>
 

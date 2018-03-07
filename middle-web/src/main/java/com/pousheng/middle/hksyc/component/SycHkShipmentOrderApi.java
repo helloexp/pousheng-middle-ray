@@ -61,7 +61,7 @@ public class SycHkShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+         log.info("result:{}",responseBody);
         return responseBody;
     }
 }

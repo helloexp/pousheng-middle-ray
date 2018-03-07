@@ -252,6 +252,7 @@ public class SyncRefundLogic {
         sycHkRefund.setOrderNo(String.valueOf(refundExtra.getShipmentId()));
         //中台店铺id
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
+        sycHkRefund.setShopName("斯凯奇");
         //退货仓
         if (refundExtra.getWarehouseId()!=null){
             Response<Warehouse> response = warehouseReadService.findById(refundExtra.getWarehouseId());

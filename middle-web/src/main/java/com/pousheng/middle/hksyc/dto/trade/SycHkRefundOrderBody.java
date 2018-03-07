@@ -5,18 +5,16 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Random;
 
 /**
  * Created by songrenfei on 2017/7/19
  */
 @Data
-public class SycHkShipmentOrderBody implements Serializable{
+public class SycHkRefundOrderBody implements Serializable{
 
 
-    private static final long serialVersionUID = 7410531388126216790L;
-
-    private List<SycHkShipmentOrderDto> orders;
+    private static final long serialVersionUID = 6785005236400472777L;
+    private SycHkRefundDto refundorder;
 
     private String nonce;
 

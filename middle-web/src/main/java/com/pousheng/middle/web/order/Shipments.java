@@ -534,7 +534,7 @@ public class Shipments {
      * 同步发货单到erp
      * @param shipmentId 发货单id
      */
-    @RequestMapping(value = "api/shipment/{id}/sync/hk", method = RequestMethod.PUT)
+    @RequestMapping(value = "api/shipment/{id}/sync/hk", method = RequestMethod.GET)
     @OperationLogType("同步发货单到恒康")
     public void syncHkShipment(@PathVariable(value = "id") @OperationLogParam Long shipmentId) {
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);

@@ -92,10 +92,11 @@ public class SyncShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
             List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
-            SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
-            HkResponseHead head = response.getHead();
+            SycErpShipmentOrderResponse response  = JsonMapper.nonDefaultMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycErpShipmentOrderResponse.class);
+            Integer errorCode = response.getErrorCode();
+            String description = response.getDescription();
             //解析返回结果
-            if (Objects.equals(head.getCode(),"0")) {
+            if (Objects.equals(errorCode,200)) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -104,10 +105,10 @@ public class SyncShipmentLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
             } else {
-                log.error("sync hk fail, return code :{},return message:{}",head.getCode(),head.getMessage());
+                log.error("sync hk fail, return code :{},return message:{}",errorCode,description);
                 //更新状态为同步失败
                 updateShipmetSyncFail(shipment);
-                return Response.fail("恒康返回信息:"+head.getMessage());
+                return Response.fail("恒康返回信息:"+description);
             }
             return Response.ok();
         } catch (Exception e) {
@@ -305,6 +306,10 @@ public class SyncShipmentLogic {
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         //下单店铺编码
         tradeOrder.setShopId(shipmentExtra.getErpOrderShopCode());
+        //todo 下单店名称
+        tradeOrder.setShopName("斯凯奇");
+        tradeOrder.setOuterOrderNo(shopOrder.getOutId());
+
         //绩效店铺编码
         tradeOrder.setPerformanceShopId(shipmentExtra.getErpPerformanceShopCode());
         Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());

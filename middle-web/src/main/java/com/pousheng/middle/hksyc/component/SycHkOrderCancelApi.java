@@ -1,6 +1,7 @@
 package com.pousheng.middle.hksyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
@@ -39,15 +40,24 @@ public class SycHkOrderCancelApi {
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         Map<String, Object> params = Maps.newHashMap();
-        params.put("shopid",shopCode);
-        params.put("orderNo",orderId);
-        params.put("optype",operationType);
-        params.put("type",type);
+        if(Objects.equal(0,operationType)){
+            params.put("orderno",orderId);
+        }else {
+            params.put("refundno",orderId);
+        }
+        params.put("nonce",Numbers.getNonce());
+        params.put("timestamp",String.valueOf(System.currentTimeMillis()));
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
         log.info("paramJson:{}",paramJson);
-        String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
+        //String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
+        String gateway = "";
+        if(Objects.equal(0,operationType)){
+            gateway = hkGateway+"/common-terminus/skx-oms/default/getcancelorder";
+        }else {
+            gateway = hkGateway+"//common-terminus/skx-oms/default/getcancelrefundorder";
+        }
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

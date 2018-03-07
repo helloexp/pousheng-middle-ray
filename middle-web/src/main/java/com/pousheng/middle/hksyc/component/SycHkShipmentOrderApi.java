@@ -49,7 +49,8 @@ public class SycHkShipmentOrderApi {
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderBody);
         log.info("paramJson:{}",paramJson);
-        String gateway =hkGateway + "/commonerp/erp/sal/addorder";
+        //String gateway =hkGateway + "/commonerp/erp/sal/addorder";
+        String gateway =hkGateway + "/common-terminus/skx-oms/default/getordersreceive";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

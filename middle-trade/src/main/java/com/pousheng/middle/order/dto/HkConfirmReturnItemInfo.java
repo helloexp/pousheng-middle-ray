@@ -17,4 +17,7 @@ public class HkConfirmReturnItemInfo implements Serializable {
     private String itemCode;
 
     private Integer quantity;
+
+    private String warhouseCode;
+
 }

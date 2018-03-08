@@ -58,13 +58,14 @@ public class SycHkOrderCancelApi {
         }else {
             gateway = hkGateway+"//common-terminus/skx-oms/default/getcancelrefundorder";
         }
-        String responseBody = HttpRequest.post(gateway)
+        //skx强调要用get请求，唉。。不规范。
+        String responseBody = HttpRequest.get(gateway,params,true)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-                .contentType("application/json")
+                //.contentType("application/json")
                 //.trustAllHosts().trustAllCerts()
-                .send(paramJson)
+                .acceptJson()
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 

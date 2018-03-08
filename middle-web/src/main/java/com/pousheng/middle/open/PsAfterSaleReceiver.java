@@ -167,7 +167,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             ShipmentItem shipmentItem = shipmentItems
                     .stream().filter(shipmentItem1 ->
                             Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
-            if (shipmentItem.getRefundQuantity()>0){
+            if ((shipmentItem.getRefundQuantity()==null?0:shipmentItem.getRefundQuantity())>0){
                 log.warn("this refund item has been applied,refundSkuCode is {}",skuOfRefund.getSkuCode());
                 return;
             }

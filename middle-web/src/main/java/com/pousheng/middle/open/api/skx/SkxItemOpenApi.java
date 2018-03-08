@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -41,6 +42,8 @@ public class SkxItemOpenApi {
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
 
+    @Value("${skx.open.shop.id}")
+    private Long skxOpenShopId;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
@@ -54,7 +57,7 @@ public class SkxItemOpenApi {
         Date startDate = DFT.parseDateTime(startAt).toDate();
         Date endDate = DFT.parseDateTime(endAt).toDate();
 
-        Response<Paging<PushedItem>> response =  pushedItemReadService.findPushedItem(null,null,7L,1,null,pageNo,pageSize);
+        Response<Paging<PushedItem>> response =  pushedItemReadService.findPushedItem(null,null,skxOpenShopId,1,null,pageNo,pageSize);
         if(!response.isSuccess()){
             log.error("find push item fail");
             throw new OPServerException(200,response.getError());

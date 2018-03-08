@@ -160,6 +160,10 @@ mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api
 # mpos总单OpenShopId
 mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}
 
+
+# skx店铺OpenShopId
+skx.open.shop.id: ${SKX_OPEN_SHOP_ID}
+
 # pos单仓库
 pos.stock.code: ${POS.STOCK.CODE}
 

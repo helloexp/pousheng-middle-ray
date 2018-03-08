@@ -282,12 +282,11 @@ public class Refunds {
     /**
      * 同步售后单到恒康
      *
-     * todo @PermissionCheckParam
      * @param refundId 售后单id
      */
-    @RequestMapping(value = "api/refund/{id}/sync/hk", method = RequestMethod.GET)
+    @RequestMapping(value = "api/refund/{id}/sync/hk", method = RequestMethod.PUT)
     @OperationLogType("同步售后单到恒康")
-    public void syncHkRefund(@PathVariable(value = "id")Long refundId) {
+    public void syncHkRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
         Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
         if (!syncRes.isSuccess()) {

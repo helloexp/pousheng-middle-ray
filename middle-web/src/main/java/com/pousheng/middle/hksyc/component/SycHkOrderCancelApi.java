@@ -40,7 +40,7 @@ public class SycHkOrderCancelApi {
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         Map<String, Object> params = Maps.newHashMap();
-        if(Objects.equal(0,operationType)){
+        if(Objects.equal(0,type)){
             params.put("orderno",orderId);
         }else {
             params.put("refundno",orderId);
@@ -53,10 +53,10 @@ public class SycHkOrderCancelApi {
         log.info("paramJson:{}",paramJson);
         //String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
         String gateway = "";
-        if(Objects.equal(0,operationType)){
+        if(Objects.equal(0,type)){
             gateway = hkGateway+"/common-terminus/skx-oms/default/getcancelorder";
         }else {
-            gateway = hkGateway+"//common-terminus/skx-oms/default/getcancelrefundorder";
+            gateway = hkGateway+"/common-terminus/skx-oms/default/getcancelrefundorder";
         }
         //skx强调要用get请求，唉。。不规范。
         String responseBody = HttpRequest.get(gateway,params,true)

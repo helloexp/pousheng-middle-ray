@@ -169,6 +169,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                             Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
             if ((shipmentItem.getRefundQuantity()==null?0:shipmentItem.getRefundQuantity())>0){
                 log.warn("this refund item has been applied,refundSkuCode is {}",skuOfRefund.getSkuCode());
+                refund.setStatus(MiddleRefundStatus.DELETED.getValue());
                 return;
             }
             refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));

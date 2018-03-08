@@ -285,7 +285,7 @@ public class RefundWriteLogic {
         }
         refund.setShopId(shopOrder.getShopId());
         refund.setShopName(shopOrder.getShopName());
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
             for (RefundItem refundItem :refundItems){
@@ -389,7 +389,7 @@ public class RefundWriteLogic {
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItems);
             completeSkuAttributeInfo(currentRefundItems);
         }
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
             for (RefundItem refundItem :currentRefundItems){

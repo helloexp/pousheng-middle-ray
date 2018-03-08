@@ -301,7 +301,16 @@ public class RefundWriteLogic {
         }
         refund.setShopId(shopOrder.getShopId());
         refund.setShopName(shopOrder.getShopName());
-        refund.setFee(submitRefundInfo.getFee());
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //换货的金额用商品净价*申请数量
+            Long totalRefundAmount = 0L;
+            for (RefundItem refundItem :refundItems){
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+            }
+            refund.setFee(totalRefundAmount);
+        }else{
+            refund.setFee(submitRefundInfo.getFee());
+        }
         refund.setRefundType(submitRefundInfo.getRefundType());
 
         Map<String,String> extraMap = Maps.newHashMap();
@@ -386,7 +395,6 @@ public class RefundWriteLogic {
         Refund updateRefund = new Refund();
         updateRefund.setId(refund.getId());
         updateRefund.setBuyerNote(submitRefundInfo.getBuyerNote());
-        updateRefund.setFee(submitRefundInfo.getFee());
 
         //判断退货商品及数量是否有变化
         Boolean isRefundItemChanged = refundItemIsChanged(submitRefundInfo,existRefundItems);
@@ -396,6 +404,16 @@ public class RefundWriteLogic {
             //更新发货商品中的已退货数量
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItems);
             completeSkuAttributeInfo(currentRefundItems);
+        }
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //换货的金额用商品净价*申请数量
+            Long totalRefundAmount = 0L;
+            for (RefundItem refundItem :currentRefundItems){
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+            }
+            updateRefund.setFee(totalRefundAmount);
+        }else{
+            updateRefund.setFee(submitRefundInfo.getFee());
         }
         //更新金额
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value()))
@@ -690,7 +708,7 @@ public class RefundWriteLogic {
             if (skuCodes.contains(editSubmitRefundItem.getRefundSkuCode())){
                 //判断金额是否小于0
                 if (editSubmitRefundItem.getRefundQuantity()<0){
-                    log.error("refund applyQuantity:{} invalid",editSubmitRefundItem.getRefundQuantity());
+                    log.error("refund applyQuantity:{}【 invalid",editSubmitRefundItem.getRefundQuantity());
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 //判断申请售后的商品数量是否大于发货单中商品的数量

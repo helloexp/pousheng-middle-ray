@@ -167,6 +167,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             ShipmentItem shipmentItem = shipmentItems
                     .stream().filter(shipmentItem1 ->
                             Objects.equals(shipmentItem1.getSkuCode(), skuOfRefund.getSkuCode())).collect(Collectors.toList()).get(0);
+            if (shipmentItem.getRefundQuantity()>0){
+                log.warn("this refund item has been applied,refundSkuCode is {}",skuOfRefund.getSkuCode());
+                return;
+            }
             refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
             refundItem.setSkuPrice(shipmentItem.getSkuPrice());
             refundItem.setSkuDiscount(shipmentItem.getSkuDiscount());
@@ -313,14 +317,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             return;
         }
         //淘宝苏宁仅退款的订单做特殊处理
-        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
-                Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
                 &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())){
             return;
         }
         //淘宝的退货退款单只有订单退货完成待退款才可以更新发货单状态
-        if ((refund.getOutId().contains("taobao")||refund.getOutId().contains("suning"))&&
-                Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
                 &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())){
             return;
         }

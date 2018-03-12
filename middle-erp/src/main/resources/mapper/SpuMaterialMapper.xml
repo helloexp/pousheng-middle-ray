@@ -108,6 +108,7 @@
             <if test="spuId != null">spu_id = #{spuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
             <if test="materialCode != null">material_code = #{materialCode},</if>
+            updated_at = now()
         </set>
         WHERE id = #{id}
     </update>

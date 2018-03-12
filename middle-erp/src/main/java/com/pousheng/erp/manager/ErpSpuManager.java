@@ -77,7 +77,7 @@ public class ErpSpuManager {
                                          String spuCode,
                                          PoushengMaterial material,
                                          List<PoushengSku> skus) {
-        //因为不同leafId下, 即使spuCode一样, 也视为不同的spu
+        //因为不同leafId下, 即使spuCode一样, 也视为不同的spu（如果规则变动，这里的spuCode就会变动）
         Spu spu = erpSpuDao.findByCategoryIdAndCode(leafId, spuCode);
         Long spuId;
         if (spu != null) { //已经存在对应的spu

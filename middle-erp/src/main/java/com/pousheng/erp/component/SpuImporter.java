@@ -14,6 +14,9 @@ import com.pousheng.erp.rules.SkuGroupRuler;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.category.impl.dao.BackCategoryDao;
 import io.terminus.parana.category.model.BackCategory;
+import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
+import io.terminus.parana.spu.impl.dao.SpuDao;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +53,10 @@ public class SpuImporter {
 
     private final MaterialFetcher materialFetcher;
 
+    private final SkuTemplateDao skuTemplateDao;
+
+    private final SpuDao spuDao;
+
 
     @Autowired
     public SpuImporter(ErpBrandCacher brandCacher,
@@ -58,7 +65,7 @@ public class SpuImporter {
                        BackCategoryDao categoryDao,
                        ErpSpuManager spuManager,
                        SpuMaterialDao spuMaterialDao,
-                       MaterialFetcher materialFetcher) {
+                       MaterialFetcher materialFetcher, SkuTemplateDao skuTemplateDao, SpuDao spuDao) {
         this.brandCacher = brandCacher;
         this.spuCacher = spuCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
@@ -66,6 +73,8 @@ public class SpuImporter {
         this.spuManager = spuManager;
         this.spuMaterialDao = spuMaterialDao;
         this.materialFetcher = materialFetcher;
+        this.skuTemplateDao = skuTemplateDao;
+        this.spuDao = spuDao;
     }
 
     public int process(Date start, Date end) {
@@ -140,6 +149,9 @@ public class SpuImporter {
                     spuMaterial.setId(exist.getId());
                     spuMaterial.setSpuId(spuId);
                     spuMaterialDao.update(spuMaterial);
+
+                    //删除无效的spu
+                    deleteInvalidSpu(exist.getSpuId());
                 }
             }
 
@@ -149,6 +161,16 @@ public class SpuImporter {
             log.error("failed to doProcess material(code={}), cause:{}",
                     materialCode, Throwables.getStackTraceAsString(e));
             return null;
+        }
+
+    }
+
+
+    private void deleteInvalidSpu(Long spuId){
+        List<SkuTemplate> skuTemplates = skuTemplateDao.findBySpuId(spuId);
+        //如果spu下没有有效的sku则把spu标记为已删除
+        if(CollectionUtils.isEmpty(skuTemplates)){
+            spuDao.updateStatus(spuId,-3);
         }
 
     }

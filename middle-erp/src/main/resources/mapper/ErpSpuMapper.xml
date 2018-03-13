@@ -10,7 +10,7 @@
     <select id="findByCategoryIdAndCode" parameterType="map" resultMap="SpuMap">
         SELECT * FROM
         <include refid="tb"/>
-        WHERE category_id=#{categoryId} AND spu_code=#{spuCode}
+        WHERE category_id=#{categoryId} AND spu_code=#{spuCode} AND status =1
     </select>
 
 

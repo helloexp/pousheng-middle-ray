@@ -151,7 +151,7 @@ public class MemberShopOperationLogic {
         criteria.put("sportCityCode", code);
         Integer pageNo = 1;
         criteria.put("pageNo", pageNo+"");
-        criteria.put("status", 1+"");
+        criteria.put("openStateList", "0,1,2");
         Response<Paging<MemberSportCity>> resp = findSrvSportCity(criteria);
         if (!resp.isSuccess()) {
             log.error("find SportCity failed, criteria = {}, cause: {}", criteria, resp.getError());
@@ -169,7 +169,7 @@ public class MemberShopOperationLogic {
         criteria.put("storeCode", code);
         Integer pageNo = 1;
         criteria.put("pageNo", pageNo+"");
-        criteria.put("status", 1+"");
+        criteria.put("openStateList", "0,1,2");
         criteria.put("types", type+"");
         Response<Paging<MemberShop>> resp = findSrvShop(criteria);
         if (!resp.isSuccess()) {

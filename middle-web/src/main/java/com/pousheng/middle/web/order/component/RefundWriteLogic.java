@@ -301,16 +301,6 @@ public class RefundWriteLogic {
         }
         refund.setShopId(shopOrder.getShopId());
         refund.setShopName(shopOrder.getShopName());
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
-            //换货的金额用商品净价*申请数量
-            Long totalRefundAmount = 0L;
-            for (RefundItem refundItem :refundItems){
-                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
-            }
-            refund.setFee(totalRefundAmount);
-        }else{
-            refund.setFee(submitRefundInfo.getFee());
-        }
         refund.setRefundType(submitRefundInfo.getRefundType());
 
         Map<String,String> extraMap = Maps.newHashMap();
@@ -333,11 +323,19 @@ public class RefundWriteLogic {
                 extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO,mapper.toJson(submitRefundInfo.getMiddleChangeReceiveInfo()));
             }
         }
-
+        if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //换货的金额用商品净价*申请数量
+            Long totalRefundAmount = 0L;
+            for (RefundItem refundItem :refundItems){
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+            }
+            refund.setFee(totalRefundAmount);
+        }else{
+            refund.setFee(submitRefundInfo.getFee());
+        }
         //表明售后单的信息已经全部完善
         extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
         refund.setExtra(extraMap);
-
         //打标
         Map<String,String> tagMap = Maps.newHashMap();
         tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
@@ -405,16 +403,6 @@ public class RefundWriteLogic {
             updateShipmentItemRefundQuantityForEdit(shipmentItems,submitRefundInfo,existRefundItems);
             completeSkuAttributeInfo(currentRefundItems);
         }
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
-            //换货的金额用商品净价*申请数量
-            Long totalRefundAmount = 0L;
-            for (RefundItem refundItem :currentRefundItems){
-                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
-            }
-            updateRefund.setFee(totalRefundAmount);
-        }else{
-            updateRefund.setFee(submitRefundInfo.getFee());
-        }
         //更新金额
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value()))
         {
@@ -439,22 +427,15 @@ public class RefundWriteLogic {
                 throw new JsonResponseException(updateStatusRes.getError());
             }
         }
-
-        //更新退换货信息
-        //退款总金额变化
-        if(!Objects.equals(submitRefundInfo.getFee(),refund.getFee())){
-            //如果只是改了退款金额，则要更新退货商品中的退款金额
-            if(!isRefundItemChanged){
-                //因为现在是可能有多个商品申请售后，因此退款金额按照商品净价乘以数量的比例分摊
-                submitRefundInfo.getEditSubmitRefundItems();
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+            //换货的金额用商品净价*申请数量
+            Long totalRefundAmount = 0L;
+            for (RefundItem refundItem :currentRefundItems){
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
             }
-
-            //如果只是改了退款金额,则更新换货商品中的退款金额
-            if(!isChangeItemChanged&&Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
-                //RefundItem existChangeItem = refundReadLogic.findRefundChangeItems(refund).get(0);
-                //existChangeItem.setFee(submitRefundInfo.getFee());
-                //extraMap.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,mapper.toJson(Lists.newArrayList(existChangeItem)));
-            }
+            updateRefund.setFee(totalRefundAmount);
+        }else{
+            updateRefund.setFee(submitRefundInfo.getFee());
         }
         //表明售后单的信息已经全部完善
         extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");

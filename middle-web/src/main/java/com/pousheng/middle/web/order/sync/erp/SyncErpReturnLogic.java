@@ -154,6 +154,9 @@ public class SyncErpReturnLogic {
             case "hk":
                 return syncRefundLogic.syncRefundCancelToHk(refund);
             case "yyEdi":
+                if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                    return Response.ok(Boolean.TRUE);
+                }
                 return syncYYEdiReturnLogic.syncRefundCancelToYyEdi(refund);
             default:
                 return Response.ok(Boolean.TRUE);

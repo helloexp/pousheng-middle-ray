@@ -162,6 +162,22 @@ public class OuterOrderReceiver {
         shipmentWiteLogic.toDispatchOrder(shopOrder,null);
     }
 
+    @RequestMapping(value = "/dispatch/shipment/sku/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void createSkuShipment(@PathVariable(value = "id") Long skuOrderId) {
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(Lists.newArrayList(skuOrderId));
+
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(skuOrders.get(0).getOrderId());
+        //获取skuCode,数量的集合
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
+        skuOrders.forEach(skuOrder -> {
+            SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
+            skuCodeAndQuantity.setQuantity(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
+            skuCodeAndQuantities.add(skuCodeAndQuantity);
+        });
+        shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
+    }
+
 
 
 }

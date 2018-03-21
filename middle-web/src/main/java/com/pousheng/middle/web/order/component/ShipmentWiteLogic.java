@@ -109,8 +109,6 @@ public class ShipmentWiteLogic {
     @RpcConsumer
     private RefundWriteService refundWriteService;
     @Autowired
-    private SyncShipmentLogic syncShipmentLogic;
-    @Autowired
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
@@ -134,6 +132,8 @@ public class ShipmentWiteLogic {
     private MemberShopOperationLogic memberShopOperationLogic;
     @RpcConsumer
     private PsShopReadService psShopReadService;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
 
@@ -226,7 +226,7 @@ public class ShipmentWiteLogic {
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
-                    return Response.fail("revoke.shipment.failed");
+                    return Response.fail(updateStatus.getError());
                 }
             }
             //解锁库存
@@ -1058,7 +1058,6 @@ public class ShipmentWiteLogic {
                 this.handleSyncShipment(shipment,2,shopOrder);
             }
         }
-
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
         if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
             //如果是恒康pos订单，暂不处理
@@ -1085,6 +1084,10 @@ public class ShipmentWiteLogic {
         }
         if(isFirst)
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+        //如果没有派出去的单子则提示库存不足
+        if (dispatchOrderItemInfo.getWarehouseShipments().isEmpty()&&dispatchOrderItemInfo.getShopShipments().isEmpty()){
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+        }
     }
 
     /**

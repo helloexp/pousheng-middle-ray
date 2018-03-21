@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
+import com.google.common.base.Splitter;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
@@ -79,7 +80,8 @@ public class SyncOrderToEcpLogic {
                 orderShipment.setOuterOrderId(shopOrder.getOutId());
                 orderShipment.setLogisticsCompany(expressCompayCode);
                 //填写运单号
-                orderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
+                String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo())?"":Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+                orderShipment.setWaybill(shipmentSerialNo);
                 //目前苏宁需要传入商品编码
                 List<String> outSkuCodes = Lists.newArrayList();
                 if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())){
@@ -167,7 +169,8 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
                     openClientOrderShipment.setOuterSkuCodes(outerSkuCodes);
                     //填写运单号
-                    openClientOrderShipment.setWaybill(String.valueOf(shipmentExtra.getShipmentSerialNo()));
+                    String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo())?"":Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+                    openClientOrderShipment.setWaybill(shipmentSerialNo);
                     log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                     Response<Boolean> response = null;
                     if (!isTaobaoGiftShipmentOnly(shopOrder,shipmentItems)){

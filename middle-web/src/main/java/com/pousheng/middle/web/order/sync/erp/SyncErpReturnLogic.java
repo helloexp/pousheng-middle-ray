@@ -124,9 +124,6 @@ public class SyncErpReturnLogic {
                 return Response.ok(Boolean.TRUE);
             }else{
                 updateRefundSyncFial(refund);
-            /*    Map<String,Object> param1 = Maps.newHashMap();
-                param1.put("refundId",refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK,r.getError());*/
                 return Response.fail("sync.pos.failed");
             }
         }catch (Exception e){
@@ -156,6 +153,11 @@ public class SyncErpReturnLogic {
         switch (erpSyncType){
             case "hk":
                 return syncRefundLogic.syncRefundCancelToHk(refund);
+            case "yyEdi":
+                if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+                    return Response.ok(Boolean.TRUE);
+                }
+                return syncYYEdiReturnLogic.syncRefundCancelToYyEdi(refund);
             default:
                 return Response.ok(Boolean.TRUE);
         }

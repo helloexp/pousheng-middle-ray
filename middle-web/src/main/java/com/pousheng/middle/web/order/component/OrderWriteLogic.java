@@ -31,6 +31,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -199,6 +200,10 @@ public class OrderWriteLogic {
     public void autoCancelShopOrder(Long shopOrderId) {
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this shopOrder has been canceled,shopOrderId is {}",shopOrderId);
+            return;
+        }
         //判断该订单是否有取消订单的权限
         if (!validateAutoCancelShopOrder(shopOrder)){
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}",shopOrder.getId());
@@ -294,6 +299,10 @@ public class OrderWriteLogic {
      */
     public void autoCancelSkuOrder(long shopOrderId, String skuCode) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this shopOrder has been canceled,shopOrderId is {}",shopOrderId);
+            return;
+        }
         //判断该订单所属整单是否有取消订单的权限
         if (!validateAutoCancelShopOrder4Sku(shopOrder)){
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}",shopOrder.getId());
@@ -304,6 +313,10 @@ public class OrderWriteLogic {
                 MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                 MiddleOrderStatus.WAIT_SHIP.getValue());
         SkuOrder skuOrder = this.getSkuOrder(skuOrders,skuCode);
+        if (Objects.isNull(skuOrder)||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this skuOrder has been canceled,shopOrderId is {},skuCode is {}",shopOrderId,skuCode);
+            return;
+        }
         //判断订单是否有取消订单的权限
         if (!validateAutoCancelSkuOrder(skuOrder)){
             log.error("this skuOrder can not be canceled,because of error skuOrder status.shopOrderId is :{}",skuOrder.getId());
@@ -552,7 +565,12 @@ public class OrderWriteLogic {
      * @return 返回经过过滤的skuOrder记录
      */
     private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode){
-        return skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).collect(Collectors.toList()).get(0);
+        Optional<SkuOrder> skuOrderOptional = skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).findAny();
+        if (skuOrderOptional.isPresent()){
+            return skuOrderOptional.get();
+        }else{
+            return null;
+        }
     }
 
     /**

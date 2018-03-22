@@ -1,7 +1,7 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
-import com.google.common.eventbus.EventBus;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.ErpHandleShipmentResult;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -16,6 +16,8 @@ import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -78,11 +80,13 @@ public class OrderOpenApi {
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
     @Autowired
-    private EventBus eventBus;
-    @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncRefundPosLogic syncRefundPosLogic;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -289,6 +293,15 @@ public class OrderOpenApi {
             //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
             hkShipmentDoneLogic.doneShipment(shipment);
 
+            //同步pos单到恒康
+            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+            if (!response.isSuccess()) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("shipmentId", shipment.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
+
+            }
+
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
             throw new OPServerException(200,e.getMessage());
@@ -379,6 +392,20 @@ public class OrderOpenApi {
             if(refund.getShopName().startsWith("mpos")){
                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
+
+            try {
+                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                if (!r.isSuccess()) {
+                    Map<String, Object> param1 = Maps.newHashMap();
+                    param1.put("refundId", refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+                }
+            } catch (Exception e) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
+            }
+
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
 

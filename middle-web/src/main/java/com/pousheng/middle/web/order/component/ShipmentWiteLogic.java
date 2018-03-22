@@ -1059,7 +1059,6 @@ public class ShipmentWiteLogic {
                 this.handleSyncShipment(shipment,2,shopOrder);
             }
         }
-
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
         if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
             //如果是恒康pos订单，暂不处理
@@ -1086,6 +1085,10 @@ public class ShipmentWiteLogic {
         }
         if(isFirst)
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+        //如果没有派出去的单子则提示库存不足
+        if (dispatchOrderItemInfo.getWarehouseShipments().isEmpty()&&dispatchOrderItemInfo.getShopShipments().isEmpty()){
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+        }
     }
 
     /**

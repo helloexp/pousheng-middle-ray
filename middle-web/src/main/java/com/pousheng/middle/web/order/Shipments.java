@@ -149,7 +149,7 @@ public class Shipments {
             throw new JsonResponseException("permission.check.query.deny");
         }
         //判断查询的发货单类型
-        if (Objects.equals(shipmentCriteria.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
+        if (Objects.equals(shipmentCriteria.getType(), ShipmentType.EXCHANGE_SHIP.value())||Objects.equals(shipmentCriteria.getType(), 3)) {
             shipmentCriteria.setAfterSaleOrderId(shipmentCriteria.getOrderId());
             shipmentCriteria.setOrderId(null);
         }

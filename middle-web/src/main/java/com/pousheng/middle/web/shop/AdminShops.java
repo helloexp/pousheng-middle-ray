@@ -10,10 +10,7 @@ import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
-import com.pousheng.middle.shop.dto.ShopExpresssCompany;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
-import com.pousheng.middle.shop.dto.ShopPaging;
-import com.pousheng.middle.shop.dto.ShopServerInfo;
+import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
@@ -176,8 +173,12 @@ public class AdminShops {
         for (Shop shop : shops){
             ShopPaging shopPag = new ShopPaging();
             shopPag.setShop(shop);
-            shopPag.setShopExtraInfo(ShopExtraInfo.fromJson(shop.getExtra()));
-
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
+            shopExtraInfo.setPhone(memberShop.getMobile());
+            shopExtraInfo.setEmail(memberShop.getEmail());
+            shop.setPhone(memberShop.getMobile());
+            shopPag.setShopExtraInfo(shopExtraInfo);
             shopPagingList.add(shopPag);
         }
         shopPaging.setData(shopPagingList);

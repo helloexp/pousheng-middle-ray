@@ -39,4 +39,10 @@ public class MemberShop implements Serializable {
 
     private String zoneName;
 
+    private String mobile;
+
+    private String email;
+
+
+
 }

@@ -34,4 +34,10 @@ public class Constants {
      * 用户管理店铺ID列表
      */
     public static final String MANAGE_SHOP_IDS = "manageShopIds";
+
+
+    /**
+     * 用户管理区部ID列表
+     */
+    public static final String MANAGE_ZONE_IDS = "manageZoneIds";
 }

@@ -174,10 +174,15 @@ public class AdminShops {
             ShopPaging shopPag = new ShopPaging();
             shopPag.setShop(shop);
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
-            shopExtraInfo.setPhone(memberShop.getTelphone());
-            shopExtraInfo.setEmail(memberShop.getEmail());
-            shop.setPhone(memberShop.getTelphone());
+            try {
+                MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
+                shopExtraInfo.setPhone(memberShop.getTelphone());
+                shopExtraInfo.setEmail(memberShop.getEmail());
+                shop.setPhone(memberShop.getTelphone());
+            }catch (JsonResponseException e){
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),e.getMessage());
+            }
+
             shopPag.setShopExtraInfo(shopExtraInfo);
             shopPagingList.add(shopPag);
         }
@@ -311,6 +316,8 @@ public class AdminShops {
         toCreate.setPhone(shop.getPhone());
         toCreate.setAddress(shop.getAddress());
         toCreate.setExtra(shop.getExtra());
+        toCreate.setZoneId(shop.getZoneId());
+        toCreate.setZoneName(shop.getZoneName());
 
         Response<Long> rShop = shopWriteService.create(toCreate);
         if (!rShop.isSuccess()) {
@@ -351,6 +358,8 @@ public class AdminShops {
         toUpdate.setImageUrl(shop.getImageUrl());
         toUpdate.setPhone(shop.getPhone());
         toUpdate.setAddress(shop.getAddress());
+        toUpdate.setZoneId(shop.getZoneId());
+        toUpdate.setZoneName(shop.getZoneName());
         toUpdate.setExtra(Iters.deltaUpdate(exist.getExtra(), shop.getExtra()));
         Response<Boolean> resp = shopWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
@@ -769,6 +778,10 @@ public class AdminShops {
         private Long companyId;
         //公司名称
         private String companyName;
+
+        private String zoneId;
+
+        private String zoneName;
 
         //店铺内码
         private String storeId;

@@ -93,6 +93,7 @@ public class OperatorApis {
         toCreateOperator.setRoleId(operator.getRoleId());
         Map<String, String> extraMap = Maps.newHashMap();
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
+        extraMap.put(Constants.MANAGE_ZONE_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageZoneIds())));
         toCreateOperator.setExtra(extraMap);
 
         Long outUserId;
@@ -182,6 +183,7 @@ public class OperatorApis {
         toUpdateOperator.setRoleId(operator.getRoleId());
         Map<String, String> extraMap = existOp.getExtra();//这里就不判断extra是否为空了，创建时会塞入管理店铺id，所以这里一定不会为空
         extraMap.put(Constants.MANAGE_SHOP_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageShopIds())));
+        extraMap.put(Constants.MANAGE_ZONE_IDS, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleManageShopIds(operator.getManageZoneIds())));
         toUpdateOperator.setExtra(extraMap);
 
         Response<Boolean> opUpdateResp = operatorWriteService.update(toUpdateOperator);
@@ -287,6 +289,9 @@ public class OperatorApis {
         private Long roleId;
         //管理店铺ids
         private List<Long> manageShopIds;
+
+        //管理区部ids
+        private List<Long> manageZoneIds;
 
         //用户中心用户id（绑定已有账户时）
         private Long userId;

@@ -29,6 +29,10 @@ public class PsShop {
 
     private String companyName;
 
+    private String zoneId;
+
+    private String zoneName;
+
     //"店铺电话", position = 19)
     private String telphone;
 

@@ -175,9 +175,9 @@ public class AdminShops {
             shopPag.setShop(shop);
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
             MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
-            shopExtraInfo.setPhone(memberShop.getMobile());
+            shopExtraInfo.setPhone(memberShop.getTelphone());
             shopExtraInfo.setEmail(memberShop.getEmail());
-            shop.setPhone(memberShop.getMobile());
+            shop.setPhone(memberShop.getTelphone());
             shopPag.setShopExtraInfo(shopExtraInfo);
             shopPagingList.add(shopPag);
         }

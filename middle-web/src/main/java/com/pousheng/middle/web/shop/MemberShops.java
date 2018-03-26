@@ -57,14 +57,16 @@ public class MemberShops {
         if (Objects.equal(type, MemberFromType.SHOP.value())||Objects.equal(type, MemberFromType.SHOP_STORE.value())) {
             List<MemberShop> shops = memberShopOperationLogic.findShopByCodeAndType(code,type);
             for (MemberShop shop : shops) {
-                psShop = new PsShop(shop.getId(), shop.getId(),shop.getStoreFullName(), shop.getStoreCode(), shop.getCompanyId(),shop.getCompanyName());
+                psShop = new PsShop(shop.getId(), shop.getId(),shop.getStoreFullName(), shop.getStoreCode(),
+                        shop.getCompanyId(),shop.getCompanyName(),shop.getTelphone(),shop.getEmail(),shop.getAddress());
                 psShops.add(psShop);
             }
         } else {
             List<MemberSportCity> sportCities = memberShopOperationLogic.findSportCityByCode(code);
             for (MemberSportCity sportCity : sportCities) {
                 psShop = new PsShop(sportCity.getId(),sportCity.getId(), sportCity.getSportCityFullName(),
-                        sportCity.getSportCityCode(), sportCity.getCompanyId(),sportCity.getCompanyName());
+                        sportCity.getSportCityCode(), sportCity.getCompanyId(),sportCity.getCompanyName(),
+                        sportCity.getTelphone(),sportCity.getEmail(),sportCity.getAddress());
                 psShops.add(psShop);
             }
         }

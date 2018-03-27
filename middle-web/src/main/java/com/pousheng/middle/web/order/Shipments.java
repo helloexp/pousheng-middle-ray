@@ -1343,24 +1343,13 @@ public class Shipments {
      */
     private void validateOrderAllChannelWarehouse(List<Long> warehouseIds,Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
-            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
-            if (!r.isSuccess()){
-                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
-                throw new JsonResponseException("find.warehouse.failed");
-            }
-            List<Warehouse> warehouses = r.getResult();
-            int count = 0;
-            for (Warehouse warehouse:warehouses){
-                //如果是店仓
-                if (Objects.equals(warehouse.getType(),1)){
-                    count++;
-                }
-            }
-            if (count>0){
-                throw new JsonResponseException("can.not.contain.shop.warehouse");
-            }
+
+        //mpos门店可以指定店仓发货
+        if(orderReadLogic.isMposOpenShop(shopOrder.getShopId())){
+            return;
         }
+        checkCanShopWarehouseShip(warehouseIds,shopOrder.getShopId());
+
 
     }
 
@@ -1371,7 +1360,16 @@ public class Shipments {
      */
     private void validateRefundAllChannelWarehouse(List<Long> warehouseIds,Long refundId){
         Refund refund = refundReadLogic.findRefundById(refundId);
-        if (!orderReadLogic.isAllChannelOpenShop(refund.getShopId())){
+        //mpos门店可以指定店仓发货
+        if(orderReadLogic.isMposOpenShop(refund.getShopId())){
+            return;
+        }
+        checkCanShopWarehouseShip(warehouseIds,refund.getShopId());
+    }
+
+    private void checkCanShopWarehouseShip(List<Long> warehouseIds,Long shopId){
+
+        if (!orderReadLogic.isAllChannelOpenShop(shopId)){
             Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
             if (!r.isSuccess()){
                 log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());

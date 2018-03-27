@@ -89,6 +89,9 @@ public class MposOrderHandleLogic {
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
                 shipmentExtra.setReceiveStaff(extra.get(TradeConstants.MPOS_RECEIVE_STAFF));
                 break;
+            case TradeConstants.MPOS_SHIPMENT_CALL_SHIP:
+                orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
+                break;
             case TradeConstants.MPOS_SHIPMENT_REJECT:
                 orderEvent = MiddleOrderEvent.MPOS_REJECT;
                 shipmentExtra.setRejectReason(extra.get(TradeConstants.MPOS_REJECT_REASON));
@@ -142,6 +145,10 @@ public class MposOrderHandleLogic {
     private Boolean idempotencyValidate(Integer status,String shipStatus){
         switch (shipStatus){
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
+                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue()))
+                    return false;
+                break;
+            case TradeConstants.MPOS_SHIPMENT_CALL_SHIP:
                 if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue()))
                     return false;
                 break;

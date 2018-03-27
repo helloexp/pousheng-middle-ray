@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
+import com.pousheng.middle.web.shop.component.OpenShopLogic;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
 import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -49,10 +50,11 @@ public class PsOpenClientShops {
     private OpenShopReadService openShopReadService;
     @RpcConsumer
     private OpenShopWriteService openShopWriteService;
-    @Autowired
-    private OpenShopCacher openShopCacher;
+
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private OpenShopLogic openShopLogic;
 
     /**
      * 查询所有店铺
@@ -61,73 +63,11 @@ public class PsOpenClientShops {
     @RequestMapping(value = "/shop/all/group", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ShopChannelGroup> searchAllShopsGroup() {
 
-        Response<List<String>> channelRes = openShopReadService.groupByChannel();
-        if (!channelRes.isSuccess()) {
-            log.error("fail to search all open shop by cause:{}", channelRes.getError());
-            throw new ServiceException(channelRes.getError());
-        }
-
-        List<String> channels = channelRes.getResult();
-
-        List<ShopChannel> mposChannels = Lists.newArrayList();
-
-
-        List<ShopChannelGroup> channelGroups = Lists.newArrayListWithCapacity(channels.size());
-        for (String channel : channels){
-            ShopChannelGroup group = new ShopChannelGroup();
-            group.setChannel(channel);
-            List<OpenClientShop> openClientShops = findOpenShopByChannel(channel);
-
-            List<ShopChannel> shopChannels = Lists.newArrayListWithCapacity(openClientShops.size());
-
-            for (OpenClientShop openClientShop : openClientShops){
-                ShopChannel shopChannel = new ShopChannel();
-                shopChannel.setOpenClientShop(openClientShop);
-                if(openClientShop.getShopName().startsWith("mpos")){
-                    ShopChannel mposChannel = new ShopChannel();
-                    mposChannel.setOpenClientShop(openClientShop);
-                    mposChannels.add(mposChannel);
-                    continue;
-                }
-                shopChannels.add(shopChannel);
-            }
-
-            group.setShopChannels(shopChannels);
-            channelGroups.add(group);
-        }
-
-        if(!CollectionUtils.isEmpty(mposChannels)){
-
-            ListMultimap<String, OpenClientShop> byZoneName = ArrayListMultimap.create();
-            ShopChannelGroup mposGroup = new ShopChannelGroup();
-            mposGroup.setChannel("mpos");
-
-            for (ShopChannel shopChannel : mposChannels){
-                OpenClientShop openClientShop = shopChannel.getOpenClientShop();
-                OpenShop openShop = openShopCacher.findById(openClientShop.getOpenShopId());
-                Map<String, String>  extra = openShop.getExtra();
-                if(Arguments.isNull(extra)||!extra.containsKey(ZONE_ID)){
-                    continue;
-                }
-                String zoneName = extra.get(ZONE_NAME);
-                byZoneName.put(zoneName,openClientShop);
-            }
-
-            List<ShopChannel> zoneChannels = Lists.newArrayListWithCapacity(byZoneName.keySet().size());
-
-            for (String zoneName : byZoneName.keySet()){
-                ShopChannel zoneChannel = new ShopChannel();
-                zoneChannel.setZoneName(zoneName);
-                zoneChannel.setZoneOpenClientShops(byZoneName.get(zoneName));
-                zoneChannels.add(zoneChannel);
-            }
-            mposGroup.setShopChannels(zoneChannels);
-            channelGroups.add(mposGroup);
-        }
-
-        return channelGroups;
+       return openShopLogic.findShopChannelGroup();
 
     }
+
+
 
 
 
@@ -171,22 +111,5 @@ public class PsOpenClientShops {
     }
 
 
-    private List<OpenClientShop> findOpenShopByChannel(String channel){
-        Response<List<OpenShop>> findR = openShopReadService.findByChannel(channel);
-        if (!findR.isSuccess()) {
-            log.error("fail to search all open shop by cause:{}", findR.getError());
-            throw new ServiceException(findR.getError());
-        }
-        List<OpenShop> openShops = findR.getResult();
-        List<OpenClientShop> openClientShops = Lists.newArrayListWithCapacity(openShops.size());
-        for (OpenShop openShop : openShops) {
-            OpenClientShop openClientShop = new OpenClientShop();
-            openClientShop.setShopName(openShop.getShopName());
-            openClientShop.setChannel(openShop.getChannel());
-            openClientShop.setOpenShopId(openShop.getId());
-            openClientShops.add(openClientShop);
-        }
-        return openClientShops;
-    }
 
 }

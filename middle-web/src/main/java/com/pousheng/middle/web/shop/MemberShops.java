@@ -58,8 +58,8 @@ public class MemberShops {
      */
     @ApiOperation("根据店铺类型和店铺外码查询店铺信息")
     @GetMapping("/api/ec/member/shop-query")
-    public List<PsShop> checkShopExists(@RequestParam(required = false,defaultValue = "1") String code,
-                                        @RequestParam Integer type) {
+    public List<PsShop> checkShopExists(@RequestParam String code,
+                                        @RequestParam(required = false,defaultValue = "1") Integer type) {
 
         ParanaUser paranaUser = UserUtil.getCurrentUser();
 

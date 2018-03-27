@@ -31,12 +31,15 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
+import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.AdminShopWriteService;
 import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.shop.service.ShopWriteService;
+import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -49,6 +52,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
 /**
  * Author:cp
@@ -92,6 +97,8 @@ public class AdminShops {
     private MemberShopOperationLogic memberShopOperationLogic;
     @Autowired
     private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private UserTypeBean userTypeBean;
 
 
 
@@ -156,7 +163,22 @@ public class AdminShops {
             }
             return new Paging<>();
         }
-        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, pageNo, pageSize);
+
+        ParanaUser paranaUser = UserUtil.getCurrentUser();
+
+        List<String> zoneIds = null;
+
+        if (!userTypeBean.isAdmin(paranaUser)) {
+            Map<String, String> extraMap = paranaUser.getExtra();
+            String zoneIdStr = extraMap.get(MANAGE_ZONE_IDS);
+            //如果没有设置区域则返回空
+            if(Strings.isNullOrEmpty(zoneIdStr)){
+                return new Paging<>();
+            }
+            zoneIds  = Splitters.COMMA.splitToList(zoneIdStr);
+        }
+
+        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, zoneIds,pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }

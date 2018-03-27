@@ -34,6 +34,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
+import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -127,6 +128,8 @@ public class Shipments {
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
     private ShopReadService shopReadService;
+    @Autowired
+    private WarehouseSkuStockLogic warehouseSkuStockLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -669,7 +672,7 @@ public class Shipments {
 
     //获取指定仓库中指定商品的库存信息
     private Map<String, Integer> findStocksForSkus(Long warehouseId, List<String> skuCodes) {
-        Response<Map<String, Integer>> r = warehouseSkuReadService.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
+        Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
         if (!r.isSuccess()) {
             log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
                     warehouseId, skuCodes, r.getError());

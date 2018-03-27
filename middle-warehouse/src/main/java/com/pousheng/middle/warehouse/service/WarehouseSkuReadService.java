@@ -65,4 +65,14 @@ public interface WarehouseSkuReadService {
      * @return skuCodes在某个仓库中的库存情况
      */
     Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes);
+
+
+    /**
+     * 批量查询skuCodes在某个仓库中的库存情况
+     *
+     * @param warehouseId 仓库id
+     * @param skuCodes sku codes
+     * @return skuCodes在某个仓库中的库存情况
+     */
+    Response<List<WarehouseSkuStock>> findSkuStocks(Long warehouseId, List<String> skuCodes);
 }

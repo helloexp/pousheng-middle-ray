@@ -2,6 +2,7 @@ package com.pousheng.middle.web.shop.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.gd.Location;
@@ -214,12 +215,12 @@ public class MemberShopOperationLogic {
      * @param type  类型
      * @param companyId 公司ID
      */
-    public MemberShop findShopByCodeAndType(String code,Integer type,String companyId) {
+    public Optional<MemberShop> findShopByCodeAndType(String code,Integer type,String companyId) {
         Map<String, String> criteria = new HashMap<>();
         criteria.put("storeCode", code);
         Integer pageNo = 1;
         criteria.put("pageNo", pageNo+"");
-        criteria.put("status", 1+"");
+        criteria.put("openStateList", "0,1,2");
         criteria.put("types", type+"");
         criteria.put("companyId",companyId);
         Response<Paging<MemberShop>> resp = findSrvShop(criteria);
@@ -228,7 +229,10 @@ public class MemberShopOperationLogic {
             throw new JsonResponseException(resp.getError());
         }
         Paging<MemberShop> paging = resp.getResult();
-        return paging.getData().get(0);
+        if(Objects.equal(paging.getTotal(),0L)){
+            return Optional.absent();
+        }
+        return Optional.of(paging.getData().get(0));
     }
 
 

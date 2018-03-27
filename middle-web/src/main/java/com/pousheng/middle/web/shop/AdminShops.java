@@ -175,10 +175,14 @@ public class AdminShops {
             shopPag.setShop(shop);
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
             try {
-                MemberShop memberShop = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
-                shopExtraInfo.setPhone(memberShop.getTelphone());
-                shopExtraInfo.setEmail(memberShop.getEmail());
-                shop.setPhone(memberShop.getTelphone());
+                Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
+                if(memberShopOptional.isPresent()){
+                    MemberShop memberShop = memberShopOptional.get();
+                    shopExtraInfo.setPhone(memberShop.getTelphone());
+                    shopExtraInfo.setEmail(memberShop.getEmail());
+                    shop.setPhone(memberShop.getTelphone());
+                }
+
             }catch (JsonResponseException e){
                 log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),e.getMessage());
             }

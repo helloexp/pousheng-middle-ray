@@ -1,10 +1,12 @@
 package com.pousheng.middle.web.shop;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
@@ -13,6 +15,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -103,7 +106,7 @@ public class PsOpenClientShops {
                 OpenClientShop openClientShop = shopChannel.getOpenClientShop();
                 OpenShop openShop = openShopCacher.findById(openClientShop.getOpenShopId());
                 Map<String, String>  extra = openShop.getExtra();
-                if(!extra.containsKey(ZONE_ID)){
+                if(Arguments.isNull(extra)||!extra.containsKey(ZONE_ID)){
                     continue;
                 }
                 String zoneName = extra.get(ZONE_NAME);
@@ -137,11 +140,14 @@ public class PsOpenClientShops {
         }
         List<OpenShop> openShops = findR.getResult();
         for (OpenShop openShop : openShops) {
-            if(!openShop.getShopName().startsWith("mpos")) {
+            if(!openShop.getShopName().startsWith("mpos")|| Objects.equal("mpos-总店",openShop.getShopName())) {
                 continue;
             }
 
             Map<String, String>  extra = openShop.getExtra();
+            if(Arguments.isNull(extra)){
+                extra = Maps.newHashMap();
+            }
 
             List<String> keys = Splitter.on("-").splitToList(openShop.getAppKey());
             try {

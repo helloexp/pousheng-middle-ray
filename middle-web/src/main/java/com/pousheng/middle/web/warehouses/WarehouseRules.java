@@ -28,6 +28,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashSet;
@@ -301,11 +302,14 @@ public class WarehouseRules {
                 }
 
                 List<OpenClientShop> zoneOpenClientShops = shopChannel.getZoneOpenClientShops();
-                for (OpenClientShop openShop : zoneOpenClientShops){
-                    if (shopIds.contains(openShop.getOpenShopId())) {
-                        openShop.setEditable(false);
+                if(!CollectionUtils.isEmpty(zoneOpenClientShops)){
+                    for (OpenClientShop openShop : zoneOpenClientShops){
+                        if (shopIds.contains(openShop.getOpenShopId())) {
+                            openShop.setEditable(false);
+                        }
                     }
                 }
+
             }
         }
     }
@@ -352,12 +356,15 @@ public class WarehouseRules {
                     }
 
                     List<OpenClientShop> zoneOpenClientShops = shopChannel.getZoneOpenClientShops();
-                    for (OpenClientShop openShop : zoneOpenClientShops){
-                        if (Objects.equal(openShop.getOpenShopId(), shopId)) {
-                            openShop.setEditable(true);
-                            openShop.setSelected(true);
+                    if(!CollectionUtils.isEmpty(zoneOpenClientShops)){
+                        for (OpenClientShop openShop : zoneOpenClientShops){
+                            if (Objects.equal(openShop.getOpenShopId(), shopId)) {
+                                openShop.setEditable(true);
+                                openShop.setSelected(true);
+                            }
                         }
                     }
+
                 }
             }
         }

@@ -127,6 +127,8 @@ public class TradeConstants {
      */
     //发货单接单,待发货
     public static final String MPOS_SHIPMENT_WAIT_SHIP = "1";
+    //发货单呼叫快递
+    public static final String MPOS_SHIPMENT_CALL_SHIP = "2";
     //发货单拒单
     public static final String MPOS_SHIPMENT_REJECT = "-1";
     //发货单发货,待收货

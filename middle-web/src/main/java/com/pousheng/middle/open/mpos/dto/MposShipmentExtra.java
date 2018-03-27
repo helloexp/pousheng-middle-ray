@@ -90,7 +90,7 @@ public class MposShipmentExtra {
     private String reason;
 
     /**
-     * 状态 0:待接单，1：已接单， 2:已发货， -1：已拒绝
+     * 状态 0:待接单，1：已接单， 2：呼叫快递  3:已发货， -1：已拒绝
      */
     private Integer status;
 

@@ -47,11 +47,12 @@ public class WarehouseSkuStockLogic {
                 log.error("warehouse(id:{}) out code is null,so skip to count stock");
                 continue;
             }
-            String outerId = extra.get("outCode");
-            String companyId = warehouse.getCompanyId();
-            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+
             //如果是店仓则要减掉中台的占用库存
             if(Objects.equal(warehouse.getType(),1)){
+                String outerId = extra.get("outCode");
+                String companyId = warehouse.getCompanyId();
+                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
                 Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),stock.getSkuCode());
                 Long availStock = stock.getAvailStock() - localStock;
                 if(availStock<=0L){

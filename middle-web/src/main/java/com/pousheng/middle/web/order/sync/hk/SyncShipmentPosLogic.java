@@ -16,6 +16,8 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.user.dto.MemberProfile;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -68,6 +70,9 @@ public class SyncShipmentPosLogic {
     private ShopReadService shopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
+
+    @Autowired
+    private UcUserOperationLogic ucUserOperationLogic;
 
     @Value("${pos.stock.code}")
     private String posStockCode;
@@ -281,7 +286,19 @@ public class SyncShipmentPosLogic {
         }else{
             posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
         }
-        posInfo.setCardcode(""); //会员卡号
+
+        //获取会员卡号
+        String cardcode ="";
+        if(Arguments.notNull(shopOrder.getBuyerId())&&shopOrder.getBuyerId()>0L&&shopOrder.getShopName().startsWith("官网")){
+            Response<MemberProfile>  memberProfileRes = ucUserOperationLogic.findByUserId(shopOrder.getBuyerId());
+            if(!memberProfileRes.isSuccess()){
+                log.error("find member profile by user id:{} fail,error:{}",shopOrder.getBuyerId(),memberProfileRes.getError());
+            }else {
+                cardcode = memberProfileRes.getResult().getOuterId();
+            }
+        }
+
+        posInfo.setCardcode(cardcode); //会员卡号
         posInfo.setBuyercode(shopOrder.getBuyerName());//买家昵称
         posInfo.setBuyermobiletel(shopOrder.getOutBuyerId()); //买家手机
         posInfo.setBuyertel(""); //买家座机

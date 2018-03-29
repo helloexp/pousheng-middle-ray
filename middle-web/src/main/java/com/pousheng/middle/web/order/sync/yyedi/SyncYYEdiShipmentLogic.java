@@ -140,7 +140,7 @@ public class SyncYYEdiShipmentLogic {
 
 
     /**
-     * 同步发货单取消到恒康
+     * 同步发货单取消订单派发中心
      * @param shipment 发货单
      * @return 同步结果, 同步成功true, 同步失败false
      */

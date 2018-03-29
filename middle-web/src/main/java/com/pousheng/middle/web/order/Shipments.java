@@ -9,6 +9,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
@@ -127,9 +128,9 @@ public class Shipments {
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
-    private ShopReadService shopReadService;
-    @Autowired
     private WarehouseSkuStockLogic warehouseSkuStockLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -362,7 +363,7 @@ public class Shipments {
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
             //锁定库存
-            Response<Boolean> lockStockRlt = lockStock(shipment);
+            Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
             if (!lockStockRlt.isSuccess()) {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
@@ -511,7 +512,7 @@ public class Shipments {
             shipment.setShopId(refund.getShopId());
             shipment.setShopName(refund.getShopName());
             //锁定库存
-            Response<Boolean> lockStockRlt = lockStock(shipment);
+            Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
             if (!lockStockRlt.isSuccess()) {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
@@ -947,42 +948,6 @@ public class Shipments {
         return ruleRes.getResult();
     }
 
-    private Response<Boolean> lockStock(Shipment shipment) {
-        //获取发货单下的sku订单信息
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        //获取发货仓信息
-        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
-        WarehouseShipment warehouseShipment = new WarehouseShipment();
-        //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.transform(shipmentItems, new Function<ShipmentItem, SkuCodeAndQuantity>() {
-            @Nullable
-            @Override
-            public SkuCodeAndQuantity apply(@Nullable ShipmentItem shipmentItem) {
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                return skuCodeAndQuantity;
-            }
-        });
-        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-        warehouseShipment.setWarehouseId(extra.getWarehouseId());
-        warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
-
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipmentList) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
-        return result;
-
-    }
 
     /**
      * @param skuQuantity     sku订单中商品的数量

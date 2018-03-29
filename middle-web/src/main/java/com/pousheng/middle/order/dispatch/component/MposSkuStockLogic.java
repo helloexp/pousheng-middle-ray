@@ -7,14 +7,17 @@ import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.MposSkuStockWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,8 +57,20 @@ public class MposSkuStockLogic {
     private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
     private DispatchComponent dispatchComponent;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
 
+    /**
+     * 锁定库存
+     * @param shipment 发货单信息
+     */
+    public Response<Boolean> lockStock(Shipment shipment){
+
+        DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+        return this.lockStock(dispatchOrderItemInfo);
+
+    }
 
     /**
      * 锁定库存
@@ -149,9 +164,12 @@ public class MposSkuStockLogic {
 
     /**
      * 解锁库存
-     * @param dispatchOrderItemInfo 商品信息
+     * @param shipment 商品信息
      */
-    public Response<Boolean> unLockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
+    public Response<Boolean> unLockStock(Shipment shipment){
+
+        DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+
 
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
@@ -164,16 +182,30 @@ public class MposSkuStockLogic {
 
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
-        return warehouseSkuWriteService.unlockStock(warehouseShipments);
+        warehouseSkuWriteService.unlockStock(warehouseShipments);
+
+        //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
+        for (WarehouseShipment ws : warehouseShipments) {
+            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
+            }
+        }
+        stockPusher.submit(skuCodes);
+
+        return Response.ok();
 
     }
 
 
     /**
      * 减少库存
-     * @param dispatchOrderItemInfo 商品信息
+     * @param shipment 发货单信息
      */
-    public Response<Boolean> decreaseStock(DispatchOrderItemInfo dispatchOrderItemInfo){
+    public Response<Boolean> decreaseStock(Shipment shipment){
+
+        DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
+
 
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
@@ -187,6 +219,17 @@ public class MposSkuStockLogic {
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
 
-        return warehouseSkuWriteService.decreaseStock(warehouseShipments,warehouseShipments);
+        warehouseSkuWriteService.decreaseStock(warehouseShipments,warehouseShipments);
+        //触发库存推送
+        List<String> skuCodes = Lists.newArrayList();
+        for (WarehouseShipment ws : warehouseShipments) {
+            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
+                skuCodes.add(skuCodeAndQuantity.getSkuCode());
+            }
+        }
+        stockPusher.submit(skuCodes);
+        log.info("end decrease stock");
+
+        return Response.ok();
     }
 }

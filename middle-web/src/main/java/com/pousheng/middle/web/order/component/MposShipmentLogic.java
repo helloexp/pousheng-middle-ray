@@ -83,8 +83,7 @@ public class MposShipmentLogic {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             if(Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)){
                 //扣减库存
-                DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-                mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
+                mposSkuStockLogic.decreaseStock(shipment);
                 // 发货推送pos信息给恒康
                 Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
                 if(!response.isSuccess()){
@@ -97,8 +96,7 @@ public class MposShipmentLogic {
         }
         if(event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT){
             //解锁库存
-            DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-            mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
+            mposSkuStockLogic.unLockStock(shipment);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);

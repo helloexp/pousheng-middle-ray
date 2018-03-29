@@ -151,8 +151,7 @@ public class SyncMposShipmentLogic{
             //如果是自提，直接扣库存
             if(Objects.equals(shipmentExtra.getTakeWay(),"2")){
                 //扣减库存
-                DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-                mposSkuStockLogic.decreaseStock(dispatchOrderItemInfo);
+                mposSkuStockLogic.decreaseStock(shipment);
                 // 发货推送pos信息给恒康
                 Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
                 if(!response.isSuccess()){

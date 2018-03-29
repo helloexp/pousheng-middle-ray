@@ -182,6 +182,11 @@ public class MposSkuStockLogic {
 
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
+
+        //没有说明不是仓发直接返回
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Response.ok();
+        }
         warehouseSkuWriteService.unlockStock(warehouseShipments);
 
         //触发库存推送
@@ -218,6 +223,11 @@ public class MposSkuStockLogic {
 
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
+
+        //没有说明不是仓发直接返回
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Response.ok();
+        }
 
         warehouseSkuWriteService.decreaseStock(warehouseShipments,warehouseShipments);
         //触发库存推送

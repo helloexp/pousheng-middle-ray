@@ -4,11 +4,14 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,8 +56,15 @@ public class WarehouseSkuStockLogic {
                 String outerId = extra.get("outCode");
                 String companyId = warehouse.getCompanyId();
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                if(Arguments.isNull(shopExtraInfo)){
+                    log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+                    throw new ServiceException("shop.safe.stock.invalid");
+                }
+                //安全库存
+                Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
                 Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),stock.getSkuCode());
-                Long availStock = stock.getAvailStock() - localStock;
+                Long availStock = stock.getAvailStock() - localStock - safeStock;
                 if(availStock<=0L){
                     availStock =0L;
                 }

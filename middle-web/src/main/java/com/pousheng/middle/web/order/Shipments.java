@@ -2,7 +2,6 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -18,8 +17,7 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -50,7 +48,6 @@ import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
-import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,7 +56,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -131,6 +127,8 @@ public class Shipments {
     private WarehouseSkuStockLogic warehouseSkuStockLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -756,10 +754,18 @@ public class Shipments {
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
+            shipmentExtra.setWarehouseId(warehouse.getId());
         }else {
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
+            Map<String, String>  extra = warehouse.getExtra();
+            if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+                log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+                throw new ServiceException("warehouse.out.code.invalid");
+            }
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(extra.get("outCode"),Long.valueOf(warehouse.getCompanyId()));
+            shipmentExtra.setWarehouseId(shop.getId());
         }
-        shipmentExtra.setWarehouseId(warehouse.getId());
+
         shipmentExtra.setWarehouseName(warehouse.getName());
 
         Map<String, String> warehouseExtra = warehouse.getExtra();

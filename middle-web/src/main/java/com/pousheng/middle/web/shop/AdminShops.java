@@ -12,6 +12,7 @@ import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
@@ -99,6 +100,8 @@ public class AdminShops {
     private MiddleShopCacher middleShopCacher;
     @Autowired
     private UserTypeBean userTypeBean;
+    @Autowired
+    private ShopChannelGroupCacher shopChannelGroupCacher;
 
 
 
@@ -352,6 +355,9 @@ public class AdminShops {
         }
         //同步电商
         syncParanaShop(toCreate);
+
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
 
         return rShop.getResult();
     }

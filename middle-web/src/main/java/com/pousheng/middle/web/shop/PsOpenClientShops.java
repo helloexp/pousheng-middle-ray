@@ -8,6 +8,7 @@ import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.shop.dto.MemberShop;
+import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.component.OpenShopLogic;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
@@ -54,7 +55,7 @@ public class PsOpenClientShops {
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
     @Autowired
-    private OpenShopLogic openShopLogic;
+    private ShopChannelGroupCacher shopChannelGroupCacher;
 
     /**
      * 查询所有店铺
@@ -63,7 +64,7 @@ public class PsOpenClientShops {
     @RequestMapping(value = "/shop/all/group", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ShopChannelGroup> searchAllShopsGroup() {
 
-       return openShopLogic.findShopChannelGroup();
+       return shopChannelGroupCacher.listAllShopChannelGroupCache();
 
     }
 

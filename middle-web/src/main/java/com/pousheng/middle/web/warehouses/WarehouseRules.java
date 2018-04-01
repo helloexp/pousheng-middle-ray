@@ -12,6 +12,7 @@ import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.OpenShopLogic;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
 import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
@@ -65,7 +66,7 @@ public class WarehouseRules {
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
-    private OpenShopLogic openShopLogic;
+    private ShopChannelGroupCacher shopChannelGroupCacher;
 
 
     /**
@@ -198,7 +199,7 @@ public class WarehouseRules {
     @RequestMapping(value = "/shops-new", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ShopChannelGroup> markShopsNew(@RequestParam(value = "groupId", required = false) Long groupId) {
         //获取店铺列表集合
-        List<ShopChannelGroup> channelGroups = openShopLogic.findShopChannelGroup();
+        List<ShopChannelGroup> channelGroups = shopChannelGroupCacher.listAllShopChannelGroupCache();
 
         //标记所有已设置发货规则的店铺不可被编辑
         disableRuleShopsNew(channelGroups);

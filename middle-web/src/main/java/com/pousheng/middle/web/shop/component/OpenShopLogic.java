@@ -61,7 +61,7 @@ public class OpenShopLogic {
             for (OpenClientShop openClientShop : openClientShops){
                 ShopChannel shopChannel = new ShopChannel();
                 shopChannel.setOpenClientShop(openClientShop);
-                if(openClientShop.getShopName().startsWith("mpos")){
+                if(openClientShop.getShopName().contains("mpos")){
                     ShopChannel mposChannel = new ShopChannel();
                     mposChannel.setOpenClientShop(openClientShop);
                     mposChannels.add(mposChannel);

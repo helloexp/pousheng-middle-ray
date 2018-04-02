@@ -118,7 +118,7 @@ public class OpenShopLogic {
         List<OpenClientShop> openClientShops = Lists.newArrayListWithCapacity(openShops.size());
         for (OpenShop openShop : openShops) {
             OpenClientShop openClientShop = new OpenClientShop();
-            openClientShop.setShopName(openShop.getShopName());
+            openClientShop.setShopName(openShop.getChannel()+"-"+openShop.getShopName());
             openClientShop.setChannel(openShop.getChannel());
             openClientShop.setOpenShopId(openShop.getId());
             openClientShops.add(openClientShop);

@@ -38,11 +38,14 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
 
         log.info("DISPATCH-AppointShopDispatchLink-1  order(id:{}) start...",shopOrder.getId());
+        Map<String,String> extraMap = shopOrder.getExtra();
+
         //全渠道订单不判断是否指定门店
         if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
-            return true;
+            if(!extraMap.containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+                return true;
+            }
         }
-        Map<String,String> extraMap = shopOrder.getExtra();
         if(!extraMap.containsKey(TradeConstants.IS_ASSIGN_SHOP)){
             log.error("shop order(id:{}) extra not key:{}",shopOrder.getId(),TradeConstants.IS_ASSIGN_SHOP);
             throw new ServiceException("query.assign.shop.fail");

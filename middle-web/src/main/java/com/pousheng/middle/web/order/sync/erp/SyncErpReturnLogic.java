@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.sync.erp;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundResponseBody;
@@ -124,11 +125,11 @@ public class SyncErpReturnLogic {
                 return Response.ok(Boolean.TRUE);
             }else{
                 updateRefundSyncFial(refund);
-                return Response.fail("sync.pos.failed");
+                return Response.fail("sync.refund.pos.failed");
             }
         }catch (Exception e){
-            log.error("sync pos failed,caused by {}",e.getMessage());
-            return Response.fail("sync.pos.failed");
+            log.error("sync pos failed,caused by {}", Throwables.getStackTraceAsString(e));
+            return Response.fail("sync.refund.pos.failed");
         }
 
     }

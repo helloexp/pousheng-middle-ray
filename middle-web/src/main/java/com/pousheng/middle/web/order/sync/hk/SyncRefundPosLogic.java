@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.sync.hk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
@@ -88,7 +89,7 @@ public class SyncRefundPosLogic {
             }
             return Response.ok();
         } catch (Exception e) {
-            log.error("sync hk pos refund failed,shipmentId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync hk pos refund failed,refund is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e))          ;
             return Response.fail("sync.hk.pos.refund.fail");
         }
 

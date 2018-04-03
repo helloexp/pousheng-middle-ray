@@ -5,6 +5,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
+import com.pousheng.middle.web.user.dto.MemberProfile;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -65,6 +66,30 @@ public class UcUserOperationLogic {
         return JsonMapper.nonDefaultMapper().fromJson(resultJson,LoginTokenInfo.class);
 
 
+    }
+
+
+
+    public Response<MemberProfile> findByUserId(Long userId) {
+        try {
+            String url = userCenterGateway+"/api/member/profile/user/"+ userId;
+            HttpRequest request = HttpRequest.get(url);
+            if (!request.ok()) {
+                String failedResult = HttpRequest.get(url).body();
+                log.warn("failed to request mc to find member profile by userId = {}, cause: {}"
+                        , userId, failedResult);
+                return Response.fail("request.mc.failed");
+            }
+            String result = request.body();
+            if (com.google.common.base.Strings.isNullOrEmpty(result)) {
+                return Response.fail("user.is.not.exists");
+            }
+            return Response.ok(JsonMapper.JSON_NON_DEFAULT_MAPPER.getMapper().readValue(result, MemberProfile.class));
+        }catch (Exception e) {
+            log.error("failed to find member profile by user id = {}, cause : {}"
+                    , userId, Throwables.getStackTraceAsString(e));
+            return Response.fail("member.profile.find.failed");
+        }
     }
 
     public UcUserInfo authGetUserInfo(String token){

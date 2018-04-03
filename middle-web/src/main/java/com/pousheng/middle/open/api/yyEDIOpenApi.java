@@ -17,6 +17,7 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -128,7 +129,7 @@ public class yyEDIOpenApi {
                     Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
                     if (!updateStatusRes.isSuccess()) {
                         log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                        throw new ServiceException(updateStatusRes.getError());
+                        throw new OPServerException(200,updateStatusRes.getError());
                     }
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                     //封装更新信息
@@ -153,17 +154,14 @@ public class yyEDIOpenApi {
                     Response<Boolean> updateRes = shipmentWriteService.update(update);
                     if (!updateRes.isSuccess()) {
                         log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                        throw new ServiceException(updateRes.getError());
+                        throw new OPServerException(200,updateRes.getError());
                     }
                     //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
                     hkShipmentDoneLogic.doneShipment(shipment);
                     //同步pos单到恒康
-                    Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                    if (!response.isSuccess()) {
-                        Map<String, Object> param1 = Maps.newHashMap();
-                        param1.put("shipmentId", shipment.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-                    }
+                    ShipmentPosToHkEvent hkEvent = new ShipmentPosToHkEvent();
+                    hkEvent.setShipment(shipment);
+                    eventBus.post(hkEvent);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
                     YyEdiResponseDetail field = new YyEdiResponseDetail();

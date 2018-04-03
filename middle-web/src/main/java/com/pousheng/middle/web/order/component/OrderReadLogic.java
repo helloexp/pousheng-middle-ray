@@ -477,6 +477,18 @@ public class OrderReadLogic {
 
     }
 
+
+    /**
+     * 查询open shop是mpos门店
+     * @param openShopId open shop id
+     * @return 是否参与全渠道
+     */
+    public Boolean isMposOpenShop(Long openShopId) {
+        OpenShop openShop = findOpenShopByShopId(openShopId);
+        return openShop.getShopName().startsWith("mpos");
+
+    }
+
     /**
      * 查询店铺
      * @param shopId 店铺主键

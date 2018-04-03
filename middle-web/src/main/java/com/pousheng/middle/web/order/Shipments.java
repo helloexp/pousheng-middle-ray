@@ -2,13 +2,13 @@ package com.pousheng.middle.web.order;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
@@ -17,8 +17,7 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -34,6 +33,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
+import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -48,7 +48,6 @@ import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
-import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +56,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
@@ -126,7 +124,11 @@ public class Shipments {
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
-    private ShopReadService shopReadService;
+    private WarehouseSkuStockLogic warehouseSkuStockLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -359,7 +361,7 @@ public class Shipments {
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
             //锁定库存
-            Response<Boolean> lockStockRlt = lockStock(shipment);
+            Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
             if (!lockStockRlt.isSuccess()) {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
@@ -508,7 +510,7 @@ public class Shipments {
             shipment.setShopId(refund.getShopId());
             shipment.setShopName(refund.getShopName());
             //锁定库存
-            Response<Boolean> lockStockRlt = lockStock(shipment);
+            Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
             if (!lockStockRlt.isSuccess()) {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
@@ -669,7 +671,7 @@ public class Shipments {
 
     //获取指定仓库中指定商品的库存信息
     private Map<String, Integer> findStocksForSkus(Long warehouseId, List<String> skuCodes) {
-        Response<Map<String, Integer>> r = warehouseSkuReadService.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
+        Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
         if (!r.isSuccess()) {
             log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
                     warehouseId, skuCodes, r.getError());
@@ -752,10 +754,18 @@ public class Shipments {
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
+            shipmentExtra.setWarehouseId(warehouse.getId());
         }else {
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
+            Map<String, String>  extra = warehouse.getExtra();
+            if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+                log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+                throw new ServiceException("warehouse.out.code.invalid");
+            }
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(extra.get("outCode"),Long.valueOf(warehouse.getCompanyId()));
+            shipmentExtra.setWarehouseId(shop.getId());
         }
-        shipmentExtra.setWarehouseId(warehouse.getId());
+
         shipmentExtra.setWarehouseName(warehouse.getName());
 
         Map<String, String> warehouseExtra = warehouse.getExtra();
@@ -944,42 +954,6 @@ public class Shipments {
         return ruleRes.getResult();
     }
 
-    private Response<Boolean> lockStock(Shipment shipment) {
-        //获取发货单下的sku订单信息
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        //获取发货仓信息
-        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
-        WarehouseShipment warehouseShipment = new WarehouseShipment();
-        //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.transform(shipmentItems, new Function<ShipmentItem, SkuCodeAndQuantity>() {
-            @Nullable
-            @Override
-            public SkuCodeAndQuantity apply(@Nullable ShipmentItem shipmentItem) {
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                return skuCodeAndQuantity;
-            }
-        });
-        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-        warehouseShipment.setWarehouseId(extra.getWarehouseId());
-        warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> result = warehouseSkuWriteService.lockStock(warehouseShipmentList);
-
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipmentList) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
-        return result;
-
-    }
 
     /**
      * @param skuQuantity     sku订单中商品的数量
@@ -1343,24 +1317,13 @@ public class Shipments {
      */
     private void validateOrderAllChannelWarehouse(List<Long> warehouseIds,Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
-            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
-            if (!r.isSuccess()){
-                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
-                throw new JsonResponseException("find.warehouse.failed");
-            }
-            List<Warehouse> warehouses = r.getResult();
-            int count = 0;
-            for (Warehouse warehouse:warehouses){
-                //如果是店仓
-                if (Objects.equals(warehouse.getType(),1)){
-                    count++;
-                }
-            }
-            if (count>0){
-                throw new JsonResponseException("can.not.contain.shop.warehouse");
-            }
+
+        //mpos门店可以指定店仓发货
+        if(orderReadLogic.isMposOpenShop(shopOrder.getShopId())){
+            return;
         }
+        checkCanShopWarehouseShip(warehouseIds,shopOrder.getShopId());
+
 
     }
 
@@ -1371,7 +1334,16 @@ public class Shipments {
      */
     private void validateRefundAllChannelWarehouse(List<Long> warehouseIds,Long refundId){
         Refund refund = refundReadLogic.findRefundById(refundId);
-        if (!orderReadLogic.isAllChannelOpenShop(refund.getShopId())){
+        //mpos门店可以指定店仓发货
+        if(orderReadLogic.isMposOpenShop(refund.getShopId())){
+            return;
+        }
+        checkCanShopWarehouseShip(warehouseIds,refund.getShopId());
+    }
+
+    private void checkCanShopWarehouseShip(List<Long> warehouseIds,Long shopId){
+
+        if (!orderReadLogic.isAllChannelOpenShop(shopId)){
             Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
             if (!r.isSuccess()){
                 log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());

@@ -231,8 +231,7 @@ public class ShipmentWiteLogic {
                 }
             }
             //解锁库存
-            DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-            mposSkuStockLogic.unLockStock(dispatchOrderItemInfo);
+            mposSkuStockLogic.unLockStock(shipment);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());

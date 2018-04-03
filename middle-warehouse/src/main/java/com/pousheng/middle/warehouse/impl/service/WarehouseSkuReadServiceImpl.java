@@ -149,5 +149,16 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
         }
     }
 
+    @Override
+    public Response<List<WarehouseSkuStock>> findSkuStocks(Long warehouseId, List<String> skuCodes) {
+        try {
+            return Response.ok(warehouseSkuStockDao.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes));
+        } catch (Exception e) {
+            log.error("failed to find stock for warehouseId={} and skuCodes={}, cause:{}",
+                    warehouseId, skuCodes, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.find.fail");
+        }
+    }
+
 
 }

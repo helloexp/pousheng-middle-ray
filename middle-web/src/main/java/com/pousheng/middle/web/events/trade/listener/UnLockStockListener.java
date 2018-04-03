@@ -5,6 +5,7 @@ import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -33,7 +34,7 @@ public class UnLockStockListener {
     @Autowired
     private EventBus eventBus;
     @RpcConsumer
-    private WarehouseSkuWriteService warehouseSkuWriteService;
+    private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
@@ -51,46 +52,15 @@ public class UnLockStockListener {
 
         Shipment shipment = event.getShipment();
 
-        //获取发货单下的sku订单信息
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //获取发货仓信息
         ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
 
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
-        WarehouseShipment warehouseShipment = new WarehouseShipment();
-        //组装sku订单数量信息
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = makeSkuCodeAndQuantities(shipmentItems);
-
-        warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-        warehouseShipment.setWarehouseId(extra.getWarehouseId());
-        warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> unlockRlt =  warehouseSkuWriteService.unlockStock(warehouseShipmentList);
+        Response<Boolean> unlockRlt =  mposSkuStockLogic.unLockStock(shipment);
         if (!unlockRlt.isSuccess()){
             log.error("this shipment can not unlock stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
         }
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipmentList) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
 
 
     }
 
-    private List<SkuCodeAndQuantity> makeSkuCodeAndQuantities(List<ShipmentItem> list){
-        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
-        if (list.size()>0){
-            for (ShipmentItem shipmentItem:list){
-                SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-                skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-                skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-                skuCodeAndQuantities.add(skuCodeAndQuantity);
-            }
-        }
-        return skuCodeAndQuantities;
-    }
 }

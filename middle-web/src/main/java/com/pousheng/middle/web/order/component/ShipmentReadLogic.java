@@ -544,8 +544,7 @@ public class ShipmentReadLogic {
             shopShipment.setShopName(shipmentExtra.getWarehouseName());
             shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
-        }
-        if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_WAREHOUSE_DELIVER)){
+        }else{
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());
             warehouseShipment.setWarehouseName(shipmentExtra.getWarehouseName());

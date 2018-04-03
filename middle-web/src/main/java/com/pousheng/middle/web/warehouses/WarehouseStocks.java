@@ -13,6 +13,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import com.pousheng.middle.web.warehouses.dto.SkuStock;
 import com.pousheng.middle.web.warehouses.dto.SkuStockDetail;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -59,6 +60,8 @@ public class WarehouseStocks {
 
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private WarehouseSkuStockLogic warehouseSkuStockLogic;
 
     /**
      * sku库存概览, 不分仓
@@ -177,6 +180,7 @@ public class WarehouseStocks {
 
     /**
      * 在一个仓库中对应sku的库存
+     * 如果是店仓则要减掉中台已经占用的
      *
      * @param skuCodes sku codes, 以','分割
      * @return sku在对应仓库中的可用库存情况
@@ -189,7 +193,7 @@ public class WarehouseStocks {
         if (CollectionUtils.isEmpty(skuCodeList)) {
             return Collections.emptyMap();
         }
-        Response<Map<String, Integer>> r = warehouseSkuReadService.findByWarehouseIdAndSkuCodes(warehouseId, skuCodeList);
+        Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodeList);
         if (!r.isSuccess()) {
             log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
                     warehouseId, skuCodes, r.getError());

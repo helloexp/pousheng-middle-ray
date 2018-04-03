@@ -121,6 +121,10 @@ public class SyncRefundPosLogic {
         posContent.setChanneltype("b2c");//订单来源类型, 是b2b还是b2c
 
         //退货仓
+        if(Arguments.isNull(refundExtra.getWarehouseId())){
+            log.error("refund(id:{}) refund warehouse not exist",refund.getId());
+            throw new ServiceException("refund.warehouse.invalid");
+        }
         Warehouse warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
         Map<String, String>  extra = warehouse.getExtra();
         if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){

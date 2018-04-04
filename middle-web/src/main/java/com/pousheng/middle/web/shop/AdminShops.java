@@ -385,6 +385,7 @@ public class AdminShops {
     @ApiOperation("更新单个门店安全库存信息")
     @RequestMapping(value = "/{shopId}/safe/stock", method = RequestMethod.PUT)
     public void updateShopSafeStock(@PathVariable Long shopId, @RequestParam Integer safeStock) {
+        log.info("UPDATE-SAFE-STOCK shop:{} safe stock to:{}",shopId,safeStock);
         val rExist = shopReadService.findById(shopId);
         if (!rExist.isSuccess()) {
             log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());

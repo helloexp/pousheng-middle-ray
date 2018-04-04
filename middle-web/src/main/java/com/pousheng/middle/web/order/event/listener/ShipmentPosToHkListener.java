@@ -12,6 +12,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
@@ -47,6 +48,9 @@ public class ShipmentPosToHkListener {
     private AutoCompensateLogic autoCompensateLogic;
 
     @Autowired
+    private HKShipmentDoneLogic hkShipmentDoneLogic;
+
+    @Autowired
     private EventBus eventBus;
 
     @PostConstruct
@@ -57,8 +61,12 @@ public class ShipmentPosToHkListener {
     @Subscribe
     @AllowConcurrentEvents
     public void onShipment(ShipmentPosToHkEvent event) {
-        log.info("try to sync shipment(id:{}) to hk}",event.getShipment().getId());
+        log.info("try to sync shipment(id:{}) to hk",event.getShipment().getId());
         Shipment shipment = event.getShipment();
+
+        //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
+        hkShipmentDoneLogic.doneShipment(shipment);
+
         //同步pos单到恒康
         Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
         if (!response.isSuccess()) {

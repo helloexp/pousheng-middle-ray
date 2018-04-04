@@ -347,17 +347,17 @@ CREATE TABLE `parana_address_gpss` (
 )COMMENT='地址定位信息表';
 create index idx_parana_address_gpss_business_id on parana_address_gpss(business_id);
 create index idx_parana_address_gpss_type on parana_address_gpss(business_type);
-
-drop table if exists `pousheng_auto_compensation`;
-CREATE TABLE `pousheng_auto_compensation` (
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `type` tinyint(4) NOT NULL COMMENT '任务类型 1:同步无法派单商品至mpos',
-  `extra_json` varchar(2048) NOT NULL COMMENT '额外信息,json表示',
-  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
-  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
-  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
-  PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
+--
+--drop table if exists `pousheng_auto_compensation`;
+--CREATE TABLE `pousheng_auto_compensation` (
+--  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+--  `type` tinyint(4) NOT NULL COMMENT '任务类型 1:同步无法派单商品至mpos',
+--  `extra_json` varchar(2048) NOT NULL COMMENT '额外信息,json表示',
+--  `status` tinyint(4) NOT NULL COMMENT '0:待处理，1:已处理',
+--  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+--  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+--  PRIMARY KEY (`id`)
+--) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
 
 
 drop table if exists `open_push_order_task`;
@@ -371,3 +371,21 @@ CREATE TABLE `open_push_order_task` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
+
+
+drop table if exists `pousheng_zone_contracts`;
+CREATE TABLE `pousheng_zone_contracts` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `zone_id` VARCHAR(100) NOT NULL COMMENT '区部id',
+  `zone_name` VARCHAR(100) NOT NULL COMMENT '区部名称',
+  `name` VARCHAR(30) NOT NULL COMMENT '联系人姓名',
+  `email` VARCHAR(30) NOT NULL COMMENT '联系人邮箱',
+  `phone` VARCHAR(30)  COMMENT '联系人电话',
+  `group` tinyint(2) NOT NULL COMMENT '分组',
+  `status` tinyint(2) NOT NULL COMMENT '状态,1可用,-1已删除',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='区部联系人表';
+create index `idx_pousheng_zone_contracts_zone_name` on pousheng_zone_contracts(zone_name);
+create index `idx_pousheng_zone_contracts_zone_id` on pousheng_zone_contracts(zone_id);

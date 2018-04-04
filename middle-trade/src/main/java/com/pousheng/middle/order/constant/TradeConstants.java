@@ -36,67 +36,67 @@ public class TradeConstants {
     //逆向单换货商品信息
     public static final String REFUND_CHANGE_ITEM_INFO = "refundChangeItemInfo";
     //逆向单丢件补发商品信息
-    public static final String REFUND_LOST_ITEM_INFO="refundLostItemInfo";
+    public static final String REFUND_LOST_ITEM_INFO = "refundLostItemInfo";
     //逆向单商品信息
     public static final String REFUND_EXTRA_INFO = "refundExtraInfo";
     //订饭派发中心过来的item
-    public static final String REFUND_YYEDI_RECEIVED_ITEM_INFO="yyediReceivedItemInfo";
+    public static final String REFUND_YYEDI_RECEIVED_ITEM_INFO = "yyediReceivedItemInfo";
     //通知电商平台状态
     public static final String ECP_ORDER_STATUS = "ecpOrderStatus";
     //冗余的shipmentId
-    public static final String ECP_SHIPMENT_ID ="ecpShipmentId";
+    public static final String ECP_SHIPMENT_ID = "ecpShipmentId";
     //从电商平台拉取消子单时,子单取消失败,需要将取消失败的子单冗余进总单的extra
-    public static final String SKU_CODE_CANCELED="skuCodeCanceled";
+    public static final String SKU_CODE_CANCELED = "skuCodeCanceled";
     //同步恒康响应头
-    public static final String HK_RESPONSE_HEAD ="head";
+    public static final String HK_RESPONSE_HEAD = "head";
     //同步恒康发货单返回的body
-    public static final String HK_SHIPMENT_ORDER_BODY="orderBody";
+    public static final String HK_SHIPMENT_ORDER_BODY = "orderBody";
     //同步恒康售后单返回的body
-    public static final String SYNC_HK_REFUND_BODY="refundBody";
+    public static final String SYNC_HK_REFUND_BODY = "refundBody";
     //发票类型
-    public static final String INVOICE_TYPE="type";
+    public static final String INVOICE_TYPE = "type";
     //发票抬头类型
-    public static final String INVOICE_TITLE_TYPE="titleType";
+    public static final String INVOICE_TITLE_TYPE = "titleType";
     //sku商品初始价格
-    public static final String SKU_PRICE="skuPrice";
+    public static final String SKU_PRICE = "skuPrice";
     //积分
-    public static final String SKU_INTEGRAL="integral";
+    public static final String SKU_INTEGRAL = "integral";
     //客服备注
-    public static final String CUSTOMER_SERVICE_NOTE="customerServiceNote";
+    public static final String CUSTOMER_SERVICE_NOTE = "customerServiceNote";
     //恒康售后单id
-    public static final String HK_REFUND_ID="hkRefundId";
+    public static final String HK_REFUND_ID = "hkRefundId";
     //yyedi售后单id
-    public static final String YYEDI_REFUND_ID="yyediRefundId";
+    public static final String YYEDI_REFUND_ID = "yyediRefundId";
     //京东物流编码
-    public static final String JD_VEND_CUST_ID="JDCOD";
+    public static final String JD_VEND_CUST_ID = "JDCOD";
     //自选物流编码
-    public static final String OPTIONAL_VEND_CUST_ID="ZX000001";
+    public static final String OPTIONAL_VEND_CUST_ID = "ZX000001";
     //子单分拆优惠
-    public static final String SKU_SHARE_DISCOUNT="shareDiscount";
+    public static final String SKU_SHARE_DISCOUNT = "shareDiscount";
     //订单支付信息
-    public static final String ORDER_PAYMENT_INFO="paymentInfo";
+    public static final String ORDER_PAYMENT_INFO = "paymentInfo";
     //外部电商商品id
-    public static final String MIDDLE_OUT_ITEM_ID="outItemId";
+    public static final String MIDDLE_OUT_ITEM_ID = "outItemId";
     //判断售后单是否完善的标记位(有这个标记位则说明可以自动审核,默认0)
-    public static final String MIDDLE_REFUND_COMPLETE_FLAG="refundCompleteFlag";
+    public static final String MIDDLE_REFUND_COMPLETE_FLAG = "refundCompleteFlag";
     //hk绩效店铺名称
-    public static final String HK_PERFORMANCE_SHOP_NAME="hkPerformanceShopName";
+    public static final String HK_PERFORMANCE_SHOP_NAME = "hkPerformanceShopName";
     //hk绩效店铺代码
-    public static final String HK_PERFORMANCE_SHOP_CODE="hkPerformanceShopCode";
+    public static final String HK_PERFORMANCE_SHOP_CODE = "hkPerformanceShopCode";
     //hk绩效店铺外码
-    public static final String HK_PERFORMANCE_SHOP_OUT_CODE="hkPerformanceShopOutCode";
+    public static final String HK_PERFORMANCE_SHOP_OUT_CODE = "hkPerformanceShopOutCode";
     //中台换货收货地址
-    public static final String MIDDLE_CHANGE_RECEIVE_INFO="middleChangeReceiveInfo";
+    public static final String MIDDLE_CHANGE_RECEIVE_INFO = "middleChangeReceiveInfo";
     //默认退货仓id
-    public static final String DEFAULT_REFUND_WAREHOUSE_ID="defaultReWarehouseId";
+    public static final String DEFAULT_REFUND_WAREHOUSE_ID = "defaultReWarehouseId";
     //默认退货仓名称
-    public static final String DEFAULT_REFUND_WAREHOUSE_NAME="defaultReWarehouseName";
+    public static final String DEFAULT_REFUND_WAREHOUSE_NAME = "defaultReWarehouseName";
     //默认退货仓对应的外码
-    public static final String DEFAULT_REFUND_OUT_WAREHOUSE_CODE="defaultReWarehouseCode";
+    public static final String DEFAULT_REFUND_OUT_WAREHOUSE_CODE = "defaultReWarehouseCode";
     //公司代码(账套)
-    public static final String HK_COMPANY_CODE="companyCode";
+    public static final String HK_COMPANY_CODE = "companyCode";
     //不自动生成发货单的备注
-    public static final String NOT_AUTO_CREATE_SHIPMENT_NOTE="shipmentNote";
+    public static final String NOT_AUTO_CREATE_SHIPMENT_NOTE = "shipmentNote";
     /**
      * 逆向单来源
      * see RefundSource
@@ -105,11 +105,11 @@ public class TradeConstants {
     /**
      * 是否是预售订单
      */
-    public static final String IS_STEP_ORDER="isStepOrder";
+    public static final String IS_STEP_ORDER = "isStepOrder";
     /**
      * 预售订单状态 1.付完定金没有付尾款,2.付完定金和尾款
      */
-    public static final String STEP_ORDER_STATUS="stepOrderStatus";
+    public static final String STEP_ORDER_STATUS = "stepOrderStatus";
 
 
     /**
@@ -120,11 +120,11 @@ public class TradeConstants {
     public static final String REFUND_CANCELED = "1";
 
     //活动商品
-    public static final String ACTIVITY_ITEM="activityItems";
+    public static final String ACTIVITY_ITEM = "activityItems";
     //赠品
-    public static final String GIFT_ITEM="giftItems";
+    public static final String GIFT_ITEM = "giftItems";
 
-    public static final String ACTIVITY_SHOP="activityShops";
+    public static final String ACTIVITY_SHOP = "activityShops";
 
     /**
      * mpos 状态
@@ -143,23 +143,22 @@ public class TradeConstants {
     public static final String MPOS_WAREHOUSE_DELIVER = "2";
 
     //活动赠品id
-    public static final String  GIFT_ACTIVITY_ID= "giftActivityId";
+    public static final String GIFT_ACTIVITY_ID = "giftActivityId";
     //活动赠品名称
-    public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
+    public static final String GIFT_ACTIVITY_NAME = "giftActivityName";
     //sku订单中的shipmentId
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
     //sku订单中的shipmentCode
     public static final String SKU_ORDER_SHIPMENT_CODE = "skuShipmentCode";
-    //店铺订单选择的快递单号
-    public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
-    public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
-    public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
-    public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
-
-    //sizeId
-    public static final String HK_SIZE_ID = "sizeId";
     //没有有效的订单
     public static final String  YYEDI_RESPONSE_NOT_EXIST_ORDER= "-120";
+    //店铺订单选择的快递单号
+    public static final String SHOP_ORDER_HK_EXPRESS_CODE = "orderHkExpressCode";
+    public static final String SHOP_ORDER_HK_EXPRESS_NAME = "orderHkExpressName";
+    public static final String SKU_ORDER_CANCEL_REASON = "skuOrderCancelReason";
+    public static final String SHOP_ORDER_CANCEL_REASON = "shopOrderCancelReason";
+    //sizeId
+    public static final String HK_SIZE_ID = "sizeId";
     //是否指定门店 1 指定 2 未指定
     public static final String IS_ASSIGN_SHOP = "isAssignShop";
     //指定门店id
@@ -246,5 +245,9 @@ public class TradeConstants {
 
     public static final String REFUND_PREFIX = "ASS";
 
+
+    //数据逻辑状态  1可用 1已删除
+    public static final int STATUS_ENABLE = 1;
+    public static final int STATUS_DISABLE = -1;
 
 }

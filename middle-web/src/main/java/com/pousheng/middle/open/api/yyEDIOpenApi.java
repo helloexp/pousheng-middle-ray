@@ -12,14 +12,11 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -31,10 +28,8 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -42,7 +37,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
@@ -61,22 +55,17 @@ public class yyEDIOpenApi {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-    @Autowired
-    private ShipmentWiteLogic shipmentWiteLogic;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
     private OrderReadLogic orderReadLogic;
-    @Autowired
-    private HKShipmentDoneLogic hkShipmentDoneLogic;
+
     @Autowired
     private RefundReadLogic refundReadLogic;
     @Autowired
     private RefundWriteLogic refundWriteLogic;
-    @Autowired
-    private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
     @Autowired
@@ -156,8 +145,7 @@ public class yyEDIOpenApi {
                         log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
                         throw new OPServerException(200,updateRes.getError());
                     }
-                    //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
-                    hkShipmentDoneLogic.doneShipment(shipment);
+
                     //同步pos单到恒康
                     ShipmentPosToHkEvent hkEvent = new ShipmentPosToHkEvent();
                     hkEvent.setShipment(shipment);

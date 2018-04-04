@@ -229,6 +229,8 @@ public class SkuTemplates {
     @RequestMapping(value = "/api/sku-template/{id}/cancel/flag", method = RequestMethod.PUT)
     public void cancelMposFlag(@PathVariable Long id) {
 
+        log.info("start cancel mpos flag id:{}",id);
+
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -304,6 +306,7 @@ public class SkuTemplates {
     @ApiOperation("批量取消货品mops打标")
     @RequestMapping(value = "/api/sku-template/batch/cancel/flag", method = RequestMethod.PUT)
     public void batchCancelMposFlag(@RequestParam String skuTemplateIds) {
+        log.info("start batch cancel mpos flag data:{}",skuTemplateIds);
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){
             cancelMposFlag(id);
@@ -367,6 +370,7 @@ public class SkuTemplates {
     @ApiOperation("异步批量取消货品mpos打标")
     @RequestMapping(value = "/api/sku-template/batch/async/cancel/flag",method = RequestMethod.PUT)
     public void asyncCancelMposFlag(@RequestParam Map<String,String> params){
+        log.info("start async cancel mpos flag,params:{}",params);
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
         event.setType(PsSpuType.POUSHENG.value());

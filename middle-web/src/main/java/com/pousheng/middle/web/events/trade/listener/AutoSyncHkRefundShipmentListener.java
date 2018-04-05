@@ -49,6 +49,7 @@ public class AutoSyncHkRefundShipmentListener {
     @AllowConcurrentEvents
     public void autoSyncHkRefundShipment(RefundShipmentEvent refundShipmentEvent) {
         Long shipmentId = refundShipmentEvent.getShipmentId();
+        log.info("EVEN-BUS-AutoSyncHkRefundShipmentListener handle start shipment id:{}",shipmentId);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
@@ -62,6 +63,9 @@ public class AutoSyncHkRefundShipmentListener {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }
         }
+
+        log.info("EVEN-BUS-AutoSyncHkRefundShipmentListener handle end shipment id:{}",shipmentId);
+
 
     }
 }

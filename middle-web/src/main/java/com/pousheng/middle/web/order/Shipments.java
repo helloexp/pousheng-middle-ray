@@ -439,6 +439,9 @@ public class Shipments {
     @OperationLogType("生成换货发货单")
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
+
+        //判断是否重复生成
+        checkIsDuplicateCreate(refundId);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
         List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
         //判断是否是全渠道订单的售后单，如果不是全渠道订单的售后单，不能选择店仓
@@ -525,6 +528,18 @@ public class Shipments {
             shipmentIds.add(shipmentId);
         }
         return shipmentIds;
+    }
+
+    //判断是否重复生成
+    private void checkIsDuplicateCreate(Long refundId){
+
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        if(!CollectionUtils.isEmpty(orderShipments)){
+            log.error("refund(id:{}) already generate shipment");
+            throw new JsonResponseException("refund.already.generate.shipment");
+        }
+
+
     }
 
 

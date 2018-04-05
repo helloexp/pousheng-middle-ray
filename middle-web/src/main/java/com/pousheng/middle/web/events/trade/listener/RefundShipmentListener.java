@@ -55,6 +55,8 @@ public class RefundShipmentListener {
     @AllowConcurrentEvents
     public void onRefundShipment(RefundShipmentEvent refundShipmentEvent) {
         Long shipmentId = refundShipmentEvent.getShipmentId();
+        log.info("EVEN-BUS-RefundShipmentListener handle start shipment id:{}",shipmentId);
+
         Shipment shipment  = shipmentReadLogic.findShipmentById(shipmentId);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
@@ -67,6 +69,9 @@ public class RefundShipmentListener {
         }else{
             refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(),skuCodeAndQuantityMap);
         }
+
+        log.info("EVEN-BUS-RefundShipmentListener handle end shipment id:{}",shipmentId);
+
 
     }
 }

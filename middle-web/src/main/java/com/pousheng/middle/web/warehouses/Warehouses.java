@@ -265,6 +265,7 @@ public class Warehouses {
     @ApiOperation("设置安全库存")
     @RequestMapping(value = "/{id}/safestock/setting",method = RequestMethod.PUT)
     public void setSafeStock(@PathVariable Long id,@RequestParam Integer safeStock){
+        log.info("SET-WAREHOUSE-SAFE-STOCK id:{} safe stock to:{}",id,safeStock);
         Response<Warehouse> response = warehouseReadService.findById(id);
         if(!response.isSuccess()){
             log.error("fail to find warehouse by id:{},error:{}",id,response.getError());

@@ -87,7 +87,7 @@
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE code = #{code}
+        WHERE code = #{code} LIMIT 1
     </select>
 
     <select id="findByFuzzyCode" parameterType="string" resultMap="WarehouseMap">

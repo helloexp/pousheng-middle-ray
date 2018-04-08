@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
@@ -16,6 +17,8 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -46,6 +49,10 @@ public class PsOpenClientShops {
     private MemberShopOperationLogic memberShopOperationLogic;
     @Autowired
     private ShopChannelGroupCacher shopChannelGroupCacher;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
+    @RpcConsumer
+    private ShopWriteService shopWriteService;
 
     /**
      * 查询所有店铺
@@ -92,7 +99,22 @@ public class PsOpenClientShops {
                     update.setId(openShop.getId());
                     update.setExtra(extra);
 
-                    openShopWriteService.update(update);
+                    Response<Boolean> response = openShopWriteService.update(update);
+                    if(response.isSuccess()){
+                        log.error("FIX-ZONE-OPEN-SHOP open shop id:{} fail,error:{}",openShop.getId(),response.getError());
+                    }
+
+                    Shop shop =  middleShopCacher.findByOuterIdAndBusinessId(keys.get(1),Long.valueOf(keys.get(0)));
+                    Shop updateShop = new Shop();
+                    updateShop.setId(shop.getId());
+                    updateShop.setZoneId(memberShop.getZoneId());
+                    updateShop.setZoneName(memberShop.getZoneName());
+                    Response<Boolean> shopRes = shopWriteService.update(shop);
+                    if(response.isSuccess()){
+                        log.error("FIX-ZONE-SHOP shop id:{} fail,error:{}",shop.getId(),shopRes.getError());
+                    }
+
+
                 }
             }catch (JsonResponseException e){
                 log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0),e.getMessage());

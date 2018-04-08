@@ -1356,6 +1356,7 @@ public class Shipments {
     @RequestMapping(value = "api/order/shipment/fix")
     public Integer fixOrderShipment(OrderShipmentCriteria criteria){
         int count = 0;
+        int errorCount = 0;
         /**
          * 分页获取数据，再做转换
          */
@@ -1373,26 +1374,38 @@ public class Shipments {
             }
             List<OrderShipment> list = response.getResult().getData();
             for (OrderShipment os:list) {
-                Shipment shipment = shipmentReadLogic.findShipmentById(os.getShipmentId());
-                OrderShipment os1 = new OrderShipment();
-                os1.setId(os.getId());
-                os1.setSpuCodes(getSpusFromShipment(shipment));
-                ReceiverInfo receiverInfo = this.trans2ReceiverInfo(shipment.getReceiverInfos());
-                if(receiverInfo != null){
-                    try{
-                        os1.setProvinceId(receiverInfo.getProvinceId().longValue());
-                        os1.setCityId(receiverInfo.getCityId().longValue());
-                        os1.setRegionId(receiverInfo.getRegionId().longValue());
-                    }catch (Exception e){
-                        continue;
-                    }
+                if(os.getProvinceId() != null) {
+                    continue;
                 }
-                orderShipmentWriteService.update(os1);
-                count += 1;
+                OrderShipment os1 = new OrderShipment();
+                try{
+                    Shipment shipment = shipmentReadLogic.findShipmentById(os.getShipmentId());
+                    os1.setId(os.getId());
+                    os1.setSpuCodes(getSpusFromShipment(shipment));
+                    ReceiverInfo receiverInfo = this.trans2ReceiverInfo(shipment.getReceiverInfos());
+                    if(receiverInfo != null){
+                        if(receiverInfo.getProvinceId() != null) {
+                            os1.setProvinceId(receiverInfo.getProvinceId().longValue());
+                        }
+                        if(receiverInfo.getCityId() != null) {
+                            os1.setCityId(receiverInfo.getCityId().longValue());
+                        }
+                        if(receiverInfo.getRegionId() != null) {
+                            os1.setRegionId(receiverInfo.getRegionId().longValue());
+                        }
+                    }
+                    orderShipmentWriteService.update(os1);
+                }catch (Exception e){
+                    errorCount ++;
+                    log.error("fix shipment(id:{}) failed,cause:{}", os.getShipmentId(),Throwables.getStackTraceAsString(e));
+                    continue;
+                }
             }
-            log.info("fix order shipment count:{}",count);
-            if(list.size() < pageSize)
+            count += list.size();
+            log.info("fix order shipment count:{},failed count:{}",count,errorCount);
+            if(list.size() < pageSize) {
                 next = false;
+            }
         }
         log.info("fix order shipment spucode and address end.....");
         return count;
@@ -1400,8 +1413,9 @@ public class Shipments {
 
     private String getSpusFromShipment(Shipment shipment){
         StringBuilder sb = new StringBuilder();
-        if(shipment.getSkuInfos() == null)
+        if(shipment.getSkuInfos() == null) {
             return null;
+        }
         Set<Long> skuOrderIds = shipment.getSkuInfos().keySet();
         Response<List<SkuOrder>> response = skuOrderReadService.findByIds(Lists.newArrayList(skuOrderIds));
         if(!response.isSuccess()){
@@ -1417,10 +1431,11 @@ public class Shipments {
         List<SkuTemplate> list = response1.getResult();
         for (SkuTemplate sku:list) {
             String spuCode = sku.getExtra().get("materialCode");
-            if(sb.length() > 0)
+            if(sb.length() > 0) {
                 sb.append(",").append(spuCode);
-            else
+            } else {
                 sb.append(spuCode);
+            }
         }
         return sb.toString();
     }

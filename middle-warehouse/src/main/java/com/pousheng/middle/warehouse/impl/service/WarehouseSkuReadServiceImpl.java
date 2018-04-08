@@ -53,7 +53,7 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
         try {
             WarehouseSkuStock stock = warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
             if(stock == null){
-                log.warn("no stock record found for warehouseId={} and skuCode={}", warehouseId, skuCode);
+                //log.warn("no stock record found for warehouseId={} and skuCode={}", warehouseId, skuCode);
                 stock = new WarehouseSkuStock();
                 stock.setWarehouseId(warehouseId);
                 stock.setSkuCode(skuCode);

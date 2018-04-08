@@ -102,7 +102,7 @@ public class EcpOrderLogic {
         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
         //最后一个发货单发货完成之后需要将订单同步到电商
         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())){
+        if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
             syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
         }else{
             syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);

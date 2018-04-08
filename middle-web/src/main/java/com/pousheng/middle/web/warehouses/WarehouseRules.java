@@ -161,6 +161,9 @@ public class WarehouseRules {
             log.error("failed to delete warehouse rule(id={}), error code:{}", ruleId, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
+
         return r.getResult();
     }
 

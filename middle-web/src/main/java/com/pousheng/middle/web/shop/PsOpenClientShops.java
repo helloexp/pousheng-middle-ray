@@ -100,7 +100,7 @@ public class PsOpenClientShops {
                     update.setExtra(extra);
 
                     Response<Boolean> response = openShopWriteService.update(update);
-                    if(response.isSuccess()){
+                    if(!response.isSuccess()){
                         log.error("FIX-ZONE-OPEN-SHOP open shop id:{} fail,error:{}",openShop.getId(),response.getError());
                     }
 
@@ -109,8 +109,8 @@ public class PsOpenClientShops {
                     updateShop.setId(shop.getId());
                     updateShop.setZoneId(memberShop.getZoneId());
                     updateShop.setZoneName(memberShop.getZoneName());
-                    Response<Boolean> shopRes = shopWriteService.update(shop);
-                    if(response.isSuccess()){
+                    Response<Boolean> shopRes = shopWriteService.update(updateShop);
+                    if(!response.isSuccess()){
                         log.error("FIX-ZONE-SHOP shop id:{} fail,error:{}",shop.getId(),shopRes.getError());
                     }
 

@@ -9,6 +9,7 @@ import com.google.common.base.Optional;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.collect.Maps;
 import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.constants.Constants;
@@ -103,7 +104,12 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
 
                         Map<String,String> operatorExtra = operator.getExtra();
                         if(!CollectionUtils.isEmpty(operatorExtra)){
-                            paranaUser.getExtra().putAll(operatorExtra);
+                            Map<String, String> userExtra = paranaUser.getExtra();
+                            if(CollectionUtils.isEmpty(userExtra)){
+                                userExtra = Maps.newHashMap();
+                            }
+                            userExtra.putAll(operatorExtra);
+                            paranaUser.setExtra(userExtra);
                         }
                     }
 

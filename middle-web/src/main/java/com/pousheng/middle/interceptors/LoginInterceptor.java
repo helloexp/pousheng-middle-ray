@@ -14,6 +14,7 @@ import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.auth.model.Operator;
@@ -26,6 +27,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.servlet.handler.HandlerInterceptorAdapter;
 
 import javax.annotation.PostConstruct;
@@ -33,6 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
@@ -89,14 +92,21 @@ public class LoginInterceptor extends HandlerInterceptorAdapter {
                         session.invalidate();
                         return false;
                     }
+                    ParanaUser paranaUser = ParanaUserMaker.from(middleUser);
+
                     if (Objects.equal(middleUser.getType(), UserType.OPERATOR.value())) {
                         Operator operator = RespHelper.or500(operatorReadService.findByUserId(middleUser.getId()));
                         if (operator == null || !Objects.equal(operator.getStatus(), 1)) {
                             session.invalidate();
                             return false;
                         }
+
+                        Map<String,String> operatorExtra = operator.getExtra();
+                        if(!CollectionUtils.isEmpty(operatorExtra)){
+                            paranaUser.getExtra().putAll(operatorExtra);
+                        }
                     }
-                    ParanaUser paranaUser = ParanaUserMaker.from(middleUser);
+
                     UserUtil.putCurrentUser(paranaUser);
                 }else {
                     log.error("not find middle user by out id:{}",userId);

@@ -180,6 +180,9 @@ public class WarehouseRules {
             log.error("failed to delete warehouse shop group(id={}), error code:{}", groupId, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
+
         return r.getResult();
     }
 

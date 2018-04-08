@@ -120,7 +120,7 @@ public class ZoneContractsApis {
             throw new JsonResponseException("zone.contract.group.empty");
         }
 
-        if (ZoneGroupEnum.contains(zoneContract.getGroup())) {
+        if (!ZoneGroupEnum.contains(zoneContract.getGroup())) {
             throw new JsonResponseException("zone.contract.group.illegal");
         }
     }

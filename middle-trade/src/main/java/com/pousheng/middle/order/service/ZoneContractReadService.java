@@ -32,4 +32,14 @@ public interface ZoneContractReadService {
      * @return
      */
     Response<Paging<ZoneContract>> pagination(String zoneName, Integer pageNo, Integer pageSize);
+
+
+    /**
+     * 通过zoneId查询
+     *
+     * @param zoneId
+     * @return
+     */
+    Response<List<ZoneContract>> findByZoneId(String zoneId);
+
 }

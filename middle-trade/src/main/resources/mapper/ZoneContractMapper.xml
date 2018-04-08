@@ -16,7 +16,7 @@
         <result column="status" property="status"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-        
+
     </resultMap>
 
     <sql id="tb">
@@ -36,25 +36,25 @@
     </sql>
 
     <sql id="queryCondition">
-        
+
         <if test="zoneId != null">and `zone_id` = #{zoneId}</if>
-        
+
         <if test="zoneName != null">and `zone_name` like concat('%',#{zoneName}) </if>
-        
+
         <if test="name != null">and `name` = #{name}</if>
-        
+
         <if test="email != null">and `email` = #{email}</if>
-        
+
         <if test="phone != null">and `phone` = #{phone}</if>
-        
+
         <if test="group != null">and `group` = #{group}</if>
-        
+
         <if test="status != null">and `status` = #{status}</if>
-        
+
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
+
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
+
         <if test="startAt != null">and created_at &gt; #{startAt}</if>
         <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
@@ -101,9 +101,9 @@
             <if test="phone != null">phone = #{phone},</if>
             <if test="group != null">`group` = #{group},</if>
             <if test="status != null">status = #{status},</if>
-            
-            
-            
+
+
+
             updated_at=now()
         </set>
         WHERE id = #{id}
@@ -129,6 +129,15 @@
         <where>
         <include refid="queryCondition"/>
         </where>
+    </select>
+
+    <select id="findByCondition"  resultMap="ZoneContractMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+
     </select>
 
 </mapper>

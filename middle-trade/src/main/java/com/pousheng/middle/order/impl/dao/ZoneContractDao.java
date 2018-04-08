@@ -4,6 +4,8 @@ import com.pousheng.middle.order.model.ZoneContract;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+
 /**
  * Author: songrenfei
  * Desc: 区部联系人表Dao类
@@ -11,5 +13,11 @@ import org.springframework.stereotype.Repository;
  */
 @Repository
 public class ZoneContractDao extends MyBatisDao<ZoneContract> {
+
+    public List<ZoneContract> findByZoneId(String zoneId) {
+        ZoneContract contract = new ZoneContract();
+        contract.setZoneId(zoneId);
+        return getSqlSession().selectList(sqlId("findByCondition"), contract);
+    }
 
 }

@@ -62,4 +62,20 @@ public class ZoneContractReadServiceImpl implements ZoneContractReadService {
 
         }
     }
+
+    @Override
+    public Response<List<ZoneContract>> findByZoneId(String zoneId) {
+
+
+        try {
+
+            return Response.ok(zoneContractDao.findByZoneId(zoneId));
+
+        } catch (Exception e) {
+
+            log.error(" zonecontacts findByZoneId error,cause={}", Throwables.getStackTraceAsString(e));
+            return Response.fail("zone.contract.find.fail");
+
+        }
+    }
 }

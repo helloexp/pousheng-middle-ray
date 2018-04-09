@@ -1327,14 +1327,23 @@ public class Shipments {
                     }
                     Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> item.getStatus() != -1).filter(item -> null == item.getShipWay());
 
-                    afterFiler.forEach(shipment -> {
-                        String shipmentWay = (String) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("shipmentWay");
+                    afterFiler.parallel().forEach(shipment -> {
+                        if (CollectionUtils.isEmpty(shipment.getExtra())||shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO)==null){
 
-                        //处理旧数据 shipmentWay不是数字的情况
-                        if (!Pattern.compile("^[0-9]+$").matcher(shipmentWay).matches()) {
-                            return;
+                            shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));//不存在设置仓发
+                        }else {
+                            String shipmentWay = (String) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("shipmentWay");
+
+                            if (StringUtils.isEmpty(shipmentWay)) { //不存在设置仓发
+                                shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));
+                            } else {
+                                //处理旧数据 shipmentWay不是数字的情况
+                                if (!Pattern.compile("^[0-9]+$").matcher(shipmentWay).matches()) {
+                                    return;
+                                }
+                                shipment.setShipWay(Integer.parseInt(shipmentWay));
+                            }
                         }
-                        shipment.setShipWay(Integer.parseInt(shipmentWay));
                         shipmentWriteService.update(shipment);
                     });
                     pageNo++;

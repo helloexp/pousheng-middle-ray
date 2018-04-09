@@ -70,6 +70,10 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Long shopId;
 
+    /**
+     * 发货方式 1.店发 2.仓发
+     */
+    private Integer shipWay;
 
 
     /**

@@ -133,8 +133,8 @@ public class AdminOrderWriter {
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
         log.info("try to roll back shop order shopOrderId is {}",shopOrderId);
-        boolean isSuccess = orderWriteLogic.rollbackShopOrder(shopOrderId);
-        if (!isSuccess){
+        Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
+        if (!response.isSuccess()){
             throw new JsonResponseException("rollback.shop.order.failed");
         }
     }
@@ -159,14 +159,14 @@ public class AdminOrderWriter {
         }
         if (StringUtils.isNotEmpty(skuCodeCanceled)) {
             log.info("try to cancel sku order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            boolean isSuccess = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
-            if (!isSuccess){
+            Response<Boolean> response = orderWriteLogic.cancelSkuOrder(shopOrderId, skuCodeCanceled);
+            if (!response.isSuccess()){
                 throw new JsonResponseException("cancel.sku.order.failed");
             }
         } else {
             log.info("try to cancel shop order shopOrderId is {},skuCode is {}",shopOrderId,skuCodeCanceled);
-            boolean isSuccess = orderWriteLogic.cancelShopOrder(shopOrderId);
-            if (!isSuccess){
+            Response<Boolean> response = orderWriteLogic.cancelShopOrder(shopOrderId);
+            if (!response.isSuccess()){
                 throw new JsonResponseException("cancel.shop.order.failed");
             }
 
@@ -327,10 +327,16 @@ public class AdminOrderWriter {
     @OperationLogType("单个订单自动处理")
     public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
-        if (!response.isSuccess()){
-            log.error("auto handle shop order failed, order id is {}",shopOrderId);
-            throw new JsonResponseException("生成发货单失败，原因:"+response.getError());
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+            shipmentWiteLogic.toDispatchOrder(shopOrder);
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
+        }else{
+            Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+            if (!response.isSuccess()){
+                log.error("auto handle shop order failed, order id is {}",shopOrderId);
+                throw new JsonResponseException("生成发货单失败，原因:"+response.getError());
+            }
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -350,10 +356,16 @@ public class AdminOrderWriter {
         List<Long> failedShopOrderIds = Lists.newArrayList();
         for (Long shopOrderId:ids){
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-            Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
-            if (!response.isSuccess()){
-                failedShopOrderIds.add(shopOrderId);
-                continue;
+            if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+                log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+                shipmentWiteLogic.toDispatchOrder(shopOrder);
+                log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
+            }else{
+                Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+                if (!response.isSuccess()){
+                    failedShopOrderIds.add(shopOrderId);
+                    continue;
+                }
             }
             successShopOrderIds.add(shopOrderId);
         }

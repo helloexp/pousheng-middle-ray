@@ -1,9 +1,6 @@
 package com.pousheng.middle.hksyc.pos.api;
 
 import com.github.kevinsawicki.http.HttpRequest;
-import com.pousheng.middle.hksyc.dto.HkRequestHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.pos.dto.HkShimentDoneRequestData;
 import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosRequestData;
 import com.pousheng.middle.hksyc.utils.Numbers;
@@ -13,8 +10,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/19

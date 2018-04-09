@@ -1,3 +1,4 @@
+/*
 package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.collect.Maps;
@@ -33,10 +34,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+*/
 /**
  * Created by penghui on 2017/12/22
  * 发货单事件监听器
- */
+ *//*
+
 @Component
 @Slf4j
 public class MposShipmentListener {
@@ -83,10 +86,12 @@ public class MposShipmentListener {
     }
 
 
-    /**
+    */
+/**
      * 判断是否所有发货单都更新了 更新订单状态
      * @param event
-     */
+     *//*
+
     @Subscribe
     @AllowConcurrentEvents
     public void onUpdateMposShipment(MposShipmentUpdateEvent event){
@@ -118,11 +123,13 @@ public class MposShipmentListener {
         }
     }
 
-    /**
+    */
+/**
      * 同步订单状态
      * @param shipment      发货单
      * @param expectOrderStatus   期望订单状态
-     */
+     *//*
+
     private void syncOrderStatus(Shipment shipment,Integer expectOrderStatus){
 
         //更新子单状态
@@ -149,4 +156,4 @@ public class MposShipmentListener {
         }
     }
 
-}
+}*/

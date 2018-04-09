@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
 import com.pousheng.middle.order.enums.Municipality;
+import com.pousheng.middle.order.enums.SpecialRegion;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.utils.Arguments;
@@ -102,9 +103,22 @@ public class ReceiverInfoCompleter {
         }
 
         if (StringUtils.hasText(address.getRegion())){
-            Long regionId = queryAddressId(cityId,address.getRegion());
-            if(Arguments.notNull(regionId)){
-                address.setRegionId(regionId);
+            List<String> specialRegions = Lists.newArrayList(SpecialRegion.YUANQU.getName(),SpecialRegion.YUANQU.getDesc());
+            if (specialRegions.contains(address.getRegion())){
+                Long regionId = queryAddressId(cityId,SpecialRegion.YUANQU.getName());
+                if(Arguments.notNull(regionId)){
+                    address.setRegionId(regionId);
+                }else{
+                    regionId = queryAddressId(cityId,SpecialRegion.YUANQU.getDesc());
+                    if(Arguments.notNull(regionId)) {
+                        address.setRegionId(regionId);
+                    }
+                }
+            }else{
+                Long regionId = queryAddressId(cityId,address.getRegion());
+                if(Arguments.notNull(regionId)){
+                    address.setRegionId(regionId);
+                }
             }
         }
     }

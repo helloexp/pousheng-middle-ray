@@ -31,6 +31,7 @@ import org.springframework.util.CollectionUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -199,6 +200,10 @@ public class OrderWriteLogic {
     public void autoCancelShopOrder(Long shopOrderId) {
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this shopOrder has been canceled,shopOrderId is {}",shopOrderId);
+            return;
+        }
         //判断该订单是否有取消订单的权限
         if (!validateAutoCancelShopOrder(shopOrder)){
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}",shopOrder.getId());
@@ -219,7 +224,8 @@ public class OrderWriteLogic {
         //取消发货单
         int count=0;//判断是否存在取消失败的发货单
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment,0))
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment,0);
+            if (!cancelShipmentResponse.isSuccess())
             {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
@@ -239,7 +245,7 @@ public class OrderWriteLogic {
      *取消整单失败时,用于补偿失败的订单
      * @param shopOrderId 店铺订单主键
      */
-    public boolean cancelShopOrder(Long shopOrderId) {
+    public Response<Boolean> cancelShopOrder(Long shopOrderId) {
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单是否有取消订单的权限
@@ -258,10 +264,14 @@ public class OrderWriteLogic {
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
                 filter(it->!Objects.equals(it.getStatus(),MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //取消发货单
+        Response<Boolean> cancelShipmentResponse = Response.ok(Boolean.TRUE);
         int count=0;//判断是否存在取消失败的发货单
+        String errorMsg = "";
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment,0))
+            cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment,0);
+            if (!cancelShipmentResponse.isSuccess())
             {
+                errorMsg = cancelShipmentResponse.getError();
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
             }
@@ -276,9 +286,9 @@ public class OrderWriteLogic {
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
         }
         if (count>0){
-            return false;
+            return Response.fail(errorMsg);
         }else{
-            return true;
+            return Response.ok(Boolean.TRUE);
         }
     }
     /**
@@ -289,6 +299,10 @@ public class OrderWriteLogic {
      */
     public void autoCancelSkuOrder(long shopOrderId, String skuCode) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this shopOrder has been canceled,shopOrderId is {}",shopOrderId);
+            return;
+        }
         //判断该订单所属整单是否有取消订单的权限
         if (!validateAutoCancelShopOrder4Sku(shopOrder)){
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}",shopOrder.getId());
@@ -299,6 +313,10 @@ public class OrderWriteLogic {
                 MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                 MiddleOrderStatus.WAIT_SHIP.getValue());
         SkuOrder skuOrder = this.getSkuOrder(skuOrders,skuCode);
+        if (Objects.isNull(skuOrder)||Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.CANCEL.getValue())){
+            log.warn("this skuOrder has been canceled,shopOrderId is {},skuCode is {}",shopOrderId,skuCode);
+            return;
+        }
         //判断订单是否有取消订单的权限
         if (!validateAutoCancelSkuOrder(skuOrder)){
             log.error("this skuOrder can not be canceled,because of error skuOrder status.shopOrderId is :{}",skuOrder.getId());
@@ -317,7 +335,8 @@ public class OrderWriteLogic {
 
         int count=0;//计数器用来记录是否有发货单取消失败
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment,0))
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment,0);
+            if (!cancelShipmentResponse.isSuccess())
             {
                 count++;
             }
@@ -345,7 +364,7 @@ public class OrderWriteLogic {
      * @param shopOrderId 店铺订单主键
      * @param skuCode     子单代码
      */
-    public boolean cancelSkuOrder(long shopOrderId, String skuCode) {
+    public Response<Boolean> cancelSkuOrder(long shopOrderId, String skuCode) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单所属整单是否有取消订单的权限
         if (!validateCancelShopOrder4Sku(shopOrder)){
@@ -371,9 +390,12 @@ public class OrderWriteLogic {
         //获取需要恢复成待处理状态的子单
         List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).filter(it->!Objects.equals(it.getId(),skuOrder.getId())).collect(Collectors.toList());
         int count=0;//计数器用来记录是否有发货单取消失败
+        String errorMsg = "";
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment,0))
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment,0);
+            if (!cancelShipmentResponse.isSuccess())
             {
+                errorMsg = cancelShipmentResponse.getError();
                 count++;
             }
         }
@@ -392,9 +414,9 @@ public class OrderWriteLogic {
 
         }
         if (count>0){
-            return false;
+            return Response.fail(errorMsg);
         }else{
-            return true;
+            return Response.ok(Boolean.TRUE);
         }
     }
 
@@ -403,7 +425,7 @@ public class OrderWriteLogic {
      *
      * @param shopOrderId 店铺订单主键
      */
-    public boolean rollbackShopOrder(Long shopOrderId) {
+    public Response<Boolean> rollbackShopOrder(Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //判断该订单是否有撤销订单的权限
         if (!validateRollbackShopOrder(shopOrder)){
@@ -425,9 +447,12 @@ public class OrderWriteLogic {
 
         //取消发货单
         int count= 0 ;//计数器用来记录是否有发货单取消失败的
+        String errorMsg = "";
         for (Shipment shipment:shipments){
-            if (!shipmentWiteLogic.cancelShipment(shipment,1))
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment,1);
+            if (!cancelShipmentResponse.isSuccess())
             {
+                errorMsg = cancelShipmentResponse.getError();
                 count++;
             }
         }
@@ -438,9 +463,9 @@ public class OrderWriteLogic {
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
         }
         if (count>0){
-            return false;
+            return Response.fail(errorMsg);
         }else{
-            return true;
+            return Response.ok(Boolean.TRUE);
         }
     }
 
@@ -540,7 +565,12 @@ public class OrderWriteLogic {
      * @return 返回经过过滤的skuOrder记录
      */
     private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode){
-        return skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).collect(Collectors.toList()).get(0);
+        Optional<SkuOrder> skuOrderOptional = skuOrders.stream().filter(Objects::nonNull).filter(it->Objects.equals(it.getSkuCode(),skuCode)).findAny();
+        if (skuOrderOptional.isPresent()){
+            return skuOrderOptional.get();
+        }else{
+            return null;
+        }
     }
 
     /**

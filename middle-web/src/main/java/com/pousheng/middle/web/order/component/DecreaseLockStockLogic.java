@@ -25,6 +25,7 @@ import java.util.List;
  */
 @Slf4j
 @Component
+@Deprecated
 public class DecreaseLockStockLogic {
     @Autowired
     private EventBus eventBus;

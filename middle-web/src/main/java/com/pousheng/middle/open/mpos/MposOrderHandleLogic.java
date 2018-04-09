@@ -1,20 +1,18 @@
 package com.pousheng.middle.open.mpos;
 
 import com.google.common.base.Throwables;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
+import com.pousheng.middle.web.order.component.MposShipmentLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Shipment;
@@ -25,7 +23,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -51,16 +48,12 @@ public class MposOrderHandleLogic {
     private ExpressCodeReadService expressCodeReadService;
 
     @Autowired
-    private EventBus eventBus;
+    private MposShipmentLogic mposShipmentLogic;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
-    @PostConstruct
-    public void init() {
-        eventBus.register(this);
-    }
 
     /**
      * 拉取发货单状态的更新
@@ -109,12 +102,12 @@ public class MposOrderHandleLogic {
                 update.setId(shipment.getId());
                 //保存物流信息
                 shipmentExtra.setShipmentSerialNo(extra.get(TradeConstants.SHIP_SERIALNO));
-                shipmentExtra.setShipmentCorpCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
                     try{
 
                         ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(extra.get(TradeConstants.SHIP_CORP_CODE));
                         shipmentExtra.setShipmentCorpName(expressCode.getName());
+                        shipmentExtra.setShipmentCorpCode(expressCode.getHkCode());
                         DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
                         shipmentExtra.setShipmentDate(dt.toDate());
 
@@ -126,17 +119,20 @@ public class MposOrderHandleLogic {
                 update.setExtra(extraMap);
                 break;
         }
-        if(Objects.isNull(orderEvent))
-            return ;
+        if(Objects.isNull(orderEvent)) {
+            return;
+        }
         Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,orderEvent.toOrderOperation());
         if(!res.isSuccess()){
             log.error("sync shipment(id:{}) fail,cause:{}",shipment.getId(),res.getError());
             return ;
         }
-        if(Objects.nonNull(update))
+        if(Objects.nonNull(update)) {
             shipmentWiteLogic.update(update);
-        if(!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE))
-            eventBus.post(new MposShipmentUpdateEvent(shipment.getId(),orderEvent));
+        }
+        if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
+            mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
+        }
         log.info("sync shipment(id:{}) success",shipment.getId());
     }
 

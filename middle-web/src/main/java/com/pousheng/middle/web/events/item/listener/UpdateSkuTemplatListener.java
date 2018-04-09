@@ -34,15 +34,15 @@ public class UpdateSkuTemplatListener {
     @Subscribe
     public void onUpdate(SkuTemplateUpdateEvent event){
 
-        log.debug("update sku template to search index start");
         Long skuTemplateId = event.getSkuTemplateId();
+        log.debug("update sku template(id:{}) to search index start",skuTemplateId);
 
         Response<Boolean> updateRes = skuTemplateSearchWriteService.index(skuTemplateId);
         if(!updateRes.isSuccess()){
             log.error("update sku template(id:{}) to search index fail,error:{}",skuTemplateId,updateRes.getError());
         }
 
-        log.debug("update sku template to search index  end");
+        log.debug("update sku template(id:{}) to search index  end",skuTemplateId);
 
     }
 

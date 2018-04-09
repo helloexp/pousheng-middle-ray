@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -66,6 +67,8 @@ public class HKShipmentDoneLogic {
     private WarehouseSkuWriteService warehouseSkuWriteService;
     @Autowired
     private SyncMposShipmentLogic syncMposShipmentLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     public void doneShipment(Shipment shipment) {
         log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
@@ -163,7 +166,7 @@ public class HKShipmentDoneLogic {
         }
 
         //真正扣减库存
-        decreaseLockStockLogic.doDecreaseStock(shipment);
+        mposSkuStockLogic.decreaseStock(shipment);
 
         log.info("HK SHIPMENT DONE LISTENER end, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
 

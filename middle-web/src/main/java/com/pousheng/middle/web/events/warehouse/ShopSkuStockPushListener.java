@@ -60,8 +60,10 @@ public class ShopSkuStockPushListener {
                 skuCodes.add(datum.getSkuCode());
             }
             stockPusher.submit(skuCodes);
+            log.info("push stock pageNo is {}",pageNo);
             pageNo++;
             if(data.size()<pageSize){
+                log.info("push stock return pageNo is {}",pageNo);
                 return;
             }
         }

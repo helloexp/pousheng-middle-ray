@@ -13,7 +13,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -65,7 +65,7 @@ public class Refunds {
     @Autowired
     private WarehouseReadService warehouseReadService;
     @Autowired
-    private SyncRefundLogic syncRefundLogic;
+    private SyncErpReturnLogic syncErpReturnLogic;
     @Autowired
     private SyncRefundToEcpLogic syncRefundToEcpLogic;
     @Autowired
@@ -125,7 +125,7 @@ public class Refunds {
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
                     refund.setStatus(targetStatus);
-                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                     if (!syncRes.isSuccess()) {
                         log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
                     }
@@ -182,7 +182,7 @@ public class Refunds {
                     Flow flow = flowPicker.pickAfterSales();
                     Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
                     refund.setStatus(targetStatus);
-                    Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+                    Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                     if (!syncRes.isSuccess()) {
                         log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
                     }
@@ -288,7 +288,7 @@ public class Refunds {
     @OperationLogType("同步售后单到恒康")
     public void syncHkRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
-        Response<Boolean> syncRes = syncRefundLogic.syncRefundToHk(refund);
+        Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
         if (!syncRes.isSuccess()) {
             log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -335,7 +335,7 @@ public class Refunds {
                 throw new JsonResponseException(updateSyncStatusRes.getError());
             }
         }else{
-                Response<Boolean> syncRes = syncRefundLogic.syncRefundCancelToHk(refund);
+                Response<Boolean> syncRes = syncErpReturnLogic.syncReturnCancel(refund);
             if (!syncRes.isSuccess()) {
                 log.error("sync cancel refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
                 throw new JsonResponseException(syncRes.getError());

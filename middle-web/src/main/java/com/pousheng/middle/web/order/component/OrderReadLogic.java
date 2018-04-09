@@ -13,6 +13,7 @@ import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.taobao.api.domain.Trade;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -20,6 +21,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
@@ -30,6 +32,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.zookeeper.Op;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -70,6 +73,8 @@ public class OrderReadLogic {
     private ShipmentReadService shipmentReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -446,18 +451,51 @@ public class OrderReadLogic {
 
     }
 
+
+    /**
+     * 查询open shop是否参与全渠道
+     * @param openShopId open shop id
+     * @return 是否参与全渠道
+     */
+    public Boolean isAllChannelOpenShop(Long openShopId){
+
+        OpenShop openShop = findOpenShopByShopId(openShopId);
+
+        Map<String,String> extraMap = openShop.getExtra();
+        if(CollectionUtils.isEmpty(extraMap)){
+            log.error("open shop (id:{}) extra map is empty",openShop.getId());
+            throw new JsonResponseException("open.shop.extra.is.null");
+        }
+        if(!extraMap.containsKey(TradeConstants.IS_ALL_CHANNEL_SHOP)){
+            log.warn("open shop (id:{}) extra map not contains key:{}",openShop.getId(),TradeConstants.IS_ALL_CHANNEL_SHOP);
+            return Boolean.FALSE;
+        }
+
+        String value = extraMap.get(TradeConstants.IS_ALL_CHANNEL_SHOP);
+
+        return Objects.equals(value,"1");
+
+    }
+
+
+    /**
+     * 查询open shop是mpos门店
+     * @param openShopId open shop id
+     * @return 是否参与全渠道
+     */
+    public Boolean isMposOpenShop(Long openShopId) {
+        OpenShop openShop = findOpenShopByShopId(openShopId);
+        return openShop.getShopName().startsWith("mpos");
+
+    }
+
     /**
      * 查询店铺
      * @param shopId 店铺主键
      * @return
      */
     public OpenShop findOpenShopByShopId(Long shopId){
-        Response<OpenShop> response = openShopReadService.findById(shopId);
-        if (!response.isSuccess()){
-            log.error("find openShop failed,shopId is {},caused by {}",shopId,response.getError());
-            throw new JsonResponseException("find.openShop.failed");
-        }
-        return response.getResult();
+        return openShopCacher.findById(shopId);
     }
 
     /**

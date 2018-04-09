@@ -87,6 +87,7 @@ import java.util.concurrent.*;
                 "com.pousheng.middle.auth",
                 "com.pousheng.middle.erpsyc",
                 "com.pousheng.middle.hksyc",
+                "com.pousheng.middle.yyedisyc",
                 "com.pousheng.middle.interceptors",
                 "com.pousheng.middle.web",
                 "com.pousheng.middle.gd"})

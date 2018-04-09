@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.erp.component.WarehouseFetcher;
 import com.pousheng.erp.model.PoushengWarehouse;
 import com.pousheng.middle.gd.Location;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
@@ -23,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -100,6 +102,12 @@ public class WarehouseImporter {
         }
         if(r.getResult().isPresent()){ //已同步过, 则更新
             Warehouse exist = r.getResult().get();
+            Map<String, String> extra = exist.getExtra();
+            if(!CollectionUtils.isEmpty(extra)){
+                if(extra.containsKey(TradeConstants.WAREHOUSE_SAFESTOCK)){
+                    w.getExtra().put(TradeConstants.WAREHOUSE_SAFESTOCK,extra.get(TradeConstants.WAREHOUSE_SAFESTOCK));
+                }
+            }
             w.setId(exist.getId());
             Response<Boolean> ru = warehouseWriteService.update(w);
             if(!ru.isSuccess()){

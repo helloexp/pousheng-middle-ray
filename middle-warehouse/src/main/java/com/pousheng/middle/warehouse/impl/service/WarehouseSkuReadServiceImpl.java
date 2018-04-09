@@ -53,7 +53,7 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
         try {
             WarehouseSkuStock stock = warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
             if(stock == null){
-                log.warn("no stock record found for warehouseId={} and skuCode={}", warehouseId, skuCode);
+                //log.warn("no stock record found for warehouseId={} and skuCode={}", warehouseId, skuCode);
                 stock = new WarehouseSkuStock();
                 stock.setWarehouseId(warehouseId);
                 stock.setSkuCode(skuCode);
@@ -142,6 +142,17 @@ public class WarehouseSkuReadServiceImpl implements WarehouseSkuReadService {
                 r.put(stock.getSkuCode(), stock.getAvailStock().intValue());
             }
             return Response.ok(r);
+        } catch (Exception e) {
+            log.error("failed to find stock for warehouseId={} and skuCodes={}, cause:{}",
+                    warehouseId, skuCodes, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.sku.find.fail");
+        }
+    }
+
+    @Override
+    public Response<List<WarehouseSkuStock>> findSkuStocks(Long warehouseId, List<String> skuCodes) {
+        try {
+            return Response.ok(warehouseSkuStockDao.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes));
         } catch (Exception e) {
             log.error("failed to find stock for warehouseId={} and skuCodes={}, cause:{}",
                     warehouseId, skuCodes, Throwables.getStackTraceAsString(e));

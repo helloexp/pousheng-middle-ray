@@ -97,7 +97,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //过滤掉非mpos仓
-        List<Warehouse> isMposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).collect(Collectors.toList());
+        List<Warehouse> isMposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());
         //没有有效的则跳过
         if(CollectionUtils.isEmpty(isMposWarehouses)){
             return Boolean.TRUE;

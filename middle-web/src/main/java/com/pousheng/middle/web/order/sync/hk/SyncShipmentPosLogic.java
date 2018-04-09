@@ -16,6 +16,8 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.user.dto.MemberProfile;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -69,6 +71,9 @@ public class SyncShipmentPosLogic {
     @Autowired
     private WarehouseCacher warehouseCacher;
 
+    @Autowired
+    private UcUserOperationLogic ucUserOperationLogic;
+
     @Value("${pos.stock.code}")
     private String posStockCode;
 
@@ -86,7 +91,7 @@ public class SyncShipmentPosLogic {
             //获取发货单详情
             ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
             ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
-            String shipmentWay = shipmentExtra.getShipmentWay();
+            String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay())?"2":shipmentExtra.getShipmentWay();
             if(Strings.isNullOrEmpty(shipmentWay)){
                 log.error("shipment(id:{}) shipment way invalid",shipment.getId());
                 throw new ServiceException("shipment.way.invalid");
@@ -275,8 +280,25 @@ public class SyncShipmentPosLogic {
         posInfo.setOrdertype("");  //订单类型
         posInfo.setOrdercustomercode(""); //订单标记code
         posInfo.setAppamtsourceshop(""); //业绩来源店铺
-        posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
-        posInfo.setCardcode(""); //会员卡号
+        if (java.util.Objects.isNull(openClientPaymentInfo)){
+            //如果拉取不到付款信息，则使用中台订单创建的时间
+            posInfo.setPaymentdate(formatter.print(shopOrder.getCreatedAt().getTime())); //付款时间
+        }else{
+            posInfo.setPaymentdate(formatter.print(openClientPaymentInfo.getPaidAt().getTime())); //付款时间
+        }
+
+        //获取会员卡号
+        String cardcode ="";
+        if(Arguments.notNull(shopOrder.getBuyerId())&&shopOrder.getBuyerId()>0L&&shopOrder.getShopName().startsWith("官网")){
+            Response<MemberProfile>  memberProfileRes = ucUserOperationLogic.findByUserId(shopOrder.getBuyerId());
+            if(!memberProfileRes.isSuccess()){
+                log.error("find member profile by user id:{} fail,error:{}",shopOrder.getBuyerId(),memberProfileRes.getError());
+            }else {
+                cardcode = memberProfileRes.getResult().getOuterId();
+            }
+        }
+
+        posInfo.setCardcode(cardcode); //会员卡号
         posInfo.setBuyercode(shopOrder.getBuyerName());//买家昵称
         posInfo.setBuyermobiletel(shopOrder.getOutBuyerId()); //买家手机
         posInfo.setBuyertel(""); //买家座机
@@ -310,19 +332,19 @@ public class SyncShipmentPosLogic {
         posInfo.setSellremark(sellerNote);//卖家备注
         posInfo.setSellcode(shopOrder.getBuyerName()); //卖家昵称
         posInfo.setExpresstype("express");//物流方式
-        if(isWarehouseShip(shipmentWay)){
+        posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
+     /*   if(isWarehouseShip(shipmentWay)){
             //仓发
-            posInfo.setVendcustcode(shipmentExtra.getShipmentCorpCode());  //物流公司代码
         }else{
             //店铺发货
             try{
-                ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shipmentExtra.getShipmentCorpCode());
+                //ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shipmentExtra.getShipmentCorpCode());
                 posInfo.setVendcustcode(expressCode.getHkCode());  //物流公司代码
             }catch (Exception e){
                 log.error("find express code failed,mposShipmentCorpCode is {}",shipmentExtra.getShipmentCorpCode());
             }
 
-        }
+        }*/
         posInfo.setExpressbillno(shipmentExtra.getShipmentSerialNo()); //物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
         if(Arguments.isNull(shipmentExtra.getShipmentDate())){
@@ -331,7 +353,14 @@ public class SyncShipmentPosLogic {
             posInfo.setConsignmentdate(formatter.print(shipmentExtra.getShipmentDate().getTime())); //发货时间
 
         }
-
+        //添加重量
+        if (java.util.Objects.isNull(shipmentExtra.getWeight())){
+            posInfo.setWeight("0.00");
+            posInfo.setParcelweight("0.00");
+        }else{
+            posInfo.setWeight(String.valueOf(shipmentExtra.getWeight()));
+            posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
+        }
         return posInfo;
     }
 

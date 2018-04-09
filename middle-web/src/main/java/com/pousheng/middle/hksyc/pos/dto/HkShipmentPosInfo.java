@@ -46,4 +46,6 @@ public class HkShipmentPosInfo implements Serializable{
     private String    expressbillno; //物流单号
     private String    wms_ordercode; //第三方物流单号
     private String    consignmentdate; //发货时间
+    private String    weight;//重量
+    private String    parcelweight;//包裹重量
 }

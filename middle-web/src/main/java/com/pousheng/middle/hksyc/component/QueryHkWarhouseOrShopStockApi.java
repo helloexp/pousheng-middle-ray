@@ -80,6 +80,8 @@ public class QueryHkWarhouseOrShopStockApi {
                     Warehouse warehouse = warehouseCacher.findByCode(skuStockInfo.getCompany_id()+"-"+skuStockInfo.getStock_id());
                     skuStockInfo.setBusinessId(warehouse.getId());
                     skuStockInfo.setBusinessName(warehouse.getName());
+                    middleStockList.add(skuStockInfo);
+
                 }catch (Exception e){
                     log.error("find warehouse by company id:{} and stock id:{} fail,cause:{}",skuStockInfo.getCompany_id(),skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
                 }
@@ -93,12 +95,13 @@ public class QueryHkWarhouseOrShopStockApi {
                     }
                     skuStockInfo.setBusinessId(shop.getId());
                     skuStockInfo.setBusinessName(shop.getName());
+                    middleStockList.add(skuStockInfo);
+
                 }catch (Exception e){
                     log.error("find shop by outer id:{} fail,cause:{}",skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
                 }
 
             }
-            middleStockList.add(skuStockInfo);
         }
 
         return middleStockList;

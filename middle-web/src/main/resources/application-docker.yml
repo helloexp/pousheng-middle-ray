@@ -89,6 +89,9 @@ gateway:
   hk:
     host: ${HK_HOST}
     accessKey: ${HK_ACCESS_KEY}
+  yyedi:
+      host: ${YYEDI_HOST}
+      accessKey: ${YYEDI_ACCESS_KEY}
   parana:
     host: ${PARANA_HOST}
 

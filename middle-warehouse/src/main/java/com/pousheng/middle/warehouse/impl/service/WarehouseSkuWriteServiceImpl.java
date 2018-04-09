@@ -117,7 +117,7 @@ public class WarehouseSkuWriteServiceImpl implements WarehouseSkuWriteService {
             warehouseSkuStockManager.decreaseStock(lockedShipments,actualShipments);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("failed to decrease stock for {}", actualShipments, Throwables.getStackTraceAsString(e));
+            log.error("failed to decrease stock for lockedShipments:{},actualShipments:{},cause:{}",lockedShipments, actualShipments, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.stock.decrease.fail");
         }
     }

@@ -20,6 +20,8 @@ import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -384,7 +386,9 @@ public class AdminShops {
 
     @ApiOperation("更新单个门店安全库存信息")
     @RequestMapping(value = "/{shopId}/safe/stock", method = RequestMethod.PUT)
-    public void updateShopSafeStock(@PathVariable Long shopId, @RequestParam Integer safeStock) {
+    @OperationLogType("更新门店安全库存信息")
+    public void updateShopSafeStock(@PathVariable @OperationLogParam Long shopId, @RequestParam Integer safeStock) {
+        log.info("UPDATE-SAFE-STOCK shop:{} safe stock to:{}",shopId,safeStock);
         val rExist = shopReadService.findById(shopId);
         if (!rExist.isSuccess()) {
             log.error("find shop by id:{} fail,error:{}",shopId,rExist.getError());
@@ -408,6 +412,7 @@ public class AdminShops {
 
         //刷新缓存
         shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
     }
 
 

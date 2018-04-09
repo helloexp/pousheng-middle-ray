@@ -7,6 +7,7 @@ package com.pousheng.middle.web.shop;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.MemberSportCity;
 import com.pousheng.middle.shop.dto.PsShop;
@@ -18,6 +19,8 @@ import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Joiners;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.user.ext.UserTypeBean;
@@ -74,7 +77,15 @@ public class MemberShops {
 
         if (!userTypeBean.isAdmin(paranaUser)) {
             Map<String, String> extraMap = paranaUser.getExtra();
-            zoneIds = extraMap.get(MANAGE_ZONE_IDS);
+            String zoneIdStr = extraMap.get(MANAGE_ZONE_IDS);
+            //如果没有设置区域则返回空
+            if(com.google.common.base.Strings.isNullOrEmpty(zoneIdStr)){
+                log.error("current operator(user id:{}) not manage zone",paranaUser.getId());
+                throw new JsonResponseException("not.manage.zone.ranage");
+            }
+
+            List<String> zoneIdList = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(extraMap.get(Constants.MANAGE_ZONE_IDS),JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,String.class));
+            zoneIds = Joiners.COMMA.join(zoneIdList);
         }
 
         PsShop psShop = null;

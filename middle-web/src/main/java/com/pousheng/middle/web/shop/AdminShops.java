@@ -7,6 +7,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
+import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -25,8 +26,8 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
-import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
@@ -178,7 +179,8 @@ public class AdminShops {
             if(Strings.isNullOrEmpty(zoneIdStr)){
                 return new Paging<>();
             }
-            zoneIds  = Splitters.COMMA.splitToList(zoneIdStr);
+
+            zoneIds = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(extraMap.get(Constants.MANAGE_ZONE_IDS),JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,String.class));
         }
 
         Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, zoneIds,pageNo, pageSize);

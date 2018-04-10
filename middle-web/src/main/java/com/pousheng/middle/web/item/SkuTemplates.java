@@ -293,6 +293,15 @@ public class SkuTemplates {
         }
     }
 
+    @RequestMapping(value = "/api/sku-template/batch/make/falge", method = RequestMethod.PUT)
+    public void batchSetFlage(@RequestParam String skuTemplateIds) {
+        List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
+        Response<List<SkuTemplate>> response = skuTemplateReadService.findByIds(ids);
+        pushMposItemComponent.batchMakeFlag(response.getResult(),PsSpuType.MPOS.value());
+
+    }
+
+
 
     @ApiOperation("对货品批量打mops打标")
     @RequestMapping(value = "/api/sku-template/batch/make/flag", method = RequestMethod.PUT)

@@ -1325,7 +1325,7 @@ public class Shipments {
                     if (response.getResult().getData().size() == 0) {
                         break;
                     }
-                    Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> item.getStatus() != -1).filter(item -> null == item.getShipWay());
+                    Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> null == item.getShipWay());
 
                     afterFiler.parallel().forEach(shipment -> {
                         if (CollectionUtils.isEmpty(shipment.getExtra())||shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO)==null){
@@ -1351,7 +1351,7 @@ public class Shipments {
                     throw new JsonResponseException("shipment.update.fail");
                 }
             }
-                return Response.ok();
+                return Response.ok(true);
             } catch(Exception e){
                 log.error("failed to batch update {}, cause:{}", Throwables.getStackTraceAsString(e));
                 return Response.fail("shipment.update.fail");

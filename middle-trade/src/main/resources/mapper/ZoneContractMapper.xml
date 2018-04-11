@@ -39,7 +39,7 @@
 
         <if test="zoneId != null">and `zone_id` = #{zoneId}</if>
 
-        <if test="zoneName != null">and `zone_name` like concat('%',#{zoneName}) </if>
+        <if test="zoneName != null">and `zone_name` like concat(#{zoneName},'%') </if>
 
         <if test="name != null">and `name` = #{name}</if>
 

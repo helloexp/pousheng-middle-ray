@@ -437,7 +437,8 @@ public class ExportTradeBillListener {
                     ShipmentExportEntity entity = new ShipmentExportEntity();
 
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipmentContext.getShipment());
-
+                   //发货方式
+                    entity.setShipWay(shipmentContext.getShipment().getShipWay());
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
                     entity.setItemNo(item.getSkuCode());

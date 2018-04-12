@@ -39,4 +39,33 @@ public class MemberShop implements Serializable {
 
     private String zoneName;
 
+    //"省名称"
+    private String provinceName;
+
+    //"市名称")
+    private String cityName;
+
+    //"区名称")
+    private String areaName;
+
+    // "省代码", position = 37)
+    private String provinceCode;
+
+    //"市代码", position = 38)
+    private String cityCode;
+
+    //"区代码", position = 39)
+    private String areaId;
+
+    //"店铺电话", position = 19)
+    private String telphone;
+
+    //"邮箱", position = 19)
+    private String email;
+
+    // "店铺地址", position = 18)
+    private String address;
+
+
+
 }

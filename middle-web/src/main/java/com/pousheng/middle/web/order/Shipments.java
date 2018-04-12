@@ -34,6 +34,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -53,6 +54,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.PatternMatchUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -62,7 +64,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * 发货单相关api （以 order shipment 为发货单）
@@ -1099,9 +1103,10 @@ public class Shipments {
     @RequestMapping(value = "api/single/shipment/{id}/rollback", method = RequestMethod.PUT)
     @OperationLogType("单个发货单取消")
     public void rollbackShopOrder(@PathVariable("id") @OperationLogParam Long shipmentId) {
-        log.info("try to cancel shipemnt, shipmentId is {}",shipmentId);
+        log.info("try to cancel shipment, shipmentId is {}",shipmentId);
         Response<Boolean> response = shipmentWiteLogic.rollbackShipment(shipmentId);
         if (!response.isSuccess()){
+            log.info("try to cancel shipment, shipmentId is {}", shipmentId);
             throw new JsonResponseException(response.getError());
         }
     }
@@ -1195,6 +1200,7 @@ public class Shipments {
 
     /*
      * 同步发货单到mpos
+     *
      * @param shipmentId 发货单id
      */
     @RequestMapping(value = "api/shipment/{id}/sync/mpos", method = RequestMethod.PUT)
@@ -1356,28 +1362,107 @@ public class Shipments {
         checkCanShopWarehouseShip(warehouseIds,refund.getShopId());
     }
 
-    private void checkCanShopWarehouseShip(List<Long> warehouseIds,Long shopId){
+    private void checkCanShopWarehouseShip(List<Long> warehouseIds,Long shopId) {
 
-        if (!orderReadLogic.isAllChannelOpenShop(shopId)){
+        if (!orderReadLogic.isAllChannelOpenShop(shopId)) {
             Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
-            if (!r.isSuccess()){
-                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
+            if (!r.isSuccess()) {
+                log.error("find warehouses failed,ids are {},caused by {}", warehouseIds, r.getError());
                 throw new JsonResponseException("find.warehouse.failed");
             }
             List<Warehouse> warehouses = r.getResult();
             int count = 0;
-            for (Warehouse warehouse:warehouses){
+            for (Warehouse warehouse : warehouses) {
                 //如果是店仓
-                if (Objects.equals(warehouse.getType(),1)){
+                if (Objects.equals(warehouse.getType(), 1)) {
                     count++;
                 }
             }
-            if (count>0){
+            if (count > 0) {
                 throw new JsonResponseException("can.not.contain.shop.warehouse");
             }
         }
 
     }
-}
+
+    /**
+     * 单笔修复shipment的发货方式数据
+     *
+     * @param shipmentId
+     * @return
+     */
+    @ApiOperation("修复发货方式数据(单笔)")
+    @RequestMapping(value = "api/shipment/{id}/update/shipway", method = RequestMethod.PUT)
+    public Response<Boolean> singleFixShipWay(@PathVariable(value = "id") @OperationLogParam Long shipmentId) {
+
+        Shipment shipment = null;
+        try {
+            shipment = shipmentReadLogic.findShipmentById(shipmentId);
+//            String shipmentWay = shipment.getExtra().get("shipmentWay");
+            String shipmentWay = (String) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("shipmentWay");
+
+            shipment.setShipWay(Integer.parseInt(shipmentWay));
+            return shipmentWriteService.update(shipment);
+        } catch (Exception e) {
+            log.error("failed to update {}, cause:{}", shipment, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.update.fail");
+        }
+    }
+
+    /**
+     * 一次性修复全部的数据
+     * @return
+     */
+    @ApiOperation("修复发货方式数据(一次更新全部)")
+    @RequestMapping(value = "api/shipment/batch/update/shipway", method = RequestMethod.PUT)
+    public Response<Boolean> batchFixShipWay() {
+
+        int pageNo = 1;
+        int pageSize = 5000;
+        try {
+            while (true) {
+
+                Response<Paging<Shipment>> response = shipmentReadService.pagingByStatus(pageNo, pageSize, null);
+                if (response.isSuccess()) {
+
+                    if (response.getResult().getData().size() == 0) {
+                        break;
+                    }
+                    Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> null == item.getShipWay());
+
+                    afterFiler.parallel().forEach(shipment -> {
+                        if (CollectionUtils.isEmpty(shipment.getExtra())||shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO)==null){
+
+                            shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));//不存在设置仓发
+                        }else {
+                            String shipmentWay = (String) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("shipmentWay");
+
+                            if (StringUtils.isEmpty(shipmentWay)) { //不存在设置仓发
+                                shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));
+                            } else {
+                                //处理旧数据 shipmentWay不是数字的情况
+                                if (!Pattern.compile("^[0-9]+$").matcher(shipmentWay).matches()) {
+                                    return;
+                                }
+                                shipment.setShipWay(Integer.parseInt(shipmentWay));
+                            }
+                        }
+                        shipmentWriteService.update(shipment);
+                    });
+                    pageNo++;
+                }else{
+                    throw new JsonResponseException("shipment.update.fail");
+                }
+            }
+                return Response.ok(true);
+            } catch(Exception e){
+                log.error("failed to batch update {}, cause:{}", Throwables.getStackTraceAsString(e));
+                return Response.fail("shipment.update.fail");
+            }
+    }
+
+
+
+    }
 
 

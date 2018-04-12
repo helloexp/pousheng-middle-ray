@@ -628,7 +628,8 @@ public class ShipmentWiteLogic {
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
-
+        //仓发
+        shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));
         //发货仓库信息
         Warehouse warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
@@ -700,7 +701,7 @@ public class ShipmentWiteLogic {
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
-
+        shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_SHOP_DELIVER));
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);

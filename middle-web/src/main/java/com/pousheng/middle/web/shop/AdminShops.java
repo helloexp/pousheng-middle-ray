@@ -7,14 +7,13 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
+import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
-import com.pousheng.middle.shop.dto.ShopExpresssCompany;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
-import com.pousheng.middle.shop.dto.ShopPaging;
-import com.pousheng.middle.shop.dto.ShopServerInfo;
+import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
@@ -29,19 +28,22 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
-import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
+import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.AdminShopWriteService;
 import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.shop.service.ShopWriteService;
+import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
@@ -54,6 +56,8 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
+import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
 /**
  * Author:cp
@@ -97,6 +101,10 @@ public class AdminShops {
     private MemberShopOperationLogic memberShopOperationLogic;
     @Autowired
     private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private UserTypeBean userTypeBean;
+    @Autowired
+    private ShopChannelGroupCacher shopChannelGroupCacher;
 
 
 
@@ -161,7 +169,29 @@ public class AdminShops {
             }
             return new Paging<>();
         }
-        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, pageNo, pageSize);
+
+        ParanaUser paranaUser = UserUtil.getCurrentUser();
+
+        List<String> zoneIds = null;
+
+        if (!userTypeBean.isAdmin(paranaUser)) {
+            Map<String, String> extraMap = paranaUser.getExtra();
+
+            //如果没有设置区域则返回空
+            if(CollectionUtils.isEmpty(extraMap)||!extraMap.containsKey(MANAGE_ZONE_IDS)){
+                return new Paging<>();
+            }
+
+            String zoneIdStr = extraMap.get(MANAGE_ZONE_IDS);
+            //如果没有设置区域则返回空
+            if(Strings.isNullOrEmpty(zoneIdStr)){
+                return new Paging<>();
+            }
+
+            zoneIds = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(extraMap.get(Constants.MANAGE_ZONE_IDS),JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,String.class));
+        }
+
+        Response<Paging<Shop>> resp = psShopReadService.pagination(name, userId, type, status,outerId,companyId, zoneIds,pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }
@@ -178,8 +208,21 @@ public class AdminShops {
         for (Shop shop : shops){
             ShopPaging shopPag = new ShopPaging();
             shopPag.setShop(shop);
-            shopPag.setShopExtraInfo(ShopExtraInfo.fromJson(shop.getExtra()));
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            try {
+                Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
+                if(memberShopOptional.isPresent()){
+                    MemberShop memberShop = memberShopOptional.get();
+                    shopExtraInfo.setPhone(memberShop.getTelphone());
+                    shopExtraInfo.setEmail(memberShop.getEmail());
+                    shop.setPhone(memberShop.getTelphone());
+                }
 
+            }catch (JsonResponseException e){
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),e.getMessage());
+            }
+
+            shopPag.setShopExtraInfo(shopExtraInfo);
             shopPagingList.add(shopPag);
         }
         shopPaging.setData(shopPagingList);
@@ -312,6 +355,8 @@ public class AdminShops {
         toCreate.setPhone(shop.getPhone());
         toCreate.setAddress(shop.getAddress());
         toCreate.setExtra(shop.getExtra());
+        toCreate.setZoneId(shop.getZoneId());
+        toCreate.setZoneName(shop.getZoneName());
 
         Response<Long> rShop = shopWriteService.create(toCreate);
         if (!rShop.isSuccess()) {
@@ -320,6 +365,9 @@ public class AdminShops {
         }
         //同步电商
         syncParanaShop(toCreate);
+
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
 
         return rShop.getResult();
     }
@@ -352,6 +400,8 @@ public class AdminShops {
         toUpdate.setImageUrl(shop.getImageUrl());
         toUpdate.setPhone(shop.getPhone());
         toUpdate.setAddress(shop.getAddress());
+        toUpdate.setZoneId(shop.getZoneId());
+        toUpdate.setZoneName(shop.getZoneName());
         toUpdate.setExtra(Iters.deltaUpdate(exist.getExtra(), shop.getExtra()));
         Response<Boolean> resp = shopWriteService.update(toUpdate);
         if (!resp.isSuccess()) {
@@ -773,6 +823,10 @@ public class AdminShops {
         private Long companyId;
         //公司名称
         private String companyName;
+
+        private String zoneId;
+
+        private String zoneName;
 
         //店铺内码
         private String storeId;

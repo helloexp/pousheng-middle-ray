@@ -12,6 +12,10 @@ import com.pousheng.middle.warehouse.service.WarehouseRuleWriteService;
 import com.pousheng.middle.warehouse.service.WarehouseShopGroupReadService;
 import com.pousheng.middle.warehouse.service.WarehouseShopRuleWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
+import com.pousheng.middle.web.shop.component.OpenShopLogic;
+import com.pousheng.middle.web.shop.dto.ShopChannel;
+import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.component.WarehouseRuleComponent;
@@ -20,6 +24,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -63,6 +68,8 @@ public class WarehouseRules {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private WarehouseRuleComponent warehouseRuleComponent;
+    @Autowired
+    private ShopChannelGroupCacher shopChannelGroupCacher;
 
 
     /**
@@ -169,6 +176,9 @@ public class WarehouseRules {
             log.error("failed to delete warehouse rule(id={}), error code:{}", ruleId, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
+
         return r.getResult();
     }
 
@@ -185,6 +195,9 @@ public class WarehouseRules {
             log.error("failed to delete warehouse shop group(id={}), error code:{}", groupId, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        //刷新open shop缓存
+        shopChannelGroupCacher.refreshShopChannelGroupCache();
+
         return r.getResult();
     }
 
@@ -202,6 +215,22 @@ public class WarehouseRules {
             enableCurrentRuleShops(groupId, thinShops);
         }
         return thinShops;
+    }
+
+    @RequestMapping(value = "/shops-new", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<ShopChannelGroup> markShopsNew(@RequestParam(value = "groupId", required = false) Long groupId) {
+        //获取店铺列表集合
+        List<ShopChannelGroup> channelGroups = shopChannelGroupCacher.listAllShopChannelGroupCache();
+
+        //标记所有已设置发货规则的店铺不可被编辑
+        disableRuleShopsNew(channelGroups);
+
+
+        //标记当前规则选的店铺可以编辑
+        if(groupId!=null) {
+            enableCurrentRuleShopsNew(groupId,channelGroups);
+        }
+        return channelGroups;
     }
 
     /**
@@ -258,6 +287,43 @@ public class WarehouseRules {
         }
     }
 
+    private void disableRuleShopsNew(List<ShopChannelGroup> channelGroups) {
+        //获取所有已设置规则的店铺
+        Response<Set<Long>> rShopIds = warehouseShopGroupReadService.findShopIds();
+        if (!rShopIds.isSuccess()) {
+            log.error("failed to find shopIds which have warehouse rules set, error code :{} ",
+                    rShopIds.getError());
+            throw new JsonResponseException(rShopIds.getError());
+        }
+
+        //标记所有已设置发货规则的店铺不可被编辑
+        Set<Long> shopIds = rShopIds.getResult();
+
+        for (ShopChannelGroup channelGroup : channelGroups) {
+
+            List<ShopChannel> shopChannels = channelGroup.getShopChannels();
+
+            for (ShopChannel shopChannel : shopChannels){
+                OpenClientShop openClientShop = shopChannel.getOpenClientShop();
+                if(Arguments.notNull(openClientShop)){
+                    if (shopIds.contains(openClientShop.getOpenShopId())) {
+                        openClientShop.setEditable(false);
+                    }
+                }
+
+                List<OpenClientShop> zoneOpenClientShops = shopChannel.getZoneOpenClientShops();
+                if(!CollectionUtils.isEmpty(zoneOpenClientShops)){
+                    for (OpenClientShop openShop : zoneOpenClientShops){
+                        if (shopIds.contains(openShop.getOpenShopId())) {
+                            openShop.setEditable(false);
+                        }
+                    }
+                }
+
+            }
+        }
+    }
+
     //标记当前规则选的店铺可以编辑
     private void enableCurrentRuleShops(Long shopGroupId, List<ThinShop> thinShops) {
         Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
@@ -271,6 +337,44 @@ public class WarehouseRules {
                 if (Objects.equal(thinShop.getShopId(), shopId)) {
                     thinShop.setEditable(true);
                     thinShop.setSelected(true);
+                }
+            }
+        }
+    }
+
+
+    //标记当前规则选的店铺可以编辑
+    private void enableCurrentRuleShopsNew(Long shopGroupId, List<ShopChannelGroup> channelGroups) {
+        Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(shopGroupId);
+        if (!rwsrs.isSuccess()) {
+            log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", shopGroupId, rwsrs.getError());
+            throw new JsonResponseException(rwsrs.getError());
+        }
+        for (WarehouseShopGroup warehouseShopGroup : rwsrs.getResult()) {
+            Long shopId = warehouseShopGroup.getShopId();
+            for (ShopChannelGroup channelGroup : channelGroups) {
+
+                List<ShopChannel> shopChannels = channelGroup.getShopChannels();
+
+                for (ShopChannel shopChannel : shopChannels){
+                    OpenClientShop openClientShop = shopChannel.getOpenClientShop();
+                    if(Arguments.notNull(openClientShop)){
+                        if (Objects.equal(openClientShop.getOpenShopId(), shopId)) {
+                            openClientShop.setEditable(true);
+                            openClientShop.setSelected(true);
+                        }
+                    }
+
+                    List<OpenClientShop> zoneOpenClientShops = shopChannel.getZoneOpenClientShops();
+                    if(!CollectionUtils.isEmpty(zoneOpenClientShops)){
+                        for (OpenClientShop openShop : zoneOpenClientShops){
+                            if (Objects.equal(openShop.getOpenShopId(), shopId)) {
+                                openShop.setEditable(true);
+                                openShop.setSelected(true);
+                            }
+                        }
+                    }
+
                 }
             }
         }

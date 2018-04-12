@@ -64,4 +64,9 @@ public class ShipmentExportEntity {
     @ExportTitle("交易状态")
     private String orderStatus;
 
+
+
+    @ExportTitle("发货方式")
+    private Integer shipWay;
+
 }

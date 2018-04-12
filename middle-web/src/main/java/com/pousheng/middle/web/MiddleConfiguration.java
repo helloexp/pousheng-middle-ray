@@ -34,6 +34,8 @@ import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.rule.RuleExecutorRegistry;
+import io.terminus.parana.user.ext.DefaultUserTypeBean;
+import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -236,6 +238,11 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         messageSource.setFallbackToSystemLocale(true);
         messageSource.setCacheSeconds(-1);
         return messageSource;
+    }
+
+    @Bean
+    public UserTypeBean userTypeBean() {
+        return new DefaultUserTypeBean();
     }
 
 }

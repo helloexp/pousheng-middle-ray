@@ -174,6 +174,12 @@ public class AdminShops {
 
         if (!userTypeBean.isAdmin(paranaUser)) {
             Map<String, String> extraMap = paranaUser.getExtra();
+
+            //如果没有设置区域则返回空
+            if(CollectionUtils.isEmpty(extraMap)||!extraMap.containsKey(MANAGE_ZONE_IDS)){
+                return new Paging<>();
+            }
+
             String zoneIdStr = extraMap.get(MANAGE_ZONE_IDS);
             //如果没有设置区域则返回空
             if(Strings.isNullOrEmpty(zoneIdStr)){

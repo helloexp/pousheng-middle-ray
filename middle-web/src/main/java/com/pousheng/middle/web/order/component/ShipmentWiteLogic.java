@@ -1007,7 +1007,9 @@ public class ShipmentWiteLogic {
         if(isFirst){
             //获取skuCode,数量的集合
             skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
-            for (SkuOrder skuOrder:skuOrders) {
+            //只取待处理的
+            List<SkuOrder> waitHandles = skuOrders.stream().filter(skuOrder -> Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())).collect(Collectors.toList());
+            for (SkuOrder skuOrder:waitHandles) {
                 SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
                 skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
                 skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());

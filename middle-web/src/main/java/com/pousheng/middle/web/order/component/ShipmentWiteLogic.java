@@ -1063,26 +1063,25 @@ public class ShipmentWiteLogic {
         }
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
         if(!CollectionUtils.isEmpty(skuCodeAndQuantityList)){
-            //如果是恒康pos订单，暂不处理
-            if(!shopOrder.getExtra().containsKey("isHkPosOrder")){
-                //全渠道的订单暂不处理
-                if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
-                    //取消子单
-                    for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
-                        orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
-                        //添加取消原因
-                        Map<String,String> skuOrderExtra = skuOrder.getExtra();
-                        skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
-                        orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
-                    }
-                    syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
-                }
-            }else{
+            //如果是恒康pos订单或者全渠道订单，暂不处理
+            if(shopOrder.getExtra().containsKey(TradeConstants.IS_HK_POS_ORDER) || orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+                log.info("hk pos or all channel order(id:{}) can not be dispatched",shopOrder.getId());
                 if(!isFirst){
                     //如果不是第一次派单，将订单状态恢复至待处理
                     this.makeSkuOrderWaitHandle(skuCodeAndQuantityList,skuOrders);
                 }
+            }else{
+                log.info("mpos order(id:{}) can not be dispatched",shopOrder.getId());
+                //取消子单
+                for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
+                    SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuCode());
+                    orderWriteService.skuOrderStatusChanged(skuOrder.getId(),skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
+                    //添加取消原因
+                    Map<String,String> skuOrderExtra = skuOrder.getExtra();
+                    skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON,TradeConstants.SKU_CANNOT_BE_DISPATCHED);
+                    orderWriteService.updateOrderExtra(skuOrder.getId(),OrderLevel.SKU,skuOrderExtra);
+                }
+                syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder,skuCodeAndQuantityList);
             }
         }
         if(isFirst)
@@ -1109,6 +1108,7 @@ public class ShipmentWiteLogic {
             if (!response1.isSuccess()) {
                 log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response1.getError());
             }
+            log.info("sku order(id:{}) be change to wait_handle",skuOrder.getId());
         }
     }
 

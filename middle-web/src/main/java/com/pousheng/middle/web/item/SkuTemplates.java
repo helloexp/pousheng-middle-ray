@@ -499,6 +499,7 @@ public class SkuTemplates {
         Map<String, Object> mposParams = Maps.newHashMap();
         mposParams.put("skuCodes",skuCodes);
         String skuJson = postQueryMposItem(mposParams);
+        log.info("check sku codes is exist:{} ,result:{}",skuCodes,skuJson);
 
         try {
             List<String> mposSkuCodes  = objectMapper.readValue(skuJson, JacksonType.LIST_OF_STRING);

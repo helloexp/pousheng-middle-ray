@@ -461,7 +461,7 @@ public class SkuTemplates {
 
         log.info("END FIX MPOS ITEM..........");
 
-        return Response.ok();
+        return Response.ok(Boolean.TRUE);
 
 
     }

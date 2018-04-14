@@ -1,5 +1,9 @@
 package com.pousheng.middle.web.item;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.kevinsawicki.http.HttpRequest;
+import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -12,9 +16,12 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
@@ -24,16 +31,20 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Created by songrenfei on 2017/6/30
@@ -53,6 +64,11 @@ public class SkuTemplates {
     private EventBus eventBus;
     @Autowired
     private PushMposItemComponent pushMposItemComponent;
+    @Value("${gateway.parana.host}")
+    private String paranaGateway;
+
+    private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
+
 
 
 
@@ -158,6 +174,7 @@ public class SkuTemplates {
     public Paging<SkuTemplate> pagination(@RequestParam(value = "ids",required = false) List<Long> ids,@RequestParam(value ="skuCode", required = false) String skuCode,
                                           @RequestParam(value="name",  required = false) String name,
                                           @RequestParam(value = "spuId",required = false) Long spuId,
+                                          @RequestParam(value = "type",required = false) Integer type,
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
                                           @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                           @RequestParam(value = "statuses", required = false) List<Integer> statuses){
@@ -175,6 +192,11 @@ public class SkuTemplates {
         if (spuId!=null){
             params.put("spuId",spuId);
         }
+
+        if (type!=null){
+            params.put("type",type);
+        }
+
         if (Objects.isNull(statuses)){
             params.put("statuses",Lists.newArrayList(1,-3));
         }else if (!statuses.isEmpty()){
@@ -414,6 +436,89 @@ public class SkuTemplates {
         eventBus.post(event);
     }
 
+
+
+    //修复中台打标mpos总单同步缺少商品
+    @RequestMapping(value = "api/fix/mpos/shop/item",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> fixMposItems(@RequestParam(required = false) String skuIds){
+
+
+        log.info("START FIX MPOS ITEM..........");
+        int pageNo = 1;
+        Map<String, Object> params = Maps.newHashMap();
+        if(!Strings.isNullOrEmpty(skuIds)){
+            List<Long> ids  = Splitters.splitToLong(skuIds,Splitters.COMMA);
+            params.put("ids",ids);
+        }
+        params.put("type",2);
+        params.put("statuses",Lists.newArrayList(1));
+
+        boolean next = batchHandle(pageNo, 3000,params);
+        while (next) {
+            pageNo ++;
+            next = batchHandle(pageNo, 3000,params);
+        }
+
+        log.info("END FIX MPOS ITEM..........");
+
+        return Response.ok();
+
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean batchHandle(int pageNo, int size,Map<String, Object> params) {
+
+        Response<Paging<SkuTemplate>> pagingRes = skuTemplateReadService.findBy(pageNo, size, params);
+        if(!pagingRes.isSuccess()){
+            log.error("paging sku template order fail,criteria:{},error:{}",params,pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<SkuTemplate> paging = pagingRes.getResult();
+        List<SkuTemplate> skuTemplates = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(skuTemplates)) {
+            return Boolean.FALSE;
+        }
+
+
+        Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
+
+        List<String> skuCodes = Lists.transform(skuTemplates, new Function<SkuTemplate, String>() {
+            @Nullable
+            @Override
+            public String apply(@Nullable SkuTemplate input) {
+                return input.getSkuCode();
+            }
+        });
+
+        //查询mpos总店是否有该商品
+
+        Map<String, Object> mposParams = Maps.newHashMap();
+        mposParams.put("skuCodes",skuCodes);
+        String skuJson = postQueryMposItem(mposParams);
+
+        try {
+            List<String> mposSkuCodes  = objectMapper.readValue(skuJson, JacksonType.LIST_OF_STRING);
+
+            for (String skuCode : skuCodes){
+                //mpos缺少
+                if(!mposSkuCodes.contains(skuCode)){
+                    log.info("MPOS-SKU-NOT-EXIST sku code:{} mpos not exist",skuCode);
+                    //同步电商
+                    pushMposItemComponent.push(skuTemplateMap.get(skuCode));
+                }
+            }
+        } catch (IOException e) {
+            log.error("analysis sku json:{} fail,cause:{}",skuJson, Throwables.getStackTraceAsString(e));
+        }
+        int current = skuTemplates.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+
     //打标或取消打标
     private Map<String,String> getSkuTemplateExtra(SkuTemplate exist){
         Map<String,String> extra = exist.getExtra();
@@ -447,5 +552,23 @@ public class SkuTemplates {
         BigDecimal discountDecimal = new BigDecimal(discount);
         BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
         return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
+    }
+
+
+    private String postQueryMposItem(Map<String, Object> params){
+        String url =paranaGateway+"/api/query/mpos/item";
+        HttpRequest r = HttpRequest.post(url, params, true)
+                .acceptJson()
+                .acceptCharset(HttpRequest.CHARSET_UTF8);
+        if(r.ok()){
+            return r.body();
+
+        }else{
+            int code = r.code();
+            String body = r.body();
+            log.error("failed to post (url={}, params:{}), http code:{}, message:{}",
+                    url, params, code, body);
+            throw new ServiceException("parana.request.post.fail");
+        }
     }
 }

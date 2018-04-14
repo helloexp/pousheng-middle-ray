@@ -557,19 +557,6 @@ public class SkuTemplates {
 
 
     private String postQueryMposItem(Map<String, Object> params){
-        String url =paranaGateway+"/api/query/mpos/item";
-        HttpRequest r = HttpRequest.post(url, params, true)
-                .acceptJson()
-                .acceptCharset(HttpRequest.CHARSET_UTF8);
-        if(r.ok()){
-            return r.body();
-
-        }else{
-            int code = r.code();
-            String body = r.body();
-            log.error("failed to post (url={}, params:{}), http code:{}, message:{}",
-                    url, params, code, body);
-            throw new ServiceException("parana.request.post.fail");
-        }
+        return HttpRequest.post(paranaGateway+"/api/query/mpos/item").connectTimeout(1000000).readTimeout(1000000).form(params).body();
     }
 }

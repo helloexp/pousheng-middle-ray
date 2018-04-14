@@ -19,6 +19,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.constants.JacksonType;
@@ -497,7 +498,8 @@ public class SkuTemplates {
         //查询mpos总店是否有该商品
 
         Map<String, Object> mposParams = Maps.newHashMap();
-        mposParams.put("skuCodes",skuCodes);
+        String skuCodeStr = Joiners.COMMA.join(skuCodes);
+        mposParams.put("skuCodes",skuCodeStr);
         String skuJson = postQueryMposItem(mposParams);
         log.info("check sku codes is exist:{} ,result:{}",skuCodes,skuJson);
 

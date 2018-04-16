@@ -3,13 +3,19 @@ package com.pousheng.middle.web.item;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.erp.model.SpuMaterial;
+import com.pousheng.erp.service.SpuMaterialReadService;
+import com.pousheng.erp.service.SpuMaterialWriteService;
 import com.pousheng.middle.item.constant.PsItemConstants;
+import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import io.swagger.annotations.Api;
@@ -24,6 +30,8 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.constants.JacksonType;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.search.dto.SearchedItemWithAggs;
+import io.terminus.parana.spu.impl.manager.SpuManager;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -67,6 +75,12 @@ public class SkuTemplates {
     private PushMposItemComponent pushMposItemComponent;
     @Value("${gateway.parana.host}")
     private String paranaGateway;
+    @RpcConsumer
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
+    @Autowired
+    private SpuMaterialReadService spuMaterialReadService;
+    @Autowired
+    private SpuMaterialWriteService spuMaterialWriteService;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
@@ -465,6 +479,69 @@ public class SkuTemplates {
         return Response.ok(Boolean.TRUE);
 
 
+    }
+
+
+    /**
+     * 修复spu和货号关联错误
+     * @param data 货号
+     */
+    @RequestMapping(value = "/api/fix/spu/material",method = RequestMethod.PUT)
+    public void fixSpuMaterial(@RequestParam String data){
+        log.info("START-FIX-SPU-MATERIAL data:{}",data);
+        List<String> materialIds = Splitters.COMMA.splitToList(data);
+        List<String> errorMaterialIds = Lists.newArrayListWithCapacity(materialIds.size());
+        for (String materialId  : materialIds){
+
+            //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
+            String templateName = "search.mustache";
+            Map<String,String> params = Maps.newHashMap();
+            params.put("spuCode",materialId);
+            Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);
+            if(!response.isSuccess()){
+                log.error("query sku template by materialId:{} fail,error:{}",materialId,response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+
+            List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
+            if(CollectionUtils.isEmpty(searchSkuTemplates)){
+                log.error("middle not find sku template by materialId:{} ",materialId);
+                errorMaterialIds.add(materialId);
+                continue;
+            }
+            SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
+
+            Response<Optional<SpuMaterial>> materialRes = spuMaterialReadService.findbyMaterialCode(materialId);
+            if(!materialRes.isSuccess()){
+                log.error("find spu material by material id:{} fail,error:{}",materialId,materialRes.getError());
+                errorMaterialIds.add(materialId);
+
+                continue;
+            }
+
+            if(!materialRes.getResult().isPresent()){
+                log.error("not find spu material by material id:{}",materialId);
+                errorMaterialIds.add(materialId);
+                continue;
+            }
+            SpuMaterial spuMaterial = materialRes.getResult().get();
+
+            if(Objects.equals(spuMaterial.getSpuId(),searchSkuTemplate.getSpuId())){
+                log.error("spu material(id:{}) spu id:{} equal search spu id:{}",materialId,spuMaterial.getSpuId(),searchSkuTemplate.getSpuId());
+                errorMaterialIds.add(materialId);
+                continue;
+            }
+
+            //更新spu id
+
+            SpuMaterial update = new SpuMaterial();
+            update.setId(spuMaterial.getId());
+            update.setSpuId(searchSkuTemplate.getSpuId());
+            Response<Boolean> updateRes = spuMaterialWriteService.update(update);
+            if(!updateRes.isSuccess()){
+                log.error("update spu material:{} fail,error:{}",update,updateRes.getError());
+            }
+        }
     }
 
     @SuppressWarnings("unchecked")

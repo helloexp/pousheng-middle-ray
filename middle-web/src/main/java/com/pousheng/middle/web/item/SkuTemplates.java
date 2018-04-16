@@ -541,6 +541,10 @@ public class SkuTemplates {
             if(!updateRes.isSuccess()){
                 log.error("update spu material:{} fail,error:{}",update,updateRes.getError());
             }
+
+            log.info("ERROR-MATERIAL:{}",errorMaterialIds);
+
+            log.info("END-FIX-SPU-MATERIAL data:{}",data);
         }
     }
 

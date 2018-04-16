@@ -427,6 +427,20 @@ public class FireCall {
         return result.toString();
     }
 
+    /**
+     * 修复skuTemplate表中
+     * @return
+     */
+    @RequestMapping(value = "/sku/extra/restore", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String skuTemplateExtraRestore(@RequestParam(required = false, value = "skuCode") String skuCode){
+        boolean result = spuImporter.skuTemplateExtraRestore(skuCode);
+        if (result){
+            return  "ok";
+        }else{
+            return  "not ok";
+        }
+    }
+
 }
 
 

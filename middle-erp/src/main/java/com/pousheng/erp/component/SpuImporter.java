@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.cache.ErpSpuCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
@@ -11,6 +12,8 @@ import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.*;
 import com.pousheng.erp.rules.SkuGroupRuler;
+import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
 import io.terminus.parana.brand.model.Brand;
 import io.terminus.parana.category.impl.dao.BackCategoryDao;
 import io.terminus.parana.category.model.BackCategory;
@@ -18,6 +21,7 @@ import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
 import io.terminus.parana.spu.impl.dao.SpuDao;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -27,6 +31,7 @@ import org.springframework.util.StringUtils;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 导入宝胜商品等信息, 并在导入过程中构建类目
@@ -57,7 +62,8 @@ public class SpuImporter {
 
     private final SpuDao spuDao;
 
-
+    @Autowired
+    private SkuTemplateReadService skuTemplateReadService;
     @Autowired
     public SpuImporter(ErpBrandCacher brandCacher,
                        ErpSpuCacher spuCacher,
@@ -292,4 +298,61 @@ public class SpuImporter {
         return materials.size();
     }
 
+    public boolean skuTemplateExtraRestore(String barCode){
+        int pageNo=1;
+        int pageSize=100;
+        Map<String,Object> params = Maps.newHashMap();
+        //添加查询状态
+        params.put("statuses",Lists.newArrayList(1,-3));
+        params.put("skuCode",barCode);
+        while(true){
+            log.info("pageNo ========>"+pageNo);
+            Response<Paging<SkuTemplate>> response =  skuTemplateReadService.findBy(pageNo,pageSize,params);
+            List<SkuTemplate> skuTemplates = response.getResult().getData();
+            if (skuTemplates.isEmpty()){
+                log.info("pageNo end ========");
+                break;
+            }
+            //业务处理模块
+            for (SkuTemplate skuTemplate:skuTemplates){
+                //extra为空的数据才可以进入业务处理
+                if (skuTemplate.getExtra()==null||skuTemplate.getExtra().isEmpty()){
+                    log.info("************skuCode*****************"+skuTemplate.getSkuCode());
+                    List<PoushengMaterial> materials = materialFetcher.fetchByBarCode(skuTemplate.getSkuCode());
+                    for (PoushengMaterial poushengMaterial:materials){
+                        //获取货号，颜色
+                        String material_code = poushengMaterial.getMaterial_code();
+                        String material_id = poushengMaterial.getMaterial_id();
+                        String color_id = poushengMaterial.getColor_id();
+                        //获取尺码，sku信息
+                        List<PoushengSize> size = poushengMaterial.getSize();
+                        for (PoushengSize poushengSize:size){
+                            String skuCode = poushengSize.getBarcode();
+                            Response<List<SkuTemplate>>  skutemplateListResponse = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+                            List<SkuTemplate> skuTemplateList = skutemplateListResponse.getResult();
+                            for (SkuTemplate skuTemplate1:skuTemplateList){
+                                if (skuTemplate1.getExtra()==null||skuTemplate1.getExtra().isEmpty()){
+                                    SkuTemplate updateSkuTemplate = new SkuTemplate();
+                                    updateSkuTemplate.setId(skuTemplate1.getId());
+                                    Map<String, String> extra = Maps.newHashMap();
+                                    extra.put("colorId",color_id);
+                                    extra.put("sizeId", poushengSize.getSize_id());
+                                    extra.put("materialId", material_id);
+                                    extra.put("materialCode", material_code);
+                                    updateSkuTemplate.setExtra(extra);
+                                    try {
+                                        skuTemplateDao.update(updateSkuTemplate);
+                                    } catch (Exception e) {
+                                        log.error("failed to update skuTemplate:{}, cause:{}", skuTemplate1.getSkuCode(), Throwables.getStackTraceAsString(e));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            pageNo++;
+        }
+        return true;
+    }
 }

@@ -45,6 +45,8 @@ public class ExportController {
      */
     @GetMapping("order/export")
     public void orderExport(MiddleOrderCriteria middleOrderCriteria) {
+        //获取当前用户负责的商铺id
+        middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_ORDER);
         event.setCriteria(middleOrderCriteria);
@@ -59,6 +61,8 @@ public class ExportController {
      */
     @GetMapping("refund/export")
     public void refundExport(MiddleRefundCriteria criteria) {
+        //获取当前用户负责的商铺id
+        criteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_REFUND);
         event.setCriteria(criteria);
@@ -89,13 +93,13 @@ public class ExportController {
      */
     @GetMapping( value = "settlement/pos/export")
     public void exportSettlementPos(PoushengSettlementPosCriteria criteria){
-       List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
-       if (criteria.getShopId()!=null&&!shopIds.contains(criteria.getShopId())){
-           throw new JsonResponseException("permission.check.shop.id.empty");
-       }
-       if (criteria.getShopId()==null){
-           criteria.setShopIds(shopIds);
-       }
+        List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (criteria.getShopId()!=null&&!shopIds.contains(criteria.getShopId())){
+            throw new JsonResponseException("permission.check.shop.id.empty");
+        }
+        if (criteria.getShopId()==null){
+            criteria.setShopIds(shopIds);
+        }
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_POS);
         event.setCriteria(criteria);

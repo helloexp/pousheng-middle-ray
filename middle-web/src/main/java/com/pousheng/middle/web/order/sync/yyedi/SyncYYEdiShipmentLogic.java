@@ -378,13 +378,17 @@ public class SyncYYEdiShipmentLogic {
             shipmentInfo.setFreightPay(0);
         }
         shipmentInfo.setFreightPay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
+        //查询店铺相关信息-获取下单店铺公司码
+        Response<OpenShop> r = openShopReadService.findById(shipment.getShopId());
+        Map<String,String> openShopExtra = r.getResult().getExtra();
+        String shopCompanyCode =openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
+        shipmentInfo.setShopCompanyCode(shopCompanyCode);
         //渠道
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
+
         String isAssignShop = shopOrderExtra.get("isAssignShop");
         if (!Objects.isNull(isAssignShop)){
             shipmentInfo.setChannel("mpos");
-            Response<OpenShop> r = openShopReadService.findById(shipment.getShopId());
-            Map<String,String> openShopExtra = r.getResult().getExtra();
             String shopOutCode =openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
             String companyCode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
             Response<com.google.common.base.Optional<Shop>> shopOptionalResponse =  psShopReadService.findByOuterIdAndBusinessId(shopOutCode,Long.valueOf(companyCode));

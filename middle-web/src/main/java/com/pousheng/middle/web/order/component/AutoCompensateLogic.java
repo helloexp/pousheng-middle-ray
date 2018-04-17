@@ -32,6 +32,7 @@ public class AutoCompensateLogic {
         autoCompensation.setType(type);
         autoCompensation.setStatus(0);
         autoCompensation.setExtra(extra);
+        autoCompensation.setTime(0);
         autoCompensationWriteService.create(autoCompensation);
     }
 
@@ -44,6 +45,20 @@ public class AutoCompensateLogic {
         autoCompensation.setId(id);
         autoCompensation.setStatus(1);
         autoCompensationWriteService.update(autoCompensation);
+    }
+
+    /**
+     * 同步失败，增加失败次数
+     * @param autoCompensation
+     */
+    public void autoCompensationTaskExecuteFail(AutoCompensation autoCompensation){
+        AutoCompensation update = new AutoCompensation();
+        update.setId(autoCompensation.getId());
+        if(autoCompensation.getTime() == null){
+            autoCompensation.setTime(0);
+        }
+        update.setTime(autoCompensation.getTime() + 1);
+        autoCompensationWriteService.update(update);
     }
 
 }

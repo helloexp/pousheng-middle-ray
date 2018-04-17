@@ -147,9 +147,9 @@ public class yyEDIOpenApi {
                     }
 
                     //同步pos单到恒康
-                    ShipmentPosToHkEvent hkEvent = new ShipmentPosToHkEvent();
-                    hkEvent.setShipment(shipment);
-                    eventBus.post(hkEvent);
+                    Map<String,Object> param = Maps.newHashMap();
+                    param.put(TradeConstants.SHIPMENT_ID,shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.YYEDI_SHIP_NOTIFICATION,null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
                     YyEdiResponseDetail field = new YyEdiResponseDetail();

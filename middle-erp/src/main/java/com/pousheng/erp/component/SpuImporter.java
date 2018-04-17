@@ -298,16 +298,16 @@ public class SpuImporter {
         return materials.size();
     }
 
-    public boolean skuTemplateExtraRestore(String barCode){
-        int pageNo=1;
-        int pageSize=100;
+    public boolean skuTemplateExtraRestore(String barCode,Integer type,Integer pageNo,Integer pageSize){
+
         Map<String,Object> params = Maps.newHashMap();
         //添加查询状态
         params.put("statuses",Lists.newArrayList(1,-3));
         params.put("skuCode",barCode);
+        params.put("type",type);
         while(true){
             log.info("pageNo ========>"+pageNo);
-            Response<Paging<SkuTemplate>> response =  skuTemplateReadService.findBy(pageNo,pageSize,params);
+            Response<Paging<SkuTemplate>> response =  skuTemplateReadService.findBy(pageNo==null?1:pageNo,pageSize==null?100:pageSize,params);
             List<SkuTemplate> skuTemplates = response.getResult().getData();
             if (skuTemplates.isEmpty()){
                 log.info("pageNo end ========");
@@ -346,6 +346,49 @@ public class SpuImporter {
                                         log.error("failed to update skuTemplate:{}, cause:{}", skuTemplate1.getSkuCode(), Throwables.getStackTraceAsString(e));
                                     }
                                 }
+                            }
+                        }
+                    }
+                }
+                //ismpos
+                if (!CollectionUtils.isEmpty(skuTemplate.getExtra())){
+                    if (skuTemplate.getExtra().get("materialCode")!=null){
+                        continue;
+                    }
+                    log.info("=======skuCode===="+skuTemplate.getSkuCode());
+                    List<PoushengMaterial> materials = materialFetcher.fetchByBarCode(skuTemplate.getSkuCode());
+                    for (PoushengMaterial poushengMaterial:materials){
+                        //获取货号，颜色
+                        String material_code = poushengMaterial.getMaterial_code();
+                        String material_id = poushengMaterial.getMaterial_id();
+                        String color_id = poushengMaterial.getColor_id();
+                        //获取尺码，sku信息
+                        List<PoushengSize> size = poushengMaterial.getSize();
+                        for (PoushengSize poushengSize:size){
+                            String skuCode = poushengSize.getBarcode();
+                            Response<List<SkuTemplate>>  skutemplateListResponse = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+                            List<SkuTemplate> skuTemplateList = skutemplateListResponse.getResult();
+                            for (SkuTemplate skuTemplate1:skuTemplateList){
+                                if (CollectionUtils.isEmpty(skuTemplate1.getExtra())){
+                                    continue;
+                                }
+                                if (skuTemplate1.getExtra().get("materialCode")!=null){
+                                    continue;
+                                }
+                                SkuTemplate updateSkuTemplate = new SkuTemplate();
+                                updateSkuTemplate.setId(skuTemplate1.getId());
+                                Map<String, String> extra = skuTemplate1.getExtra();
+                                extra.put("colorId",color_id);
+                                extra.put("sizeId", poushengSize.getSize_id());
+                                extra.put("materialId", material_id);
+                                extra.put("materialCode", material_code);
+                                updateSkuTemplate.setExtra(extra);
+                                try {
+                                    skuTemplateDao.update(updateSkuTemplate);
+                                } catch (Exception e) {
+                                    log.error("failed to update skuTemplate:{}, cause:{}", skuTemplate1.getSkuCode(), Throwables.getStackTraceAsString(e));
+                                }
+
                             }
                         }
                     }

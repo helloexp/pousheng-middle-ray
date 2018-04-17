@@ -174,19 +174,21 @@ public class WarehouseImporter {
         warehouseAddressTransverter.complete(addressGps);
 
         if(isUpdate){
-            Response<AddressGps> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId,AddressBusinessType.WAREHOUSE);
+            Response<Optional<AddressGps>> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId,AddressBusinessType.WAREHOUSE);
             if(!addressGpsRes.isSuccess()){
                 log.error("find address gps by warehouse id:{} fail,error:{}",warehouseId,addressGpsRes.getError());
-                //如果没找到则新建（旧数据）
-                if(Objects.equal(addressGpsRes.getError(),"address.gps.not.found")){
-                    Response<Long> response = addressGpsWriteService.create(addressGps);
-                    if(!response.isSuccess()){
-                        log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
-                    }
+                return;
+            }
+
+            if(!addressGpsRes.getResult().isPresent()){
+                Response<Long> response = addressGpsWriteService.create(addressGps);
+                if(!response.isSuccess()){
+                    log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
                     return;
                 }
             }
-            AddressGps existAddressGps = addressGpsRes.getResult();
+
+            AddressGps existAddressGps = addressGpsRes.getResult().get();
             addressGps.setId(existAddressGps.getId());
             Response<Boolean> response = addressGpsWriteService.update(addressGps);
             if(!response.isSuccess()){
@@ -195,7 +197,6 @@ public class WarehouseImporter {
         }else {
             Response<Long> response = addressGpsWriteService.create(addressGps);
             if(!response.isSuccess()){
-
                 log.error("create address gps for warehouse id:{} fail,error:{}",warehouseId,response.getError());
             }
         }

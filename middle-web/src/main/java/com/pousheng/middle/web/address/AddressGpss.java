@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.address;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
 import com.pousheng.middle.order.enums.AddressBusinessType;
@@ -79,7 +80,17 @@ public class AddressGpss {
     @ApiOperation("获取门店地址信息")
     @RequestMapping(value = "/api/middle/shop/{id}/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<AddressGps> findGpsByShopId(@PathVariable("id") Long shopId) {
-        return addressGpsReadService.findByBusinessIdAndType(shopId, AddressBusinessType.SHOP);
+
+        Response<Optional<AddressGps>> response = addressGpsReadService.findByBusinessIdAndType(shopId, AddressBusinessType.SHOP);
+        if(!response.isSuccess()){
+            log.error("find address gps by business id:{} type:{} fail,error:{}",shopId,AddressBusinessType.SHOP,response.getError());
+        }
+
+        if(response.getResult().isPresent()){
+            return Response.ok(response.getResult().get());
+        }
+
+        return Response.fail("address.gps.not.found");
     }
 
 }

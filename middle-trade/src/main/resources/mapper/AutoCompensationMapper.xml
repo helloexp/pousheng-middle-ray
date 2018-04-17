@@ -9,6 +9,7 @@
         <id column="id" property="id"/>
         <result column="type" property="type" />
         <result column="status" property="status" />
+        <result column="time" property="time" />
         <result column="extra_json" property="extraJson"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -23,11 +24,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        type,status,extra_json,created_at, updated_at
+        type,status,time,extra_json,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{type}, #{status}, #{extraJson}, now(), now()
+        #{type}, #{status},#{time}, #{extraJson}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -41,6 +42,8 @@
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
 
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
+
+        <if test="time != null">and <![CDATA[ time <= #{time} ]]> </if>
 
     </sql>
 
@@ -87,6 +90,7 @@
         <set>
             <if test="type != null">type = #{type},</if>
             <if test="status != null">status = #{status},</if>
+            <if test="time != null">time = #{time},</if>
             <if test="extraJson != null">extra_json = #{extraJson},</if>
             updated_at=now()
         </set>

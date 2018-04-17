@@ -216,6 +216,9 @@ public class TradeConstants {
     //同步退货单pos给恒康失败
     public static final Integer FAIL_SYNC_REFUND_POS_TO_HK = 6;
 
+    //订单派发中心同步发货状态
+    public static final Integer YYEDI_SHIP_NOTIFICATION = 10;
+
     public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
     //导出订单
     public static final String EXPORT_ORDER = "order";
@@ -229,6 +232,7 @@ public class TradeConstants {
     public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
 
     public static final String IS_HK_POS_ORDER = "isHkPosOrder";
+    public static final String SHIPMENT_ID = "shipmentId";
 
 
 }

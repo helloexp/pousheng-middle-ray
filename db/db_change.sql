@@ -262,7 +262,8 @@ CREATE TABLE `refund_amount` (
   PRIMARY KEY (`id`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
 
-
+-- 补偿任务添加重试次数
+ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
 
 
 

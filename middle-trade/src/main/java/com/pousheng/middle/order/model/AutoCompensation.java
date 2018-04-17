@@ -38,7 +38,7 @@ public class AutoCompensation implements Serializable{
     private String extraJson;
 
     /**
-     * 额外信息,不持久化到数据库
+     * 额外信息,不持久化
      */
     private Map<String,String> extra;
 
@@ -46,6 +46,11 @@ public class AutoCompensation implements Serializable{
      * 处理状态 0：未处理 1：已处理
      */
     private Integer status;
+
+    /**
+     * 次数
+     */
+    private Integer time;
 
     /**
      * 创建时间

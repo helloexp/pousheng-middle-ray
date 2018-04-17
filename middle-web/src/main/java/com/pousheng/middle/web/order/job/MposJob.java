@@ -10,6 +10,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
@@ -83,12 +84,17 @@ public class MposJob {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+
     @Autowired
     private SyncRefundPosLogic syncRefundPosLogic;
+
     @Autowired
     private RefundReadLogic refundReadLogic;
     @RpcConsumer
     private ShopReadService shopReadService;
+
+    @Autowired
+    private HKShipmentDoneLogic hkShipmentDoneLogic;
 
     private final ExecutorService executorService;
 
@@ -99,6 +105,9 @@ public class MposJob {
 
     @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
+
+    @Value("${auto.task.try.number:10}")
+    private Integer autoTryNumber;
 
     @Autowired
     public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
@@ -143,7 +152,7 @@ public class MposJob {
     /**
      * 自动同步失败任务
      */
-    @Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "0 */3 * * * ?")
     public void autoCompensateMposFailTask(){
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -154,6 +163,7 @@ public class MposJob {
 
         Map<String,Object> param = Maps.newHashMap();
         param.put("status",0);
+        param.put("time",autoTryNumber);
         int pageNo = 1;
         while (true) {
             Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,20,param);
@@ -275,6 +285,8 @@ public class MposJob {
                             Response<Boolean> response = syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class));
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -284,6 +296,8 @@ public class MposJob {
                             Response<Boolean> response = syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class));
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -295,6 +309,8 @@ public class MposJob {
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -306,6 +322,8 @@ public class MposJob {
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -317,7 +335,31 @@ public class MposJob {
                             Response<Boolean> response = syncRefundPosLogic.syncRefundPosToHk(refund);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
+                        }
+                    }
+
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.YYEDI_SHIP_NOTIFICATION)){
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Long shipmentId = Long.valueOf(param.get(TradeConstants.SHIPMENT_ID));
+                            log.info("try to sync shipment(id:{}) to hk",shipmentId);
+                            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+
+                            //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
+                            hkShipmentDoneLogic.doneShipment(shipment);
+
+                            //同步pos单到恒康
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                            if (!response.isSuccess()) {
+                                Map<String, Object> param1 = Maps.newHashMap();
+                                param1.put("shipmentId", shipment.getId());
+                                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
+                            }
+                            autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                         }
                     }
                 });

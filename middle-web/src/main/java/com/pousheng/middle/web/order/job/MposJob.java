@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
@@ -15,16 +16,21 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import com.pousheng.middle.web.shop.event.UpdateShopEvent;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -55,6 +61,9 @@ public class MposJob {
     private HostLeader hostLeader;
 
     @Autowired
+    private EventBus eventBus;
+
+    @Autowired
     private MposOrderHandleLogic orderHandleLogic;
 
     @Autowired
@@ -78,6 +87,8 @@ public class MposJob {
     private SyncRefundPosLogic syncRefundPosLogic;
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @RpcConsumer
+    private ShopReadService shopReadService;
 
     private final ExecutorService executorService;
 
@@ -177,6 +188,55 @@ public class MposJob {
     public void autoCompensateMposFailTaskBySelf(){
         this.autoCompensateMposFailTask();
     }
+
+
+
+
+    @RequestMapping(value = "api/mpos/shop/address/sync", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void fullDump() {  //每天凌晨2点执行一次
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        log.info("sync mpos shop address fired");
+        int pageNo = 1;
+        boolean next = batchSyncShopAddress(pageNo, 500);
+        while (next) {
+            pageNo ++;
+            next = batchSyncShopAddress(pageNo, 500);
+        }
+        log.info("sync mpos shop address end");
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private boolean batchSyncShopAddress(int pageNo, int size) {
+
+        //String name, Long userId, Integer type, Integer status, Integer pageNo, Integer pageSize
+        Response<Paging<Shop>> pagingRes = shopReadService.pagination(null,null,null,1,pageNo, size);
+        if(!pagingRes.isSuccess()){
+            log.error("paging shop fail,error:{}",pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<Shop> paging = pagingRes.getResult();
+        List<Shop> shops = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(shops)) {
+            return Boolean.FALSE;
+        }
+
+        for (Shop shop : shops){
+            UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(),shop.getBusinessId(),shop.getOuterId());
+            eventBus.post(updateShopEvent);
+        }
+
+        int current = shops.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+
 
     /**
      * 处理发货单状态更新任务

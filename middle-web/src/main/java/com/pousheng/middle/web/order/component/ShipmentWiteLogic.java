@@ -23,6 +23,7 @@ import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.ShipmentAmountWriteService;
+import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
@@ -1145,13 +1146,14 @@ public class ShipmentWiteLogic {
                         log.error("email notify shop(id:{}) failed,cause:{}",shipmentExtra.getWarehouseId(),shopResponse.getError());
                     }
                     Shop shop = shopResponse.getResult();
-                    ShopExtraInfo extraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                     Map<String,Serializable> context = Maps.newHashMap();
                     context.put("shopName",shop.getName());
                     context.put("orderId",shopOrder.getOutId());
                     List<String> list = Lists.newArrayList();
-                    if(StringUtils.isNotEmpty(extraInfo.getEmail()))
-                        list.add(extraInfo.getEmail());
+                    //门店邮箱实时查询会员中心
+                    String email = getShopEmail(shop);
+                    if(StringUtils.isNotEmpty(email))
+                        list.add(email);
                     if(StringUtils.isNotEmpty(mposEmailGroup))
                         list.add(mposEmailGroup);
                     if(list.size() > 0)
@@ -1161,6 +1163,15 @@ public class ShipmentWiteLogic {
         }catch (Exception e){
             log.error("sync shipment(id:{}) failed,cause:{}",shipment.getId(), Throwables.getStackTraceAsString(e));
         }
+    }
+
+    private String getShopEmail(Shop shop) {
+
+        Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shop.getBusinessId().toString());
+        if(memberShopOptional.isPresent()){
+            return memberShopOptional.get().getEmail();
+        }
+        return null;
     }
 
 

@@ -210,12 +210,25 @@ public class AdminShops {
             shopPag.setShop(shop);
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
             try {
+                //门店手机号、邮箱、地址实时查询会员中心
                 Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shopExtraInfo.getCompanyId().toString());
                 if(memberShopOptional.isPresent()){
                     MemberShop memberShop = memberShopOptional.get();
                     shopExtraInfo.setPhone(memberShop.getTelphone());
                     shopExtraInfo.setEmail(memberShop.getEmail());
                     shop.setPhone(memberShop.getTelphone());
+                    //如果发现中台和会员的地址不一致，则发出更新地址事件（增量修复）
+                    if(!Strings.isNullOrEmpty(memberShop.getAddress())&&!Objects.equal(memberShop.getAddress(),shop.getAddress())){
+                        UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(),shop.getBusinessId(),shop.getOuterId());
+                        eventBus.post(updateShopEvent);
+                    }
+                    if(Strings.isNullOrEmpty(memberShop.getAddress())){
+                        shop.setAddress("地址信息缺失，请去恒康系统维护！");
+                    }else {
+                        shop.setAddress(memberShop.getAddress());
+                    }
+                }else {
+                    log.error("not find member shop by outer id:{} company id:{}",shop.getOuterId(),shopExtraInfo.getCompanyId());
                 }
 
             }catch (JsonResponseException e){

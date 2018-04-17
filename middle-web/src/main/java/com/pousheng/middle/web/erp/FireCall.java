@@ -432,8 +432,11 @@ public class FireCall {
      * @return
      */
     @RequestMapping(value = "/sku/extra/restore", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String skuTemplateExtraRestore(@RequestParam(required = false, value = "skuCode") String skuCode){
-        boolean result = spuImporter.skuTemplateExtraRestore(skuCode);
+    public String skuTemplateExtraRestore(@RequestParam(required = false, value = "skuCode") String skuCode,
+                                          @RequestParam(required = false, value = "type") Integer type,
+                                          @RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                          @RequestParam(required = false, value = "pageSize") Integer pageSize){
+        boolean result = spuImporter.skuTemplateExtraRestore(skuCode,type,pageNo,pageSize);
         if (result){
             return  "ok";
         }else{

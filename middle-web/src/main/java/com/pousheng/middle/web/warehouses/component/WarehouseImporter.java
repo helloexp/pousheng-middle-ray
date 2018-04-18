@@ -106,6 +106,7 @@ public class WarehouseImporter {
             if(!CollectionUtils.isEmpty(extra)){
                 if(extra.containsKey(TradeConstants.WAREHOUSE_SAFESTOCK)){
                     w.getExtra().put(TradeConstants.WAREHOUSE_SAFESTOCK,extra.get(TradeConstants.WAREHOUSE_SAFESTOCK));
+                    w.setExtra(w.getExtra());
                 }
             }
             w.setId(exist.getId());

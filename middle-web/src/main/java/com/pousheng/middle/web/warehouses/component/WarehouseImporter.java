@@ -185,8 +185,8 @@ public class WarehouseImporter {
                 Response<Long> response = addressGpsWriteService.create(addressGps);
                 if(!response.isSuccess()){
                     log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
-                    return;
                 }
+                return;
             }
 
             AddressGps existAddressGps = addressGpsRes.getResult().get();

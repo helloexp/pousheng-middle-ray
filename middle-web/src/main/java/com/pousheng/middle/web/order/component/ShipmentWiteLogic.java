@@ -64,6 +64,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -146,7 +147,7 @@ public class ShipmentWiteLogic {
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
     @Value("${pousheng.order.email.confirm.group}")
-    private String mposEmailGroup;
+    private String[] mposEmailGroup;
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
 
@@ -1176,8 +1177,8 @@ public class ShipmentWiteLogic {
                     String email = getShopEmail(shop);
                     if(StringUtils.isNotEmpty(email))
                         list.add(email);
-                    if(StringUtils.isNotEmpty(mposEmailGroup))
-                        list.add(mposEmailGroup);
+                    if (!CollectionUtils.isEmpty(Arrays.asList(mposEmailGroup)))
+                        list.addAll(Arrays.asList(mposEmailGroup));
                     //获得区部联系人邮箱
                     list.addAll(getZoneContractEmails(shipmentExtra));
                     if (list.size() > 0)

@@ -38,9 +38,16 @@ public class MiddleRefundManager {
             throw new ServiceException("refund.create.fail");
         }
         Long refundId = refund.getId();
-
+        Refund newRefund = new Refund();
+        newRefund.setId(refundId);
+        newRefund.setRefundCode("ASS"+refundId);
+        boolean updateSuccess =  refundDao.update(newRefund);
+        if (!updateSuccess) {
+            throw new ServiceException("refund.update.fail");
+        }
         for (OrderRefund orderRefund : orderRefunds) {
             orderRefund.setRefundId(refundId);
+            orderRefund.setRefundCode("ASS"+refundId);
         }
         orderRefundDao.creates(orderRefunds);
         return refundId;

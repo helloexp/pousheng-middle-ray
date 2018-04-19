@@ -132,4 +132,15 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
         dtoPaging.setData(shipmentDtos);
         return dtoPaging;
     }
+
+    @Override
+    public Response<Paging<OrderShipment>> paging(OrderShipmentCriteria criteria){
+        try {
+            Paging<OrderShipment> paging = orderShipmentDao.paging(criteria.toMap());
+            return Response.ok(paging);
+        } catch (Exception e) {
+            log.error("failed to paging shipment, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.find.fail");
+        }
+    }
 }

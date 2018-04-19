@@ -135,7 +135,7 @@ public class SyncShipmentPosLogic {
 
             String url ="/common/erp/pos/updatenetsalreceiptdate";
             HkShimentDoneRequestData requestData = new HkShimentDoneRequestData();
-            requestData.setTranReqDate(formatter.print(new Date().getTime()));
+            requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
 
             HkShimentDoneInfo doneInfo = new HkShimentDoneInfo();
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -143,7 +143,7 @@ public class SyncShipmentPosLogic {
                 log.error("shipment(id:{}) sync hk confirm fail,param invalid",shipment.getId());
                 return Response.fail("shipment.confirm.param.invalid");
             }
-            doneInfo.setNetbillno(shipmentExtra.getHkResaleOrderId());
+            doneInfo.setNetbillno(shipment.getShipmentCode());
             doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
 
             requestData.setBizContent(Lists.newArrayList(doneInfo));
@@ -168,7 +168,7 @@ public class SyncShipmentPosLogic {
 
 
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
-        requestData.setTranReqDate(formatter.print(new Date().getTime()));
+        requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
         if(isWarehouseShip(shipmentWay)){
             log.info("current shipment(id:{}) is warehouse shipment");
             requestData.setSid("PS_ERP_POS_netsalstock");//仓发
@@ -226,7 +226,7 @@ public class SyncShipmentPosLogic {
 
 
         posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
-        posContent.setNetbillno(shipment.getId().toString());//端点唯一订单号
+        posContent.setNetbillno(shipment.getShipmentCode());//端点唯一订单号
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
         String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");
         if (!StringUtils.isEmpty(isHkPosOrder)&&Objects.equal(isHkPosOrder,"true")){

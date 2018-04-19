@@ -112,12 +112,12 @@ public class RefundDefaultWarehouse {
 
     /**
      * 根据店铺id查询默认退货仓
-     * @param shopOrderId
+     * @param shopOrderCode
      * @return
      */
     @RequestMapping(value = "{id}/openshop",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<MiddleOpenShop>  queryOpenShop(@PathVariable("id") Long shopOrderId){
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+    public Response<MiddleOpenShop>  queryOpenShop(@PathVariable("id") String shopOrderCode){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(shopOrderCode);
         Long shopId = shopOrder.getShopId();
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         MiddleOpenShop middleOpenShop =new MiddleOpenShop();

@@ -272,7 +272,7 @@ public class SyncShipmentLogic {
     public SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail) {
         SycHkShipmentOrder tradeOrder = new SycHkShipmentOrder();
         //中台主订单-发货单id
-        tradeOrder.setOrderNo(String.valueOf(shipment.getId()));
+        tradeOrder.setOrderNo(shipment.getShipmentCode());
         //会员账号昵称
         tradeOrder.setBuyerNick(shipmentDetail.getReceiverInfo().getReceiveUserName());
         //订单总金额
@@ -343,7 +343,7 @@ public class SyncShipmentLogic {
         for (ShipmentItem shipmentItem : shipmentItems) {
             SycHkShipmentItem item = new SycHkShipmentItem();
             //发货单id(恒康:中台主订单号)
-            item.setOrderNo(String.valueOf(shipment.getId()));
+            item.setOrderNo(shipment.getShipmentCode());
             //(恒康:中台子订单号),这里拼接了发货单id与skuCode
             item.setOrderSubNo(String.valueOf(shipment.getId()) + "-" + String.valueOf(shipmentItem.getSkuCode()));
             //中台skuCode

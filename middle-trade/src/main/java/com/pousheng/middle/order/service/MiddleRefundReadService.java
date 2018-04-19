@@ -28,4 +28,12 @@ public interface MiddleRefundReadService {
      */
     Response<List<OrderRefund>> findOrderRefundByRefundIds(List<Long> refundIds);
 
+
+    /**
+     * 根据订单号查询售后单订单关联表
+     * @param shopOrderId
+     * @return
+     */
+    Response<List<OrderRefund>> findOrderRefundsByOrderId(Long shopOrderId);
+
 }

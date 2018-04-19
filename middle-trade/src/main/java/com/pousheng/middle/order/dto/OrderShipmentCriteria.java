@@ -22,6 +22,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     private String shipmentId;
 
     /**
+     * 发货单号
+     */
+    private String shipmentCode;
+
+    /**
      * 订单类型
      * @see io.terminus.parana.order.enums.ShipmentType
      */
@@ -42,6 +47,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Long orderId;
 
+    /**
+     * 订单号新
+     */
+    private String orderCode;
+
 
     /**
      * 店铺ids，用于控制用户可操作的店铺
@@ -52,6 +62,12 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      * 售后单id
      */
     private Long afterSaleOrderId;
+
+
+    /**
+     * 售后单id
+     */
+    private String afterSaleOrderCode;
 
 
     /**
@@ -70,6 +86,27 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Long shopId;
 
+    /**
+     * 货号
+     */
+    private String spuCode;
+
+    /**
+     * 省id
+     */
+    private Long provinceId;
+
+
+
+    /**
+     * 市id
+     */
+    private Long cityId;
+
+    /**
+     * 区id
+     */
+    private Long regionId;
 
 
     /**

@@ -101,8 +101,8 @@ public class yyEDIOpenApi {
             for (YyEdiShipInfo yyEdiShipInfo : results) {
                 try {
                     DateTime dt = new DateTime();
-                    Long shipmentId = yyEdiShipInfo.getShipmentId();
-                    Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+                    String shipmentCode = yyEdiShipInfo.getShipmentId();
+                    Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
                     //判断状态及获取接下来的状态
                     Flow flow = flowPicker.pickShipments();
                     OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
@@ -192,7 +192,7 @@ public class yyEDIOpenApi {
      */
     @OpenMethod(key = "yyEDI.refund.confirm.received.api", paramNames = {"refundOrderId", "yyEDIRefundOrderId", "itemInfo",
             "receivedDate"}, httpMethods = RequestMethod.POST)
-    public void syncHkRefundStatus(Long refundOrderId,
+    public void syncHkRefundStatus(String refundOrderId,
                                    @NotEmpty(message = "yy.refund.order.id.is.null") String yyEDIRefundOrderId,
                                    @NotEmpty(message = "itemInfo.is.null") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
@@ -205,9 +205,10 @@ public class yyEDIOpenApi {
             if (refundOrderId == null) {
                 return;
             }
-            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+            Refund refund = refundReadLogic.findRefundByRefundCode(refundOrderId);
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            refundExtra.setIslock(0);
             refundExtra.setHkReturnDoneAt(dt.toDate());
             refundExtra.setYyediRefundId(yyEDIRefundOrderId);
             //更新状态
@@ -221,7 +222,7 @@ public class yyEDIOpenApi {
             }
             //更新扩展信息
             Refund update = new Refund();
-            update.setId(refundOrderId);
+            update.setId(refund.getId());
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO,mapper.toJson(items));

@@ -146,6 +146,8 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
     //sku订单中的shipmentId
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
+    //sku订单中的shipmentCode
+    public static final String SKU_ORDER_SHIPMENT_CODE = "skuShipmentCode";
     //店铺订单选择的快递单号
     public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
@@ -230,5 +232,12 @@ public class TradeConstants {
 
     //是否参与全渠道店铺 1参与 0 不参与
     public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
+
+    public static final String ORDER_PREFIX = "SAL";
+
+    public static final String SHIPMENT_PREFIX = "SHP";
+
+    public static final String REFUND_PREFIX = "ASS";
+
 
 }

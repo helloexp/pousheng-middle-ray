@@ -174,6 +174,16 @@ public class OrderReadLogic {
         return shopOrderRes.getResult();
     }
 
+    public ShopOrder findShopOrderByCode(String shopOrderCode){
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findByOrderCode(shopOrderCode);
+        if(!shopOrderRes.isSuccess()){
+            log.error("find shop order by shopOrderCode:{} fail,error:{}",shopOrderCode,shopOrderRes.getError());
+            throw new JsonResponseException(shopOrderRes.getError());
+        }
+
+        return shopOrderRes.getResult();
+    }
+
     /**
      * 订单id集合查询子单
      * @param skuOrderIds 子订单id集合

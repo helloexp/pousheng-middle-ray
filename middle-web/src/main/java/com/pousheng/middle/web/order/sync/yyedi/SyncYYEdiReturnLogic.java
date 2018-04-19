@@ -161,10 +161,10 @@ public class SyncYYEdiReturnLogic {
      * @param refund
      * @return
      */
-    private YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
+    public YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
         YYEdiReturnInfo refundInfo = new YYEdiReturnInfo();
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -183,9 +183,10 @@ public class SyncYYEdiReturnLogic {
             refundInfo.setStockCode(warehouseExtraMap.get("outCode"));
         }
         //退货单号
-        refundInfo.setBillNo(String.valueOf(refund.getId()));
+        refundInfo.setBillNo(String.valueOf(refund.getRefundCode()));
         //来源单号
-        refundInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+        Shipment sourceShipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        refundInfo.setSourceBillNo(sourceShipment.getShipmentCode());
         //网店交易单号
         refundInfo.setShopBillNo(shopOrder.getOutId());
         //单据类型
@@ -260,7 +261,7 @@ public class SyncYYEdiReturnLogic {
     private List<YYEdiReturnItem> makeSycYYEdiRefundItemList(Refund refund,Warehouse warehouse,ShopOrder shopOrder) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         List<YYEdiReturnItem> items = Lists.newArrayList();
         int count= 0;
@@ -271,7 +272,7 @@ public class SyncYYEdiReturnLogic {
             //公司内码
             item.setCompanyCode(warehouse.getCompanyCode());
             //ERP单号
-            item.setBillNo(String.valueOf(refund.getId()));
+            item.setBillNo(String.valueOf(refund.getRefundCode()));
             //条码
             item.setSKU(refundItem.getSkuCode());
             //货号
@@ -349,7 +350,7 @@ public class SyncYYEdiReturnLogic {
                 return Response.fail(updateStatusRes.getError());
             }
             YYEdiCancelInfo yyEdiCancelInfo = new YYEdiCancelInfo();
-            yyEdiCancelInfo.setBillNo(refund.getId().toString());
+            yyEdiCancelInfo.setBillNo(refund.getRefundCode());
             yyEdiCancelInfo.setReMark(refund.getBuyerNote());
             String response = sycYYEdiRefundCancelApi.doCancelOrder(Lists.newArrayList(yyEdiCancelInfo));
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);

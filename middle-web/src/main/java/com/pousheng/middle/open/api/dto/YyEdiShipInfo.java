@@ -12,7 +12,7 @@ public class YyEdiShipInfo {
     /**
      * 中台发货单号
      */
-    private Long shipmentId;
+    private String shipmentId;
     /**
      * yyEDI发货单号
      */

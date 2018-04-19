@@ -36,6 +36,8 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.rule.RuleExecutorRegistry;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.MessageSource;
@@ -77,7 +79,8 @@ import java.util.concurrent.*;
         ParanaAutoConfiguration.class,
         AuthConfiguration.class,
         AuthApiConfiguration.class,
-        OpenClientCenterAutoConfig.class})
+        OpenClientCenterAutoConfig.class,
+        MultipartAutoConfiguration.class})
 
 @ComponentScan(
         {"com.pousheng.middle.order",
@@ -92,6 +95,7 @@ import java.util.concurrent.*;
                 "com.pousheng.middle.web",
                 "com.pousheng.middle.gd"})
 @EnableScheduling
+@EnableAutoConfiguration
 @EnableConfigurationProperties({
         ErpOpenApiToken.class,GDMapToken.class
 })

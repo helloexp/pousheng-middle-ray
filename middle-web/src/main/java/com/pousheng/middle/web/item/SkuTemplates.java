@@ -34,6 +34,8 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * Created by songrenfei on 2017/6/30
@@ -435,5 +437,28 @@ public class SkuTemplates {
         BigDecimal discountDecimal = new BigDecimal(discount);
         BigDecimal percentDecimal =  discountDecimal.divide(ratio,2, BigDecimal.ROUND_HALF_UP);
         return percentDecimal.multiply(BigDecimal.valueOf(originPrice)).intValue();
+    }
+
+
+    /**
+     * 获取当前有效的skuCode
+     * @param skuCode 商品编码
+     * @return sku模板
+     */
+    @ApiOperation("根据有效货品条码查询")
+    @RequestMapping(value="/api/valid/sku-templates",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public SkuTemplate findValidSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode) {
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+        if(!skuTemplateRes.isSuccess()){
+            log.error("find sku template by sku code:{} fail,error:{}",skuCode,skuTemplateRes.getError());
+            throw new JsonResponseException(skuTemplateRes.getError());
+        }
+        //获取有效的货品条码
+        Optional<SkuTemplate>  skuTemplateOptional= skuTemplateRes.getResult().stream().filter(skuTemplate -> !Objects.equals(skuTemplate.getStatus(),-3)).findAny();
+        if(!skuTemplateOptional.isPresent()){
+            log.error("not find sku template by sku code:{}",skuCode);
+            throw new JsonResponseException("sku.template.not.exist");
+        }
+        return skuTemplateOptional.get();
     }
 }

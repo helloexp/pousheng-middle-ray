@@ -105,7 +105,7 @@ public class OrderOpenApi {
         List<ErpHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ErpHandleShipmentResult.class));
         try{
             for(ErpHandleShipmentResult result :results){
-                Long shipmentId = result.getEcShipmentId();
+                String shipmentId = result.getEcShipmentId();
                 Boolean handleResult = result.getSuccess();
                 String erpShipmentId = result.getErpShipmentId();
                 handleResult(shipmentId,handleResult,erpShipmentId);
@@ -135,7 +135,7 @@ public class OrderOpenApi {
     @OpenMethod(key = "erp.shipments.api", paramNames = {"shipmentId", "erpShipmentId",
             "shipmentCorpCode", "shipmentSerialNo",
             "shipmentDate"}, httpMethods = RequestMethod.POST)
-    public void syncErpShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
+    public void syncErpShipmentStatus(@NotNull(message = "shipment.id.is.null") String shipmentId,
                                      @NotEmpty(message = "erp.shipment.id.is.null") String erpShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
@@ -158,7 +158,7 @@ public class OrderOpenApi {
         List<HkHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
         try{
             for(HkHandleShipmentResult result :results){
-                Long shipmentId = result.getEcShipmentId();
+                String shipmentId = result.getEcShipmentId();
                 Boolean handleResult = result.getSuccess();
                 String hkShipmentId = result.getHkShipmentId();
                 handleResult(shipmentId,handleResult,hkShipmentId);
@@ -174,10 +174,10 @@ public class OrderOpenApi {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
 
-    private void handleResult(Long shipmentId,Boolean handleResult,String erpShipmentId){
+    private void handleResult(String shipmentId,Boolean handleResult,String erpShipmentId){
         Shipment shipment = null;
         try{
-            shipment  = shipmentReadLogic.findShipmentById(shipmentId);
+            shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
         }catch (Exception e){
             log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
             return;
@@ -227,7 +227,7 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
                                                          "shipmentDate"}, httpMethods = RequestMethod.POST)
-    public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
+    public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") String shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
@@ -242,7 +242,7 @@ public class OrderOpenApi {
             DateTime dt = DateTime.parse(shipmentDate, DFT);
             Shipment shipment = null;
             try{
-                shipment  = shipmentReadLogic.findShipmentById(shipmentId);
+                shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
             }catch (Exception e){
                 log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
                 return;
@@ -322,7 +322,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "erp.refund.confirm.received.api", paramNames = {"refundOrderId", "erpRefundOrderId", "itemInfo",
             "receivedDate"}, httpMethods = RequestMethod.POST)
-    public void syncErpRefundStatus(Long refundOrderId,
+    public void syncErpRefundStatus(String refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String erpRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
@@ -339,7 +339,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
                                                                       "receivedDate"}, httpMethods = RequestMethod.POST)
-    public void syncHkRefundStatus(Long refundOrderId,
+    public void syncHkRefundStatus(String refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
@@ -350,7 +350,7 @@ public class OrderOpenApi {
             if (refundOrderId==null){
                 return;
             }
-            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+            Refund refund = refundReadLogic.findRefundByRefundCode(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
             String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
             //仅退款是没有hkRefundOrderId,所以放开这边的校验
@@ -364,6 +364,7 @@ public class OrderOpenApi {
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
+            refundExtra.setIslock(1);
             List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkConfirmReturnItemInfo.class));
 
             refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
@@ -373,12 +374,12 @@ public class OrderOpenApi {
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
-                throw new ServiceException(updateStatusRes.getError());
+                throw new OPServerException(200,"已经通知中台退货，请勿再次通知");
             }
 
             //更新扩展信息
             Refund update = new Refund();
-            update.setId(refundOrderId);
+            update.setId(refund.getId());
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             update.setExtra(extra);
@@ -432,7 +433,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "hk.pos.api", paramNames = {"orderId", "orderType", "posSerialNo","posType",
             "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
-    public void syncHkPosStatus(@NotNull(message = "order.id.is.null") Long orderId,
+    public void syncHkPosStatus(@NotNull(message = "order.id.is.null") String orderId,
                                      @NotEmpty(message = "hk.order.type.is.null") String orderType,
                                      @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
                                      @NotNull(message = "pos.type.is.null")Integer posType,
@@ -447,17 +448,17 @@ public class OrderOpenApi {
             if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
                 OrderShipment orderShipment = null;
                 try{
-                    orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+                    orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(orderId);
 
                 }catch (Exception e){
                     log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }
                 if (Objects.equals(orderShipment.getType(),1)){
-                    pos.setOrderId(orderShipment.getOrderId());
+                    pos.setOrderId(orderShipment.getOrderCode());
                     pos.setShipType(1);
                 }else{
-                    pos.setOrderId(orderShipment.getAfterSaleOrderId());
+                    pos.setOrderId(orderShipment.getAfterSaleOrderCode());
                     pos.setShipType(2);
                     pos.setPosDoneAt(new Date());
                 }
@@ -474,12 +475,12 @@ public class OrderOpenApi {
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = null;
                 try{
-                    refund = refundReadLogic.findRefundById(orderId);
+                    refund = refundReadLogic.findRefundByRefundCode(orderId);
                 }catch (Exception e){
                     log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }
-                pos.setOrderId(refund.getId());
+                pos.setOrderId(refund.getRefundCode());
                 String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(amt));
                 pos.setPosType(Integer.valueOf(posType));

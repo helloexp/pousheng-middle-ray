@@ -2,6 +2,8 @@ package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.hksyc.dto.HkResponseHead;
+import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
@@ -11,8 +13,10 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundOrderApi;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
+import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnItem;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -28,6 +32,7 @@ import io.terminus.parana.order.model.*;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.jetbrains.annotations.Nullable;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +61,8 @@ public class SyncYYEdiReturnLogic {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private SycYYEdiRefundOrderApi sycYYEdiRefundOrderApi;
+    @Autowired
+    private SycYYEdiRefundCancelApi sycYYEdiRefundCancelApi;
     @Autowired
     private WarehouseReadService warehouseReadService;
     @Autowired
@@ -157,7 +164,7 @@ public class SyncYYEdiReturnLogic {
     private YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
         YYEdiReturnInfo refundInfo = new YYEdiReturnInfo();
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
@@ -176,9 +183,10 @@ public class SyncYYEdiReturnLogic {
             refundInfo.setStockCode(warehouseExtraMap.get("outCode"));
         }
         //退货单号
-        refundInfo.setBillNo(String.valueOf(refund.getId()));
+        refundInfo.setBillNo(String.valueOf(refund.getRefundCode()));
         //来源单号
-        refundInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+        Shipment sourceShipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        refundInfo.setSourceBillNo(sourceShipment.getShipmentCode());
         //网店交易单号
         refundInfo.setShopBillNo(shopOrder.getOutId());
         //单据类型
@@ -253,7 +261,7 @@ public class SyncYYEdiReturnLogic {
     private List<YYEdiReturnItem> makeSycYYEdiRefundItemList(Refund refund,Warehouse warehouse,ShopOrder shopOrder) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         List<YYEdiReturnItem> items = Lists.newArrayList();
         int count= 0;
@@ -264,18 +272,18 @@ public class SyncYYEdiReturnLogic {
             //公司内码
             item.setCompanyCode(warehouse.getCompanyCode());
             //ERP单号
-            item.setBillNo(String.valueOf(refund.getId()));
+            item.setBillNo(String.valueOf(refund.getRefundCode()));
             //条码
             item.setSKU(refundItem.getSkuCode());
             //货号
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(refundItem.getSkuCode()));
             if (!rS.isSuccess()){
-                throw new ServiceException("");
+                throw new ServiceException("find.sku.template.failed");
             }
             List<SkuTemplate> skuTemplates = rS.getResult();
             Optional<SkuTemplate> skuTemplateOptional = skuTemplates.stream().filter(skuTemplate->!Objects.equals(skuTemplate.getStatus(),-3)).findAny();
             if (!skuTemplateOptional.isPresent()){
-                throw new ServiceException("");
+                throw new ServiceException("sku.template.may.be.canceled");
             }
             SkuTemplate skuTemplate = skuTemplateOptional.get();
             Map<String,String> extraMaps = skuTemplate.getExtra();
@@ -324,5 +332,69 @@ public class SyncYYEdiReturnLogic {
             throw new ServiceException("find.warehouse.failed");
         }
         return response.getResult().getCode();
+    }
+
+    /**
+     * 同步恒康退货单取消
+     *
+     * @param refund 退货单
+     * @return 同步结果
+     */
+    public Response<Boolean> syncRefundCancelToYyEdi(Refund refund) {
+        try {
+            //更新状态为同步中
+            OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            if (!updateStatusRes.isSuccess()) {
+                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
+                return Response.fail(updateStatusRes.getError());
+            }
+            YYEdiCancelInfo yyEdiCancelInfo = new YYEdiCancelInfo();
+            yyEdiCancelInfo.setBillNo(refund.getRefundCode());
+            yyEdiCancelInfo.setReMark(refund.getBuyerNote());
+            String response = sycYYEdiRefundCancelApi.doCancelOrder(Lists.newArrayList(yyEdiCancelInfo));
+            YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
+                //同步调用成功后，更新售后单的状态
+                Response<Boolean> updateSyncStatusRes = this.upateCancelRefundSuccess(refund, orderOperation, updateStatusRes);
+                if (updateSyncStatusRes != null){
+                    return updateSyncStatusRes;
+                }
+            } else {
+                //同步调用取消失败，更新售后单的状态
+                this.updateCancelRefundFailed(refund);
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
+            }
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            //同步调用成功后，更新售后单的状态
+            this.updateCancelRefundFailed(refund);
+            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            return Response.fail("sync.hk.refund.fail");
+        }
+    }
+
+    @Nullable
+    private Response<Boolean> upateCancelRefundSuccess(Refund refund, OrderOperation orderOperation, Response<Boolean> updateStatusRes) {
+        Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
+        OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+        if (!updateStatusRes.isSuccess()) {
+            log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
+            return Response.fail(updateSyncStatusRes.getError());
+        }
+        return Response.ok(Boolean.TRUE);
+    }
+
+    @Nullable
+    private Response<Boolean> updateCancelRefundFailed(Refund refund) {
+        Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
+        OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+        if (!updateSyncStatusRes.isSuccess()) {
+            log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
+            return Response.fail(updateSyncStatusRes.getError());
+        }
+        return Response.ok(Boolean.TRUE);
     }
 }

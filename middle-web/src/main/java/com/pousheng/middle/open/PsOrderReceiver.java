@@ -13,16 +13,21 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
-import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
-import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.OrderWriteLogic;
+import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
+import com.pousheng.middle.web.order.component.PsGiftActivityStrategy;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -38,7 +43,11 @@ import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.Invoice;
+import io.terminus.parana.order.model.ReceiverInfo;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.shop.model.Shop;
@@ -328,7 +337,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         //添加绩效店铺编码,通过openClient获取
         shopOrderExtra.put(TradeConstants.ERP_PERFORMANCE_SHOP_CODE,openClientFullOrder.getPerformanceShopCode());
         //初始化订单待处理状态
-        shopOrderExtra.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()));
+//        shopOrderExtra.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()));
         //判断是否是预售订单
         if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
             shopOrderExtra.put(TradeConstants.IS_STEP_ORDER,String.valueOf(openClientFullOrder.getIsStepOrder().booleanValue()));
@@ -398,8 +407,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             richSku.setExtra(skuExtra);
         });
         richSkusByShop.setRichSkus(richSkus);
-        //生成发票信息
-        Long invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
+
+        Long invoiceId = null;
+        if (Arguments.notNull(openClientFullOrder.getInvoice()) && Arguments.notNull(openClientFullOrder.getInvoice().getType())) {
+            //生成发票信息(可能生成失败)
+            invoiceId = this.addInvoice(openClientFullOrder.getInvoice());
+        }
+
         richSkusByShop.setInvoiceId(invoiceId);
         return richOrder;
     }
@@ -408,22 +422,45 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         try {
             //获取发票类型
             Integer invoiceType = Integer.valueOf(openClientOrderInvoice.getType());
-            //获取抬头
-            String title = openClientOrderInvoice.getTitle();
+            if (Arguments.isNull(invoiceType)) {
+                return null;
+            }
             //获取detail
             Map<String, String> detail = openClientOrderInvoice.getDetail();
-            if (detail != null) {
-                if (Objects.equals(invoiceType, 2)) {
-                    //公司
-                    detail.put("titleType", "2");
-                }
-            } else {
+            if (detail == null) {
                 detail = Maps.newHashMap();
+            } else {
                 detail.put("type", String.valueOf(invoiceType));
             }
 
             Invoice newInvoice = new Invoice();
-            newInvoice.setTitle(title);
+            if (Objects.equals(invoiceType, 2)) {
+                //2，增值税发票
+                //公司
+                detail.put("titleType", "2");
+                //获取抬头(公司名称吧)
+                String title = openClientOrderInvoice.getDetail().get("companyName");
+                if (Arguments.isNull(title)){
+                    title="";
+                }
+                newInvoice.setTitle(title);
+            }else if(Objects.equals(invoiceType, 3)||Objects.equals(invoiceType, 1)){
+                //3，电子发票
+                String titleType= detail.get("titleType");
+                if (Objects.equals(titleType,"1")){
+                    //个人电子发票
+                    newInvoice.setTitle("个人");
+                }else if (Objects.equals(titleType,"2")){
+                    //公司 电子发票
+                    String title = openClientOrderInvoice.getDetail().get("companyName");
+                    if (Arguments.isNull(title)){
+                        title="";
+                    }
+                    newInvoice.setTitle(title);
+                }
+            }else {
+                newInvoice.setTitle("其他");
+            }
             newInvoice.setStatus(1);
             newInvoice.setIsDefault(false);
             newInvoice.setDetail(detail);

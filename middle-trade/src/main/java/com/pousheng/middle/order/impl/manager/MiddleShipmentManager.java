@@ -32,8 +32,20 @@ public class MiddleShipmentManager {
             throw new ServiceException("shipment.create.fail");
         }
         Long shipmentId = shipment.getId();
-        orderShipment.setShipmentId(shipmentId);
-        orderShipmentDao.create(orderShipment);
+
+        Shipment newShipment = new Shipment();
+        newShipment.setId(shipmentId);
+        String shipmentCode = "SHP" + shipmentId;
+        newShipment.setShipmentCode(shipmentCode);
+        boolean updateSuccess = shipmentDao.update(newShipment);
+        if (!updateSuccess) {
+            throw new ServiceException("shipment.update.fail");
+        } else {
+            orderShipment.setShipmentId(shipmentId);
+            orderShipment.setShipmentCode(shipmentCode);
+            orderShipmentDao.create(orderShipment);
+        }
+
         return shipmentId;
     }
 

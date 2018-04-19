@@ -23,6 +23,12 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 订单id
      */
     private String id;
+
+    /**
+     * 订单号
+     */
+    private String orderCode;
+
     /**
      * 外部订单id
      */
@@ -69,7 +75,6 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 状态
      */
     private List<Integer> status;
-
     /**
      * 状态,用,分割
      */
@@ -83,6 +88,11 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 借用字段，用来查询该订单是否含有赠品
      */
     private Long companyId;//赠品订单companyId=1
+
+    /**
+     * 处理状态
+     */
+    private Integer handleStatus;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

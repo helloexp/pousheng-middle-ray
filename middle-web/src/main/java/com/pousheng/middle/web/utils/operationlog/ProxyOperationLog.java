@@ -19,6 +19,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletRequest;
@@ -153,6 +154,9 @@ public class ProxyOperationLog {
         Map<Object, Object> content = new HashedMap();
         content.put("type", operationType);
         for (int i = 0; i < parameterNames.length; i++) {
+            if(args[i] instanceof MultipartFile){
+                args[i] = ((MultipartFile)args[i]).getOriginalFilename();
+            }
             content.put(parameterNames[i], args[i]);
         }
 

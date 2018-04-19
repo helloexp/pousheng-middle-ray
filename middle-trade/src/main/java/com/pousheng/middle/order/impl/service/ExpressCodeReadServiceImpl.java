@@ -10,6 +10,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -60,5 +61,23 @@ public class ExpressCodeReadServiceImpl implements ExpressCodeReadService {
             log.error("failed to find all express code, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("all.expressCode.find.fail");
         }
+    }
+
+
+    /**
+     * 按照快递名称查询快递
+     */
+    @Override
+    public Response<ExpressCode> findByName(String name) {
+        try {
+            if (!StringUtils.hasText(name)) {
+                return Response.fail("express.name.not.null");
+            }
+            return Response.ok(expressCodeDao.findByName(name));
+        } catch (Exception e) {
+            log.error("failed to find  express code, name:{}, cause:{}",name, Throwables.getStackTraceAsString(e));
+            return Response.fail("find.expressCode.by.name.fail");
+        }
+
     }
 }

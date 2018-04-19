@@ -334,7 +334,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "hk.pos.api", paramNames = {"orderId", "orderType", "posSerialNo","posType",
             "posAmt","posCreatedAt"}, httpMethods = RequestMethod.POST)
-    public void syncHkPosStatus(@NotNull(message = "order.id.is.null") Long orderId,
+    public void syncHkPosStatus(@NotNull(message = "order.id.is.null") String orderId,
                                      @NotEmpty(message = "hk.order.type.is.null") String orderType,
                                      @NotEmpty(message = "pos.serial.is.empty")String posSerialNo,
                                      @NotNull(message = "pos.type.is.null")Integer posType,
@@ -349,17 +349,17 @@ public class OrderOpenApi {
             if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
                 OrderShipment orderShipment = null;
                 try{
-                    orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(orderId);
+                    orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(orderId);
 
                 }catch (Exception e){
                     log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }
                 if (Objects.equals(orderShipment.getType(),1)){
-                    pos.setOrderId(orderShipment.getOrderId());
+                    pos.setOrderId(orderShipment.getOrderCode());
                     pos.setShipType(1);
                 }else{
-                    pos.setOrderId(orderShipment.getAfterSaleOrderId());
+                    pos.setOrderId(orderShipment.getAfterSaleOrderCode());
                     pos.setShipType(2);
                     pos.setPosDoneAt(new Date());
                 }
@@ -376,12 +376,12 @@ public class OrderOpenApi {
             }else if (Objects.equals(orderType,"2")){
                 Refund refund = null;
                 try{
-                    refund = refundReadLogic.findRefundById(orderId);
+                    refund = refundReadLogic.findRefundByRefundCode(orderId);
                 }catch (Exception e){
                     log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
                     return;
                 }
-                pos.setOrderId(refund.getId());
+                pos.setOrderId(refund.getRefundCode());
                 String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(amt));
                 pos.setPosType(Integer.valueOf(posType));

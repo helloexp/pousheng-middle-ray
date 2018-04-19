@@ -192,7 +192,7 @@ public class SyncRefundLogic {
                 return Response.fail(updateStatusRes.getError());
             }
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-            Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+            Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
             String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), refund.getId(), 0,1);
@@ -241,7 +241,7 @@ public class SyncRefundLogic {
      */
     public SycHkRefund makeSyncHkRefund(Refund refund) {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment = shipmentReadLogic.findShipmentById(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());

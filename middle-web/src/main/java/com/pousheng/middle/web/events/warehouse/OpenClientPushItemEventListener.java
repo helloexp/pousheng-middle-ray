@@ -52,6 +52,7 @@ public class OpenClientPushItemEventListener {
             Map<String,String> openShopExtra = openShop.getExtra();
             String itemMappingStock = openShopExtra.get("itemMappingStock");
             //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+            log.info("============itemId===========>"+event.getItemId());
             materialPusher.addSpus(Lists.newArrayList(event.getItemId()));
             //调用恒康抓紧给我返回库存信息
             if (StringUtils.isEmpty(itemMappingStock)|| Objects.equals(itemMappingStock,"false")){

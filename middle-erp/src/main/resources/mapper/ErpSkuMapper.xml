@@ -10,7 +10,7 @@
     <update id="logicDeleteBySkuCode" parameterType="string">
         update
         <include refid="tb"/>
-        set status=-3
+        set status=-3, updated_at = now()
         WHERE sku_code=#{skuCode}
     </update>
 </mapper>

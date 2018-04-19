@@ -51,10 +51,10 @@ public class SettlementPos {
         if (poushengSettlementPosList.size()>0){
             poushengSettlementPosList.forEach(poushengSettlementPos -> {
                 if (Objects.equals(poushengSettlementPos.getShipType(),1)){
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(poushengSettlementPos.getOrderId());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(poushengSettlementPos.getOrderId());
                     poushengSettlementPos.setStatus(shopOrder.getStatus());
                 }else{
-                    Refund refund = refundReadLogic.findRefundById(poushengSettlementPos.getOrderId());
+                    Refund refund = refundReadLogic.findRefundByRefundCode(poushengSettlementPos.getOrderId());
                     poushengSettlementPos.setStatus(refund.getStatus());
                 }
             });

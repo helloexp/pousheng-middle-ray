@@ -174,6 +174,16 @@ public class OrderReadLogic {
         return shopOrderRes.getResult();
     }
 
+    public ShopOrder findShopOrderByCode(String shopOrderCode){
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findByOrderCode(shopOrderCode);
+        if(!shopOrderRes.isSuccess()){
+            log.error("find shop order by shopOrderCode:{} fail,error:{}",shopOrderCode,shopOrderRes.getError());
+            throw new JsonResponseException(shopOrderRes.getError());
+        }
+
+        return shopOrderRes.getResult();
+    }
+
     /**
      * 订单id集合查询子单
      * @param skuOrderIds 子订单id集合
@@ -571,5 +581,20 @@ public class OrderReadLogic {
             throw new JsonResponseException("express.info.is.not.exist");
         }
         return response.getResult().getData().get(0);
+    }
+
+    /**
+     * 判断是否是创建订单或者是导入订单
+     * @param shopOrder
+     * @return
+     */
+    public boolean isCreateOrderImportOrder(ShopOrder shopOrder){
+       Map<String,String> shopOrderExtra =  shopOrder.getExtra();
+       if (!CollectionUtils.isEmpty(shopOrderExtra)){
+           if (Objects.equals(shopOrderExtra.get("importOrder"),"true")){
+               return true;
+           }
+       }
+       return false;
     }
 }

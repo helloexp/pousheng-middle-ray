@@ -14,7 +14,7 @@ import java.util.List;
 public class RefundExtra implements Serializable{
 
     //销售发货的发货单id 如果不能自动匹配到发货单号，则需要人工拆单
-    private Long shipmentId;
+    private String shipmentId;
 
     //发货仓ID
     private Long warehouseId;
@@ -67,6 +67,13 @@ public class RefundExtra implements Serializable{
     //恒康确认收到买家退货商品信息
     private List<HkConfirmReturnItemInfo> hkConfirmItemInfos;
 
-
+    /**
+     *关联订单类型
+     */
+    private Integer releOrderType;
+    /**
+     * 关联单号
+     */
+    private String releOrderNo;
 
 }

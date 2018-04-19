@@ -32,4 +32,13 @@ public interface ExpressCodeReadService {
      * @return
      */
     Response<List<ExpressCode>> findAllByName(String name);
+
+
+    /**
+     * 按照快递名称查询快递
+     *
+     * @param name
+     * @return 快递信息
+     */
+    Response<ExpressCode> findByName(String name);
 }

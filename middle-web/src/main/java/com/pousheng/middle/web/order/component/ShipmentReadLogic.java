@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.component;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.*;
@@ -16,6 +17,7 @@ import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -280,6 +282,15 @@ public class ShipmentReadLogic {
         return shipmentRes.getResult();
     }
 
+    public Shipment findShipmentByShipmentCode(String shipmentCode){
+        Response<Shipment> shipmentResponse = shipmentReadService.findShipmentCode(shipmentCode);
+        if(!shipmentResponse.isSuccess()){
+            log.error("find shipment by shipmentCode:{} fail,error:{}",shipmentCode,shipmentResponse.getError());
+            throw new JsonResponseException(shipmentResponse.getError());
+        }
+        return shipmentResponse.getResult();
+    }
+
     public OrderShipment findOrderShipmentById(Long orderShipmentId){
         Response<OrderShipment> orderShipmentRes = orderShipmentReadService.findById(orderShipmentId);
         if(!orderShipmentRes.isSuccess()){
@@ -294,6 +305,22 @@ public class ShipmentReadLogic {
         Response<OrderShipment> orderShipmentRes = orderShipmentReadService.findByShipmentId(shipmenId);
         if(!orderShipmentRes.isSuccess()){
             log.error("find order shipment by shipment id:{} fail,error:{}",shipmenId,orderShipmentRes.getError());
+            throw new JsonResponseException(orderShipmentRes.getError());
+        }
+
+        return orderShipmentRes.getResult();
+    }
+
+
+    public OrderShipment findOrderShipmentByShipmentCode(String shipmentCode){
+        Response<Shipment>  shipmentResponse = shipmentReadService.findShipmentCode(shipmentCode);
+        if(!shipmentResponse.isSuccess()){
+            log.error("find  shipment by shipment code:{} fail,error:{}",shipmentCode,shipmentResponse.getError());
+            throw new JsonResponseException(shipmentResponse.getError());
+        }
+        Response<OrderShipment> orderShipmentRes = orderShipmentReadService.findByShipmentId(shipmentResponse.getResult().getId());
+        if(!orderShipmentRes.isSuccess()){
+            log.error("find order shipment by shipment id:{} fail,error:{}",shipmentResponse.getResult().getId(),orderShipmentRes.getError());
             throw new JsonResponseException(orderShipmentRes.getError());
         }
 
@@ -573,5 +600,56 @@ public class ShipmentReadLogic {
             log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),e.getMessage());
             return true;
         }
+    }
+
+    /**
+     * 根据售后单号获取有效的发货单商品
+     * @param afterSaleCode 售后单号
+     * @return
+     */
+    public List<ShipmentItem> findAfterSaleShipmentItems(String afterSaleCode){
+        OrderShipmentCriteria orderShipmentCriteria = new OrderShipmentCriteria();
+        orderShipmentCriteria.setAfterSaleOrderCode(afterSaleCode);
+        Response<Paging<ShipmentPagingInfo>> pagingResponse = orderShipmentReadService.findBy(orderShipmentCriteria);
+        if (!pagingResponse.isSuccess()){
+            throw new  JsonResponseException("find.shipments.failed");
+        }
+        List<ShipmentPagingInfo> shipmentPagingInfos = pagingResponse.getResult().getData();
+        List<ShipmentItem> shipmentItems = Lists.newArrayList();
+        for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
+            Shipment shipment = shipmentPagingInfo.getShipment();
+            if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())){
+                continue;
+            }
+            List<ShipmentItem> shipmentItemList= this.getShipmentItems(shipment);
+            shipmentItems.addAll(shipmentItemList);
+        }
+        //根据货品条码去重
+        Map<String,ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();
+        for (ShipmentItem shipmentItem:shipmentItems){
+            skuCodeShipmentItems.put(shipmentItem.getSkuCode(),shipmentItem);
+        }
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        for (String skuCode:skuCodeShipmentItems.keySet()){
+            newShipmentItems.add(skuCodeShipmentItems.get(skuCode));
+        }
+        return newShipmentItems;
+    }
+
+    /**
+     根据订单号获取有效的发货单商品
+     * @param shopOrderCode 店铺订单号
+     * @return
+     */
+    public List<ShipmentItem> findShopOrderShipmentItems(String shopOrderCode){
+        //获取订单下的所有有效发货单
+        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(shopOrderCode);
+        List<Shipment> originShipments = this.findByShopOrderId(shopOrder.getId());
+        List<Shipment> shipments = originShipments.stream().
+                filter(Objects::nonNull).filter(shipment -> !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))
+                .collect(Collectors.toList());
+        //获取订单下对应发货单的所有发货商品列表
+        List<ShipmentItem> shipmentItems = this.getShipmentItemsForList(shipments);
+        return shipmentItems;
     }
 }

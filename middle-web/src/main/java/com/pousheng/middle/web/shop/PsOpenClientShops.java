@@ -4,6 +4,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
@@ -119,6 +120,43 @@ public class PsOpenClientShops {
             }catch (JsonResponseException e){
                 log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0),e.getMessage());
             }
+        }
+        return "success";
+    }
+
+
+    @RequestMapping(value = "/fix/syn/type", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String fixSyncType() {
+        Response<List<OpenShop>> findR = openShopReadService.findByChannel("official");
+        if (!findR.isSuccess()) {
+            log.error("fail to search all open shop by cause:{}", findR.getError());
+            throw new ServiceException(findR.getError());
+        }
+        List<OpenShop> openShops = findR.getResult();
+        for (OpenShop openShop : openShops) {
+            if(!openShop.getShopName().startsWith("mpos")|| Objects.equal("mpos-总店",openShop.getShopName())) {
+                continue;
+            }
+
+            Map<String, String>  extra = openShop.getExtra();
+            if(Arguments.isNull(extra)){
+                extra = Maps.newHashMap();
+            }
+
+            if(extra.containsKey(TradeConstants.ERP_SYNC_TYPE)){
+                continue;
+            }
+
+            OpenShop update = new OpenShop();
+            update.setId(openShop.getId());
+            extra.put(TradeConstants.ERP_SYNC_TYPE,"yyEdi");
+            update.setExtra(extra);
+
+            Response<Boolean> response = openShopWriteService.update(update);
+            if(!response.isSuccess()){
+                log.error("FIX-ZONE-OPEN-SHOP open shop id:{} fail,error:{}",openShop.getId(),response.getError());
+            }
+
         }
         return "success";
     }

@@ -446,6 +446,7 @@ public class RefundWriteLogic {
                 throw new JsonResponseException(updateStatusRes.getError());
             }
         }
+
         if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;

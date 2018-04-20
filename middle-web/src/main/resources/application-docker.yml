@@ -89,11 +89,11 @@ gateway:
   hk:
     host: ${HK_HOST}
     accessKey: ${HK_ACCESS_KEY}
+  parana:
+    host: ${PARANA_HOST}
   yyedi:
       host: ${YYEDI_HOST}
       accessKey: ${YYEDI_ACCESS_KEY}
-  parana:
-    host: ${PARANA_HOST}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
@@ -131,8 +131,6 @@ curator:
 ## 这个是开启写入订单和售后单，供roger进行压测，压测后去掉这个配置
 open.client.import.enable: true
 
-## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
-open.client.sync.item.mapping.job.enable: true
 
 
 search:
@@ -153,12 +151,18 @@ gd_map:
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
 
 index.queue.size: 500000
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: true
 
 # mpos系统调用的api白名单
 mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*,/api/middle/task/count/stock/.*'
 
 # mpos总单OpenShopId
 mpos.open.shop.id: ${MPOS_OPEN_SHOP_ID}
+
+
+# skx店铺OpenShopId
+skx.open.shop.id: ${SKX_OPEN_SHOP_ID}
 
 # pos单仓库
 pos.stock.code: ${POS.STOCK.CODE}

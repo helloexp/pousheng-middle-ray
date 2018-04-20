@@ -15,6 +15,7 @@ public class SycHkShipmentOrder implements Serializable {
     private static final long serialVersionUID = 3785578697983248329L;
 
     private String orderNo;
+    private String outerOrderNo;
     private String buyerNick;
     private String orderMon;
     private String feeMon;
@@ -29,12 +30,22 @@ public class SycHkShipmentOrder implements Serializable {
     private String Invoice;
     private String taxNo;
     private String shopId;
+    private String shopName;
     private String onlineType;
     private String performanceShopId;
     private String stockId;
     @JsonProperty(value = "VendCustCode")
     private String VendCustCode="";
     private List<SycHkShipmentItem> items;
+
+    public String getOuterOrderNo() {
+        return outerOrderNo;
+    }
+
+    public void setOuterOrderNo(String outerOrderNo) {
+        this.outerOrderNo = outerOrderNo;
+    }
+
 
     public String getOrderNo() {
         return orderNo;
@@ -154,6 +165,14 @@ public class SycHkShipmentOrder implements Serializable {
 
     public void setShopId(String shopId) {
         this.shopId = shopId;
+    }
+
+    public String getShopName() {
+        return shopName;
+    }
+
+    public void setShopName(String shopName) {
+        this.shopName = shopName;
     }
 
     public String getPerformanceShopId() {

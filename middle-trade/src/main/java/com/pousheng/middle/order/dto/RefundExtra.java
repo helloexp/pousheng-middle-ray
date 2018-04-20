@@ -67,6 +67,19 @@ public class RefundExtra implements Serializable{
     //恒康确认收到买家退货商品信息
     private List<HkConfirmReturnItemInfo> hkConfirmItemInfos;
 
+
+    //是否为skx的退货单
+    private Boolean isSkxRefund;
+    //skx的退货单要同步skx和yyedi
+    //skx退货单同步skx是否成功
+    private Boolean skxRefundSyncSkxResult;
+    //skx退货单同步YYedi是否成功
+    private Boolean skxRefundSyncYyediResult;
+
+    //退货来源 0退入宝胜仓 1 退入SKX仓
+    private Integer islock =0;
+
+
     /**
      *关联订单类型
      */

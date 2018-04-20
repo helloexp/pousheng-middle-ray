@@ -318,14 +318,14 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (afterSale.getStatus() != OpenClientAfterSaleStatus.SUCCESS) {
             return;
         }
-        //淘宝苏宁仅退款的订单做特殊处理
-        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())
-                && !Objects.equals(refund.getStatus(), MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())) {
+        //仅退款的订单只有同步完成之后才会更新售后状态
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())
+                &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue())){
             return;
         }
-        //淘宝的退货退款单只有订单退货完成待退款才可以更新发货单状态
-        if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())
-                && !Objects.equals(refund.getStatus(), MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())) {
+        //退货退款单只有订单退货完成待退款才可以更新售后状态
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())
+                &&!Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())){
             return;
         }
         Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.REFUND.getValue());

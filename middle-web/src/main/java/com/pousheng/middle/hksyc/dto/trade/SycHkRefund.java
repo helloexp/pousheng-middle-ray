@@ -15,6 +15,7 @@ public class SycHkRefund implements Serializable{
     private String refundNo;
     private String orderNo;
     private String shopId;
+    private String shopName;
     private String stockId;
     private String performanceShopId;
     private String refundOrderAmount;

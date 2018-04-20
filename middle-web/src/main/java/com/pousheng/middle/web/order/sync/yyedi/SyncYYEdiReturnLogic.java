@@ -161,7 +161,7 @@ public class SyncYYEdiReturnLogic {
      * @param refund
      * @return
      */
-    private YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
+    public YYEdiReturnInfo makeSyncYYEdiRefund(Refund refund) {
         YYEdiReturnInfo refundInfo = new YYEdiReturnInfo();
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());

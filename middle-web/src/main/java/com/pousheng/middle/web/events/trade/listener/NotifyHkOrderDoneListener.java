@@ -45,7 +45,6 @@ public class NotifyHkOrderDoneListener {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private SyncErpShipmentLogic syncErpShipmentLogic;
     private SyncShipmentLogic syncShipmentLogic;
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
@@ -53,6 +52,8 @@ public class NotifyHkOrderDoneListener {
     private PoushengSettlementPosWriteService poushengSettlementPosWriteService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired

@@ -49,7 +49,8 @@ public class SycHkShipmentOrderApi {
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderBody);
         log.info("paramJson:{}",paramJson);
-        String gateway =hkGateway + "/commonerp/erp/sal/addorder";
+        //String gateway =hkGateway + "/commonerp/erp/sal/addorder";
+        String gateway =hkGateway + "/common-terminus/skx-oms/default/getordersreceive";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)
@@ -60,7 +61,7 @@ public class SycHkShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+         log.info("result:{}",responseBody);
         return responseBody;
     }
 }

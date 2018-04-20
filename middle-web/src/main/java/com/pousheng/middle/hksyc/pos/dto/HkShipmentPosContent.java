@@ -27,6 +27,7 @@ public class HkShipmentPosContent implements Serializable{
     private String billdate;  //订单日期
     private String operator;  //线上店铺帐套操作人code
     private String remark; //备注
+    private String islock ="0"; //"0":退货到宝胜仓 "1":退货到skx仓
 
     private HkShipmentPosInfo netsalorder;
 

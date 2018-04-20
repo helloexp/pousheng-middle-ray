@@ -455,7 +455,7 @@ public class OrderReadLogic {
         }
         if(!extraMap.containsKey(key)){
             log.error("open shop (id:{}) extra map not contains key:{}",openShop.getId(),key);
-            throw new JsonResponseException("open.shop.extra.not.contains.valid.key");
+            return "";
         }
         return extraMap.get(key);
 

@@ -299,7 +299,7 @@ CREATE TABLE `pousheng_settlement_pos` (
   PRIMARY KEY (`id`),
   KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
   KEY `index_settlement_order_id` (`order_id`)
-)  COMMENT='宝胜结算管理pos单';
+)COMMENT ='宝胜结算管理pos单';
 
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`

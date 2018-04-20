@@ -112,6 +112,7 @@ CREATE TABLE `pousheng_stock_push_logs`
   KEY `index_stock_push_shop_id` (`shop_id`),
   KEY `index_stock_push_sku_code` (`sku_code`)
 )COMMENT='宝胜库存推送日志';
+
 drop table if exists `pousheng_settlement_pos`;
 CREATE TABLE `pousheng_settlement_pos` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -131,23 +132,7 @@ CREATE TABLE `pousheng_settlement_pos` (
   KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
   KEY `index_settlement_order_id` (`order_id`)
 ) COMMENT='宝胜结算管理pos单';
-CREATE TABLE `pousheng_settlement_pos`
-(
-  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `pos_type` tinyint(4) NOT NULL COMMENT 'pos单类型:1.正常销售,2.售后订单',
-  `ship_type`tinyint(4) NOT NULL COMMENT '发货类型:1.销售发货单,2.换货发货单,3.售后',
-  `order_id` bigint(20) NOT NULL COMMENT '发货单或售后单号',
-  `pos_serial_no` VARCHAR(60)  NOT NULL COMMENT 'pos单号',
-  `pos_amt` bigint(20) NOT NULL  COMMENT 'pos单金额',
-  `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
-  `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
-  `pos_created_at`datetime NOT NULL COMMENT 'POS单创建时间',
-  `created_at` datetime NOT NULL,
-  `updated_at` datetime NOT NULL,
-  PRIMARY KEY(`id`),
-  KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
-  KEY `index_settlement_order_id` (`order_id`)
-)COMMENT ='宝胜结算管理pos单';
+
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`
 (
@@ -176,6 +161,7 @@ alter table `pousheng_warehouses` add `company_id` varchar(64) after `address`;
 alter table `pousheng_warehouses` add `company_name` varchar(64) after `company_id`;
 alter table `pousheng_warehouses` add index `index_middle_warehouse_company` (`company_id`);
 
+
 -- 增大shop表extra字段长度
 alter table `parana_shops` modify column `extra_json` varchar(2048);
 
@@ -194,6 +180,7 @@ CREATE TABLE `pousheng_auto_compensation` (
 -- 库存表存储退货仓信息
 alter table `pousheng_warehouses` add `tags_json` VARCHAR(2048) NULL COMMENT 'tag信息, json表示' after `extra_json`;
 
+
 drop table if exists `open_push_order_task`;
 CREATE TABLE `open_push_order_task` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -205,6 +192,10 @@ CREATE TABLE `open_push_order_task` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
+
+
+-- 库存表存储退货仓信息
+alter table `pousheng_warehouses` add `tags_json` VARCHAR(2048) NULL COMMENT 'tag信息, json表示' after `extra_json`;
 
 -- 添加mpos快递码
 alter table `pousheng_trade_express_code` add `mpos_code` VARCHAR(64) NULL COMMENT 'mpos快递代码' after `fenqile_code`;
@@ -263,9 +254,12 @@ CREATE TABLE `refund_amount` (
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
 =======
+=======
+>>>>>>> feature/skx-develop
 --添加未处理原因筛选
 alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
 
@@ -285,7 +279,6 @@ alter table parana_order_refunds add order_code varchar(25) after order_id;
 
 
 
->>>>>>> hotfix/pousheng-second
 
 
 

@@ -144,6 +144,9 @@ public class SyncRefundPosLogic {
         posContent.setBilldate(formatter.print(refund.getCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
         posContent.setRemark(refund.getBuyerNote());//备注
+        if(Arguments.notNull(refundExtra.getIslock())){
+            posContent.setIslock(String.valueOf(refundExtra.getIslock()));
+        }
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,refund);
         //对于订单派发中心来说，可能有多个仓库，传订单派发中心的吧

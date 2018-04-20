@@ -211,7 +211,6 @@ public class SkuTemplates {
         if (type!=null){
             params.put("type",type);
         }
-
         if (Objects.isNull(statuses)){
             params.put("statuses",Lists.newArrayList(1,-3));
         }else if (!statuses.isEmpty()){

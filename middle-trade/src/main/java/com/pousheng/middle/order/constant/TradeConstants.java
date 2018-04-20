@@ -155,25 +155,11 @@ public class TradeConstants {
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
     public static final String SKU_ORDER_CANCEL_REASON="skuOrderCancelReason";
     public static final String SHOP_ORDER_CANCEL_REASON="shopOrderCancelReason";
-    //货号
-    public static final String HK_MATRIAL_CODE="materialCode";
+
     //sizeId
     public static final String HK_SIZE_ID = "sizeId";
-    //电商销售单
-    public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
-    //线下门店
-    public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
-    //退货类型
-    public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
-    //yyedi返回结果:整体成功
-    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
     //没有有效的订单
     public static final String  YYEDI_RESPONSE_NOT_EXIST_ORDER= "-120";
-    //yyedi返回结果:部分成功
-    public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
-    //yyedi返回结果:整体失败
-    public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
-    public static final String  ERP_SYNC_TYPE="erpSyncType";
     //是否指定门店 1 指定 2 未指定
     public static final String IS_ASSIGN_SHOP = "isAssignShop";
     //指定门店id
@@ -222,6 +208,22 @@ public class TradeConstants {
 
     //订单派发中心同步发货状态
     public static final Integer YYEDI_SHIP_NOTIFICATION = 10;
+    //货号
+    public static final String HK_MATRIAL_CODE="materialCode";
+
+    //电商销售单
+    public static final String YYEDI_BILL_TYPE_ON_LINE="SalesBC";
+    //线下门店
+    public static final String YYEDI_BILL_TYPE_OFF_LINE="Offline";
+    //退货类型
+    public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
+    //yyedi返回结果:整体成功
+    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
+    //yyedi返回结果:部分成功
+    public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
+    //yyedi返回结果:整体失败
+    public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
+    public static final String  ERP_SYNC_TYPE="erpSyncType";
 
     public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";
     //导出订单
@@ -232,6 +234,7 @@ public class TradeConstants {
     public static final String EXPORT_SHIPMENT = "shipment";
     //导出pos单
     public static final String EXPORT_POS = "pos";
+
     //是否参与全渠道店铺 1参与 0 不参与
     public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
 

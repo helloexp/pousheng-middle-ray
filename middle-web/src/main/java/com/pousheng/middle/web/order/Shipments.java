@@ -60,6 +60,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+
 /**
  * 发货单相关api （以 order shipment 为发货单）
  * Created by songrenfei on 2017/6/20
@@ -408,6 +409,7 @@ public class Shipments {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
             }
+
             //创建发货单
             Response<Long> createResp = shipmentWriteService.create(shipment, Lists.newArrayList(shopOrderId), OrderLevel.SHOP);
             if (!createResp.isSuccess()) {
@@ -451,11 +453,13 @@ public class Shipments {
                     continue;
                 }
             }
+
+            //手动生成销售发货单可以支持同步到店铺
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if (Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
-                log.info("sync shipment to mpos,shipmentId is {}", shipment.getId());
-                shipmentWiteLogic.handleSyncShipment(shipment, 2, shopOrder);
-            } else {
+            if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
+                log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+                shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
+            }else{
                 Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
                 if (!syncRes.isSuccess()) {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
@@ -496,7 +500,6 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
             Refund refund = refundReadLogic.findRefundById(refundId);
-
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(refund.getShopId());
             String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
             if (StringUtils.isEmpty(erpType) || Objects.equals(erpType, "hk")) {
@@ -611,7 +614,6 @@ public class Shipments {
         }
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-
         //发货仓库是mpos仓且是店仓则同步到门店
         if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
             log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
@@ -1072,7 +1074,6 @@ public class Shipments {
 
     /**
      * 宝胜二期--单个发货单撤销功能
-     *
      * @param shipmentId
      */
     @RequestMapping(value = "api/single/shipment/{id}/rollback", method = RequestMethod.PUT)
@@ -1150,6 +1151,7 @@ public class Shipments {
             log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
+
     }
 
     /**
@@ -1259,8 +1261,6 @@ public class Shipments {
             }
         }
     }
-
-
     /**
      * 根据售后单id获取发货单下所有的货品集合
      *
@@ -1319,10 +1319,10 @@ public class Shipments {
                     Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> null == item.getShipWay());
 
                     afterFiler.parallel().forEach(shipment -> {
-                        if (CollectionUtils.isEmpty(shipment.getExtra())||shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO)==null){
+                        if (CollectionUtils.isEmpty(shipment.getExtra()) || shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO) == null) {
 
                             shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));//不存在设置仓发
-                        }else {
+                        } else {
                             String shipmentWay = (String) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("shipmentWay");
 
                             if (StringUtils.isEmpty(shipmentWay)) { //不存在设置仓发
@@ -1338,15 +1338,16 @@ public class Shipments {
                         shipmentWriteService.update(shipment);
                     });
                     pageNo++;
-                }else{
+                } else {
                     throw new JsonResponseException("shipment.update.fail");
                 }
             }
-                return Response.ok(true);
-            } catch(Exception e){
-                log.error("failed to batch update {}, cause:{}", Throwables.getStackTraceAsString(e));
-                return Response.fail("shipment.update.fail");
-            }
+            return Response.ok(true);
+        } catch (Exception e) {
+            log.error("failed to batch update {}, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.update.fail");
+        }
+
     }
 
 

@@ -1,7 +1,8 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Throwables;
-import com.google.common.eventbus.EventBus;
+import com.google.common.collect.Maps;
+import com.pousheng.middle.open.api.dto.ErpHandleShipmentResult;
 import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
@@ -15,6 +16,8 @@ import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -77,16 +80,69 @@ public class OrderOpenApi {
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
     @Autowired
-    private EventBus eventBus;
-    @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncRefundPosLogic syncRefundPosLogic;
+    @Autowired
+    private SyncShipmentPosLogic syncShipmentPosLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
+
+    /**
+     * 第三方ERP同步发货单处理结果
+     *
+     * @param data 处理结果 约束大小为50个
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "erp.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void syncErpHandleResult(@NotNull(message = "handle.data.is.null") String data) {
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ", data);
+        List<ErpHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ErpHandleShipmentResult.class));
+        try{
+            for(ErpHandleShipmentResult result :results){
+                String shipmentId = result.getEcShipmentId();
+                Boolean handleResult = result.getSuccess();
+                String erpShipmentId = result.getErpShipmentId();
+                handleResult(shipmentId,handleResult,erpShipmentId);
+            }
+
+        }catch (JsonResponseException | ServiceException e) {
+            log.error("erp shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+            throw new OPServerException(200,e.getMessage());
+        }catch (Exception e){
+            log.error("erp shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"sync.fail");
+        }
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-END");
+    }
+
+
+    /**
+     * 第三方ERP同步发货完成状态到中台
+     *
+     * @param shipmentId       中台发货单号
+     * @param shipmentId     第三方ERP发货单号
+     * @param shipmentCorpCode 物流公司代码
+     * @param shipmentSerialNo 物流单号
+     * @param shipmentDate     发货时间
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "erp.shipments.api", paramNames = {"shipmentId", "erpShipmentId",
+            "shipmentCorpCode", "shipmentSerialNo",
+            "shipmentDate"}, httpMethods = RequestMethod.POST)
+    public void syncErpShipmentStatus(@NotNull(message = "shipment.id.is.null") String shipmentId,
+                                     @NotEmpty(message = "erp.shipment.id.is.null") String erpShipmentId,
+                                     @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
+                                     @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
+                                     @NotEmpty(message = "shipment.date.empty") String shipmentDate
+    ) {
+        this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+    }
 
 
 
@@ -99,51 +155,14 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
-        List<HkHandleShipmentResult> results = results = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
+        List<HkHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
         try{
             for(HkHandleShipmentResult result :results){
-                Long shipmentId = result.getEcShipmentId();
+                String shipmentId = result.getEcShipmentId();
                 Boolean handleResult = result.getSuccess();
                 String hkShipmentId = result.getHkShipmentId();
-                Shipment shipment = null;
-                try{
-                    shipment  = shipmentReadLogic.findShipmentById(shipmentId);
-                }catch (Exception e){
-                    log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
-                    continue;
-                }
-                //冗余恒康发货单号
-                //更新发货单的状态
-                if (handleResult){
-                    //如果发货单已受理，则跳过
-                    if(shipment.getStatus()>= MiddleShipmentsStatus.WAIT_SHIP.getValue()){
-                        log.warn("shipment(id:{}) duplicate request to handle,so skip",shipment.getId());
-                        continue;
-                    }
-                    Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
-                    if (!updateRes.isSuccess()) {
-                        log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(),MiddleShipmentsStatus.WAIT_SHIP.getValue(), updateRes.getError());
-                    }
-                    //更新恒康shipmentId
-                    Shipment update = new Shipment();
-                    update.setId(shipment.getId());
-                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                    shipmentExtra.setOutShipmentId(hkShipmentId);
-                    Map<String, String> extraMap = shipment.getExtra();
-                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
-                    update.setExtra(extraMap);
-                    log.info("start update hkShipmentId is {}",hkShipmentId);
-                    shipmentWiteLogic.update(update);
-                    log.info("end update hkShipmentId is {}",hkShipmentId);
-                }else{
-                    OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-                    Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
-                    if (!updateSyncStatusRes.isSuccess()) {
-                        log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
-                    }
-                }
+                handleResult(shipmentId,handleResult,hkShipmentId);
             }
-
 
         }catch (JsonResponseException | ServiceException e) {
             log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
@@ -153,6 +172,46 @@ public class OrderOpenApi {
             throw new OPServerException(200,"sync.fail");
         }
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
+    }
+
+    private void handleResult(String shipmentId,Boolean handleResult,String erpShipmentId){
+        Shipment shipment = null;
+        try{
+            shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
+        }catch (Exception e){
+            log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+            return;
+        }
+        //冗余恒康发货单号
+        //更新发货单的状态
+        if (handleResult){
+            //如果发货单已受理，则跳过
+            if(shipment.getStatus()>= MiddleShipmentsStatus.WAIT_SHIP.getValue()){
+                log.warn("shipment(id:{}) duplicate request to handle,so skip",shipment.getId());
+                return;
+            }
+            Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
+            if (!updateRes.isSuccess()) {
+                log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(),MiddleShipmentsStatus.WAIT_SHIP.getValue(), updateRes.getError());
+            }
+            //更新恒康shipmentId
+            Shipment update = new Shipment();
+            update.setId(shipment.getId());
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            shipmentExtra.setOutShipmentId(erpShipmentId);
+            Map<String, String> extraMap = shipment.getExtra();
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(shipmentExtra));
+            update.setExtra(extraMap);
+            log.info("start update erpShipmentId is {}",erpShipmentId);
+            shipmentWiteLogic.update(update);
+            log.info("end update erpShipmentId is {}",erpShipmentId);
+        }else{
+            OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+            if (!updateSyncStatusRes.isSuccess()) {
+                log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
+            }
+        }
     }
 
     /**
@@ -168,7 +227,7 @@ public class OrderOpenApi {
     @OpenMethod(key = "hk.shipments.api", paramNames = {"shipmentId", "hkShipmentId",
                                                          "shipmentCorpCode", "shipmentSerialNo",
                                                          "shipmentDate"}, httpMethods = RequestMethod.POST)
-    public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") Long shipmentId,
+    public void syncHkShipmentStatus(@NotNull(message = "shipment.id.is.null") String shipmentId,
                                      @NotEmpty(message = "hk.shipment.id.is.null") String hkShipmentId,
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
@@ -183,7 +242,7 @@ public class OrderOpenApi {
             DateTime dt = DateTime.parse(shipmentDate, DFT);
             Shipment shipment = null;
             try{
-                shipment  = shipmentReadLogic.findShipmentById(shipmentId);
+                shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
             }catch (Exception e){
                 log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
                 return;
@@ -234,6 +293,15 @@ public class OrderOpenApi {
             //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
             hkShipmentDoneLogic.doneShipment(shipment);
 
+            //同步pos单到恒康
+            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+            if (!response.isSuccess()) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("shipmentId", shipment.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
+
+            }
+
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
             throw new OPServerException(200,e.getMessage());
@@ -246,6 +314,23 @@ public class OrderOpenApi {
     }
 
     /**
+     * skx将售后单售后结果通知给中台
+     * @param refundOrderId
+     * @param erpRefundOrderId
+     * @param itemInfo
+     * @param receivedDate
+     */
+    @OpenMethod(key = "erp.refund.confirm.received.api", paramNames = {"refundOrderId", "erpRefundOrderId", "itemInfo",
+            "receivedDate"}, httpMethods = RequestMethod.POST)
+    public void syncErpRefundStatus(String refundOrderId,
+                                   @NotEmpty(message = "hk.refund.order.id.is.null") String erpRefundOrderId,
+                                   @NotEmpty(message = "item.info.empty") String itemInfo,
+                                   @NotEmpty(message = "received.date.empty") String receivedDate
+    ) {
+        syncHkRefundStatus(refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+
+    }
+    /**
      * 恒康将售后单售后结果通知给中台
      * @param refundOrderId
      * @param hkRefundOrderId
@@ -253,9 +338,8 @@ public class OrderOpenApi {
      * @param receivedDate
      */
     @OpenMethod(key = "hk.refund.confirm.received.api", paramNames = {"refundOrderId", "hkRefundOrderId", "itemInfo",
-                                                                      "receivedDate","itemCode","quantity"
-                                                                      }, httpMethods = RequestMethod.POST)
-    public void syncHkRefundStatus(Long refundOrderId,
+                                                                      "receivedDate"}, httpMethods = RequestMethod.POST)
+    public void syncHkRefundStatus(String refundOrderId,
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
@@ -266,7 +350,7 @@ public class OrderOpenApi {
             if (refundOrderId==null){
                 return;
             }
-            Refund refund = refundReadLogic.findRefundById(refundOrderId);
+            Refund refund = refundReadLogic.findRefundByRefundCode(refundOrderId);
             Map<String,String> extraMap = refund.getExtra();
             String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
             //仅退款是没有hkRefundOrderId,所以放开这边的校验
@@ -280,6 +364,7 @@ public class OrderOpenApi {
             DateTime dt = DateTime.parse(receivedDate, DFT);
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             refundExtra.setHkReturnDoneAt(dt.toDate());
+            refundExtra.setIslock(1);
             List<HkConfirmReturnItemInfo> hkConfirmReturnItemInfos = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkConfirmReturnItemInfo.class));
 
             refundExtra.setHkConfirmItemInfos(hkConfirmReturnItemInfos);
@@ -289,12 +374,12 @@ public class OrderOpenApi {
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
-                throw new ServiceException(updateStatusRes.getError());
+                throw new OPServerException(200,"已经通知中台退货，请勿再次通知");
             }
 
             //更新扩展信息
             Refund update = new Refund();
-            update.setId(refundOrderId);
+            update.setId(refund.getId());
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             update.setExtra(extra);
@@ -308,6 +393,20 @@ public class OrderOpenApi {
             if(refund.getShopName().startsWith("mpos")){
                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
+
+            try {
+                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                if (!r.isSuccess()) {
+                    Map<String, Object> param1 = Maps.newHashMap();
+                    param1.put("refundId", refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+                }
+            } catch (Exception e) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
+            }
+
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
 

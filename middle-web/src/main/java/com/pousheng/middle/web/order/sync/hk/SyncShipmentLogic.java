@@ -92,10 +92,11 @@ public class SyncShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
             List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
-            SycShipmentOrderResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycShipmentOrderResponse.class);
-            HkResponseHead head = response.getHead();
+            SycErpShipmentOrderResponse response  = JsonMapper.nonDefaultMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycErpShipmentOrderResponse.class);
+            Integer errorCode = response.getErrorCode();
+            String description = response.getDescription();
             //解析返回结果
-            if (Objects.equals(head.getCode(),"0")) {
+            if (Objects.equals(errorCode,200)) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
@@ -104,10 +105,10 @@ public class SyncShipmentLogic {
                     return Response.fail(updateSyncStatusRes.getError());
                 }
             } else {
-                log.error("sync hk fail, return code :{},return message:{}",head.getCode(),head.getMessage());
+                log.error("sync hk fail, return code :{},return message:{}",errorCode,description);
                 //更新状态为同步失败
                 updateShipmetSyncFail(shipment);
-                return Response.fail("恒康返回信息:"+head.getMessage());
+                return Response.fail("恒康返回信息:"+description);
             }
             return Response.ok();
         } catch (Exception e) {
@@ -271,7 +272,7 @@ public class SyncShipmentLogic {
     public SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail) {
         SycHkShipmentOrder tradeOrder = new SycHkShipmentOrder();
         //中台主订单-发货单id
-        tradeOrder.setOrderNo(String.valueOf(shipment.getId()));
+        tradeOrder.setOrderNo(shipment.getShipmentCode());
         //会员账号昵称
         tradeOrder.setBuyerNick(shipmentDetail.getReceiverInfo().getReceiveUserName());
         //订单总金额
@@ -305,6 +306,10 @@ public class SyncShipmentLogic {
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         //下单店铺编码
         tradeOrder.setShopId(shipmentExtra.getErpOrderShopCode());
+        //todo 下单店名称
+        tradeOrder.setShopName("斯凯奇");
+        tradeOrder.setOuterOrderNo(shopOrder.getOutId());
+
         //绩效店铺编码
         tradeOrder.setPerformanceShopId(shipmentExtra.getErpPerformanceShopCode());
         Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
@@ -338,7 +343,7 @@ public class SyncShipmentLogic {
         for (ShipmentItem shipmentItem : shipmentItems) {
             SycHkShipmentItem item = new SycHkShipmentItem();
             //发货单id(恒康:中台主订单号)
-            item.setOrderNo(String.valueOf(shipment.getId()));
+            item.setOrderNo(shipment.getShipmentCode());
             //(恒康:中台子订单号),这里拼接了发货单id与skuCode
             item.setOrderSubNo(String.valueOf(shipment.getId()) + "-" + String.valueOf(shipmentItem.getSkuCode()));
             //中台skuCode

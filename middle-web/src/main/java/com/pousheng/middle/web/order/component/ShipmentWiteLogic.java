@@ -199,7 +199,6 @@ public class ShipmentWiteLogic {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
                     throw new JsonResponseException(cancelRes.getError());
                 }
-
             }
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
@@ -1438,7 +1437,6 @@ public class ShipmentWiteLogic {
                 String appKey = openShop.getAppKey();
                 String outerId = appKey.substring(appKey.indexOf("-")+1);
                 String companyId = appKey.substring(0,appKey.indexOf("-"));
-
                 Response<Optional<Shop>> optionalRes = psShopReadService.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
                 if(!optionalRes.isSuccess()){
                     log.error("find shop by outer id:{} business id:{} fail,error:{}",outerId,companyId,optionalRes.getError());
@@ -1451,7 +1449,6 @@ public class ShipmentWiteLogic {
                     return;
                 }
                 Shop shop = shopOptional.get();
-
                 shopName = shop.getName();
                 ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                 shopCode = shopExtraInfo.getShopInnerCode();

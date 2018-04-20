@@ -28,10 +28,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.common.constants.JacksonType;
-import io.terminus.parana.order.model.Invoice;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -119,7 +116,8 @@ public class SyncRefundPosLogic {
             throw new ServiceException("refund.shipment.id.invalid");
         }
         //获取发货单详情
-        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(refundExtra.getShipmentId());
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
         HkShipmentPosContent posContent = new HkShipmentPosContent();
 
         posContent.setChanneltype("b2c");//订单来源类型, 是b2b还是b2c
@@ -141,7 +139,7 @@ public class SyncRefundPosLogic {
         posContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));//线上店铺code
 
         posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
-        posContent.setNetbillno(refund.getId().toString());//端点唯一订单号
+        posContent.setNetbillno(refund.getRefundCode());//端点唯一订单号使用带前缀的单号
         posContent.setSourcebillno("");//订单来源单号
         posContent.setBilldate(formatter.print(refund.getCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
@@ -156,12 +154,12 @@ public class SyncRefundPosLogic {
         if(isWarehouseShip(shipmentWay)){
             //仓库发货以wms具体退货仓为主
             if (Objects.equal(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
-                ordersizes = makeHKRefundPosItem(refund,shipmentDetail.getShipment().getId());
+                ordersizes = makeHKRefundPosItem(refund,shipmentDetail.getShipment().getShipmentCode());
             }else{
-                ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getId());
+                ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getShipmentCode());
             }
         }else{
-            ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getId(),extra.get("outCode"));
+            ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getShipmentCode(),extra.get("outCode"));
         }
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);
@@ -169,14 +167,14 @@ public class SyncRefundPosLogic {
         return posContent;
     }
 
-    private List<HkShipmentPosItem> makeHkShipmentPosItem(Refund refund,Long shipmentId,String returnWarehouseCode) {
+    private List<HkShipmentPosItem> makeHkShipmentPosItem(Refund refund,String shipmentCode,String returnWarehouseCode) {
 
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
         for (RefundItem refundItem : refundItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setStockcode(returnWarehouseCode);
-            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
+            hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             hkShipmentPosItem.setQty(refundItem.getApplyQuantity());
             hkShipmentPosItem.setBalaprice(new BigDecimal(refundItem.getCleanPrice()==null?0:refundItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
@@ -185,14 +183,14 @@ public class SyncRefundPosLogic {
         return posItems;
     }
 
-    private List<HkShipmentPosItem> makeHKRefundPosItem(Refund refund,Long shipmentId) {
+    private List<HkShipmentPosItem> makeHKRefundPosItem(Refund refund,String shipmentCode) {
 
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundItems.size());
         for (RefundItem refundItem : refundItems){
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setStockcode("");
-            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
+            hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundItem.getSkuCode());
             //仅退款传到恒康是0
             hkShipmentPosItem.setQty(0);
@@ -207,10 +205,10 @@ public class SyncRefundPosLogic {
     /**
      * 仓库发货退货信息
      * @param refund
-     * @param shipmentId
+     * @param shipmentCode
      * @return
      */
-    private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouse(Refund refund,Long shipmentId) {
+    private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouse(Refund refund,String shipmentCode) {
 
         List<YYEdiRefundConfirmItem> refundYYEdiConfirmItems = refundReadLogic.findRefundYYEdiConfirmItems(refund);
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
@@ -226,7 +224,7 @@ public class SyncRefundPosLogic {
             }
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
-            hkShipmentPosItem.setSourcenetbillno(shipmentId.toString());
+            hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
             hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
             hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());

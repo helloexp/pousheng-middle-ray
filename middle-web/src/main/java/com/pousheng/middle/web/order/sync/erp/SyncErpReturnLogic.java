@@ -125,7 +125,7 @@ public class SyncErpReturnLogic {
                 return Response.ok(Boolean.TRUE);
             }else{
                 updateRefundSyncFial(refund);
-                return Response.fail("sync.refund.pos.failed");
+                return Response.fail("sync.pos.failed");
             }
         }catch (Exception e){
             log.error("sync pos failed,caused by {}", Throwables.getStackTraceAsString(e));

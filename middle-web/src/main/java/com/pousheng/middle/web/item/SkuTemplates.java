@@ -3,7 +3,6 @@ package com.pousheng.middle.web.item;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -53,6 +52,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -511,7 +511,7 @@ public class SkuTemplates {
             }
             SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
 
-            Response<Optional<SpuMaterial>> materialRes = spuMaterialReadService.findbyMaterialCode(materialId);
+            Response<com.google.common.base.Optional<SpuMaterial>> materialRes = spuMaterialReadService.findbyMaterialCode(materialId);
             if(!materialRes.isSuccess()){
                 log.error("find spu material by material id:{} fail,error:{}",materialId,materialRes.getError());
                 errorMaterialIds.add(materialId);
@@ -639,7 +639,29 @@ public class SkuTemplates {
     }
 
 
-    private String postQueryMposItem(Map<String, Object> params){
-        return HttpRequest.post(paranaGateway+"/api/query/mpos/item").connectTimeout(1000000).readTimeout(1000000).form(params).body();
+    private String postQueryMposItem(Map<String, Object> params) {
+        return HttpRequest.post(paranaGateway + "/api/query/mpos/item").connectTimeout(1000000).readTimeout(1000000).form(params).body();
+    }
+
+    /**
+     * 获取当前有效的skuCode
+     * @param skuCode 商品编码
+     * @return sku模板
+     */
+    @ApiOperation("根据有效货品条码查询")
+    @RequestMapping(value="/api/valid/sku-templates",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public SkuTemplate findValidSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode) {
+        Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
+        if(!skuTemplateRes.isSuccess()){
+            log.error("find sku template by sku code:{} fail,error:{}",skuCode,skuTemplateRes.getError());
+            throw new JsonResponseException(skuTemplateRes.getError());
+        }
+        //获取有效的货品条码
+        Optional<SkuTemplate> skuTemplateOptional= skuTemplateRes.getResult().stream().filter(skuTemplate -> !Objects.equals(skuTemplate.getStatus(),-3)).findAny();
+        if(!skuTemplateOptional.isPresent()){
+            log.error("not find sku template by sku code:{}",skuCode);
+            throw new JsonResponseException("sku.template.not.exist");
+        }
+        return skuTemplateOptional.get();
     }
 }

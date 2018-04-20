@@ -245,7 +245,8 @@ public class ShipmentWiteLogic {
      * @param shopOrder 店铺订单
      */
     public void doAutoCreateShipment(ShopOrder shopOrder) {
-        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
+        //如果是全渠道订单且不是创建的或者导入的订单可以使用店发
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())&&!orderReadLogic.isCreateOrderImportOrder(shopOrder)){
             log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
             log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
@@ -270,8 +271,13 @@ public class ShipmentWiteLogic {
      */
     public Response<String> autoHandleOrder(ShopOrder shopOrder) {
         //没有经过自动生成发货单逻辑的订单时不能自动处理的，可能存在冲突
-        Map<String, String> shopOrderExtra = shopOrder.getExtra();
-        String orderWaitHandleType = shopOrderExtra.get(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE);
+        String orderWaitHandleType;
+        if(shopOrder.getHandleStatus() == null){
+            Map<String, String> shopOrderExtra = shopOrder.getExtra();
+            orderWaitHandleType = shopOrderExtra.get(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE);
+        }else{
+            orderWaitHandleType = shopOrder.getHandleStatus().toString();
+        }
         if (Objects.equals(orderWaitHandleType, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()))) {
             return Response.fail(OrderWaitHandleType.WAIT_HANDLE.getDesc());
         }
@@ -365,15 +371,10 @@ public class ShipmentWiteLogic {
     public void updateShipmentNote(ShopOrder shopOrder, int type) {
         //添加备注
         if (type > 0) {
-            //shopOrderextra中添加字段
-            ShopOrder order = orderReadLogic.findShopOrderById(shopOrder.getId());
-            Map<String, String> extraMap = order.getExtra();
-            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, type == 6 ? "" : String.valueOf(type));
-            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
-            if (!rltRes.isSuccess()) {
-                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
-
-            }
+            ShopOrder update = new ShopOrder();
+            update.setId(shopOrder.getId());
+            update.setHandleStatus(type);
+            middleOrderWriteService.updateShopOrder(update);
         }
     }
 
@@ -451,7 +452,7 @@ public class ShipmentWiteLogic {
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
                 Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + createResp.getResult());
                 Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
                 if (!response.isSuccess()) {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
@@ -539,7 +540,7 @@ public class ShipmentWiteLogic {
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
                 Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_ID, String.valueOf(createResp.getResult()));
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + createResp.getResult());
                 Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
                 if (!response.isSuccess()) {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
@@ -686,6 +687,7 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
 
         shipment.setExtra(extraMap);
+
 
         return shipment;
     }
@@ -1021,12 +1023,7 @@ public class ShipmentWiteLogic {
         if (!response.isSuccess()) {
             log.error("dispatch fail,error:{}", response.getError());
             //记录未处理原因
-            Map<String, String> extraMap = shopOrder.getExtra();
-            extraMap.put(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE, messageSource.getMessage(response.getError(),null,Locale.CHINA));
-            Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
-            if (!rltRes.isSuccess()) {
-                log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
-            }
+            this.updateShipmentNote(shopOrder,error2Type(response.getError()));
             if(!isFirst){
                 //如果不是第一次派单，将订单状态恢复至待处理
                 this.makeSkuOrderWaitHandle(skuCodeAndQuantities,skuOrders);
@@ -1462,6 +1459,32 @@ public class ShipmentWiteLogic {
             }catch (Exception e){
                 log.error("find member shop(openId:{}) failed,cause:{}",openShop.getId(),Throwables.getStackTraceAsString(e));
             }
+        }
+    }
+
+    /**
+     * 返回错误转成枚举
+     * @param error 错误信息
+     * @return 枚举类型
+     */
+    private Integer error2Type(String error){
+        switch(error){
+            case "dispatch.order.fail":
+                return OrderWaitHandleType.DISPATCH_ORDER_FAIL.value();
+            case "warehouse.safe.stock.not.find":
+                return OrderWaitHandleType.WAREHOUSE_SATE_STOCK_NOT_FIND.value();
+            case "address.gps.not.found":
+                return OrderWaitHandleType.ADDRESS_GPS_NOT_FOUND.value();
+            case "find.address.gps.fail":
+                return OrderWaitHandleType.FIND_ADDRESS_GPS_FAIL.value();
+            case "warehouse.stock.lock.fail":
+                return OrderWaitHandleType.WAREHOUSE_STOCK_LOCK_FAIL.value();
+            case "shop.stock.lock.fail":
+                return OrderWaitHandleType.SHOP_STOCK_LOCK_FAIL.value();
+            case "warehouse.rule.not.found":
+                return OrderWaitHandleType.WAREHOUSE_RULE_NOT_FOUND.value();
+            default:
+                return OrderWaitHandleType.UNKNOWN_ERROR.value();
         }
     }
 }

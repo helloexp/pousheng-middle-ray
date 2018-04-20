@@ -46,12 +46,13 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
 
             //把订单id,订单类型转为退款单id列表
             transformOrderIdAndOrderType(criteria);
-            if (criteria.getOrderId() != null && CollectionUtils.isEmpty(criteria.getIds())) {
+            if (criteria.getOrderCode() != null && CollectionUtils.isEmpty(criteria.getIds())) {
                 return Response.ok(Paging.empty());
             }
 
             handleDate(criteria);
             Map<String, Object> params = criteria.toMap();
+//            orderRefundDao.paging(pageInfo.getOffset(),pageInfo.getLimit(),params)
             Paging<Refund> refundP = refundDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), params);
             if (Objects.equals(refundP.getTotal(), 0L)) {
                 return Response.ok(Paging.<Refund>empty());
@@ -77,6 +78,18 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
         }
     }
 
+    @Override
+    public Response<List<OrderRefund>> findOrderRefundsByOrderId(Long shopOrderId) {
+        try {
+
+            return Response.ok(orderRefundDao.findByOrderIdAndOrderType(shopOrderId,OrderLevel.SHOP));
+
+        }catch (Exception e){
+            log.error("find order refunds by orderId ids:{} fail,cause:{}",shopOrderId,Throwables.getStackTraceAsString(e));
+            return Response.fail("order.refund.find.fail");
+        }
+    }
+
     private void handleDate(RefundCriteria refundCriteria) {
         if (refundCriteria.getStartAt() != null) {
             refundCriteria.setStartAt(DateUtil.withTimeAtStartOfDay(refundCriteria.getStartAt()));
@@ -87,14 +100,14 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
     }
 
 
-    private void transformOrderIdAndOrderType(RefundCriteria refundCriteria) {
-        Long orderId = refundCriteria.getOrderId();
-        if (null == orderId) {
+    private void transformOrderIdAndOrderType(MiddleRefundCriteria refundCriteria) {
+        String orderCode = refundCriteria.getOrderCode();
+        if (null == orderCode) {
             return;
         }
         Integer orderLevel = MoreObjects.firstNonNull(refundCriteria.getOrderLevel(), OrderLevel.SHOP.getValue());
 
-        List<OrderRefund> orderRefunds = orderRefundDao.findByOrderIdAndOrderType(orderId, OrderLevel.fromInt(orderLevel));
+        List<OrderRefund> orderRefunds = orderRefundDao.findByOrderCodeAndOrderType(orderCode, OrderLevel.fromInt(orderLevel));
         List<Long> refundIs = retrieveRefundIds(orderRefunds);
 
         refundCriteria.setIds(refundIs);

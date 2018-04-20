@@ -148,6 +148,8 @@ public class TradeConstants {
     public static final String  GIFT_ACTIVITY_NAME="giftActivityName";
     //sku订单中的shipmentId
     public static final String SKU_ORDER_SHIPMENT_ID="skuShipmentId";
+    //sku订单中的shipmentCode
+    public static final String SKU_ORDER_SHIPMENT_CODE = "skuShipmentCode";
     //店铺订单选择的快递单号
     public static final String SHOP_ORDER_HK_EXPRESS_CODE="orderHkExpressCode";
     public static final String SHOP_ORDER_HK_EXPRESS_NAME="orderHkExpressName";
@@ -165,6 +167,8 @@ public class TradeConstants {
     public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
     //yyedi返回结果:整体成功
     public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
+    //没有有效的订单
+    public static final String  YYEDI_RESPONSE_NOT_EXIST_ORDER= "-120";
     //yyedi返回结果:部分成功
     public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
     //yyedi返回结果:整体失败
@@ -233,6 +237,11 @@ public class TradeConstants {
 
     public static final String IS_HK_POS_ORDER = "isHkPosOrder";
     public static final String SHIPMENT_ID = "shipmentId";
+    public static final String ORDER_PREFIX = "SAL";
+
+    public static final String SHIPMENT_PREFIX = "SHP";
+
+    public static final String REFUND_PREFIX = "ASS";
 
 
 }

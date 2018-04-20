@@ -160,11 +160,12 @@ public class SyncYYEdiShipmentLogic {
 
             List<YYEdiCancelInfo> reqeustData = new ArrayList<>();
             YYEdiCancelInfo cancelShipmentInfo = new YYEdiCancelInfo();
-            cancelShipmentInfo.setBillNo(String.valueOf(shipment.getId()));
+            cancelShipmentInfo.setBillNo(String.valueOf(shipment.getShipmentCode()));
             reqeustData.add(cancelShipmentInfo);
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
+            //如果订单派发中心返回没有该订单，则直接取消成功
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_NOT_EXIST_ORDER)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
                 if (!updateStatus.isSuccess()) {
@@ -228,8 +229,8 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setCompanyCode(warehouse.getCompanyCode());
         //仓库
         shipmentInfo.setStockCode(warehouseExtraMap.get("outCode"));
-        //erp单号
-        shipmentInfo.setBillNo(String.valueOf(shipment.getId()));
+        //erp单号，中台发货单代码
+        shipmentInfo.setBillNo(String.valueOf(shipment.getShipmentCode()));
         //单据类型
         shipmentInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_ON_LINE);
         //来源单号
@@ -241,7 +242,8 @@ public class SyncYYEdiShipmentLogic {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-            shipmentInfo.setSourceBillNo(String.valueOf(refundExtra.getShipmentId()));
+            Shipment sourceShipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+            shipmentInfo.setSourceBillNo(sourceShipment.getShipmentCode());
 
         }
         //补发类型
@@ -260,7 +262,7 @@ public class SyncYYEdiShipmentLogic {
                 List<ShipmentItem> shipmentItemList = shipmentReadLogic.getShipmentItems(s);
                 for (ShipmentItem item:shipmentItemList){
                     if (skuCodes.contains(item.getSkuCode())){
-                        shipmentIds.add(String.valueOf(s.getId()));
+                        shipmentIds.add(String.valueOf(s.getShipmentCode()));
                     }
                 }
             }
@@ -467,7 +469,7 @@ public class SyncYYEdiShipmentLogic {
             //公司内码
             item.setCompanyCode(warehouse.getCompanyCode());
             //ERP单号
-            item.setBillNo(String.valueOf(shipment.getId()));
+            item.setBillNo(String.valueOf(shipment.getShipmentCode()));
             //中台sku
             item.setSKU(shipmentItem.getSkuCode());
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(shipmentItem.getSkuCode()));

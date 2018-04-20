@@ -144,8 +144,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 
             if (!Objects.isNull(shipment)) {
-                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                refundExtra.setShipmentId(shipment.getId());
+                refundExtra.setShipmentId(shipment.getShipmentCode());
                 //添加售后仓库
                 try {
                     OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
@@ -168,6 +167,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 if ((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) > 0) {
                     log.warn("this refund item has been applied,refundSkuCode is {}", skuOfRefund.getSkuCode());
                     refund.setStatus(MiddleRefundStatus.DELETED.getValue());
+                    refund.setSellerNote("系统：订单商品已产生售后，当前订单不同步ERP");
                     return;
                 }
                 refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));

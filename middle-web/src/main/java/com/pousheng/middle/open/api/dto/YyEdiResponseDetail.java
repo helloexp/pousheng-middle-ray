@@ -13,7 +13,7 @@ public class YyEdiResponseDetail implements java.io.Serializable{
     /**
      * 中台发货单号
      */
-    private Long shipmentId;
+    private String shipmentId;
     /**
      * yyedi发货单号
      */

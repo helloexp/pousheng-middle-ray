@@ -276,6 +276,7 @@ public class MemberShopOperationLogic {
         log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
         WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
         if(Arguments.isNull(province)){
+            log.error("not find middle province by code:{} and name:{}",addressDto.getProvinceCode(),addressDto.getProvinceName());
             return null;
         }
         addressGps.setProvinceId(province.getId());
@@ -284,7 +285,13 @@ public class MemberShopOperationLogic {
         //市
         WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
         if(Arguments.isNull(city)){
-            return null;
+            log.error("not find middle city by code:{} and name:{}",addressDto.getCityCode(),addressDto.getCityName());
+            //如果根据id 查询不到则用pid和name查询
+            city = transToWarehouseAddress(province.getId(),addressDto.getCityName());
+            if(Arguments.isNull(city)){
+                log.error("not find middle city by pid:{} and name:{}",province.getId(),addressDto.getCityName());
+                return null;
+            }
         }
         addressGps.setCityId(city.getId());
         addressGps.setCity(city.getName());
@@ -292,7 +299,13 @@ public class MemberShopOperationLogic {
         //区
         WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
         if(Arguments.isNull(region)){
-            return null;
+            log.error("not find middle region by code:{} and name:{}",addressDto.getAreaCode(),addressDto.getAreaName());
+            //如果根据id 查询不到则用pid和name查询
+            region = transToWarehouseAddress(city.getId(),addressDto.getAreaName());
+            if(Arguments.isNull(region)){
+                log.error("not find middle region by pid:{} and name:{}",city.getId(),addressDto.getAreaName());
+                return null;
+            }
         }
         addressGps.setRegionId(region.getId());
         addressGps.setRegion(region.getName());
@@ -366,6 +379,26 @@ public class MemberShopOperationLogic {
             return null;
         }catch (Exception e){
             log.error("check is matching warehouse address by code:{} name:{} fail,cause:{}",code,name, Throwables.getStackTraceAsString(e));
+            return null;
+        }
+
+    }
+
+
+    //将会员中心的地址与中台地址做比较，转换为中台的地址
+    private WarehouseAddress transToWarehouseAddress(Long pid,String name){
+        try {
+            Optional<WarehouseAddress> addressOptional = warehouseAddressCacher.findByPidAndName(pid,name);
+            if(!addressOptional.isPresent()){
+                log.error("[QUERY-MIDDLE-ADDRESS] by pid:{} name:{} not find",pid,name);
+                return null;
+            }
+            return addressOptional.get();
+        }catch (ServiceException e){
+            log.error("check is matching warehouse address by pid:{} name:{} fail,error:{}",pid,name, e.getMessage());
+            return null;
+        }catch (Exception e){
+            log.error("check is matching warehouse address by pid:{} name:{} fail,cause:{}",pid,name, Throwables.getStackTraceAsString(e));
             return null;
         }
 

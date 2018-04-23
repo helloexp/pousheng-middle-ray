@@ -9,7 +9,15 @@ import java.io.Serializable;
  * @author songrenfei
  */
 public class CreateShopEvent implements Serializable {
-
+    @Override
+    public String toString() {
+        return "CreateShopEvent{" +
+                "shopId=" + shopId +
+                ", companyId=" + companyId +
+                ", outerId='" + outerId + '\'' +
+                ", storeCode='" + storeCode + '\'' +
+                '}';
+    }
 
     private static final long serialVersionUID = 8144976237694246387L;
     @Getter

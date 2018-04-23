@@ -52,6 +52,7 @@ public class CreateOpenShopRelationListener {
 
     @Subscribe
     public void createOpenShopRelation(CreateShopEvent event) {
+        log.info("createOpenShopRelation shop info:{}",event);
 
         val rExist = shopReadService.findById(event.getShopId());
         if (!rExist.isSuccess()) {

@@ -17,6 +17,7 @@ import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
+import com.pousheng.middle.web.shop.event.listener.CreateOpenShopRelationListener;
 import com.pousheng.middle.web.user.component.ParanaUserOperationLogic;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -105,6 +106,8 @@ public class AdminShops {
     private UserTypeBean userTypeBean;
     @Autowired
     private ShopChannelGroupCacher shopChannelGroupCacher;
+    @Autowired
+    private CreateOpenShopRelationListener createOpenShopRelationListener;
 
 
 
@@ -746,6 +749,19 @@ public class AdminShops {
     @RequestMapping(value = "/{outerId}/cache/{businessId}/clear", method = RequestMethod.GET)
     public void testClearCache(@PathVariable String outerId,@PathVariable Long businessId ) {
          middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
+    }
+
+
+    @RequestMapping(value = "/{id}/fix/open/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixOpenShop(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+        Shop shop = rShop.getResult();
+        CreateShopEvent createShopEvent = new CreateShopEvent(shopId,shop.getBusinessId(),shop.getOuterId(),shop.getOuterId());
+
+        createOpenShopRelationListener.createOpenShopRelation(createShopEvent);
     }
 
 

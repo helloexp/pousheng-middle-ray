@@ -59,7 +59,8 @@ public class ShopCreationOrUpdateListener {
 
     @Subscribe
     public void onCreated(CreateShopEvent event) {
-       
+
+        log.info("createShopAddressGps shop info:{}",event);
 
         AddressGps addressGps = memberShopOperationLogic.getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){
@@ -95,7 +96,7 @@ public class ShopCreationOrUpdateListener {
 
     @Subscribe
     public void onUpdate(UpdateShopEvent event) {
-        log.info("update shop address :{}",event);
+        log.info("update shop address gps :{}",event);
 
         AddressGps addressGps = memberShopOperationLogic.getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){

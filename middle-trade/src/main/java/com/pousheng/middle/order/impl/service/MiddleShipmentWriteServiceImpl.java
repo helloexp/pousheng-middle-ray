@@ -6,6 +6,7 @@ import com.pousheng.middle.order.impl.manager.MiddleShipmentManager;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -23,12 +24,14 @@ public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteServic
     private MiddleShipmentManager middleShipmentManager;
 
     @Override
-    public Response<Long> createForAfterSale(Shipment shipment, Long orderId, Long afterSaleOrderId) {
+    public Response<Long> createForAfterSale(Shipment shipment, OrderRefund orderRefund, Long afterSaleOrderId) {
         try {
             shipment.setStatus(MoreObjects.firstNonNull(shipment.getStatus(), 1));
             OrderShipment orderShipment = new OrderShipment();
-            orderShipment.setOrderId(orderId);
+            orderShipment.setOrderId(orderRefund.getOrderId());
+            orderShipment.setOrderCode(orderRefund.getOrderCode());
             orderShipment.setAfterSaleOrderId(afterSaleOrderId);
+            orderShipment.setAfterSaleOrderCode(orderRefund.getRefundCode());
             orderShipment.setOrderLevel(OrderLevel.SHOP);
             orderShipment.setStatus(shipment.getStatus());
             orderShipment.setType(shipment.getType());

@@ -208,12 +208,6 @@ public class FireCall {
 
     }
 
-    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
-        int spuCount =spuImporter.processPullMarterials(skuCode);
-        log.info("synchronized {} spus", spuCount);
-        return "ok";
-    }
 
 
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -239,6 +233,13 @@ public class FireCall {
         return "ok";
     }
 
+    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
+        int spuCount =spuImporter.processPullMarterials(skuCode);
+        log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
+
     @RequestMapping(value="/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<HkSkuStockInfo> queryStock(@RequestParam(required = false) String stockCodes,
                                            @RequestParam String skuCodes,
@@ -250,6 +251,7 @@ public class FireCall {
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
         return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
     }
+
 
 
     @RequestMapping(value="/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -400,6 +402,7 @@ public class FireCall {
         }
         return "ok";
     }
+
 
     /**
      * 根据skuCode推送库存到第三方或者官网

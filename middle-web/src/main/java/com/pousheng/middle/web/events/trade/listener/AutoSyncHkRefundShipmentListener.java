@@ -59,7 +59,7 @@ public class AutoSyncHkRefundShipmentListener {
             shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
         }else{
             Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
-            if(!syncRes.isSuccess()) {
+            if (!syncRes.isSuccess()) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }
         }

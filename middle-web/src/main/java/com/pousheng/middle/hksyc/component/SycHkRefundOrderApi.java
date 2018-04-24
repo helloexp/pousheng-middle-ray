@@ -3,7 +3,9 @@ package com.pousheng.middle.hksyc.component;
 import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefundDto;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefundOrderBody;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -34,13 +36,22 @@ public class SycHkRefundOrderApi {
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
-        Map<String, Object> params = Maps.newHashMap();
+       /* Map<String, Object> params = Maps.newHashMap();
+        params.put("nonce",Numbers.getNonce());
+        params.put("timestamp","1234567890");
         params.put("tradeRefund",sycHkRefund);
-        params.put("tradeRefundItems",sycHkRefundItems);
+        params.put("tradeRefundItems",sycHkRefundItems);*/
 
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
+        SycHkRefundOrderBody refundOrderBody = new SycHkRefundOrderBody();
+        SycHkRefundDto sycHkRefundDto = new SycHkRefundDto();
+        sycHkRefundDto.setTradeRefund(sycHkRefund);
+        sycHkRefundDto.setTradeRefundItems(sycHkRefundItems);
+        refundOrderBody.setRefundorder(sycHkRefundDto);
+
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(refundOrderBody);
         log.info("paramJson:{}",paramJson);
-        String gateway =hkGateway+"/commonerp/erp/sal/addrefund";
+        //String gateway =hkGateway+"/commonerp/erp/sal/addrefund";
+        String gateway =hkGateway+"/common-terminus/skx-oms/default/getrefundordersreceive";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
                 .header("serialNo",serialNo)

@@ -53,12 +53,12 @@ public class AutoCreateShipmetsListener {
     @Subscribe
     @AllowConcurrentEvents
     public void onShipment(OpenClientOrderSyncEvent event) {
-        log.info("try to auto create shipment,shopOrder id is {}",event.getShopOrderId());
+        log.info("try to auto create shipment,shopOrder id is {}", event.getShopOrderId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
         log.info("auto create shipment,step one");
         //天猫订单如果还没有拉取售后地址是不能生成发货单的
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())){
-            if (shopOrder.getBuyerName().contains("**")){
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())) {
+            if (shopOrder.getBuyerName().contains("**")) {
                 return;
             }
         }
@@ -81,8 +81,6 @@ public class AutoCreateShipmetsListener {
             }
             shipmentWiteLogic.doAutoCreateShipment(shopOrder);
         }
-
-
     }
 
     /**

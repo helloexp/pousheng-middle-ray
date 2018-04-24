@@ -34,7 +34,7 @@ public class PoushengSettlementPos implements Serializable {
     /**
      * 发货单id
      */
-    private Long orderId;
+    private String orderId;
 
     /**
      * pos单号
@@ -59,7 +59,7 @@ public class PoushengSettlementPos implements Serializable {
     /**
      * 发货单号
      */
-    private Long  shipmentId;
+    private String  shipmentId;
     /**
      * pos单创建时间
      */

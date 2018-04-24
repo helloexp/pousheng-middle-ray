@@ -48,6 +48,7 @@ public class MaterialPusher {
         List<SpuMaterial> spuMaterials = spuMaterialDao.findBySpuIds(spuIds);
         Set<String> materialIds = Sets.newHashSet();
         for (SpuMaterial spuMaterial : spuMaterials) {
+            log.info("============materialId===========>"+spuMaterial.getMaterialId());
             materialIds.add(spuMaterial.getMaterialId());
         }
         String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(Lists.newArrayList(materialIds)));

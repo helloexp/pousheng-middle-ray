@@ -30,7 +30,7 @@ public class SettlementPosEntity {
     private String posType;
 
     @ExportTitle("订单号")
-    private Long orderId;
+    private String orderId;
     @ExportTitle("交易完成日期")
     @ExportDateFormat("yyyy-MM-dd HH:mm:ss")
     private Date posCreatedAt;

@@ -299,7 +299,7 @@ CREATE TABLE `pousheng_settlement_pos` (
   PRIMARY KEY (`id`),
   KEY `index_settlement_pos_serial_no` (`pos_serial_no`),
   KEY `index_settlement_order_id` (`order_id`)
-)  COMMENT='宝胜结算管理pos单';
+)COMMENT ='宝胜结算管理pos单';
 
 drop table if exists `pousheng_gift_activity`;
 create table `pousheng_gift_activity`
@@ -371,3 +371,21 @@ CREATE TABLE `open_push_order_task` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='外部订单处理失败补偿任务表';
+
+
+drop table if exists `pousheng_zone_contracts`;
+CREATE TABLE `pousheng_zone_contracts` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `zone_id` VARCHAR(100) NOT NULL COMMENT '区部id',
+  `zone_name` VARCHAR(100) NOT NULL COMMENT '区部名称',
+  `name` VARCHAR(30) NOT NULL COMMENT '联系人姓名',
+  `email` VARCHAR(30) NOT NULL COMMENT '联系人邮箱',
+  `phone` VARCHAR(30)  COMMENT '联系人电话',
+  `group` tinyint(2) NOT NULL COMMENT '分组',
+  `status` tinyint(2) NOT NULL COMMENT '状态,1可用,-1已删除',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='区部联系人表';
+create index `idx_pousheng_zone_contracts_zone_name` on pousheng_zone_contracts(zone_name);
+create index `idx_pousheng_zone_contracts_zone_id` on pousheng_zone_contracts(zone_id);

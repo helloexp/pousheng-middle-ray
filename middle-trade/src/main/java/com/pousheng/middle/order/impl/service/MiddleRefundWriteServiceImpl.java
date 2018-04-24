@@ -14,10 +14,9 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.order.impl.dao.RefundDao;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.impl.dao.ShopOrderDao;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -37,6 +36,8 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
     @Autowired
     private MiddleRefundManager middleRefundManager;
     @Autowired
+    private ShopOrderDao orderDao;
+    @Autowired
     private RefundDao refundDao;
 
 
@@ -55,6 +56,8 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
             for (Long orderId : orderIds) {
                 OrderRefund orderRefund = new OrderRefund();
                 orderRefund.setOrderId(orderId);
+                ShopOrder shopOrder = orderDao.findById(orderId);
+                orderRefund.setOrderCode(shopOrder.getOrderCode());
                 orderRefund.setOrderLevel(orderLevel);
                 orderRefund.setStatus(refund.getStatus());
                 orderRefunds.add(orderRefund);

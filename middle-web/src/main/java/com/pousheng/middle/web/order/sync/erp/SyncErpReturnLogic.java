@@ -3,12 +3,9 @@ package com.pousheng.middle.web.order.sync.erp;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.hksyc.dto.trade.SycHkRefundResponseBody;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
@@ -22,14 +19,12 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +58,8 @@ public class SyncErpReturnLogic {
     private MiddleOrderFlowPicker flowPicker;
     @RpcConsumer
     private OpenShopReadService openShopReadService;
+    @Value("${skx.open.shop.id}")
+    private Long skxOpenShopId;
 
     /**
      * 对于退货退款和换货的售后单需要同步到yyedi，对于仅退款的售后单需要直接同步到恒康
@@ -82,7 +79,12 @@ public class SyncErpReturnLogic {
         if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
             switch (erpSyncType){
                 case "hk":
-                    return syncRefundLogic.syncRefundToHk(refund);
+                    //skx的逆向单要同步skx和yyedi
+                    if(Objects.equals(openShop.getId(),skxOpenShopId)){
+                        return syncRefundLogic.syncRefundToSkxAndYYedi(refund);
+                    }else {
+                        return syncRefundLogic.syncRefundToHk(refund);
+                    }
                 case "yyEdi":
                     return this.syncReturnPos(refund);
                 default:
@@ -92,7 +94,12 @@ public class SyncErpReturnLogic {
         //售后换货，退货的同步走配置渠道
         switch (erpSyncType){
             case "hk":
-                return syncRefundLogic.syncRefundToHk(refund);
+                //skx的逆向单要同步skx和yyedi
+                if(Objects.equals(openShop.getId(),skxOpenShopId)){
+                    return syncRefundLogic.syncRefundToSkxAndYYedi(refund);
+                }else {
+                    return syncRefundLogic.syncRefundToHk(refund);
+                }
             case "yyEdi":
                 return syncYYEdiReturnLogic.syncRefundToYYEdi(refund);
             default:
@@ -125,7 +132,7 @@ public class SyncErpReturnLogic {
                 return Response.ok(Boolean.TRUE);
             }else{
                 updateRefundSyncFial(refund);
-                return Response.fail("sync.refund.pos.failed");
+                return Response.fail("sync.pos.failed");
             }
         }catch (Exception e){
             log.error("sync pos failed,caused by {}", Throwables.getStackTraceAsString(e));

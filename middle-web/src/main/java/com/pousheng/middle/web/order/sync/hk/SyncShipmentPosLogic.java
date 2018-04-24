@@ -106,7 +106,7 @@ public class SyncShipmentPosLogic {
             log.info("sync shipment pos to hk,response:{}",result);
             SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
             if(!Objects.equal(response.getCode(),"00000")){
-                log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
+                log.error("sync shipment(code:{}) shipment pos to hk fail,error:{}",shipment.getShipmentCode(),response.getMessage());
                 return Response.fail(response.getMessage());
             }
 

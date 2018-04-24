@@ -85,7 +85,7 @@ public class SyncRefundPosLogic {
             String result = sycHkShipmentPosApi.doSyncRefundPos(requestData,url);
             SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
             if(!Objects.equal(response.getCode(),"00000")){
-                log.error("sync shipment pos to hk fail,error:{}",response.getMessage());
+                log.error("sync refund(code:{}) pos to hk fail,error:{}",refund.getRefundCode(),response.getMessage());
                 return Response.fail(response.getMessage());
             }
             return Response.ok();

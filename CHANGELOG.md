@@ -1,5 +1,11 @@
 # RELEASE NOTES
 
+## 2.0.2 (2018-04-24)
+
+* 中台二期迭代迭代需求
+* 中台对接skx
+* 区部联系人
+
 ## 2.0.1 (2018-04-18)
 
 * 修复同步恒康仓库时仓库安全库存覆盖问题 pmp:http://pmp.terminus.io/console/project/141/issues/32134

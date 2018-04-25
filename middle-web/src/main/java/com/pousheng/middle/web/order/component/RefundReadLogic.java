@@ -195,11 +195,11 @@ public class RefundReadLogic {
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.warn("refund(id:{}) extra field is null",refund.getId());
-            return Lists.newArrayList(new RefundItem());
+            return Lists.newArrayList();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_ITEM_INFO)){
             log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_ITEM_INFO);
-            return Lists.newArrayList(new RefundItem());
+            return Lists.newArrayList();
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
     }
@@ -208,11 +208,11 @@ public class RefundReadLogic {
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.warn("refund(id:{}) extra field is null",refund.getId());
-            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+            return Lists.newArrayList();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO)){
             log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
-            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+            return Lists.newArrayList();
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO),mapper.createCollectionType(List.class,YYEdiRefundConfirmItem.class));
     }

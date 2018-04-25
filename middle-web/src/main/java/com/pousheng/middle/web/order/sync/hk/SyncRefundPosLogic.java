@@ -9,10 +9,7 @@ import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.ShipmentDetail;
-import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -159,7 +156,11 @@ public class SyncRefundPosLogic {
             if (Objects.equal(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())){
                 ordersizes = makeHKRefundPosItem(refund,shipmentDetail.getShipment().getShipmentCode());
             }else{
-                ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getShipmentCode());
+                if(!Objects.equal(refundExtra.getIslock(),1)){
+                    ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getShipmentCode());
+                }else {
+                    ordersizes =makeHkShipmentPosItemWarehouseFormHk(refund,shipmentDetail.getShipment().getShipmentCode());
+                }
             }
         }else{
             ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getShipmentCode(),extra.get("outCode"));
@@ -221,6 +222,40 @@ public class SyncRefundPosLogic {
         }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
         for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
+            //如果退货数量是0则过滤掉
+            if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
+                continue;
+            }
+            HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
+            hkShipmentPosItem.setStockcode(refundConfirmItem.getWarhouseCode());
+            hkShipmentPosItem.setSourcenetbillno(shipmentCode);
+            hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
+            hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            //售后不涉及到优惠
+            posItems.add(hkShipmentPosItem);
+        }
+        return posItems;
+    }
+
+
+    /**
+     * 仓库发货退货信息
+     * @param refund
+     * @param shipmentCode
+     * @return
+     */
+    private List<HkShipmentPosItem> makeHkShipmentPosItemWarehouseFormHk(Refund refund,String shipmentCode) {
+
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        List<HkConfirmReturnItemInfo> hkConfirmItemInfos = refundExtra.getHkConfirmItemInfos();
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        Map<String,Integer> refundItemAndPriceMap = Maps.newHashMap();
+        for (RefundItem refundItem:refundItems){
+            refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
+        }
+        List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(hkConfirmItemInfos.size());
+        for (HkConfirmReturnItemInfo refundConfirmItem : hkConfirmItemInfos){
             //如果退货数量是0则过滤掉
             if (Objects.equal(refundConfirmItem.getQuantity(),"0")){
                 continue;

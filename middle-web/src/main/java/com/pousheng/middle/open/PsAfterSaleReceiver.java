@@ -99,7 +99,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundExtra.setReleOrderNo(shopOrder.getOrderCode());
         //关联单号类型
         refundExtra.setReleOrderType(1);
-
         if (Objects.equals(MiddleRefundType.ON_SALES_REFUND.value(), refund.getRefundType())) {
             //借用tradeNo字段来标记售中退款的逆向单是否已处理
             refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
@@ -127,22 +126,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue()) && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
             refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }
-        if (!StringUtils.hasText(skuOfRefund.getSkuCode())) {
-            return;
-        }
-        Response<Optional<SkuTemplate>> findR = middleSpuService.findBySkuCode(skuOfRefund.getSkuCode());
-        if (!findR.isSuccess()) {
-            log.error("fail to find sku template by skuCode={},cause:{}",
-                    skuOfRefund.getSkuCode(), findR.getError());
-            return;
-        }
-        Optional<SkuTemplate> skuTemplateOptional = findR.getResult();
-        if (!skuTemplateOptional.isPresent()) {
-            return;
-        }
-        SkuTemplate skuTemplate = skuTemplateOptional.get();
         try {
-            SkuOrder skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
+            SkuOrder skuOrder = null;
+            if (StringUtils.hasText(skuOfRefund.getChannelSkuId())){
+                skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndOutSkuId(shopOrder.getId(), skuOfRefund.getChannelSkuId());
+            } else {
+                skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
+            }
             //查询需要售后的发货单
             Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
 
@@ -193,11 +183,16 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
                 }
             }
-
             refundItem.setSkuCode(skuOrder.getSkuCode());
             refundItem.setSkuOrderId(skuOrder.getId());
             refundItem.setOutSkuCode(skuOrder.getOutSkuId());
-            refundItem.setAttrs(skuTemplate.getAttrs());
+            //获取skuCode
+            try{
+                SkuTemplate skuTemplate = this.findSkuTemplateBySkuCode(skuOrder.getSkuCode());
+                refundItem.setAttrs(skuTemplate.getAttrs());
+            }catch (Exception e){
+                log.error("find sku template failed,skuCode is {},caused by {}",skuOrder.getSkuCode(),Throwables.getStackTraceAsString(e));
+            }
             refundItem.setSkuName(skuOrder.getItemName());
 
             extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
@@ -377,5 +372,15 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
     }
 
+    private SkuTemplate findSkuTemplateBySkuCode(String skuCode){
+        Response<Optional<SkuTemplate>> findR = middleSpuService.findBySkuCode(skuCode);
+        if (!findR.isSuccess()) {
+            log.error("fail to find sku template by skuCode={},cause:{}",
+                    skuCode, findR.getError());
+            throw new ServiceException("find.skuTemplate.failed");
+        }
+        return findR.getResult().get();
+
+    }
 
 }

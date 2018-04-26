@@ -413,4 +413,11 @@ public class RefundReadLogic {
         return null;
     }
 
+    public String getOutSkuOrderIdSuningSale(String outId){
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(3).splitToList(outId).get(2);
+        }
+        return null;
+    }
+
 }

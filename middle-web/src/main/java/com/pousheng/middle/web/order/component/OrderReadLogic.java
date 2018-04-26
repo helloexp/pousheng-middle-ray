@@ -343,6 +343,7 @@ public class OrderReadLogic {
             case FENQILE:
                 return expressCode.getFenqileCode();
             case SUNING:
+            case SUNINGSALE:
                 return expressCode.getSuningCode();
             case OFFICIAL:
                 return expressCode.getPoushengCode();

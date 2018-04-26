@@ -248,6 +248,10 @@ public class WarehouseRules {
         if(Strings.isNullOrEmpty(companyCode) && openShop.getAppKey().contains("-")){
             companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
         }
+        if(Strings.isNullOrEmpty(companyCode)){
+            log.error("open shop (id:{}) company code invalid",openShop.getId());
+            throw new JsonResponseException("rule.shop.company.code.invalid");
+        }
         return companyCode;
     }
 

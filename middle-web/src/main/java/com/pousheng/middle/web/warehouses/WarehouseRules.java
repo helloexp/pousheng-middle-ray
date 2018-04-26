@@ -28,6 +28,7 @@ import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -244,7 +245,7 @@ public class WarehouseRules {
         WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
         String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
-        if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+        if(Strings.isNullOrEmpty(companyCode) && openShop.getAppKey().contains("-")){
             companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
         }
         return companyCode;

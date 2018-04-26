@@ -55,4 +55,14 @@ public interface WarehouseReadService {
      * @return 匹配的仓库列表
      */
     Response<List<Warehouse>>  findByFuzzyCode(String codePart);
+
+    /**
+     * 仓库列表
+     *
+     * @param pageNo 起始页码
+     * @param pageSize 每页返回数目
+     * @param name 名称或者外码
+     * @return 仓库列表
+     */
+    Response<Paging<Warehouse>> pagingByOutCodeOrName(Integer pageNo, Integer pageSize,String name);
 }

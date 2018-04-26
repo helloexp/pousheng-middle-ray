@@ -158,4 +158,18 @@
         </where>
     </select>
 
+    <select id="pagingByOutCodeOrName" parameterType="list" resultMap="WarehouseMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        WHERE  name LIKE CONCAT(#{name}, '%') or `extra_json` like concat('%',#{name}, '%')
+        order by id desc limit #{offset},#{limit}
+    </select>
+    <select id="countByOutCodeOrName" parameterType="list" resultType="long">
+        select count(1)
+        from
+        <include refid="tb"/>
+        WHERE  name LIKE CONCAT(#{name}, '%') or `extra_json` like concat('%',#{name}, '%')
+    </select>
 </mapper>

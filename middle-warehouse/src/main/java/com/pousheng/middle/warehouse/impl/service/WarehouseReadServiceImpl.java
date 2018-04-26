@@ -62,11 +62,11 @@ public class WarehouseReadServiceImpl implements WarehouseReadService {
      */
     @Override
     public Response<Paging<Warehouse>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> params) {
-        try{
+        try {
             PageInfo pageInfo = new PageInfo(pageNo, pageSize);
             Paging<Warehouse> p = warehouseDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), params);
             return Response.ok(p);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("failed to pagination warehouse with params:{}, cause:{}",
                     params, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.find.fail");
@@ -104,6 +104,19 @@ public class WarehouseReadServiceImpl implements WarehouseReadService {
         } catch (Exception e) {
             log.error("failed to find warehouse by fuzzy code:{}, cause:{}",
                     codePart, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.find.fail");
+        }
+    }
+
+    @Override
+    public Response<Paging<Warehouse>> pagingByOutCodeOrName(Integer pageNo, Integer pageSize, String name) {
+        try {
+            PageInfo pageInfo = new PageInfo(pageNo, pageSize);
+            Paging<Warehouse> p = warehouseDao.pagingByOutCodeOrName(pageInfo.getOffset(), pageInfo.getLimit(), name);
+            return Response.ok(p);
+        } catch (Exception e) {
+            log.error("failed to pagination warehouse with name:{}, cause:{}",
+                    name, Throwables.getStackTraceAsString(e));
             return Response.fail("warehouse.find.fail");
         }
     }

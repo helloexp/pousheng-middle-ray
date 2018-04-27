@@ -1210,25 +1210,8 @@ public class Shipments {
     private void validateIsCreateOrderImportOrder(List<Long> warehouseIds,Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         if (orderReadLogic.isCreateOrderImportOrder(shopOrder)){
-            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
-            if (!r.isSuccess()){
-                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
-                throw new JsonResponseException("find.warehouse.failed");
-            }
-            List<Warehouse> warehouses = r.getResult();
-            int count = 0;
-            for (Warehouse warehouse:warehouses){
-                //如果是店仓
-                if (Objects.equals(warehouse.getType(),1)){
-                    count++;
-                }
-            }
-            if (count>0){
-                throw new JsonResponseException("import.or.create.order.can.not.use.shop.warehouse");
-            }
+            validateOrderAllChannelWarehouse(warehouseIds,shopOrderId);
         }
-        checkCanShopWarehouseShip(warehouseIds,shopOrder.getShopId());
-
 
     }
     /**

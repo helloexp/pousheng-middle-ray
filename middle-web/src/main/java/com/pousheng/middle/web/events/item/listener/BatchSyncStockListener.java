@@ -103,8 +103,7 @@ public class BatchSyncStockListener {
                 stockDto.setWarehouseId(warehouse.getId());
                 result.add(stockDto);
             } catch (Exception e) {
-                log.error("failed to sync {}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
-                throw new ServiceException("make.middle.data.fail");
+                log.error("failed to sync stock{}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
             }
         }
         return result;

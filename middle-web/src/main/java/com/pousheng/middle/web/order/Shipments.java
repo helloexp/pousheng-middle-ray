@@ -329,7 +329,7 @@ public class Shipments {
                                           @RequestParam(value = "dataList") String dataList) {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
         List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
-        //判断是否是全渠道到订单，如果不是全渠道订单不能选择店仓
+        //判断是否是全渠道和mpos店铺订单，如果不是全渠道订单不能选择店仓
         this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
         //创建订单不能选择店仓
         this.validateIsCreateOrderImportOrder(warehouseIds,shopOrderId);
@@ -1175,7 +1175,12 @@ public class Shipments {
      * @param shopOrderId  店铺订单id
      */
     private void validateOrderAllChannelWarehouse(List<Long> warehouseIds,Long shopOrderId){
+
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        //mpos门店可以指定店仓发货
+        if(orderReadLogic.isMposOpenShop(shopOrder.getShopId())){
+            return;
+        }
         if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
             Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
             if (!r.isSuccess()){

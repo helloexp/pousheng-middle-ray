@@ -17,6 +17,9 @@ import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
+import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
+import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -59,6 +62,7 @@ import java.util.stream.Collectors;
  * Created by songrenfei on 2017/6/30
  */
 @Api(description = "货品管理API")
+@OperationLogModule(OperationLogModule.Module.POUSHENG_ITEMS)
 @RestController
 @Slf4j
 public class SkuTemplates {
@@ -228,9 +232,10 @@ public class SkuTemplates {
 
 
     @ApiOperation("对货品打mops打标")
+    @OperationLogType("对货品打mops打标")
     @RequestMapping(value = "/api/sku-template/{id}/make/flag", method = RequestMethod.PUT)
     public void makeMposFlag(@PathVariable Long id) {
-
+        log.info("start  mpos flag id:{} by user id:{}",id,UserUtil.getUserId());
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
             log.error("find sku template by id:{} fail,error:{}",id,rExist.getError());
@@ -262,10 +267,11 @@ public class SkuTemplates {
     }
 
     @ApiOperation("取消货品mops打标")
+    @OperationLogType("取消货品mops打标")
     @RequestMapping(value = "/api/sku-template/{id}/cancel/flag", method = RequestMethod.PUT)
     public void cancelMposFlag(@PathVariable Long id) {
 
-        log.info("start cancel mpos flag id:{}",id);
+        log.info("start cancel mpos flag id:{} by user id:{}",id,UserUtil.getUserId());
 
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
@@ -291,8 +297,10 @@ public class SkuTemplates {
 
 
     @ApiOperation("设置mpos货品折扣")
+    @OperationLogType("对mpos货品批量设置折扣")
     @RequestMapping(value = "/api/sku-template/{id}/discount/setting", method = RequestMethod.PUT)
     public void setDiscount(@PathVariable Long id,@RequestParam Integer discount) {
+        log.info("start batch  set discount:{} skuTemplateId:{} by user id:{}",discount,id,UserUtil.getUserId());
 
         val rExist = skuTemplateReadService.findById(id);
         if (!rExist.isSuccess()) {
@@ -321,8 +329,10 @@ public class SkuTemplates {
     }
 
     @ApiOperation("对mpos货品批量设置折扣")
+    @OperationLogType("对mpos货品批量设置折扣")
     @RequestMapping(value = "/api/sku-template/batch/discount/setting", method = RequestMethod.PUT)
     public void batchSetMposDiscount(@RequestParam String skuTemplateIds,@RequestParam Integer discount) {
+        log.info("start batch  set discount:{} skuTemplateIds data:{} by user id:{}",discount,skuTemplateIds,UserUtil.getUserId());
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){
             setDiscount(id,discount);
@@ -330,7 +340,9 @@ public class SkuTemplates {
     }
 
     @RequestMapping(value = "/api/sku-template/batch/make/falge", method = RequestMethod.PUT)
+    @OperationLogType("对货品批量打mops打标falge")
     public void batchSetFlage(@RequestParam String skuTemplateIds) {
+        log.info("start batch  mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         Response<List<SkuTemplate>> response = skuTemplateReadService.findByIds(ids);
         pushMposItemComponent.batchMakeFlag(response.getResult(),PsSpuType.MPOS.value());
@@ -338,10 +350,12 @@ public class SkuTemplates {
     }
 
 
-
     @ApiOperation("对货品批量打mops打标")
     @RequestMapping(value = "/api/sku-template/batch/make/flag", method = RequestMethod.PUT)
-    public void batchMakeMposFlag(@RequestParam String skuTemplateIds) {
+    @OperationLogType("对货品批量打mops打标")
+    public void batchMakeMposFlag(@RequestParam @OperationLogParam String skuTemplateIds) {
+        log.info("start batch  mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
+
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){
             makeMposFlag(id);
@@ -350,8 +364,9 @@ public class SkuTemplates {
 
     @ApiOperation("批量取消货品mops打标")
     @RequestMapping(value = "/api/sku-template/batch/cancel/flag", method = RequestMethod.PUT)
-    public void batchCancelMposFlag(@RequestParam String skuTemplateIds) {
-        log.info("start batch cancel mpos flag data:{}",skuTemplateIds);
+    @OperationLogType("批量取消货品mops打标")
+    public void batchCancelMposFlag(@RequestParam @OperationLogParam String skuTemplateIds) {
+        log.info("start batch cancel mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){
             cancelMposFlag(id);
@@ -386,6 +401,11 @@ public class SkuTemplates {
     @ApiOperation("异步对货品批量mpos打标")
     @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
+        log.info("asyncMakeMposFlag params:{} by user id:{}",params,UserUtil.getUserId());
+        if(CollectionUtils.isEmpty(params)){
+            log.error("make flag param:{} invalid",params);
+            throw new JsonResponseException("at.least.one.condition");
+        }
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
         event.setParams(params);
         event.setType(PsSpuType.MPOS.value());

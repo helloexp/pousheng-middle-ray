@@ -41,7 +41,8 @@ public @interface OperationLogModule {
 
         WAREHOUSE_SHOP_RULE(9, "店铺发货规则", "warehouse/shop-rule"),
         
-        POUSHENG_GIFT_ACTIVITY(10,"宝胜活动赠品","gift");
+        POUSHENG_GIFT_ACTIVITY(10,"宝胜活动赠品","gift"),
+        POUSHENG_ITEMS(10,"宝胜商品","sku");
 
         @Getter
         private int value;

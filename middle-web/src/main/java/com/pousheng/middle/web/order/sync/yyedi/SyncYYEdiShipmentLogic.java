@@ -423,7 +423,11 @@ public class SyncYYEdiShipmentLogic {
                 }
             }
         }else{
-            shipmentInfo.setChannel(shopOrder.getOutFrom());
+            if (Objects.equals("suning-sale",shopOrder.getOutFrom())){
+                shipmentInfo.setChannel("suning");
+            }else{
+                shipmentInfo.setChannel(shopOrder.getOutFrom());
+            }
             //客户供应商快递代码
             shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
             //客户供应商快递公司名称

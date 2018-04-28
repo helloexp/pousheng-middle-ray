@@ -59,8 +59,14 @@ public class ProxyOperationLog {
     public void warehousePointcut() {
     }
 
+    @Pointcut("execution(* com.pousheng.middle.web.item.*.*(..))")
+    public void itemPointcut() {
+    }
 
-    @AfterReturning("orderPointcut() || warehousePointcut()")
+
+
+
+    @AfterReturning("orderPointcut() || warehousePointcut() || itemPointcut()")
     public void record(JoinPoint pjp) {
 
 

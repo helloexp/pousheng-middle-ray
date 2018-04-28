@@ -17,6 +17,7 @@ import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
+import com.pousheng.middle.web.utils.MapFilter;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -402,13 +403,14 @@ public class SkuTemplates {
     @OperationLogType("异步对货品批量mpos一键打标")
     @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
-        log.info("asyncMakeMposFlag params:{} by user id:{}",params,UserUtil.getUserId());
-        if(CollectionUtils.isEmpty(params)){
-            log.error("make flag param:{} invalid",params);
+        log.info("asyncMakeMposFlag params:{} by user id:{}",params.toString(),UserUtil.getUserId());
+        Map<String,String> fliter = MapFilter.filterNullOrEmpty(params);
+        if(CollectionUtils.isEmpty(fliter)){
+            log.error("make flag param:{} invalid",params.toString());
             throw new JsonResponseException("at.least.one.condition");
         }
         BatchAsyncHandleMposFlagEvent event = new BatchAsyncHandleMposFlagEvent();
-        event.setParams(params);
+        event.setParams(fliter);
         event.setType(PsSpuType.MPOS.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);

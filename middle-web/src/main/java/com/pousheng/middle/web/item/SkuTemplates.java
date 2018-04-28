@@ -399,6 +399,7 @@ public class SkuTemplates {
     }
 
     @ApiOperation("异步对货品批量mpos打标")
+    @OperationLogType("异步对货品批量mpos一键打标")
     @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
         log.info("asyncMakeMposFlag params:{} by user id:{}",params,UserUtil.getUserId());

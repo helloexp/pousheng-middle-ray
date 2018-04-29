@@ -1,6 +1,7 @@
 package com.pousheng.middle.open;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import io.terminus.parana.order.component.DefaultPersistedOrderMaker;
 import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSkusByShop;
@@ -33,6 +34,7 @@ public class PsPersistedOrderMaker extends DefaultPersistedOrderMaker {
             shopOrder.setOutId(richSkusByShop.getOuterOrderId());
             shopOrder.setOutCreatedAt(richSkusByShop.getOutCreatedAt());
             shopOrder.setOutFrom(richSkusByShop.getOutFrom());
+            shopOrder.setHandleStatus(OrderWaitHandleType.ORIGIN_STATUS_SAVE.value());
             shopOrder.setBuyerName(richOrder.getBuyer().getName());
             shopOrder.setBuyerId(richOrder.getBuyer().getId());
             shopOrder.setShopId(shop.getId());

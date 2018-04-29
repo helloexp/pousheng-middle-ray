@@ -4,12 +4,15 @@
 
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -42,6 +45,8 @@ public class AutoCreateShipmetsListener {
     private ShipmentWiteLogic shipmentWiteLogic;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @RpcConsumer
+    private MiddleOrderWriteService middleOrderWriteService;
     @Autowired
     private EventBus eventBus;
 
@@ -54,6 +59,14 @@ public class AutoCreateShipmetsListener {
     @AllowConcurrentEvents
     public void onShipment(OpenClientOrderSyncEvent event) {
         log.info("try to auto create shipment,shopOrder id is {}", event.getShopOrderId());
+        //使用乐观锁更新操作
+        Response<Boolean> updateHandleStatusR = middleOrderWriteService
+                .updateHandleStatus(event.getShopOrderId(), String.valueOf(OrderWaitHandleType.WAIT_AUTO_CREATE_SHIPMENT.value()),
+                        String.valueOf(OrderWaitHandleType.ORIGIN_STATUS_SAVE.value()));
+        if (!updateHandleStatusR.isSuccess()) {
+            log.info("update handle status failed,shopOrderId is {},caused by {}", event.getShopOrderId(), updateHandleStatusR.getResult());
+            return;
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(event.getShopOrderId());
         log.info("auto create shipment,step one");
         //天猫订单如果还没有拉取售后地址是不能生成发货单的
@@ -63,17 +76,17 @@ public class AutoCreateShipmetsListener {
             }
         }
         // 如果是Mpos订单，进行派单
-        if(isNeedMposDispatch(shopOrder)){
-            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+        if (isNeedMposDispatch(shopOrder)) {
+            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
-            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
-        }else{
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
+        } else {
             //如果是京东货到付款，默认展示京东快递
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())){
+                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
                 Map<String, String> extraMap = shopOrder.getExtra();
                 extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
-                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME,"京东快递");
+                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME, "京东快递");
                 Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
                 if (!rltRes.isSuccess()) {
                     log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
@@ -85,11 +98,12 @@ public class AutoCreateShipmetsListener {
 
     /**
      * 是否需要用mpos派单逻辑
+     *
      * @return 是否
      */
-    private Boolean isNeedMposDispatch(ShopOrder shopOrder){
+    private Boolean isNeedMposDispatch(ShopOrder shopOrder) {
 
-        if(shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+        if (shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)) {
             return Boolean.TRUE;
         }
         return Boolean.FALSE;

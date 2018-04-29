@@ -31,7 +31,7 @@ import java.util.Map;
  */
 @Slf4j
 @Service
-public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
+public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
     @Autowired
     private MiddleOrderManager middleOrderManager;
     @Autowired
@@ -55,32 +55,32 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
     @Override
-    public Response<Boolean> updateOrderStatusAndSkuQuantities(ShopOrder shopOrder,List<SkuOrder> skuOrders, OrderOperation operation) {
-        try{
+    public Response<Boolean> updateOrderStatusAndSkuQuantities(ShopOrder shopOrder, List<SkuOrder> skuOrders, OrderOperation operation) {
+        try {
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder,skuOrders,operation);
+            middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, operation);
             return Response.ok();
 
-        }catch (ServiceException e1){
-            log.error("failed to update order.cause:{}",Throwables.getStackTraceAsString(e1));
+        } catch (ServiceException e1) {
+            log.error("failed to update order.cause:{}", Throwables.getStackTraceAsString(e1));
             return Response.fail(e1.getMessage());
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("failed to update order, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }
     }
 
     @Override
-    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation,String skuCode) {
-        try{
+    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode) {
+        try {
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAndSkuQuantitiesForSku(shopOrder,skuOrders,skuOrder,cancelOperation,waitHandleOperation,skuCode);
+            middleOrderManager.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrders, skuOrder, cancelOperation, waitHandleOperation, skuCode);
             return Response.ok();
 
-        }catch (ServiceException e1){
-            log.error("failed to update order.cause:{}",Throwables.getStackTraceAsString(e1));
+        } catch (ServiceException e1) {
+            log.error("failed to update order.cause:{}", Throwables.getStackTraceAsString(e1));
             return Response.fail(e1.getMessage());
-        } catch (Exception e){
+        } catch (Exception e) {
             log.error("failed to update order, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }
@@ -88,26 +88,26 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
 
     @Override
     public Response<Boolean> updateSkuOrderCodeAndSkuId(long skuId, String skuCode, long id) {
-        try{
+        try {
             SkuOrderExt skuOrderExt = new SkuOrderExt();
             skuOrderExt.setId(id);
             skuOrderExt.setSkuId(skuId);
             skuOrderExt.setSkuCode(skuCode);
             boolean result = skuOrderExtDao.updateSkuCodeAndSkuIdById(skuOrderExt);
-            if (!result){
-                log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({})",id,skuId,skuCode);
+            if (!result) {
+                log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({})", id, skuId, skuCode);
                 return Response.fail("update.sku.order.failed");
             }
             return Response.ok();
-        }catch (Exception e){
-            log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}",id,skuId,skuCode,e.getCause());
+        } catch (Exception e) {
+            log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}", id, skuId, skuCode, e.getCause());
             return Response.fail("update.sku.order.failed");
         }
     }
 
     @Override
-    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String,Object> receiverInfoMap,String buyerNote) {
-        try{
+    public Response<Boolean> updateReceiveInfos(long shopOrderId, Map<String, Object> receiverInfoMap, String buyerNote) {
+        try {
             List<OrderReceiverInfo> receiverInfos = orderReceiverInfoDao.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
             OrderReceiverInfo orderReceiverInfo = receiverInfos.get(0);
             //获取初始的receviceInfo的json信息
@@ -119,21 +119,20 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
             //将合并的map转化为json
             orderReceiverInfo.setReceiverInfoJson(objectMapper.writeValueAsString(originReceiverMap));
             //在一个事务中更新收货信息,买家备注
-            middleOrderManager.updateReceiverInfoAndBuyerNote(shopOrderId,orderReceiverInfo,buyerNote);
+            middleOrderManager.updateReceiverInfoAndBuyerNote(shopOrderId, orderReceiverInfo, buyerNote);
 
             return Response.ok();
-        }catch (ServiceException e){
-            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
+        } catch (ServiceException e) {
+            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={})", shopOrderId, buyerNote);
             return Response.fail(e.getMessage());
-        }
-        catch (Exception e){
-            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
+        } catch (Exception e) {
+            log.error("failed to update orderReceiveInfo failed,(shopOrderId={})),buyerNote(={})", shopOrderId, buyerNote);
             return Response.fail("receiveInfo.update.fail");
         }
     }
 
     @Override
-    public Response<Boolean> updateInvoices(long shopOrderId, Map<String, String> invoicesMap,String title) {
+    public Response<Boolean> updateInvoices(long shopOrderId, Map<String, String> invoicesMap, String title) {
         try {
             List<OrderInvoice> orderInvoices = this.orderInvoiceDao.findByOrderIdAndOrderType(shopOrderId, Integer.valueOf(OrderLevel.SHOP.getValue()));
             OrderInvoice orderInvoice = orderInvoices.get(0);
@@ -183,7 +182,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
     }
 
     @Override
-    public Response<Boolean> updateBuyerInfoOfOrder(Long shopOrderId, String buyerName,String outBuyerId) {
+    public Response<Boolean> updateBuyerInfoOfOrder(Long shopOrderId, String buyerName, String outBuyerId) {
         try {
             ShopOrderExt shopOrderExt = new ShopOrderExt();
             shopOrderExt.setId(shopOrderId);
@@ -203,13 +202,13 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
 
     @Override
     public Response<Boolean> updateMobileByShopOrderId(Long shopOrderId, String outBuyerId) {
-        try{
+        try {
             ShopOrder shopOrder = new ShopOrder();
             shopOrder.setId(shopOrderId);
             shopOrder.setOutBuyerId(outBuyerId);
             shopOrderDao.update(shopOrder);
             return Response.ok(Boolean.TRUE);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
                     outBuyerId, shopOrderId, Throwables.getStackTraceAsString(e));
             return Response.fail("buyer.name.update.fail");
@@ -218,10 +217,10 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
 
     @Override
     public Response<Boolean> updateShopOrder(ShopOrder shopOrder) {
-        try{
+        try {
             shopOrderDao.update(shopOrder);
             return Response.ok(Boolean.TRUE);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
                     shopOrder.getOutId(), shopOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("buyer.name.update.fail");
@@ -230,14 +229,31 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService{
 
     @Override
     public Response<Boolean> updateSkuOrder(SkuOrder skuOrder) {
-        try{
+        try {
             skuOrderDao.update(skuOrder);
             return Response.ok(Boolean.TRUE);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("fail to update outBuyerId to {} for shopOrder(id={}),cause:{}",
                     skuOrder.getOutId(), skuOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("buyer.name.update.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> updateHandleStatus(Long id, String newHandleStatus, String originHandleStatus) {
+        try {
+            boolean result = shopOrderExtDao.updateHandleStatus(id, newHandleStatus, originHandleStatus);
+            if (result) {
+                return Response.ok(Boolean.TRUE);
+            } else {
+                return Response.fail("new.handle.status.update.fail");
+            }
+        } catch (Exception e) {
+            log.error("fail to update newhandleStatus to {} for shopOrder(id={}),cause:{}",
+                    newHandleStatus, id, Throwables.getStackTraceAsString(e));
+            return Response.fail("handle.status.update.fail");
+        }
+    }
+
 
 }

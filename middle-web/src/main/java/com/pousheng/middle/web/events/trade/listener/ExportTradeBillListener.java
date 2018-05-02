@@ -242,8 +242,8 @@ public class ExportTradeBillListener {
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
-                    export.setMaterialCode(getMaterialCode(skuOrder,querySkuCodes));
-
+                    export.setMaterialCode(getMaterialCode(skuOrder.getSkuCode(),querySkuCodes));
+                    export.setItemNo(Optional.ofNullable(skuOrder.getSkuCode()).orElse("")); //货品条码
                     if (null != skuOrder.getSkuAttrs()) {
                         skuOrder.getSkuAttrs().forEach(attr -> {
                             switch (attr.getAttrKey()) {
@@ -352,6 +352,7 @@ public class ExportTradeBillListener {
                             }
                         }
                     }
+                    ArrayList<String> querySkuCodes = Lists.newArrayList();
 
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
@@ -362,6 +363,7 @@ public class ExportTradeBillListener {
                         export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                         export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                        export.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                         export.setItemNo(item.getSkuCode());
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
@@ -398,15 +400,15 @@ public class ExportTradeBillListener {
         exportService.saveToDiskAndCloud(new ExportContext(refundExportData),userId);
     }
 
-    private String getMaterialCode(SkuOrder skuOrder,List<String> querySkuCodes){
+    private String getMaterialCode(String skuCode,List<String> querySkuCodes){
         querySkuCodes.clear();
-        if (StringUtils.isEmpty(skuOrder.getSkuCode())){
+        if (StringUtils.isEmpty(skuCode)){
             return "";//skuCode为空的
         }
-        querySkuCodes.add(skuOrder.getSkuCode());
+        querySkuCodes.add(skuCode);
         Response<List<SkuTemplate>> response = skuTemplateReadService.findBySkuCodes(querySkuCodes);
         if (!response.isSuccess()){
-            log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuOrder.getSkuCode(), response.getError());
+            log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuCode, response.getError());
             throw new JsonResponseException(response.getError());
         } else {
             return response.getResult().get(0).getExtra().getOrDefault("materialCode","");
@@ -453,6 +455,8 @@ public class ExportTradeBillListener {
                     throw new JsonResponseException(receiverResponse.getError());
                 }
 
+                ArrayList<String> querySkuCodes = Lists.newArrayList();
+
                 shipmentReadLogic.getShipmentItems(shipmentContext.getShipment()).forEach(item -> {
                     ShipmentExportEntity entity = new ShipmentExportEntity();
 
@@ -473,6 +477,7 @@ public class ExportTradeBillListener {
                     entity.setWarehouseName(shipmentExtra.getWarehouseName());
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
+                    entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                     entity.setItemNo(item.getSkuCode());
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());

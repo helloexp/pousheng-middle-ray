@@ -90,6 +90,11 @@ public class OrderExportEntity {
      */
     @ExportTitle("货号")
     private String materialCode;
+    /**
+     * 货品条码
+     */
+    @ExportTitle("货品条码")
+    private String itemNo;
 
     /**
      * 尺码

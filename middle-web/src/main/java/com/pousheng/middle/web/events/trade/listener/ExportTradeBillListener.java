@@ -400,7 +400,7 @@ public class ExportTradeBillListener {
 
     private String getMaterialCode(SkuOrder skuOrder,List<String> querySkuCodes){
         querySkuCodes.clear();
-        if (Objects.isNull(skuOrder.getSkuCode())){
+        if (StringUtils.isEmpty(skuOrder.getSkuCode())){
             return "";//skuCode为空的
         }
         querySkuCodes.add(skuOrder.getSkuCode());

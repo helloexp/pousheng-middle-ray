@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -22,6 +23,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -84,6 +86,7 @@ public class ExportTradeBillListener {
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
+    private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -208,6 +211,7 @@ public class ExportTradeBillListener {
                     }
                 }
 
+                ArrayList<String> querySkuCodes = Lists.newArrayList();
                 skuOrders.get(orderID).forEach(skuOrder -> {
                     OrderExportEntity export = new OrderExportEntity();
                     export.setOrderID(skuOrder.getOrderId());
@@ -238,7 +242,7 @@ public class ExportTradeBillListener {
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
-                    export.setItemID(skuOrder.getItemId());
+                    export.setMaterialCode(getMaterialCode(skuOrder,querySkuCodes));
 
                     if (null != skuOrder.getSkuAttrs()) {
                         skuOrder.getSkuAttrs().forEach(attr -> {
@@ -394,6 +398,19 @@ public class ExportTradeBillListener {
         exportService.saveToDiskAndCloud(new ExportContext(refundExportData),userId);
     }
 
+    private String getMaterialCode(SkuOrder skuOrder,List<String> querySkuCodes){
+        querySkuCodes.clear();
+        querySkuCodes.add(skuOrder.getSkuCode());
+        Response<List<SkuTemplate>> response = skuTemplateReadService.findBySkuCodes(querySkuCodes);
+        if (!response.isSuccess()){
+            log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuOrder.getSkuCode(), response.getError());
+            throw new JsonResponseException(response.getError());
+        } else {
+            return response.getResult().get(0).getExtra().get("materialCode");
+        }
+
+
+    }
     private void shipmentExport(OrderShipmentCriteria criteria,Long userId) {
         //判断查询的发货单类型
         if (Objects.equals(criteria.getType(), ShipmentType.EXCHANGE_SHIP.value())) {

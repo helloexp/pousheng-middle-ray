@@ -37,6 +37,10 @@ public class RefundExportEntity {
     @ExportTitle("状态")
     private String status;
 
+
+    @ExportTitle("货号")
+    private String materialCode;
+
     @ExportTitle("货品条码")
     private String itemNo;
 

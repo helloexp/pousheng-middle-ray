@@ -400,13 +400,16 @@ public class ExportTradeBillListener {
 
     private String getMaterialCode(SkuOrder skuOrder,List<String> querySkuCodes){
         querySkuCodes.clear();
+        if (Objects.isNull(skuOrder.getSkuCode())){
+            return "";//skuCode为空的
+        }
         querySkuCodes.add(skuOrder.getSkuCode());
         Response<List<SkuTemplate>> response = skuTemplateReadService.findBySkuCodes(querySkuCodes);
         if (!response.isSuccess()){
             log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuOrder.getSkuCode(), response.getError());
             throw new JsonResponseException(response.getError());
         } else {
-            return response.getResult().get(0).getExtra().get("materialCode");
+            return response.getResult().get(0).getExtra().getOrDefault("materialCode","");
         }
 
 

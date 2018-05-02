@@ -22,9 +22,9 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <parana.version>4.8.8.MIDDLE-SNAPSHOT</parana.version>
+        <parana.version>4.8.9.MIDDLE-SNAPSHOT</parana.version>
         <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
-        <open-client.version>1.2-SNAPSHOT</open-client.version>
+        <open-client.version>1.2.1-SNAPSHOT</open-client.version>
         <guava.version>19.0</guava.version>
         <spring-boot.version>1.5.3.RELEASE</spring-boot.version>
         <apache-poi.version>3.16</apache-poi.version>

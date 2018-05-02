@@ -39,6 +39,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -59,6 +60,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
 
 
 /**
@@ -134,6 +136,9 @@ public class Shipments {
     private SkuOrderReadService skuOrderReadService;
     @Autowired
     private OrderShipmentWriteService orderShipmentWriteService;
+
+    @Autowired
+    private ShopCacher shopCacher;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -1434,5 +1439,82 @@ public class Shipments {
         }catch (Exception e){
             return null;
         }
+    }
+
+    /**
+     * 一次性修复全部的数据
+     * @return
+     */
+    @ApiOperation("修复发货仓库对应的店铺ID数据(一次更新全部)")
+    @RequestMapping(value = "api/shipment/batch/update/shipId", method = RequestMethod.GET)
+    public Response<Boolean> batchFixShipId() {
+
+        log.info("******begin batch fix shipment`s shipId******");
+
+        int pageNo = 1;
+        int pageSize = 5000;
+        try {
+            while (true) {
+
+                Response<Paging<Shipment>> response = shipmentReadService.pagingByShipId(pageNo, pageSize, null);
+                if (response.isSuccess()) {
+
+                    if (response.getResult().getData().size() == 0) {
+                        break;
+                    }
+                    Stream<Shipment> afterFiler = response.getResult().getData().stream().filter(item -> null == item.getShipId());
+
+                    afterFiler.parallel().forEach(shipment -> {
+                        if (! CollectionUtils.isEmpty(shipment.getExtra()) && shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO) != null) {
+
+                            Integer wareHouserId = (Integer) JSON_MAPPER.fromJson(shipment.getExtra().get(TradeConstants.SHIPMENT_EXTRA_INFO), Map.class).get("warehouseId");
+
+                            if (!StringUtils.isEmpty(shipment.getShipWay()) && Objects.equals(shipment.getShipWay(), 2) ) { //存在并且为仓发设置为仓库ID
+                                shipment.setShipId(wareHouserId == null ? null: Long.valueOf(wareHouserId));
+                            } else if (!StringUtils.isEmpty(shipment.getShipWay()) && Objects.equals(shipment.getShipWay(), 1) ) {
+                                //店仓发货，根据发货仓库id查找对应的店铺信息
+                                if (!StringUtils.isEmpty(wareHouserId)){
+                                    try {
+                                        Long shopId = getShipIdByDeliverId(Long.valueOf(wareHouserId));
+                                        shipment.setShipId(shopId);
+                                    } catch (Exception e){
+                                        log.error("find paranaShops is error,the wareHouserId:{}", wareHouserId);
+                                    }
+
+                                }
+                            }
+                            if (shipment.getShipId() != null){
+                               Response result = shipmentWriteService.updateShipId(shipment.getId(), shipment.getShipId());
+                               if (!result.isSuccess()){
+                                   log.error("update shipment ship id to:{} by shipment id:{} fail,error:{}",
+                                           shipment.getShipId(),shipment.getId(),result.getError());
+                               }
+                            }
+                        }
+                    });
+                    pageNo++;
+                } else {
+                    throw new JsonResponseException("can`t find shipment,shipment.update.fail");
+                }
+            }
+            log.info("******end fix shipment`s shipId******");
+            return Response.ok(true);
+        } catch (Exception e) {
+            log.error("failed to batch update, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.update.fail");
+        }
+
+    }
+
+    /**
+     * 查找店发时，店仓对应的店铺id
+     * @param deliverShopId
+     * @returnshipID
+     *
+     */
+    private Long getShipIdByDeliverId(Long deliverShopId) {
+        Shop shop = shopCacher.findShopById(deliverShopId);
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+        return shopExtraInfo != null ? shopExtraInfo.getOpenShopId(): null ;
     }
 }

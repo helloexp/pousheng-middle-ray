@@ -68,7 +68,7 @@ import javax.annotation.PostConstruct;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-
+import io.terminus.parana.cache.ShopCacher;
 /**
  * 发货单写服务
  * Created by songrenfei on 2017/7/2
@@ -148,6 +148,10 @@ public class ShipmentWiteLogic {
 
     @Value("${pousheng.order.email.confirm.group}")
     private String[] mposEmailGroup;
+
+    @Autowired
+    private ShopCacher shopCacher;
+
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
 
@@ -646,6 +650,8 @@ public class ShipmentWiteLogic {
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
         //仓发
         shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));
+        //设置发货仓id
+        shipment.setShipId(warehouseId);
         //发货仓库信息
         Warehouse warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
@@ -720,6 +726,8 @@ public class ShipmentWiteLogic {
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
         shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_SHOP_DELIVER));
+        //店发设置仓库对应的店铺id
+        Long shipId = getShipIdByDeliverId(deliverShopId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
@@ -762,6 +770,19 @@ public class ShipmentWiteLogic {
 
         return shipment;
     }
+
+    /**
+     * 查找店发时，店仓对应的店铺id
+     * @param deliverShopId
+     * @returnshipID
+     *
+     */
+    private Long getShipIdByDeliverId(Long deliverShopId) {
+        Shop shop = shopCacher.findShopById(deliverShopId);
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+        return shopExtraInfo != null ? shopExtraInfo.getOpenShopId(): null ;
+    }
+
 
 
     /**

@@ -235,6 +235,7 @@ public class ExportTradeBillListener {
                     }else{
                         export.setPerformanceShopCode("");
                     }
+                    export.setOutId(shopOrder.getOutId());
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());

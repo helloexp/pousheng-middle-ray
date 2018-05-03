@@ -17,18 +17,18 @@ public interface WarehouseReadService {
 
     /**
      * 根据id查询仓库
-     * @param Id 主键id
+     * @param id 主键id
      * @return 仓库
      */
-    Response<Warehouse> findById(Long Id);
+    Response<Warehouse> findById(Long id);
 
 
     /**
      * 根据ids查询仓库集合
-     * @param Ids 主键ids
+     * @param ids 主键ids
      * @return 仓库
      */
-    Response<List<Warehouse>> findByIds(List<Long> Ids);
+    Response<List<Warehouse>> findByIds(List<Long> ids);
 
     /**
      * 仓库列表
@@ -65,4 +65,19 @@ public interface WarehouseReadService {
      * @return 仓库列表
      */
     Response<Paging<Warehouse>> pagingByOutCodeOrName(Integer pageNo, Integer pageSize,String name);
+
+    /**
+     * 根据外码做模糊查询
+     * @param outCodeList 仓库外码
+     * @return 仓库列表
+     */
+    Response<List<String>> findByOutCode(List<String> outCodeList);
+
+
+    /**
+     * 根据外码做模糊查询仓库列表
+     * @param outCodeList 仓库外码
+     * @return 仓库列表
+     */
+    Response<List<Warehouse>> findWarehouseListByOutCode(List<String> outCodeList);
 }

@@ -35,10 +35,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -135,9 +132,9 @@ public class StockPusher {
                 });
     }
 
-    //todo: 可能的优化: 只需要推送本次仓库影响的店铺范围
     public void submit(List<String> skuCodes) {
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
+        final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
         for (String skuCode : skuCodes) {
             try {
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
@@ -154,7 +151,7 @@ public class StockPusher {
                     try {
                         //计算每个店铺的可用库存
                         Long stock = availableStockCalc.availableStock(shopId, skuCode);
-                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}",skuCode,shopId,stock);
+                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
                         Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
                         if (!rShopStockRule.isSuccess()) {
                             log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
@@ -182,7 +179,7 @@ public class StockPusher {
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                         } else {
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                            this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
+                            this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName(), thirdStockPushLogs);
                         }
 
 
@@ -191,8 +188,8 @@ public class StockPusher {
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));
                     }
                 }
-            }catch (Exception e){
-                log.error("failed to push stock,sku is {}",skuCode);
+            } catch (Exception e) {
+                log.error("failed to push stock,sku is {}", skuCode);
             }
         }
         //官网批量推送
@@ -207,7 +204,7 @@ public class StockPusher {
                     paranaSkuStock.setStock(skuStockMap.get(skuCode));
                     paranaSkuStocks.add(paranaSkuStock);
                 }
-                log.info("search sku stock by shopId  is {},paranaSkuStocks is {}",shopId,paranaSkuStocks);
+                log.info("search sku stock by shopId  is {},paranaSkuStocks is {}", shopId, paranaSkuStocks);
                 Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
                 if (!r.isSuccess()) {
                     log.error("failed to push stocks {} to shop(id={}), error code{}",
@@ -215,33 +212,36 @@ public class StockPusher {
                 }
                 //添加日志到缓存中
                 List<StockPushLog> stockPushLogs = Lists.newArrayList();
-                for (ParanaSkuStock paranaSkuStock:paranaSkuStocks){
+                for (ParanaSkuStock paranaSkuStock : paranaSkuStocks) {
                     StockPushLog stockPushLog = new StockPushLog();
                     stockPushLog.setShopId(shopId);
                     stockPushLog.setShopName(openShopCacher.getUnchecked(shopId).getShopName());
                     stockPushLog.setSkuCode(paranaSkuStock.getSkuCode());
                     stockPushLog.setQuantity((long) paranaSkuStock.getStock());
                     stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
-                    stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(),null,Locale.CHINA));
+                    stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(), null, Locale.CHINA));
+                    stockPushLog.setSyncAt(new Date());
                     stockPushLogs.add(stockPushLog);
                 }
                 redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
 
-            }catch (Exception e){
-                log.error("sync offical stock failed,caused by {}",e.getMessage());
+            } catch (Exception e) {
+                log.error("sync offical stock failed,caused by {}", e.getMessage());
             }
         }
+        //第三方库存推送
+        redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
 
 
     }
 
-    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName) {
+    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName, List<StockPushLog> stockPushLogs) {
         executorService.submit(() -> {
-            Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
+            /*Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
             if (!rP.isSuccess()) {
                 log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
                         skuCode, shopId, rP.getError());
-            }
+            }*/
             log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                     stock.intValue(), skuCode, shopId);
             //异步生成库存推送日志
@@ -250,12 +250,12 @@ public class StockPusher {
             stockPushLog.setShopName(shopName);
             stockPushLog.setSkuCode(skuCode);
             stockPushLog.setQuantity((long) stock.intValue());
-            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
-            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
-            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(Lists.newArrayList(stockPushLog)));
+            stockPushLog.setStatus(1);
+            stockPushLog.setCause("");
+            stockPushLog.setSyncAt(new Date());
+            stockPushLogs.add(stockPushLog);
         });
     }
-
   /*  @PreDestroy
     public void shutdown() {
         this.executorService.shutdown();

@@ -17,6 +17,7 @@ public class StockPushLog {
     private int status;//1.成功,2.失败
     private String cause;
     private Long quantity;
+    private Date syncAt;
     private Date createdAt;
     private Date updatedAt;
 }

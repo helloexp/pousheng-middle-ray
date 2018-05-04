@@ -133,7 +133,10 @@ public class StockPusher {
     }
 
     public void submit(List<String> skuCodes) {
+
+
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
+        //库存推送日志记录
         final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
         for (String skuCode : skuCodes) {
             try {
@@ -211,7 +214,6 @@ public class StockPusher {
                             paranaSkuStocks, shopId, r.getError());
                 }
                 //添加日志到缓存中
-                List<StockPushLog> stockPushLogs = Lists.newArrayList();
                 for (ParanaSkuStock paranaSkuStock : paranaSkuStocks) {
                     StockPushLog stockPushLog = new StockPushLog();
                     stockPushLog.setShopId(shopId);
@@ -221,27 +223,27 @@ public class StockPusher {
                     stockPushLog.setStatus(r.isSuccess() ? 1 : 2);
                     stockPushLog.setCause(r.isSuccess() ? "" : messageSource.getMessage(r.getError(), null, Locale.CHINA));
                     stockPushLog.setSyncAt(new Date());
-                    stockPushLogs.add(stockPushLog);
+                    thirdStockPushLogs.add(stockPushLog);
                 }
-                redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
-
             } catch (Exception e) {
                 log.error("sync offical stock failed,caused by {}", e.getMessage());
             }
         }
-        //第三方库存推送
-        redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
+        //库存日志推送
+        if (!thirdStockPushLogs.isEmpty()) {
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
+        }
 
 
     }
 
     private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName, List<StockPushLog> stockPushLogs) {
         executorService.submit(() -> {
-            /*Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
+            Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
             if (!rP.isSuccess()) {
                 log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
                         skuCode, shopId, rP.getError());
-            }*/
+            }
             log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                     stock.intValue(), skuCode, shopId);
             //异步生成库存推送日志
@@ -256,9 +258,4 @@ public class StockPusher {
             stockPushLogs.add(stockPushLog);
         });
     }
-  /*  @PreDestroy
-    public void shutdown() {
-        this.executorService.shutdown();
-    }*/
-
 }

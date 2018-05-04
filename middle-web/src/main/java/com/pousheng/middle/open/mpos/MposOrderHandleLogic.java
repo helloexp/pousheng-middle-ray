@@ -95,6 +95,7 @@ public class MposOrderHandleLogic {
             case TradeConstants.MPOS_SHIPMENT_REJECT:
                 orderEvent = MiddleOrderEvent.MPOS_REJECT;
                 shipmentExtra.setRejectReason(extra.get(TradeConstants.MPOS_REJECT_REASON));
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 break;
             case TradeConstants.MPOS_SHIPMENT_SHIPPED:
                 orderEvent = MiddleOrderEvent.SHIP;
@@ -129,6 +130,10 @@ public class MposOrderHandleLogic {
         }
         if(Objects.nonNull(update)) {
             shipmentWiteLogic.update(update);
+        }
+        //如果据单，将据单原因更新到发货单扩展字段里
+        if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)) {
+            shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
         }
         if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));

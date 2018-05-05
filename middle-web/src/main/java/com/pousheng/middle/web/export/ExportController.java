@@ -46,7 +46,12 @@ public class ExportController {
     @GetMapping("order/export")
     public void orderExport(MiddleOrderCriteria middleOrderCriteria) {
         //获取当前用户负责的商铺id
-        middleOrderCriteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (middleOrderCriteria.getShopId() == null) {
+            middleOrderCriteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(middleOrderCriteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_ORDER);
         event.setCriteria(middleOrderCriteria);
@@ -62,7 +67,12 @@ public class ExportController {
     @GetMapping("refund/export")
     public void refundExport(MiddleRefundCriteria criteria) {
         //获取当前用户负责的商铺id
-        criteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (criteria.getShopId() == null) {
+            criteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(criteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_REFUND);
         event.setCriteria(criteria);
@@ -79,7 +89,13 @@ public class ExportController {
         if (criteria.getEndAt() != null) {
             criteria.setEndAt(new DateTime(criteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
-        criteria.setShopIds(permissionUtil.getCurrentUserCanOperateShopIDs());
+        //获取当前用户负责的商铺id
+        List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
+        if (criteria.getShopId() == null) {
+            criteria.setShopIds(currentUserCanOperatShopIds);
+        } else if (!currentUserCanOperatShopIds.contains(criteria.getShopId())) {
+            throw new JsonResponseException("permission.check.query.deny");
+        }
         ExportTradeBillEvent event = new ExportTradeBillEvent();
         event.setType(TradeConstants.EXPORT_SHIPMENT);
         event.setCriteria(criteria);

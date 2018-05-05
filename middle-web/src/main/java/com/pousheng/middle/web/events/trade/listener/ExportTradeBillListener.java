@@ -24,6 +24,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.common.model.Criteria;
@@ -90,6 +91,9 @@ public class ExportTradeBillListener {
 
     @RpcConsumer
     private OpenShopReadService openShopReadService;
+
+    @Autowired
+    private OpenShopCacher openShopCacher;
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
     @PostConstruct
     public void init() {
@@ -514,12 +518,7 @@ public class ExportTradeBillListener {
 
     private String getPerformanceShopCode(long shopId){
 
-        Response<OpenShop> openShopRes = openShopReadService.findById(shopId);
-        if(!openShopRes.isSuccess()){
-            log.error("find open shop by id:{} fail,error:{}",shopId,openShopRes.getError());
-            throw new JsonResponseException(openShopRes.getError());
-        }
-        OpenShop openShop = openShopRes.getResult();
+        OpenShop openShop = openShopCacher.findById(shopId);
         return openShop.getExtra().getOrDefault("hkPerformanceShopOutCode", "");
     }
 
@@ -557,4 +556,6 @@ public class ExportTradeBillListener {
         }
         exportService.saveToDiskAndCloud(new ExportContext(posExportEntities),userId);
     }
+
+
 }

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
@@ -23,6 +24,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -41,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
@@ -518,8 +521,23 @@ public class ExportTradeBillListener {
 
     private String getPerformanceShopCode(long shopId){
 
-        OpenShop openShop = openShopCacher.findById(shopId);
-        return openShop.getExtra().getOrDefault("hkPerformanceShopOutCode", "");
+        try {
+
+            OpenShop openShop = openShopCacher.findById(shopId);
+            if(Arguments.isNull(openShop)){
+                return "";
+            }
+            Map<String,String> extra = openShop.getExtra();
+            if(CollectionUtils.isEmpty(extra)){
+                return "";
+            }
+            return extra.getOrDefault("hkPerformanceShopOutCode", "");
+
+        }catch (Exception e){
+            log.error("find OpenShop by id:{}fail,cause:{}",shopId, Throwables.getStackTraceAsString(e));
+            return "";
+        }
+
     }
 
     private void exportSettlementPos(PoushengSettlementPosCriteria criteria,Long userId){

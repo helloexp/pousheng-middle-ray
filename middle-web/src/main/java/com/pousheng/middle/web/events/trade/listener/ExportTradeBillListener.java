@@ -24,6 +24,8 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -86,6 +88,8 @@ public class ExportTradeBillListener {
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
     @PostConstruct
     public void init() {
@@ -230,11 +234,8 @@ public class ExportTradeBillListener {
                     //TODO paytype enum
                     export.setPayType("在线支付");
                     //恒康的绩效店铺代码
-                    if (shopOrder.getExtra()!=null){
-                        export.setPerformanceShopCode(shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE)!=null?shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE):"");
-                    }else{
-                        export.setPerformanceShopCode("");
-                    }
+                    export.setPerformanceShopCode(getPerformanceShopCode(shopOrder.getShopId()));
+
                     export.setOutId(shopOrder.getOutId());
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
@@ -509,6 +510,17 @@ public class ExportTradeBillListener {
             });
         }
         exportService.saveToDiskAndCloud(new ExportContext(shipmentExportEntities),userId);
+    }
+
+    private String getPerformanceShopCode(long shopId){
+
+        Response<OpenShop> openShopRes = openShopReadService.findById(shopId);
+        if(!openShopRes.isSuccess()){
+            log.error("find open shop by id:{} fail,error:{}",shopId,openShopRes.getError());
+            throw new JsonResponseException(openShopRes.getError());
+        }
+        OpenShop openShop = openShopRes.getResult();
+        return openShop.getExtra().getOrDefault("hkPerformanceShopOutCode", "");
     }
 
     private void exportSettlementPos(PoushengSettlementPosCriteria criteria,Long userId){

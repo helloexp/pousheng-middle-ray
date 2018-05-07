@@ -17,6 +17,7 @@ import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -46,7 +47,7 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
 
             //把订单id,订单类型转为退款单id列表
             transformOrderIdAndOrderType(criteria);
-            if (criteria.getOrderCode() != null && CollectionUtils.isEmpty(criteria.getIds())) {
+            if (StringUtils.isNotEmpty(criteria.getOrderCode()) && CollectionUtils.isEmpty(criteria.getIds())) {
                 return Response.ok(Paging.empty());
             }
 

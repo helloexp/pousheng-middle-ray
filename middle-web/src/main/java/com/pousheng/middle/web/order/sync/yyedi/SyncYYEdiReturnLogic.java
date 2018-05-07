@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.dto.HkResponseHead;
 import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
@@ -112,7 +113,7 @@ public class SyncYYEdiReturnLogic {
                 return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (Exception e) {
-            log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
             //更新同步状态
             updateRefundSyncFial(refund);
             return Response.fail("sync.yyedi.refund.fail");
@@ -369,7 +370,7 @@ public class SyncYYEdiReturnLogic {
         } catch (Exception e) {
             //同步调用成功后，更新售后单的状态
             this.updateCancelRefundFailed(refund);
-            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("sync.hk.refund.fail");
         }
     }

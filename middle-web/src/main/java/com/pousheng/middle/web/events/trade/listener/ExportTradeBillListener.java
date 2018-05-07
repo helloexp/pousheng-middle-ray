@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -22,6 +24,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -36,6 +43,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
@@ -84,6 +92,12 @@ public class ExportTradeBillListener {
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
 
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
+
+    @Autowired
+    private OpenShopCacher openShopCacher;
+    private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -208,6 +222,7 @@ public class ExportTradeBillListener {
                     }
                 }
 
+                ArrayList<String> querySkuCodes = Lists.newArrayList();
                 skuOrders.get(orderID).forEach(skuOrder -> {
                     OrderExportEntity export = new OrderExportEntity();
                     export.setOrderID(skuOrder.getOrderId());
@@ -226,11 +241,9 @@ public class ExportTradeBillListener {
                     //TODO paytype enum
                     export.setPayType("在线支付");
                     //恒康的绩效店铺代码
-                    if (shopOrder.getExtra()!=null){
-                        export.setPerformanceShopCode(shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE)!=null?shopOrder.getExtra().get(TradeConstants.ERP_PERFORMANCE_SHOP_CODE):"");
-                    }else{
-                        export.setPerformanceShopCode("");
-                    }
+                    export.setPerformanceShopCode(getPerformanceShopCode(shopOrder.getShopId()));
+
+                    export.setOutId(shopOrder.getOutId());
                     export.setPaymentDate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
@@ -238,8 +251,8 @@ public class ExportTradeBillListener {
                     //TODO 发票信息待完善
                     export.setInvoice("");
                     //TODO 货号可能是其他字段
-                    export.setItemID(skuOrder.getItemId());
-
+                    export.setMaterialCode(getMaterialCode(skuOrder.getSkuCode(),querySkuCodes));
+                    export.setItemNo(Optional.ofNullable(skuOrder.getSkuCode()).orElse("")); //货品条码
                     if (null != skuOrder.getSkuAttrs()) {
                         skuOrder.getSkuAttrs().forEach(attr -> {
                             switch (attr.getAttrKey()) {
@@ -348,6 +361,7 @@ public class ExportTradeBillListener {
                             }
                         }
                     }
+                    ArrayList<String> querySkuCodes = Lists.newArrayList();
 
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
@@ -358,6 +372,7 @@ public class ExportTradeBillListener {
                         export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
 
                         export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                        export.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                         export.setItemNo(item.getSkuCode());
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
@@ -394,6 +409,22 @@ public class ExportTradeBillListener {
         exportService.saveToDiskAndCloud(new ExportContext(refundExportData),userId);
     }
 
+    private String getMaterialCode(String skuCode,List<String> querySkuCodes){
+        querySkuCodes.clear();
+        if (StringUtils.isEmpty(skuCode)){
+            return "";//skuCode为空的
+        }
+        querySkuCodes.add(skuCode);
+        Response<List<SkuTemplate>> response = skuTemplateReadService.findBySkuCodes(querySkuCodes);
+        if (!response.isSuccess()){
+            log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        } else {
+            return response.getResult().get(0).getExtra().getOrDefault("materialCode","");
+        }
+
+
+    }
     private void shipmentExport(OrderShipmentCriteria criteria,Long userId) {
         //判断查询的发货单类型
         if (Objects.equals(criteria.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
@@ -433,6 +464,8 @@ public class ExportTradeBillListener {
                     throw new JsonResponseException(receiverResponse.getError());
                 }
 
+                ArrayList<String> querySkuCodes = Lists.newArrayList();
+
                 shipmentReadLogic.getShipmentItems(shipmentContext.getShipment()).forEach(item -> {
                     ShipmentExportEntity entity = new ShipmentExportEntity();
 
@@ -453,6 +486,7 @@ public class ExportTradeBillListener {
                     entity.setWarehouseName(shipmentExtra.getWarehouseName());
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
+                    entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                     entity.setItemNo(item.getSkuCode());
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
@@ -483,6 +517,27 @@ public class ExportTradeBillListener {
             });
         }
         exportService.saveToDiskAndCloud(new ExportContext(shipmentExportEntities),userId);
+    }
+
+    private String getPerformanceShopCode(long shopId){
+
+        try {
+
+            OpenShop openShop = openShopCacher.findById(shopId);
+            if(Arguments.isNull(openShop)){
+                return "";
+            }
+            Map<String,String> extra = openShop.getExtra();
+            if(CollectionUtils.isEmpty(extra)){
+                return "";
+            }
+            return extra.getOrDefault("hkPerformanceShopOutCode", "");
+
+        }catch (Exception e){
+            log.error("find OpenShop by id:{}fail,cause:{}",shopId, Throwables.getStackTraceAsString(e));
+            return "";
+        }
+
     }
 
     private void exportSettlementPos(PoushengSettlementPosCriteria criteria,Long userId){
@@ -519,4 +574,6 @@ public class ExportTradeBillListener {
         }
         exportService.saveToDiskAndCloud(new ExportContext(posExportEntities),userId);
     }
+
+
 }

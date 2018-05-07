@@ -33,7 +33,7 @@ public class PoushengSettlementPosCriteria extends PagingCriteria implements Ser
     /**
      * 订单主键
      */
-    private Long orderId;
+    private String orderId;
 
     /**
      * 店铺主键

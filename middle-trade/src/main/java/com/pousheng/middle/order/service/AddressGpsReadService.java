@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.service;
 
+import com.google.common.base.Optional;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import io.terminus.common.model.Response;
@@ -22,7 +23,7 @@ public interface AddressGpsReadService {
     Response<AddressGps> findById(Long Id);
 
 
-    Response<AddressGps> findByBusinessIdAndType(Long businessId,AddressBusinessType type);
+    Response<Optional<AddressGps>> findByBusinessIdAndType(Long businessId, AddressBusinessType type);
 
     /**
      * 根据省id和业务类型查询对应的门店或仓库的定位信息

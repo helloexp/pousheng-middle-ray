@@ -68,7 +68,6 @@ public class RealTimeIndexer {
                     String stockJson = customer.pop();
                     //弹出一个元素
                     if (!Strings.isNullOrEmpty(stockJson)) {
-                        log.info("stockPushLogJson==================================" + stockJson);
                         doProcess(stockJson);
                     } else {
                         Thread.sleep(100000);

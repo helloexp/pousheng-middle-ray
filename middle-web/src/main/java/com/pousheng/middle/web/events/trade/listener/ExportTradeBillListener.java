@@ -437,7 +437,20 @@ public class ExportTradeBillListener {
                     ShipmentExportEntity entity = new ShipmentExportEntity();
 
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipmentContext.getShipment());
-
+                   //发货方式
+                    if(null!=shipmentContext.getShipment().getShipWay()){
+                        String shipWay="";
+                        if (shipmentContext.getShipment().getShipWay()==1){
+                            shipWay="店发";
+                        }
+                        if (shipmentContext.getShipment().getShipWay()==2){
+                            shipWay="仓发";
+                        }
+                        //发货方式
+                        entity.setShipWay(shipWay);
+                    }
+                    //发货方
+                    entity.setWarehouseName(shipmentExtra.getWarehouseName());
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
                     entity.setItemNo(item.getSkuCode());

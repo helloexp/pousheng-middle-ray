@@ -294,6 +294,14 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     @JsonProperty(value = "Channel")
     private String Channel;
 
+
+    /**
+     * 下单店铺公司码
+     */
+    @JsonProperty(value = "ShopCompanyCode")
+    private String ShopCompanyCode;
+
+
     /**
      * 明细
      */
@@ -710,6 +718,14 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     @JsonIgnore
     public void setChannel(String channel) {
         Channel = channel;
+    }
+    @JsonIgnore
+    public String getShopCompanyCode() {
+        return ShopCompanyCode;
+    }
+    @JsonIgnore
+    public void setShopCompanyCode(String shopCompanyCode) {
+        ShopCompanyCode = shopCompanyCode;
     }
 
     public List<YYEdiShipmentItem> getItems() {

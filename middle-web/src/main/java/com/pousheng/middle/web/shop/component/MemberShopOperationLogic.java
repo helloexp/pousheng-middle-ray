@@ -2,6 +2,7 @@ package com.pousheng.middle.web.shop.component;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.gd.Location;
@@ -14,17 +15,20 @@ import com.pousheng.middle.shop.enums.MemberFromType;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.web.shop.dto.MemberCenterAddressDto;
+import com.pousheng.middle.web.shop.dto.Zone;
 import com.pousheng.middle.web.user.component.MemberCenterClient;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -67,6 +71,28 @@ public class MemberShopOperationLogic {
         }
         return resp.getResult();
     }
+
+
+    /**
+     * 区部查询
+     *
+     * @param criteria 查询条件
+     * @return 区部信息
+     */
+    public Response<Paging<Zone>> findZone(Map<String, String> criteria) {
+        try {
+            String result = mcClient.doGet("/api/member/pousheng/zone/list", criteria);
+            Paging paging = convertStringToPaging(result);
+            String listData = convertListToString(paging.getData());
+            return Response.ok(new Paging<>(paging.getTotal()
+                    , jsonToObject(listData, new TypeReference<List<Zone>>() {})));
+        }catch (Exception e) {
+            log.error("failed to find zone by criteria = {}, cause: {}"
+                    , criteria, Throwables.getStackTraceAsString(e));
+            return Response.fail("find.zone.failed");
+        }
+    }
+
 
     /**
      * 服务店铺查询
@@ -164,12 +190,15 @@ public class MemberShopOperationLogic {
     /**
      * Modify by lt 增加店铺类型判断 types 1:店铺 3:店柜
      */
-    public List<MemberShop> findShopByCodeAndType(String code,Integer type) {
+    public List<MemberShop> findShopByCodeAndTypeAndZoneId(String code,Integer type,String zoneIds) {
         Map<String, String> criteria = new HashMap<>();
         criteria.put("storeCode", code);
         Integer pageNo = 1;
         criteria.put("pageNo", pageNo+"");
         criteria.put("openStateList", "0,1,2");
+        if(!Strings.isNullOrEmpty(zoneIds)){
+            criteria.put("zoneIds", zoneIds);
+        }
         criteria.put("types", type+"");
         Response<Paging<MemberShop>> resp = findSrvShop(criteria);
         if (!resp.isSuccess()) {
@@ -186,12 +215,12 @@ public class MemberShopOperationLogic {
      * @param type  类型
      * @param companyId 公司ID
      */
-    public MemberShop findShopByCodeAndType(String code,Integer type,String companyId) {
+    public Optional<MemberShop> findShopByCodeAndType(String code,Integer type,String companyId) {
         Map<String, String> criteria = new HashMap<>();
         criteria.put("storeCode", code);
         Integer pageNo = 1;
         criteria.put("pageNo", pageNo+"");
-        criteria.put("status", 1+"");
+        criteria.put("openStateList", "0,1,2");
         criteria.put("types", type+"");
         criteria.put("companyId",companyId);
         Response<Paging<MemberShop>> resp = findSrvShop(criteria);
@@ -200,7 +229,10 @@ public class MemberShopOperationLogic {
             throw new JsonResponseException(resp.getError());
         }
         Paging<MemberShop> paging = resp.getResult();
-        return paging.getData().get(0);
+        if(Objects.equal(paging.getTotal(),0L)){
+            return Optional.absent();
+        }
+        return Optional.of(paging.getData().get(0));
     }
 
 
@@ -244,6 +276,7 @@ public class MemberShopOperationLogic {
         log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
         WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
         if(Arguments.isNull(province)){
+            log.error("not find middle province by code:{} and name:{}",addressDto.getProvinceCode(),addressDto.getProvinceName());
             return null;
         }
         addressGps.setProvinceId(province.getId());
@@ -252,7 +285,13 @@ public class MemberShopOperationLogic {
         //市
         WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
         if(Arguments.isNull(city)){
-            return null;
+            log.error("not find middle city by code:{} and name:{}",addressDto.getCityCode(),addressDto.getCityName());
+            //如果根据id 查询不到则用pid和name查询
+            city = transToWarehouseAddress(province.getId(),addressDto.getCityName());
+            if(Arguments.isNull(city)){
+                log.error("not find middle city by pid:{} and name:{}",province.getId(),addressDto.getCityName());
+                return null;
+            }
         }
         addressGps.setCityId(city.getId());
         addressGps.setCity(city.getName());
@@ -260,7 +299,13 @@ public class MemberShopOperationLogic {
         //区
         WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
         if(Arguments.isNull(region)){
-            return null;
+            log.error("not find middle region by code:{} and name:{}",addressDto.getAreaCode(),addressDto.getAreaName());
+            //如果根据id 查询不到则用pid和name查询
+            region = transToWarehouseAddress(city.getId(),addressDto.getAreaName());
+            if(Arguments.isNull(region)){
+                log.error("not find middle region by pid:{} and name:{}",city.getId(),addressDto.getAreaName());
+                return null;
+            }
         }
         addressGps.setRegionId(region.getId());
         addressGps.setRegion(region.getName());
@@ -334,6 +379,26 @@ public class MemberShopOperationLogic {
             return null;
         }catch (Exception e){
             log.error("check is matching warehouse address by code:{} name:{} fail,cause:{}",code,name, Throwables.getStackTraceAsString(e));
+            return null;
+        }
+
+    }
+
+
+    //将会员中心的地址与中台地址做比较，转换为中台的地址
+    private WarehouseAddress transToWarehouseAddress(Long pid,String name){
+        try {
+            Optional<WarehouseAddress> addressOptional = warehouseAddressCacher.findByPidAndName(pid,name);
+            if(!addressOptional.isPresent()){
+                log.error("[QUERY-MIDDLE-ADDRESS] by pid:{} name:{} not find",pid,name);
+                return null;
+            }
+            return addressOptional.get();
+        }catch (ServiceException e){
+            log.error("check is matching warehouse address by pid:{} name:{} fail,error:{}",pid,name, e.getMessage());
+            return null;
+        }catch (Exception e){
+            log.error("check is matching warehouse address by pid:{} name:{} fail,cause:{}",pid,name, Throwables.getStackTraceAsString(e));
             return null;
         }
 

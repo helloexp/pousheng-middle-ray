@@ -18,7 +18,6 @@ import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -106,6 +105,7 @@ public class WarehouseImporter {
             if(!CollectionUtils.isEmpty(extra)){
                 if(extra.containsKey(TradeConstants.WAREHOUSE_SAFESTOCK)){
                     w.getExtra().put(TradeConstants.WAREHOUSE_SAFESTOCK,extra.get(TradeConstants.WAREHOUSE_SAFESTOCK));
+                    w.setExtra(w.getExtra());
                 }
             }
             w.setId(exist.getId());
@@ -174,19 +174,21 @@ public class WarehouseImporter {
         warehouseAddressTransverter.complete(addressGps);
 
         if(isUpdate){
-            Response<AddressGps> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId,AddressBusinessType.WAREHOUSE);
+            Response<Optional<AddressGps>> addressGpsRes = addressGpsReadService.findByBusinessIdAndType(warehouseId,AddressBusinessType.WAREHOUSE);
             if(!addressGpsRes.isSuccess()){
                 log.error("find address gps by warehouse id:{} fail,error:{}",warehouseId,addressGpsRes.getError());
-                //如果没找到则新建（旧数据）
-                if(Objects.equal(addressGpsRes.getError(),"address.gps.not.found")){
-                    Response<Long> response = addressGpsWriteService.create(addressGps);
-                    if(!response.isSuccess()){
-                        log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
-                    }
-                    return;
-                }
+                return;
             }
-            AddressGps existAddressGps = addressGpsRes.getResult();
+
+            if(!addressGpsRes.getResult().isPresent()){
+                Response<Long> response = addressGpsWriteService.create(addressGps);
+                if(!response.isSuccess()){
+                    log.error("create address gps for old data, warehouse id:{} fail,error:{}",warehouseId,response.getError());
+                }
+                return;
+            }
+
+            AddressGps existAddressGps = addressGpsRes.getResult().get();
             addressGps.setId(existAddressGps.getId());
             Response<Boolean> response = addressGpsWriteService.update(addressGps);
             if(!response.isSuccess()){
@@ -195,7 +197,6 @@ public class WarehouseImporter {
         }else {
             Response<Long> response = addressGpsWriteService.create(addressGps);
             if(!response.isSuccess()){
-
                 log.error("create address gps for warehouse id:{} fail,error:{}",warehouseId,response.getError());
             }
         }

@@ -69,7 +69,7 @@ public class TaobaoConfirmRefundListener {
             }
         }
         //苏宁渠道
-        if (Objects.equals(event.getChannel(),MiddleChannel.SUNING.getValue())){
+        if (Objects.equals(event.getChannel(),MiddleChannel.SUNING.getValue()) || Objects.equals(event.getChannel(),MiddleChannel.SUNINGSALE.getValue())){
             OpenClientAfterSaleService afterSaleService = this.afterSaleServiceRegistryCenter.getAfterSaleService(MiddleChannel.SUNING.getValue());
             Response<Pagination<OpenClientAfterSale>> r =  afterSaleService.findByOrderId(Long.valueOf(event.getOpenShopId()),event.getOpenOrderId());
             if (!r.isSuccess()){

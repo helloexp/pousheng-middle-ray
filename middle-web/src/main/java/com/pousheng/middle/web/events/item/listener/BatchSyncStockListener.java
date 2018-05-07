@@ -14,6 +14,7 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.item.BatchSyncStockEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
@@ -36,8 +37,6 @@ public class BatchSyncStockListener {
 
     @Autowired
     private EventBus eventBus;
-    @Autowired
-    private WarehouseCacher warehouseCacher;
 
     @RpcConsumer
     private WarehouseSkuWriteService warehouseSkuWriteService;
@@ -45,9 +44,7 @@ public class BatchSyncStockListener {
     @Autowired
     private StockPusher stockPusher;
 
-    private static final TypeReference<List<ErpStock>> LIST_OF_ERP_STOCK = new TypeReference<List<ErpStock>>() {};
 
-    private static final DateTimeFormatter dft = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
 
 
@@ -60,17 +57,14 @@ public class BatchSyncStockListener {
     @AllowConcurrentEvents
     public void onBatchSyncStockEvent(BatchSyncStockEvent event){
 
-        Integer total = event.getTotal();
-        String data = event.getData();
-        log.debug("batch sync stock to middle start ,total:{}",total);
+        log.debug("batch sync stock to middle start ,total:{}",event);
 
+        List<StockDto> stockDtos = event.getStockDtos();
         try {
-            List<ErpStock> erpStocks = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(data, LIST_OF_ERP_STOCK);
-            List<StockDto> stockDtos = make(erpStocks);
             Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
             if(!r.isSuccess()){
-                log.error("failed to sync {} stocks, data:{}, error code:{}", total, data, r.getError());
-                throw new OPServerException(200,r.getError());
+                log.error("failed to stocks, data:{},error:{}", stockDtos, r.getError());
+                return;
             }
             //触发库存推送
             List<String> skuCodes = Lists.newArrayList();
@@ -79,8 +73,7 @@ public class BatchSyncStockListener {
             }
             stockPusher.submit(skuCodes);
         } catch (Exception e) {
-            log.error("failed to sync {} stocks, data:{}, cause:{}", total, data, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"stock.data.invalid");
+            log.error("failed to sync stocks, data:{},cause:{}", stockDtos, Throwables.getStackTraceAsString(e));
         }
 
         log.debug("batch sync stock to middle end");
@@ -88,25 +81,6 @@ public class BatchSyncStockListener {
     }
 
 
-    private List<StockDto> make(List<ErpStock> erpStocks) {
-        List<StockDto> result = Lists.newArrayListWithCapacity(erpStocks.size());
-        for (ErpStock erpStock : erpStocks) {
-            try {
-                StockDto stockDto = new StockDto();
-                stockDto.setSkuCode(erpStock.getBarcode());
-                stockDto.setQuantity(erpStock.getQuantity());
-                stockDto.setUpdatedAt(dft.parseDateTime(erpStock.getModify_time()).toDate());
-
-                String warehouseCode = erpStock.getCompany_id()+"-"+erpStock.getStock_id();
-                Warehouse warehouse = warehouseCacher.findByCode(warehouseCode);
-                stockDto.setWarehouseId(warehouse.getId());
-                result.add(stockDto);
-            } catch (Exception e) {
-                log.error("failed to sync {}, cause:{}", erpStock, Throwables.getStackTraceAsString(e));
-            }
-        }
-        return result;
-    }
 
 
 

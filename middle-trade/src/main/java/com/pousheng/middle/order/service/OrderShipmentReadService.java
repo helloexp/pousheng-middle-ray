@@ -65,4 +65,11 @@ public interface OrderShipmentReadService {
      * @return 发货单
      */
     Response<OrderShipment> findByOrderIdAndSkuCodeAndQuantity(Long id,String skuCode,Integer quantity);
+
+    /**
+     * 分页获取orderShipment 修复数据用
+     * @param criteria 参数
+     * @return 订单发货单关联关系
+     */
+    Response<Paging<OrderShipment>> paging(OrderShipmentCriteria criteria);
 }

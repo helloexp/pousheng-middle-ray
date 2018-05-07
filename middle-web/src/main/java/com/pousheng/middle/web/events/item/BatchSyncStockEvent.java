@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.item;
 
+import com.pousheng.middle.warehouse.dto.StockDto;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -12,6 +13,5 @@ import java.util.List;
 @Data
 public class BatchSyncStockEvent implements Serializable{
     private static final long serialVersionUID = -2577931179578376505L;
-    private Integer total;
-    private String data;
+    private List<StockDto> stockDtos;
 }

@@ -196,28 +196,28 @@ public class AdminOrderReader {
 
     /**
      * 订单信息和收货地址信息封装 for 新建售后订单展示订单信息
-     * @param id 交易订单id
+     * @param code 交易订单id
      * @return 订单信息和收货地址信息封装DTO
      */
-    @RequestMapping(value = "/api/order/{id}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("id") @PermissionCheckParam Long id) {
+    @RequestMapping(value = "/api/order/{code}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("code") @PermissionCheckParam String code) {
 
 
-        Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
+        Response<ShopOrder> shopOrderRes = shopOrderReadService.findByOrderCode(code);
         if(!shopOrderRes.isSuccess()){
-            log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
+            log.error("find shop order by code:{} fail,error:{}",code,shopOrderRes.getError());
             return Response.fail(shopOrderRes.getError());
         }
         ShopOrder shopOrder = shopOrderRes.getResult();
 
-        Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(id, OrderLevel.SHOP);
+        Response<List<ReceiverInfo>> response = receiverInfoReadService.findByOrderId(shopOrder.getId(), OrderLevel.SHOP);
         if(!response.isSuccess()){
-            log.error("find order receive info by order id:{} fial,error:{}",id,response.getError());
+            log.error("find order receive info by order id:{} fial,error:{}",shopOrder.getId(),response.getError());
             return Response.fail(response.getError());
         }
         List<ReceiverInfo> receiverInfos = response.getResult();
         if(CollectionUtils.isEmpty(receiverInfos)){
-            log.error("not find receive info by order id:{}",id);
+            log.error("not find receive info by order id:{}",shopOrder.getId());
             return Response.fail("order.receive.info.not.exist");
         }
 

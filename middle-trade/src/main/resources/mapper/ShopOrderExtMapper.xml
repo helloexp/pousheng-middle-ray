@@ -20,4 +20,13 @@
         WHERE id=#{id}
     </update>
 
+    <update id="updateHandleStatus" parameterType="ShopOrderExt">
+        UPDATE
+        <include refid="tb"/>
+        SET updated_at=now(),
+        handle_status = #{newHandleStatus}
+        WHERE id=#{id} AND handle_status = #{originHandleStatus}
+    </update>
+
+
 </mapper>

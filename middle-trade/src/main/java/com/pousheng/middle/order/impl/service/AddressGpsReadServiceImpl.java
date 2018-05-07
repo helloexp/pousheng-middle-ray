@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.impl.service;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.impl.dao.AddressGpsDao;
@@ -39,14 +40,13 @@ public class AddressGpsReadServiceImpl implements AddressGpsReadService {
     }
 
     @Override
-    public Response<AddressGps> findByBusinessIdAndType(Long businessId, AddressBusinessType type) {
+    public Response<Optional<AddressGps>> findByBusinessIdAndType(Long businessId, AddressBusinessType type) {
         try {
             AddressGps addressGps = addressGpsDao.findByBusinessIdAndType(businessId, type);
             if (addressGps == null) {
                 log.error("not find address gps by businessId:{} and business type:{}", businessId,type);
-                return Response.fail("address.gps.not.found");
             }
-            return Response.ok(addressGps);
+            return Response.ok(Optional.fromNullable(addressGps));
         }catch (Exception e){
             log.error("find address gps by businessId:{} and business type:{} fail,cause:{}", businessId,type);
             return Response.fail("find.address.gps.fail");

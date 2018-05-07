@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
@@ -124,6 +125,16 @@ public class RefundReadLogic {
         return refundRes.getResult();
     }
 
+    public Refund findRefundByRefundCode(String refundCode){
+        Response<Refund> refundRes = refundReadService.findByRefundCode(refundCode);
+        if(!refundRes.isSuccess()){
+            log.error("find refund by refundCode:{} fail,error:{}",refundCode,refundRes.getError());
+            throw new JsonResponseException(refundRes.getError());
+        }
+
+        return refundRes.getResult();
+    }
+
 
     public List<Refund> findRefundByIds(List<Long> refundIds){
         Response<List<Refund>> refundRes = refundReadService.findByIds(refundIds);
@@ -153,15 +164,42 @@ public class RefundReadLogic {
 
     }
 
+    public List<OrderRefund> findOrderRefundsByOrderId(Long shopOrderId){
+        Response<List<OrderRefund>> response =  middleRefundReadService.findOrderRefundsByOrderId(shopOrderId);
+        if(!response.isSuccess()){
+            log.error("find order refunds by orderId ids:{} fail,cause:{}",shopOrderId, response.getError());
+            throw new JsonResponseException("order.refund.not.exist");
+        }
+        return response.getResult();
+    }
+
+    public List<Refund> findRefundsByOrderId(Long shopOrderId){
+        Response<List<Refund>> response = refundReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if(!response.isSuccess()){
+            log.error("find  refunds by orderId ids:{} fail,cause:{}",shopOrderId, response.getError());
+            throw new JsonResponseException("refund.not.exist");
+        }
+        return response.getResult();
+    }
+
+    public List<Refund> findRefundsByOrderCode(String shopOrderCode){
+        Response<List<Refund>> response = refundReadService.findByOrderCodeAndOrderLevel(shopOrderCode,OrderLevel.SHOP);
+        if(!response.isSuccess()){
+            log.error("find  refunds by shopOrderCode ids:{} fail,cause:{}",shopOrderCode, response.getError());
+            throw new JsonResponseException("refund.not.exist");
+        }
+        return response.getResult();
+    }
+
     public List<RefundItem> findRefundItems(Refund refund){
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.warn("refund(id:{}) extra field is null",refund.getId());
-            return Lists.newArrayList(new RefundItem());
+            return Lists.newArrayList();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_ITEM_INFO)){
             log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_ITEM_INFO);
-            return Lists.newArrayList(new RefundItem());
+            return Lists.newArrayList();
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),mapper.createCollectionType(List.class,RefundItem.class));
     }
@@ -170,11 +208,11 @@ public class RefundReadLogic {
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
             log.warn("refund(id:{}) extra field is null",refund.getId());
-            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+            return Lists.newArrayList();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO)){
             log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
-            return Lists.newArrayList(new YYEdiRefundConfirmItem());
+            return Lists.newArrayList();
         }
         return mapper.fromJson(extraMap.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO),mapper.createCollectionType(List.class,YYEdiRefundConfirmItem.class));
     }
@@ -251,13 +289,13 @@ public class RefundReadLogic {
 
     /**
      * 返回最多可退金额
-     * @param orderId 订单id
+     * @param orderCode 订单id
      * @param refundId 退货单id
-     * @param shipmentId 发货单id
+     * @param shipmentCode 发货单id
      * @param refundFeeDatas 传输进来的售后单sku以及数量
      * @return
      */
-    public int getAlreadyRefundFee(Long orderId,Long refundId,Long shipmentId,List<RefundFeeData> refundFeeDatas){
+    public int getAlreadyRefundFee(String orderCode,Long refundId,String shipmentCode,List<RefundFeeData> refundFeeDatas){
         //传输进来的售后单sku集合
         List<String> editSkuCodes = refundFeeDatas.stream().map(RefundFeeData::getSkuCode).collect(Collectors.toList());
         //传输进来的售后单sku以及数量的map
@@ -266,9 +304,9 @@ public class RefundReadLogic {
             editSkuCodeAndQuantityMap.put(refundFeeData.getSkuCode(),refundFeeData.getApplyQuantity());
         });
         //获取订单信息
-        Response<List<Refund>> rltRes = refundReadService.findByOrderIdAndOrderLevel(orderId, OrderLevel.SHOP);
+        Response<List<Refund>> rltRes = refundReadService.findByOrderCodeAndOrderLevel(orderCode, OrderLevel.SHOP);
         if (!rltRes.isSuccess()){
-            log.error("find Refund failed,order id is ({}),caused by {}",orderId,rltRes.getError());
+            log.error("find Refund failed,order id is ({}),caused by {}",orderCode,rltRes.getError());
             throw new JsonResponseException(rltRes.getError());
         }
         //获取不是订单号关联的其他售后单，过滤掉换货的，已经取消的，当前传入的需要计算的售后单
@@ -289,7 +327,7 @@ public class RefundReadLogic {
                 }
             }
         }
-        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Integer totalCleanFee=0; //商品总进价
         Integer totalEditCleanFee = 0; //申请的商品总进价
@@ -324,20 +362,7 @@ public class RefundReadLogic {
     }
 
     /**
-     * 判断丢件补发或者售后换货是否可以继续生成发货单
-     * @param refundItems
-     * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
-     */
-    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems){
-        int count= 0;
-        for (RefundItem refundItem : refundItems) {
-            if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
-                count++;
-            }
-        }
-        return count==0;
-    }
-    /**
+<<<<<<< HEAD
      * 通过outId获取渠道
      *
      * @return 获取渠道
@@ -359,6 +384,22 @@ public class RefundReadLogic {
             return Splitter.on('_').omitEmptyStrings().trimResults().limit(2).splitToList(outId).get(1);
         }
         return null;
+
+    }
+
+    /**
+     * 判断丢件补发或者售后换货是否可以继续生成发货单
+     * @param refundItems
+     * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
+     */
+    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems){
+        int count= 0;
+        for (RefundItem refundItem : refundItems) {
+            if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
+                count++;
+            }
+        }
+        return count==0;
     }
     /**
      * 通过outId获取渠道
@@ -368,6 +409,13 @@ public class RefundReadLogic {
     public String getOutChannelSuning(String outId) {
         if (StringUtils.hasText(outId)) {
             return Splitter.on('_').omitEmptyStrings().trimResults().limit(3).splitToList(outId).get(0);
+        }
+        return null;
+    }
+
+    public String getOutSkuOrderIdSuningSale(String outId){
+        if (StringUtils.hasText(outId)) {
+            return Splitter.on('_').omitEmptyStrings().trimResults().limit(3).splitToList(outId).get(2);
         }
         return null;
     }

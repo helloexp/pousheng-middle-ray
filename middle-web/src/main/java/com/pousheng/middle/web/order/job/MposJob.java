@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
@@ -9,22 +10,28 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import com.pousheng.middle.web.shop.event.UpdateShopEvent;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -55,6 +62,9 @@ public class MposJob {
     private HostLeader hostLeader;
 
     @Autowired
+    private EventBus eventBus;
+
+    @Autowired
     private MposOrderHandleLogic orderHandleLogic;
 
     @Autowired
@@ -74,10 +84,17 @@ public class MposJob {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+
     @Autowired
     private SyncRefundPosLogic syncRefundPosLogic;
+
     @Autowired
     private RefundReadLogic refundReadLogic;
+    @RpcConsumer
+    private ShopReadService shopReadService;
+
+    @Autowired
+    private HKShipmentDoneLogic hkShipmentDoneLogic;
 
     private final ExecutorService executorService;
 
@@ -88,6 +105,9 @@ public class MposJob {
 
     @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
+
+    @Value("${auto.task.try.number:10}")
+    private Integer autoTryNumber;
 
     @Autowired
     public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
@@ -132,7 +152,7 @@ public class MposJob {
     /**
      * 自动同步失败任务
      */
-    @Scheduled(cron = "0 */15 * * * ?")
+    @Scheduled(cron = "0 */3 * * * ?")
     public void autoCompensateMposFailTask(){
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -143,6 +163,7 @@ public class MposJob {
 
         Map<String,Object> param = Maps.newHashMap();
         param.put("status",0);
+        param.put("time",autoTryNumber);
         int pageNo = 1;
         while (true) {
             Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,20,param);
@@ -177,6 +198,55 @@ public class MposJob {
     public void autoCompensateMposFailTaskBySelf(){
         this.autoCompensateMposFailTask();
     }
+
+
+
+
+    @RequestMapping(value = "api/mpos/shop/address/sync", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Scheduled(cron = "0 0 2 * * ?")
+    public void fullDump() {  //每天凌晨2点执行一次
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        log.info("sync mpos shop address fired");
+        int pageNo = 1;
+        boolean next = batchSyncShopAddress(pageNo, 500);
+        while (next) {
+            pageNo ++;
+            next = batchSyncShopAddress(pageNo, 500);
+        }
+        log.info("sync mpos shop address end");
+    }
+
+
+    @SuppressWarnings("unchecked")
+    private boolean batchSyncShopAddress(int pageNo, int size) {
+
+        //String name, Long userId, Integer type, Integer status, Integer pageNo, Integer pageSize
+        Response<Paging<Shop>> pagingRes = shopReadService.pagination(null,null,null,1,pageNo, size);
+        if(!pagingRes.isSuccess()){
+            log.error("paging shop fail,error:{}",pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<Shop> paging = pagingRes.getResult();
+        List<Shop> shops = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(shops)) {
+            return Boolean.FALSE;
+        }
+
+        for (Shop shop : shops){
+            UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(),shop.getBusinessId(),shop.getOuterId());
+            eventBus.post(updateShopEvent);
+        }
+
+        int current = shops.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+
 
     /**
      * 处理发货单状态更新任务
@@ -215,6 +285,8 @@ public class MposJob {
                             Response<Boolean> response = syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class));
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -224,6 +296,8 @@ public class MposJob {
                             Response<Boolean> response = syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class));
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -235,6 +309,8 @@ public class MposJob {
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -246,6 +322,8 @@ public class MposJob {
                             Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                             if(response.isSuccess()){
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
                         }
                     }
@@ -257,7 +335,31 @@ public class MposJob {
                             Response<Boolean> response = syncRefundPosLogic.syncRefundPosToHk(refund);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            }else{
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
+                        }
+                    }
+
+                    if(Objects.equals(autoCompensation.getType(),TradeConstants.YYEDI_SHIP_NOTIFICATION)){
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Long shipmentId = Long.valueOf(param.get(TradeConstants.SHIPMENT_ID));
+                            log.info("try to sync shipment(id:{}) to hk",shipmentId);
+                            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+
+                            //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
+                            hkShipmentDoneLogic.doneShipment(shipment);
+
+                            //同步pos单到恒康
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                            if (!response.isSuccess()) {
+                                Map<String, Object> param1 = Maps.newHashMap();
+                                param1.put("shipmentId", shipment.getId());
+                                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
+                            }
+                            autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                         }
                     }
                 });

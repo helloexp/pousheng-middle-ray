@@ -21,7 +21,7 @@ public class HkHandleShipmentResult implements Serializable{
     /**
      * 中台发货单号
      */
-    private Long ecShipmentId;
+    private String ecShipmentId;
 
     /**
      * 处理结果

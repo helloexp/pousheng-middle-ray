@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.shop.event.listener;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -58,7 +59,8 @@ public class ShopCreationOrUpdateListener {
 
     @Subscribe
     public void onCreated(CreateShopEvent event) {
-       
+
+        log.info("createShopAddressGps shop info:{}",event);
 
         AddressGps addressGps = memberShopOperationLogic.getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){
@@ -94,21 +96,33 @@ public class ShopCreationOrUpdateListener {
 
     @Subscribe
     public void onUpdate(UpdateShopEvent event) {
+        log.info("update shop address gps :{}",event);
 
         AddressGps addressGps = memberShopOperationLogic.getAddressGps(event.getShopId(),event.getCompanyId().toString(),event.getStoreCode());
         if(Arguments.isNull(addressGps)){
+            log.error("not find shop address from member center by:{}",event);
             return;
         }
-        Response<AddressGps> existRes = addressGpsReadService.findByBusinessIdAndType(event.getShopId(),AddressBusinessType.SHOP);
+        Response<Optional<AddressGps>> existRes = addressGpsReadService.findByBusinessIdAndType(event.getShopId(),AddressBusinessType.SHOP);
         if(!existRes.isSuccess()){
             log.error("find address gps by businessId:{} and business type:{} fail,error:{}", event.getShopId(),AddressBusinessType.SHOP,existRes.getError());
             return;
         }
-        addressGps.setId(existRes.getResult().getId());
-        Response<Boolean> updateRes = addressGpsWriteService.update(addressGps);
-        if(!updateRes.isSuccess()){
-            log.error("updateRes address gps:{} fail,error:{}",addressGps,updateRes.getError());
-            return;
+        //不存在则创建
+        if(!existRes.getResult().isPresent()){
+            log.error("not find address gps by business id:{} type:{} ",event.getShopId(),AddressBusinessType.SHOP);
+            Response<Long> createRes = addressGpsWriteService.create(addressGps);
+            if(!createRes.isSuccess()){
+                log.error("create address gps:{} fail,error:{}",addressGps,createRes.getError());
+                return;
+            }
+        }else {
+            addressGps.setId(existRes.getResult().get().getId());
+            Response<Boolean> updateRes = addressGpsWriteService.update(addressGps);
+            if(!updateRes.isSuccess()){
+                log.error("updateRes address gps:{} fail,error:{}",addressGps,updateRes.getError());
+                return;
+            }
         }
 
         //4、更新门店地址信息

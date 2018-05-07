@@ -3,6 +3,7 @@ package com.pousheng.middle.web.shop.event.listener;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
+
+import static com.pousheng.middle.constants.Constants.ZONE_ID;
+import static com.pousheng.middle.constants.Constants.ZONE_NAME;
 
 /**
  * @author songrenfei
@@ -48,6 +52,7 @@ public class CreateOpenShopRelationListener {
 
     @Subscribe
     public void createOpenShopRelation(CreateShopEvent event) {
+        log.info("createOpenShopRelation shop info:{}",event);
 
         val rExist = shopReadService.findById(event.getShopId());
         if (!rExist.isSuccess()) {
@@ -67,6 +72,9 @@ public class CreateOpenShopRelationListener {
         openShop.setSecret(exist.getOuterId()+"93204aefe45d47f6e488");
         Map<String,String> openExtra = Maps.newHashMap();
         openExtra.put("isOrderInsertMiddle","false");
+        openExtra.put(ZONE_ID,exist.getZoneId());
+        openExtra.put(ZONE_NAME,exist.getZoneName());
+        openExtra.put(TradeConstants.ERP_SYNC_TYPE,"yyEdi");
         openShop.setExtra(openExtra);
 
 

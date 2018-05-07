@@ -10,6 +10,14 @@ import java.io.Serializable;
  */
 public class UpdateShopEvent implements Serializable {
 
+    @Override
+    public String toString() {
+        return "UpdateShopEvent{" +
+                "shopId=" + shopId +
+                ", companyId=" + companyId +
+                ", storeCode='" + storeCode + '\'' +
+                '}';
+    }
 
     private static final long serialVersionUID = 3285534935695785921L;
     @Getter

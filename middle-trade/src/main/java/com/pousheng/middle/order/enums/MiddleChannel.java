@@ -12,7 +12,8 @@ public enum MiddleChannel {
     TAOBAO("taobao"), //淘宝
     SUNING("suning"),//苏宁
     FENQILE("fenqile"),//分期乐
-    OFFICIAL("official");//官网
+    OFFICIAL("official"),//官网
+    SUNINGSALE("suning-sale");//苏宁特卖
     private final String value;
 
     MiddleChannel(String value){

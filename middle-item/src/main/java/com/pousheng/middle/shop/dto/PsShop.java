@@ -18,6 +18,7 @@ public class PsShop {
 
     private String id;
 
+    //内码
     private String storeId;
 
     private String name;
@@ -27,6 +28,19 @@ public class PsShop {
     private String companyId;
 
     private String companyName;
+
+    private String zoneId;
+
+    private String zoneName;
+
+    //"店铺电话", position = 19)
+    private String telphone;
+
+    //"邮箱", position = 19)
+    private String email;
+
+    // "店铺地址", position = 18)
+    private String address;
 
 
 }

@@ -5,6 +5,7 @@ import com.pousheng.erp.component.ErpClient;
 import com.pousheng.erp.component.HkClient;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.WarehouseServerInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -57,6 +58,8 @@ public class Warehouses {
 
     @Autowired
     private MposWarehousePusher warehousePusher;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("新建")
@@ -233,6 +236,9 @@ public class Warehouses {
             throw new JsonResponseException(res.getError());
         }
         warehousePusher.addWarehouses(exist.getCompanyId(),exist.getExtra().get("outCode"));
+
+        //刷新缓存
+        warehouseCacher.refreshById(exist.getId());
     }
 
     /**
@@ -256,6 +262,9 @@ public class Warehouses {
             throw new JsonResponseException(res.getError());
         }
         warehousePusher.removeWarehouses(exist.getCompanyId(),exist.getExtra().get("outCode"));
+
+        //刷新缓存
+        warehouseCacher.refreshById(exist.getId());
     }
 
     /**
@@ -282,6 +291,9 @@ public class Warehouses {
             log.error("update warehouse failed,error:{}",res.getError());
             throw new JsonResponseException(res.getError());
         }
+        //刷新缓存
+        warehouseCacher.refreshById(exist.getId());
+
     }
 
     /**
@@ -313,6 +325,9 @@ public class Warehouses {
             log.error("fail to update warehouse id:{},cause:{}",warehouseId,r.getError());
             throw new JsonResponseException(r.getError());
         }
+
+        //刷新缓存
+        warehouseCacher.refreshById(exist.getId());
     }
 
 
@@ -365,6 +380,14 @@ public class Warehouses {
             this.updateWarehouseServerInfo(warehouseId,warehouseServerInfo);
         }
     }
+
+
+    @ApiOperation("根据id获取仓库信息")
+    @RequestMapping(value = "/{id}/query/by/cache", method = RequestMethod.GET)
+    public Warehouse batchUpdateShopServerInfo(@PathVariable("id") Long warehouseId) {
+        return warehouseCacher.findById(warehouseId);
+    }
+
 
 
 }

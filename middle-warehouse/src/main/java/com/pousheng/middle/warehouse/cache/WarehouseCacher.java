@@ -66,4 +66,30 @@ public class WarehouseCacher {
             }
         });
     }
+
+
+    public void refreshById(Long id){
+
+        Response<Warehouse> r =  warehouseReadService.findById(id);
+        if(!r.isSuccess()){
+            log.error("failed to find warehouse(id={}), error code:{}", id, r.getError());
+            throw new ServiceException(r.getError());
+        }
+        Warehouse exist = r.getResult();
+
+        if(byId.containsKey(id)){
+            byId.replace(id,exist);
+        }else {
+            byId.putIfAbsent(id,exist);
+        }
+
+        if(byCode.containsKey(exist.getCode())){
+            byCode.replace(exist.getCode(),exist);
+        }else {
+            byCode.putIfAbsent(exist.getCode(),exist);
+        }
+    }
+
+
+
 }

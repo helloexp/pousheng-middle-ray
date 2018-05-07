@@ -208,12 +208,6 @@ public class FireCall {
 
     }
 
-    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
-        int spuCount =spuImporter.processPullMarterials(skuCode);
-        log.info("synchronized {} spus", spuCount);
-        return "ok";
-    }
 
 
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -239,6 +233,13 @@ public class FireCall {
         return "ok";
     }
 
+    @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
+        int spuCount =spuImporter.processPullMarterials(skuCode);
+        log.info("synchronized {} spus", spuCount);
+        return "ok";
+    }
+
     @RequestMapping(value="/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<HkSkuStockInfo> queryStock(@RequestParam(required = false) String stockCodes,
                                            @RequestParam String skuCodes,
@@ -250,6 +251,7 @@ public class FireCall {
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
         return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
     }
+
 
 
     @RequestMapping(value="/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -401,6 +403,7 @@ public class FireCall {
         return "ok";
     }
 
+
     /**
      * 根据skuCode推送库存到第三方或者官网
      * @param skuCode
@@ -427,6 +430,22 @@ public class FireCall {
         return result.toString();
     }
 
+    /**
+     * 修复skuTemplate表中
+     * @return
+     */
+    @RequestMapping(value = "/sku/extra/restore", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String skuTemplateExtraRestore(@RequestParam(required = false, value = "skuCode") String skuCode,
+                                          @RequestParam(required = false, value = "type") Integer type,
+                                          @RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                          @RequestParam(required = false, value = "pageSize") Integer pageSize){
+        boolean result = spuImporter.skuTemplateExtraRestore(skuCode,type,pageNo,pageSize);
+        if (result){
+            return  "ok";
+        }else{
+            return  "not ok";
+        }
+    }
 }
 
 

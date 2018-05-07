@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -128,7 +129,7 @@ public class SyncYYEdiShipmentLogic {
                 return Response.fail(response.getFields().get(0).getErrorMsg());
             }
         } catch (Exception e) {
-            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
             return Response.fail("sync.yyedi.shipment.fail");
@@ -178,12 +179,12 @@ public class SyncYYEdiShipmentLogic {
                 return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
             }
         } catch (ServiceException e1) {
-            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e1));
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
             return Response.fail(e1.getMessage());
         } catch (Exception e) {
-            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
             return Response.fail("sync.yyedi.cancel.shipment.failed");

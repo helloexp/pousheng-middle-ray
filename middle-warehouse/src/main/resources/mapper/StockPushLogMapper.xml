@@ -13,6 +13,7 @@
         <result column="quantity" property="quantity"/>
         <result column="status" property="status"/>
         <result column="cause" property="cause"/>
+        <result column="sync_at" property="syncAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
 
@@ -28,11 +29,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name,sku_code,quantity,status,cause,created_at, updated_at
+        shop_id, shop_name,sku_code,quantity,status,cause,sync_at,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName},#{skuCode}, #{quantity},#{status},#{cause}, now(), now()
+        #{shopId}, #{shopName},#{skuCode}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -55,7 +56,17 @@
         VALUES
         (<include refid="vals"/>)
     </insert>
-
+    <insert id="creates" parameterType="list">
+        INSERT INTO
+        <include refid="tb"/>
+        (<include refid="cols_exclude_id"/>)
+        VALUES
+        <foreach collection="list" item="i" index="index" separator=",">
+            (
+            #{i.shopId}, #{i.shopName}, #{i.skuCode}, #{i.quantity}, #{i.status}, #{i.cause}, #{i.syncAt}, now(), now()
+            )
+        </foreach>
+    </insert>
     <select id="findById" parameterType="long" resultMap="StockPushLogMap">
         SELECT
         <include refid="cols_all"/>

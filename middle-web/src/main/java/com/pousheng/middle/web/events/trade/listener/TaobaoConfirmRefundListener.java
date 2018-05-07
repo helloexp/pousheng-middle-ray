@@ -49,18 +49,19 @@ public class TaobaoConfirmRefundListener {
 
     @Subscribe
     @AllowConcurrentEvents
-    public void updateRefundStatusForTaobao(TaobaoConfirmRefundEvent event){
+    public void updateRefundStatusForTaobao(TaobaoConfirmRefundEvent event) {
+        log.error("begin to update third channel refund status,refundId is {},openAfterSaleId is {},openOrderId is {},openShopId is {],channel is {} ", event.getRefundId(), event.getOpenAfterSaleId(), event.getOpenOrderId(), event.getOpenShopId(), event.getChannel());
         //天猫渠道
-        if (Objects.equals(event.getChannel(),MiddleChannel.TAOBAO.getValue())){
+        if (Objects.equals(event.getChannel(), MiddleChannel.TAOBAO.getValue())) {
             OpenClientAfterSaleService afterSaleService = this.afterSaleServiceRegistryCenter.getAfterSaleService(MiddleChannel.TAOBAO.getValue());
-            Response<OpenClientAfterSale> r =  afterSaleService.findByAfterSaleId(Long.valueOf(event.getOpenShopId()),event.getOpenAfterSaleId());
-            if (!r.isSuccess()){
-                log.error("find taobao afterSaleOrder failed,taobaoAfterSaleOrderId is {},refundId is{},caused by{}",event.getOpenAfterSaleId(),event.getRefundId(),event.getOpenShopId());
+            Response<OpenClientAfterSale> r = afterSaleService.findByAfterSaleId(Long.valueOf(event.getOpenShopId()), event.getOpenAfterSaleId());
+            if (!r.isSuccess()) {
+                log.error("find taobao afterSaleOrder failed,taobaoAfterSaleOrderId is {},refundId is{},caused by{}", event.getOpenAfterSaleId(), event.getRefundId(), event.getOpenShopId());
                 return;
             }
             //如果淘宝售后单状态是success(已退款),中台售后单状态同样变成已退款
             OpenClientAfterSale afterSale = r.getResult();
-            if (Objects.equals(afterSale.getStatus(), OpenClientAfterSaleStatus.SUCCESS)){
+            if (Objects.equals(afterSale.getStatus(), OpenClientAfterSaleStatus.SUCCESS)) {
                 Response<Boolean> updateR = refundWriteService.updateStatus(event.getRefundId(), MiddleRefundStatus.REFUND.getValue());
                 if (!updateR.isSuccess()) {
                     log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",
@@ -69,20 +70,20 @@ public class TaobaoConfirmRefundListener {
             }
         }
         //苏宁渠道
-        if (Objects.equals(event.getChannel(),MiddleChannel.SUNING.getValue()) || Objects.equals(event.getChannel(),MiddleChannel.SUNINGSALE.getValue())){
+        if (Objects.equals(event.getChannel(), MiddleChannel.SUNING.getValue()) || Objects.equals(event.getChannel(), MiddleChannel.SUNINGSALE.getValue())) {
             OpenClientAfterSaleService afterSaleService = this.afterSaleServiceRegistryCenter.getAfterSaleService(MiddleChannel.SUNING.getValue());
-            Response<Pagination<OpenClientAfterSale>> r =  afterSaleService.findByOrderId(Long.valueOf(event.getOpenShopId()),event.getOpenOrderId());
-            if (!r.isSuccess()){
-                log.error("find taobao afterSaleOrder failed,taobaoAfterSaleOrderId is {},refundId is{},caused by{}",event.getOpenAfterSaleId(),event.getRefundId(),event.getOpenShopId());
+            Response<Pagination<OpenClientAfterSale>> r = afterSaleService.findByOrderId(Long.valueOf(event.getOpenShopId()), event.getOpenOrderId());
+            if (!r.isSuccess()) {
+                log.error("find taobao afterSaleOrder failed,taobaoAfterSaleOrderId is {},refundId is{},caused by{}", event.getOpenAfterSaleId(), event.getRefundId(), event.getOpenShopId());
                 return;
             }
             List<OpenClientAfterSale> openClientAfterSales = r.getResult().getData();
-            if (openClientAfterSales==null||openClientAfterSales.isEmpty()){
+            if (openClientAfterSales == null || openClientAfterSales.isEmpty()) {
                 return;
             }
             Refund refund = refundReadLogic.findRefundById(event.getRefundId());
-            for (OpenClientAfterSale openClientAfterSale:openClientAfterSales){
-                if (refund.getOutId().contains(openClientAfterSale.getOpenOrderId())&&Objects.equals(openClientAfterSale.getStatus(), OpenClientAfterSaleStatus.SUCCESS)){
+            for (OpenClientAfterSale openClientAfterSale : openClientAfterSales) {
+                if (refund.getOutId().contains(openClientAfterSale.getOpenOrderId()) && Objects.equals(openClientAfterSale.getStatus(), OpenClientAfterSaleStatus.SUCCESS)) {
                     Response<Boolean> updateR = refundWriteService.updateStatus(event.getRefundId(), MiddleRefundStatus.REFUND.getValue());
                     if (!updateR.isSuccess()) {
                         log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",

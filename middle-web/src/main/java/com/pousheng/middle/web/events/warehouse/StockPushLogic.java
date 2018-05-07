@@ -38,33 +38,27 @@ public class StockPushLogic {
                 });
     }
 */
-    public void insertstockPushLog(StockPushLog stockPushLog){
+    public void insertstockPushLog(StockPushLog stockPushLog) {
         try {
             Response<Long> response = middleStockPushLogWriteService.create(stockPushLog);
-            if (!response.isSuccess()){
-                log.error("create stockPushLog failed, caused by {}",response.getError());
+            if (!response.isSuccess()) {
+                log.error("create stockPushLog failed, caused by {}", response.getError());
             }
-        }catch (Exception e){
-            log.error("create stockPushLog failed,caused by {}",e.getMessage());
+        } catch (Exception e) {
+            log.error("create stockPushLog failed,caused by {}", e.getMessage());
         }
 
     }
 
 
-    public Response<Boolean> batchInsertStockPushLog(List<StockPushLog> stockPushLogs){
+    public Response<Boolean> batchInsertStockPushLog(List<StockPushLog> stockPushLogs) {
 
-            try {
-                for (StockPushLog stockPushLog:stockPushLogs){
-                    Response<Long> response = middleStockPushLogWriteService.create(stockPushLog);
-                    if (!response.isSuccess()){
-                        log.error("create stockPushLog failed, caused by {}",response.getError());
-                    }
-                }
-                return Response.ok(Boolean.TRUE);
-            }catch (Exception e){
-                log.error("create stockPushLog failed,caused by {}",e.getMessage());
-                return Response.ok(Boolean.FALSE);
-            }
+        try {
+            return middleStockPushLogWriteService.creates(stockPushLogs);
+        } catch (Exception e) {
+            log.error("create stockPushLog failed,caused by {}", e.getMessage());
+            return Response.ok(Boolean.FALSE);
+        }
 
     }
 }

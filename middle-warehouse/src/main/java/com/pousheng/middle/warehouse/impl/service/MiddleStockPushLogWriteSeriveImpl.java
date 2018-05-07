@@ -11,6 +11,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2017/11/10
@@ -18,7 +20,7 @@ import org.springframework.util.StringUtils;
  */
 @Slf4j
 @Service
-public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWriteService{
+public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWriteService {
     @Autowired
     private StockPushLogDao stockPushLogDao;
 
@@ -29,8 +31,27 @@ public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWrit
             stockPushLogDao.create(stockPushLog);
             return Response.ok(stockPushLog.getId());
         } catch (Exception e) {
+            log.error("create stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
+            return Response.fail("stockPushLogDao.create.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> creates(List<StockPushLog> stockPushLogs) {
+        try {
+            if (stockPushLogs.isEmpty()) {
+                return Response.fail("stockPushLogs.is.null");
+            }
+            int result = stockPushLogDao.creates(stockPushLogs);
+            if (result > 0) {
+                return Response.ok(Boolean.TRUE);
+            } else {
+                return Response.fail("stockPushLogDao.create.fail");
+            }
+        } catch (Exception e) {
             log.error("batchCreate stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
             return Response.fail("stockPushLogDao.batchCreate.fail");
         }
+
     }
 }

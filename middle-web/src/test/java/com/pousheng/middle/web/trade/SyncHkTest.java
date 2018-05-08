@@ -193,7 +193,7 @@ public class SyncHkTest {
     @Test
     public void testOrderCancel(){
         SycHkOrderCancelApi api = new SycHkOrderCancelApi();
-        api.doCancelOrder("hkh01",12121L,0,0);
+        api.doCancelOrder("hkh01","SHP12121",0,0);
     }
 
     @Test

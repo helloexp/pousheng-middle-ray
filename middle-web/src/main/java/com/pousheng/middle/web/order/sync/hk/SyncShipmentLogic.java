@@ -171,7 +171,7 @@ public class SyncShipmentLogic {
             shipment.setStatus(targetStatus);//塞入最新的状态
 
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(),operationType,0);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getShipmentCode(),operationType,0);
             SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
@@ -212,7 +212,7 @@ public class SyncShipmentLogic {
     public Response<Boolean> syncShipmentDoneToHk(Shipment shipment,Integer operationType,OrderOperation syncOrderOperation) {
         try {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getId(),operationType,0);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getShipmentCode(),operationType,0);
             SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {

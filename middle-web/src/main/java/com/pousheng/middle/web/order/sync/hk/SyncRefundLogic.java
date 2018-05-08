@@ -337,7 +337,7 @@ public class SyncRefundLogic {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), refund.getId(), 0,1);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), refund.getRefundCode(), 0,1);
             SycRefundResponse sycRefundResponse  = JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
             HkResponseHead head = sycRefundResponse.getHead();
             if (Objects.equals(head.getCode(),"0")) {

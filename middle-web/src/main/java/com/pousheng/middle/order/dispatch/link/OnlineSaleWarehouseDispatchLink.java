@@ -25,6 +25,7 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -60,6 +61,8 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
     private DispatchComponent dispatchComponent;
     @RpcConsumer
     private MappingReadService mappingReadService;
+    @Value("${mpos.open.shop.id}")
+    private Long mposOpenShopId;
 
 
     @Override
@@ -72,7 +75,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         context.put(DispatchContants.BUYER_ADDRESS,address);
         context.put(DispatchContants.BUYER_ADDRESS_REGION,addressRegion);
 
-        //查找该批商品中电商在售的
+        //查找该批商品中电商在售的(要把mpos总店的商品排除掉)
         List<SkuCodeAndQuantity> onlineSaleSku = getOnlineSaleSku(skuCodeAndQuantities);
         if(CollectionUtils.isEmpty(onlineSaleSku)){
             return Boolean.TRUE;
@@ -192,8 +195,10 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
                 throw new ServiceException(response.getError());
             }
             List<ItemMapping> itemMappingList = response.getResult();
+
+            List<ItemMapping> onlineItemMappingList = itemMappingList.stream().filter(itemMapping -> !Objects.equals(itemMapping.getOpenShopId(),mposOpenShopId)).collect(Collectors.toList());
             //不为空则说明电商在售
-            if(!CollectionUtils.isEmpty(itemMappingList)){
+            if(!CollectionUtils.isEmpty(onlineItemMappingList)){
                 filterSkuCodeAndQuantitys.add(skuCodeAndQuantity);
             }
         }

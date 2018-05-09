@@ -487,6 +487,7 @@ public class ExportTradeBillListener {
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
+                    entity.setShipmentId(shipmentContext.getShipment().getId());
                     entity.setItemNo(item.getSkuCode());
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
@@ -508,7 +509,7 @@ public class ExportTradeBillListener {
                         entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
-                    entity.setOrderStatus(MiddleOrderStatus.fromInt(shopOrderResponse.getResult().getStatus()).getName());
+                    entity.setShipmentStatus(MiddleShipmentsStatus.fromInt(shipmentContext.getShipment().getStatus()).getName());
                     shipmentExportEntities.add(entity);
 
                 });

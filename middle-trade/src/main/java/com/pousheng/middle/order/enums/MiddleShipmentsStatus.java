@@ -14,32 +14,38 @@ import com.google.common.base.Objects;
  */
 public enum MiddleShipmentsStatus {
 
-    WAIT_SYNC_HK(1),  //待同步恒康（mpos）
-    SYNC_HK_ING(2),    //同步恒康（mpos）中（此状态前端可不用关心，只是为了后端flow通顺）
-    ACCEPTED(3),//已受理
-    WAIT_SHIP(4),    //同步成功，待发货
-    SHIPPED(5),      //已发货
-    CONFIRMD_SUCCESS(6),     //确认收货成功
-    WAIT_MPOS_RECEIVE(7),   //待接单
-    SYNC_HK_ACCEPT_FAILED(-1),//发货单恒康（mpos）受理失败
-    SYNC_HK_FAIL(-2),   //同步恒康失败
-    SYNC_HK_CANCEL_ING(-3),       //同步恒康（mpos）取消中（此状态前端可不用关心，只是为了后端flow通顺）
-    SYNC_HK_CANCEL_FAIL(-4),   //同步恒康（mpos）失败
-    CANCELED(-5),  // 已取消取消
-    CONFIRMED_FAIL(-6), //恒康确认收货失败
-    REJECTED(-7); //mpos拒单
+    WAIT_SYNC_HK(1, "待同步订单派发中心/MPOS"),  //待同步恒康（mpos）
+    SYNC_HK_ING(2, "同步订单派发中心/MPOS中"),    //同步恒康（mpos）中（此状态前端可不用关心，只是为了后端flow通顺）
+    ACCEPTED(3, "已受理"),//已受理
+    WAIT_SHIP(4, "同步成功，待发货"),    //同步成功，待发货
+    SHIPPED(5, "已发货"),      //已发货
+    CONFIRMD_SUCCESS(6, "订单派发中心确认收货"),     //确认收货成功
+    WAIT_MPOS_RECEIVE(7, "待接单"),   //待接单
+    SYNC_HK_ACCEPT_FAILED(-1,"订单派发中心/MPOS受理失败"),//发货单恒康（mpos）受理失败
+    SYNC_HK_FAIL(-2, "同步订单派发中心/MPOS失败"),   //同步恒康失败
+    SYNC_HK_CANCEL_ING(-3, "同步订单派发中心取消中"),       //同步恒康（mpos）取消中（此状态前端可不用关心，只是为了后端flow通顺）
+    SYNC_HK_CANCEL_FAIL(-4, "取消同步订单派发中心失败"),   //同步恒康（mpos）失败
+    CANCELED(-5, "已取消"),  // 已取消取消
+    CONFIRMED_FAIL(-6, "订单派发中心确认失败"), //恒康确认收货失败
+    REJECTED(-7, "已拒绝"); //mpos拒单
 
 
 
 
     private final int value;
+    private final String name;
 
-    MiddleShipmentsStatus(int value) {
+    MiddleShipmentsStatus(int value ,String name) {
         this.value = value;
+        this.name = name;
     }
 
     public int getValue() {
         return value;
+    }
+
+    public String getName() {
+        return name;
     }
 
     public static MiddleShipmentsStatus fromInt(int value){

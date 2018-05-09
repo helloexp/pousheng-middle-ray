@@ -101,11 +101,6 @@ public class WarehouseSkuStockLogic {
                 }
                 r.put(skuCode, availStock.intValue());
             }else {
-                if(Arguments.isNull(stock)){
-                    log.error("not find stock by warehouse id:{} sku code:{}",warehouseId,skuCode);
-                    continue;
-                }
-
                 //判断是否为mpos仓，是则减掉安全库存
                 Integer safeStock = 0;
                 if(Objects.equals(warehouse.getIsMpos(),1)){

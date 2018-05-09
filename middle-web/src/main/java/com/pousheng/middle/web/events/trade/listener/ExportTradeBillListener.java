@@ -98,6 +98,8 @@ public class ExportTradeBillListener {
     @Autowired
     private OpenShopCacher openShopCacher;
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
+
+    private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -421,7 +423,13 @@ public class ExportTradeBillListener {
             log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuCode, response.getError());
             throw new JsonResponseException(response.getError());
         } else {
-            return response.getResult().get(0).getExtra().getOrDefault("materialCode","");
+            Optional<SkuTemplate> tmpSkuTemplate = response.getResult().stream().filter(
+                    s -> s.getStatus().equals(SKU_TEMPLATES_AVALIABLE_STATUS)).findFirst();
+            String materialCode = "";
+            if (tmpSkuTemplate.get().getExtra() != null){
+                materialCode = tmpSkuTemplate.get().getExtra().getOrDefault("materialCode","");
+            }
+            return materialCode;
         }
 
 

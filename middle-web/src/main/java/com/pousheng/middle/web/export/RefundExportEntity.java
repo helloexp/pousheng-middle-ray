@@ -19,6 +19,12 @@ public class RefundExportEntity {
     private Long orderID;
 
     /**
+     * 售后单号
+     */
+    @ExportTitle("售后单号")
+    private Long refundId;
+
+    /**
      * 店铺
      */
     @ExportTitle("店铺")

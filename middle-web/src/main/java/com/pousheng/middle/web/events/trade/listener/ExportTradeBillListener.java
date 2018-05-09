@@ -366,6 +366,7 @@ public class ExportTradeBillListener {
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
                         export.setOrderID(refundInfo.getOrderRefund().getOrderId());
+                        export.setRefundId(refundInfo.getRefund().getId());
                         export.setShopName(refundInfo.getRefund().getShopName());
                         export.setMemo(refundInfo.getRefund().getBuyerNote());
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());

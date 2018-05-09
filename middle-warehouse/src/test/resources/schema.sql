@@ -15,17 +15,18 @@ drop table if exists `pousheng_warehouses`;
 
 CREATE TABLE `pousheng_warehouses` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
-  `code` varchar(64) NULL COMMENT '仓库编码',
+  `code` varchar(64) DEFAULT NULL COMMENT '仓库编码',
   `name` varchar(64) NOT NULL COMMENT '仓库名称',
-  `type` tinyint(4)  NULL COMMENT '仓库类型',
+  `type` tinyint(4) DEFAULT NULL COMMENT '仓库类型',
   `status` tinyint(4) NOT NULL COMMENT '仓库状态',
-  `address` varchar(128) NULL COMMENT '仓库地址',
-  `company_id` varchar(64) NULL COMMENT '公司编码',
-  `company_name` varchar(64) NULL COMMENT '公司名称',
-  `owner_id` bigint(20)  NULL COMMENT '负责人id',
-  `is_default` tinyint(4) NULL COMMENT '是否默认发货仓',
-  `is_mpos` tinyint(4) DEFAULT 0 COMMENT '是否为mpos仓库',
-  `extra_json` varchar(2048) NULL COMMENT '附加信息',
+  `address` varchar(128) DEFAULT NULL COMMENT '仓库地址',
+  `company_id` varchar(64) DEFAULT NULL,
+  `company_name` varchar(64) DEFAULT NULL,
+  `owner_id` bigint(20) DEFAULT NULL COMMENT '负责人id',
+  `is_default` tinyint(4) DEFAULT NULL COMMENT '是否默认发货仓',
+  `is_mpos` tinyint(4) DEFAULT '0',
+  `extra_json` varchar(2048) DEFAULT NULL COMMENT '附加信息',
+  `tags_json` varchar(2048) DEFAULT NULL COMMENT 'tag信息, json表示',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
@@ -147,13 +148,14 @@ CREATE TABLE `pousheng_warehouse_shop_stock_rules`(
 drop table if exists `pousheng_stock_push_logs`;
 CREATE TABLE `pousheng_stock_push_logs`
 (
-  `id` BIGINT(20) unsigned NOT NULL AUTO_INCREMENT,
-  `shop_id`  BIGINT(20) NOT NULL  COMMENT '店铺id',
-  `shop_name` VARCHAR(64) NOT NULL COMMENT '店铺名称',
-  `sku_code` VARCHAR(40) NULL COMMENT 'SKU 编码 (标准库存单位编码)',
-  `quantity`  BIGINT(20) NOT NULL COMMENT 'sku数量',
-  `status` INT(1) NOT NULL COMMENT '1:推送成功,2:推送失败',
-  `cause` VARCHAR(512) COMMENT '失败原因',
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
+  `shop_name` varchar(64) NOT NULL COMMENT '店铺名称',
+  `sku_code` varchar(40) DEFAULT NULL COMMENT 'SKU 编码 (标准库存单位编码)',
+  `quantity` bigint(20) NOT NULL COMMENT 'sku数量',
+  `status` int(1) NOT NULL COMMENT '1:推送成功,2:推送失败',
+  `cause` varchar(512) DEFAULT NULL COMMENT '失败原因',
+  `sync_at` datetime DEFAULT NULL,
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY(`id`),
@@ -165,7 +167,6 @@ CREATE TABLE `pousheng_stock_push_logs`
 
 
 drop table if exists `pousheng_mpos_sku_stocks`;
-
 CREATE TABLE `pousheng_mpos_sku_stocks` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `warehouse_id` bigint(20)  NULL COMMENT '仓库id',

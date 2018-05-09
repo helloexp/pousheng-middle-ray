@@ -98,6 +98,8 @@ public class ExportTradeBillListener {
     @Autowired
     private OpenShopCacher openShopCacher;
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
+
+    private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -366,6 +368,7 @@ public class ExportTradeBillListener {
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
                         export.setOrderID(refundInfo.getOrderRefund().getOrderId());
+                        export.setRefundId(refundInfo.getRefund().getId());
                         export.setShopName(refundInfo.getRefund().getShopName());
                         export.setMemo(refundInfo.getRefund().getBuyerNote());
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
@@ -420,7 +423,13 @@ public class ExportTradeBillListener {
             log.error("get sku template bySkuCode fail ,skuCode={},error:{}",skuCode, response.getError());
             throw new JsonResponseException(response.getError());
         } else {
-            return response.getResult().get(0).getExtra().getOrDefault("materialCode","");
+            Optional<SkuTemplate> tmpSkuTemplate = response.getResult().stream().filter(
+                    s -> s.getStatus().equals(SKU_TEMPLATES_AVALIABLE_STATUS)).findFirst();
+            String materialCode = "";
+            if (tmpSkuTemplate.get().getExtra() != null){
+                materialCode = tmpSkuTemplate.get().getExtra().getOrDefault("materialCode","");
+            }
+            return materialCode;
         }
 
 
@@ -487,6 +496,7 @@ public class ExportTradeBillListener {
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
+                    entity.setShipmentId(shipmentContext.getShipment().getId());
                     entity.setItemNo(item.getSkuCode());
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
@@ -508,7 +518,7 @@ public class ExportTradeBillListener {
                         entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
-                    entity.setOrderStatus(MiddleOrderStatus.fromInt(shopOrderResponse.getResult().getStatus()).getName());
+                    entity.setShipmentStatus(MiddleShipmentsStatus.fromInt(shipmentContext.getShipment().getStatus()).getName());
                     shipmentExportEntities.add(entity);
 
                 });

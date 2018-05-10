@@ -22,7 +22,7 @@ public class RefundExportEntity {
      * 售后单号
      */
     @ExportTitle("售后单号")
-    private Long refundId;
+    private String refundCode;
 
     /**
      * 店铺

@@ -100,10 +100,6 @@ public class ExportTradeBillListener {
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
 
     private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
-<<<<<<< HEAD
-=======
-
->>>>>>> 修复发货单和售后单id为code
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -430,18 +426,10 @@ public class ExportTradeBillListener {
             Optional<SkuTemplate> tmpSkuTemplate = response.getResult().stream().filter(
                     s -> s.getStatus().equals(SKU_TEMPLATES_AVALIABLE_STATUS)).findFirst();
             String materialCode = "";
-<<<<<<< HEAD
-            if (tmpSkuTemplate.get().getExtra() != null){
-                materialCode = tmpSkuTemplate.get().getExtra().getOrDefault("materialCode","");
-            }
-            return materialCode;
-=======
             if (tmpSkuTemplate.isPresent() && tmpSkuTemplate.get().getExtra() != null){
                 materialCode = tmpSkuTemplate.get().getExtra().getOrDefault("materialCode","");
             }
             return materialCode;
-
->>>>>>> 修复发货单和售后单id为code
         }
 
 
@@ -508,11 +496,7 @@ public class ExportTradeBillListener {
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
                     entity.setOrderCode(shipmentContext.getOrderShipment().getOrderCode());
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
-<<<<<<< HEAD
-                    entity.setShipmentId(shipmentContext.getShipment().getId());
-=======
                     entity.setShipmenCode(shipmentContext.getShipment().getShipmentCode());
->>>>>>> 修复发货单和售后单id为code
                     entity.setItemNo(item.getSkuCode());
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());

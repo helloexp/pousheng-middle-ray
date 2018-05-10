@@ -20,6 +20,8 @@ public class ShipmentExportEntity {
 
     @ExportTitle("货号")
     private String materialCode;
+    @ExportTitle("发货单号")
+    private String shipmenCode;
 
     @ExportTitle("发货单号")
     private Long shipmentId;

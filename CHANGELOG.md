@@ -1,5 +1,13 @@
 # RELEASE NOTES
 
+## 2.0.4 (2018-05-10)
+
+*  【BUG】生产环境-中台导出订单/售后订单/发货单没有按照权限导出	http://pmp.terminus.io/console/project/141/issues/31747 ok
+*  【任务】发货单显示拒单理由	http://pmp.terminus.io/console/project/178/issues/33168 ok
+*  【任务】发货单根据订单来源和发货仓库所属的店铺展现。	http://pmp.terminus.io/console/project/178/issues/33252 ok
+*  【任务】中台仓库库存不正确	http://pmp.terminus.io/console/project/178/issues/34627 ok
+*  【BUG】修复发货单和售后单导出里的id为code	http://pmp.terminus.io/console/project/178/issues/34951
+
 ## 2.0.3 (2018-04-26)
 
 * 苏宁特卖

@@ -227,7 +227,7 @@ public class ExportTradeBillListener {
                 ArrayList<String> querySkuCodes = Lists.newArrayList();
                 skuOrders.get(orderID).forEach(skuOrder -> {
                     OrderExportEntity export = new OrderExportEntity();
-                    export.setOrderID(skuOrder.getOrderId());
+                    export.setOrderCode(shopOrder.getOrderCode());
                     export.setShopName(skuOrder.getShopName());
                     shipment.ifPresent(s -> {
                         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(s);
@@ -367,8 +367,8 @@ public class ExportTradeBillListener {
 
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
-                        export.setOrderID(refundInfo.getOrderRefund().getOrderId());
-                        export.setRefundId(refundInfo.getRefund().getId());
+                        export.setOrderCode(refundInfo.getOrderRefund().getOrderCode());
+                        export.setRefundCode(refundInfo.getRefund().getRefundCode());
                         export.setShopName(refundInfo.getRefund().getShopName());
                         export.setMemo(refundInfo.getRefund().getBuyerNote());
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
@@ -494,7 +494,7 @@ public class ExportTradeBillListener {
                     //发货方
                     entity.setWarehouseName(shipmentExtra.getWarehouseName());
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
-                    entity.setOrderID(shipmentContext.getOrderShipment().getOrderId());
+                    entity.setOrderCode(shipmentContext.getOrderShipment().getOrderCode());
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                     entity.setShipmentId(shipmentContext.getShipment().getId());
                     entity.setItemNo(item.getSkuCode());

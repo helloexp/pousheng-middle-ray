@@ -32,17 +32,17 @@ public class ExportUtilTest {
         List<OrderExportEntity> entities = new ArrayList<>();
 
         OrderExportEntity orderExport = new OrderExportEntity();
-        orderExport.setOrderID(System.currentTimeMillis());
+        orderExport.setOrderCode(String.valueOf(System.currentTimeMillis()));
         orderExport.setShopName("张三的店");
         entities.add(orderExport);
 
         OrderExportEntity orderExport2 = new OrderExportEntity();
-        orderExport2.setOrderID(System.currentTimeMillis());
+        orderExport2.setOrderCode(String.valueOf(System.currentTimeMillis()));
         orderExport2.setShopName("里斯的店");
         entities.add(orderExport2);
 
         OrderExportEntity orderExport3 = new OrderExportEntity();
-        orderExport3.setOrderID(System.currentTimeMillis());
+        orderExport3.setOrderCode(String.valueOf(System.currentTimeMillis()));
         orderExport3.setShopName("王武的店");
         entities.add(orderExport3);
 
@@ -55,7 +55,7 @@ public class ExportUtilTest {
     @Test
     public void orderTest() {
         OrderExportEntity orderExport = new OrderExportEntity();
-        orderExport.setOrderID(3434888387674L);
+        orderExport.setOrderCode("3434888387674");
         orderExport.setShopName("shangzhaer");
         orderExport.setPaymentDate(new Date());
         orderExport.setOrderStatus(MiddleOrderStatus.CONFIRMED.getName());

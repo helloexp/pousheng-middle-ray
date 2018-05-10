@@ -16,7 +16,7 @@ public class ShipmentExportEntity {
     private String shopName;
 
     @ExportTitle("订单号")
-    private Long orderID;
+    private String orderCode;
 
     @ExportTitle("货号")
     private String materialCode;

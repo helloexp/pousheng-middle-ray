@@ -17,7 +17,7 @@ public class OrderExportEntity {
      * 订单编号
      */
     @ExportTitle("订单编号")
-    private Long orderID;
+    private String orderCode;
     /**
      * 店铺名称
      */

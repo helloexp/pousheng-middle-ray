@@ -16,13 +16,13 @@ public class RefundExportEntity {
      * 订单号
      */
     @ExportTitle("订单号")
-    private Long orderID;
+    private String orderCode;
 
     /**
      * 售后单号
      */
     @ExportTitle("售后单号")
-    private Long refundId;
+    private String refundCode;
 
     /**
      * 店铺

@@ -7,6 +7,11 @@ package com.pousheng.middle.web.spu;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
+import com.pousheng.middle.web.utils.RichTextCleaner;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -25,7 +30,6 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -90,9 +94,10 @@ public class Spus {
         return rSpu.getResult();
     }
 
-
+    @ApiOperation("创建")
+    @LogMe(description = "创建Spu", compareTo = "spuDao#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody FullSpu fullSpu) {
+    public Long create(@RequestBody @LogMeContext  FullSpu fullSpu) {
         if(log.isDebugEnabled()){
             log.debug("API-SPU-CREATE-START param: fullSpu [{}]",JsonMapper.nonEmptyMapper().toJson(fullSpu));
         }
@@ -168,8 +173,11 @@ public class Spus {
         }
     }
 
+    @ApiOperation("更新")
+    @LogMe(description = "更新SPU",ignore = true)
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean update(@RequestBody FullSpu fullSpu) {
+    public Boolean update(@RequestBody @LogMeContext FullSpu fullSpu) {
+
         if(log.isDebugEnabled()){
             log.debug("API-SPU-UPDATE-START param: fullSpu [{}]",JsonMapper.nonEmptyMapper().toJson(fullSpu));
         }
@@ -200,15 +208,16 @@ public class Spus {
 
 
 
-
+    @ApiOperation("附加标签")
+    @LogMe(description = "更新Spu附加标签", compareTo = "spuDao#findById")
     @RequestMapping(value ="/extras", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public boolean updateExtras(@RequestParam(name="id")Long id, @RequestParam("extras")String extras){
+    public boolean updateExtras(@RequestParam(name = "id") @LogMeId Long id, @RequestParam("extras") @LogMeId String extras){
         if(log.isDebugEnabled()){
             log.debug("API-SPU-EXTRAS-START param: id [{}] extras [{}]",id,extras);
         }
         Map<String,String> realTags = Splitter.on(',').withKeyValueSeparator(':').split(extras);
         Response<Boolean>  r = spuWriteService.extras(id,realTags);
-        if(!r.isSuccess()){
+        if (!r.isSuccess()) {
             log.error("failed to update extras to {} for spu(id={}), error code:{} ",
                     extras, id, r.getError());
             throw new JsonResponseException(r.getError());
@@ -220,8 +229,10 @@ public class Spus {
     }
 
 
+    @ApiOperation("删除")
+    @LogMe(description = "删除Spu", deleting = "spuDao#findById")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public boolean delete(@PathVariable("id")Long id){
+    public boolean delete(@PathVariable("id") @LogMeContext  Long id){
         if(log.isDebugEnabled()){
             log.debug("API-SPU-DELETE-START param: id [{}]",id);
         }
@@ -255,6 +266,50 @@ public class Spus {
         return resp.getResult();
     }
 
+    @ApiOperation("根据spuId编辑富文本详情")
+    @LogMe(description = "根据spuId编辑富文本详情", compareTo = "spuDetailDao#findById")
+    @RequestMapping(value = "/{id}/detail", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean editMRichText(@PathVariable("id") @LogMeContext Long spuId, @RequestParam("detail") @LogMeContext String richText) {
 
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-EDITRICHTEXT-START param: spuId [{}] richText [{}]",spuId,richText);
+        }
+        Response<Spu> rSpu = spuReadService.findById(spuId);
+        if (!rSpu.isSuccess()) {
+            log.error("failed to find spu(id={}), error code:{}", spuId, rSpu.getError());
+            throw new JsonResponseException(rSpu.getError());
+        }
+
+        String safeRichText = RichTextCleaner.safe(richText);
+
+        Response<Boolean> r = spuWriteService.editRichText(spuId, safeRichText);
+
+        if (!r.isSuccess()) {
+            log.error("failed to edit richtext for spu(id={}), error code:{}", spuId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-EDITRICHTEXT-END param: spuId [{}] richText [{}]",spuId,richText);
+        }
+        return true;
+    }
+
+    @ApiOperation("根据spuId查询富文本详情")
+    @RequestMapping(value ="/{id}/detail" ,method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String findRichTextById(@PathVariable("id") Long spuId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-FINDRICHTEXTBYID-START param: spuId [{}]",spuId);
+        }
+        Response<String> r = spuReadService.findRichTextById(spuId);
+        if (!r.isSuccess()) {
+            log.error("failed to find rich text detail for spu(id={}), error code:{}",
+                    spuId, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-FINDRICHTEXTBYID-END param: spuId [{}] ,resp: [{}]",spuId,r.getResult());
+        }
+        return r.getResult();
+    }
 
 }

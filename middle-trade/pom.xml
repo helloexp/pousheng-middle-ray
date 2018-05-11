@@ -53,6 +53,10 @@
             <artifactId>opencsv</artifactId>
             <version>RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>io.terminus</groupId>
+            <artifactId>applog-boot-starter</artifactId>
+        </dependency>
     </dependencies>
 
     <build>

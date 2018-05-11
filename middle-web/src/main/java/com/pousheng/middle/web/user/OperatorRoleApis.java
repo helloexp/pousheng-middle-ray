@@ -1,6 +1,10 @@
 package com.pousheng.middle.web.user;
 
 import com.google.common.collect.Lists;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -40,8 +44,10 @@ public class OperatorRoleApis {
      * @param role 运营角色
      * @return 角色主键 ID
      */
+    @ApiOperation("创建运营角")
+    @LogMe(description = "创建运营角", compareTo = "operatorRoleDao#findById")
     @RequestMapping(value = "", method = RequestMethod.POST)
-    public Long createRole(@RequestBody OperatorRole role) {
+    public Long createRole(@RequestBody @LogMeContext  OperatorRole role) {
         String roleStr = JsonMapper.nonEmptyMapper().toJson(role);
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-CREATEROLE-START param: role [{}]",roleStr);
@@ -61,6 +67,8 @@ public class OperatorRoleApis {
      * @param role 角色授权内容
      * @return 是否更新成功
      */
+    @ApiOperation("更新运营角色")
+    @LogMe(description = "更新运营角色", compareTo = "operatorRoleDao#findById")
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     public Boolean updateRole(@PathVariable Long id, @RequestBody OperatorRole role) {
         String roleStr = JsonMapper.nonEmptyMapper().toJson(role);
@@ -80,8 +88,9 @@ public class OperatorRoleApis {
         return or500(resp);
     }
 
+    @LogMe(description = "删除运营角", deleting = "operatorRoleDao#findById")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
-    public Boolean deleteRole(@PathVariable Long id) {
+        public Boolean deleteRole(@PathVariable @LogMeId Long id) {
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-DELETEROLE-START param: id [{}]",id);
         }

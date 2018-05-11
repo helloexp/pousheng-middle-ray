@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.model;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,6 +20,7 @@ public class WarehouseShopGroup implements Serializable {
     /**
      * 主键id
      */
+    @LogMeId
     private Long id;
 
     /**

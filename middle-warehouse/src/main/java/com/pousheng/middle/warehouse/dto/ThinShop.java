@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.dto;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;

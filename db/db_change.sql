@@ -350,7 +350,40 @@ ALTER TABLE `pousheng_sku_stock_tasks` add `type` VARCHAR(4)
 -- 添加仓库派单优先级类型
 alter table `pousheng_warehouse_rules` add `item_priority_type` tinyint(4)  NULL COMMENT '仓库优先级类型 1距离 2排序' after `shop_group_id`;
 
-
 -- 仓库增加out字段
 ALTER TABLE pousheng_warehouses ADD COLUMN `out_code` varchar(64) NULL COMMENT '外部编码' AFTER `code`;
 update pousheng_warehouses  set  out_code= JSON_UNQUOTE(json_extract(extra_json,'$.outCode[0]'))​​;
+
+-- 2018.01.08 增加会员应用日志记录表
+DROP TABLE IF EXISTS `mc_application_logs`;
+CREATE TABLE `mc_application_logs` (
+  `id`              BIGINT        UNSIGNED NOT NULL AUTO_INCREMENT,
+  `operator_id`     VARCHAR(32)   NOT NULL     COMMENT '操作者Id',
+  `root_id`         VARCHAR(32)   DEFAULT NULL COMMENT '外部id',
+  `root_key_id`     VARCHAR(32)   NOT NULL     COMMENT '模板key id',
+  `metadata`        TEXT          NOT NULL     COMMENT '操作内容',
+  `ext1`            VARCHAR(64)   DEFAULT NULL COMMENT '额外字段1',
+  `ext2`            VARCHAR(64)   DEFAULT NULL COMMENT '额外字段2',
+  `ext3`            VARCHAR(64)   DEFAULT NULL COMMENT '额外字段3',
+  `created_at`      DATETIME      NOT NULL     COMMENT '创建时间',
+  `updated_at`      DATETIME      NOT NULL     COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) COMMENT = '会员应用日志记录';
+CREATE INDEX idx_mc_al_root_id ON mc_application_logs(root_id);
+CREATE INDEX idx_mc_al_root_key_id ON mc_application_logs(root_key_id);
+CREATE INDEX idx_mc_al_operator_id ON mc_application_logs(operator_id);
+CREATE INDEX idx_mc_al_created_at ON mc_application_logs(created_at);
+
+-- 2018.01.22 增加会员应用日志模板key类型
+DROP TABLE IF EXISTS `mc_application_log_keys`;
+CREATE TABLE `mc_application_log_keys`(
+  `id`                      BIGINT        UNSIGNED NOT NULL AUTO_INCREMENT,
+  `root_key_class_name`     VARCHAR(128)  NOT NULL     COMMENT '模板key类名',
+  `root_key_method_name`    VARCHAR(64)   NOT NULL     COMMENT '模板key方法名',
+  `description`             VARCHAR(256)  NOT NULL     COMMENT '任务的描述',
+  `root_id_way`             TINYINT       NOT NULL     COMMENT '外部id生成方式',
+  `created_at`              DATETIME      NOT NULL     COMMENT '创建时间',
+  `updated_at`              DATETIME      NOT NULL     COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) COMMENT = '增加会员应用日志模板key类型';
+CREATE UNIQUE INDEX idx_mc_ald_root_key_name on mc_application_log_keys(root_key_class_name,root_key_method_name);

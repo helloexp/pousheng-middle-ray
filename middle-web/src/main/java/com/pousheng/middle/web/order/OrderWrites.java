@@ -3,8 +3,6 @@ package com.pousheng.middle.web.order;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
-import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import io.terminus.parana.order.model.OrderLevel;
@@ -34,8 +32,6 @@ public class OrderWrites {
      * @param shopOrderId 订单id
      */
     @RequestMapping(value = "api/order/{id}/cancel",method = RequestMethod.PUT)
-    @OperationLogModule(OperationLogModule.Module.ORDER)
-    @OperationLogType("取消订单")
     public void cancelOrder(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-CANCEL-START param: shopOrderId [{}] ",shopOrderId);

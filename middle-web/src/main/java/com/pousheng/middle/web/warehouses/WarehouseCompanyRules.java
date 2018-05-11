@@ -19,6 +19,10 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.dto.Company;
 import com.pousheng.middle.web.warehouses.dto.CompanyRuleDto;
 import com.pousheng.middle.web.warehouses.dto.ErpShop;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -33,7 +37,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -65,9 +68,11 @@ public class WarehouseCompanyRules {
     private ShipmentReadLogic shipmentReadLogic;
 
 
+
+    @ApiOperation("创建")
+    @LogMe(description = "创建公司规则", compareTo = "warehouseCompanyRuleDao#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建")
-    public Long create(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+    public Long create(@RequestBody @LogMeContext WarehouseCompanyRule warehouseCompanyRule){
         String warehouseCompanyRuleStr = JsonMapper.nonEmptyMapper().toJson(warehouseCompanyRule);
         if(log.isDebugEnabled()){
             log.debug("API-WAREHOUSE-COMPANY-RULE-CREATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
@@ -90,9 +95,10 @@ public class WarehouseCompanyRules {
         return r.getResult();
     }
 
+    @ApiOperation("更新")
+    @LogMe(description = "更新公司规则", compareTo = "warehouseCompanyRuleDao#findById")
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("更新")
-    public Boolean update(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+    public Boolean update(@RequestBody @LogMeContext WarehouseCompanyRule warehouseCompanyRule){
         String warehouseCompanyRuleStr = JsonMapper.nonEmptyMapper().toJson(warehouseCompanyRule);
         if(log.isDebugEnabled()){
             log.debug("API-WAREHOUSE-COMPANY-RULE-UPDATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
@@ -115,8 +121,10 @@ public class WarehouseCompanyRules {
         return r.getResult();
     }
 
+    @ApiOperation("删除")
+    @LogMe(description = "删除公司规则", compareTo = "warehouseCompanyRuleDao#findById")
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean delete(@PathVariable Long id){
+    public Boolean delete(@PathVariable @LogMeId Long id){
         if(log.isDebugEnabled()){
             log.debug("API-WAREHOUSE-COMPANY-RULE-DELETE-START param: id [{}]",id);
         }

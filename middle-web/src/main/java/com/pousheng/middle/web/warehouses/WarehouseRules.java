@@ -11,8 +11,11 @@ import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
 import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
-import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.component.WarehouseRuleComponent;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -27,11 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * 店铺规则
@@ -66,8 +66,8 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建")
-    public Long create(@RequestBody ThinShop[] shops) {
+    @LogMe(description = "创建", ignore = true)
+    public Long create(@RequestBody @LogMeContext ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
         List<ThinShop> thinShops = Lists.newArrayList(shops);
 
@@ -96,8 +96,8 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(value="/{ruleId}",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("编辑")
-    public Boolean update(@PathVariable Long ruleId,  @RequestBody ThinShop[] shops) {
+    @LogMe(description = "编辑",ignore = true)
+    public Boolean update(@PathVariable @LogMeContext Long ruleId, @RequestBody @LogMeContext ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
         /*List<ThinShop> thinShops = Lists.newArrayList(shops);
         List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
@@ -141,8 +141,10 @@ public class WarehouseRules {
      * @param ruleId 规则id
      * @return 是否删除成功
      */
+    @ApiOperation("删除单条规则")
+    @LogMe(description = "删除单条规则", deleting = "warehouseRuleDao#findById")
     @RequestMapping(value = "/{ruleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean delete(@PathVariable Long ruleId) {
+    public Boolean delete(@PathVariable @LogMeId Long ruleId) {
         Response<Boolean> r = warehouseRulesClient.deleteById(ruleId);
         if (!r.isSuccess()) {
             log.error("failed to delete warehouse rule(id={}), error code:{}", ruleId, r.getError());
@@ -160,8 +162,10 @@ public class WarehouseRules {
      * @param groupId 店铺组id
      * @return 是否删除成功
      */
+    @ApiOperation("删除店铺组,同时删除对应的发货规则记录")
+    @LogMe(description = "删除店铺组", deleting = "warehouseRuleDao#findById")
     @RequestMapping(value = "/group/{groupId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean deleteShopGroup(@PathVariable Long groupId){
+    public Boolean deleteShopGroup(@PathVariable @LogMeId Long groupId){
         Response<Boolean> r = warehouseRulesClient.deleteShopGroup(groupId);
         if (!r.isSuccess()) {
             log.error("failed to delete warehouse shop group(id={}), error code:{}", groupId, r.getError());

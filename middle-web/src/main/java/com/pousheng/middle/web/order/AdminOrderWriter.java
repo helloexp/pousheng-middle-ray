@@ -25,6 +25,9 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -106,8 +109,9 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/sync/ecp", method = RequestMethod.PUT)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    @OperationLogType("同步订单到电商")
-    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
+    @ApiOperation("发货单已发货,同步订单信息到电商")
+    @LogMe(description = "发货单已发货,同步订单信息到电商",ignore = true)
+    public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @LogMeContext Long shopOrderId) {
         if(log.isDebugEnabled()){
             log.debug("API-SYNCORDERINFOTOECP-START param: shopOrderId [{}] ",shopOrderId);
         }
@@ -146,9 +150,9 @@ public class AdminOrderWriter {
      * @param skuCode
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
-    @OperationLogType("取消子订单")
-    public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
-        log.info("start try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
+    @ApiOperation("取消子订单(自动)")
+    public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
+        log.info("try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
         orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
         log.info("end try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
 
@@ -161,8 +165,8 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "api/order/{id}/rollback/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单撤销")
-    public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
-        log.info("start try to roll back shop order shopOrderId is {}", shopOrderId);
+    public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
+        log.info("try to roll back shop order shopOrderId is {}", shopOrderId);
         Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
         if (!response.isSuccess()) {
             throw new JsonResponseException("rollback.shop.order.failed");
@@ -215,7 +219,6 @@ public class AdminOrderWriter {
      * @param shopOrderId
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/shop/order", method = RequestMethod.PUT)
-    @OperationLogType("整单取消")
     public void autoCancelShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         log.info("try to auto cancel shop order shopOrderId is {},skuCode is {}", shopOrderId);
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
@@ -229,7 +232,6 @@ public class AdminOrderWriter {
      * @param shopOrderId
      */
     @RequestMapping(value = "api/order/{id}/confirm", method = RequestMethod.PUT)
-    @OperationLogType("电商确认收货")
     public void confirmOrders(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         if(log.isDebugEnabled()){
             log.debug("API-CONFIRMORDERS-START param: shopOrderId [{}]",shopOrderId);
@@ -291,9 +293,10 @@ public class AdminOrderWriter {
      * @param id                  店铺订单主键
      * @param customerSerivceNote 客服备注
      */
+    @ApiOperation("添加中台客服备注")
+    @LogMe(description = "添加中台客服备注", ignore = true)
     @RequestMapping(value = "/api/order/{id}/add/customer/service/note", method = RequestMethod.PUT)
-    @OperationLogType("添加客服备注")
-    public void addCustomerServiceNote(@PathVariable("id") @OperationLogParam Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
+    public void addCustomerServiceNote(@PathVariable("id") @LogMeContext Long id, @RequestParam("customerSerivceNote") @LogMeContext String customerSerivceNote) {
         if(log.isDebugEnabled()){
             log.debug("API-ADDCUSTOMERSERVICENOTE-START param: id [{}] customerSerivceNote [{}]",id,customerSerivceNote);
         }
@@ -312,8 +315,11 @@ public class AdminOrderWriter {
      * @return true (更新成功)or false (更新失败)
      */
     @RequestMapping(value = "/api/order/{id}/edit/receiver/info", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("修改订单收货信息")
-    public void editReceiverInfos(@PathVariable("id") @OperationLogParam Long id, @RequestParam("data") String data, @RequestParam(value = "buyerNote", required = false) String buyerNote) {
+    @LogMe(description = "修改订单的收货信息",ignore = true)
+    public void editReceiverInfos(
+            @PathVariable("id") @LogMeContext Long id,
+            @RequestParam("data") @LogMeContext String data,
+            @RequestParam(value = "buyerNote", required = false) @LogMeContext String buyerNote) {
         if(log.isDebugEnabled()){
             log.debug("API-EDITRECEIVERINFOS-START param: id [{}] data [{}] buyerNote [{}]",id,data,buyerNote);
         }
@@ -349,8 +355,10 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/edit/invoice", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("修改发票信息")
-    public void editInvoiceInfos(@PathVariable("id") @OperationLogParam Long id, @RequestParam("data") String data, @RequestParam(value = "title", required = false) String title) {
+    @LogMe(description = "修改订单的发票信息", ignore = true)
+    public void editInvoiceInfos(@PathVariable("id") @LogMeContext Long id,
+                                 @RequestParam("data") @LogMeContext String data,
+                                 @RequestParam(value = "title", required = false) @LogMeContext String title) {
         if(log.isDebugEnabled()){
             log.debug("API-EDITINVOICEINFOS-START param: id [{}] data [{}] title [{}]",id,data,title);
         }
@@ -396,8 +404,8 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/{id}/auto/handle", method = RequestMethod.PUT)
-    @OperationLogType("单个订单自动处理")
-    public synchronized Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId) {
+    @LogMe(description = "单个订单生成发货单", ignore = true)
+    public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @LogMeContext Long shopOrderId) {
         if(log.isDebugEnabled()){
             log.debug("API-AUTOHANDLESINGLESHOPORDER-START param: shopOrderId [{}] ",shopOrderId);
         }
@@ -420,8 +428,8 @@ public class AdminOrderWriter {
      * @return
      */
     @RequestMapping(value = "/api/order/batch/auto/handle", method = RequestMethod.PUT)
-    @OperationLogType("批量订单自动处理")
-    public synchronized Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids) {
+    @LogMe(description = "批量订单自动处理",ignore = true)
+    public Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") @LogMeContext List<Long> ids) {
         if(log.isDebugEnabled()){
             log.debug("API-AUTOBATCHHANDLESHOPORDER-START param: ids [{}] ",ids);
         }
@@ -533,9 +541,12 @@ public class AdminOrderWriter {
      * @param hkExpressCode
      * @return
      */
+    @ApiOperation("选择快递商")
+    @LogMe(description = "选择快递商",ignore = true)
     @RequestMapping(value = "/api/order/choose/hk/express/code", method = RequestMethod.PUT)
-    @OperationLogType("选择快递商")
-    public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode, @RequestParam String expressName, @RequestParam @OperationLogParam Long shopOrderId) {
+    public Response<Boolean> chooseExpress(@RequestParam @LogMeContext String hkExpressCode,
+                                           @RequestParam @LogMeContext String expressName,
+                                           @RequestParam @LogMeContext Long shopOrderId) {
         if(log.isDebugEnabled()){
             log.debug("API-CHOOSEEXPRESS-START param: hkExpressCode [{}] expressName [{}] shopOrderId [{}]",hkExpressCode,expressName,shopOrderId);
         }
@@ -590,11 +601,11 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    @OperationLogType("创建订单")
-    public Response<Boolean> createMiddleOrder(@RequestBody OpenFullOrderInfo openFullOrderInfo) {
-        if(log.isDebugEnabled()){
-            log.debug("API-CREATEMIDDLEORDER-START param: openFullOrderInfo [{}] ",openFullOrderInfo);
-        }
+    @LogMe(description = "创建订单",ignore = true)
+    public Response<Boolean> createMiddleOrder(@RequestBody @LogMeContext OpenFullOrderInfo openFullOrderInfo) {
+            if(log.isDebugEnabled()){
+                log.debug("API-CREATEMIDDLEORDER-START param: openFullOrderInfo [{}] ",openFullOrderInfo);
+            }
         try {
             openFullOrderInfo.getOrder().setStatus(1);
             Response<Boolean> response = openClientOrderLogic.createOrder(openFullOrderInfo);
@@ -616,7 +627,6 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/import", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
-    @OperationLogType("导入订单")
     public Response<Boolean> importMiddleOrder(MultipartFile file) {
         try {
             Set<String> allowExts = Sets.newHashSet("xlsx");

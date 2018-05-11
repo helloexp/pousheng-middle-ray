@@ -3,6 +3,9 @@ package com.pousheng.middle.web.erp;
 import com.google.common.base.Throwables;
 import com.pousheng.erp.model.SkuGroupRule;
 import com.pousheng.erp.service.SkuGroupRuleService;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -29,8 +32,11 @@ public class SkuGroupRules {
         this.skuGroupRuleService = skuGroupRuleService;
     }
 
+
+    @LogMe(description = "创建SPU规则", compareTo = "skuGroupRuleDao#findById")
+    @ApiOperation("创建")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody SkuGroupRule skuGroupRule){
+    public Long create(@RequestBody @LogMeContext  SkuGroupRule skuGroupRule){
         String ruleStr = JsonMapper.nonEmptyMapper().toJson(skuGroupRule);
         if(log.isDebugEnabled()){
             log.debug("API-SKURULE-CREATE-START param: skuGroupRule [{}]",ruleStr);
@@ -56,8 +62,11 @@ public class SkuGroupRules {
 
     }
 
+
+    @LogMe(description = "更新SPU规则",ignore = true)
+    @ApiOperation("更新")
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean update(@RequestBody SkuGroupRule skuGroupRule){
+    public Boolean update(@RequestBody @LogMeContext  SkuGroupRule skuGroupRule){
         String ruleStr = JsonMapper.nonEmptyMapper().toJson(skuGroupRule);
         if(log.isDebugEnabled()){
             log.debug("API-SKURULE-UPDATE-START param: skuGroupRule [{}]",ruleStr);
@@ -77,8 +86,10 @@ public class SkuGroupRules {
         return Boolean.TRUE;
     }
 
+    @ApiOperation("删除SPU规则")
+    @LogMe(description = "删除SPU规则",deleting = "skuGroupRuleDao#findById")
     @RequestMapping(value = "/{id}",method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean delete(@PathVariable Long id){
+    public Boolean delete(@PathVariable @LogMeContext  Long id){
         if(log.isDebugEnabled()){
             log.debug("API-SKURULE-ID-START param: id [{}]",id);
         }

@@ -508,8 +508,8 @@ public class FireCall {
         }
         int pageNo = 0;
         int pageSize = 40;
-        while (true) {
-            Response<Paging<ItemMapping>> r = mappingReadService.findByOpenShopId(openShopId, null, pageNo, pageSize);
+        while(true){
+            Response<Paging<ItemMapping>> r =  mappingReadService.findByOpenShopId(openShopId,null,pageNo,pageSize);
             Paging<ItemMapping> itemMappingPaging = r.getResult();
             List<ItemMapping> itemMappingList = itemMappingPaging.getData();
             if (itemMappingList.isEmpty()) {

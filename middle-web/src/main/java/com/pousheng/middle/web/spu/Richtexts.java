@@ -4,15 +4,10 @@
 
 package com.pousheng.middle.web.spu;
 
-import com.pousheng.middle.web.utils.RichTextCleaner;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.model.Response;
-import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import io.terminus.parana.spu.service.SpuWriteService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -32,45 +27,5 @@ public class Richtexts {
     @RpcConsumer
     private SpuWriteService spuWriteService;
 
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean editRichText(@PathVariable("id") Long spuId, @RequestParam("detail") String richText) {
-        if(log.isDebugEnabled()){
-            log.debug("API-SPU-EDITRICHTEXT-START param: spuId [{}] richText [{}]",spuId,richText);
-        }
-        Response<Spu> rSpu = spuReadService.findById(spuId);
-        if (!rSpu.isSuccess()) {
-            log.error("failed to find spu(id={}), error code:{}", spuId, rSpu.getError());
-            throw new JsonResponseException(rSpu.getError());
-        }
 
-        String safeRichText = RichTextCleaner.safe(richText);
-
-        Response<Boolean> r = spuWriteService.editRichText(spuId, safeRichText);
-
-        if (!r.isSuccess()) {
-            log.error("failed to edit richtext for spu(id={}), error code:{}", spuId, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        if(log.isDebugEnabled()){
-            log.debug("API-SPU-EDITRICHTEXT-END param: spuId [{}] richText [{}]",spuId,richText);
-        }
-        return true;
-    }
-
-    @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String findRichTextById(@PathVariable("id") Long spuId) {
-        if(log.isDebugEnabled()){
-            log.debug("API-SPU-FINDRICHTEXTBYID-START param: spuId [{}]",spuId);
-        }
-        Response<String> r = spuReadService.findRichTextById(spuId);
-        if (!r.isSuccess()) {
-            log.error("failed to find rich text detail for spu(id={}), error code:{}",
-                    spuId, r.getError());
-            throw new JsonResponseException(r.getError());
-        }
-        if(log.isDebugEnabled()){
-            log.debug("API-SPU-FINDRICHTEXTBYID-END param: spuId [{}] ,resp: [{}]",spuId,r.getResult());
-        }
-        return r.getResult();
-    }
 }

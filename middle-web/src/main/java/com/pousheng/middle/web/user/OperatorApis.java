@@ -12,6 +12,10 @@ import com.pousheng.auth.service.PsUserWriteService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.web.user.component.UcUserOperationLogic;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -68,8 +72,10 @@ public class OperatorApis {
      * @param operator 运营信息
      * @return 运营用户 ID
      */
+    @ApiOperation("创建运营")
+    @LogMe(description = "创建运营",ignore = true)
     @RequestMapping(value = "", method = RequestMethod.POST)
-    public Long createOperator(@RequestBody OperatorPost operator) {
+    public Long createOperator(@RequestBody @LogMeContext OperatorPost operator) {
         String operatorStr = JsonMapper.nonEmptyMapper().toJson(operator);
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-CREATEOPERATOR-START param: operator [{}]",operatorStr);
@@ -139,8 +145,11 @@ public class OperatorApis {
     }
 
 
+
+    @ApiOperation("编辑运营")
+    @LogMe(description = "编辑运营",ignore = true)
     @RequestMapping(value = "/{userId}", method = RequestMethod.PUT)
-    public Boolean updateOperator(@PathVariable Long userId, @RequestBody OperatorPost operator) {
+    public Boolean updateOperator(@PathVariable @LogMeContext Long userId, @RequestBody @LogMeContext OperatorPost operator) {
         String operatorStr = JsonMapper.nonEmptyMapper().toJson(operator);
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-UPDATEOPERATOR-START param: userId [{}] operator: [{}]",userId,operatorStr);
@@ -231,8 +240,11 @@ public class OperatorApis {
         return !Arguments.isNull(operatorPost.getUserId());
     }
 
+
+    @ApiOperation("冻结运营账户")
+    @LogMe(description = "冻结运营账户", compareTo = "OperatorDao#findById")
     @RequestMapping(value = "/{userId}/frozen", method = RequestMethod.PUT)
-    public Boolean frozenOperator(@PathVariable Long userId) {
+    public Boolean frozenOperator(@PathVariable @LogMeId Long userId) {
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-FROZENOPERATOR-START param: userId [{}] ",userId);
         }
@@ -260,8 +272,10 @@ public class OperatorApis {
         return Boolean.TRUE;
     }
 
+    @ApiOperation("解冻运营账户")
+    @LogMe(description = "解冻运营账户", compareTo = "OperatorDao#findById")
     @RequestMapping(value = "/{userId}/unfrozen", method = RequestMethod.PUT)
-    public Boolean unfrozenOperator(@PathVariable Long userId) {
+    public Boolean unfrozenOperator(@PathVariable @LogMeId Long userId) {
         if(log.isDebugEnabled()){
             log.debug("API-OPERATOR-UNFROZENOPERATOR-START param: userId [{}] ",userId);
         }
@@ -319,6 +333,7 @@ public class OperatorApis {
         private List<Long> manageZoneIds;
 
         //用户中心用户id（绑定已有账户时）
+        @LogMeId
         private Long userId;
     }
 

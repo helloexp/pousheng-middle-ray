@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.model;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,6 +16,7 @@ public class WarehouseRuleItem implements Serializable {
 
     private static final long serialVersionUID = -5829358460555504227L;
 
+    @LogMeId
     private Long id;
     
     /**

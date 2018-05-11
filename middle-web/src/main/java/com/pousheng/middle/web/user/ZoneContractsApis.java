@@ -6,6 +6,9 @@ import com.pousheng.middle.order.model.ZoneContract;
 import com.pousheng.middle.order.service.ZoneContractReadService;
 import com.pousheng.middle.order.service.ZoneContractWriteService;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -60,8 +63,9 @@ public class ZoneContractsApis {
     }
 
     @ApiOperation("新建或者更新区部联系人")
+    @LogMe(description = "新建或者更新区部联系人", compareTo = "zoneContractDao#findById")
     @PostMapping("/create")
-    public Map<String, Long> editZoneContract(@RequestBody ZoneContract zoneContract) {
+    public Map<String, Long> editZoneContract(@RequestBody @LogMeContext ZoneContract zoneContract) {
         String zoneContractStr = JsonMapper.nonEmptyMapper().toJson(zoneContract);
         if(log.isDebugEnabled()){
             log.debug("API-ZONECONTRACTS-CREATE-START param: zoneContract [{}] ",zoneContractStr);
@@ -98,8 +102,10 @@ public class ZoneContractsApis {
     }
 
     @ApiOperation("删除区部联系人")
+    @LogMe(description = "删除区部联系人", compareTo = "zoneContractDao#findById")
     @GetMapping("/del/{id}")
-    public Response<Boolean> del(@PathVariable("id") Long id) {
+    public Response<Boolean> del(@PathVariable("id") @LogMeId Long id) {
+
         if(log.isDebugEnabled()){
             log.debug("API-ZONECONTRACTS-DEL-START param: id [{}] ",id);
         }

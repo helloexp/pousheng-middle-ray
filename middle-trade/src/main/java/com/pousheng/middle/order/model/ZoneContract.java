@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,6 +18,7 @@ import static com.pousheng.middle.order.constant.TradeConstants.STATUS_ENABLE;
 public class ZoneContract implements Serializable {
     //TODO: Do not forget add "serialVersionUID" field AND change package path!
 
+    @LogMeId
     private Long id;
 
     /**

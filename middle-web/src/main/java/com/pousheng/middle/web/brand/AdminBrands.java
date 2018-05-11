@@ -5,7 +5,12 @@
 package com.pousheng.middle.web.brand;
 
 import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiImplicitParam;
+import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -55,8 +60,11 @@ public class AdminBrands {
         return r.getResult();
     }
 
+
+    @ApiOperation("创建品牌")
+    @LogMe(description = "创建品牌", compareTo = "brandDao#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody Brand brand) {
+    public Long create(@RequestBody @LogMeContext Brand brand) {
         String brandStr = JsonMapper.nonEmptyMapper().toJson(brand);
         if(log.isDebugEnabled()){
             log.debug("API-BRANDS-CREATE-START param: brand [{}] ",brandStr);
@@ -73,8 +81,12 @@ public class AdminBrands {
     }
 
 
+
+    @ApiOperation("更新logo")
+    @LogMe(description = "更新品牌logo", ignore = true)
+    @ApiImplicitParams({@ApiImplicitParam(name = "id",paramType = "path",value = "主键id"),@ApiImplicitParam(name = "url",paramType = "query",required = true)})
     @RequestMapping(value = "/{id}/logo", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean updateLogo(@PathVariable Long id, @RequestParam String url) {
+    public Boolean updateLogo(@PathVariable @LogMeId Long id, @RequestParam @LogMeContext String url) {
         if(log.isDebugEnabled()){
             log.debug("API-BRANDS-ID-LOGO-START param: id [{}] url [{}]",id,url);
         }
@@ -98,8 +110,11 @@ public class AdminBrands {
      * 更新品牌
      * @return 是否成功
      */
+    @LogMe(description = "更新品牌信息", compareTo = "brandDao#findById")
+    @ApiOperation("更新品牌")
     @RequestMapping(value = "/update", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean updateLogo(@RequestBody Brand brand) {
+    public Boolean updateLogo(@RequestBody @LogMeContext Brand brand) {
+
         String brandStr = JsonMapper.nonEmptyMapper().toJson(brand);
         if(log.isDebugEnabled()){
             log.debug("API-BRANDS-UPDATE-START param: brand [{}] ",brandStr);
@@ -128,4 +143,5 @@ public class AdminBrands {
         }
         return resp;
     }
+
 }

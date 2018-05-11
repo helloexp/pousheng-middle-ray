@@ -1,5 +1,6 @@
 package com.pousheng.erp.model;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -16,6 +17,7 @@ public class SkuGroupRule implements Serializable {
     /**
      * 自增主键
      */
+    @LogMeId
     private Long id;
 
     /**

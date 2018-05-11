@@ -149,7 +149,6 @@ public class Refunds {
      * @return 逆向单id
      */
     @RequestMapping(value = "/api/refund/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建售后单")
     public Long createRefund(@RequestBody SubmitRefundInfo submitRefundInfo) {
         if (Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             //创建丢件补发类型的售后单
@@ -336,7 +335,6 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/sync/hk", method = RequestMethod.PUT)
-    @OperationLogType("同步售后单到恒康")
     public void syncHkRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-SYNCHKREFUND-START param: refundId [{}] ", refundId);
@@ -386,7 +384,6 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/cancel/sync/hk", method = RequestMethod.PUT)
-    @OperationLogType("同步售后单取消状态")
     public void syncHkCancelRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-SYNCHKCANCELREFUND-START param: refundId [{}] ", refundId);
@@ -429,7 +426,6 @@ public class Refunds {
      * @param refundId
      */
     @RequestMapping(value = "api/refund/{id}/sync/ecp", method = RequestMethod.PUT)
-    @OperationLogType("通知电商退款")
     public void syncECPRefund(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-SYNCECPREFUND-START param: refundId [{}] ", refundId);
@@ -452,7 +448,6 @@ public class Refunds {
      * @param refundId 售后单id
      */
     @RequestMapping(value = "api/refund/{id}/confirm/received", method = RequestMethod.PUT)
-    @OperationLogType("运营商确认收货（换货）")
     public void confirmReceived(@PathVariable(value = "id") @PermissionCheckParam Long refundId) {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-CONFIRMRECEIVED-START param: refundId [{}] ", refundId);
@@ -678,9 +673,9 @@ public class Refunds {
      * @return
      */
     @RequestMapping(value = "/api/refund/{id}/sync/hk/pos",method = RequestMethod.GET)
-     @OperationLogType("同步售后单到恒康开pos")
+    @OperationLogType("同步售后单到恒康开pos")
     public Response<Boolean> syncRefundToHkPos(@PathVariable("id") @OperationLogParam Long id){
-        if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()) {
             log.debug("API-REFUND-SYNCREFUNDTOHKPOS-START param: id [{}]", id);
         }
         Refund refund = refundReadLogic.findRefundById(id);
@@ -691,53 +686,53 @@ public class Refunds {
         return resp;
     }
 
-    /**
-     * 根据订单号获取所关联的售后单号,包括订单号自身，需要判断哪些状态的售后单不允许售后（负面清单）
-     * @param code
-     * @return
-     */
-    @RequestMapping(value = "/api/refund/order/{code}/after/sale",method = RequestMethod.GET)
-    public Response<List<MiddleAfterSaleInfo>> findAfterSaleIds(@PathVariable("code") String code){
-        if(log.isDebugEnabled()){
-            log.debug("API-REFUND-FINDAFTERSALEIDS-START param: code [{}]", code);
-        }
-        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(code);
-        List<MiddleAfterSaleInfo> middleAfterSaleInfos = Lists.newArrayList();
-        //查询售后单信息
-        List<Refund> refunds = refundReadLogic.findRefundsByOrderCode(code);
-        //添加过滤售后单id,状态，类型(丢件补发，和换货才会可以继续申请售后)
-        List<Refund> afterSales =  refunds.stream().filter(Objects::nonNull)
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.DELETED.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.CANCELED.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_HANDLE.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_SHIP.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue()))
-                .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_SHIP.getValue()))
-                .filter(it->(Objects.equals(it.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(it.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())))
-                .collect(Collectors.toList());
-        //添加售后单信息
-        afterSales.forEach(refund->{
+        /**
+         * 根据订单号获取所关联的售后单号,包括订单号自身，需要判断哪些状态的售后单不允许售后（负面清单）
+         * @param code
+         * @return
+         */
+        @RequestMapping(value = "/api/refund/order/{code}/after/sale",method = RequestMethod.GET)
+        public Response<List<MiddleAfterSaleInfo>> findAfterSaleIds(@PathVariable("code") String code){
+            if(log.isDebugEnabled()){
+                log.debug("API-REFUND-FINDAFTERSALEIDS-START param: code [{}]", code);
+            }
+            ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(code);
+            List<MiddleAfterSaleInfo> middleAfterSaleInfos = Lists.newArrayList();
+            //查询售后单信息
+            List<Refund> refunds = refundReadLogic.findRefundsByOrderCode(code);
+            //添加过滤售后单id,状态，类型(丢件补发，和换货才会可以继续申请售后)
+            List<Refund> afterSales =  refunds.stream().filter(Objects::nonNull)
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.DELETED.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.CANCELED.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_HANDLE.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_SHIP.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_SHIP.getValue()))
+                    .filter(it->(Objects.equals(it.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(it.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())))
+                    .collect(Collectors.toList());
+            //添加售后单信息
+            afterSales.forEach(refund->{
+                MiddleAfterSaleInfo middleAfterSaleInfo = new MiddleAfterSaleInfo();
+                middleAfterSaleInfo.setId(refund.getId());
+                middleAfterSaleInfo.setCode(refund.getRefundCode());
+                middleAfterSaleInfo.setType(2);
+                middleAfterSaleInfo.setDesc("售后单");
+                middleAfterSaleInfos.add(middleAfterSaleInfo);
+            });
+            //添加订单信息
             MiddleAfterSaleInfo middleAfterSaleInfo = new MiddleAfterSaleInfo();
-            middleAfterSaleInfo.setId(refund.getId());
-            middleAfterSaleInfo.setCode(refund.getRefundCode());
-            middleAfterSaleInfo.setType(2);
-            middleAfterSaleInfo.setDesc("售后单");
+            middleAfterSaleInfo.setId(shopOrder.getId());
+            middleAfterSaleInfo.setCode(shopOrder.getOrderCode());
+            middleAfterSaleInfo.setType(1);
+            middleAfterSaleInfo.setDesc("订单");
             middleAfterSaleInfos.add(middleAfterSaleInfo);
-        });
-        //添加订单信息
-        MiddleAfterSaleInfo middleAfterSaleInfo = new MiddleAfterSaleInfo();
-        middleAfterSaleInfo.setId(shopOrder.getId());
-        middleAfterSaleInfo.setCode(shopOrder.getOrderCode());
-        middleAfterSaleInfo.setType(1);
-        middleAfterSaleInfo.setDesc("订单");
-        middleAfterSaleInfos.add(middleAfterSaleInfo);
-        if(log.isDebugEnabled()){
-            log.debug("API-REFUND-FINDAFTERSALEIDS-END param: code [{}] ,resp: [{}]", code,JsonMapper.nonEmptyMapper().toJson(middleAfterSaleInfos));
+            if(log.isDebugEnabled()){
+                log.debug("API-REFUND-FINDAFTERSALEIDS-END param: code [{}] ,resp: [{}]", code,JsonMapper.nonEmptyMapper().toJson(middleAfterSaleInfos));
+            }
+            return Response.ok(middleAfterSaleInfos);
         }
-        return Response.ok(middleAfterSaleInfos);
-    }
 
     //编辑售后单
 

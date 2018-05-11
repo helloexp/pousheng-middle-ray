@@ -6,6 +6,9 @@ import com.pousheng.middle.warehouse.model.MiddleOpenShop;
 import com.pousheng.middle.warehouse.service.MiddleRefundWarehouseReadService;
 import com.pousheng.middle.warehouse.service.MiddleRefundWarehouseWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -54,8 +57,11 @@ public class RefundDefaultWarehouse {
      * @param outCode 仓库外码
      * @return
      */
+    @ApiOperation("编辑店铺的默认退货仓")
+    @LogMe(description = "编辑店铺的默认退货仓",ignore = true)
     @RequestMapping(value = "{id}/edit",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName,String outCode){
+    public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") @LogMeContext Long openShopId, @RequestParam @LogMeContext Long warehouseId, String warehouseName, String outCode){
+
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-DEFAULT-WAREHOUSE-EDIT-START param: openShopId [{}] warehouseId [{}] warehouseName [{}] outCode [{}]",openShopId,warehouseId,warehouseName,outCode);
         }

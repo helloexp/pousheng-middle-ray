@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.model;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -18,6 +19,7 @@ public class WarehouseCompanyRule implements Serializable {
     /**
      * 主键id
      */
+    @LogMeId
     private Long id;
 
     /**
@@ -40,6 +42,16 @@ public class WarehouseCompanyRule implements Serializable {
      * 仓库名称
      */
     private String warehouseName;
+
+    /**
+     * 店铺id
+     */
+    private Long shopId;
+
+    /**
+     * 店铺名称
+     */
+    private String shopName;
 
     /**
      * 创建时间

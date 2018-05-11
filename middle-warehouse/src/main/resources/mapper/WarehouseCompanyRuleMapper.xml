@@ -11,6 +11,8 @@
         <result column="company_name" property="companyName"/>
         <result column="warehouse_id" property="warehouseId"/>
         <result column="warehouse_name" property="warehouseName"/>
+        <result column="shop_id" property="shopId"/>
+        <result column="shop_name" property="shopName"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
         
@@ -25,11 +27,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        company_code, company_name, warehouse_id, warehouse_name, created_at, updated_at
+        company_code, company_name, shop_id, shop_name, warehouse_id, warehouse_name, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{companyCode}, #{companyName}, #{warehouseId}, #{warehouseName}, now(), now()
+        #{companyCode}, #{companyName}, #{shopId}, #{shopName}, #{warehouseId}, #{warehouseName}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -38,6 +40,10 @@
         <if test="warehouseId != null">and `warehouse_id` = #{warehouseId}</if>
         
         <if test="warehouseName != null">and `warehouse_name` = #{warehouseName}</if>
+
+        <if test="shopId != null">and `shop_id` = #{shopId}</if>
+
+        <if test="shopName != null">and `shop_name` = #{shopName}</if>
         
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         

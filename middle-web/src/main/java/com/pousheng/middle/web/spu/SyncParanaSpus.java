@@ -6,6 +6,9 @@ import com.pousheng.middle.web.events.item.BatchSyncParanaSpuEvent;
 import com.pousheng.middle.web.events.item.DumpSyncParanaSpuEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -44,8 +47,11 @@ public class SyncParanaSpus {
     @Autowired
     private EventBus eventBus;
 
+    @ApiOperation("根据id同步")
+    @LogMe(description = "根据id同步u", ignore = true)
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> syncSpu(@PathVariable(name = "id") Long spuId){
+    public Response<Boolean> syncSpu(@PathVariable(name = "id") @LogMeContext Long spuId){
+
         if(log.isDebugEnabled()){
             log.debug("API-SPU-SYNC-START param: spuId [{}]",spuId);
         }
@@ -65,8 +71,11 @@ public class SyncParanaSpus {
      * 批量同步spu
      * @return 任务ID
      */
+    @ApiOperation("批量同步spu")
+    @LogMe(description = "批量同步spu", ignore = true)
     @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String batchSynSpu(@PathVariable(name = "ids") String spuIds){
+    public String batchSynSpu(@PathVariable(name = "ids") @LogMeContext String spuIds){
+
         if(log.isDebugEnabled()){
             log.debug("API-SPU-BATCHSYNSPU-START param: spuIds [{}]",spuIds);
         }
@@ -93,6 +102,8 @@ public class SyncParanaSpus {
      * 全量同步spu
      * @return 任务ID
      */
+    @ApiOperation("全量同步spu")
+    @LogMe(description = "全量同步spu", ignore = true)
     @RequestMapping(value = "/dump-sync", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
         if(log.isDebugEnabled()){

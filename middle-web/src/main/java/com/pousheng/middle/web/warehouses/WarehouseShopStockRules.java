@@ -9,6 +9,9 @@ import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -47,9 +50,10 @@ public class WarehouseShopStockRules {
      * @param warehouseShopStockRule 店铺库存发货规则
      * @return 新创建的规则id
      */
+    @ApiOperation("创建店铺库存发货规则")
+    @LogMe(description = "创建店铺库存发货规则", compareTo = "warehouseShopStockRuleDao#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建")
-    public Long create(@RequestBody WarehouseShopStockRule warehouseShopStockRule){
+    public Long create(@RequestBody @LogMeContext WarehouseShopStockRule warehouseShopStockRule){
         authCheck(warehouseShopStockRule.getShopId());
         Response<Long> r = warehousePushRuleClient.createShopRule(warehouseShopStockRule);
         if(!r.isSuccess()){
@@ -117,11 +121,14 @@ public class WarehouseShopStockRules {
      * @param warehouseShopStockRule 店铺推送规则
      * @return 是否成功
      */
+    @ApiOperation("更新店铺推送规则")
+    @LogMe(description = "更新店铺库存发货规则", ignore = true)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
-    public Boolean update(@PathVariable Long id, @RequestBody WarehouseShopStockRule warehouseShopStockRule){
+    public Boolean update(@PathVariable @LogMeContext Long id,
+                          @RequestBody @LogMeContext WarehouseShopStockRule warehouseShopStockRule){
         WarehouseShopStockRule exist = warehousePushRuleClient.findById(id);
-        if(null == exist){
+        if(null == exist) {
             log.error("failed to find WarehouseShopStockRule(id={})", id);
             throw new JsonResponseException("warehouse.shop.rule.find.fail");
         }

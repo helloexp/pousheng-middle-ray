@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.model;
 
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
+import io.terminus.applog.annotation.LogMeId;
 import io.terminus.common.utils.Arguments;
 import lombok.Data;
 
@@ -20,6 +21,7 @@ public class WarehouseRule implements Serializable {
     /**
      * 主键
      */
+    @LogMeId
     private Long id;
     
     /**

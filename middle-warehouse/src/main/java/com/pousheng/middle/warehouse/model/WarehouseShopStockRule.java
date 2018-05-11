@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.model;
 
+import io.terminus.applog.annotation.LogMeId;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -17,6 +18,7 @@ public class WarehouseShopStockRule implements Serializable {
     /**
      * 自增主键
      */
+    @LogMeId
     private Long id;
     
     /**

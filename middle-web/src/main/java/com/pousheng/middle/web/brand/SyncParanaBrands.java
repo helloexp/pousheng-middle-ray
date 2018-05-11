@@ -7,6 +7,9 @@ import com.pousheng.middle.web.events.item.BatchSyncParanaBrandEvent;
 import com.pousheng.middle.web.events.item.DumpSyncParanaBrandEvent;
 import com.pousheng.middle.web.task.SyncParanaTaskRedisHandler;
 import com.pousheng.middle.web.task.SyncTask;
+import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -45,8 +48,11 @@ public class SyncParanaBrands {
     private EventBus eventBus;
 
 
+    @ApiOperation("根据品牌id同步")
+    @LogMe(description = "根据品牌id同步", ignore = true)
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> synBrand(@PathVariable(name = "id") Long brandId){
+    public Response<Boolean> synBrand(@PathVariable(name = "id") @LogMeContext Long brandId){
+
         if(log.isDebugEnabled()){
             log.debug("API-BRAND-ID-SYNC-START param: brandId [{}] ",brandId);
         }
@@ -71,8 +77,10 @@ public class SyncParanaBrands {
      * 批量同步品牌
      * @return 任务ID
      */
+    @ApiOperation("批量同步品牌")
+    @LogMe(description = "批量同步品牌", ignore = true)
     @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
-    public String batchSynBrand(@PathVariable(name = "ids") String brandIds){
+    public String batchSynBrand(@PathVariable(name = "ids") @LogMeContext String brandIds){
         if(log.isDebugEnabled()){
             log.debug("API-BRAND-BATCH-SYNC-IDS-START param: brandIds [{}] ",brandIds);
         }
@@ -100,6 +108,8 @@ public class SyncParanaBrands {
      * 全量同步品牌
      * @return 任务ID
      */
+    @ApiOperation("全量同步品牌")
+    @LogMe(description = "全量同步品牌")
     @RequestMapping(value = "/dump-sync", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
         if(log.isDebugEnabled()){

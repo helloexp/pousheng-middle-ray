@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.warehouses;
 
+
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesItemClient;
 import com.pousheng.middle.warehouse.dto.WarehouseRuleDto;
@@ -47,6 +48,7 @@ public class WarehouseRuleItems {
         }
 
         WarehouseRuleDto ruleDto = ruleDtoRes.getResult();
+
 
         List<WarehouseShopGroup> rwsrs = warehouseRulesClient.findShopListByGroup(ruleDto.getWarehouseRule().getShopGroupId());
         if (ObjectUtils.isEmpty(rwsrs)) {

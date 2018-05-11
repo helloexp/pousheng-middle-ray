@@ -53,7 +53,6 @@ public class GiftActivityWriter {
      * @return
      */
     @RequestMapping(value = "/api/gift/actvity/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建活动规则")
     public Response<Long> createGiftActivity(@RequestBody EditSubmitGiftActivityInfo editSubmitGiftActivityInfo) {
         String editSubmitGiftActivityInfoStr = JsonMapper.nonEmptyMapper().toJson(editSubmitGiftActivityInfo);
         if(log.isDebugEnabled()){
@@ -71,7 +70,6 @@ public class GiftActivityWriter {
      * @return
      */
     @RequestMapping(value = "/api/gift/actvity/create/test", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("创建活动规则")
     public Response<Long> createTest(@RequestParam(required =false)String name,@RequestParam(required = false) String startAt,@RequestParam(required = false) String endAt,@RequestParam Integer activityType,
                                      @RequestParam(required = false) Integer fee,@RequestParam(required = false)Integer quantity,Boolean isNoLimitItem,Integer limitQuantity
                                     ,@RequestParam(required = false)Long shopId,@RequestParam(required = false) String shopName,@RequestParam(required = false) Integer price
@@ -116,7 +114,6 @@ public class GiftActivityWriter {
      * @return
      */
     @RequestMapping(value = "/api/gift/actvity/update", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("更新活动规则")
     public Response<Boolean> updateGiftActivity(@RequestBody EditSubmitGiftActivityInfo editSubmitGiftActivityInfo) {
         return Response.ok(poushengGiftActivityWriteLogic.updateGiftActivity(editSubmitGiftActivityInfo));
     }
@@ -203,13 +200,13 @@ public class GiftActivityWriter {
      */
     @RequestMapping(value = "/api/gift/actvity/{id}/delete", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("删除赠品活动")
-    public Response<Boolean> deleteGiftActivity(@PathVariable("id")@OperationLogParam Long id){
-        if(log.isDebugEnabled()){
-            log.debug("API-GIFT-ACTVITY-DELETE-START param: id [{}] ",id);
+    public Response<Boolean> deleteGiftActivity(@PathVariable("id")@OperationLogParam Long id) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-GIFT-ACTVITY-DELETE-START param: id [{}] ", id);
         }
         Response<Boolean> resp = poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.DELETE.toOrderOperation());
-        if(log.isDebugEnabled()){
-            log.debug("API-GIFT-ACTVITY-DELETE-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        if (log.isDebugEnabled()) {
+            log.debug("API-GIFT-ACTVITY-DELETE-END param: id [{}] ,resp: [{}]", id, resp.getResult());
         }
         return resp;
     }

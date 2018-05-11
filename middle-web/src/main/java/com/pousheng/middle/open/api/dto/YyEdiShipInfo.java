@@ -33,5 +33,5 @@ public class YyEdiShipInfo {
     /**
      * 发货重量
      */
-    private Long weight;
+    private double weight;
 }

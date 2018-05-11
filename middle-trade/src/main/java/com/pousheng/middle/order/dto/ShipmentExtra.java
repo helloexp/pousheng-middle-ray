@@ -92,5 +92,5 @@ public class ShipmentExtra implements Serializable{
     private String mposShipmentId;
 
     //重量
-    private Long weight;
+    private double weight;
 }

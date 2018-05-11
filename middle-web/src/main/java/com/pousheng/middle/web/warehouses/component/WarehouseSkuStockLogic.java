@@ -46,7 +46,10 @@ public class WarehouseSkuStockLogic {
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
 
-     Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes){
+    /**
+     * 根据仓库id和商品条码查询对应的库存
+     */
+    public Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes){
 
         Warehouse warehouse = warehouseCacher.findById(warehouseId);
         Map<String, String> extra = warehouse.getExtra();

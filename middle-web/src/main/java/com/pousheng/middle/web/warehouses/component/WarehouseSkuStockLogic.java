@@ -46,11 +46,11 @@ public class WarehouseSkuStockLogic {
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
 
-    public Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes){
+     Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes){
 
         Warehouse warehouse = warehouseCacher.findById(warehouseId);
         Map<String, String> extra = warehouse.getExtra();
-        if(!extra.containsKey("outCode")){
+        if( !extra.containsKey("outCode")){
             log.error("warehouse(id:{}) out code is null,so skip to count stock");
             return Response.fail("warehouse.out.code.invalid");
         }
@@ -65,55 +65,65 @@ public class WarehouseSkuStockLogic {
         for (String skuCode : skuCodes) {
 
 
-            WarehouseSkuStock stock =null;
-            if(skuCodeMap.containsKey(skuCode)){
+            WarehouseSkuStock stock = null;
+            if( skuCodeMap.containsKey(skuCode)){
                 stock = skuCodeMap.get(skuCode);
             }
 
             //查询恒康库存
             String outerId = extra.get("outCode");
             String companyId = warehouse.getCompanyId();
-
-
             List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(outerId),Lists.newArrayList(skuCode),0);
-            if(CollectionUtils.isEmpty(hkSkuStockInfos)){
-                log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
-                continue;
-            }
-            //可用库存
-            Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
 
 
-            //如果是店仓则要减掉中台的占用库存
-            if(Objects.equals(warehouse.getType(),1)){
+            //如果是店仓，则要减掉中台的占用库存和安全库存
+            if( Objects.equals(warehouse.getType(),1)){
+
+                if( CollectionUtils.isEmpty(hkSkuStockInfos)){
+                    log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
+                    continue;
+                }
+                //可用库存
+                Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
                 ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                if(Arguments.isNull(shopExtraInfo)){
+                if( Arguments.isNull(shopExtraInfo)){
                     log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
                     throw new ServiceException("shop.safe.stock.invalid");
                 }
                 //安全库存
-                Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
+                Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
                 Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
                 Long availStock = hkAvailStock - localStock - safeStock;
-                if(availStock<=0L){
-                    availStock =0L;
+                if( availStock <= 0L){
+                    availStock = 0L;
                 }
                 r.put(skuCode, availStock.intValue());
-            }else {
-                //判断是否为mpos仓，是则减掉安全库存
+            } else {
+                //判断是否为mpos仓，则是用实时恒康库存，并减掉中台安全库存
                 Integer safeStock = 0;
-                if(Objects.equals(warehouse.getIsMpos(),1)){
-                    if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
+                if( Objects.equals(warehouse.getIsMpos(),1)){
+                    if( CollectionUtils.isEmpty(extra) ||! extra.containsKey("safeStock")){
                         log.error("not find safe stock for warehouse:(id:{})",warehouse.getId());
-                    }else {
+                    } else {
                         //安全库存
                         safeStock = Integer.valueOf(extra.get("safeStock"));
                     }
+                    if( CollectionUtils.isEmpty(hkSkuStockInfos)){
+                        log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
+                        continue;
+                    }
+                    //可用库存
+                    Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
+                    r.put(skuCode, hkAvailStock - safeStock);
+                } else {
+                    //非mpos大仓，则直接取中台库存
+                    if (Arguments.isNull(stock)){
+                        log.error("not find stock by warehouse id:{} sku code:{}",warehouseId,skuCode);
+                        continue;
+                    }
+                    r.put(skuCode, stock.getAvailStock().intValue());
                 }
-                //这里大仓的库也实时查询下恒康系统
-                //r.put(skuCode, stock.getAvailStock().intValue());
-                r.put(skuCode, hkAvailStock-safeStock);
             }
         }
         return Response.ok(r);

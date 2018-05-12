@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.shop;
 
 import com.google.common.base.*;
+import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -10,6 +12,8 @@ import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.order.model.ZoneContract;
+import com.pousheng.middle.order.service.ZoneContractReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
@@ -49,14 +53,13 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
@@ -108,7 +111,10 @@ public class AdminShops {
     private ShopChannelGroupCacher shopChannelGroupCacher;
     @Autowired
     private CreateOpenShopRelationListener createOpenShopRelationListener;
-
+    @Autowired
+    private ZoneContractReadService zoneContractReadService;
+    @Value("${pousheng.order.email.confirm.group}")
+    private String[] mposEmailGroup;
 
 
     @ApiOperation("根据门店id查询门店信息")
@@ -764,6 +770,30 @@ public class AdminShops {
         createOpenShopRelationListener.createOpenShopRelation(createShopEvent);
     }
 
+    @ApiOperation("获取区部经理和负责人邮箱")
+    @RequestMapping(value = "/zone/email", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<String> findEmailList(@RequestParam String outerId, @RequestParam Long businessId) {
+        ArrayList<String> emails = Lists.newArrayList();
+        Response<Optional<Shop>> response = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
+        if (!response.isSuccess()) {
+            log.error("find shop by outer id:{} business id:{},cause:{}",outerId,businessId,response.getError());
+        }
+        Optional<Shop> shopOptional = response.getResult();
+        if (shopOptional.isPresent()) {
+            Shop shop = shopOptional.get();
+            if (org.apache.commons.lang3.StringUtils.isNotBlank(shop.getZoneId())) {
+                Response<List<ZoneContract>> listResponse = zoneContractReadService.findByZoneId(shop.getZoneId());
+                if (!response.isSuccess()) {
+                    log.error("zoneContractReadService findByZoneId  fail,zoneId={}", shop.getZoneId());
+                }
+                listResponse.getResult().stream().forEach(item -> emails.add(item.getEmail()));
+            }
+        }
+        if (!CollectionUtils.isEmpty(Arrays.asList(mposEmailGroup))) {
+            emails.addAll(Arrays.asList(mposEmailGroup));
+        }
+        return emails;
+    }
 
 
 

@@ -221,7 +221,7 @@ public class SyncYYEdiShipmentLogic {
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         Response<Warehouse> rW  = warehouseReadService.findById(shipmentExtra.getWarehouseId());
         if (!rW.isSuccess()){
-            throw new ServiceException("");
+            throw new ServiceException("find.warehouse.failed");
         }
         Warehouse warehouse = rW.getResult();
         Map<String,String> warehouseExtraMap = warehouse.getExtra();
@@ -482,9 +482,9 @@ public class SyncYYEdiShipmentLogic {
                 throw new ServiceException("find.sku.template.failed");
             }
             List<SkuTemplate> skuTemplates = rS.getResult();
-            Optional<SkuTemplate> skuTemplateOptional = skuTemplates.stream().filter(skuTemplate->!Objects.equals(skuTemplate.getStatus(),-3)).findAny();
+            Optional<SkuTemplate> skuTemplateOptional = skuTemplates.stream().findAny();
             if (!skuTemplateOptional.isPresent()){
-                throw new ServiceException("sku.template.may.be.canceled");
+                throw new ServiceException("find.sku.template.failed");
             }
             SkuTemplate skuTemplate = skuTemplateOptional.get();
             Map<String,String> extraMaps = skuTemplate.getExtra();

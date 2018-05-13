@@ -20,7 +20,6 @@ import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
 import io.terminus.search.api.query.Criterias;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;

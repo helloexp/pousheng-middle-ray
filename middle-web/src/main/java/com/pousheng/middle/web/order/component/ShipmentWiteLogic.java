@@ -728,6 +728,7 @@ public class ShipmentWiteLogic {
         shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_SHOP_DELIVER));
         //店发设置仓库对应的店铺id
         Long shipId = getShipIdByDeliverId(deliverShopId);
+        shipment.setShipId(shipId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);

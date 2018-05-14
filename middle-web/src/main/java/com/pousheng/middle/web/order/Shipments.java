@@ -818,9 +818,11 @@ public class Shipments {
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
+            shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_WAREHOUSE_DELIVER));
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
             shipmentExtra.setWarehouseId(warehouse.getId());
         }else {
+            shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_SHOP_DELIVER));
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
             Map<String, String>  extra = warehouse.getExtra();
             if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){

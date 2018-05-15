@@ -518,7 +518,8 @@ public class ExportTradeBillListener {
                         entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                     entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
-                    entity.setShipmentStatus(MiddleShipmentsStatus.fromInt(shipmentContext.getShipment().getStatus()).getName());
+                    String shipmentStatus = convertStatus(shipmentContext.getShipment().getStatus(), shipmentContext.getShipment().getShipWay());
+                    entity.setShipmentStatus(shipmentStatus);
                     shipmentExportEntities.add(entity);
 
                 });
@@ -527,6 +528,43 @@ public class ExportTradeBillListener {
             });
         }
         exportService.saveToDiskAndCloud(new ExportContext(shipmentExportEntities),userId);
+    }
+
+    private String convertStatus(Integer status, Integer shipWay) {
+        String shipmentStatus = null;
+        switch (status){
+            case 1:
+                if (Objects.equals(shipWay,1)){
+                    shipmentStatus = "待同步MPOS";
+                } else{
+                    shipmentStatus = "待同步订单派发中心";
+                }
+                break;
+            case 2:
+                if (Objects.equals(shipWay,1)){
+                    shipmentStatus = "同步MPOS中";
+                } else{
+                    shipmentStatus = "同步订单派发中心中";
+                }
+                break;
+            case -1:
+                if (Objects.equals(shipWay,1)){
+                    shipmentStatus = "MPOS受理失败";
+                } else{
+                    shipmentStatus = "订单派发中心受理失败";
+                }
+                break;
+            case -2:
+                if (Objects.equals(shipWay,1)){
+                    shipmentStatus = "同步MPOS失败";
+                } else{
+                    shipmentStatus = "同步订单派发中心失败";
+                }
+                break;
+            default:
+                shipmentStatus = MiddleShipmentsStatus.fromInt(status).getName();
+        }
+        return shipmentStatus;
     }
 
     private String getPerformanceShopCode(long shopId){

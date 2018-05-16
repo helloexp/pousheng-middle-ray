@@ -19,6 +19,7 @@ import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -45,6 +46,9 @@ public class WarehouseSkuStockLogic {
     @Autowired
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
+    @Value("${skx.warehouse.id}")
+    private Long skxWarehouseId;
+
 
     /**
      * 根据仓库id和商品条码查询对应的库存
@@ -65,8 +69,8 @@ public class WarehouseSkuStockLogic {
                 .collect(Collectors.toMap(WarehouseSkuStock::getSkuCode, it -> it));
 
         Map<String, Integer> r = Maps.newHashMapWithExpectedSize(skuCodes.size());
-        for (String skuCode : skuCodes) {
 
+        for (String skuCode : skuCodes) {
 
             WarehouseSkuStock stock = null;
             if( skuCodeMap.containsKey(skuCode)){
@@ -78,9 +82,22 @@ public class WarehouseSkuStockLogic {
             String companyId = warehouse.getCompanyId();
             List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(outerId),Lists.newArrayList(skuCode),0);
 
+            if( Objects.equals(warehouseId,skxWarehouseId)){
 
-            //如果是店仓，则要减掉中台的占用库存和安全库存
-            if( Objects.equals(warehouse.getType(),1)){
+                if (Arguments.isNull(stock)){
+                    log.error("not find stock by warehouse id:{} sku code:{}",warehouseId,skuCode);
+                    continue;
+                }
+                r.put(skuCode, stock.getAvailStock().intValue());
+
+            //如果是店仓则要减掉中台的占用库存
+            } else if( Objects.equals(warehouse.getType(),1)){
+                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
+                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                if( Arguments.isNull(shopExtraInfo)){
+                    log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+                    throw new ServiceException("shop.safe.stock.invalid");
+                }
 
                 if( CollectionUtils.isEmpty(hkSkuStockInfos)){
                     log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
@@ -88,12 +105,6 @@ public class WarehouseSkuStockLogic {
                 }
                 //可用库存
                 Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
-                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId,Long.valueOf(companyId));
-                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                if( Arguments.isNull(shopExtraInfo)){
-                    log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
-                    throw new ServiceException("shop.safe.stock.invalid");
-                }
                 //安全库存
                 Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
                 Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);

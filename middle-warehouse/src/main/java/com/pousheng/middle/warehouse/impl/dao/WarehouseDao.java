@@ -60,4 +60,12 @@ public class WarehouseDao extends MyBatisDao<Warehouse> {
         }
     }
 
+    /*
+     * 根据外码做模糊查询
+     * @param outCode 仓库外码
+     * @return 仓库列表
+     */
+    public List<Warehouse> findByOutCode(String outCode) {
+        return getSqlSession().selectList(sqlId("findByOutCode"), outCode);
+    }
 }

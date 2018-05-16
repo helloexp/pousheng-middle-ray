@@ -42,7 +42,7 @@
 
     <sql id="queryCondition">
 
-        <if test="codePrefix!=null">and `code` like concat(#{codePrefix},'-%')</if>
+        <if test="codePrefix != null">and `code` like concat(#{codePrefix},'-%')</if>
 
         <if test="code != null">and `code` = #{code}</if>
 
@@ -171,5 +171,13 @@
         from
         <include refid="tb"/>
         WHERE  name LIKE CONCAT(#{name}, '%') or `extra_json` like concat('%',#{name}, '%')
+    </select>
+
+    <select id="findByOutCode" parameterType="string" resultMap="WarehouseMap">
+        select
+        <include refid="cols_all"/>
+        from
+        <include refid="tb"/>
+        WHERE `extra_json` like concat('%',#{outCode}, '%')
     </select>
 </mapper>

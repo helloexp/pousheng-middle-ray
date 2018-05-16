@@ -3,6 +3,7 @@ package com.pousheng.middle.warehouse.impl.dao;
 import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.model.Paging;
+import io.terminus.common.model.Response;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -76,6 +77,12 @@ public class WarehouseDaoTest extends BaseDaoTest {
 
         assertThat(warehousePaging.getTotal(), is(1L));
         assertEquals(warehousePaging.getData().get(0).getId(), warehouse.getId());
+    }
+
+    @Test
+    public void findByOutCode() {
+        List<Warehouse> list = warehouseDao.findByOutCode("js");
+        assertNotNull(list);
     }
 
     private Warehouse make() throws Exception{

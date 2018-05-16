@@ -344,12 +344,7 @@ public class SyncYYEdiShipmentLogic {
         //代收金额:商品总金额+运费
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
             //判断有没有拆单过
-            if (shipmentReadLogic.isOrderHasMoreShipments(shopOrder)){
-                shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
-            }else{
-                Long totalPrice = (shopOrder.getFee()==null?0L:shopOrder.getFee())+(shopOrder.getShipFee()==null?0L:shopOrder.getShipFee());
-                shipmentInfo.setCollectionAmount(new BigDecimal(totalPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
-            }
+            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         }else{
             shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
         }

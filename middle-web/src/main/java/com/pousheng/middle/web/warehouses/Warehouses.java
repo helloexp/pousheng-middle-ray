@@ -388,6 +388,18 @@ public class Warehouses {
         return warehouseCacher.findById(warehouseId);
     }
 
+    @ApiOperation("根据名称或者外码获取仓库信息")
+    @RequestMapping(value = "/paging/by/name", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<Warehouse> pagingByOutCodeOrName(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                                   @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                        @RequestParam(required = false, value = "name") String namePrefix) {
+        Response<Paging<Warehouse>> r = warehouseReadService.pagingByOutCodeOrName(pageNo, pageSize, namePrefix);
+        if(!r.isSuccess()){
+            log.error("failed to pagination warehouse with nam:{}, error code:{}", namePrefix, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        return r.getResult();
 
+    }
 
 }

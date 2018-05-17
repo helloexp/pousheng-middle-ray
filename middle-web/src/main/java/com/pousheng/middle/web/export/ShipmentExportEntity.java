@@ -23,9 +23,6 @@ public class ShipmentExportEntity {
     @ExportTitle("发货单号")
     private String shipmenCode;
 
-    @ExportTitle("发货单号")
-    private Long shipmentId;
-
     @ExportTitle("货品条码")
     private String itemNo;
 

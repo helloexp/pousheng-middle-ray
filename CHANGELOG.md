@@ -1,5 +1,11 @@
 # RELEASE NOTES
 
+## 2.0.5 (2018-05-17)
+
+ *【bug】预发环境-斯凯奇发货单 取消失败和skx库存查询问题    34567   hotfix/fix-shipment-cancel-bug
+ *【新增】默认发货仓规则批量添加仓库  "http://pmp.terminus.io/console/project/178/issues/33172"
+ *【新增】中午外网访问限制（5月17日上线）    http://pmp.terminus.io/console/project/141/issues/29499
+ *【bug】生产&测试：发货单导出文件中，发货单状态与搜索结果不一致。没有区分订单派发中心和Mpos，BUGID-35758
 ## 2.0.4 (2018-05-10)
 
 *  【BUG】生产环境-中台导出订单/售后订单/发货单没有按照权限导出	http://pmp.terminus.io/console/project/141/issues/31747 ok

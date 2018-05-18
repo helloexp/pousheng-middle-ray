@@ -173,7 +173,7 @@ msg:
   current:
     emailService: javaxEmailService
   javaxemail:
-    mailServerHost: smtp.163.como
+    mailServerHost: smtp.163.com
     fromAddress: yyecsys@163.com
     userName: yyecsys
     password: yyec1qaz2wsx

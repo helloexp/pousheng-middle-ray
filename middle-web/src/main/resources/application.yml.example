@@ -132,3 +132,7 @@ pousheng.order.email.confirm.group:
 
 suning.selfmarket.supplier.code:
 suning.sale.warehouseCode:
+
+jd.yunding.app.key:pousheng
+jd.yunding.secret: 6a0e@93204aefe45d47f6e488
+jd.yunding.gateway: http://114.67.68.158:8008/api/gateway

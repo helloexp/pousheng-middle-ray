@@ -341,17 +341,18 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setBCMemberCard("");
         //支付类型在中台是1:在线支付,2:货到付款,同步给订单派发中心时时需要变为0:在线支付,1:货到付款
         shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
-        //代收金额:商品总金额+运费
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            //判断有没有拆单过
-            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            //代收金额:商品总金额+运费
+            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            //结算金额
+            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         }else{
             shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+            //结算金额
+            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         }
         //买家邮费
         shipmentInfo.setExpressAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
-        //结算金额
-        shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //线上实付金额
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())) {
             shipmentInfo.setPayAmountBakUp(new BigDecimal(0.00));

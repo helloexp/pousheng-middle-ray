@@ -7,6 +7,7 @@ import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
@@ -84,6 +85,8 @@ public class StockPusher {
 
     @Autowired
     private RedisQueueProvider redisQueueProvider;
+    @Autowired
+    private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
 
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
@@ -239,10 +242,17 @@ public class StockPusher {
 
     private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName, List<StockPushLog> stockPushLogs) {
         executorService.submit(() -> {
-            Response<Boolean> rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
-            if (!rP.isSuccess()) {
-                log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
-                        skuCode, shopId, rP.getError());
+            OpenShop openShop = openShopCacher.getUnchecked(shopId);
+            Map<String, String> extra = openShop.getExtra();
+            Response<Boolean> rP = null;
+            if (extra.get("isYunDing") != null && Objects.equals(extra.get("isYunDing"), "true")) {
+                rP = jdYunDingSyncStockLogic.syncJdYundingStock(shopId, skuCode, Math.toIntExact(stock));
+            } else {
+                rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
+                if (!rP.isSuccess()) {
+                    log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
+                            skuCode, shopId, rP.getError());
+                }
             }
             log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                     stock.intValue(), skuCode, shopId);
@@ -252,8 +262,8 @@ public class StockPusher {
             stockPushLog.setShopName(shopName);
             stockPushLog.setSkuCode(skuCode);
             stockPushLog.setQuantity((long) stock.intValue());
-            stockPushLog.setStatus(1);
-            stockPushLog.setCause("");
+            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
+            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
             stockPushLog.setSyncAt(new Date());
             stockPushLogs.add(stockPushLog);
         });

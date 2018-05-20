@@ -10,22 +10,15 @@ import com.google.common.hash.Hashing;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
-import io.terminus.open.client.common.token.Token;
-import io.terminus.open.client.common.token.TokenFactory;
-import io.terminus.open.client.order.dto.OpenClientFullOrder;
-import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -42,8 +35,6 @@ public class JdYunDingSyncStockLogic {
     private String secret;
     @Value("${jd.yunding.gateway}")
     private String gateway;
-    @Autowired
-    private TokenFactory tokenFactory;
     @RpcConsumer
     private MappingReadService mappingReadService;
 

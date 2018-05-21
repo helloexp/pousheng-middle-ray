@@ -17,6 +17,7 @@ import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.web.events.trade.ExportTradeBillEvent;
 import com.pousheng.middle.web.export.*;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.utils.export.ExportContext;
@@ -29,6 +30,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -48,6 +50,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.PostConstruct;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -97,9 +100,16 @@ public class ExportTradeBillListener {
 
     @Autowired
     private OpenShopCacher openShopCacher;
+
+    @Autowired
+    private OrderReadLogic orderReadLogic;
+
     private static JsonMapper jsonMapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
 
     private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
+
+    private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
     @PostConstruct
     public void init() {
         eventBus.register(this);
@@ -284,7 +294,7 @@ public class ExportTradeBillListener {
 
     @NotNull
     private String getAddress(ReceiverInfo receiver) {
-        StringBuffer addressBuffer = new StringBuffer();
+        StringBuilder addressBuffer = new StringBuilder();
         if (StringUtils.isNotEmpty(receiver.getProvince())) {
             addressBuffer.append(receiver.getProvince());
         }
@@ -363,12 +373,28 @@ public class ExportTradeBillListener {
                             }
                         }
                     }
+                    //查询关联的交易订单
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(refundInfo.getRefund().getReleOrderCode());
+                    OpenClientPaymentInfo paymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
+                    //查询关联的pos单
+                    PoushengSettlementPos posSettleMent = null;
+                    if (refundExtra.getShipmentId() != null){
+                        String shipCode = refundExtra.getShipmentId().startsWith("SHP") == true? refundExtra.getShipmentId().substring(3): refundExtra.getShipmentId();
+                        Response<PoushengSettlementPos> posResponse = poushengSettlementPosReadService.findByShipmentId(Long.valueOf(Long.valueOf(shipCode)));
+                        if (posResponse.isSuccess()){
+                            posSettleMent = posResponse.getResult();
+                        }
+                    }
+
+
                     ArrayList<String> querySkuCodes = Lists.newArrayList();
 
+                    PoushengSettlementPos finalPosSettleMent = posSettleMent;
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
                         export.setOrderCode(refundInfo.getOrderRefund().getOrderCode());
                         export.setRefundCode(refundInfo.getRefund().getRefundCode());
+                        export.setRefundSubCode(item.getSkuCode());
                         export.setShopName(refundInfo.getRefund().getShopName());
                         export.setMemo(refundInfo.getRefund().getBuyerNote());
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
@@ -376,6 +402,11 @@ public class ExportTradeBillListener {
 
                         export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                         export.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
+                        if (item.getCleanPrice() != null && item.getAlreadyHandleNumber() != null){
+                            export.setTotalPrice(new BigDecimal(item.getCleanPrice()).multiply(new BigDecimal(item.getApplyQuantity())).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                        } else {
+                            export.setTotalPrice(null);
+                        }
                         export.setItemNo(item.getSkuCode());
                         if (StringUtils.isNotBlank(item.getSkuCode()) && spus.containsKey(item.getSkuCode())) {
                             export.setBrand(spus.get(item.getSkuCode()).getBrandName());
@@ -403,6 +434,18 @@ public class ExportTradeBillListener {
                         export.setApplyQuantity(item.getApplyQuantity());
                         //实际数量
                         export.setActualQuantity(item.getApplyQuantity());
+                        export.setOrderCode(refundInfo.getRefund().getReleOrderCode());
+                        export.setShipCode(refundExtra.getShipmentId());
+                        export.setOutCode(shopOrder.getOutId());
+                        export.setPayOrderCreateDate(shopOrder.getCreatedAt());
+                        if (finalPosSettleMent != null){
+                          export.setPosCode(finalPosSettleMent.getPosSerialNo());
+                        }
+                        export.setPayOrderPayDate(paymentInfo.getPaidAt());
+                        export.setAfterSaleCreateDate(refundInfo.getRefund().getCreatedAt());
+                        export.setAfterSaleRefundDate(refundInfo.getRefund().getRefundAt());
+
+
                         refundExportData.add(export);
                     });
 
@@ -501,7 +544,6 @@ public class ExportTradeBillListener {
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                     entity.setShipmenCode(shipmentContext.getShipment().getShipmentCode());
                     entity.setItemNo(item.getSkuCode());
-
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                     entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
                     entity.setExpressOrderId(shipmentExtra.getExpressOrderId());

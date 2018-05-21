@@ -2,12 +2,15 @@ package com.pousheng.middle.open.api.skx;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.erp.cache.ErpSpuCacher;
 import com.pousheng.middle.open.api.skx.dto.OnSaleItem;
 import com.pousheng.middle.open.api.skx.dto.OnSaleSku;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.item.model.PushedItem;
 import io.terminus.open.client.item.service.PushedItemReadService;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
@@ -15,12 +18,15 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import io.terminus.parana.spu.service.SpuReadService;
 import io.terminus.parana.user.model.User;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -38,14 +44,17 @@ import java.util.Map;
 public class SkxItemOpenApi {
 
     @RpcConsumer
-    private PushedItemReadService pushedItemReadService;
+    private MappingReadService mappingReadService;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @Autowired
+    private ErpSpuCacher erpSpuCacher;
 
     @Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
+
 
 
 
@@ -57,7 +66,7 @@ public class SkxItemOpenApi {
         Date startDate = DFT.parseDateTime(startAt).toDate();
         Date endDate = DFT.parseDateTime(endAt).toDate();
 
-        Response<Paging<PushedItem>> response =  pushedItemReadService.findPushedItem(null,null,skxOpenShopId,1,null,pageNo,pageSize);
+        Response<Paging<ItemMapping>> response =  mappingReadService.findByOpenShopId(skxOpenShopId,pageNo,pageSize);
         if(!response.isSuccess()){
             log.error("find push item fail");
             throw new OPServerException(200,response.getError());
@@ -67,17 +76,18 @@ public class SkxItemOpenApi {
         return transToOnSaleItem(response.getResult());
     }
 
-    private Paging<OnSaleItem> transToOnSaleItem(Paging<PushedItem> pushedItemPaging){
+    private Paging<OnSaleItem> transToOnSaleItem(Paging<ItemMapping> itemMappingPaging){
         Paging<OnSaleItem> onSaleItemPaging = new Paging<>();
-        onSaleItemPaging.setTotal(pushedItemPaging.getTotal());
+        onSaleItemPaging.setTotal(itemMappingPaging.getTotal());
 
-        List<PushedItem> pushedItemList = pushedItemPaging.getData();
-        List<OnSaleItem> onSaleItems = Lists.newArrayListWithCapacity(pushedItemList.size());
-        for (PushedItem pushedItem : pushedItemList){
+        List<ItemMapping> mappingList = itemMappingPaging.getData();
+        List<OnSaleItem> onSaleItems = Lists.newArrayListWithCapacity(mappingList.size());
+        for (ItemMapping  itemMapping : mappingList){
             OnSaleItem onSaleItem = new OnSaleItem();
-            onSaleItem.setItemId(pushedItem.getItemId());
-            onSaleItem.setItemName(pushedItem.getItemName());
-            onSaleItem.setSkus(makeOnSaleSku(pushedItem.getItemId()));
+            Spu spu = erpSpuCacher.findById(itemMapping.getItemId());
+            onSaleItem.setItemId(itemMapping.getItemId());
+            onSaleItem.setItemName(spu.getName());
+            onSaleItem.setSkus(makeOnSaleSku(onSaleItem.getItemId()));
             onSaleItems.add(onSaleItem);
         }
 
@@ -110,7 +120,7 @@ public class SkxItemOpenApi {
             List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
             if (!CollectionUtils.isEmpty(skuAttributes)) {
                 for (SkuAttribute skuAttribute : skuAttributes) {
-                    if(Objects.equal(skuAttribute.getAttrKey(),"尺码")) {
+                    if( Objects.equal(skuAttribute.getAttrKey(),"尺码")) {
                         onSaleSku.setSize(skuAttribute.getAttrVal());
                     }
                 }

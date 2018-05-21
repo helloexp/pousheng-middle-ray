@@ -87,7 +87,7 @@ public class WarehouseRuleItemConverter {
         List<Long> list = Lists.newArrayList();
         for (WarehouseRuleItem obj1 : exist) {
             for (WarehouseRuleItem obj2 : addList) {
-                if (obj1.getWarehouseId() == obj2.getWarehouseId()) {
+                if (obj1.getWarehouseId().longValue() == obj2.getWarehouseId().longValue()) {
                     list.add(obj1.getWarehouseId());
                     continue;
                 }

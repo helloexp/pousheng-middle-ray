@@ -66,7 +66,7 @@ public class SkxItemOpenApi {
         Date startDate = DFT.parseDateTime(startAt).toDate();
         Date endDate = DFT.parseDateTime(endAt).toDate();
 
-        Response<Paging<ItemMapping>> response =  mappingReadService.findByOpenShopId(skxOpenShopId,pageNo,pageSize);
+        Response<Paging<ItemMapping>> response =  mappingReadService.findByOpenShopId(skxOpenShopId,1,pageNo,pageSize);
         if(!response.isSuccess()){
             log.error("find push item fail");
             throw new OPServerException(200,response.getError());

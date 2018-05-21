@@ -47,7 +47,7 @@ public class ShopSkuStockPushListener {
         int pageNo = 1;
         int pageSize = 100;
         while(true) {
-            Response<Paging<ItemMapping>> r = mappingReadService.findByOpenShopId(shopId, pageNo, pageSize);
+            Response<Paging<ItemMapping>> r = mappingReadService.findByOpenShopId(shopId,null, pageNo, pageSize);
             if(!r.isSuccess()){
                 log.error("failed to find pushed items by shopId(id={}), error code:{}", shopId, r.getError());
                 return;

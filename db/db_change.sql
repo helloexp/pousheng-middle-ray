@@ -174,7 +174,7 @@ CREATE TABLE `pousheng_auto_compensation` (
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8 COMMENT='自动补偿失败任务表';
+) COMMENT='自动补偿失败任务表';
 
 
 -- 库存表存储退货仓信息
@@ -253,18 +253,15 @@ CREATE TABLE `refund_amount` (
   PRIMARY KEY (`id`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
 
-
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
-
-
--- 添加未处理原因筛选
+--添加未处理原因筛选
 alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
 
--- 添加无头件查询条件
+--添加无头件查询条件
 alter table parana_order_shipments add spu_codes varchar(512) default null comment '货号' after order_type, add province_id bigint(20) default null comment '省份id' after spu_codes, add city_id bigint(20) default null comment '市id' after province_id, add region_id bigint(20) default null comment '区id' after city_id;
 
--- 添加订单前缀
+--添加订单前缀
 alter table parana_shop_orders add order_code varchar(25) after id;
 alter table parana_shipments add shipment_code varchar(25) after id;
 alter table parana_order_shipments add shipment_code varchar(25) after shipment_id;
@@ -274,6 +271,8 @@ alter table parana_refunds add refund_code varchar(25) after id;
 alter table parana_refunds add rele_order_code varchar(25) after after_sale_id;
 alter table parana_order_refunds add refund_code varchar(25) after refund_id;
 alter table parana_order_refunds add order_code varchar(25) after order_id;
+
+
 -- 库存同步日志添加真实同步时间
 alter table pousheng_stock_push_logs add sync_at DATETIME after cause;
 

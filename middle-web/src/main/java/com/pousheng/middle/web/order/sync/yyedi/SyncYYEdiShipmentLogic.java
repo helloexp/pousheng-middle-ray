@@ -87,6 +87,7 @@ public class SyncYYEdiShipmentLogic {
     @Autowired
     private OpenShopReadService openShopReadService;
 
+
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -147,6 +148,17 @@ public class SyncYYEdiShipmentLogic {
      */
     public Response<Boolean> syncShipmentCancelToYYEdi(Shipment shipment) {
         try {
+            Flow flow = flowPicker.pickShipments();
+            //如果同步订单派发中心失败，则直接取消
+            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation())){
+                OrderOperation operation = MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation();
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                if (!updateStatus.isSuccess()) {
+                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
+                    return Response.fail(updateStatus.getError());
+                }
+                return Response.ok(Boolean.TRUE);
+            }
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
             Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
@@ -155,7 +167,6 @@ public class SyncYYEdiShipmentLogic {
                 return Response.fail(updateStatusRes.getError());
             }
 
-            Flow flow = flowPicker.pickShipments();
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态*/
 

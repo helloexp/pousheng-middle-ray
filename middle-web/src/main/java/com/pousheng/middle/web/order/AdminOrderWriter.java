@@ -365,7 +365,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/{id}/auto/handle", method = RequestMethod.PUT)
     @OperationLogType("单个订单自动处理")
-    public Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId) {
+    public synchronized Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
             log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
@@ -389,7 +389,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/batch/auto/handle", method = RequestMethod.PUT)
     @OperationLogType("批量订单自动处理")
-    public Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids) {
+    public synchronized Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids) {
         if (Objects.isNull(ids) || ids.isEmpty()) {
             throw new JsonResponseException("shop.order.ids.can.not.be.null");
         }

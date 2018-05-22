@@ -14,6 +14,8 @@ mybatis:
       com.pousheng.(erp|auth).model,
       com.pousheng.middle.warehouse.model,
       com.pousheng.middle.order.model,
+      io.terminus.parana.user.address.model,
+      io.terminus.parana.user.model,
       io.terminus.parana.(item|category|brand|spu|shop).model,
       io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
       io.terminus.open.client.common.(mappings|token|shop).model,

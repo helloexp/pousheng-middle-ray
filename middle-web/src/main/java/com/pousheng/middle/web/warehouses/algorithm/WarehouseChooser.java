@@ -94,21 +94,6 @@ public class WarehouseChooser {
             List<WarehouseShipment> warehouseShipments = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
                     skuCodeAndQuantities);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
-                // 先锁定库存, 锁定成功后再返回结果
-                Response<Boolean> rDecrease = warehouseSkuWriteService.lockStock(warehouseShipments);
-                if(!rDecrease.isSuccess()){
-                    log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
-                            "auto dispatch stock failed", addressId, rDecrease.getError());
-                    return Collections.emptyList();
-                }
-                //触发库存推送
-                List<String> skuCodes = Lists.newArrayList();
-                for (WarehouseShipment warehouseShipment : warehouseShipments) {
-                    for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
-                        skuCodes.add(skuCodeAndQuantity.getSkuCode());
-                    }
-                }
-                stockPusher.submit(skuCodes);
                 return warehouseShipments;
             }
         }

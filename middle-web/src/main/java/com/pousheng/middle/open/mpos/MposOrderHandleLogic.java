@@ -9,10 +9,7 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
-import com.pousheng.middle.web.order.component.MposShipmentLogic;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Shipment;
@@ -49,6 +46,10 @@ public class MposOrderHandleLogic {
 
     @Autowired
     private MposShipmentLogic mposShipmentLogic;
+
+    @Autowired
+    private ShipmentWriteManger shipmentWriteManger;
+
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
@@ -119,6 +120,8 @@ public class MposOrderHandleLogic {
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 update.setExtra(extraMap);
                 break;
+            default:
+                log.info("error status");
         }
         if(Objects.isNull(orderEvent)) {
             return;
@@ -138,6 +141,11 @@ public class MposOrderHandleLogic {
         if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
         }
+        if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)){
+            //回滚发货单
+            Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
+            shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment1);
+        }
         log.info("sync shipment(id:{}) success",shipment.getId());
     }
 
@@ -150,20 +158,24 @@ public class MposOrderHandleLogic {
     private Boolean idempotencyValidate(Integer status,String shipStatus){
         switch (shipStatus){
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
-                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue()))
+                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
                     return false;
+                }
                 break;
             case TradeConstants.MPOS_SHIPMENT_CALL_SHIP:
-                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue()))
+                if(Objects.equals(status, MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
                     return false;
+                }
                 break;
             case TradeConstants.MPOS_SHIPMENT_REJECT:
-                if(Objects.equals(status, MiddleShipmentsStatus.REJECTED.getValue()))
+                if(Objects.equals(status, MiddleShipmentsStatus.REJECTED.getValue())) {
                     return false;
+                }
                 break;
             case TradeConstants.MPOS_SHIPMENT_SHIPPED:
-                if(Objects.equals(status, MiddleShipmentsStatus.SHIPPED.getValue()))
+                if(Objects.equals(status, MiddleShipmentsStatus.SHIPPED.getValue())) {
                     return false;
+                }
                 break;
             default:
                 return false;

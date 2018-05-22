@@ -136,6 +136,8 @@ public class Shipments {
     private SkuOrderReadService skuOrderReadService;
     @Autowired
     private OrderShipmentWriteService orderShipmentWriteService;
+    @Autowired
+    private ShipmentWriteManger shipmentWriteManger;
 
     @Autowired
     private ShopCacher shopCacher;
@@ -416,17 +418,8 @@ public class Shipments {
             }
 
             //创建发货单
-            Response<Long> createResp = shipmentWriteService.create(shipment, Lists.newArrayList(shopOrderId), OrderLevel.SHOP);
-            if (!createResp.isSuccess()) {
-                log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
-                        shipment, shopOrderId, OrderLevel.SHOP.getValue(), createResp.getError());
-                throw new JsonResponseException(createResp.getError());
-            }
-
-
-            Long shipmentId = createResp.getResult();
+            Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment,shopOrder);
             shipmentIds.add(shipmentId);
-
             Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
             if (!shipmentRes.isSuccess()) {
                 log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());

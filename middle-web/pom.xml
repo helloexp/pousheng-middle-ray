@@ -40,7 +40,11 @@
             <artifactId>parana-category</artifactId>
             <version>${parana.version}</version>
         </dependency>
-
+        <dependency>
+            <groupId>io.terminus.parana</groupId>
+            <artifactId>parana-user</artifactId>
+            <version>${parana.version}</version>
+        </dependency>
 
         <dependency>
             <groupId>com.pousheng</groupId>
@@ -71,6 +75,12 @@
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-center</artifactId>
             <version>${open-client.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.terminus.parana</groupId>
+                    <artifactId>parana-trade-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.terminus.open</groupId>
@@ -102,6 +112,12 @@
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-parana</artifactId>
             <version>${open-client.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.terminus.parana</groupId>
+                    <artifactId>parana-trade-api</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>io.terminus.open</groupId>

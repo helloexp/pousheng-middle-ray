@@ -354,9 +354,9 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
             //代收金额:商品总金额+运费
-            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //结算金额
-            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         }else{
             shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
             //结算金额

@@ -186,7 +186,7 @@ public class SyncHkTest {
         dto.setUserAddress(sycHkUserAddress);
         orders.add(dto);
 
-        api.doSyncShipmentOrder(orders);
+        api.doSyncShipmentOrder(orders,sycHkShipmentOrder.getOrderNo());
     }
 
 

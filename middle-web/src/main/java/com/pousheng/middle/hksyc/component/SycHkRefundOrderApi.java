@@ -49,7 +49,7 @@ public class SycHkRefundOrderApi {
         refundOrderBody.setRefundorder(sycHkRefundDto);
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(refundOrderBody);
-        log.info("paramJson:{}",paramJson);
+        log.info("sync refund code:{} to hk paramJson:{}",sycHkRefund.getRefundNo(),paramJson);
         //String gateway =hkGateway+"/commonerp/erp/sal/addrefund";
         String gateway =hkGateway+"/common-terminus/skx-oms/default/getrefundordersreceive";
         String responseBody = HttpRequest.post(gateway)
@@ -62,7 +62,7 @@ public class SycHkRefundOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+        log.info("sync refund code:{} to hk result:{}",sycHkRefund.getRefundNo(),responseBody);
         return responseBody;
     }
 }

@@ -92,7 +92,7 @@ public class SyncShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
             List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
-            SycErpShipmentOrderResponse response  = JsonMapper.nonDefaultMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list),SycErpShipmentOrderResponse.class);
+            SycErpShipmentOrderResponse response  = JsonMapper.nonDefaultMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list,shipment.getShipmentCode()),SycErpShipmentOrderResponse.class);
             Integer errorCode = response.getErrorCode();
             String description = response.getDescription();
             //解析返回结果

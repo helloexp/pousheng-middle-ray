@@ -29,7 +29,7 @@ public class SycHkShipmentOrderApi {
     @Value("${gateway.hk.accessKey}")
     private String accessKey;
 
-    public String doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders){
+    public String doSyncShipmentOrder( List<SycHkShipmentOrderDto> orders,String shipmentCode){
 
        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
@@ -48,7 +48,7 @@ public class SycHkShipmentOrderApi {
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(orderBody);
-        log.info("paramJson:{}",paramJson);
+        log.info("sync shipment code:{} to hk  paramJson:{}",shipmentCode,paramJson);
         //String gateway =hkGateway + "/commonerp/erp/sal/addorder";
         String gateway =hkGateway + "/common-terminus/skx-oms/default/getordersreceive";
         String responseBody = HttpRequest.post(gateway)
@@ -61,7 +61,7 @@ public class SycHkShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-         log.info("result:{}",responseBody);
+         log.info("sync shipment code:{} to hk result:{}",shipmentCode,responseBody);
         return responseBody;
     }
 }

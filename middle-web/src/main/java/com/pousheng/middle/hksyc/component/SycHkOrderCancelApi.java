@@ -50,7 +50,7 @@ public class SycHkOrderCancelApi {
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(params);
-        log.info("paramJson:{}",paramJson);
+        log.info("sync cancel order id:{} to hk paramJson:{}",orderId,paramJson);
         //String gateway = hkGateway+"/commonerp/erp/sal/updateordercancelstatus";
         String gateway = "";
         if(Objects.equal(0,type)){
@@ -69,7 +69,7 @@ public class SycHkOrderCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+        log.info("sync cancel order id:{} to hk result:{}",orderId,responseBody);
         return responseBody;
     }
 }

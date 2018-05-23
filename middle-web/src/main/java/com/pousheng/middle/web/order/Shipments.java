@@ -492,6 +492,7 @@ public class Shipments {
     @OperationLogType("生成换货发货单")
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
+        log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
 
         //判断是否重复生成
         checkIsDuplicateCreate(refundId);
@@ -577,7 +578,10 @@ public class Shipments {
                 throw new JsonResponseException(createResp.getError());
             }
             Long shipmentId = createResp.getResult();
+            log.info("Shipments.createAfterShipment eventBus post before refundId:{}, shipmentId:{}",refundId,shipmentId);
             eventBus.post(new RefundShipmentEvent(shipmentId));
+            log.info("Shipments.createAfterShipment eventBus post after refundId:{}, shipmentId:{}",refundId,shipmentId);
+
             shipmentIds.add(shipmentId);
         }
         return shipmentIds;

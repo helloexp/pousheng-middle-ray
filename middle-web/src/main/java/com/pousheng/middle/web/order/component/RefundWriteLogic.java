@@ -526,6 +526,8 @@ public class RefundWriteLogic {
 
     //创建售后单
     public Long createYunJURefund(SubmitRefundInfo submitRefundInfo){
+        // 退款金额
+        Long refundFee = 0L;
         //验证提交信息是否有效
         //订单是否有效
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
@@ -542,6 +544,7 @@ public class RefundWriteLogic {
 //        }
         for (EditSubmitRefundItem editSubmitRefundItem:submitRefundInfo.getEditSubmitRefundItems()){
             updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity(),shipmentItems);
+            refundFee += editSubmitRefundItem.getFee();
         }
         Refund refund = new Refund();
         // 售后单关联单号 订单的订单编号
@@ -558,6 +561,7 @@ public class RefundWriteLogic {
         }else {
             refund.setStatus(MiddleRefundStatus.WAIT_SYNC_HK.getValue());
         }
+
         refund.setShopId(shopOrder.getShopId());
         refund.setShopName(shopOrder.getShopName());
         refund.setRefundType(submitRefundInfo.getRefundType());
@@ -582,11 +586,12 @@ public class RefundWriteLogic {
                 extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO,mapper.toJson(submitRefundInfo.getMiddleChangeReceiveInfo()));
             }
         }
-        // 云聚接口传了退款金额 就使用接口参数，没有传就使用交易订单中的实际支付
-        // 订单实际支付=商品实际支付+运费
-        Long orderFee = shopOrder.getFee() + shopOrder.getOriginFee();
-        Long refundFee = MoreObjects.firstNonNull(submitRefundInfo.getFee(), orderFee);
-        refund.setFee(refundFee);
+
+        // 云聚接口传了退款金额 就使用接口参数，没有传就使用子订单中的退款金额累加
+        Long refundFeeTotal = MoreObjects.firstNonNull(submitRefundInfo.getFee(), refundFee);
+        log.info("refund fee is : {}", refundFeeTotal);
+        refund.setFee(refundFeeTotal);
+
         //表明售后单的信息已经全部完善
         extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
         refund.setExtra(extraMap);

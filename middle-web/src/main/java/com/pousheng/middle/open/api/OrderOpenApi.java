@@ -603,7 +603,7 @@ public class OrderOpenApi {
         OrderShipment shipment = response.getResult().get(0);
         refundInfo.setOutAfterSaleOrderId(refundOrder.getOutAfterSaleOrderId()); //售后单id
         refundInfo.setShipmentId(shipment.getShipmentId());
-        refundInfo.setRefundType(AFTER_SALES_RETURN.value()); //退售后 类型
+        refundInfo.setRefundType(refundOrder.getType()); //退售后 类型
         refundInfo.setFee(refundOrder.getFee()); //金额
         ArrayList<EditSubmitRefundItem> refundItems = Lists.newArrayList();
         applyRefund.getItems().forEach(x->{
@@ -617,7 +617,8 @@ public class OrderOpenApi {
         });
         refundInfo.setEditSubmitRefundItems(refundItems);//退 商品item
         refundInfo.setBuyerNote(refundOrder.getBuyerNote()); //买家备注
-        refundInfo.setOperationType(1); //操作类型 //这里不需要同步给yyedi,需要客服审核手动触发推送给yyedi
+        // 自动推送
+        refundInfo.setOperationType(2); //操作类型 //这里不需要同步给yyedi,需要客服审核手动触发推送给yyedi
         refundInfo.setReturnStockid(refundOrder.getReturnStockid()); //退货仓id 文案有点问题存到warehousId
         refundWriteLogic.createYunJURefund(refundInfo);
 

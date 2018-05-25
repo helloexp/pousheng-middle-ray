@@ -1,26 +1,17 @@
 package com.pousheng.middle.web.events.item.listener;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.StockPusher;
-import com.pousheng.middle.open.api.dto.ErpStock;
-import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.events.item.BatchSyncStockEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
-import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 

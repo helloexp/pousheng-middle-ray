@@ -7,9 +7,13 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.api.dto.ErpStock;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
+import com.pousheng.middle.warehouse.model.SkuStockTask;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
+import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import com.pousheng.middle.web.events.item.BatchSyncStockEvent;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
@@ -38,6 +42,8 @@ public class WarehouseStockApi {
     private EventBus eventBus;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private SkuStockTaskWriteService skuStockTaskWriteService;
 
     private static final TypeReference<List<ErpStock>> LIST_OF_ERP_STOCK = new TypeReference<List<ErpStock>>() {};
 
@@ -56,9 +62,21 @@ public class WarehouseStockApi {
             throw new OPServerException(200,"stock.data.invalid");
         }
         List<StockDto> stockDtos = make(erpStocks);
-        BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
+        SkuStockTask task = new SkuStockTask();
+        task.setSkuCount(total);
+        task.setStockDtoList(stockDtos);
+        task.setStatus(0);
+
+        Response<Long> response = skuStockTaskWriteService.create(task);
+        if (!response.isSuccess()) {
+            log.error("create task:{} fail,error:{}",task,response.getError());
+            throw new OPServerException(200,response.getError());
+        }
+
+
+        /*BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
         syncStockEvent.setStockDtos(stockDtos);
-        eventBus.post(syncStockEvent);
+        eventBus.post(syncStockEvent);*/
 
     }
 

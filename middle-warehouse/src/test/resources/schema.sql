@@ -180,3 +180,20 @@ CREATE TABLE `pousheng_mpos_sku_stocks` (
   KEY `idx_mss_shop_id` (`shop_id`),
   KEY `idx_mss_warehouse_id` (`warehouse_id`)
 )COMMENT='mpos下单sku锁定库存情况';
+
+
+
+
+
+drop table if exists `pousheng_sku_stock_tasks`;
+CREATE TABLE `pousheng_sku_stock_tasks` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `status` tinyint(4) NOT NULL COMMENT '状态, 0 待处理, 1处理中',
+  `sku_count` int(11) NOT NULL COMMENT '商品数量',
+  `sku_json` varchar(2048) DEFAULT NULL COMMENT 'sku信息',
+  `timeout_at` datetime  NULL COMMENT '任务超时时间，当状态为处理中时会记录下处理的超时时间，当到达超时时间时任务状态仍为处理中，则更正状态为待处理',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sst_status` (`status`)
+)COMMENT='sku库存同步任务';

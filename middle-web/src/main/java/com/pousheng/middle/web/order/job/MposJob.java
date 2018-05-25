@@ -9,6 +9,8 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
+import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
+import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
@@ -95,6 +97,9 @@ public class MposJob {
 
     @Autowired
     private HKShipmentDoneLogic hkShipmentDoneLogic;
+
+    @Autowired
+    private SkuStockTaskWriteService skuStockTaskWriteService;
 
     private final ExecutorService executorService;
 
@@ -217,6 +222,23 @@ public class MposJob {
             next = batchSyncShopAddress(pageNo, 500);
         }
         log.info("sync mpos shop address end");
+    }
+
+    /**
+     * 每隔10分钟尝试把超时处理中的任务状态回滚到待处理
+     */
+    @Scheduled(cron = "0 */10 * * * ?")
+    public void compensationSkuStockTask() {
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        log.info("start to compensationSkuStockTask...");
+
+        Response<Boolean> updateRes = skuStockTaskWriteService.updateTimeOutHandleTask();
+        if (!updateRes.isSuccess()){
+            log.error("updateTimeOutHandleTask fail,error:{}",updateRes.getError());
+        }
     }
 
 

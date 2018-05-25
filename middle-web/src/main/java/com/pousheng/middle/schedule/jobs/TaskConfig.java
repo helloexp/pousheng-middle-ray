@@ -10,8 +10,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @ComponentScan({
-        "com.pousheng.middle.schedule.jobs",
-        "com.pousheng.middle.schedule.tasks",
-        "com.pousheng.middle.schedule.rest"
+        "com.pousheng.middle.schedule.jobs"
 })
 public class TaskConfig {}

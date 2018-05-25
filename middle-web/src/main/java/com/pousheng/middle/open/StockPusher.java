@@ -5,14 +5,18 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
+import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
-import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
-import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
 import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -28,7 +32,6 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Lists;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +39,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.Date;
 import java.util.List;
@@ -49,6 +53,7 @@ import java.util.concurrent.*;
  */
 @Component
 @Slf4j
+// TODO 推送优化改造
 public class StockPusher {
 
 
@@ -61,14 +66,11 @@ public class StockPusher {
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
 
-    @RpcConsumer
-    private AvailableStockCalc availableStockCalc;
+    @Autowired
+    private InventoryClient inventoryClient;
 
-    @RpcConsumer
-    private WarehouseShopStockRuleReadService warehouseShopStockRuleReadService;
-
-    @RpcConsumer
-    private WarehouseShopStockRuleWriteService warehouseShopStockRuleWriteService;
+    @Autowired
+    private WarehouseShopRuleClient warehouseShopRuleClient;
 
     @RpcConsumer
     private StockPushLogic stockPushLogic;
@@ -80,6 +82,8 @@ public class StockPusher {
     private MessageSource messageSource;
     @Autowired
     private RedisQueueProvider redisQueueProvider;
+    @Autowired
+    private WarehouseRulesClient warehouseRulesClient;
 
 
     @Value("${mpos.open.shop.id}")
@@ -145,6 +149,7 @@ public class StockPusher {
 
     public void submit(List<String> skuCodes) {
 
+        log.info("start to push skus: {}", skuCodes);
 
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
         //库存推送日志记录
@@ -162,21 +167,9 @@ public class StockPusher {
                 //计算库存分配并将库存推送到每个外部店铺去
                 List<Long> shopIds = r.getResult();
                 for (Long shopId : shopIds) {
+                    log.info("start to push sku to shop: {}", shopId);
                     try {
-
                         if (Objects.equals(shopId,mposOpenShopId)){
-                            continue;
-                        }
-
-                        Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
-                        if (!rShopStockRule.isSuccess()) {
-                            log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
-                                    shopId, rShopStockRule.getError());
-                            continue;
-                        }
-                        //和安全库存进行比较, 确定推送库存数量
-                        WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
-                        if (shopStockRule.getStatus() < 0) { //非启用状态
                             continue;
                         }
 
@@ -194,8 +187,37 @@ public class StockPusher {
                             continue;
                         }
 
+                        Response<WarehouseShopStockRule> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
+                        if (!rShopStockRule.isSuccess()) {
+                            log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
+                                    shopId, rShopStockRule.getError());
+                            continue;
+                        }
+                        //和安全库存进行比较, 确定推送库存数量
+                        WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
+                        if (shopStockRule.getStatus() < 0) { //非启用状态
+                            continue;
+                        }
+
                         //计算每个店铺的可用库存
-                        Long stock = availableStockCalc.availableStock(shopId, skuCode, shopStockRule.getSafeStock());
+                        Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
+                        if (!rWarehouseIds.isSuccess()) {
+                            log.error("find warehouse list by shopId fail: shopId: {}, caused: {]",shopId, rWarehouseIds.getError());
+                            continue;
+                        }
+
+                        Long stock = 0L;
+                        long start1 = System.currentTimeMillis();
+                        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
+                                Lists.transform(rWarehouseIds.getResult(), input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
+                        ), shopId);
+                        long end1 = System.currentTimeMillis();
+                        log.info("get available inventory cost: {}", (end1-start1));
+                        if (!getRes.isSuccess() || ObjectUtils.isEmpty(getRes.getResult())) {
+                            stock = 0L;
+                        } else {
+                            stock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getTotalQuantity).sum();
+                        }
                         log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
 
                         /*if (shopStockRule.getSafeStock() >= stock) {
@@ -213,12 +235,15 @@ public class StockPusher {
                         }
 
                         //按照设定的比例确定推送数量
-                        stock = stock * shopStockRule.getRatio() / 100;
+                        stock = stock * shopStockRule.getRatio() / 100 + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock());
+
                         //判断店铺是否是官网的
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
+                            log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                         } else {
+                            log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
                             log.info("parall update stock start");
                             this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
@@ -234,6 +259,7 @@ public class StockPusher {
                 log.error("failed to push stock,sku is {}", skuCode);
             }
         }
+
         //官网批量推送
         log.info("send to parana by parall update stock start");
         sendToParana(shopSkuStock);

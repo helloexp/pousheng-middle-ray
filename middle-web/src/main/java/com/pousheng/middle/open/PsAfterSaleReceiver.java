@@ -14,8 +14,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
-import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -66,10 +64,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
-    @Autowired
-    private WarehouseReadService warehouseReadService;
-    @Autowired
-    private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
     @Autowired
     private RefundReadLogic refundReadLogic;
     @Autowired

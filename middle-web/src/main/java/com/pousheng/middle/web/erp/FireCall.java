@@ -25,15 +25,13 @@ import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
-import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -57,7 +55,6 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
-import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -93,8 +90,6 @@ public class FireCall {
 
     private final BrandImporter brandImporter;
 
-    private final WarehouseImporter warehouseImporter;
-
     private final MaterialPusher materialPusher;
 
     private final ErpBrandCacher brandCacher;
@@ -103,16 +98,13 @@ public class FireCall {
 
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
-    private final WarehouseSkuReadService warehouseSkuReadService;
-
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
-
     @Autowired
-    private WarehouseRuleReadService warehouseRuleReadService;
+    private WarehouseRulesClient warehouseRulesClient;
+
     private final ShopCacher shopCacher;
     private final WarehouseCacher warehouseCacher;
-
 
     private final DateTimeFormatter dft;
     @RpcConsumer
@@ -143,25 +135,23 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
+                    MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi,
+                    SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
-        this.warehouseImporter = warehouseImporter;
         this.materialPusher = materialPusher;
         this.brandCacher = brandCacher;
         this.mposWarehousePusher = mposWarehousePusher;
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
-        this.warehouseSkuReadService = warehouseSkuReadService;
         this.skuTemplateSearchReadService = skuTemplateSearchReadService;
         this.shopCacher = shopCacher;
         this.warehouseCacher = warehouseCacher;
 
         DateTimeParser[] parsers = {
-            DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
-            DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
+                DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
+                DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
         dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
     }
-
 
     @RequestMapping(value = "/spu/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String spuInput(@RequestParam String file) {
@@ -180,8 +170,8 @@ public class FireCall {
                 return "fail";
             }
             List<PoushengMaterial> poushengMaterials = mapper.readValue(root.findPath("list").toString(),
-                new TypeReference<List<PoushengMaterial>>() {
-                });
+                    new TypeReference<List<PoushengMaterial>>() {
+                    });
 
             return String.valueOf(poushengMaterials.size());
             /*for (PoushengMaterial poushengMaterial : poushengMaterials) {
@@ -238,31 +228,6 @@ public class FireCall {
     }
 
 
-    @RequestMapping(value = "/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean synchronizeWarehouse(@RequestParam(name = "start", required = false, defaultValue = "") String start,
-                                        @RequestParam(name = "end", required = false, defaultValue = "") String end) {
-        if (log.isDebugEnabled()) {
-            log.debug("API-MIDDLE-TASK-WAREHOUSE-START param: start [{}] end [{}]", start, end);
-        }
-        Date from = DateTime.now().withTimeAtStartOfDay().toDate();
-        if (StringUtils.hasText(start)) {
-            from = dft.parseDateTime(start).toDate();
-        }
-        Date to = DateTime.now().withTimeAtStartOfDay().plusDays(1).minusSeconds(1).toDate();
-        if (StringUtils.hasText(end)) {
-            to = dft.parseDateTime(end).toDate();
-        }
-        log.info("begin to synchronize warehouse from {} to {}", from, to);
-        int warehouseCount = warehouseImporter.process(from, to);
-        log.info("synchronized {} warehouses", warehouseCount);
-        if (log.isDebugEnabled()) {
-            log.debug("API-MIDDLE-TASK-WAREHOUSE-END param: start [{}] end [{}] ,resp: [{}]", start, end, true);
-        }
-        return Boolean.TRUE;
-
-    }
-
-
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpuStock(@RequestParam Long spuId) {
         if (log.isDebugEnabled()) {
@@ -288,7 +253,7 @@ public class FireCall {
                 Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, 1, pageNo, pageSize);
                 if (!res.isSuccess()) {
                     log.error("fail to find item mapping by shopId={} pageNo={},pageSize={},error:{}", shopId,
-                        pageNo, pageSize, res.getError());
+                            pageNo, pageSize, res.getError());
                     break;
                 }
 
@@ -449,7 +414,7 @@ public class FireCall {
         }
 
         //3、查询门店的发货仓范围
-        Response<List<Long>> warehouseIdsRes = warehouseRuleReadService.findWarehouseIdsByShopId(openShopId);
+        Response<List<Long>> warehouseIdsRes = warehouseRulesClient.findWarehouseIdsByShopId(openShopId);
         if (!warehouseIdsRes.isSuccess()) {
             log.error("find warehouse rule item by shop id:{} fail,error:{}", openShopId, warehouseIdsRes.getError());
             throw new JsonResponseException(warehouseIdsRes.getError());
@@ -463,21 +428,16 @@ public class FireCall {
             return itemNameAndStock;
 
         }
-        List<Warehouse> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
+        List<WarehouseDTO> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
         for (Long warehouseId : warehouseIds) {
             warehouseList.add(warehouseCacher.findById(warehouseId));
         }
 
-        List<String> stockCodes = Lists.transform(warehouseList, new Function<Warehouse, String>() {
+        List<String> stockCodes = Lists.transform(warehouseList, new Function<WarehouseDTO, String>() {
             @Nullable
             @Override
-            public String apply(@Nullable Warehouse warehouse) {
-                Map<String, String> extra = warehouse.getExtra();
-                if (CollectionUtils.isEmpty(extra) || !extra.containsKey("outCode")) {
-                    log.error("warehouse(id:{}) out code invalid", warehouse.getId());
-                    throw new JsonResponseException("warehouse.out.code.invalid");
-                }
-                return extra.get("outCode");
+            public String apply(@Nullable WarehouseDTO warehouse) {
+                return warehouse.getOutCode();
             }
         });
 
@@ -485,7 +445,7 @@ public class FireCall {
         Long total = 0L;
         Long currentCompanyQuantity = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList, currentShop.getId());
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
             if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
@@ -924,5 +884,3 @@ public class FireCall {
     }
 
 }
-
-

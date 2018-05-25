@@ -11,8 +11,8 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
@@ -63,7 +63,7 @@ public class Refunds {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private SyncErpReturnLogic syncErpReturnLogic;
     @Autowired
@@ -853,9 +853,9 @@ public class Refunds {
         waitShipItemInfos.add(waitShipItemInfo);
     }
 
-    private Warehouse findWarehouseById(Long warehouseId) {
+    private WarehouseDTO findWarehouseById(Long warehouseId) {
 
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());

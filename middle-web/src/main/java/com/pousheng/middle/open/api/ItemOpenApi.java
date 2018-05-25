@@ -1,6 +1,5 @@
 package com.pousheng.middle.open.api;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
@@ -12,8 +11,7 @@ import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -28,11 +26,11 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.util.CollectionUtils;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -55,7 +53,7 @@ public class ItemOpenApi {
     @Autowired
     private MiddleShopCacher middleShopCacher;
     @Autowired
-    private WarehouseRuleReadService warehouseRuleReadService;
+    private WarehouseRulesClient warehouseRulesClient;
     @Autowired
     private WarehouseCacher warehouseCacher;
 
@@ -98,7 +96,7 @@ public class ItemOpenApi {
             }
 
             //3、查询门店的发货仓范围
-            Response<List<Long>> warehouseIdsRes = warehouseRuleReadService.findWarehouseIdsByShopId(openShopId);
+            Response<List<Long>> warehouseIdsRes = warehouseRulesClient.findWarehouseIdsByShopId(openShopId);
             if(!warehouseIdsRes.isSuccess()){
                 log.error("find warehouse rule item by shop id:{} fail,error:{}",openShopId,warehouseIdsRes.getError());
                 throw new OPServerException(200,warehouseIdsRes.getError());
@@ -127,7 +125,7 @@ public class ItemOpenApi {
                 throw new OPServerException(200,"some.barcode.middle.not.exist");
             }
 
-            Map<String,Long> skuAndStockMap = queryStock(warehouseIds,barcodeList);
+            Map<String,Long> skuAndStockMap = queryStock(warehouseIds,barcodeList,openShopId);
 
             List<SkuIsMposDto> skuIsMposDtos = Lists.newArrayListWithCapacity(barcodeList.size());
             for (SkuTemplate skuTemplate : skuTemplates){
@@ -150,12 +148,12 @@ public class ItemOpenApi {
     }
 
 
-    private Map<String,Long> queryStock(List<Long> warehouseIds,List<String> skuCodesList){
+    private Map<String,Long> queryStock(List<Long> warehouseIds,List<String> skuCodesList, Long shopId){
 
         Multimap<String, Integer> stockBySkuCode = HashMultimap.create();
 
         Table<Long, String, Integer> skuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodesList);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodesList,shopId);
         dispatchComponent.completeTab(skuStockInfos,skuCodeQuantityTable);
 
         makeStockByStock(stockBySkuCode,skuCodesList,skuCodeQuantityTable);

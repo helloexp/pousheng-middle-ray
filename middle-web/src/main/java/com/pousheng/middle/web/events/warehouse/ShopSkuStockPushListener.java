@@ -9,6 +9,7 @@ import io.terminus.common.model.Response;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -42,6 +43,13 @@ public class ShopSkuStockPushListener {
 
     @Subscribe
     public void onPushEvent(PushEvent event){
+        if (null != event && StringUtils.isNotBlank(event.getSkuCode())) {
+            log.info("begin to push stock for skuCode(skuCode={})", event.getSkuCode());
+            stockPusher.submit(Lists.newArrayList(event.getSkuCode()));
+
+            return;
+        }
+
         Long shopId = event.getShopId();
         log.info("begin to push stock for shop(id={})", shopId);
         int pageNo = 1;

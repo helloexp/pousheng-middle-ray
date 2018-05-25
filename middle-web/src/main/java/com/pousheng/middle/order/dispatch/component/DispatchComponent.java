@@ -2,41 +2,47 @@ package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Table;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import javax.annotation.Nullable;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -52,11 +58,15 @@ public class DispatchComponent {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private WarehouseSkuReadService warehouseSkuReadService;
+    private InventoryClient inventoryClient;
     @Autowired
     private WarehouseCacher warehouseCacher;
     @Autowired
     private ShopCacher shopCacher;
+    @Autowired
+    private OrderShipmentReadService orderShipmentReadService;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
     private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
@@ -81,6 +91,36 @@ public class DispatchComponent {
             return input.getPriority();
         }
     });
+
+    /**
+     * 根据派单规则生成的信息，组建库存交易对象
+     * @param dispatchOrderItemInfo
+     * @return
+     */
+    public InventoryTradeDTO genInventoryTradeDTO (DispatchOrderItemInfo dispatchOrderItemInfo, Integer retryMinusDelta) {
+        if (null == retryMinusDelta) {
+            retryMinusDelta = 0;
+        }
+        InventoryTradeDTO inventoryTradeDTO = new InventoryTradeDTO();
+        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getOrderId()));
+        inventoryTradeDTO.setShopId(dispatchOrderItemInfo.getOpenShopId());
+
+        // TODO 如果已经取消过，则放入uniqueCode一个内容，这个内容取自取消信息，用来告诉产品那边这是一次新的交易
+        if (null != dispatchOrderItemInfo.getOrderId()) {
+            Response<List<OrderShipment>> orderShipList = orderShipmentReadService.findByOrderIdAndOrderLevel(dispatchOrderItemInfo.getOrderId(), OrderLevel.SHOP);
+            if (orderShipList.isSuccess() && !ObjectUtils.isEmpty(orderShipList.getResult())) {
+                List<OrderShipment> cancelShipment = orderShipList.getResult().stream().filter(orderShipment -> MiddleShipmentsStatus.CANCELED.getValue() == orderShipment.getStatus()).collect(Collectors.toList());
+
+                if (!ObjectUtils.isEmpty(cancelShipment) && (cancelShipment.size()-retryMinusDelta) > 0) {
+                    inventoryTradeDTO.setUniqueCode("CURR_TRY:"+(cancelShipment.size()-retryMinusDelta));
+                }
+            }
+        }
+
+        // 子订单直接使用订单ID
+        inventoryTradeDTO.setSubOrderId(Lists.newArrayList(inventoryTradeDTO.getOrderId()));
+        return inventoryTradeDTO;
+    }
 
 
     public Optional<Location> getLocation(String address){
@@ -117,6 +157,47 @@ public class DispatchComponent {
     }
 
 
+    public Optional<Shop> getShopByWarehouse (Long warehouseId) {
+        if (null == warehouseId) {
+            return Optional.absent();
+        }
+
+        try {
+            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+            if (null == warehouse) {
+                return Optional.absent();
+            }
+
+            Shop shopResponse =  middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
+            if (null == shopResponse) {
+                return Optional.absent();
+            }
+
+            return Optional.of(shopResponse);
+        } catch (Exception e) {
+            log.error("fail to find shop by warehouse, params: {}, caused: {}", warehouseId, Throwables.getStackTraceAsString(e));
+        }
+
+        return Optional.absent();
+
+    }
+
+    public List<AvailableInventoryRequest> getAvailInvReq(List<Long> warehouseId, List<String> skuCodes) {
+        if (ObjectUtils.isEmpty(skuCodes)) {
+            return Lists.newArrayList();
+        }
+        List<AvailableInventoryRequest> requests = Lists.newArrayList();
+        if (null == warehouseId) {
+            requests.addAll(Lists.transform(skuCodes, input -> AvailableInventoryRequest.builder().skuCode(input).build()));
+        } else {
+            for (String skuCode : skuCodes) {
+                requests.addAll(Lists.transform(warehouseId, input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build()));
+            }
+        }
+
+        return requests;
+    }
+
     /**
      * 完善 仓库商品库存信息
      * @param skuStockInfos 商品数量信息
@@ -134,6 +215,21 @@ public class DispatchComponent {
             //安全库存
             Integer safeStock = Integer.valueOf(extra.get("safeStock"));*/
             completeTotalWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
+        }
+    }
+
+
+    /**
+     * 完善 仓库商品库存信息
+     * @param skuStockInfos 商品数量信息
+     * @param skuCodeQuantityTable tab
+     */
+    //TODO 各种complete的调整是否合适
+    public void completeWarehouseTabFromInv(List<AvailableInventoryDTO> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
+
+        for (AvailableInventoryDTO hkSkuStockInfo : skuStockInfos){
+            //这里先不考虑 availStock-lockStock - safeStock 负数情况
+            skuCodeQuantityTable.put(hkSkuStockInfo.getWarehouseId(),hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalQuantity());
         }
     }
 
@@ -200,6 +296,21 @@ public class DispatchComponent {
             }
     }
 
+    /**
+     * 完善 门店商品库存信息
+     * @param skuStockInfos 商品数量信息
+     * @param skuCodeQuantityTable tab
+     */
+    public void completeShopTabFromInv(List<AvailableInventoryDTO> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
+
+        for (AvailableInventoryDTO hkSkuStockInfo : skuStockInfos){
+            Optional<Shop> shopOptional = getShopByWarehouse(hkSkuStockInfo.getWarehouseId());
+            if (shopOptional.isPresent()) {
+                skuCodeQuantityTable.put(shopOptional.get().getId(), hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalQuantity());
+            }
+        }
+    }
+
 
 
 
@@ -231,7 +342,7 @@ public class DispatchComponent {
      * @return 可以整单发货的门店
      */
     public List<ShopShipment> chooseSingleShop(Table<Long, String, Integer> shopskucode2stock,
-                                                    List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+                                               List<SkuCodeAndQuantity> skuCodeAndQuantities) {
         List<ShopShipment> singleShops = Lists.newArrayListWithCapacity(shopskucode2stock.size());
         for (Long shopId : shopskucode2stock.rowKeySet()) {
             List<ShopShipment> shopShipments = trySingleShop(skuCodeAndQuantities, shopskucode2stock, shopId);
@@ -287,31 +398,26 @@ public class DispatchComponent {
         return distanceDto;
     }
 
-    public List<String> getWarehouseOutCode(List<Warehouse> warehouses){
+    public List<String> getWarehouseOutCode(List<WarehouseDTO> warehouses){
         //查询仓代码
-        return Lists.transform(warehouses, new Function<Warehouse, String>() {
+        return Lists.transform(warehouses, new Function<WarehouseDTO, String>() {
             @Nullable
             @Override
-            public String apply(@Nullable Warehouse input) {
-                Map<String, String> extra = input.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",input.getId());
-                    throw new ServiceException("warehouse.out.code.invalid");
-                }
-                return extra.get("outCode");
+            public String apply(@Nullable WarehouseDTO input) {
+                return input.getOutCode();
             }
         });
     }
 
 
     private List<WarehouseShipment> trySingleWarehouse(List<SkuCodeAndQuantity> skuCodeAndQuantities,
-                                                                 Table<Long, String, Integer> widskucode2stock,
+                                                       Table<Long, String, Integer> widskucode2stock,
                                                        Long warehouseId) {
         if (isEnough(skuCodeAndQuantities,widskucode2stock,warehouseId)) {
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(warehouseId);
-            Warehouse warehouse = warehouseCacher.findById(warehouseId);
-            warehouseShipment.setWarehouseName(warehouse.getName());
+            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+            warehouseShipment.setWarehouseName(warehouse.getWarehouseName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             return Lists.newArrayList(warehouseShipment);
         }
@@ -320,8 +426,8 @@ public class DispatchComponent {
 
 
     private List<ShopShipment> trySingleShop(List<SkuCodeAndQuantity> skuCodeAndQuantities,
-                                                       Table<Long, String, Integer> widskucode2stock,
-                                                       Long shopId) {
+                                             Table<Long, String, Integer> widskucode2stock,
+                                             Long shopId) {
 
         if (isEnough(skuCodeAndQuantities,widskucode2stock,shopId)) {
             ShopShipment shopShipment = new ShopShipment();

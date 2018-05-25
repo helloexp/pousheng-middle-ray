@@ -5,17 +5,17 @@ import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
-import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.model.AddressGps;
-import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -47,11 +47,9 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
     @Autowired
     private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
-    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
-    @Autowired
-    private WarehouseCacher warehouseCacher;
-    @Autowired
     private DispatchComponent dispatchComponent;
+    @Autowired
+    private InventoryClient inventoryClient;
 
 
     @Override
@@ -86,30 +84,27 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
+        List<WarehouseDTO> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //过滤掉非mpos仓
-        List<Warehouse> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());
+        List<WarehouseDTO> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getWarehouseSubType(),0)).collect(Collectors.toList());
         if(CollectionUtils.isEmpty(mposWarehouses)){
             return Boolean.TRUE;
         }
 
-        //查询仓代码
-        List<String> stockCodes = dispatchComponent.getWarehouseOutCode(mposWarehouses);
-
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
-        if(CollectionUtils.isEmpty(skuStockInfos)){
+        Response<List<AvailableInventoryDTO>> skuStockInfos = inventoryClient.getAvailableInventory(
+                dispatchComponent.getAvailInvReq(Lists.newArrayList(Lists.transform(mposWarehouses, input -> input.getId())), skuCodes),
+                dispatchOrderItemInfo.getOpenShopId());
+        if(!skuStockInfos.isSuccess() || CollectionUtils.isEmpty(skuStockInfos.getResult())){
             return Boolean.TRUE;
         }
 
         // 放入 warehouseSkuCodeQuantityTable
-        dispatchComponent.completeWarehouseTab(skuStockInfos,warehouseSkuCodeQuantityTable);
+        dispatchComponent.completeWarehouseTabFromInv(skuStockInfos.getResult(), warehouseSkuCodeQuantityTable);
 
         //判断是否有整单
-
         List<WarehouseShipment> warehouseShipments = dispatchComponent.chooseSingleWarehouse(warehouseSkuCodeQuantityTable,skuCodeAndQuantities);
 
         //没有整单发的

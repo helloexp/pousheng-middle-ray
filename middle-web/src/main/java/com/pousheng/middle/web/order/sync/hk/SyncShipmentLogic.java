@@ -13,8 +13,8 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -63,7 +63,7 @@ public class SyncShipmentLogic {
     @Autowired
     private SycHkOrderCancelApi sycHkOrderCancelApi;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -312,12 +312,12 @@ public class SyncShipmentLogic {
 
         //绩效店铺编码
         tradeOrder.setPerformanceShopId(shipmentExtra.getErpPerformanceShopCode());
-        Response<Warehouse> response = warehouseReadService.findById(shipmentExtra.getWarehouseId());
+        Response<WarehouseDTO> response = warehouseClient.findById(shipmentExtra.getWarehouseId());
         if (!response.isSuccess()){
             log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
             throw new ServiceException(response.getError());
         }
-        Warehouse warehouse = response.getResult();
+        WarehouseDTO warehouse = response.getResult();
         tradeOrder.setStockId(warehouse.getInnerCode());
         //京东快递,自选快递
         tradeOrder.setVendCustCode(shipmentExtra.getVendCustID());
@@ -511,12 +511,12 @@ public class SyncShipmentLogic {
      * @return
      */
     private String getHkWarehouseCodeById(long warehouseId){
-        Response<Warehouse> response = warehouseReadService.findById(warehouseId);
+        Response<WarehouseDTO> response = warehouseClient.findById(warehouseId);
         if (!response.isSuccess()){
             log.error("find warehouse by id :{} failed",warehouseId);
             throw new ServiceException("find.warehouse.failed");
         }
-        return response.getResult().getCode();
+        return response.getResult().getWarehouseCode();
     }
     /**
      * 中台支付类型映射为恒康支付类型

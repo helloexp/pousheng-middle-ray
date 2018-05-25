@@ -1,21 +1,24 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
-import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.ShopAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -25,6 +28,7 @@ import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -44,7 +48,8 @@ public class AllShopDispatchlink implements DispatchOrderLink{
     @Autowired
     private DispatchComponent dispatchComponent;
     @Autowired
-    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+    private InventoryClient inventoryClient;
+
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -58,8 +63,10 @@ public class AllShopDispatchlink implements DispatchOrderLink{
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodes,1);
-        if(CollectionUtils.isEmpty(skuStockInfos)){
+        Response<List<AvailableInventoryDTO>> skuStockInfos = inventoryClient.getAvailableInventory(dispatchComponent.getAvailInvReq(null, skuCodes)
+                , dispatchOrderItemInfo.getOpenShopId());
+        if(!skuStockInfos.isSuccess() || CollectionUtils.isEmpty(skuStockInfos.getResult())){
+            log.warn("not skuStockInfos so skip");
             return Boolean.TRUE;
         }
 
@@ -69,13 +76,14 @@ public class AllShopDispatchlink implements DispatchOrderLink{
             context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         }
 
-        List<HkSkuStockInfo> filterSkuStockInfos = filterAlreadyQuery(skuStockInfos,shopSkuCodeQuantityTable,rejectShopIds);
+        List<AvailableInventoryDTO> filterSkuStockInfos = filterAlreadyQuery(skuStockInfos.getResult(),shopSkuCodeQuantityTable,rejectShopIds);
         if(CollectionUtils.isEmpty(filterSkuStockInfos)){
+            log.warn("not skuStockInfos so skip");
             return Boolean.TRUE;
         }
 
         //放入 shopSkuCodeQuantityTable
-        dispatchComponent.completeShopTab(filterSkuStockInfos,shopSkuCodeQuantityTable);
+        dispatchComponent.completeShopTabFromInv(filterSkuStockInfos, shopSkuCodeQuantityTable);
 
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);
@@ -106,12 +114,27 @@ public class AllShopDispatchlink implements DispatchOrderLink{
 
 
     //过滤掉省内和已拒绝的门店
-    private List<HkSkuStockInfo> filterAlreadyQuery(List<HkSkuStockInfo> hkSkuStockInfos,Table<Long, String, Integer> shopSkuCodeQuantityTable,List<Long> rejectShopIds){
+    private List<AvailableInventoryDTO> filterAlreadyQuery(List<AvailableInventoryDTO> hkSkuStockInfos,Table<Long, String, Integer> shopSkuCodeQuantityTable,List<Long> rejectShopIds){
         Set<Long> alreadyQueryShopIds =  shopSkuCodeQuantityTable.rowKeySet();
         //过滤掉省内
-        List<HkSkuStockInfo> hkSkuStockInfoList = hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryShopIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
+        List<AvailableInventoryDTO> hkSkuStockInfoList = hkSkuStockInfos.stream().filter(availableInventoryDTO -> {
+            Optional<Shop> shopRes = dispatchComponent.getShopByWarehouse(availableInventoryDTO.getWarehouseId());
+            if (!shopRes.isPresent()) {
+                return false;
+            }
+            return !alreadyQueryShopIds.contains(shopRes.get().getId());
+
+        }).collect(Collectors.toList());
+
         //过滤掉已拒绝的门店
-        return hkSkuStockInfoList.stream().filter(hkSkuStockInfo -> !rejectShopIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
+        return hkSkuStockInfoList.stream().filter(availableInventoryDTO -> {
+            Optional<Shop> shopRes = dispatchComponent.getShopByWarehouse(availableInventoryDTO.getWarehouseId());
+            if (!shopRes.isPresent()) {
+                return false;
+            }
+            return !rejectShopIds.contains(shopRes.get().getId());
+
+        }).collect(Collectors.toList());
 
     }
 }

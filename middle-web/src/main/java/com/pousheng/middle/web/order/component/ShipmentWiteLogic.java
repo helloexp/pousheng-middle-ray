@@ -25,12 +25,11 @@ import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -82,7 +81,7 @@ public class ShipmentWiteLogic {
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @Autowired
@@ -147,10 +146,6 @@ public class ShipmentWiteLogic {
 
     @Autowired
     private ShopCacher shopCacher;
-
-    @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
-
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
         if (log.isDebugEnabled()){
@@ -426,6 +421,7 @@ public class ShipmentWiteLogic {
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
         skuOrders.forEach(skuOrder -> {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
             skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
             skuCodeAndQuantity.setQuantity(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             skuCodeAndQuantities.add(skuCodeAndQuantity);
@@ -458,9 +454,9 @@ public class ShipmentWiteLogic {
             }
             if (null == shipmentId) {
                 //解锁库存
-                Response<Boolean> res = warehouseSkuWriteService.unlockStock(new ArrayList<WarehouseShipment>() {{
-                    add(warehouseShipment);
-                }});
+                Response<Boolean> res = mposSkuStockLogic.unLockStock(
+                        warehouseChooser.genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, Lists.newArrayList(warehouseShipment))
+                );
                 if (!res.isSuccess()) {
                     log.warn("shopOrderId : {}  mposSkuStockLogic.unLockStock is fail : {}", shopOrder.getId(), res.getError());
                 }
@@ -778,16 +774,13 @@ public class ShipmentWiteLogic {
         //设置发货仓id
         shipment.setShipId(warehouseId);
         //发货仓库信息
-        Warehouse warehouse = findWarehouseById(warehouseId);
+        WarehouseDTO warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
         shipmentExtra.setWarehouseId(warehouse.getId());
-        shipmentExtra.setWarehouseName(warehouse.getName());
-        Map<String, String> warehouseExtra = warehouse.getExtra();
-        if (Objects.nonNull(warehouseExtra)) {
-            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode") != null ? warehouseExtra.get("outCode") : "");
-        }
+        shipmentExtra.setWarehouseName(warehouse.getWarehouseName());
+        shipmentExtra.setWarehouseOutCode(StringUtils.isEmpty(warehouse.getOutCode()) ? "" : warehouse.getOutCode());
 
         //绩效店铺代码
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
@@ -958,8 +951,8 @@ public class ShipmentWiteLogic {
      * @param warehouseId 仓库主键
      * @return 仓库信息
      */
-    private Warehouse findWarehouseById(Long warehouseId) {
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+    private WarehouseDTO findWarehouseById(Long warehouseId) {
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());
@@ -1278,6 +1271,7 @@ public class ShipmentWiteLogic {
             List<SkuOrder> waitHandles = skuOrders.stream().filter(skuOrder -> Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())).collect(Collectors.toList());
             for (SkuOrder skuOrder : waitHandles) {
                 SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
                 skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
                 skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
                 skuCodeAndQuantities.add(skuCodeAndQuantity);

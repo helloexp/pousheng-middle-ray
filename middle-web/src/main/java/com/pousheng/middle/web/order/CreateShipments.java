@@ -7,8 +7,8 @@ import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -47,7 +47,7 @@ public class CreateShipments {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -135,15 +135,15 @@ public class CreateShipments {
             ShipmentPreview shipmentPreview = response.getResult();
 
             //发货仓库信息
-            Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+            Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
             if (!warehouseRes.isSuccess()) {
                 log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
                 throw new JsonResponseException(warehouseRes.getError());
             }
 
-            Warehouse warehouse = warehouseRes.getResult();
+            WarehouseDTO warehouse = warehouseRes.getResult();
             shipmentPreview.setWarehouseId(warehouse.getId());
-            shipmentPreview.setWarehouseName(warehouse.getName());
+            shipmentPreview.setWarehouseName(warehouse.getWarehouseName());
             //判断所选仓库是否数据下单店铺的账套
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
            /* String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);

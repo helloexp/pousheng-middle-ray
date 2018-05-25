@@ -53,6 +53,8 @@ public class DispatchOrderEngine {
         //初始化
         DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
         dispatchOrderItemInfo.setOpenShopId(shopOrder.getShopId());
+        dispatchOrderItemInfo.setOrderId(shopOrder.getId());
+        dispatchOrderItemInfo.setSubOrderIds(Lists.transform(skuCodeAndQuantities, input -> input.getSkuOrderId()));
         List<ShopShipment> shopShipments = Lists.newArrayList();
         List<WarehouseShipment> warehouseShipments = Lists.newArrayList();
         dispatchOrderItemInfo.setShopShipments(shopShipments);

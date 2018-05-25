@@ -9,8 +9,8 @@ import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundOrderApi;
@@ -66,7 +66,7 @@ public class SyncYYEdiReturnLogic {
     @Autowired
     private SycYYEdiRefundCancelApi sycYYEdiRefundCancelApi;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @RpcConsumer
@@ -172,19 +172,18 @@ public class SyncYYEdiReturnLogic {
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
-        Warehouse warehouse = null;
+        WarehouseDTO warehouse = null;
         if (refundExtra.getWarehouseId()!=null){
-            Response<Warehouse> response = warehouseReadService.findById(refundExtra.getWarehouseId());
+            Response<WarehouseDTO> response = warehouseClient.findById(refundExtra.getWarehouseId());
             if (!response.isSuccess()){
                 log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
                 throw new ServiceException(response.getError());
             }
             warehouse = response.getResult();
-            Map<String,String> warehouseExtraMap = warehouse.getExtra();
             //公司码
             refundInfo.setCompanyCode(warehouse.getCompanyCode());
             //仓库
-            refundInfo.setStockCode(warehouseExtraMap.get("outCode"));
+            refundInfo.setStockCode(warehouse.getOutCode());
         }
         //退货单号
         refundInfo.setBillNo(String.valueOf(refund.getRefundCode()));
@@ -262,7 +261,7 @@ public class SyncYYEdiReturnLogic {
      * @param refund
      * @return
      */
-    private List<YYEdiReturnItem> makeSycYYEdiRefundItemList(Refund refund,Warehouse warehouse,ShopOrder shopOrder) {
+    private List<YYEdiReturnItem> makeSycYYEdiRefundItemList(Refund refund,WarehouseDTO warehouse,ShopOrder shopOrder) {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
@@ -330,12 +329,12 @@ public class SyncYYEdiReturnLogic {
      * @return
      */
     private String getHkWarehouseCodeById(long warehouseId){
-        Response<Warehouse> response = warehouseReadService.findById(warehouseId);
+        Response<WarehouseDTO> response = warehouseClient.findById(warehouseId);
         if (!response.isSuccess()){
             log.error("find warehouse by id :{} failed",warehouseId);
             throw new ServiceException("find.warehouse.failed");
         }
-        return response.getResult().getCode();
+        return response.getResult().getWarehouseCode();
     }
 
     /**

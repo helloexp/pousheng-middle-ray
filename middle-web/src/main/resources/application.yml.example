@@ -52,6 +52,8 @@ gateway:
   yyedi:
       host: https://esbt.pousheng.com
       accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  inventory:
+      host: http://devt-inventory-web.pousheng.com
 
 open.api.app.key: terminus
 open.api.secret: anywhere
@@ -142,6 +144,10 @@ jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 is.stock.task.consume:  false
 
 trade.job.enable: true
-stock.job.enable: true
 
 order.current.ip: ${TERMINUS_HOST:localhost}
+
+terminus:
+  rocketmq:
+    nameServerAddress: localhost:9876
+    producerGroup: testGroup

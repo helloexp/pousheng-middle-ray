@@ -1,19 +1,13 @@
 package com.pousheng.middle.order.dispatch.link;
 
-import com.google.common.base.Objects;
-import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.open.client.constants.ParanaTradeConstants;
-import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,10 +41,10 @@ public class AppointWarehouseDispatchLink implements DispatchOrderLink{
 
         //公司别-内码
         String assignWarehouseId = extraMap.get(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID);
-        Warehouse warehouse = warehouseCacher.findByCode(assignWarehouseId);
+        WarehouseDTO warehouse = warehouseCacher.findByCode(assignWarehouseId);
         WarehouseShipment warehouseShipment = new WarehouseShipment();
         warehouseShipment.setWarehouseId(warehouse.getId());
-        warehouseShipment.setWarehouseName(warehouse.getName());
+        warehouseShipment.setWarehouseName(warehouse.getWarehouseName());
         warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
         dispatchOrderItemInfo.getWarehouseShipments().add(warehouseShipment);
         return Boolean.FALSE;

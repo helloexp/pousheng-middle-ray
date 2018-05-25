@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.warehouse.model.MiddleOpenShop;
 import com.pousheng.middle.warehouse.service.MiddleRefundWarehouseReadService;
@@ -65,6 +66,9 @@ public class RefundDefaultWarehouse {
         }
         OpenShop openShop=openShopResponse.getResult();
         Map<String, String> extraMap= openShop.getExtra();
+        if (null == extraMap) {
+            extraMap = Maps.newHashMap();
+        }
         extraMap.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID,String.valueOf(warehouseId));
         extraMap.put(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME,warehouseName);
         extraMap.put(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE,outCode);

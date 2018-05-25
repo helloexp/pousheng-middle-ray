@@ -16,6 +16,11 @@ public class SkuCodeAndQuantity implements Serializable {
     private static final long serialVersionUID = -7014447872532799068L;
 
     /**
+     * 子订单ID
+     */
+    private Long skuOrderId;
+
+    /**
      * sku code
      */
     private String  skuCode;

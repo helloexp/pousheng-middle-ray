@@ -21,8 +21,8 @@ import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
@@ -75,7 +75,7 @@ public class RefundWriteLogic {
     @Autowired
     private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private SyncErpReturnLogic syncErpReturnLogic;
     @RpcConsumer
@@ -768,11 +768,11 @@ public class RefundWriteLogic {
                 refundExtra.setWarehouseName(shipmentExtra.getWarehouseName());
             } else {
                 //根据默认售后仓规则填入的仓库id查询仓库信息
-                Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
+                WarehouseDTO warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
                 //填入售后单仓库id
                 refundExtra.setWarehouseId(warehouse.getId());
                 //填入售后单仓库名称
-                refundExtra.setWarehouseName(warehouse.getName());
+                refundExtra.setWarehouseName(warehouse.getWarehouseName());
             }
             //填入物流编码，公司
             refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
@@ -789,6 +789,7 @@ public class RefundWriteLogic {
             refundExtra.setWarehouseId(Long.valueOf(warehouseId));
             refundExtra.setWarehouseName(warehouseName);
         }
+
     }
     //完善云聚退货仓信息
     private void completeYunJUWareHoseAndExpressInfo(ShopOrder shopOrder,Integer refundType,RefundExtra refundExtra,EditSubmitRefundInfo submitRefundInfo){
@@ -807,9 +808,9 @@ public class RefundWriteLogic {
 
                  }else { //不为空
 
-                    Warehouse warehouse = warehouseCacher.findByCode(submitRefundInfo.getReturnStockid());
+                    WarehouseDTO warehouse = warehouseCacher.findByCode(submitRefundInfo.getReturnStockid());
                     refundWarehouseId=warehouse.getId()+"";
-                    refundWarehouseName=warehouse.getName();
+                    refundWarehouseName=warehouse.getWarehouseName();
                 }
                 refundExtra.setWarehouseId(Long.valueOf(refundWarehouseId));
                 refundExtra.setWarehouseName(refundWarehouseName);
@@ -865,9 +866,9 @@ public class RefundWriteLogic {
 
     }
 
-    private Warehouse findWarehouseById(Long warehouseId) {
+    private WarehouseDTO findWarehouseById(Long warehouseId) {
 
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());

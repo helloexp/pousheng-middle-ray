@@ -39,6 +39,11 @@ public class WarehouseShopStockRule implements Serializable {
      * 库存分配比率, 以整数表示
      */
     private Integer ratio;
+
+    /**
+     * 虚拟库存，推送时加上，非必填
+     */
+    private Long jitStock;
     
     /**
      * 状态, 1 - 启用, -1 停用

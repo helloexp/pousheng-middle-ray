@@ -11,8 +11,8 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -66,7 +66,7 @@ public class OrderReadLogic {
     @Autowired
     private ExpressCodeReadService expressCodeReadService;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
     @Autowired
@@ -585,7 +585,7 @@ public class OrderReadLogic {
         if (Arguments.isNull(comanyCode) && openShop.getAppKey().contains("-")) {
             comanyCode = openShop.getAppKey().substring(0, openShop.getAppKey().indexOf("-"));
         }
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());

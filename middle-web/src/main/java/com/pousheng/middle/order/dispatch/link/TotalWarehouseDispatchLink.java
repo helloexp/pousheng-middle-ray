@@ -13,12 +13,7 @@ import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
-import com.pousheng.middle.warehouse.dto.Warehouses4Address;
-import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.dto.*;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -105,7 +100,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
             }
         });
 
-        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
+        List<WarehouseDTO> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
 
         //过滤掉非mpos仓
         /*List<Warehouse> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());
@@ -119,7 +114,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodes);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodes, dispatchOrderItemInfo.getOpenShopId());
         if(CollectionUtils.isEmpty(skuStockInfos)){
             return Boolean.TRUE;
         }

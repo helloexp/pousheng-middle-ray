@@ -5,6 +5,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Table;
+import com.jd.open.api.sdk.domain.supplier.PurchaseOrderJsfJosAPI.WarehouseDto;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
@@ -14,25 +15,17 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
-import com.pousheng.middle.warehouse.dto.Warehouses4Address;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
-import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
@@ -103,7 +96,7 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
 
         //封装店铺id
         shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie ->{
-            Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
+            WarehouseDTO warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
             //判断店铺状态及过滤是否拒过单
             if (com.google.common.base.Objects.equal(shop.getStatus(),1) &&! rejectShopIds.contains(shop.getId())){
@@ -120,7 +113,7 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodes);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodes, dispatchOrderItemInfo.getOpenShopId());
         if(CollectionUtils.isEmpty(skuStockInfos)){
             log.warn("not skuStockInfos so skip");
             return Boolean.TRUE;

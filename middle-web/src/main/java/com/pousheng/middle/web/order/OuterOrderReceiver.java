@@ -164,6 +164,7 @@ public class OuterOrderReceiver {
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
         skuOrders.forEach(skuOrder -> {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
             skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
             skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
@@ -192,6 +193,7 @@ public class OuterOrderReceiver {
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
         skuOrders.forEach(skuOrder -> {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
             skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
             skuCodeAndQuantity.setQuantity(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             skuCodeAndQuantities.add(skuCodeAndQuantity);
@@ -214,6 +216,7 @@ public class OuterOrderReceiver {
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
         skuOrders.forEach(skuOrder -> {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
             skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
             skuCodeAndQuantity.setQuantity(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER, skuOrder)));
             skuCodeAndQuantities.add(skuCodeAndQuantity);

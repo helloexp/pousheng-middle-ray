@@ -14,7 +14,6 @@ import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
@@ -184,7 +183,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
         //封装店铺id
         shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie ->{
-            Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
+            WarehouseDTO warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
             shopWarehouseWithPrioritie.setShopId(shop.getId());
 
@@ -339,7 +338,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                 if(Objects.equals(type,"warehouse")){
                     WarehouseShipment warehouseShipment = new WarehouseShipment();
                     warehouseShipment.setWarehouseId(id);
-                    warehouseShipment.setWarehouseName(warehouseCacher.findById(id).getName());
+                    warehouseShipment.setWarehouseName(warehouseCacher.findById(id).getWarehouseName());
                     warehouseShipment.setSkuCodeAndQuantities(scaqs);
                     warehouseShipmentResult.add(warehouseShipment);
 

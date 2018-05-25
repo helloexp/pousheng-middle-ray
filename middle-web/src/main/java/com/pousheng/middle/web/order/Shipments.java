@@ -19,11 +19,12 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
+import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
@@ -62,8 +63,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,13 +89,13 @@ public class Shipments {
     @Autowired
     private OrderWriteLogic orderWriteLogic;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @RpcConsumer
     private ReceiverInfoReadService receiverInfoReadService;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
     @RpcConsumer
-    private WarehouseSkuReadService warehouseSkuReadService;
+    private InventoryClient inventoryClient;
     @Autowired
     private MiddleOrderFlowPicker orderFlowPicker;
     @Autowired
@@ -112,7 +111,7 @@ public class Shipments {
     @Autowired
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
+    private WarehouseSkuStockManager warehouseSkuStockManager;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
     @Autowired
@@ -473,7 +472,7 @@ public class Shipments {
             Map<String, Integer> skuCodeAndQuantityMap = skuOrders.stream().filter(Objects::nonNull)
                     .collect(Collectors.toMap(SkuOrder::getSkuCode, it -> skuOrderIdAndQuantity.get(it.getId())));
             //检查库存是否充足
-            checkStockIsEnough(warehouseId, skuCodeAndQuantityMap);
+            checkStockIsEnough(warehouseId, skuCodeAndQuantityMap, shopOrder.getShopId());
             //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常
             checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
             //封装发货信息
@@ -508,6 +507,7 @@ public class Shipments {
             shipment.setSkuInfos(skuOrderIdAndQuantity);
             Map<String, String> extraMap = shipment.getExtra();
             extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
+            extraMap.put(TradeConstants.SHOP_ORDER_ID, String.valueOf(shopOrderId));
             shipment.setExtra(extraMap);
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
@@ -630,7 +630,7 @@ public class Shipments {
                 OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
 
                 //检查库存是否充足
-                checkStockIsEnough(warehouseId, skuCodeAndQuantity);
+                checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
                 //封装发货信息
                 List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity);
                 //发货单商品金额
@@ -841,8 +841,8 @@ public class Shipments {
 
 
     //获取指定仓库中指定商品的库存信息
-    private Map<String, Integer> findStocksForSkus(Long warehouseId, List<String> skuCodes) {
-        Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes);
+    private Map<String, Integer> findStocksForSkus(Long warehouseId, List<String> skuCodes, Long shopId) {
+        Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes, shopId);
         if (!r.isSuccess()) {
             log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}",
                     warehouseId, skuCodes, r.getError());
@@ -852,12 +852,12 @@ public class Shipments {
     }
 
     //检查库存是否充足
-    private void checkStockIsEnough(Long warehouseId, Map<String, Integer> skuCodeAndQuantityMap) {
+    private void checkStockIsEnough(Long warehouseId, Map<String, Integer> skuCodeAndQuantityMap, Long shopId) {
 
 
         List<String> skuCodes = Lists.newArrayListWithCapacity(skuCodeAndQuantityMap.size());
         skuCodes.addAll(skuCodeAndQuantityMap.keySet());
-        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId, skuCodes);
+        Map<String, Integer> warehouseStockInfo = findStocksForSkus(warehouseId, skuCodes, shopId);
         for (String skuCode : warehouseStockInfo.keySet()) {
             if (warehouseStockInfo.get(skuCode) < skuCodeAndQuantityMap.get(skuCode)) {
                 log.error("sku code:{} warehouse stock:{} ship applyQuantity:{} stock not enough", skuCode, warehouseStockInfo.get(skuCode), skuCodeAndQuantityMap.get(skuCode));
@@ -899,8 +899,8 @@ public class Shipments {
     }
 
 
-    private Warehouse findWarehouseById(Long warehouseId) {
-        Response<Warehouse> warehouseRes = warehouseReadService.findById(warehouseId);
+    private WarehouseDTO findWarehouseById(Long warehouseId) {
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findById(warehouseId);
         if (!warehouseRes.isSuccess()) {
             log.error("find warehouse by id:{} fail,error:{}", warehouseId, warehouseRes.getError());
             throw new JsonResponseException(warehouseRes.getError());
@@ -919,11 +919,11 @@ public class Shipments {
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
 
         //发货仓库信息
-        Warehouse warehouse = findWarehouseById(warehouseId);
+        WarehouseDTO warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
         ShipmentExtra shipmentExtra = new ShipmentExtra();
         //仓库区分是店仓还是总仓
-        if (Objects.equals(warehouse.getType(),0)){
+        if (Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.TOTAL_WAREHOUSE.value())){
             shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_WAREHOUSE_DELIVER));
             shipment.setShipId(warehouse.getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
@@ -931,22 +931,18 @@ public class Shipments {
         }else {
             shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_SHOP_DELIVER));
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
-            Map<String, String>  extra = warehouse.getExtra();
-            if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+            if(StringUtils.isEmpty(warehouse.getOutCode())){
                 log.error("warehouse(id:{}) out code invalid",warehouse.getId());
                 throw new ServiceException("warehouse.out.code.invalid");
             }
-            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(extra.get("outCode"),Long.valueOf(warehouse.getCompanyId()));
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
             shipmentExtra.setWarehouseId(shop.getId());
             shipment.setShipId(getShipIdByDeliverId(shop.getId()));
         }
 
-        shipmentExtra.setWarehouseName(warehouse.getName());
+        shipmentExtra.setWarehouseName(warehouse.getWarehouseName());
 
-        Map<String, String> warehouseExtra = warehouse.getExtra();
-        if (Objects.nonNull(warehouseExtra)) {
-            shipmentExtra.setWarehouseOutCode(warehouseExtra.get("outCode") != null ? warehouseExtra.get("outCode") : "");
-        }
+        shipmentExtra.setWarehouseOutCode(!StringUtils.isEmpty(warehouse.getOutCode()) ? warehouse.getOutCode() : "");
 
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE, openShop);
@@ -1148,10 +1144,10 @@ public class Shipments {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Long warehouseId = shipmentExtra.getWarehouseId();
-        Warehouse warehouse = findWarehouseById(warehouseId);
-        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getCode());
+        WarehouseDTO warehouse = findWarehouseById(warehouseId);
+        Response<WarehouseCompanyRule> ruleRes = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouse.getWarehouseCode());
         if (!ruleRes.isSuccess()) {
-            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getCode(), ruleRes.getError());
+            log.error("find warehouse company rule by company code:{} fail,error:{}", warehouse.getWarehouseCode(), ruleRes.getError());
             throw new JsonResponseException(ruleRes.getError());
         }
 
@@ -1339,17 +1335,17 @@ public class Shipments {
         if(orderReadLogic.isMposOpenShop(shopOrder.getShopId())){
             return;
         }
-        if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
-            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
-            if (!r.isSuccess()){
-                log.error("find warehouses failed,ids are {},caused by {}",warehouseIds,r.getError());
+        if (!orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
+            Response<List<WarehouseDTO>> r = warehouseClient.findByIds(warehouseIds);
+            if (!r.isSuccess()) {
+                log.error("find warehouses failed,ids are {},caused by {}", warehouseIds, r.getError());
                 throw new JsonResponseException("find.warehouse.failed");
             }
-            List<Warehouse> warehouses = r.getResult();
+            List<WarehouseDTO> warehouses = r.getResult();
             int count = 0;
-            for (Warehouse warehouse:warehouses){
+            for (WarehouseDTO warehouse : warehouses) {
                 //如果是店仓
-                if (Objects.equals(warehouse.getType(),1)){
+                if (Objects.equals(warehouse.getWarehouseSubType(), 1)) {
                     count++;
                 }
             }
@@ -1389,16 +1385,16 @@ public class Shipments {
     private void checkCanShopWarehouseShip(List<Long> warehouseIds,Long shopId) {
 
         if (!orderReadLogic.isAllChannelOpenShop(shopId)) {
-            Response<List<Warehouse>> r = warehouseReadService.findByIds(warehouseIds);
+            Response<List<WarehouseDTO>> r = warehouseClient.findByIds(warehouseIds);
             if (!r.isSuccess()) {
                 log.error("find warehouses failed,ids are {},caused by {}", warehouseIds, r.getError());
                 throw new JsonResponseException("find.warehouse.failed");
             }
-            List<Warehouse> warehouses = r.getResult();
+            List<WarehouseDTO> warehouses = r.getResult();
             int count = 0;
-            for (Warehouse warehouse : warehouses) {
+            for (WarehouseDTO warehouse : warehouses) {
                 //如果是店仓
-                if (Objects.equals(warehouse.getType(), 1)) {
+                if (Objects.equals(warehouse.getWarehouseSubType(), 1)) {
                     count++;
                 }
             }

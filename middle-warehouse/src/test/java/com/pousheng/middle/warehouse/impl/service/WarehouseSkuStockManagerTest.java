@@ -12,11 +12,12 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.AbstractTest;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
+import io.terminus.common.model.Response;
 import org.junit.Test;
 import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -25,7 +26,7 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.anyList;
 
 /**
  * @author xiehong
@@ -38,7 +39,7 @@ public class WarehouseSkuStockManagerTest extends AbstractTest {
     public static class MockitoBeans {
 
         @MockBean
-        private WarehouseSkuStockDao warehouseSkuStockDao;
+        private InventoryClient inventoryClient;
         @SpyBean
         private WarehouseSkuStockManager warehouseSkuStockManager;
 
@@ -51,29 +52,33 @@ public class WarehouseSkuStockManagerTest extends AbstractTest {
 
     @Override
     protected void init() {
-        warehouseSkuStockDao = get(WarehouseSkuStockDao.class);
+        inventoryClient = get(InventoryClient.class);
         warehouseSkuStockManager = get(WarehouseSkuStockManager.class);
 
     }
 
-    WarehouseSkuStockDao warehouseSkuStockDao;
+    InventoryClient inventoryClient;
     WarehouseSkuStockManager warehouseSkuStockManager;
 
 
     @Test
     public void unlockStock() {
-        Mockito.when(warehouseSkuStockDao.findByWarehouseIdAndSkuCode(anyLong(),anyString())).thenReturn(new WarehouseSkuStock(){{setLockedStock(123L);}});
-        Mockito.when(warehouseSkuStockDao.unlockStock(anyLong(),anyString(),anyInt(),anyLong())).thenReturn(Boolean.TRUE);
+        Mockito.when(inventoryClient.unLock(anyList())).thenReturn(Response.ok(true));
 
         List<WarehouseShipment> warehouseShipments = Lists.newArrayList();
         WarehouseShipment shipment = new WarehouseShipment();
         warehouseShipments.add(shipment);
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
-        SkuCodeAndQuantity quantity = new SkuCodeAndQuantity(){{setSkuCode("132124");setQuantity(12);}};
+        SkuCodeAndQuantity quantity = new SkuCodeAndQuantity(){{setSkuOrderId(11L);setSkuCode("132124");setQuantity(12);}};
         skuCodeAndQuantities.add(quantity);
         shipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
 
-        warehouseSkuStockManager.unlockStock(warehouseShipments);
+        InventoryTradeDTO inventoryTradeDTO = InventoryTradeDTO.builder()
+                .orderId("11").subOrderId(Lists.newArrayList("11"))
+                .shopId(7L)
+                .build();
+
+        warehouseSkuStockManager.unlockStock(inventoryTradeDTO, warehouseShipments);
 
 
     }

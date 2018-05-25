@@ -9,7 +9,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleWriteService;
@@ -73,7 +73,7 @@ public class WarehouseCompanyRules {
             log.debug("API-WAREHOUSE-COMPANY-RULE-CREATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
         }
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
-        Warehouse warehouse = warehouseCacher.findById(warehouseId);
+        WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
         if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
             log.error("company code mismatch, expect: {}, actual:{}",warehouseCompanyRule.getCompanyCode(),
                     warehouse.getCompanyCode() );
@@ -98,7 +98,7 @@ public class WarehouseCompanyRules {
             log.debug("API-WAREHOUSE-COMPANY-RULE-UPDATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
         }
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
-        Warehouse warehouse = warehouseCacher.findById(warehouseId);
+        WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
         if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
             log.error("company code mismatch, expect: {}, actual:{}",warehouseCompanyRule.getCompanyCode(),
                     warehouse.getCompanyCode() );
@@ -172,7 +172,7 @@ public class WarehouseCompanyRules {
             CompanyRuleDto crd = new CompanyRuleDto();
             BeanMapper.copy(warehouseCompanyRule, crd);
             Long warehosueId = crd.getWarehouseId();
-            Warehouse warehouse = warehouseCacher.findById(warehosueId);
+            WarehouseDTO warehouse = warehouseCacher.findById(warehosueId);
             crd.setWarehouseCode(warehouse.getInnerCode());
             crds.add(crd);
         }

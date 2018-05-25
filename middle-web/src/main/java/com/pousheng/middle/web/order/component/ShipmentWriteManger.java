@@ -1,9 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -34,10 +32,6 @@ public class ShipmentWriteManger {
 
     @Autowired
     private ShipmentWriteService shipmentWriteService;
-    @RpcConsumer
-    private WarehouseSkuWriteService warehouseSkuWriteService;
-    @Autowired
-    private StockPusher stockPusher;
     @RpcConsumer
     private OrderWriteService orderWriteService;
     @Autowired

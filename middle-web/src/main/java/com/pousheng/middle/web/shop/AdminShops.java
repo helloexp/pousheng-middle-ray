@@ -18,8 +18,8 @@ import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseWriteService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
@@ -63,8 +63,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
-
-import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
 import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
@@ -123,8 +121,7 @@ public class AdminShops {
     @Autowired
     private WarehouseCacher warehouseCacher;
     @Autowired
-    private WarehouseWriteService warehouseWriteService;
-
+    private WarehouseClient warehouseClient;
 
     @ApiOperation("根据门店id查询门店信息")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -287,6 +284,9 @@ public class AdminShops {
         //判断是否已创建
         Shop recoverShop = checkOuterId(shop.getOuterId(),shop.getCompanyId());
 
+        // TODO 判断对应仓库是否存在，目前使用OUTCODE，后面调整
+        checkWarehouse(shop.getOuterId(), shop.getCompanyId());
+
         //创建门店
         shop.setBusinessId(shop.getCompanyId());//这里把公司id塞入到businessId字段中
         ShopExtraInfo shopExtraInfo = new ShopExtraInfo();
@@ -325,16 +325,15 @@ public class AdminShops {
             //更新门店信息
             id = updateShop(recoverShop.getId());
 
+            // TODO 设置对应仓库标签， 现在先用outCode，后面改造，方法已提供，直接换
+            warehouseClient.markMposOrNotWithOutCode(shop.getOuterId(), String.valueOf(shop.getCompanyId()), true);
+
             UpdateShopEvent updateShopEvent = new UpdateShopEvent(id,shop.getCompanyId(),recoverShop.getOuterId());
             eventBus.post(updateShopEvent);
 
             //同步电商
             syncParanaShop(recoverShop);
         }
-
-
-
-
 
         return Collections.singletonMap("id", id);
     }
@@ -363,6 +362,18 @@ public class AdminShops {
 
         return null;
 
+    }
+
+    private void checkWarehouse(String outerId,Long companyId){
+        if(Strings.isNullOrEmpty(outerId)){
+            log.error("shop outer id is null");
+            throw new JsonResponseException("shop.outer.in.invalid");
+        }
+        Response<WarehouseDTO> warehouseRes = warehouseClient.findByOutCodeBizId(outerId,String.valueOf(companyId));
+        if(!warehouseRes.isSuccess() || null == warehouseRes.getResult()){
+            log.error("no warehouse found by outer id:{} and business id:{} fail,error:{}",outerId,companyId, warehouseRes);
+            throw new JsonResponseException("warehouse.not.found");
+        }
     }
 
     //直接恢复状态
@@ -398,6 +409,10 @@ public class AdminShops {
             log.warn("shop create failed, error={}", rShop.getError());
             throw new JsonResponseException(rShop.getError());
         }
+
+        // TODO 设置对应仓库标签， 现在先用outCode，后面改造，方法已提供，直接换
+        warehouseClient.markMposOrNotWithOutCode(toCreate.getOuterId(), String.valueOf(toCreate.getBusinessId()), true);
+
         //同步电商
         syncParanaShop(toCreate);
 
@@ -681,10 +696,9 @@ public class AdminShops {
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
         String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
-        Warehouse warehouse = warehouseCacher.findByShopInfo(shopInfo);
+        WarehouseDTO warehouse = warehouseCacher.findByShopInfo(shopInfo);
         if (warehouse != null) {
-            warehouse.setStatus(-2);
-            RespHelper.or500(warehouseWriteService.update(warehouse));
+            RespHelper.or500(warehouseClient.updateStatus(warehouse.getId(), -2));
             warehouseCacher.refreshById(warehouse.getId());
         }
         shopCacher.refreshShopById(shopId);
@@ -712,10 +726,9 @@ public class AdminShops {
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
         String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
-        Warehouse warehouse = warehouseCacher.findByShopInfo(shopInfo);
+        WarehouseDTO warehouse = warehouseCacher.findByShopInfo(shopInfo);
         if (warehouse != null) {
-            warehouse.setStatus(1);
-            RespHelper.or500(warehouseWriteService.update(warehouse));
+            RespHelper.or500(warehouseClient.updateStatus(warehouse.getId(), 1));
             warehouseCacher.refreshById(warehouse.getId());
         }
         shopCacher.refreshShopById(shopId);
@@ -751,6 +764,8 @@ public class AdminShops {
         //同步电商
         syncParanaCloseShop(exist.getOuterId(),exist.getBusinessId());
 
+        // TODO 取消对应仓库标签， 现在先用outCode，后面改造，方法已提供，直接换
+        warehouseClient.markMposOrNotWithOutCode(exist.getOuterId(), String.valueOf(exist.getBusinessId()), false);
     }
 
     @ApiOperation("设置邮箱和手机号")

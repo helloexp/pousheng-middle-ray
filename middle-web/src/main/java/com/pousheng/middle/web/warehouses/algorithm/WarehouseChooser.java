@@ -2,22 +2,16 @@ package com.pousheng.middle.web.warehouses.algorithm;
 
 import com.google.common.base.Function;
 import com.google.common.collect.*;
-import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
-import com.pousheng.middle.warehouse.dto.Warehouses4Address;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.companent.WarehouseAddressRuleClient;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -41,23 +35,16 @@ import java.util.Objects;
 @Slf4j
 public class WarehouseChooser {
 
-    @RpcConsumer
-    private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
-
-    @RpcConsumer
-    private WarehouseSkuReadService warehouseSkuReadService;
-
-    @RpcConsumer
-    private WarehouseSkuWriteService warehouseSkuWriteService;
-
-    @RpcConsumer
+    @Autowired
+    private WarehouseAddressRuleClient warehouseAddressRuleClient;
+    @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
-
     @Autowired
     private WarehouseCacher warehouseCacher;
-
     @Autowired
-    private StockPusher stockPusher;
+    private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private InventoryClient inventoryClient;
 
     private static final Ordering<WarehouseWithPriority> byPriority = Ordering.natural().onResultOf(new Function<WarehouseWithPriority, Integer>() {
         @Override
@@ -74,6 +61,7 @@ public class WarehouseChooser {
      * @param skuCodeAndQuantities sku及数量
      * @return 对应的仓库及每个仓库应发货的数量
      */
+    // TODO 修改是否合适
     public List<WarehouseShipment> choose(ShopOrder shopOrder, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
 
         List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
@@ -90,7 +78,7 @@ public class WarehouseChooser {
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
             needSingle = true;
         }
-        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
+        Response<List<Warehouses4Address>> r = warehouseAddressRuleClient.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",
                     addressIds, shopOrder.getShopId(), r.getError());
@@ -104,24 +92,28 @@ public class WarehouseChooser {
                     skuCodeAndQuantities, needSingle);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 // 先锁定库存, 锁定成功后再返回结果
-                Response<Boolean> rDecrease = warehouseSkuWriteService.lockStock(warehouseShipments);
+                Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, warehouseShipments));
                 if(!rDecrease.isSuccess()){
                     log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
                             "auto dispatch stock failed", addressId, rDecrease.getError());
                     return Collections.emptyList();
                 }
-                //触发库存推送
-                List<String> skuCodes = Lists.newArrayList();
-                for (WarehouseShipment warehouseShipment : warehouseShipments) {
-                    for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
-                        skuCodes.add(skuCodeAndQuantity.getSkuCode());
-                    }
-                }
-                stockPusher.submit(skuCodes);
+
                 return warehouseShipments;
             }
         }
         return Collections.emptyList();
+    }
+
+    public DispatchOrderItemInfo genDispatchOrderInfo (ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantities, List<WarehouseShipment> warehouseShipments) {
+        DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
+        dispatchOrderItemInfo.setOpenShopId(shopOrder.getShopId());
+        dispatchOrderItemInfo.setOrderId(shopOrder.getId());
+        dispatchOrderItemInfo.setSubOrderIds(Lists.transform(skuCodeAndQuantities, input -> input.getSkuOrderId()));
+        dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
+        dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
+
+        return dispatchOrderItemInfo;
     }
 
 
@@ -185,7 +177,7 @@ public class WarehouseChooser {
             } else {//分配发货仓库
                 WarehouseShipment warehouseShipment = new WarehouseShipment();
                 warehouseShipment.setWarehouseId(candidateWarehouseId);
-                warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getName());
+                warehouseShipment.setWarehouseName(warehouseCacher.findById(candidateWarehouseId).getWarehouseName());
                 List<SkuCodeAndQuantity> scaqs = Lists.newArrayList();
                 for (String skuCode : current.elementSet()) {
                     int required = current.count(skuCode);
@@ -210,14 +202,6 @@ public class WarehouseChooser {
             }
         }
 
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment warehouseShipment : result) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : warehouseShipment.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
         return result;
     }
 
@@ -228,7 +212,7 @@ public class WarehouseChooser {
         boolean enough = true;
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             String skuCode = skuCodeAndQuantity.getSkuCode();
-            Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+            Response<InventoryDTO> rStock = inventoryClient.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
             if (!rStock.isSuccess()) {
                 log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
                         skuCode, warehouseId, rStock.getError());
@@ -243,8 +227,8 @@ public class WarehouseChooser {
         if (enough) {
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(warehouseId);
-            Warehouse warehouse = warehouseCacher.findById(warehouseId);
-            warehouseShipment.setWarehouseName(warehouse.getName());
+            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+            warehouseShipment.setWarehouseName(warehouse.getWarehouseName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             return Lists.newArrayList(warehouseShipment);
         }

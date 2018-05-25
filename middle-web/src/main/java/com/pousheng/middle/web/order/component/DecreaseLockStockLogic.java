@@ -1,13 +1,12 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Shipment;
@@ -27,18 +26,16 @@ import java.util.List;
 @Component
 @Deprecated
 public class DecreaseLockStockLogic {
-    @Autowired
-    private EventBus eventBus;
     @RpcConsumer
-    private WarehouseSkuWriteService warehouseSkuWriteService;
+    private WarehouseSkuStockManager warehouseSkuStockManager;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-
     @Autowired
-    private StockPusher stockPusher;
+    private DispatchComponent dispatchComponent;
 
     public void doDecreaseStock(Shipment shipment){
         log.info("start decrease stock,shipmentId is {}",shipment.getId());
+
         //获取发货单下的sku订单信息
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //获取发货仓信息
@@ -53,18 +50,11 @@ public class DecreaseLockStockLogic {
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
         warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> decreaseStockRlt =  warehouseSkuWriteService.decreaseStock(warehouseShipmentList,warehouseShipmentList);
+        Response<Boolean> decreaseStockRlt =  warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(shipmentReadLogic.getDispatchOrderItem(shipment),0),warehouseShipmentList);
         if (!decreaseStockRlt.isSuccess()){
             log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
         }
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipmentList) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
+
         log.info("end decrease stock");
     }
 
@@ -73,6 +63,7 @@ public class DecreaseLockStockLogic {
         if (list.size()>0){
             for (ShipmentItem shipmentItem:list){
                 SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+                skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
                 skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
                 skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
                 skuCodeAndQuantities.add(skuCodeAndQuantity);
@@ -80,4 +71,5 @@ public class DecreaseLockStockLogic {
         }
         return skuCodeAndQuantities;
     }
+
 }

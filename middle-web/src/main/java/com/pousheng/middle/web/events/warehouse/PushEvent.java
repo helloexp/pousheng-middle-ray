@@ -16,4 +16,11 @@ public class PushEvent implements Serializable {
 
     @Getter
     private final Long shopId;
+
+    /**
+     * 商品级推送，可以为null
+     * added by caohao
+     */
+    @Getter
+    private final String skuCode;
 }

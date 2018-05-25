@@ -7,7 +7,7 @@ import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
@@ -57,7 +57,7 @@ public class RefundWriteLogicTest extends AbstractRestApiTest {
         @MockBean
         private MiddleRefundWriteService middleRefundWriteService;
         @MockBean
-        private WarehouseReadService warehouseReadService;
+        private WarehouseClient warehouseClient;
         @MockBean
         private SyncErpReturnLogic syncErpReturnLogic;
         @RpcConsumer

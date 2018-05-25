@@ -14,18 +14,11 @@ server:
   context-path: /
   port: 8082
 
-pousheng:
-  middle:
-    stock-full-dump:
-      page-size: ${POUSHENG_MIDDLE_PAGE_SIZE}
-      chunk-size: ${POUSHENG_MIDDLE_CHUNK_SIZE}
-      throttle-limit: ${POUSHENG_MIDDLE_THROTTLE_LIMIT}
-
 spring:
   datasource:
-    url: jdbc:mysql://${POUSHENG_MIDDLE_MYSQL_HOST}:${POUSHENG_MIDDLE_MYSQL_PORT}/${POUSHENG_MIDDLE_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8
-    username: ${POUSHENG_MIDDLE_MYSQL_USERNAME}
-    password: ${POUSHENG_MIDDLE_MYSQL_PASSWORD}
+    url: jdbc:mysql://${POUSHENG_MIDDLE_4_STOCK_HOST}:${POUSHENG_MIDDLE_4_STOCK_PORT}/${POUSHENG_MIDDLE_4_STOCK_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull
+    username: ${POUSHENG_MIDDLE_4_STOCK_USERNAME}
+    password: ${POUSHENG_MIDDLE_4_STOCK_PASSWORD}
     initialize: false
     continue-on-error: false
     hikari:
@@ -55,7 +48,7 @@ mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
         com.pousheng.(erp|auth).model,
-         com.pousheng.middle.(group|task).model,
+        com.pousheng.middle.(group|task).model,
         com.pousheng.middle.warehouse.model,
         com.pousheng.middle.order.model,
         io.terminus.parana.user.address.model,
@@ -65,8 +58,6 @@ mybatis:
         io.terminus.open.client.common.(mappings|token|shop).model,
         io.terminus.open.client.item.model,
         io.terminus.applog.core.model
-
-
 
 
 session:
@@ -114,6 +105,8 @@ gateway:
   yyedi:
       host: ${YYEDI_HOST}
       accessKey: ${YYEDI_ACCESS_KEY}
+  inventory:
+      host: ${POUSHENG_INVENTORY_HOST}
 
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
@@ -217,25 +210,8 @@ jd.yunding.app.key: pousheng
 jd.yunding.secret: 6a0e@93204aefe45d47f6e488
 jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 
-is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
-stock.task.queue.size: ${STOCK_TASK_QUEUE.SIZE}
-stock.task.single.process.pool.core.size: ${STOCK_TASK_SINGLE.PROCESS_POOL_CORE_SIZE}
-stock.task.single.process.pool.max.size: ${STOCK_TASK_SINGLE_PROCESS_POOL_MAX_SIZE}
-
-#恒康全量同步中台时间
-stock.sync.task.full.time.start: ${STOCK_SYNC_TASK_FULL_TIME_START}
-stock.sync.task.full.time.end: ${STOCK_SYNC_TASK_FULL_TIME_END}
-
-#中台全量更新库存时间
-stock.sync.middle.full.time.start: ${STOCK_SYNC_MIDDLE_FULL_TIME_START}
-stock.sync.middle.full.time.end: ${STOCK_SYNC_MIDDLE_FULL_TIME_END}
-
-#中台全量推送第三方时间
-stock.sync.third.full.time.start: ${STOCK_SYNC_THIRD_FULL_TIME_START}
-stock.sync.third.full.time.end: ${STOCK_SYNC_THIRD_FULL_TIME_END}
 
 trade.job.enable: ${TRADE_JOB_ENABLE}
-stock.job.enable: ${STOCK_JOB_ENABLE}
 
 open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
 open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
@@ -255,3 +231,8 @@ open.client.sync.item.duration.in.minute: ${PULL_ITEM_MAPPING_DURATION}
 
 #获取宿主机ip
 order.current.ip: ${TERMINUS_HOST:localhost}
+
+terminus:
+  rocketmq:
+    nameServerAddress: ${MQ_NAME_ADDR}
+    producerGroup: ${MQ_PRODUCER_GROUP}

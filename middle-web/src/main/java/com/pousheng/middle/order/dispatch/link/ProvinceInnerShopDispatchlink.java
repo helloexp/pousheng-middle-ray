@@ -5,21 +5,22 @@ import com.google.common.base.Objects;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
-import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
-import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.ShopAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import io.terminus.common.exception.ServiceException;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -47,7 +48,9 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
     @Autowired
     private DispatchComponent dispatchComponent;
     @Autowired
-    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+    private InventoryClient inventoryClient;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -85,27 +88,33 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(validShops)){
             return Boolean.TRUE;
         }
-        //查询仓代码
-        List<String> stockCodes = Lists.transform(validShops, new Function<Shop, String>() {
+        //查询仓ID
+        List<Long> stockCodes = Lists.transform(validShops, new Function<Shop, Long>() {
             @Nullable
             @Override
-            public String apply(@Nullable Shop input) {
-                if(Strings.isNullOrEmpty(input.getOuterId())){
-                    log.error("shop(id:{}) outer id invalid",input.getId());
-                    throw new ServiceException("shop.outer.id.invalid");
+            public Long apply(@Nullable Shop input) {
+                WarehouseDTO warehouseDTO = warehouseCacher.findByOutCodeAndBizId(input.getOuterId(), String.valueOf(input.getBusinessId()));
+
+                if (null == warehouseDTO) {
+                    return null;
                 }
-                return input.getOuterId();
+
+                return warehouseDTO.getId();
             }
         });
 
+        stockCodes = stockCodes.stream().filter(java.util.Objects::nonNull).collect(Collectors.toList());
+
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,1);
-        if(CollectionUtils.isEmpty(skuStockInfos)){
+        Response<List<AvailableInventoryDTO>> skuStockInfos = inventoryClient.getAvailableInventory(dispatchComponent.getAvailInvReq(stockCodes, skuCodes)
+                , dispatchOrderItemInfo.getOpenShopId());
+        if(!skuStockInfos.isSuccess() || CollectionUtils.isEmpty(skuStockInfos.getResult())){
             return Boolean.TRUE;
         }
+
         Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
-        dispatchComponent.completeShopTab(skuStockInfos,shopSkuCodeQuantityTable);
+        dispatchComponent.completeShopTabFromInv(skuStockInfos.getResult(), shopSkuCodeQuantityTable);
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单
         List<ShopShipment> shopShipments = dispatchComponent.chooseSingleShop(shopSkuCodeQuantityTable,skuCodeAndQuantities);

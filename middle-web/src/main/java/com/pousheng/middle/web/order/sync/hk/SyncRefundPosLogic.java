@@ -12,7 +12,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -124,9 +124,8 @@ public class SyncRefundPosLogic {
             log.error("refund(id:{}) refund warehouse not exist",refund.getId());
             throw new ServiceException("refund.warehouse.invalid");
         }
-        Warehouse warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
-        Map<String, String>  extra = warehouse.getExtra();
-        if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+        WarehouseDTO warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
+        if(StringUtils.isEmpty(warehouse.getOutCode())){
             log.error("warehouse(id:{}) out code invalid",warehouse.getId());
             throw new ServiceException("warehouse.out.code.invalid");
         }

@@ -1,14 +1,15 @@
 package com.pousheng.middle.warehouse.manager;
 
+import com.google.common.collect.Lists;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 
@@ -18,13 +19,14 @@ import java.util.List;
  */
 @Component
 @Slf4j
+// TODO 部分失败补偿机制
 public class WarehouseSkuStockManager {
 
-    private final WarehouseSkuStockDao warehouseSkuStockDao;
+    private final InventoryClient inventoryClient;
 
     @Autowired
-    public WarehouseSkuStockManager(WarehouseSkuStockDao warehouseSkuStockDao) {
-        this.warehouseSkuStockDao = warehouseSkuStockDao;
+    public WarehouseSkuStockManager(InventoryClient inventoryClient) {
+        this.inventoryClient = inventoryClient;
     }
 
     /**
@@ -32,59 +34,45 @@ public class WarehouseSkuStockManager {
      *
      * @param warehouses 待锁定的库存明细
      */
-    @Transactional
-    public void lockStock(List<WarehouseShipment> warehouses) {
+    public Response<Boolean> lockStock(InventoryTradeDTO inventoryTradeDTO, List<WarehouseShipment> warehouses) {
+        List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         for (WarehouseShipment warehouseShipment : warehouses) {
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = warehouseShipment.getSkuCodeAndQuantities();
-            Long warehouseId = warehouseShipment.getWarehouseId();
+            tradeList.addAll(genTradeContextList(warehouseShipment.getWarehouseId(),
+                    inventoryTradeDTO, warehouseShipment.getSkuCodeAndQuantities()));
+        }
 
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-                String skuCode = skuCodeAndQuantity.getSkuCode();
-                Integer quantity = skuCodeAndQuantity.getQuantity();
-                boolean success = warehouseSkuStockDao.lockStock(warehouseId,
-                        skuCode,
-                        quantity);
-                if (!success) {
-                    WarehouseSkuStock wss = this.warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-                    if (wss == null) {
-                        log.error("no sku(skuCode={}) stock found in warehouse(id={})", skuCode, warehouseId);
-                    } else {
-                        log.error("insufficient sku stock(skuCode={}, required stock={}, actual stock={}) for warehouse(id={})",
-                                skuCode, quantity, wss.getAvailStock(), warehouseId);
-
-                    }
-                    throw new ServiceException("insufficient.sku.stock");
-                }
+        if (!ObjectUtils.isEmpty(tradeList)) {
+            Response<Boolean> tradeRet = inventoryClient.lock(tradeList);
+            if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
+                log.error("fail to occupy inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
+                return Response.fail(tradeRet.getError());
             }
         }
+
+        return Response.ok(Boolean.TRUE);
     }
 
     /**
      * 先解锁之前的锁定的库存, 在扣减实际发货的库存
      *
-     * @param lockedShipments 之前锁定的库存明细
      * @param actualShipments 实际发货的库存明细
      */
-    @Transactional
-    public void decreaseStock(List<WarehouseShipment> lockedShipments, List<WarehouseShipment> actualShipments) {
-        doUnlock(lockedShipments);
+    public Response<Boolean> decreaseStock(InventoryTradeDTO inventoryTradeDTO, List<WarehouseShipment> actualShipments) {
+        List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         for (WarehouseShipment actualShipment : actualShipments) {
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = actualShipment.getSkuCodeAndQuantities();
-            Long warehouseId = actualShipment.getWarehouseId();
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-                String skuCode = skuCodeAndQuantity.getSkuCode();
-                Integer quantity = skuCodeAndQuantity.getQuantity();
-                boolean success = warehouseSkuStockDao.decreaseStock(warehouseId,
-                        skuCode,
-                        quantity);
-                if (!success) {
-                    log.error("failed to decrease stock of warehouse where warehouseId={} and skuCode={}, delta={}",
-                            warehouseId, skuCode, quantity);
-                    throw new ServiceException("stock.decrease.fail");
-                }
+            tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
+                    inventoryTradeDTO, actualShipment.getSkuCodeAndQuantities()));
+        }
+
+        if (!ObjectUtils.isEmpty(tradeList)) {
+            Response<Boolean> tradeRet = inventoryClient.decrease(tradeList);
+            if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
+                log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipments, tradeRet.getError());
+                return Response.fail(tradeRet.getError());
             }
         }
 
+        return Response.ok(Boolean.TRUE);
     }
 
     /**
@@ -92,43 +80,48 @@ public class WarehouseSkuStockManager {
      *
      * @param warehouseShipments 仓库及解锁数量列表
      */
-    @Transactional
-    public void unlockStock(List<WarehouseShipment> warehouseShipments) {
-
-        doUnlock(warehouseShipments);
+    public Response<Boolean> unlockStock(InventoryTradeDTO inventoryTradeDTO, List<WarehouseShipment> warehouseShipments) {
+        return doUnlock(inventoryTradeDTO, warehouseShipments);
     }
 
-    private void doUnlock(List<WarehouseShipment> lockedShipments) {
+    private Response<Boolean> doUnlock(InventoryTradeDTO inventoryTradeDTO, List<WarehouseShipment> lockedShipments) {
+        List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         for (WarehouseShipment lockedShipment : lockedShipments) {
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = lockedShipment.getSkuCodeAndQuantities();
-            Long warehouseId = lockedShipment.getWarehouseId();
-            for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-                String skuCode = skuCodeAndQuantity.getSkuCode();
-                Integer quantity = skuCodeAndQuantity.getQuantity();
+            tradeList.addAll(genTradeContextList(lockedShipment.getWarehouseId(),
+                    inventoryTradeDTO, lockedShipment.getSkuCodeAndQuantities()));
+        }
 
-                //先查询
-                WarehouseSkuStock warehouseSkuStock = warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-                if(null == warehouseSkuStock){
-                log.warn("findByWarehouseIdAndSkuCode return null warehouseId ({})  skuCode ({}) ",warehouseId,skuCode);
-                    continue;
-                }
-                Long currentLock = warehouseSkuStock.getLockedStock();
-
-                if(Long.valueOf(quantity).longValue()>currentLock.longValue()){
-                    //购买数量大于当前锁定库存时，直接将锁定库存扣减为0
-                    quantity = Integer.valueOf(String.valueOf(currentLock));
-
-                }
-                boolean success = warehouseSkuStockDao.unlockStock(warehouseId,
-                        skuCode,
-                        quantity,currentLock);
-                if (!success) {
-                    log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
-                            warehouseId, skuCode, quantity);
-                    throw new ServiceException("stock.unlock.fail");
-                }
+        if (!ObjectUtils.isEmpty(tradeList)) {
+            Response<Boolean> tradeRet = inventoryClient.unLock(tradeList);
+            if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
+                log.error("fail to unLock inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, lockedShipments, tradeRet.getError());
+                return Response.fail(tradeRet.getError());
             }
         }
+
+        return Response.ok(Boolean.TRUE);
+    }
+
+    private List<InventoryTradeDTO> genTradeContextList (Long warehouseId, InventoryTradeDTO inventoryTradeDTO, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+        List<InventoryTradeDTO> tradeList = Lists.newArrayList();
+        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
+            String skuCode = skuCodeAndQuantity.getSkuCode();
+            Integer quantity = skuCodeAndQuantity.getQuantity();
+
+            InventoryTradeDTO currTrade = new InventoryTradeDTO();
+            currTrade.setWarehouseId(warehouseId);
+            currTrade.setQuantity(quantity);
+            currTrade.setSkuCode(skuCode);
+            currTrade.setOrderId(inventoryTradeDTO.getOrderId());
+            currTrade.setSubOrderId(Lists.newArrayList(inventoryTradeDTO.getSubOrderId()));
+            currTrade.setShopId(inventoryTradeDTO.getShopId());
+            currTrade.setUniqueCode(inventoryTradeDTO.getUniqueCode());
+
+            tradeList.add(currTrade);
+
+        }
+
+        return tradeList;
     }
 
 }

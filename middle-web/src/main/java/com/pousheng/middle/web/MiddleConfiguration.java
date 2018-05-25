@@ -21,8 +21,6 @@ import com.pousheng.middle.schedule.jobs.BatchJobProperties;
 import com.pousheng.middle.schedule.jobs.TaskConfig;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
-import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
-import com.pousheng.middle.web.job.SkuStockThirdTaskTimeIndexer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
@@ -129,26 +127,6 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(loginInterceptor);
     }
-
-
-    //@Configuration
-    @ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
-    @Bean
-    public SkuStockTaskTimeIndexer skuStockTaskTimeIndexer() {
-        return new SkuStockTaskTimeIndexer();
-    }
-
-
-
-    //@Configuration
-    @ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
-    @Bean
-    public SkuStockThirdTaskTimeIndexer skuStockThirdTaskTimeIndexer() {
-        return new SkuStockThirdTaskTimeIndexer();
-    }
-
-
-
 
 
     /**

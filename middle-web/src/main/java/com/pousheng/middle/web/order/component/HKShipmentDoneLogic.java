@@ -9,8 +9,6 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -43,8 +41,6 @@ public class HKShipmentDoneLogic {
 
     @Autowired
     private EcpOrderLogic ecpOrderLogic;
-    @Autowired
-    private DecreaseLockStockLogic decreaseLockStockLogic;
 
     @Autowired
     private OrderShipmentReadService orderShipmentReadService;
@@ -56,17 +52,11 @@ public class HKShipmentDoneLogic {
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
-    private OrderWriteLogic orderWriteLogic;
-    @Autowired
     private RefundWriteLogic refundWriteLogic;
     @Autowired
     private RefundReadLogic refundReadLogic;
     @Autowired
     private RefundWriteService refundWriteService;
-    @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
-    @Autowired
-    private SyncMposShipmentLogic syncMposShipmentLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
 
@@ -95,8 +85,8 @@ public class HKShipmentDoneLogic {
                 }
             }
             log.info("wait to notify ecp,shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
-                //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
-                ecpOrderLogic.shipToEcp(shipment.getId());
+            //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
+            ecpOrderLogic.shipToEcp(shipment.getId());
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

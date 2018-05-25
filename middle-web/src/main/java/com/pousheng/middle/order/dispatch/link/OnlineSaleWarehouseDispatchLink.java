@@ -8,12 +8,9 @@ import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -49,9 +46,9 @@ import java.util.stream.Collectors;
 public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
     @Autowired
-    private WarehouseSkuReadService warehouseSkuReadService;
+    private InventoryClient inventoryClient;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private WarehouseAddressComponent warehouseAddressComponent;
     @Autowired
@@ -79,63 +76,44 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(onlineSaleSku)){
             return Boolean.TRUE;
         }
-        List<WarehouseSkuStock> onlineSaleWarehouses = getOnlineSaleWarehouseStock(onlineSaleSku);
+        List<AvailableInventoryDTO> onlineSaleWarehouses = getOnlineSaleWarehouseStock(onlineSaleSku, shopOrder);
         //如果不存在直接让下个规则处理
         if(CollectionUtils.isEmpty(onlineSaleWarehouses)){
             return Boolean.TRUE;
         }
 
-        List<Long> warehouseIds = Lists.transform(onlineSaleWarehouses, new Function<WarehouseSkuStock, Long>() {
-            @Nullable
-            @Override
-            public Long apply(@Nullable WarehouseSkuStock input) {
-                return input.getWarehouseId();
-            }
-        });
+        List<Long> warehouseIds = Lists.transform(onlineSaleWarehouses, input -> input.getWarehouseId());
 
-        List<Warehouse> warehouseList = findWarehouseByIds(warehouseIds);
+        List<WarehouseDTO> warehouseList = findWarehouseByIds(warehouseIds);
 
         //过滤掉非mpos仓,过滤后如果没有则进入下个规则,过滤掉店仓直接用总仓
-        List<Warehouse> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse -> Objects.equals(warehouse.getIsMpos(),1)).filter(warehouse -> Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());
+        List<WarehouseDTO> mposOnlineSaleWarehouse = warehouseList.stream().filter(warehouse ->
+                Objects.equals(warehouse.getIsMpos(),1)).filter(warehouse ->
+                Objects.equals(warehouse.getWarehouseSubType(),0)).collect(Collectors.toList());
+
         if(CollectionUtils.isEmpty(mposOnlineSaleWarehouse)){
             return Boolean.TRUE;
         }
 
-        Map<Long, Warehouse> warehouseIdMap = mposOnlineSaleWarehouse.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(Warehouse::getId, it -> it));
-
-
-
         //电商mpos 仓id集合
-        List<Long> mposOnlineSaleWarehouseIds = Lists.transform(mposOnlineSaleWarehouse, new Function<Warehouse, Long>() {
+        List<Long> mposOnlineSaleWarehouseIds = Lists.transform(mposOnlineSaleWarehouse, new Function<WarehouseDTO, Long>() {
             @Nullable
             @Override
-            public Long apply(@Nullable Warehouse input) {
+            public Long apply(@Nullable WarehouseDTO input) {
                 return input.getId();
             }
         });
 
         //仓库 商品 库存
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
-        for (WarehouseSkuStock warehouseSkuStock : onlineSaleWarehouses){
-
-
+        for (AvailableInventoryDTO warehouseSkuStock : onlineSaleWarehouses){
 
             //过滤掉非mpos的
             if(mposOnlineSaleWarehouseIds.contains(warehouseSkuStock.getWarehouseId())){
-
-                Map<String,String> extra = warehouseIdMap.get(warehouseSkuStock.getWarehouseId()).getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
-                    log.error("not find safe stock for warehouse:(id:{})",warehouseSkuStock.getWarehouseId());
-                    throw new ServiceException("warehouse.safe.stock.not.find");
-                }
                 //可用库存
-                Long availStock = warehouseSkuStock.getAvailStock();
-                //安全库存
-                Integer safeStock = Integer.valueOf(extra.get("safeStock"));
-                Integer stock = Integer.valueOf(availStock.toString())-safeStock;
-                log.info("[ONLINE-STOCK]-warehouse(id:{}) sku code:{} availStock:{} safeStock:{} valid stock:{}",warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock,safeStock,stock);
-                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),stock);
+                Integer availStock = warehouseSkuStock.getTotalQuantity();
+                log.info("[ONLINE-STOCK]-warehouse(id:{}) sku code:{} availStock:{}",warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock);
+                warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock);
             }
         }
         context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
@@ -162,22 +140,21 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
 
 
     //电商在售的仓
-    private List<WarehouseSkuStock> getOnlineSaleWarehouseStock(List<SkuCodeAndQuantity> skuCodeAndQuantities){
-        List<WarehouseSkuStock> allWarehouseSkuStock = Lists.newArrayList();
-        for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities){
-            Response<List<WarehouseSkuStock>> warehouseSkuStockRes = warehouseSkuReadService.findBySkuCode(skuCodeAndQuantity.getSkuCode());
-            if(!warehouseSkuStockRes.isSuccess()){
-                log.error("failed to find stock for  skuCode={}, error:{}",
-                        skuCodeAndQuantity.getSkuCode(), warehouseSkuStockRes.getError());
-                continue;
-            }
-            allWarehouseSkuStock.addAll(warehouseSkuStockRes.getResult());
+    private List<AvailableInventoryDTO> getOnlineSaleWarehouseStock(List<SkuCodeAndQuantity> skuCodeAndQuantities, ShopOrder shopOrder){
+        Response<List<AvailableInventoryDTO>> skuStockInfos = inventoryClient.getAvailableInventory(
+                dispatchComponent.getAvailInvReq(null, Lists.newArrayList(Lists.transform(skuCodeAndQuantities, input -> input.getSkuCode())))
+                , shopOrder.getShopId());
+        if(!skuStockInfos.isSuccess() || CollectionUtils.isEmpty(skuStockInfos.getResult())){
+            log.warn("not skuStockInfos so skip");
+
+            return Lists.newArrayList();
         }
-        return allWarehouseSkuStock;
+
+        return skuStockInfos.getResult();
     }
 
-    private List<Warehouse> findWarehouseByIds(List<Long> ids){
-        Response<List<Warehouse>> warehouseListRes = warehouseReadService.findByIds(ids);
+    private List<WarehouseDTO> findWarehouseByIds(List<Long> ids){
+        Response<List<WarehouseDTO>> warehouseListRes = warehouseClient.findByIds(ids);
         if(!warehouseListRes.isSuccess()){
             throw new ServiceException(warehouseListRes.getError());
         }

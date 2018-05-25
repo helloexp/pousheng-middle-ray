@@ -14,6 +14,8 @@ gateway:
   erp:
     host: http://esbt.pousheng.com
     accessKey: b82d30f3f1fc4e43b3f427ba3d7b9a50
+  inventory:
+    host: http://devt-inventory-web.pousheng.com
 
 
 rpc.mode: false

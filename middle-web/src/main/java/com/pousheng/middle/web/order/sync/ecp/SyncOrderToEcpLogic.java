@@ -12,7 +12,6 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -22,7 +21,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
-import io.terminus.parana.item.service.SkuReadService;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
@@ -59,17 +57,8 @@ public class SyncOrderToEcpLogic {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
-
     @Autowired
     private SkuOrderReadService skuOrderReadService;
-
-    @Autowired
-    private SkuReadService skuReadService;
-
-    @Autowired
-    private WarehouseReadService warehouseReadService;
-
-
     @Autowired
     private SycYunJuShipmentOrderApi sycYunJuShipmentOrderApi;
 

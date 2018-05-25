@@ -11,15 +11,13 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -68,7 +66,7 @@ public class ShipmentReadLogic {
     @Autowired
     private WarehouseCacher warehouseCacher;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private ShopCacher shopCacher;
 
@@ -565,6 +563,7 @@ public class ShipmentReadLogic {
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
         shipmentItems.forEach(shipmentItem -> {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
             skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
             skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
@@ -590,14 +589,14 @@ public class ShipmentReadLogic {
             //店发改成仓发
             Long shopId = shipmentExtra.getWarehouseId();
             Shop shop = shopCacher.findShopById(shopId);
-            Warehouse warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
+            WarehouseDTO warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
             if (null == warehouse) {
                 log.error(" find warehouse by code {} is null ",shop.getOuterId() + "-_" + shop.getBusinessId());
                 throw new JsonResponseException("find.warehouse.failed");
             }
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(warehouse.getId());
-            warehouseShipment.setWarehouseName(warehouse.getName());
+            warehouseShipment.setWarehouseName(warehouse.getWarehouseName());
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }else{
@@ -608,6 +607,19 @@ public class ShipmentReadLogic {
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }
         dispatchOrderItemInfo.setOpenShopId(shipment.getShopId());
+
+        // TODO 获取订单信息
+        if (null != shipment.getId()) {
+            dispatchOrderItemInfo.setOrderId(findOrderShipmentByShipmentId(shipment.getId()).getOrderId());
+        } else {
+            if (null != shipment.getExtra() && shipment.getExtra().containsKey(TradeConstants.SHOP_ORDER_ID)) {
+                dispatchOrderItemInfo.setOrderId(Long.parseLong(shipment.getExtra().get(TradeConstants.SHOP_ORDER_ID)));
+            } else {
+                log.error("shipment fail because no order id found :{}", shipment);
+                throw new JsonResponseException("order.id.not.found");
+            }
+        }
+        dispatchOrderItemInfo.setSubOrderIds(Lists.transform(skuCodeAndQuantities, input -> input.getSkuOrderId()));
         return dispatchOrderItemInfo;
     }
 

@@ -12,7 +12,7 @@ import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -203,14 +203,13 @@ public class SyncShipmentPosLogic {
         posContent.setChanneltype("b2c");//订单来源类型, 是b2b还是b2c
 
         if(isWarehouseShip(shipmentWay)){
-            Warehouse warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
-            Map<String, String>  extra = warehouse.getExtra();
-            if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+            WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
+            if(StringUtils.isEmpty(warehouse.getOutCode())){
                 log.error("warehouse(id:{}) out code invalid",warehouse.getId());
                 throw new ServiceException("warehouse.out.code.invalid");
             }
             posContent.setCompanyid(warehouse.getCompanyId());//实际发货账套id
-            posContent.setStockcode(extra.get("outCode"));//实际发货店铺code
+            posContent.setStockcode(warehouse.getOutCode());//实际发货店铺code
 
             //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());

@@ -1,26 +1,16 @@
 package com.pousheng.middle.order.dispatch.component;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
-import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.StockDto;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Joiners;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
@@ -32,8 +22,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import javax.annotation.Nullable;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -55,28 +43,20 @@ import static com.pousheng.middle.constants.Constants.IS_CARE_STOCK;
  */
 @Component
 @Slf4j
+// TODO 店发shop全部转换成warehouse去库存交易，同时去掉mposstock操作，同时去掉同步门店库存数据
 public class MposSkuStockLogic {
     @Autowired
-    private StockPusher stockPusher;
+    private WarehouseSkuStockManager warehouseSkuStockManager;
     @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
+    private WarehouseCacher warehouseCacher;
     @Autowired
-    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
-    @Autowired
-    private WarehouseAddressComponent warehouseAddressComponent;
+    private ShopCacher shopCacher;
     @Autowired
     private DispatchComponent dispatchComponent;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private OpenShopCacher openShopCacher;
-    @Autowired
-    private ShopCacher shopCacher;
-    @Autowired
-    private WarehouseReadService warehouseReadService;
-    @Autowired
-    private WarehouseCacher warehouseCacher;
-
 
     /**
      * 锁定库存
@@ -106,72 +86,15 @@ public class MposSkuStockLogic {
             return Response.ok();
         }
 
-        List<String> skuCodes = dispatchComponent.getWarehouseSkuCodes(warehouseShipments);
-        //1、先同步恒康最新库存到中台（这里可以不用担心拉取不到库存，因为既然可以仓发，说明恒康一定有库存）
-        //syncStock(warehouseShipments,skuCodes);
-        //2、锁定库存
         //锁定电商库存
-        Response<Boolean> response = warehouseSkuWriteService.lockStock(warehouseShipments);
+        Response<Boolean> response = warehouseSkuStockManager.lockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,0), warehouseShipments);
         if(!response.isSuccess()){
             log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,response.getError());
             return response;
         }
 
-        //3、触发库存推送
-        stockPusher.submit(skuCodes);
-
         return Response.ok();
     }
-
-
-    //同步最新的仓库商品库存到中台
-    private void syncStock(List<WarehouseShipment> warehouseShipments,List<String> skuCodes){
-
-        if(CollectionUtils.isEmpty(warehouseShipments)){
-            return;
-        }
-
-        List<Long> warehouseIds = Lists.transform(warehouseShipments, new Function<WarehouseShipment, Long>() {
-            @Nullable
-            @Override
-            public Long apply(@Nullable WarehouseShipment input) {
-                return input.getWarehouseId();
-            }
-        });
-
-
-        List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
-
-        //查询仓代码
-        List<String> stockCodes = dispatchComponent.getWarehouseOutCode(warehouses);
-
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
-        if(CollectionUtils.isEmpty(skuStockInfos)){
-            log.error("not find stock info by stockCodes:{} and skuCodes:{}",stockCodes,skuCodes);
-            return;
-        }
-
-        List<StockDto> stockDtos = Lists.newArrayList();
-        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            List<HkSkuStockInfo.SkuAndQuantityInfo> skuAndQuantityInfos =hkSkuStockInfo.getMaterial_list();
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : skuAndQuantityInfos){
-                StockDto stockDto = new StockDto();
-                stockDto.setQuantity(skuAndQuantityInfo.getQuantity());
-                stockDto.setSkuCode(skuAndQuantityInfo.getBarcode());
-                stockDto.setUpdatedAt(new Date());
-                stockDto.setWarehouseId(hkSkuStockInfo.getBusinessId());
-                stockDtos.add(stockDto);
-            }
-        }
-
-        Response<Boolean> r = warehouseSkuWriteService.syncStock(stockDtos);
-        if(!r.isSuccess()){
-            log.error("failed to sync stockDtos:{} stocks, error code:{}", stockDtos ,r.getError());
-            throw new ServiceException(r.getError());
-        }
-
-    }
-
 
 
     /**
@@ -193,16 +116,25 @@ public class MposSkuStockLogic {
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Response.ok();
         }
-        warehouseSkuWriteService.unlockStock(warehouseShipments);
+        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,1), warehouseShipments);
 
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipments) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
+        return Response.ok();
+
+    }
+
+    /**
+     * 解锁库存
+     * @param dispatchOrderItemInfo
+     */
+    public Response<Boolean> unLockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
+        //仓库发货
+        List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
+
+        //没有说明不是仓发直接返回
+        if(CollectionUtils.isEmpty(warehouseShipments)){
+            return Response.ok();
         }
-        stockPusher.submit(skuCodes);
+        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,1), warehouseShipments);
 
         return Response.ok();
 
@@ -224,15 +156,8 @@ public class MposSkuStockLogic {
             return Response.ok();
         }
 
-        warehouseSkuWriteService.decreaseStock(warehouseShipments,warehouseShipments);
-        //触发库存推送
-        List<String> skuCodes = Lists.newArrayList();
-        for (WarehouseShipment ws : warehouseShipments) {
-            for (SkuCodeAndQuantity skuCodeAndQuantity : ws.getSkuCodeAndQuantities()) {
-                skuCodes.add(skuCodeAndQuantity.getSkuCode());
-            }
-        }
-        stockPusher.submit(skuCodes);
+        warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,0) ,warehouseShipments);
+
         log.info("end decrease stock");
 
         return Response.ok();
@@ -278,14 +203,14 @@ public class MposSkuStockLogic {
         if (!CollectionUtils.isEmpty(shopShipments)) {
             for (ShopShipment s : shopShipments) {
                 Shop shop = shopCacher.findShopById(s.getShopId());
-                Warehouse warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
+                WarehouseDTO warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
                 if (null == warehouse) {
                     log.error(" find warehouse by code {} is null ",shop.getOuterId() + "-_" + shop.getBusinessId());
                     throw new JsonResponseException("find.warehouse.failed");
                 }
                 WarehouseShipment warehouseShipment = new WarehouseShipment();
                 warehouseShipment.setWarehouseId(warehouse.getId());
-                warehouseShipment.setWarehouseName(warehouse.getName());
+                warehouseShipment.setWarehouseName(warehouse.getWarehouseName());
                 warehouseShipment.setSkuCodeAndQuantities(s.getSkuCodeAndQuantities());
                 warehouseShipments.add(warehouseShipment);
             }
@@ -294,3 +219,4 @@ public class MposSkuStockLogic {
     }
 
 }
+

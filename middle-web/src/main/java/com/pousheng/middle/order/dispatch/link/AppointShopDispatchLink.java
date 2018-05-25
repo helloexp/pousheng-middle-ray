@@ -6,14 +6,13 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
+import com.pousheng.middle.warehouse.companent.WarehouseAddressRuleClient;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.Warehouses4Address;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
-import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.parana.cache.ShopCacher;
@@ -46,7 +45,7 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
     @RpcConsumer
-    private WarehouseAddressRuleReadService warehouseAddressRuleReadService;
+    private WarehouseAddressRuleClient warehouseAddressRuleClient;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -76,7 +75,7 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
             currentAddressId= address.getPid();
         }
 
-        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
+        Response<List<Warehouses4Address>> r = warehouseAddressRuleClient.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",
                     addressIds, shopOrder.getShopId(), r.getError());

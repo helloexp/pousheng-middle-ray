@@ -1,8 +1,8 @@
 package com.pousheng.middle.warehouse.cache;
 
 import com.google.common.base.Optional;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
@@ -13,7 +13,6 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.function.Function;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -22,80 +21,84 @@ import java.util.function.Function;
 @Component
 @Slf4j
 public class WarehouseCacher {
-    private final ConcurrentMap<Long, Warehouse> byId;
+    private final ConcurrentMap<Long, WarehouseDTO> byId;
 
-    private final ConcurrentMap<String, Warehouse> byCode;
+    private final ConcurrentMap<String, WarehouseDTO> byCode;
 
-    private final WarehouseReadService warehouseReadService;
+    private final ConcurrentMap<String, WarehouseDTO> byOutCodeBizId;
+
+    private final WarehouseClient warehouseClient;
 
     @Autowired
-    public WarehouseCacher(WarehouseReadService warehouseReadService) {
-        this.warehouseReadService = warehouseReadService;
+    public WarehouseCacher(WarehouseClient warehouseClient) {
+        this.warehouseClient = warehouseClient;
         byId = new ConcurrentHashMap<>();
         byCode = new ConcurrentHashMap<>();
+        byOutCodeBizId = new ConcurrentHashMap<>();
     }
 
-    public Warehouse findById(Long id){
-        return byId.computeIfAbsent(id, new Function<Long, Warehouse>() {
-            @Override
-            public Warehouse apply(Long id) {
-                Response<Warehouse> r =  warehouseReadService.findById(id);
-                if(!r.isSuccess()){
-                    log.error("failed to find warehouse(id={}), error code:{}", id, r.getError());
-                    throw new ServiceException(r.getError());
-                }
-                return r.getResult();
+    public WarehouseDTO findById(Long id){
+        return byId.computeIfAbsent(id, id1 -> {
+            Response<WarehouseDTO> r =  warehouseClient.findById(id1);
+            if(!r.isSuccess()){
+                log.error("failed to find warehouse(id={}), error code:{}", id1, r.getError());
+                throw new ServiceException(r.getError());
+            }
+
+            return r.getResult();
+        });
+    }
+
+    public WarehouseDTO findByCode(String code){
+        return byCode.computeIfAbsent(code, code1 -> {
+            Response<Optional<WarehouseDTO>> r =  warehouseClient.findByCode(code1);
+            if(!r.isSuccess()){
+                log.error("failed to find warehouse(code={}), error code:{}", code1, r.getError());
+                throw new ServiceException(r.getError());
+            }
+            Optional<WarehouseDTO> result = r.getResult();
+            if(result.isPresent()) {
+                return result.get();
+            }else{
+                log.error("warehouse(code={}) not found", code1);
+                throw new ServiceException("warehouse.not.found");
             }
         });
     }
 
-    public Warehouse findByCode(String code){
-        return byCode.computeIfAbsent(code, new Function<String, Warehouse>() {
-            @Override
-            public Warehouse apply(String code) {
-                Response<Optional<Warehouse>> r =  warehouseReadService.findByCode(code);
-                if(!r.isSuccess()){
-                    log.error("failed to find warehouse(code={}), error code:{}", code, r.getError());
-                    throw new ServiceException(r.getError());
-                }
-                Optional<Warehouse> result = r.getResult();
-                if(result.isPresent()) {
-                    return result.get();
-                }else{
-                    log.error("warehouse(code={}) not found", code);
-                    throw new ServiceException("warehouse not found");
-                }
+    public WarehouseDTO findByOutCodeAndBizId(String outCode, String bizId){
+        return byOutCodeBizId.computeIfAbsent(outCode+"_"+bizId, code1 -> {
+            Response<WarehouseDTO> r =  warehouseClient.findByOutCodeBizId(code1.split("_")[0], code1.split("_")[1]);
+            if(!r.isSuccess() || null == r.getResult()){
+                log.error("failed to find warehouse(code={}), error code:{}", code1, r.getError());
+                throw new ServiceException(r.getError());
             }
+
+            return r.getResult();
         });
     }
 
-
-    public Warehouse findByShopInfo(String shopInfo) {
+    public WarehouseDTO findByShopInfo(String shopInfo) {
         return byCode.computeIfAbsent(shopInfo, shopInfo1 -> {
             List<String> infos = Splitters.UNDERSCORE.splitToList(shopInfo1);
-            Response<Optional<Warehouse>> r = warehouseReadService.findByOutCodeAndCompanyId(infos.get(0), infos.get(1));
+            Response<WarehouseDTO> r = warehouseClient.findByOutCodeBizId(infos.get(0), infos.get(1));
             if (!r.isSuccess()) {
                 log.error("failed to find warehouse(info={}), error code:{}", shopInfo1, r.getError());
                 throw new ServiceException(r.getError());
             }
-            Optional<Warehouse> result = r.getResult();
-            if (result.isPresent()) {
-                return result.get();
-            } else {
-                return null;
-            }
+
+            return r.getResult();
         });
     }
 
 
     public void refreshById(Long id){
-
-        Response<Warehouse> r =  warehouseReadService.findById(id);
+        Response<WarehouseDTO> r =  warehouseClient.findById(id);
         if(!r.isSuccess()){
             log.error("failed to find warehouse(id={}), error code:{}", id, r.getError());
             throw new ServiceException(r.getError());
         }
-        Warehouse exist = r.getResult();
+        WarehouseDTO exist = r.getResult();
 
         if(byId.containsKey(id)){
             byId.replace(id,exist);
@@ -103,10 +106,10 @@ public class WarehouseCacher {
             byId.putIfAbsent(id,exist);
         }
 
-        if(byCode.containsKey(exist.getCode())){
-            byCode.replace(exist.getCode(),exist);
+        if(byCode.containsKey(exist.getWarehouseCode())){
+            byCode.replace(exist.getWarehouseCode(),exist);
         }else {
-            byCode.putIfAbsent(exist.getCode(),exist);
+            byCode.putIfAbsent(exist.getWarehouseCode(),exist);
         }
     }
 

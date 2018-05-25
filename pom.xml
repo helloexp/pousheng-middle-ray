@@ -30,7 +30,7 @@
         <azure-storage.version>5.4.0</azure-storage.version>
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
         <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
-
+        <log.version>1.2.2.SUPPORT-MIDDLE-SNAPSHOT</log.version>
     </properties>
 
     <dependencies>
@@ -141,6 +141,15 @@
                 <artifactId>azure-storage</artifactId>
                 <version>${azure-storage.version}</version>
             </dependency>
+
+            <!-- swagger end-->
+            <!-- 日志框架 -->
+            <dependency>
+                <groupId>io.terminus</groupId>
+                <artifactId>applog-boot-starter</artifactId>
+                <version>${log.version}</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>

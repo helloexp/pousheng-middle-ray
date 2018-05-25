@@ -25,6 +25,8 @@ public class TradeConstants {
     public static final String ERP_ORDER_SHOP_CODE = "erpOrderShopCode";
 
 
+    //店铺订单ID
+    public static final String SHOP_ORDER_ID = "shopOrderId";
     //发货单商品信息
     public static final String SHIPMENT_ITEM_INFO = "shipmentItemInfo";
     //发货单扩展信息

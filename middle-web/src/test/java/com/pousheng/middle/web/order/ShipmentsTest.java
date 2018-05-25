@@ -22,8 +22,8 @@ import com.pousheng.middle.order.service.OrderShipmentWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
-import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
@@ -72,7 +72,7 @@ public class ShipmentsTest extends AbstractRestApiTest {
         @MockBean
         private OrderWriteLogic orderWriteLogic;
         @MockBean
-        private WarehouseReadService warehouseReadService;
+        private WarehouseClient warehouseClient;
         @MockBean
         private MiddleOrderFlowPicker orderFlowPicker;
         @MockBean
@@ -88,7 +88,7 @@ public class ShipmentsTest extends AbstractRestApiTest {
         @MockBean
         private SyncErpShipmentLogic syncErpShipmentLogic;
         @MockBean
-        private WarehouseSkuWriteService warehouseSkuWriteService;
+        private InventoryClient inventoryClient;
         @MockBean
         private StockPusher stockPusher;
         @MockBean
@@ -157,7 +157,7 @@ public class ShipmentsTest extends AbstractRestApiTest {
         when(shipmentReadLogic.findShipmentById(anyLong())).thenReturn(new Shipment());
         when(shipmentWiteLogic.updateStatus(any(),any())).thenReturn(Response.ok());
         when(shipmentReadLogic.getShipmentExtra(any())).thenReturn(new ShipmentExtra());
-        when(mposSkuStockLogic.unLockStock(any())).thenReturn(Response.ok());
+        when(mposSkuStockLogic.unLockStock(any(Shipment.class))).thenReturn(Response.ok());
         shipments.cancleShipment(anyLong());
     }
     @Test

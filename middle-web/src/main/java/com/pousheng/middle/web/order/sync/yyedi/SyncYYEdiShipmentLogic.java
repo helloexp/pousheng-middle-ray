@@ -19,8 +19,8 @@ import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
-import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.constants.OrderInfoConstants;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
@@ -76,7 +76,7 @@ public class SyncYYEdiShipmentLogic {
     @Autowired
     private SycHkOrderCancelApi sycHkOrderCancelApi;
     @Autowired
-    private WarehouseReadService warehouseReadService;
+    private WarehouseClient warehouseClient;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -222,17 +222,16 @@ public class SyncYYEdiShipmentLogic {
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
         ReceiverInfo receiverInfo = shipmentDetail.getReceiverInfo();
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
-        Response<Warehouse> rW  = warehouseReadService.findById(shipmentExtra.getWarehouseId());
+        Response<WarehouseDTO> rW  = warehouseClient.findById(shipmentExtra.getWarehouseId());
         if (!rW.isSuccess()){
             throw new ServiceException("find.warehouse.failed");
         }
-        Warehouse warehouse = rW.getResult();
-        Map<String,String> warehouseExtraMap = warehouse.getExtra();
+        WarehouseDTO warehouse = rW.getResult();
         YYEdiShipmentInfo shipmentInfo = new YYEdiShipmentInfo();
         //公司内码
         shipmentInfo.setCompanyCode(warehouse.getCompanyCode());
         //仓库
-        shipmentInfo.setStockCode(warehouseExtraMap.get("outCode"));
+        shipmentInfo.setStockCode(warehouse.getOutCode());
         //erp单号，中台发货单代码
         shipmentInfo.setBillNo(String.valueOf(shipment.getShipmentCode()));
         //单据类型
@@ -482,11 +481,11 @@ public class SyncYYEdiShipmentLogic {
     private List<YYEdiShipmentItem> getSyncYYEdiShipmentItem(Shipment shipment, ShipmentDetail shipmentDetail,int integral) {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
-        Response<Warehouse> rW  = warehouseReadService.findById(shipmentExtra.getWarehouseId());
+        Response<WarehouseDTO> rW  = warehouseClient.findById(shipmentExtra.getWarehouseId());
         if (!rW.isSuccess()){
             throw new ServiceException("");
         }
-        Warehouse warehouse = rW.getResult();
+        WarehouseDTO warehouse = rW.getResult();
         List<YYEdiShipmentItem> items = Lists.newArrayListWithCapacity(shipmentItems.size());
         for (ShipmentItem shipmentItem : shipmentItems) {
             YYEdiShipmentItem item = new YYEdiShipmentItem();

@@ -26,10 +26,13 @@ public class SkuStockTaskDao extends MyBatisDao<SkuStockTask> {
         return getSqlSession().update("updateToHandle", ImmutableMap.of("id",id,"timeoutAt",timeOutAt))> 0;
     }
 
+    public boolean updateToHandleBatch(List list){
+        return getSqlSession().update("updateToHandleBatch",list)> 0;
+    }
+
     public boolean updateTimeOutHandleTask(){
         return getSqlSession().update("updateTimeOutHandleTask", ImmutableMap.of("timeoutAt", DateTime.now().plusMinutes(10).toDate(),"endAt",new Date()))> 0;
 
     }
-
 
 }

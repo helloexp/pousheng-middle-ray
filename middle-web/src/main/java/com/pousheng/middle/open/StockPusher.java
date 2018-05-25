@@ -75,6 +75,10 @@ public class StockPusher {
     @Autowired
     private MessageSource messageSource;
 
+
+    @Value("${mpos.open.shop.id}")
+    private Long mposOpenShopId;
+
     private LoadingCache<String, Long> skuCodeCacher;
 
     private LoadingCache<Long, OpenShop> openShopCacher;
@@ -157,7 +161,10 @@ public class StockPusher {
                     try {
                         //计算每个店铺的可用库存
                         Long stock = availableStockCalc.availableStock(shopId, skuCode);
-                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
+                        //log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
+                        if (Objects.equals(shopId,mposOpenShopId)){
+                            continue;
+                        }
                         Response<WarehouseShopStockRule> rShopStockRule = warehouseShopStockRuleReadService.findByShopId(shopId);
                         if (!rShopStockRule.isSuccess()) {
                             log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
@@ -210,7 +217,7 @@ public class StockPusher {
                     paranaSkuStock.setStock(skuStockMap.get(skuCode));
                     paranaSkuStocks.add(paranaSkuStock);
                 }
-                log.info("search sku stock by shopId  is {},paranaSkuStocks is {}", shopId, paranaSkuStocks);
+                //log.info("search sku stock by shopId  is {},paranaSkuStocks is {}", shopId, paranaSkuStocks);
                 Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
                 if (!r.isSuccess()) {
                     log.error("failed to push stocks {} to shop(id={}), error code{}",
@@ -254,8 +261,8 @@ public class StockPusher {
                             skuCode, shopId, rP.getError());
                 }
             }
-            log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-                    stock.intValue(), skuCode, shopId);
+            //log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
+            //        stock.intValue(), skuCode, shopId);
             //异步生成库存推送日志
             StockPushLog stockPushLog = new StockPushLog();
             stockPushLog.setShopId(shopId);

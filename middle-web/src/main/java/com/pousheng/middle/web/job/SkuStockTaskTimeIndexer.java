@@ -20,7 +20,6 @@ import javax.annotation.PostConstruct;
 import java.util.List;
 
 @Slf4j
-@Component
 public class SkuStockTaskTimeIndexer {
 
     @Autowired
@@ -84,7 +83,7 @@ public class SkuStockTaskTimeIndexer {
                     List<SkuStockTask> skuStockTasks = listRes.getResult();
                     if (!CollectionUtils.isEmpty(skuStockTasks)) {
                         for (SkuStockTask skuStockTask : skuStockTasks) {
-                            log.info("PUT STOCK TASK:{} to thread pool",skuStockTask.getId());
+                            //log.info("PUT STOCK TASK:{} to thread pool",skuStockTask.getId());
                             skuStockExecutor.submit(new SotckPushTask(skuStockTask));
                         }
                     } else {
@@ -142,7 +141,6 @@ public class SkuStockTaskTimeIndexer {
         if (!deleteRes.isSuccess()) {
             log.error("delete sku stock task by id:{} fail,error:{}", skuStockTask.getId(), deleteRes.getError());
         }
-
 
     }
 }

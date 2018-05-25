@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,8 +37,19 @@ public class SkuStockTaskManager {
             return validSkuStockTasks;
         }
 
+        /*
         for (SkuStockTask skuStockTask : skuStockTasks) {
             if (skuStockTaskDao.updateToHandle(skuStockTask.getId(), DateTime.now().plusMinutes(10).toDate())) {
+                validSkuStockTasks.add(skuStockTask);
+            }
+        }*/
+
+        List list = new ArrayList();
+        for (SkuStockTask skuStockTask : skuStockTasks) {
+            list.add(skuStockTask.getId());
+        }
+        if(skuStockTaskDao.updateToHandleBatch(list)) {
+            for (SkuStockTask skuStockTask : skuStockTasks) {
                 validSkuStockTasks.add(skuStockTask);
             }
         }

@@ -18,6 +18,7 @@ import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
 import com.pousheng.middle.order.dispatch.link.*;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
+import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
@@ -39,6 +40,7 @@ import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
@@ -113,6 +115,13 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         registry.addInterceptor(loginInterceptor);
     }
 
+
+    //@Configuration
+    @ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+    @Bean
+    public SkuStockTaskTimeIndexer skuStockTaskTimeIndexer() {
+        return new SkuStockTaskTimeIndexer();
+    }
 
     /**
      * 中台不需要计算运费

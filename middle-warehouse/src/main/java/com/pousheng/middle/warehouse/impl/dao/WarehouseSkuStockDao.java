@@ -126,7 +126,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      */
     public void syncStock(Long warehouseId, String skuCode, Integer erpStock, Date updatedAt) {
         WarehouseSkuStock exist = findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-        long id = exist.getId();
+
         if(exist ==null){
             WarehouseSkuStock wss = new WarehouseSkuStock();
             wss.setAvailStock(erpStock.longValue());
@@ -137,6 +137,7 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
             wss.setSyncAt(updatedAt);
             this.create(wss);
         }else {
+            long id = exist.getId();
             this.sqlSession.update(sqlId("syncStock"),
                     ImmutableMap.of("id", id,
                             "erpStock", erpStock, "updatedAt", updatedAt));

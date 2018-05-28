@@ -305,15 +305,9 @@ public class SpuImporter {
         params.put("statuses",Lists.newArrayList(1,-3));
         params.put("skuCode",barCode);
         params.put("type",type);
-        if (pageNo == null){
-            pageNo = 1;
-        }
-        if (pageSize == null){
-            pageSize = 5000;
-        }
         while(true){
             log.info("pageNo ========>"+pageNo);
-            Response<Paging<SkuTemplate>> response =  skuTemplateReadService.findBy(pageNo,pageSize,params);
+            Response<Paging<SkuTemplate>> response =  skuTemplateReadService.findBy(pageNo==null?1:pageNo,pageSize==null?100:pageSize,params);
             List<SkuTemplate> skuTemplates = response.getResult().getData();
             if (skuTemplates.isEmpty()){
                 log.info("pageNo end ========");

@@ -1081,6 +1081,34 @@ public class ShipmentWiteLogic {
     }
 
     /**
+     * 更新发货单同步电商渠道的状态
+     * @param shipment
+     * @param orderOperation
+     * @return
+     */
+    public Response<Boolean> updateShipmentSyncChannelStatus(Shipment shipment, OrderOperation orderOperation) {
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Flow flow = flowPicker.pickSyncTaobao();
+        //判断当前状态是否可以操作
+        if (!flow.operationAllowed(shipmentExtra.getSyncChannelStatus(), orderOperation)) {
+            log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipmentExtra.getSyncTaobaoStatus(), orderOperation.getText());
+            return Response.fail("sync.taobao.status.not.allow.current.operation");
+        }
+        //获取下一步状态
+        Integer targetStatus = flow.target(shipmentExtra.getSyncChannelStatus(), orderOperation);
+        shipmentExtra.setSyncChannelStatus(targetStatus);
+        Map<String, String> extraMap = shipment.getExtra();
+        extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+        shipment.setExtra(extraMap);
+        Response<Boolean> updateRes = shipmentWriteService.update(shipment);
+        if (!updateRes.isSuccess()) {
+            log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        return Response.ok();
+    }
+
+    /**
      * 订单拆单派单
      *
      * @param shopOrder 订单

@@ -33,4 +33,9 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     private String refundSkuCode;
     //购买数量
     private Integer quantity;
+
+    //子售后单id
+    private String skuAfterSaleId;
+
+
 }

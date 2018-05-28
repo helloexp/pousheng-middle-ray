@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -7,7 +9,6 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
-import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -19,6 +20,7 @@ import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
@@ -26,10 +28,13 @@ import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.order.dto.OpenClientAfterSale;
+import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
@@ -87,6 +92,8 @@ public class RefundWriteLogic {
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     /**
      * 更新换货商品处理数量
@@ -415,6 +422,7 @@ public class RefundWriteLogic {
     }
 
     /**
+     * 完善售后单
      * 完善售后单（仅退款，退货退款，换货）
      *
      * @param refund           售后单
@@ -486,6 +494,8 @@ public class RefundWriteLogic {
         if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
+        //更新退换货信息
+        //退款总金额变化
             for (RefundItem refundItem :currentRefundItems){
                 totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
             }
@@ -512,6 +522,102 @@ public class RefundWriteLogic {
         }
 
 
+    }
+
+    //创建售后单
+    public Long createYunJURefund(SubmitRefundInfo submitRefundInfo){
+        //验证提交信息是否有效
+        //订单是否有效
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(submitRefundInfo.getOrderId());
+        //发货单是否有效
+        Shipment shipment = shipmentReadLogic.findShipmentById(submitRefundInfo.getShipmentId());
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        //申请数量是否有效
+        List<RefundItem> refundItems = checkYunJuRefundQuantity(submitRefundInfo,shipmentItems);
+        completeSkuAttributeInfo(refundItems);
+//        //更新金额
+//        if (!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value()))
+//        {
+//            this.calcRefundItemFees(refundItems,submitRefundInfo.getFee());
+//        }
+        for (EditSubmitRefundItem editSubmitRefundItem:submitRefundInfo.getEditSubmitRefundItems()){
+            updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity(),shipmentItems);
+        }
+        Refund refund = new Refund();
+        // 售后单关联单号 订单的订单编号
+        refund.setReleOrderCode(shopOrder.getOrderCode());
+        refund.setOutId(MiddleChannel.YJ.getValue()+"_"+submitRefundInfo.getOutAfterSaleOrderId());//outId是 yunju_售后单号
+        refund.setBuyerId(shopOrder.getBuyerId());
+        refund.setBuyerName(shopOrder.getBuyerName());
+        refund.setBuyerNote(submitRefundInfo.getBuyerNote());
+        refund.setRefundAt(new Date());
+
+        // 云聚单子 默认传1
+        if(Objects.equals(submitRefundInfo.getOperationType(),1)){
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }else {
+            refund.setStatus(MiddleRefundStatus.WAIT_SYNC_HK.getValue());
+        }
+        refund.setShopId(shopOrder.getShopId());
+        refund.setShopName(shopOrder.getShopName());
+        refund.setRefundType(submitRefundInfo.getRefundType());
+
+        Map<String,String> extraMap = Maps.newHashMap();
+
+        RefundExtra refundExtra = new RefundExtra();
+
+        ReceiverInfo receiverInfo = JsonMapper.JSON_NON_DEFAULT_MAPPER.fromJson(shipment.getReceiverInfos(),ReceiverInfo.class);
+        refundExtra.setReceiverInfo(receiverInfo);
+        refundExtra.setShipmentId(shipment.getShipmentCode());
+        //完善退货仓库及物流信息
+        completeYunJUWareHoseAndExpressInfo(shopOrder,submitRefundInfo.getRefundType(),refundExtra,submitRefundInfo);
+
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
+        extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(refundItems));
+        //完善换货信息
+        completeChangeItemInfo(refundItems,submitRefundInfo.getRefundType(),submitRefundInfo,extraMap);
+        //完善换货发货地址信息
+        if (Objects.equals(MiddleRefundType.AFTER_SALES_CHANGE.value(),submitRefundInfo.getRefundType())){
+            if (Objects.nonNull(submitRefundInfo.getMiddleChangeReceiveInfo())){
+                extraMap.put(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO,mapper.toJson(submitRefundInfo.getMiddleChangeReceiveInfo()));
+            }
+        }
+        // 云聚接口传了退款金额 就使用接口参数，没有传就使用交易订单中的实际支付
+        // 订单实际支付=商品实际支付+运费
+        Long orderFee = shopOrder.getFee() + shopOrder.getOriginFee();
+        Long refundFee = MoreObjects.firstNonNull(submitRefundInfo.getFee(), orderFee);
+        refund.setFee(refundFee);
+        //表明售后单的信息已经全部完善
+        extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG,"0");
+        refund.setExtra(extraMap);
+        //打标
+        Map<String,String> tagMap = Maps.newHashMap();
+        tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
+        refund.setTags(tagMap);
+
+
+
+
+        //创建售后单
+        Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(submitRefundInfo.getOrderId()), OrderLevel.SHOP);
+        if (!rRefundRes.isSuccess()) {
+            log.error("failed to create {}, error code:{}", refund, rRefundRes.getError());
+            throw new JsonResponseException(rRefundRes.getError());
+        }
+
+        //更新发货单商品中的已退货数量
+        Map<String,String> shipmentExtraMap = shipment.getExtra();
+        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+        shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
+        //如果是手工创建的售后单是点击的提交，直接同步恒康
+        if(Objects.equals(submitRefundInfo.getOperationType(),2)){
+            Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+            Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(newRefund);
+            if (!syncRes.isSuccess()) {
+                log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+            }
+        }
+        return rRefundRes.getResult();
     }
 
     /**
@@ -679,7 +785,35 @@ public class RefundWriteLogic {
             refundExtra.setWarehouseName(warehouseName);
         }
     }
+    //完善云聚退货仓信息
+    private void completeYunJUWareHoseAndExpressInfo(ShopOrder shopOrder,Integer refundType,RefundExtra refundExtra,EditSubmitRefundInfo submitRefundInfo){
 
+            //非仅退款则验证仓库是否有效、物流信息是否有效
+            if(!Objects.equals(refundType, MiddleRefundType.AFTER_SALES_REFUND.value())){
+                String refundWarehouseId;
+                String refundWarehouseName;
+                if (StringUtils.isEmpty(submitRefundInfo.getReturnStockid())){ //为空取默认退货仓
+                    OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
+                    refundWarehouseId = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID, openShop);
+                    refundWarehouseName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME, openShop);
+                    String refundWareHouseCode= orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_OUT_WAREHOUSE_CODE, openShop);
+
+                    refundExtra.setReturnStockCode(refundWareHouseCode);
+
+                 }else { //不为空
+
+                    Warehouse warehouse = warehouseCacher.findByCode(submitRefundInfo.getReturnStockid());
+                    refundWarehouseId=warehouse.getId()+"";
+                    refundWarehouseName=warehouse.getName();
+                }
+                refundExtra.setWarehouseId(Long.valueOf(refundWarehouseId));
+                refundExtra.setWarehouseName(refundWarehouseName);
+                refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
+                refundExtra.setShipmentSerialNo(submitRefundInfo.getShipmentSerialNo());
+                refundExtra.setShipmentCorpName(submitRefundInfo.getShipmentCorpName());
+            }
+
+    }
     /**
      * 完善换货商品信息
      *
@@ -796,6 +930,68 @@ public class RefundWriteLogic {
         }
     }
 
+    /**
+     *
+     * 判断退货数量是否有效
+     * @param submitRefundInfo 从前端提交过来的请求参数
+     * @param shipmentItems    对应发货单的发货商品的集合
+     * @return
+     */
+    private List<RefundItem> checkYunJuRefundQuantity(EditSubmitRefundInfo submitRefundInfo,List<ShipmentItem> shipmentItems){
+        //退货商品的列表集合
+        List<EditSubmitRefundItem> editSubmitRefundItems = submitRefundInfo.getEditSubmitRefundItems();
+        //发货单的sku-quantity集合
+        Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
+        //发货单skuCode集合列表
+        List<String> skuCodes = Lists.newArrayList();
+        //获取发货单skuCode-发货单商品的map集合
+        Map<String, ShipmentItem> skuCodesAndShipmentItems = Maps.newHashMap();
+        shipmentItems.forEach(shipmentItem -> {
+            skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
+            skuCodesAndShipmentItems.put(shipmentItem.getSkuCode(), shipmentItem);
+            skuCodes.add(shipmentItem.getSkuCode());
+        });
+        List<RefundItem> refundItems = Lists.newArrayList();
+        int count = 0;
+        //判断请求的skuCode在不在申请的发货单中，count>0代表存在skuCode不在发货单中
+        List<String> invalidSkuCodes = Lists.newArrayList();
+        for (EditSubmitRefundItem editSubmitRefundItem:editSubmitRefundItems){
+            if (skuCodes.contains(editSubmitRefundItem.getRefundSkuCode())){
+                if(!Objects.isNull(editSubmitRefundItem.getRefundQuantity())){
+                    //判断金额是否小于0
+                    if (editSubmitRefundItem.getRefundQuantity()<0){
+                        log.error("refund applyQuantity:{}【 invalid",editSubmitRefundItem.getRefundQuantity());
+                        throw new JsonResponseException("refund.apply.quantity.invalid");
+                    }
+                    //判断申请售后的商品数量是否大于发货单中商品的数量
+                    if (editSubmitRefundItem.getRefundQuantity()>skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode())){
+                        log.error("refund applyQuantity:{} gt available applyQuantity:{}",editSubmitRefundItem.getRefundQuantity(),skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()));
+                        throw new JsonResponseException("refund.apply.quantity.invalid");
+                    }
+                }else { //云聚没传的话
+                    editSubmitRefundItem.setRefundQuantity(skuCodesAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()));
+                }
+
+                RefundItem refundItem = new RefundItem();
+                ShipmentItem shipmentItem = skuCodesAndShipmentItems.get(editSubmitRefundItem.getRefundSkuCode());
+                BeanMapper.copy(shipmentItem, refundItem);
+                //填入实际申请售后的数量
+                refundItem.setApplyQuantity(editSubmitRefundItem.getRefundQuantity());
+
+                refundItem.setFee(editSubmitRefundItem.getFee()); //以云聚为准
+                refundItem.setSkuAfterSaleId(editSubmitRefundItem.getSkuAfterSaleId());//子退货单号 yunju add
+                refundItems.add(refundItem);
+            } else {
+                count++;
+            }
+        }
+        if (count == 0) {
+            return refundItems;
+        } else {
+            log.error("refund sku codes:{} invalid", invalidSkuCodes);
+            throw new JsonResponseException("check.refund.applyQuantity.fail");
+        }
+    }
 
     //更新发货单商品中的已退货数量
     private void updateShipmentItemRefundQuantity(String skuCode, Integer refundQuantity, List<ShipmentItem> shipmentItems) {
@@ -1088,7 +1284,7 @@ public class RefundWriteLogic {
             }
         }
         //如果是苏宁的售后单，将会主动查询售后单的状态
-        if (StringUtils.hasText(outId) && outId.contains("suning")) {
+        if (StringUtils.hasText(outId) && outId.contains("suning")&&!outId.contains("suning-sale")) {
             String channel = refundReadLogic.getOutChannelSuning(outId);
             if (Objects.equals(channel, MiddleChannel.TAOBAO.getValue())
                     && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
@@ -1105,7 +1301,42 @@ public class RefundWriteLogic {
                 this.createRefundResultTask(event);
             }
         }
+
+        if(StringUtils.hasText(outId) && outId.contains("suning-sale")) {
+            String channel = MiddleChannel.SUNINGSALE.getValue();
+            if (Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+
+                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                event.setRefundId(refund.getId());
+                event.setChannel(channel);
+                event.setOpenShopId(newRefund.getShopId());
+                event.setOpenOrderId(refundReadLogic.getOutSkuOrderIdSuningSale(outId));
+                eventBus.post(event);
+
+            }
     }
+
+        //如果是云聚的售后单,将主动查询售后单的状态
+        if (StringUtils.hasText(outId) && outId.contains("YJ")) {
+            log.info(" refund={}",refund);
+            String channel = refundReadLogic.getOutChannelSuning(outId);
+            if (Objects.equals(channel, MiddleChannel.YJ.getValue())
+                    && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+                Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+                OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+                TaobaoConfirmRefundEvent event = new TaobaoConfirmRefundEvent();
+                event.setRefundId(refund.getId());
+                event.setChannel(channel);
+                event.setOpenShopId(newRefund.getShopId());
+                event.setOpenOrderId(shopOrder.getOutId());
+                eventBus.post(event);
+            }
+        }
+    }
+
+
 
     /**
      * @Description 查询第三方（天猫、苏宁）售后单确认状态任务创建
@@ -1171,4 +1402,199 @@ public class RefundWriteLogic {
         return refundItems;
     }
 
+    /**
+     *
+     * @param shopId
+     */
+    public void refundAmountOrigin(Long shopId){
+        int pageNo = 1;
+        while(true){
+            MiddleRefundCriteria criteria = new MiddleRefundCriteria();
+            criteria.setShopId(shopId);
+            criteria.setPageNo(pageNo);
+            Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
+            if (!response.isSuccess()) {
+                log.error("find refund by criteria:{} fail,error:{}", criteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            List<RefundPaging> refundPagings = response.getResult().getData();
+            if (refundPagings.isEmpty()){
+                log.info("all refunds done pageNo is {}",pageNo);
+                break;
+            }
+            for (RefundPaging refundPaging:refundPagings){
+                try {
+
+                    Refund refund = refundPaging.getRefund();
+                    if (refund.getStatus()<0){
+                        log.info("shipment status <0");
+                        continue;
+                    }
+                    if (Objects.equals(refund.getRefundType(),4)){
+                        continue;
+                    }
+                    if (Objects.equals(refund.getRefundType(),3)){
+                        continue;
+                    }
+                    SycHkRefund sycHkRefund = syncRefundLogic.makeSyncHkRefund(refund);
+                    List<SycHkRefundItem> items = syncRefundLogic.makeSycHkRefundItemList(refund);
+                    for (SycHkRefundItem sycHkRefundItem:items){
+                        try{
+                            RefundAmount refundAmount = new RefundAmount();
+                            refundAmount.setRefundNo(sycHkRefund.getRefundNo());
+                            refundAmount.setOrderNo(sycHkRefund.getOrderNo());
+                            refundAmount.setShopId(sycHkRefund.getShopId());
+                            refundAmount.setPerformanceShopId(sycHkRefund.getPerformanceShopId());
+                            refundAmount.setStockId(sycHkRefund.getStockId());
+                            refundAmount.setRefundOrderAmount(sycHkRefund.getRefundOrderAmount());
+                            if (Objects.equals(refund.getRefundType(),1)){
+                                refundAmount.setType("仅退款");
+                            }
+                            if (Objects.equals(refund.getRefundType(),2)){
+                                refundAmount.setType("退货退款");
+                            }
+                            if (Objects.equals(refund.getRefundType(),3)){
+                                refundAmount.setType("换货");
+                            }
+                            refundAmount.setTotalRefund(sycHkRefund.getTotalRefund());
+                            refundAmount.setOnlineOrderNo(sycHkRefundItem.getOnlineOrderNo());
+                            Map<String,String> extraMap = refund.getExtra();
+                            String hkRefundId = extraMap.get(TradeConstants.HK_REFUND_ID);
+                            //恒康单号
+                            refundAmount.setHkOrderNo(hkRefundId);
+                            //pos单号
+                            try{
+                                Response<PoushengSettlementPos> sR = poushengSettlementPosReadService.findByRefundIdAndPosType(refund.getId(),2);
+                                if(!sR.isSuccess()){
+                                    log.error("find pos failed");
+                                }
+                                PoushengSettlementPos poushengSettlementPos = sR.getResult();
+                                refundAmount.setPosNo(poushengSettlementPos.getPosSerialNo());
+                            }catch (Exception e){
+                                log.error("find.pos.failed,caused by {}",e.getMessage());
+                            }
+                            refundAmount.setRefundSubNo(sycHkRefundItem.getRefundSubNo());
+                            refundAmount.setOrderSubNo(sycHkRefundItem.getOrderSubNo());
+                            refundAmount.setBarCode(sycHkRefundItem.getBarCode());
+                            refundAmount.setItemNum(String.valueOf(sycHkRefundItem.getItemNum()));
+                            refundAmount.setSalePrice(sycHkRefundItem.getSalePrice());
+                            refundAmount.setRefundAmount(sycHkRefundItem.getRefundAmount());
+                            Response<Long> r = refundAmountWriteService.create(refundAmount);
+                            if (!r.isSuccess()){
+                                log.error("create refund amount failed,shipment id is {},barCode is {}",refund.getId(),sycHkRefundItem.getBarCode());
+                            }
+                        }catch (Exception e){
+                            log.error("create refund amount failed,shipment id is {},barCode is {}",refund.getId(),sycHkRefundItem.getBarCode());
+                        }
+                    }
+                }catch (Exception e){
+                    log.error("refundAmountOrigin shop id:{} fail,cause:{}",shopId, Throwables.getStackTraceAsString(e));
+                }
+            }
+            pageNo++;
+        }
+    }
+
+    public void updateRefundInfos(Long shopId){
+        int pageNo = 1;
+        while(true){
+            MiddleRefundCriteria criteria = new MiddleRefundCriteria();
+            criteria.setShopId(shopId);
+            criteria.setPageNo(pageNo);
+            Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
+            if (!response.isSuccess()) {
+                log.error("find refund by criteria:{} fail,error:{}", criteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            List<RefundPaging> refundPagings = response.getResult().getData();
+            if (refundPagings.isEmpty()){
+                log.info("all refunds done pageNo is {}",pageNo);
+                break;
+            }
+            for (RefundPaging refundPaging:refundPagings){
+                try {
+                    Refund refund = refundPaging.getRefund();
+                    if (refund.getStatus()<0){
+                        log.info("shipment status <0");
+                        continue;
+                    }
+                    if (Objects.equals(refund.getRefundType(),4)){
+                        continue;
+                    }
+                    if (Objects.equals(refund.getRefundType(),3)){
+                        continue;
+                    }
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                    Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+                    List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+                    List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+                    for (RefundItem refundItem :refundItems){
+                        for (ShipmentItem shipmentItem:shipmentItems){
+                            if (Objects.equals(refundItem.getSkuCode(),shipmentItem.getSkuCode())){
+                                refundItem.setCleanPrice(shipmentItem.getCleanPrice());
+                                refundItem.setCleanFee(shipmentItem.getCleanFee());
+                            }
+                        }
+                    }
+                    Long refundFee = 0L;
+                    for (RefundItem refundItem:refundItems){
+                        refundFee = refundFee+(refundItem.getCleanPrice()*refundItem.getApplyQuantity());
+                    }
+                    //算出来的金额大于申请的金额，以申请的金额为准
+                    if (refundFee>=refund.getFee()){
+                       refundItems =  calcRefundItemFees(refundItems,refund.getFee());
+                    }else{
+                        refundItems = calcRefundItemFees(refundItems,refundFee);
+                        refund.setFee(refundFee);
+                    }
+                    Map<String,String> extraMap = refund.getExtra();
+                    extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(refundItems));
+                    refund.setExtra(extraMap);
+                    this.update(refund);
+                }catch (Exception e){
+                    log.error("updateRefundInfos shop id:{} fail,cause:{}",shopId, Throwables.getStackTraceAsString(e));
+                }
+            }
+            pageNo++;
+        }
+    }
+
+    public Response<Boolean> cancelRefund(Refund refund, OpenClientAfterSale afterSale){
+        //如果这个时候拉取过来的售后单是用户自己取消且为退货类型的可以更新售后单的状态
+        if (afterSale.getStatus() == OpenClientAfterSaleStatus.RETURN_CLOSED
+                && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+            //判断售后单状态
+            Flow flow = flowPicker.pickAfterSales();
+            //这个时候的状态可能为待完善,待同步恒康,同步恒康失败
+            if (flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation())
+                    || flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.SYNC_HK.toOrderOperation())) {
+                //直接售后单的状态为已取消即可
+                Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.CANCELED.getValue());
+                if (!updateR.isSuccess()) {
+                    log.error("fail to update refund(id={}) status to {}cause:{}",
+                            refund.getId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
+                    return Response.fail(updateR.getError());
+                } else {
+                    //回滚发货单的数量
+                    this.rollbackRefundQuantities(refund);
+                }
+                return Response.ok();
+            }
+            //已经同步恒康
+            if (flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
+                Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync cancel refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                    return Response.fail(syncRes.getError());
+                } else {
+                    //回滚发货单的数量
+                    this.rollbackRefundQuantities(refund);
+                }
+                return Response.ok();
+            }
+        }
+
+        log.error("cancel refund(id:{}) fail,because after sale:{}",refund.getId(),afterSale);
+        return Response.fail("refund.status.invalid");
+    }
 }

@@ -68,6 +68,13 @@ public class RefundExtra implements Serializable{
     private List<HkConfirmReturnItemInfo> hkConfirmItemInfos;
 
 
+    //退货仓ID
+    private Long refundWarehouseId;
+    //退货仓name
+    private String refundWareHouseName;
+
+    //退货仓code
+    private String returnStockCode;
     //是否为skx的退货单
     private Boolean isSkxRefund;
     //skx的退货单要同步skx和yyedi

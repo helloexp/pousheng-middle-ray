@@ -203,12 +203,13 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     }
 
     @Bean
-    public DispatchOrderChain dispatchOrderChain(AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
+    public DispatchOrderChain dispatchOrderChain(AppointWarehouseDispatchLink appointWarehouseDispatchLink,AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
                                                  AllWarehouseDispatchLink allWarehouseDispatchLink, OnlineSaleWarehouseDispatchLink onlineSaleWarehouseDispatchLink,
                                                  ProvinceInnerShopDispatchlink provinceInnerShopDispatchlink,ProvinceInnerWarehouseDispatchLink provinceInnerWarehouseDispatchLink,
                                                  ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
         DispatchOrderChain dispatchOrderChain = new DispatchOrderChain();
         List<DispatchOrderLink> dispatchOrderLinks = Lists.newArrayList();
+        dispatchOrderLinks.add(appointWarehouseDispatchLink);
         dispatchOrderLinks.add(appointShopDispatchLink);
         dispatchOrderLinks.add(onlineSaleWarehouseDispatchLink);
         dispatchOrderLinks.add(provinceInnerWarehouseDispatchLink);

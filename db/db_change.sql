@@ -253,6 +253,7 @@ CREATE TABLE `refund_amount` (
   PRIMARY KEY (`id`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
 
+<<<<<<< HEAD
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
 -- 添加未处理原因筛选
@@ -262,6 +263,15 @@ alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
 alter table parana_order_shipments add spu_codes varchar(512) default null comment '货号' after order_type, add province_id bigint(20) default null comment '省份id' after spu_codes, add city_id bigint(20) default null comment '市id' after province_id, add region_id bigint(20) default null comment '区id' after city_id;
 
 -- 添加订单前缀
+-- 补偿任务添加重试次数
+ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
+--添加未处理原因筛选
+alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
+
+--添加无头件查询条件
+alter table parana_order_shipments add spu_codes varchar(512) default null comment '货号' after order_type, add province_id bigint(20) default null comment '省份id' after spu_codes, add city_id bigint(20) default null comment '市id' after province_id, add region_id bigint(20) default null comment '区id' after city_id;
+
+--添加订单前缀
 alter table parana_shop_orders add order_code varchar(25) after id;
 alter table parana_shipments add shipment_code varchar(25) after id;
 alter table parana_order_shipments add shipment_code varchar(25) after shipment_id;

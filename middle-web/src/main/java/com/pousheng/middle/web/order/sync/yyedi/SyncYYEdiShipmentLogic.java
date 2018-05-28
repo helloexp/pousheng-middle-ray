@@ -87,7 +87,6 @@ public class SyncYYEdiShipmentLogic {
     @Autowired
     private OpenShopReadService openShopReadService;
 
-
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");

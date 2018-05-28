@@ -162,6 +162,8 @@ gd_map:
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
 
 index.queue.size: 500000
+## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
+open.client.sync.item.mapping.job.enable: true
 
 
 # mpos系统调用的api白名单

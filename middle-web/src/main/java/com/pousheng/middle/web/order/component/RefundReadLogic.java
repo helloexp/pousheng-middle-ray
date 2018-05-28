@@ -124,6 +124,17 @@ public class RefundReadLogic {
         return refundRes.getResult();
     }
 
+    public Refund findRefundByOutId(String refundOutId){
+        Response<Refund> refundRes = refundReadService.findByOutId(refundOutId);
+        if(!refundRes.isSuccess()){
+            log.error("find refund by out id:{} fail,error:{}",refundOutId,refundRes.getError());
+
+            throw new JsonResponseException(refundRes.getError());
+        }
+
+        return refundRes.getResult();
+    }
+
     public Refund findRefundByRefundCode(String refundCode){
         Response<Refund> refundRes = refundReadService.findByRefundCode(refundCode);
         if(!refundRes.isSuccess()){

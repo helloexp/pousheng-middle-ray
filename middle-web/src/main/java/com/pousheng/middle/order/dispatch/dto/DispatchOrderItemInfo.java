@@ -20,6 +20,11 @@ public class DispatchOrderItemInfo implements Serializable{
     private static final long serialVersionUID = -6197446559219078443L;
 
     /**
+     * 开发平台店铺id
+     */
+    private Long openShopId;
+
+    /**
      * 门店发货
      */
     private List<ShopShipment> shopShipments;

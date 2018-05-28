@@ -177,6 +177,9 @@ public class DispatchComponent {
                 Integer availStock = skuAndQuantityInfo.getQuantity();
                 //锁定库存
                 Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
+                if( lockStock < 0){
+                    lockStock = 0;
+                }
                 //这里先不考虑 availStock-lockStock - safeStock 负数情况
                 skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock -safeStock);
             }
@@ -206,6 +209,9 @@ public class DispatchComponent {
                 Integer availStock = skuAndQuantityInfo.getQuantity();
                 //mpos占用库存
                 Integer lockStock = Integer.valueOf(this.getMposSkuShopLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
+                if( lockStock < 0){
+                    lockStock = 0;
+                }
                 //这里先不考虑 availStock-lockStock-safeStock 负数情况
                 skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock-safeStock);
             }

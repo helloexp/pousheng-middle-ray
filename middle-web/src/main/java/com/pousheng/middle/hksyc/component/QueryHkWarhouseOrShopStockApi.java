@@ -68,6 +68,10 @@ public class QueryHkWarhouseOrShopStockApi {
         Map<String,String> map= Maps.newHashMap();
         if(!CollectionUtils.isEmpty(stockCodes)){
             map.put("stock_codes",Joiners.COMMA.join(stockCodes));
+        }else {
+            log.warn("do query stock info for:{} ,stock type:{} skip,because stockCodes is empty",skuCodes,stockType);
+            //新版查询库存必须传仓库范围，所以如果这里没有范围则直接返回空列表
+            return Lists.newArrayList();
         }
         if(CollectionUtils.isEmpty(skuCodes)){
             log.error("sku code info invalid");

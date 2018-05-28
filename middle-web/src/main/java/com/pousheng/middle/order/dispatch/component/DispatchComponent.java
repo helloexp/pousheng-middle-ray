@@ -19,6 +19,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
@@ -73,9 +74,17 @@ public class DispatchComponent {
     });
 
 
-    private static final Ordering<DispatchWithPriority> byPriority = Ordering.natural().onResultOf(new Function<DispatchWithPriority, Double>() {
+    private static final Ordering<DispatchWithPriority> byDistance = Ordering.natural().onResultOf(new Function<DispatchWithPriority, Double>() {
         @Override
         public Double apply(DispatchWithPriority input) {
+            return input.getDistance();
+        }
+    });
+
+
+    private static final Ordering<DispatchWithPriority> byPriority = Ordering.natural().onResultOf(new Function<DispatchWithPriority, Integer>() {
+        @Override
+        public Integer apply(DispatchWithPriority input) {
             return input.getPriority();
         }
     });
@@ -154,14 +163,15 @@ public class DispatchComponent {
     public void completeWarehouseTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
+            /*Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
             Map<String,String> extra = warehouse.getExtra();
             if(CollectionUtils.isEmpty(extra)||!extra.containsKey("safeStock")){
                 log.error("not find safe stock for warehouse:(id:{})",hkSkuStockInfo.getBusinessId());
                 throw new ServiceException("warehouse.safe.stock.not.find");
             }
             //安全库存
-            Integer safeStock = Integer.valueOf(extra.get("safeStock"));
+            Integer safeStock = Integer.valueOf(extra.get("safeStock"));*/
+            Integer safeStock = 0;//新版仓库暂时不取安全库存
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
                 //可用库存
                 Integer availStock = skuAndQuantityInfo.getQuantity();
@@ -267,6 +277,11 @@ public class DispatchComponent {
 
     public List<DistanceDto> sortDistanceDto(List<DistanceDto> distanceDtos){
         return bydiscount.sortedCopy(distanceDtos);
+    }
+
+
+    public List<DispatchWithPriority> sortDispatchWithDistance(List<DispatchWithPriority> dispatchWithPriorities){
+        return byDistance.sortedCopy(dispatchWithPriorities);
     }
 
 

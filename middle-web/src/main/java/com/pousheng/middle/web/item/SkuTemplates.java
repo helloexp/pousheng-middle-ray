@@ -356,7 +356,7 @@ public class SkuTemplates {
 
     @ApiOperation("批量取消货品mops打标")
     @RequestMapping(value = "/api/sku-template/batch/cancel/flag", method = RequestMethod.PUT)
-    public void batchCancelMposFlag(@RequestParam @OperationLogParam String skuTemplateIds) {
+    public void batchCancelMposFlag(@RequestParam String skuTemplateIds) {
         log.info("start batch cancel mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){

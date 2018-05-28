@@ -82,30 +82,31 @@ public class WarehouseRules {
     public Long create(@RequestBody ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
         List<ThinShop> thinShops = Lists.newArrayList(shops);
-        List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
-        List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
-        Set<String> companyCodes = new HashSet<>();
+         /*List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
+         List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
+         Set<String> companyCodes = new HashSet<>();
         List<Long> allChannelShopIds = Lists.newArrayListWithCapacity(thinShops.size());
-        openShops.forEach(openShop -> {
+         openShops.forEach(openShop -> {
             String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
-            if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+            if(openShop.getShopName().startsWith("mpos") && openShop.getAppKey().contains("-")){
                 companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
             }
             companyCodes.add(companyCode);
 
-            if(orderReadLogic.isAllChannelOpenShop(openShop.getId())){
+           if(orderReadLogic.isAllChannelOpenShop(openShop.getId())){
                 allChannelShopIds.add(openShop.getId());
             }
 
-        });
-        if (companyCodes.size()>1){
+        });*/
+        /*if (companyCodes.size()>1){
+            log.error("can not add more company code:{}",companyCodes);
             throw new JsonResponseException("shop.must.be.in.one.company");
-        }
-        if(!CollectionUtils.isEmpty(allChannelShopIds)){
+        }*/
+        /*if(!CollectionUtils.isEmpty(allChannelShopIds)){
             if(!Objects.equal(allChannelShopIds.size(),thinShops.size())){
                 throw new JsonResponseException("shop.must.be.all.channel");
             }
-        }
+        }*/
 
         Response<Long> r = warehouseShopRuleWriteService.batchCreate(thinShops);
         if (!r.isSuccess()) {
@@ -126,20 +127,21 @@ public class WarehouseRules {
     @OperationLogType("编辑")
     public Boolean update(@PathVariable Long ruleId,  @RequestBody ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
-        List<ThinShop> thinShops = Lists.newArrayList(shops);
+        /*List<ThinShop> thinShops = Lists.newArrayList(shops);
         List<Long> shopIds = thinShops.stream().map(ThinShop::getShopId).collect(Collectors.toList());
         List<OpenShop> openShops = orderReadLogic.findOpenShopByShopIds(shopIds);
         Set<String> companyCodes = new HashSet<>();
         openShops.forEach(openShop -> {
             String companyCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_COMPANY_CODE,openShop);
-            if(Arguments.isNull(companyCode) && openShop.getAppKey().contains("-")){
+            if(openShop.getShopName().startsWith("mpos") && openShop.getAppKey().contains("-")){
                 companyCode = openShop.getAppKey().substring(0,openShop.getAppKey().indexOf("-"));
             }
             companyCodes.add(companyCode);
         });
         if (companyCodes.size()>1){
+            log.error("can not add more company code:{}",companyCodes);
             throw new JsonResponseException("shop.must.be.in.one.company");
-        }
+        }*/
         Response<Boolean> r = warehouseShopRuleWriteService.batchUpdate(ruleId, Lists.newArrayList(shops));
         if (!r.isSuccess()) {
             log.error("failed to batch update warehouse rule(id={}) with shops:{}, error code:{}",

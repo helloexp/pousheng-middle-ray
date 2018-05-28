@@ -72,6 +72,7 @@ CREATE TABLE `pousheng_warehouse_rules` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `name` varchar(128) NULL COMMENT '规则描述, 按照优先级将各仓名称拼接起来',
   `shop_group_id` bigint(10) NOT NULL COMMENT '店铺组id',
+  `item_priority_type` tinyint(4)  NULL COMMENT '仓库优先级类型 1距离 2排序',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),

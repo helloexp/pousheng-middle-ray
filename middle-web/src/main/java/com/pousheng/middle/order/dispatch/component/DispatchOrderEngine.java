@@ -51,7 +51,7 @@ public class DispatchOrderEngine {
             boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context);
 
             if(success){
-                log.info("dispatchOrderItemInfo:{}" ,dispatchOrderItemInfo);
+                log.info("dispatch shop order id:{} success,dispatchOrderItemInfo:{}" ,shopOrder.getId(),dispatchOrderItemInfo);
                 //锁定库存及更新电商在售库存（当mpos仓和电商仓交集时）
                 Response<Boolean> lockRes = mposSkuStockLogic.lockStock(dispatchOrderItemInfo);
                 if(!lockRes.isSuccess()){

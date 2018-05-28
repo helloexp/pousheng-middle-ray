@@ -15,6 +15,7 @@ import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Shipment;
+
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

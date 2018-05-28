@@ -3,9 +3,12 @@ package com.pousheng.middle.web.warehouses;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.enums.WareHousePriorityType;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
 import com.pousheng.middle.warehouse.service.*;
@@ -15,16 +18,19 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.warehouses.component.WarehouseRuleComponent;
+import com.pousheng.middle.web.warehouses.dto.WarehouseRuleDto;
 import com.pousheng.middle.web.warehouses.dto.WarehouseRuleItemDto;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.common.exception.InvalidException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
@@ -62,10 +68,23 @@ public class WarehouseRuleItems {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
     @ApiOperation("根据规则ID查找仓库规则")
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<WarehouseRuleItemDto> findByRuleId(@PathVariable Long ruleId) {
+    public WarehouseRuleDto findByRuleId(@PathVariable Long ruleId){
+
+        WarehouseRuleDto ruleDto = new WarehouseRuleDto();
+
+        Response<WarehouseRule> ruleRes = warehouseRuleReadService.findById(ruleId);
+        if(!ruleRes.isSuccess()){
+            log.error("find warehouse rule by id:{} fail,error:{}",ruleId,ruleRes.getError());
+            throw new JsonResponseException(ruleRes.getError());
+        }
+
+        ruleDto.setWarehouseRule(ruleRes.getResult());
+
         Response<List<WarehouseRuleItem>> r = warehouseRuleItemReadService.findByRuleId(ruleId);
         if (!r.isSuccess()) {
             log.error("failed to find warehouse rule items for rule(id={}), error code:{}", ruleId, r.getError());
@@ -85,21 +104,24 @@ public class WarehouseRuleItems {
                 ruleItemDto.setOutCode(
                         warehouse.getExtra().get("outCode") == null ? "" : warehouse.getExtra().get("outCode"));
             }
+            ruleItemDto.setAddress(warehouse.getAddress());
+            ruleItemDto.setType(warehouse.getType());
+            ruleItemDto.setStatus(warehouse.getStatus());
             result.add(ruleItemDto);
         }
-        return result;
+        ruleDto.setWarehouseRuleItemDtos(result);
+        return ruleDto;
     }
 
-    @ApiOperation("添加派单规则仓库")
-    @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @OperationLogType("批量创建")
-    public Boolean save(@PathVariable @OperationLogParam Long ruleId,
-                        @RequestBody WarehouseRuleItem[] warehouseRuleItems) {
+    @RequestMapping(value = "/{type}",method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean save(@PathVariable Long ruleId,@PathVariable Integer type, @RequestBody WarehouseRuleItem[] warehouseRuleItems){
         ArrayList<WarehouseRuleItem> ruleItemArrayList = Lists.newArrayList(warehouseRuleItems);
         //判断店仓
-        checkAllChannel(ruleId,ruleItemArrayList);
-        Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(ruleId, ruleItemArrayList);
-        if (!r.isSuccess()) {
+        //checkAllChannel(ruleId,ruleItemArrayList);
+
+        checkShopWarehouseValid(ruleItemArrayList);
+        Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(ruleId, WarehouseRuleItemPriorityType.from(type), ruleItemArrayList);
+        if(!r.isSuccess()){
             log.error("failed to save rule(id={})'s warehouseRuleItems:{}, error code:{}",
                     ruleId, warehouseRuleItems,r.getError());
             throw new JsonResponseException(r.getError());
@@ -182,7 +204,8 @@ public class WarehouseRuleItems {
                     qList.toString());
         }
         warehouseRuleItems.addAll(warehouseRuleItemList);
-        Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(ruleId, warehouseRuleItems);
+        Response<Boolean> r = warehouseRuleItemWriteService.batchCreate(
+                ruleId, WarehouseRuleItemPriorityType.from(priority), warehouseRuleItems);
         if (!r.isSuccess()) {
             log.error("failed to save rule(id={})'s warehouseRuleItems:{}, error code:{}",
                     ruleId, warehouseRuleItemList,r.getError());
@@ -209,6 +232,29 @@ public class WarehouseRuleItems {
                 throw new JsonResponseException("can.not.contain.shop.warehouse");
             }
         }
+    }
 
+
+    private void checkShopWarehouseValid(ArrayList<WarehouseRuleItem> ruleItemArrayList){
+        //非全渠道则要判断仓范围中不能含有店仓
+        for (WarehouseRuleItem warehouseRuleItem : ruleItemArrayList){
+            Warehouse warehouse = warehouseCacher.findById(warehouseRuleItem.getWarehouseId());
+            String outCode = warehouse.getOutCode();
+            String companyId = warehouse.getCompanyId();
+            if(Strings.isNullOrEmpty(outCode)||Strings.isNullOrEmpty(companyId)){
+                log.error("warehouse(id:{}) company id:{} out code:{} invalid",warehouse.getId(),companyId,outCode);
+                throw new JsonResponseException("warehouse.company.id.or.out.code.invalid");
+            }
+            if(Objects.equal(warehouse.getType(),WarehouseType.TOTAL_WAREHOUSE.value())){
+                continue;
+            }
+            try {
+                middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(companyId));
+            }catch (Exception e){
+                log.error("find shop by  company id:{} out code:{} fail",companyId,outCode);
+                throw new JsonResponseException("not.find.related.shop");
+            }
+
+        }
     }
 }

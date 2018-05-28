@@ -15,5 +15,7 @@ public class WarehouseWithPriority implements Serializable {
 
     private Long warehouseId;
 
+    private Long shopId;
+
     private Integer priority;
 }

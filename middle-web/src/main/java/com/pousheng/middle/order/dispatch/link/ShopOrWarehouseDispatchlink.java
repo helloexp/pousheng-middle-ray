@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.dispatch.link;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.pousheng.middle.gd.Location;
@@ -12,9 +11,8 @@ import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.dto.*;
+import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
@@ -31,6 +29,8 @@ import org.springframework.util.CollectionUtils;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 门店或仓 发货规则（最后一条规则，最复杂场景）
@@ -59,20 +59,13 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...",shopOrder.getId());
 
-        String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
-        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
+        Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
 
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
         }
-
-        //全部的仓和门店的距离信息
-        List<DispatchWithPriority> allDispatchWithPriorities = Lists.newArrayList();
-
-        //全部的仓和门店
-        Table<String, String, Integer> allSkuCodeQuantityTable = HashBasedTable.create();
 
 
         //全部仓及商品信息
@@ -81,25 +74,121 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
             context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
-        //调用高德地图查询地址坐标
-        Location location = dispatchComponent.getLocation(address,addressRegion);
+        //根据不同的优先级类型走不同的处理逻辑
+        if(isDistanceType(warehouses4Address)){
+            handleDispatchWithPriority(dispatchOrderItemInfo,skuCodeAndQuantities,warehouseSkuCodeQuantityTable,current,context);
+        }else {
+            handleWithPriority(warehouses4Address,dispatchOrderItemInfo,skuCodeAndQuantities,warehouseSkuCodeQuantityTable,current,context);
+        }
 
-        ListMultimap<Long, String> byWarehouseId = ArrayListMultimap.create();
+        return false;
+    }
+
+
+   private void handleDispatchWithPriority(DispatchOrderItemInfo dispatchOrderItemInfo,List<SkuCodeAndQuantity> skuCodeAndQuantities,Table<Long, String, Integer> warehouseSkuCodeQuantityTable,
+                                           Multiset<String> current,Map<String, Serializable> context ){
+
+       String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+       String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
+
+       //全部的仓和门店的距离或优先级信息
+       List<DispatchWithPriority> allDispatchWithPriorities = Lists.newArrayList();
+
+       //全部的仓和门店
+       Table<String, String, Integer> allSkuCodeQuantityTable = HashBasedTable.create();
+
+       //调用高德地图查询地址坐标
+       Location location  = dispatchComponent.getLocation(address,addressRegion);
+
+       //最少拆单中发货件数最多的仓
+       for (Long warehouseId : warehouseSkuCodeQuantityTable.rowKeySet()) {
+           DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
+           String warehouseOrShopId = "warehouse:"+warehouseId;
+           dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
+           //根据距离优先级派单
+           dispatchWithPriority.setDistance(getDistance(warehouseId,AddressBusinessType.WAREHOUSE,location));
+           allDispatchWithPriorities.add(dispatchWithPriority);
+           //添加到 allSkuCodeQuantityTable
+           for (String skuCode : current.elementSet()) {
+               Object stockObject = warehouseSkuCodeQuantityTable.get(warehouseId,skuCode);
+               Integer stock = 0;
+               if(!Arguments.isNull(stockObject)){
+                   stock = (Integer) stockObject;
+               }
+               allSkuCodeQuantityTable.put(warehouseOrShopId,skuCode,stock);
+           }
+
+       }
+
+       List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithDistance(allDispatchWithPriorities);
+
+       //最远仓的距离
+       Double farthestWarehouseDistance = 0.0;
+       if(!CollectionUtils.isEmpty(warehouseDispatchWithPriority)){
+           DispatchWithPriority farthestWarehouse = warehouseDispatchWithPriority.get(warehouseDispatchWithPriority.size()-1);
+           farthestWarehouseDistance = farthestWarehouse.getDistance();
+       }
+       //全部门店及商品信息
+       Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
+       if(Arguments.isNull(shopSkuCodeQuantityTable)){
+           shopSkuCodeQuantityTable = HashBasedTable.create();
+           context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
+       }
+       //最少拆单中发货件数最多的仓
+       for (Long shopId : shopSkuCodeQuantityTable.rowKeySet()) {
+           DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
+           String warehouseOrShopId = "shop:"+shopId;
+           dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
+           //店铺的距离永远按比仓的距离远，实现 先仓后店
+           dispatchWithPriority.setDistance(getDistance(shopId,AddressBusinessType.SHOP,location)+farthestWarehouseDistance);
+           allDispatchWithPriorities.add(dispatchWithPriority);
+           //添加到 allSkuCodeQuantityTable
+           for (String skuCode : current.elementSet()) {
+               Object stockObject =shopSkuCodeQuantityTable.get(shopId,skuCode);
+               Integer stock = 0;
+               if(Arguments.notNull(stockObject)){
+                   stock = (Integer) stockObject;
+               }
+               allSkuCodeQuantityTable.put(warehouseOrShopId,skuCode,stock);
+           }
+       }
+
+
+       List<DispatchWithPriority> allDispatchWithPriority = dispatchComponent.sortDispatchWithDistance(allDispatchWithPriorities);
+
+       packageShipmentInfo(dispatchOrderItemInfo,allSkuCodeQuantityTable,skuCodeAndQuantities,allDispatchWithPriority);
+
+   }
+
+
+    private void handleWithPriority(Warehouses4Address warehouses4Address,DispatchOrderItemInfo dispatchOrderItemInfo,List<SkuCodeAndQuantity> skuCodeAndQuantities,Table<Long, String, Integer> warehouseSkuCodeQuantityTable,
+                                    Multiset<String> current,Map<String, Serializable> context){
+
+
+        //全部的仓和门店的距离或优先级信息
+        List<DispatchWithPriority> allDispatchWithPriorities = Lists.newArrayList();
+
+        //全部的仓和门店
+        Table<String, String, Integer> allSkuCodeQuantityTable = HashBasedTable.create();
+
+        List<WarehouseWithPriority> totalWarehouseWithPriorities = warehouses4Address.getTotalWarehouses();
+
+        Map<Long, WarehouseWithPriority>  warehouseIdMap = totalWarehouseWithPriorities.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(WarehouseWithPriority::getWarehouseId, it -> it));
+
+
+        List<WarehouseWithPriority> shopWarehouseWithPriorities = warehouses4Address.getShopWarehouses();
+
+        Map<Long, WarehouseWithPriority>  shopIdMap = shopWarehouseWithPriorities.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(WarehouseWithPriority::getShopId, it -> it));
+
         //最少拆单中发货件数最多的仓
         for (Long warehouseId : warehouseSkuCodeQuantityTable.rowKeySet()) {
-            //本仓库当前可以发货的数量
-            /*for (String skuCode : current.elementSet()) {
-                int required = current.count(skuCode);
-                int stock = warehouseSkuCodeQuantityTable.get(warehouseId, skuCode);
-                if(stock>=required){
-                    byWarehouseId.put(warehouseId,skuCode);
-                }
-            }*/
-
             DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
             String warehouseOrShopId = "warehouse:"+warehouseId;
             dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
-            dispatchWithPriority.setPriority(getDistance(warehouseId,AddressBusinessType.WAREHOUSE,location));
+            WarehouseWithPriority withPriority = warehouseIdMap.get(warehouseId);
+            dispatchWithPriority.setPriority(withPriority.getPriority());
             allDispatchWithPriorities.add(dispatchWithPriority);
             //添加到 allSkuCodeQuantityTable
             for (String skuCode : current.elementSet()) {
@@ -115,11 +204,11 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
         List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithPriority(allDispatchWithPriorities);
 
-        //最远仓的距离
-        Double farthestWarehouseDistance = 0.0;
+        //最小优先级
+        Integer leastWarehousePriority = 0;
         if(!CollectionUtils.isEmpty(warehouseDispatchWithPriority)){
             DispatchWithPriority farthestWarehouse = warehouseDispatchWithPriority.get(warehouseDispatchWithPriority.size()-1);
-            farthestWarehouseDistance = farthestWarehouse.getPriority();
+            leastWarehousePriority = farthestWarehouse.getPriority();
         }
         //全部门店及商品信息
         Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
@@ -127,23 +216,14 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             shopSkuCodeQuantityTable = HashBasedTable.create();
             context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         }
-        ListMultimap<Long, String> byShopId = ArrayListMultimap.create();
-        //最少拆单中发货件数最多的仓
+        //最少拆单中发货件数最多的店仓
         for (Long shopId : shopSkuCodeQuantityTable.rowKeySet()) {
-            //本仓库当前可以发货的数量
-            /*for (String skuCode : current.elementSet()) {
-                int required = current.count(skuCode);
-                int stock = shopSkuCodeQuantityTable.get(shopId, skuCode);
-                if(stock>=required){
-                    byShopId.put(shopId,skuCode);
-                }
-            }*/
-
             DispatchWithPriority dispatchWithPriority = new DispatchWithPriority();
             String warehouseOrShopId = "shop:"+shopId;
             dispatchWithPriority.setWarehouseOrShopId(warehouseOrShopId);
-            //店铺的距离永远按比仓的距离远，实现 先仓后店
-            dispatchWithPriority.setPriority(getDistance(shopId,AddressBusinessType.SHOP,location)+farthestWarehouseDistance);
+            WarehouseWithPriority withPriority = shopIdMap.get(shopId);
+            //店仓的优先级永远小于仓的
+            dispatchWithPriority.setPriority(leastWarehousePriority+withPriority.getPriority());
             allDispatchWithPriorities.add(dispatchWithPriority);
             //添加到 allSkuCodeQuantityTable
             for (String skuCode : current.elementSet()) {
@@ -161,7 +241,21 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
         packageShipmentInfo(dispatchOrderItemInfo,allSkuCodeQuantityTable,skuCodeAndQuantities,allDispatchWithPriority);
 
-        return false;
+    }
+
+
+
+    private Boolean isDistanceType(Warehouses4Address warehouses4Address){
+        //优先级类型
+        WarehouseRuleItemPriorityType priorityType = WarehouseRuleItemPriorityType.from(warehouses4Address.getWarehouseRule().getItemPriorityType());
+        switch (priorityType){
+            case DISTANCE:
+                return Boolean.TRUE;
+            case PRIORITY:
+                return Boolean.FALSE;
+        }
+        log.error("warehouses4Address priority type:{} invalid",warehouses4Address.getWarehouseRule().getItemPriorityType());
+        throw new ServiceException("priority.type.invalid");
     }
 
 
@@ -232,7 +326,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                     //减少库存需求
                     current.remove(skuCode, actual);
                 }
-                if(Objects.equal(type,"warehouse")){
+                if(Objects.equals(type,"warehouse")){
                     WarehouseShipment warehouseShipment = new WarehouseShipment();
                     warehouseShipment.setWarehouseId(id);
                     warehouseShipment.setWarehouseName(warehouseCacher.findById(id).getName());

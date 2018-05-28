@@ -138,12 +138,12 @@ public class CreateShipments {
             shipmentPreview.setWarehouseName(warehouse.getName());
             //判断所选仓库是否数据下单店铺的账套
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentPreview.getShopId());
-            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);
+           /* String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE,openShop);
             if (StringUtils.isEmpty(erpType)||Objects.equals(erpType,"hk")){
                 if (!orderReadLogic.validateCompanyCode(warehouseId,shipmentPreview.getShopId())){
                     throw new JsonResponseException("warehouse.must.be.in.one.company");
                 }
-            }
+            }*/
             String shopCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE,openShop);
             String shopName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME,openShop);
             String shopOutCode = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE,openShop);

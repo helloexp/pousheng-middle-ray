@@ -53,7 +53,7 @@ public class WarehouseChooser {
     @RpcConsumer
     private WarehouseAddressCacher warehouseAddressCacher;
 
-    @RpcConsumer
+    @Autowired
     private WarehouseCacher warehouseCacher;
 
     @Autowired

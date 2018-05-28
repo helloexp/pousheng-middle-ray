@@ -15,8 +15,10 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -29,6 +31,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -54,9 +57,12 @@ public class yyEDIOpenApi {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-
+    @RpcConsumer
+    private ShipmentWriteService shipmentWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     @Autowired
     private RefundReadLogic refundReadLogic;

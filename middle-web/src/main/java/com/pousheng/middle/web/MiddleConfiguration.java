@@ -202,8 +202,9 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return poushengPipelineConfigurer;
     }
 
-    @Bean
-    public DispatchOrderChain dispatchOrderChain(AppointWarehouseDispatchLink appointWarehouseDispatchLink,AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
+
+    /*@Bean
+    public DispatchOrderChain dispatchOrderChain(AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
                                                  AllWarehouseDispatchLink allWarehouseDispatchLink, OnlineSaleWarehouseDispatchLink onlineSaleWarehouseDispatchLink,
                                                  ProvinceInnerShopDispatchlink provinceInnerShopDispatchlink,ProvinceInnerWarehouseDispatchLink provinceInnerWarehouseDispatchLink,
                                                  ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
@@ -216,6 +217,22 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         dispatchOrderLinks.add(allWarehouseDispatchLink);
         dispatchOrderLinks.add(provinceInnerShopDispatchlink);
         dispatchOrderLinks.add(allShopDispatchlink);
+        dispatchOrderLinks.add(allShopDispatchlink);
+        dispatchOrderLinks.add(shopOrWarehouseDispatchlink);
+        dispatchOrderChain.setDispatchOrderLinks(dispatchOrderLinks);
+        return dispatchOrderChain;
+    }*/
+
+
+    @Bean
+    public DispatchOrderChain dispatchOrderChain(AppointWarehouseDispatchLink appointWarehouseDispatchLink,AppointShopDispatchLink appointShopDispatchLink, ShopWarehouseDispatchLink shopWarehouseDispatchLink,
+                                                 TotalWarehouseDispatchLink totalWarehouseDispatchLink,ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
+        DispatchOrderChain dispatchOrderChain = new DispatchOrderChain();
+        List<DispatchOrderLink> dispatchOrderLinks = Lists.newArrayList();
+        dispatchOrderLinks.add(appointWarehouseDispatchLink);
+        dispatchOrderLinks.add(appointShopDispatchLink);
+        dispatchOrderLinks.add(totalWarehouseDispatchLink);
+        dispatchOrderLinks.add(shopWarehouseDispatchLink);
         dispatchOrderLinks.add(shopOrWarehouseDispatchlink);
         dispatchOrderChain.setDispatchOrderLinks(dispatchOrderLinks);
         return dispatchOrderChain;

@@ -4,11 +4,14 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.JsonMapper;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
@@ -24,6 +27,7 @@ import java.util.Map;
 @Getter
 @ToString
 @EqualsAndHashCode
+@Slf4j
 public class Warehouse implements Serializable {
 
     private static final long serialVersionUID = 7864298121373633591L;
@@ -186,5 +190,20 @@ public class Warehouse implements Serializable {
             return Splitter.on('-').omitEmptyStrings().trimResults().limit(2).splitToList(code).get(1);
         }
         return null;
+    }
+
+
+    /**
+     * 获取仓库内码
+     *
+     * @return 仓库内码
+     */
+    public String getOutCode() {
+        Map<String, String>  extra = this.getExtra();
+        if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+            log.error("warehouse(id:{}) out code invalid",this.getId());
+            throw new ServiceException("warehouse.out.code.invalid");
+        }
+        return extra.get("outCode");
     }
 }

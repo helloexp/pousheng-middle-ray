@@ -15,6 +15,13 @@ import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
+import com.pousheng.middle.order.service.MiddleShipmentWriteService;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -60,6 +67,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -381,8 +394,8 @@ public class Shipments {
                                           @RequestParam(value = "dataList") String dataList) {
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
         List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
-        //判断是否是全渠道和mpos店铺订单，如果不是全渠道订单不能选择店仓
-        this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
+        //判断是否是全渠道到订单，如果不是全渠道订单不能选择店仓
+        //this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
         //创建订单不能选择店仓
         this.validateIsCreateOrderImportOrder(warehouseIds,shopOrderId);
         List<Long> shipmentIds = Lists.newArrayList();
@@ -394,12 +407,12 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
-            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
+            /*String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
             if (StringUtils.isEmpty(erpType) || Objects.equals(erpType, "hk")) {
                 if (!orderReadLogic.validateCompanyCode(warehouseId, shopOrder.getShopId())) {
                     throw new JsonResponseException("warehouse.must.be.in.one.company");
                 }
-            }
+            }*/
             //判断是否可以生成发货单
             for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
                 SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId, OrderLevel.SKU);
@@ -545,9 +558,9 @@ public class Shipments {
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
-        List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
+        //List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
         //判断是否是全渠道订单的售后单，如果不是全渠道订单的售后单，不能选择店仓
-        this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
+        //this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
             try {

@@ -38,5 +38,10 @@ public class DispatchContants {
      */
     public static final String REJECT_SHOP_IDS = "rejectShopIds";
 
+    /**
+     * 仓集合
+     */
+    public static final String WAREHOUSE_FOR_ADDRESS = "warehouseForAddress";
+
 
 }

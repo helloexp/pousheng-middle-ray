@@ -61,7 +61,7 @@ public class SkxItemOpenApi {
     @OpenMethod(key = "query.erp.onsale.item.api", paramNames = {"pageNo","pageSize","startAt","endAt"}, httpMethods = RequestMethod.GET)
     public Paging<OnSaleItem> getOnSaleItem(@NotNull(message = "page.no.is.null") Integer pageNo,@NotNull(message = "page.size.is.null")  Integer pageSize,
                                             @NotEmpty(message = "start.at.empty")  String startAt,@NotEmpty(message = "end.at.empty") String endAt) {
-        log.info("QUERY-ERP-ON-SALE-ITEM-START param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} ", pageNo,pageSize,startAt,endAt);
+        log.info("QUERY-ERP-ON-SALE-ITEM-START param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} skxOpenShopId:{} ", pageNo,pageSize,startAt,endAt,skxOpenShopId);
 
         Date startDate = DFT.parseDateTime(startAt).toDate();
         Date endDate = DFT.parseDateTime(endAt).toDate();
@@ -72,7 +72,7 @@ public class SkxItemOpenApi {
             throw new OPServerException(200,response.getError());
         }
 
-        log.info("QUERY-ERP-ON-SALE-ITEM-END param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} ", pageNo,pageSize,startAt,endAt);
+        log.info("QUERY-ERP-ON-SALE-ITEM-END param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} result:{}", pageNo,pageSize,startAt,endAt,response.getResult().getData());
         return transToOnSaleItem(response.getResult());
     }
 

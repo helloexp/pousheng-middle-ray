@@ -340,6 +340,7 @@ public class ErpSpuManager {
             erpSkuTemplateDao.logicDeleteBySkuCode(skuTemplate.getSkuCode());
             if (stts.contains(poushengSku.getMaterialId(), poushengSku.getSizeId())) {
                 skuTemplate.setId(stts.get(poushengSku.getMaterialId(), poushengSku.getSizeId()).getId());
+                skuTemplate.setType(null);//更新是保持原始类型
                 skuTemplateDao.update(skuTemplate);
             } else {
                 skuTemplateDao.create(skuTemplate);

@@ -410,3 +410,20 @@ CREATE TABLE `pousheng_zone_contracts` (
 )  COMMENT='区部联系人表';
 create index `idx_pousheng_zone_contracts_zone_name` on pousheng_zone_contracts(zone_name);
 create index `idx_pousheng_zone_contracts_zone_id` on pousheng_zone_contracts(zone_id);
+
+
+
+drop table if exists `pousheng_compensate_biz`;
+CREATE TABLE `pousheng_compensate_biz` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `biz_id` VARCHAR(128) NOT NULL COMMENT '业务id',
+  `biz_type` VARCHAR(128) NOT NULL COMMENT '业务类型',
+  `context` LONGTEXT  COMMENT '明细内容',
+  `status` VARCHAR(32) COMMENT '状态',
+  `cnt` tinyint(4) DEFAULT 0 COMMENT '失败次数',
+  `last_failed_reason` VARCHAR(500)  COMMENT '上次失败原因',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='业务处理表';
+

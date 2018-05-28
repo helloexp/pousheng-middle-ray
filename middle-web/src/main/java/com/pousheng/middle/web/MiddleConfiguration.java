@@ -16,10 +16,17 @@ import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
 import com.pousheng.middle.order.dispatch.link.*;
+import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizProcessor;
+import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizRegistryCenter;
+import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizService;
+import com.pousheng.middle.web.biz.annotation.PoushengMiddleCompensateAnnotation;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
+import io.terminus.open.client.center.OrderServiceRegistryCenter;
+import io.terminus.open.client.common.OpenClientService;
+import io.terminus.open.client.order.service.OpenClientOrderService;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
@@ -38,12 +45,15 @@ import io.terminus.parana.rule.RuleExecutorRegistry;
 import io.terminus.parana.user.ext.DefaultUserTypeBean;
 import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -109,6 +119,10 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
 
     @Autowired
     private LoginInterceptor loginInterceptor;
+
+
+    @Autowired
+    private ApplicationContext applicationContext;
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
@@ -256,6 +270,33 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     @Bean
     public UserTypeBean userTypeBean() {
         return new DefaultUserTypeBean();
+    }
+
+
+    @Bean(name = "pousheng-compensate-biz-registry-center-bean-processor")
+    public BeanPostProcessor beanPostProcessorForPoushengCompensateBiz() {
+        return new BeanPostProcessor() {
+            @Override
+            public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
+                if (!(bean instanceof PoushengMiddleCompensateBizRegistryCenter)) {
+                    return bean;
+                }
+                PoushengMiddleCompensateBizRegistryCenter registryCenter = (PoushengMiddleCompensateBizRegistryCenter) bean;
+                Map<String, Object> beanMap = applicationContext.getBeansWithAnnotation(PoushengMiddleCompensateAnnotation.class);
+                for (Object service : beanMap.values()) {
+                    if (service instanceof PoushengMiddleCompensateBizService) {
+                        PoushengMiddleCompensateAnnotation annotation = service.getClass().getAnnotation(PoushengMiddleCompensateAnnotation.class);
+                        registryCenter.register(annotation.bizType(), (PoushengMiddleCompensateBizService) service);
+                    }
+                }
+                return registryCenter;
+            }
+
+            @Override
+            public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
+                return bean;
+            }
+        };
     }
 
 }

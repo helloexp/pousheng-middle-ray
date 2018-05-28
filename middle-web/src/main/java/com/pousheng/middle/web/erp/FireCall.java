@@ -3,6 +3,7 @@ package com.pousheng.middle.web.erp;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -22,12 +23,14 @@ import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
+import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.events.item.BatchAsyncImportMposFlagEvent;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
@@ -76,6 +79,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -113,6 +117,9 @@ public class FireCall {
 
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
+
+    @Autowired
+    private WarehouseRuleReadService warehouseRuleReadService;
     private final ShopCacher shopCacher;
     private final WarehouseCacher warehouseCacher;
 
@@ -139,6 +146,8 @@ public class FireCall {
     private SkuTemplateReadService skuTemplateReadService;
     @Autowired
     private PushMposItemComponent pushMposItemComponent;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -318,7 +327,9 @@ public class FireCall {
      * @return 商品信息
      */
     @RequestMapping(value="/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size){
+    public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size,
+                                       @RequestParam Long companyId,@RequestParam String outerId){
+
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
         Map<String,String> params = Maps.newHashMap();
@@ -339,10 +350,55 @@ public class FireCall {
         SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
         ItemNameAndStock itemNameAndStock = new ItemNameAndStock();
         itemNameAndStock.setName(searchSkuTemplate.getName());
+
+
+
+        //2、查询店铺是否存在
+        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId,companyId);
+        ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
+        Long openShopId = currentShopExtraInfo.getOpenShopId();
+        if(Arguments.isNull(openShopId)){
+            log.error("shop(id:{}) not mapping open shop",currentShop.getId());
+            throw new JsonResponseException("shop.not.mapping.open.shop");
+        }
+
+        //3、查询门店的发货仓范围
+        Response<List<Long>> warehouseIdsRes = warehouseRuleReadService.findWarehouseIdsByShopId(openShopId);
+        if(!warehouseIdsRes.isSuccess()){
+            log.error("find warehouse rule item by shop id:{} fail,error:{}",openShopId,warehouseIdsRes.getError());
+            throw new JsonResponseException(warehouseIdsRes.getError());
+        }
+
+        List<Long> warehouseIds = warehouseIdsRes.getResult();
+
+        if(CollectionUtils.isEmpty(warehouseIds)){
+            itemNameAndStock.setCurrentShopQuantity(0L);
+            itemNameAndStock.setStockQuantity(0L);
+            return itemNameAndStock;
+
+        }
+        List<Warehouse> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
+        for (Long warehouseId : warehouseIds){
+            warehouseList.add(warehouseCacher.findById(warehouseId));
+        }
+
+        List<String> stockCodes = Lists.transform(warehouseList, new Function<Warehouse, String>() {
+            @Nullable
+            @Override
+            public String apply(@Nullable Warehouse warehouse) {
+                Map<String, String>  extra = warehouse.getExtra();
+                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
+                    log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+                    throw new JsonResponseException("warehouse.out.code.invalid");
+                }
+                return extra.get("outCode");
+            }
+        });
+
         String skuCode = searchSkuTemplate.getSkuCode();
         Long total = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(null,skuCodesList,0);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodesList,0);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
             //仓
             if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
@@ -357,19 +413,36 @@ public class FireCall {
 
                     //锁定库存
                     Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
+                    if( lockStock < 0L){
+                        lockStock= 0L;
+                    }
+                    Long warehouseStock = skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
+                    if(warehouseStock<0L){
+                        warehouseStock=0L;
+                    }
 
-                    total+=skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
+                    total+=warehouseStock;
                 }
             //店
             }else {
                 for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
                     //锁定库存
                     Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
+                    if( lockStock < 0L){
+                        lockStock = 0L;
+                    }
                     Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
                     ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                     //安全库存
                     Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
-                    total+=skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
+                    Long currentShopStock = skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
+                    if(currentShopStock<0L){
+                        currentShopStock=0L;
+                    }
+                    total+=currentShopStock;
+                    if(Objects.equals(shop.getId(),currentShop.getId())){
+                        itemNameAndStock.setCurrentShopQuantity(currentShopStock);
+                    }
                 }
             }
 

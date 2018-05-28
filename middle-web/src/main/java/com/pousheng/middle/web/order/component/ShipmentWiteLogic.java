@@ -333,7 +333,7 @@ public class ShipmentWiteLogic {
             return false;
         }
         //选择发货仓库
-        List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder.getShopId(), Long.valueOf(receiverInfo.getCityId()), skuCodeAndQuantities);
+        List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder, Long.valueOf(receiverInfo.getCityId()), skuCodeAndQuantities);
         if (Objects.isNull(warehouseShipments) || warehouseShipments.isEmpty()) {
             //库存不足，添加备注
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());

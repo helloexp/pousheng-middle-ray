@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.biz;
 
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import io.terminus.common.model.Response;
 
 /**
@@ -8,12 +9,12 @@ import io.terminus.common.model.Response;
  * Date: 2018/5/28
  * pousheng-middle
  */
-public interface PoushengMiddleCompensateBizService {
+public interface MiddleCompensateBizService {
 
     /**
      * 业务处理过程
      * @param poushengCompensateBiz 业务处理domain
      * @return
      */
-    public Response<Boolean> doProcess(PoushengCompensateBiz poushengCompensateBiz);
+    public void doProcess(PoushengCompensateBiz poushengCompensateBiz) throws BizException;
 }

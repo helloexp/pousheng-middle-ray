@@ -110,5 +110,30 @@ CREATE TABLE `pousheng_trade_express_code`
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY(`id`),
-  KEY `idx_express_code_name` (`express_name`)
+  KEY `idx_express_code_name` (`name`)
 )COMMENT='快递商代码';
+
+
+
+-- 库存任务分片表
+DROP TABLE IF EXISTS `pousheng_temp_sku_stock_push_partitioner`;
+CREATE TABLE `pousheng_temp_sku_stock_push_partitioner` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT,
+  `start`       BIGINT      NOT NULL COMMENT '开始id',
+  `end`         BIGINT      NOT NULL COMMENT '截止id',
+  `status`      VARCHAR(16) NOT NULL COMMENT '状态: INIT/PROCESSING/DONE',
+  `machine`     VARCHAR(16) NOT NULL ,
+  `created_at`  DATETIME    NOT NULL,
+  `updated_at`  DATETIME    NOT NULL,
+  PRIMARY KEY (`id`)
+);
+
+-- 库存任务推送表
+DROP TABLE IF EXISTS `pousheng_temp_sku_stock_push_id`;
+CREATE TABLE `pousheng_temp_sku_stock_push_id` (
+  `id`              BIGINT      NOT NULL AUTO_INCREMENT,
+  `sku_code`        VARCHAR(40) NOT NULL COMMENT 'sku编码',
+  `push_finish_at`  DATETIME    NULL COMMENT '完成推送时间',
+  PRIMARY KEY (`id`)
+);
+

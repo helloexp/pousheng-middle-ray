@@ -5,7 +5,9 @@ spring:
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:test;MODE=MySQL
-    schema: schema.sql
+    schema: classpath*:schema-batch-h2.sql, classpath*:schema.sql
+    initialize: true
+
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
@@ -18,7 +20,9 @@ mybatis:
       io.terminus.parana.auth.model,
       io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
       io.terminus.open.client.common.(mappings|token|shop).model,
-      io.terminus.open.client.item.model
+      io.terminus.open.client.item.model,
+      io.terminus.parana.user.address.model,
+      io.terminus.parana.user.model
 
 
 rpc.mode: false

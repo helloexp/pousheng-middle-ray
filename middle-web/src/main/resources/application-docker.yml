@@ -39,6 +39,9 @@ spring:
     name: pousheng-middle
   messages:
     basename: middle_messages
+  batch:
+    job:
+      enabled: false
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml

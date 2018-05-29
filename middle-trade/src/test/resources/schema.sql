@@ -417,7 +417,7 @@ drop table if exists `pousheng_compensate_biz`;
 CREATE TABLE `pousheng_compensate_biz` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
   `biz_id` VARCHAR(128) NOT NULL COMMENT '业务id',
-  `biz_type` VARCHAR(128) NOT NULL COMMENT '业务类型',
+  `biz_type` VARCHAR(128)  COMMENT '业务类型',
   `context` LONGTEXT  COMMENT '明细内容',
   `status` VARCHAR(32) COMMENT '状态',
   `cnt` tinyint(4) DEFAULT 0 COMMENT '失败次数',

@@ -3,12 +3,11 @@ package com.pousheng.middle.web.biz.job;
 import com.google.common.base.Stopwatch;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.Exception.BizException;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizProcessor;
+import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * 中台业务处理-处理从未处理过的任务的job
@@ -28,13 +26,13 @@ import java.util.Objects;
  */
 @Slf4j
 @RestController
-public class PoushengMiddleCompensateBizWaitHandleJob {
+public class CompensateBizWaitHandleJob {
     @Autowired
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     @Autowired
-    private PoushengMiddleCompensateBizProcessor poushengMiddleCompensateBizProcessor;
+    private CompensateBizProcessor compensateBizProcessor;
 
     @Scheduled(cron = "0 */1 * * * ?")
     @GetMapping("/api/compensate/biz/wait/handle/job")
@@ -68,7 +66,7 @@ public class PoushengMiddleCompensateBizWaitHandleJob {
                 }
                 //业务处理
                 try{
-                    poushengMiddleCompensateBizProcessor.doProcess(poushengCompensateBiz);
+                    compensateBizProcessor.doProcess(poushengCompensateBiz);
                     poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
                 }catch (BizException e0){
                     log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e0);

@@ -15,24 +15,24 @@ import java.util.Map;
  * @author tony
  */
 @Component
-public class PoushengMiddleCompensateBizRegistryCenter {
+public class CompensateBizRegistryCenter {
 
-    private Map<PoushengCompensateBizType, MiddleCompensateBizService> registry = new HashMap<>();
+    private Map<PoushengCompensateBizType, CompensateBizService> registry = new HashMap<>();
 
     /**
      * 注册相应的bean
      *
      * @param bizType
-     * @param middleCompensateBizService
+     * @param compensateBizService
      */
-    public void register(PoushengCompensateBizType bizType, MiddleCompensateBizService middleCompensateBizService) {
+    public void register(PoushengCompensateBizType bizType, CompensateBizService compensateBizService) {
         if (bizType == null) {
-            throw new IllegalArgumentException("middleCompensateBizService bizType not provided");
+            throw new IllegalArgumentException("compensateBizService bizType not provided");
         }
-        if (middleCompensateBizService == null) {
-            throw new IllegalArgumentException("middleCompensateBizService bizType can't be null");
+        if (compensateBizService == null) {
+            throw new IllegalArgumentException("compensateBizService bizType can't be null");
         }
-        registry.put(bizType, middleCompensateBizService);
+        registry.put(bizType, compensateBizService);
     }
 
     /**
@@ -40,8 +40,8 @@ public class PoushengMiddleCompensateBizRegistryCenter {
      * @param poushengCompensateBiz
      * @return
      */
-    public MiddleCompensateBizService getBizProcessor(PoushengCompensateBiz poushengCompensateBiz) {
-        MiddleCompensateBizService service = registry.get(poushengCompensateBiz.getBizType());
+    public CompensateBizService getBizProcessor(PoushengCompensateBiz poushengCompensateBiz) {
+        CompensateBizService service = registry.get(poushengCompensateBiz.getBizType());
         if (service == null) {
             throw new IllegalStateException("poushengMiddleCompensateBizService not registered of bizType:" + poushengCompensateBiz.getBizType());
         }

@@ -9,7 +9,7 @@ import io.terminus.common.model.Response;
  * Date: 2018/5/28
  * pousheng-middle
  */
-public interface MiddleCompensateBizService {
+public interface CompensateBizService {
 
     /**
      * 业务处理过程

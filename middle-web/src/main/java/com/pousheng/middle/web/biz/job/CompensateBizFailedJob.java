@@ -3,12 +3,11 @@ package com.pousheng.middle.web.biz.job;
 import com.google.common.base.Stopwatch;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.Exception.BizException;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizProcessor;
+import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +26,13 @@ import java.util.List;
  */
 @Slf4j
 @RestController
-public class PoushengMiddleCompensateBizFailedJob {
+public class CompensateBizFailedJob {
     @Autowired
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     @Autowired
-    private PoushengMiddleCompensateBizProcessor poushengMiddleCompensateBizProcessor;
+    private CompensateBizProcessor compensateBizProcessor;
 
     @Scheduled(cron = "0 */1 * * * ?")
     @GetMapping("/api/compensate/biz/failed/job")
@@ -68,7 +67,7 @@ public class PoushengMiddleCompensateBizFailedJob {
                 }
                 //业务处理
                 try{
-                    poushengMiddleCompensateBizProcessor.doProcess(poushengCompensateBiz);
+                    compensateBizProcessor.doProcess(poushengCompensateBiz);
                     poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(), PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.SUCCESS.name());
                 }catch (BizException e0){
                     log.error("process pousheng biz failed,id is {},bizType is {},caused by {}", poushengCompensateBiz.getId(), poushengCompensateBiz.getBizType(), e0.getMessage());

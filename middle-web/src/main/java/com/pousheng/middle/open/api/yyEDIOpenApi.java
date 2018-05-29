@@ -120,7 +120,7 @@ public class yyEDIOpenApi {
                     Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
                     if (!updateStatusRes.isSuccess()) {
                         log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                        throw new OPServerException(200,updateStatusRes.getError());
+                        throw new OPServerException(200, updateStatusRes.getError());
                     }
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
                     //封装更新信息
@@ -129,9 +129,9 @@ public class yyEDIOpenApi {
                     Map<String, String> extraMap = shipment.getExtra();
                     shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
                     shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
-                    if (Objects.isNull(yyEdiShipInfo.getWeight())){
+                    if (Objects.isNull(yyEdiShipInfo.getWeight())) {
                         shipmentExtra.setWeight(0L);
-                    }else{
+                    } else {
                         shipmentExtra.setWeight(yyEdiShipInfo.getWeight());
                     }
                     //通过恒康代码查找快递名称
@@ -145,13 +145,13 @@ public class yyEDIOpenApi {
                     Response<Boolean> updateRes = shipmentWriteService.update(update);
                     if (!updateRes.isSuccess()) {
                         log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                        throw new OPServerException(200,updateRes.getError());
+                        throw new OPServerException(200, updateRes.getError());
                     }
 
                     //同步pos单到恒康
-                    Map<String,Object> param = Maps.newHashMap();
-                    param.put(TradeConstants.SHIPMENT_ID,shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.YYEDI_SHIP_NOTIFICATION,null);
+                    Map<String, Object> param = Maps.newHashMap();
+                    param.put(TradeConstants.SHIPMENT_ID, shipment.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
                     YyEdiResponseDetail field = new YyEdiResponseDetail();
@@ -230,7 +230,7 @@ public class yyEDIOpenApi {
             update.setId(refund.getId());
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-            extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO,mapper.toJson(items));
+            extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO, mapper.toJson(items));
             update.setExtra(extra);
 
             Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
@@ -257,10 +257,10 @@ public class yyEDIOpenApi {
             refundWriteLogic.getThirdRefundResult(refund);
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
-            if (Objects.nonNull(error)&&Objects.nonNull(error.getErrorCode())){
+            if (Objects.nonNull(error) && Objects.nonNull(error.getErrorCode())) {
                 String reason = JsonMapper.nonEmptyMapper().toJson(error);
                 throw new OPServerException(200, reason);
-            }else{
+            } else {
                 error.setErrorCode("-100");
                 error.setErrorMsg(e.getMessage());
                 String reason = JsonMapper.nonEmptyMapper().toJson(error);
@@ -294,19 +294,20 @@ public class yyEDIOpenApi {
         }
 
     }
-    private boolean validateYYConfirmedItems( List<YYEdiRefundConfirmItem> items){
-        if (items==null||items.isEmpty()){
+
+    private boolean validateYYConfirmedItems(List<YYEdiRefundConfirmItem> items) {
+        if (items == null || items.isEmpty()) {
             return false;
-        }else{
-            int count =0;
-            for (YYEdiRefundConfirmItem item:items){
-                if (Objects.equals(item.getQuantity(),"0")){
+        } else {
+            int count = 0;
+            for (YYEdiRefundConfirmItem item : items) {
+                if (Objects.equals(item.getQuantity(), "0")) {
                     count++;
                 }
             }
-            if (count==items.size()){
+            if (count == items.size()) {
                 return false;
-            }else{
+            } else {
                 return true;
             }
         }

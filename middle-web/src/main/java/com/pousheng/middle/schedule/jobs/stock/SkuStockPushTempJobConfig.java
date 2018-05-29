@@ -15,6 +15,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.task.SimpleAsyncTaskExecutor;
 import org.springframework.core.task.TaskExecutor;
 
+import java.net.InetAddress;
+
 /**
  * Description: 第三方推送任务配置
  * Author: xiao
@@ -94,7 +96,13 @@ public class SkuStockPushTempJobConfig {
     @Bean
     public Job skuStockPushJob(JobBuilderFactory jobs,
                               @Qualifier("processStep") Step step) {
-        return jobs.get("任务: 推送库存至第三方平台").start(step).build();
+        String ip = "";
+        try {
+            ip = InetAddress.getLocalHost().getHostAddress();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return jobs.get("任务: 推送库存至第三方平台(" + ip + ")").start(step).build();
     }
 
 

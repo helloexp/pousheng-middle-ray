@@ -28,7 +28,6 @@ public class SkuStockPushTempProcessor implements ItemProcessor<String, String> 
             log.debug("Process skuCode {}", item);
         }
         log.info("Process skuCode {}", item);
-
         stockPusher.submit(Lists.newArrayList(item));
         return item;
     }

@@ -31,6 +31,7 @@
         <azure-storage.version>5.4.0</azure-storage.version>
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
         <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
+
     </properties>
 
     <dependencies>

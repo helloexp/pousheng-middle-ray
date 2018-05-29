@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="SkuStockPartitioner">
+    <sql id="tb">
+        pousheng_temp_sku_stock_push_partitioner
+    </sql>
+
+    <delete id="teardown">
+        TRUNCATE TABLE <include refid="tb"/>
+    </delete>
+
+
+
+    <insert id="create" parameterType="map" keyProperty="id">
+        INSERT INTO
+        <include refid="tb" />
+        (`start`, `end`, `status`, `created_at`, `updated_at`)
+        VALUES
+        (#{start}, #{end}, #{status}, now(), now())
+    </insert>
+
+    <select id="count" resultType="long">
+        SELECT count(1)
+        FROM <include refid="tb"/>
+        WHERE status = 'INIT'
+    </select>
+
+
+    <update id="update" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="status != null">status = #{status},</if>
+            updated_at = now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <update id="done" parameterType="long">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = 'DONE',
+            updated_at = now()
+        </set>
+        WHERE id = #{id} and status = 'ING'
+    </update>
+
+    <update id="lock" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = 'ING',
+            machine = #{machine},
+            updated_at = now()
+        </set>
+        WHERE id = #{id} and status = 'INIT'
+    </update>
+
+    <select id="fetch" resultType="map">
+        select *
+        from <include refid="tb"/> where status = 'INIT'
+        limit 0, 1
+    </select>
+
+
+    <select id="paging" parameterType="map" resultType="string">
+        select stock_code
+        from <include refid="tb"/>
+        <include refid="queryCondition"/>
+        limit #{offset}, #{limit}
+    </select>
+
+    <sql id="queryCondition">
+        where 1 = 1
+        <if test="start != null">and `id` &gt;= #{start}</if>
+        <if test="end != null">and `id` &lt;= #{end}</if>
+    </sql>
+</mapper>

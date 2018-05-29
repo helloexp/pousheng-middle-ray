@@ -255,13 +255,13 @@ CREATE TABLE `refund_amount` (
 
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
---添加未处理原因筛选
+-- 添加未处理原因筛选
 alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
 
---添加无头件查询条件
+-- 添加无头件查询条件
 alter table parana_order_shipments add spu_codes varchar(512) default null comment '货号' after order_type, add province_id bigint(20) default null comment '省份id' after spu_codes, add city_id bigint(20) default null comment '市id' after province_id, add region_id bigint(20) default null comment '区id' after city_id;
 
---添加订单前缀
+-- 添加订单前缀
 alter table parana_shop_orders add order_code varchar(25) after id;
 alter table parana_shipments add shipment_code varchar(25) after id;
 alter table parana_order_shipments add shipment_code varchar(25) after shipment_id;
@@ -277,6 +277,23 @@ alter table parana_order_refunds add order_code varchar(25) after order_id;
 alter table pousheng_stock_push_logs add sync_at DATETIME after cause;
 
 
+-- 创建两个临时表来处理库存
+-- 库存任务分片表
+CREATE TABLE `pousheng_temp_sku_stock_push_partitioner` (
+  `id`          BIGINT      NOT NULL AUTO_INCREMENT,
+  `start`       BIGINT      NOT NULL COMMENT '开始id',
+  `end`         BIGINT      NOT NULL COMMENT '截止id',
+  `status`      VARCHAR(16) NOT NULL COMMENT '状态: INIT/PROCESSING/DONE',
+  `machine`     VARCHAR(16) NOT NULL ,
+  `created_at`  DATETIME    NOT NULL,
+  `updated_at`  DATETIME    NOT NULL,
+  PRIMARY KEY (`id`)
+);
 
-
-
+-- 库存任务推送表
+CREATE TABLE `pousheng_temp_sku_stock_push_id` (
+  `id`              BIGINT      NOT NULL AUTO_INCREMENT,
+  `sku_code`        VARCHAR(40) NOT NULL COMMENT 'sku编码',
+  `push_finish_at`  DATETIME    NULL COMMENT '完成推送时间',
+  PRIMARY KEY (`id`)
+);

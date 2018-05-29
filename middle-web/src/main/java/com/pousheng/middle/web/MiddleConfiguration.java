@@ -16,6 +16,9 @@ import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
 import com.pousheng.middle.order.dispatch.link.*;
+import com.pousheng.middle.schedule.jobs.BatchConfig;
+import com.pousheng.middle.schedule.jobs.BatchJobProperties;
+import com.pousheng.middle.schedule.jobs.TaskConfig;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
@@ -85,6 +88,8 @@ import java.util.concurrent.*;
         AuthConfiguration.class,
         AuthApiConfiguration.class,
         OpenClientCenterAutoConfig.class,
+        BatchConfig.class,
+        TaskConfig.class,
         MultipartAutoConfiguration.class})
 
 @ComponentScan(
@@ -102,7 +107,7 @@ import java.util.concurrent.*;
 @EnableScheduling
 @EnableAutoConfiguration
 @EnableConfigurationProperties({
-        ErpOpenApiToken.class,GDMapToken.class
+        ErpOpenApiToken.class, GDMapToken.class, BatchJobProperties.class
 })
 @Slf4j
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {

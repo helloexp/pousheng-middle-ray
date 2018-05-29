@@ -10,7 +10,9 @@ import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
@@ -29,6 +31,11 @@ public class SkuStockThirdTaskTimeIndexer {
     private StockPusher stockPusher;
     @Autowired
     private SkuStockThirdExecutor skuStockThridExecutor;
+
+    @Value("${stock.sync.third.full.time.start:00:00:00}")
+    String stockSyncThirdFullTimeStart;
+    @Value("${stock.sync.third.full.time.end:00:30:00}")
+    String stockSyncThirdFullTimeEnd;
 
     @PostConstruct
     public void doIndex() {
@@ -49,7 +56,10 @@ public class SkuStockThirdTaskTimeIndexer {
 
                     if (capacity > 0) {
                         // fetch data
-                        Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity,2);
+                        String type;
+                        if(!isFullRunTime()) {
+                            type = "INCR";
+                            Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity, 2, type);
                             if (listRes.isSuccess() && !CollectionUtils.isEmpty(listRes.getResult())) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Fetch data {}",
@@ -57,9 +67,10 @@ public class SkuStockThirdTaskTimeIndexer {
                                                     .map(SkuStockTask::getId).collect(Collectors.toList()));
                                 }
 
-                            listRes.getResult().forEach(
-                                    skuStockTask -> skuStockThridExecutor.submit(new SotckPushTask(skuStockTask))
-                            );
+                                listRes.getResult().forEach(
+                                        skuStockTask -> skuStockThridExecutor.submit(new SotckPushTask(skuStockTask))
+                                );
+                            }
                         }
                     }
                     Thread.sleep(60000);
@@ -113,5 +124,24 @@ public class SkuStockThirdTaskTimeIndexer {
             log.error("update sku stock task by id:{} to third db over fail,error:{}", skuStockTask.getId(), updateRes.getError());
         }
 
+    }
+
+
+    /**
+     * @Description 是否在全量退第三方时间段内
+     * @Date        2018/5/29
+     * @param
+     * @return
+     */
+
+    private boolean isFullRunTime(){
+        java.time.LocalTime localTime = java.time.LocalTime.now();
+        java.time.LocalTime startTime = java.time.LocalTime.parse(stockSyncThirdFullTimeStart);
+        java.time.LocalTime endTime = java.time.LocalTime.parse(stockSyncThirdFullTimeEnd);
+
+        if(localTime.compareTo(startTime)>0 && localTime.compareTo(endTime)<0){
+            return true;
+        }
+        return false;
     }
 }

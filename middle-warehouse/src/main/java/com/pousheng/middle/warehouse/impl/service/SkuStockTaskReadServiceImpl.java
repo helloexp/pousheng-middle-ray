@@ -44,10 +44,10 @@ public class SkuStockTaskReadServiceImpl implements SkuStockTaskReadService {
     }
 
     @Override
-    public Response<List<SkuStockTask>> findWaiteHandleLimit(int qty,Integer status) {
+    public Response<List<SkuStockTask>> findWaiteHandleLimit(int qty,Integer status,String type) {
         try {
 
-            return Response.ok(skuStockTaskManager.findWaiteHandleLimit(qty,status));
+            return Response.ok(skuStockTaskManager.findWaiteHandleLimit(qty,status,type));
 
         } catch (Exception e) {
             log.error("findWaiteHandleLimit failed,cause:{}",Throwables.getStackTraceAsString(e));

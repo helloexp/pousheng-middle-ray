@@ -19,9 +19,12 @@ import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTimeFieldType;
+import org.joda.time.LocalTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -49,6 +52,11 @@ public class WarehouseStockApi {
 
     private static final DateTimeFormatter dft = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
+    @Value("${stock.sync.task.full.time.start:02:00:00}")
+    String stockSyncTaskFullTimeStart;
+    @Value("${stock.sync.task.full.time.end:02:30:00}")
+    String stockSyncTaskFullTimeEnd;
+
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
@@ -66,6 +74,12 @@ public class WarehouseStockApi {
         task.setSkuCount(total);
         task.setStockDtoList(stockDtos);
         task.setStatus(0);
+        //任务表类型，如果是2：00至2：30则认为是全量
+        if(this.isFullRunTime()){
+            task.setType("FULL");
+        }else{
+            task.setType("INCR");
+        }
 
         Response<Long> response = skuStockTaskWriteService.create(task);
         if (!response.isSuccess()) {
@@ -109,6 +123,24 @@ public class WarehouseStockApi {
         log.info("ERPSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
         this.onStockChanged(total,data);
 
+    }
+
+    /**
+     * @Description 是否在全量写入TASK时间段
+     * @Date        2018/5/29
+     * @param
+     * @return
+     */
+
+    private boolean isFullRunTime(){
+        java.time.LocalTime localTime = java.time.LocalTime.now();
+        java.time.LocalTime startTime = java.time.LocalTime.parse(stockSyncTaskFullTimeStart);
+        java.time.LocalTime endTime = java.time.LocalTime.parse(stockSyncTaskFullTimeEnd);
+
+        if(localTime.compareTo(startTime)>0 && localTime.compareTo(endTime)<0){
+            return true;
+        }
+        return false;
     }
 
 }

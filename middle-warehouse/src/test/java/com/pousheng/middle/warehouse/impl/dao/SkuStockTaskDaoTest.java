@@ -76,8 +76,9 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
     @Test
     public void findWaiteHandleLimit() {
         int qty = 1;
+        String type = "INCR";
 
-        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit(qty,1);
+        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit(qty,1,type);
         assertNotNull(skuStockTaskList);
     }
 

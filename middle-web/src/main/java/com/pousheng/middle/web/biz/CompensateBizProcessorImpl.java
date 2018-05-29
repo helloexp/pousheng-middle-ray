@@ -22,7 +22,8 @@ public class CompensateBizProcessorImpl implements CompensateBizProcessor {
 
 
     @Override
-    public void  doProcess(PoushengCompensateBiz poushengCompensateBiz) throws BizException {
+    public void
+    doProcess(PoushengCompensateBiz poushengCompensateBiz)  {
          this.getService(poushengCompensateBiz).doProcess(poushengCompensateBiz);
     }
 

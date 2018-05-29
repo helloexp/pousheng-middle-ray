@@ -18,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Slf4j
 public class HkNotifyService  implements CompensateBizService {
     @Override
-    public void doProcess(PoushengCompensateBiz poushengCompensateBiz) throws BizException {
+    public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
         // TODO: 2018/5/28 将来需要删除
         log.info("============================》");
     }

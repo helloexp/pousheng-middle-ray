@@ -122,7 +122,7 @@ CREATE TABLE `pousheng_temp_sku_stock_push_partitioner` (
   `start`       BIGINT      NOT NULL COMMENT '开始id',
   `end`         BIGINT      NOT NULL COMMENT '截止id',
   `status`      VARCHAR(16) NOT NULL COMMENT '状态: INIT/PROCESSING/DONE',
-  `machine`     VARCHAR(16) NOT NULL ,
+  `machine`     VARCHAR(16) DEFAULT NULL COMMENT '机器名称',
   `created_at`  DATETIME    NOT NULL,
   `updated_at`  DATETIME    NOT NULL,
   PRIMARY KEY (`id`)

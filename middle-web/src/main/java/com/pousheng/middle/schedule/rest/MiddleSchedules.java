@@ -5,6 +5,7 @@ import com.pousheng.middle.schedule.tasks.SkuStockPartitionerTask;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Author: xiao
  * Date: 2018/05/29
  */
+@ConditionalOnProperty(name = "stock.job.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @RestController
 @RequestMapping("/api/middle/schedule")

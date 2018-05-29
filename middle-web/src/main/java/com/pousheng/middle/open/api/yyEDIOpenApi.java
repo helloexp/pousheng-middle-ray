@@ -10,15 +10,11 @@ import com.pousheng.middle.open.api.dto.YyEdiResponseDetail;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -31,8 +27,8 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -56,12 +52,9 @@ public class yyEDIOpenApi {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-    @RpcConsumer
-    private ShipmentWriteService shipmentWriteService;
+
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
-    @Autowired
-    private OrderReadLogic orderReadLogic;
 
     @Autowired
     private RefundReadLogic refundReadLogic;
@@ -75,6 +68,9 @@ public class yyEDIOpenApi {
     private EventBus eventBus;
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
+
+    @Autowired
+    private ReceiveYyediResultLogic receiveYyediResultLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -90,6 +86,7 @@ public class yyEDIOpenApi {
     public void receiveYYEDIShipmentResult(String shipInfo) {
         List<YyEdiShipInfo> results = null;
         List<YyEdiResponseDetail> fields = Lists.newArrayList();
+        List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
         try {
             log.info("YYEDI-SHIPMENT-INFO-start param=======>{}", shipInfo);
@@ -116,43 +113,46 @@ public class yyEDIOpenApi {
                         count++;
                         continue;
                     }
-                    Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
-                    //更新状态
-                    Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
-                    if (!updateStatusRes.isSuccess()) {
-                        log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                        throw new OPServerException(200, updateStatusRes.getError());
-                    }
-                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                    //封装更新信息
-                    Shipment update = new Shipment();
-                    update.setId(shipment.getId());
-                    Map<String, String> extraMap = shipment.getExtra();
-                    shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
-                    shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
-                    if (Objects.isNull(yyEdiShipInfo.getWeight())) {
-                        shipmentExtra.setWeight(0L);
-                    } else {
-                        shipmentExtra.setWeight(yyEdiShipInfo.getWeight());
-                    }
-                    //通过恒康代码查找快递名称
-                    ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
-                    shipmentExtra.setShipmentCorpName(expressCode.getName());
-                    shipmentExtra.setShipmentDate(dt.toDate());
-                    shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                    update.setExtra(extraMap);
-                    //更新基本信息
-                    Response<Boolean> updateRes = shipmentWriteService.update(update);
-                    if (!updateRes.isSuccess()) {
-                        log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                        throw new OPServerException(200, updateRes.getError());
-                    }
+                    //校验成功，直接转存至okShipInfos
+                    okShipInfos.add(yyEdiShipInfo);
 
-                    //同步pos单到恒康
-                    Map<String, Object> param = Maps.newHashMap();
-                    param.put(TradeConstants.SHIPMENT_ID, shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
+                    // Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+                    // //更新状态
+                    // Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
+                    // if (!updateStatusRes.isSuccess()) {
+                    //     log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
+                    //     throw new OPServerException(200, updateStatusRes.getError());
+                    // }
+                    // ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                    // //封装更新信息
+                    // Shipment update = new Shipment();
+                    // update.setId(shipment.getId());
+                    // Map<String, String> extraMap = shipment.getExtra();
+                    // shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
+                    // shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
+                    // if (Objects.isNull(yyEdiShipInfo.getWeight())) {
+                    //     shipmentExtra.setWeight(0L);
+                    // } else {
+                    //     shipmentExtra.setWeight(yyEdiShipInfo.getWeight());
+                    // }
+                    // //通过恒康代码查找快递名称
+                    // ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
+                    // shipmentExtra.setShipmentCorpName(expressCode.getName());
+                    // shipmentExtra.setShipmentDate(dt.toDate());
+                    // shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                    // extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                    // update.setExtra(extraMap);
+                    // //更新基本信息
+                    // Response<Boolean> updateRes = shipmentWriteService.update(update);
+                    // if (!updateRes.isSuccess()) {
+                    //     log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
+                    //     throw new OPServerException(200, updateRes.getError());
+                    // }
+                    //
+                    // //同步pos单到恒康
+                    // Map<String, Object> param = Maps.newHashMap();
+                    // param.put(TradeConstants.SHIPMENT_ID, shipment.getId());
+                    // autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
                     continue;
@@ -161,6 +161,13 @@ public class yyEDIOpenApi {
             }
             if (count > 0) {
                 throw new ServiceException("shipment.receive.shipinfo.failed");
+            }
+            if(CollectionUtils.isNotEmpty(okShipInfos)){
+                Response<Long> response = receiveYyediResultLogic.createShipmentResultTask(okShipInfos);
+                if(!response.isSuccess()){
+                    log.error("yyEDI.shipments.api.createShipmentResultTask.failed,caused by {}",response.getError());
+                    throw new ServiceException("yyEDI.shipments.api.createShipmentResultTask.failed");
+                }
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());

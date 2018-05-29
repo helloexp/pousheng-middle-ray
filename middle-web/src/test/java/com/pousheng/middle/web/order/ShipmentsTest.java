@@ -141,7 +141,7 @@ public class ShipmentsTest extends AbstractRestApiTest {
 
 
     @Test
-    public void updateReceiverInfoAndBuyerNote() {
+    public void cancleShipment() {
         when(shipmentReadLogic.findShipmentById(anyLong())).thenReturn(new Shipment());
         when(shipmentWiteLogic.updateStatus(any(),any())).thenReturn(Response.ok());
         when(shipmentReadLogic.getShipmentExtra(any())).thenReturn(new ShipmentExtra());

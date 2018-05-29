@@ -17,5 +17,5 @@ public interface CompensateBizProcessor {
      * @param poushengCompensateBiz 业务处理domain
      * @return
      */
-    public void doProcess( PoushengCompensateBiz poushengCompensateBiz) throws BizException;
+    public void doProcess( PoushengCompensateBiz poushengCompensateBiz);
 }

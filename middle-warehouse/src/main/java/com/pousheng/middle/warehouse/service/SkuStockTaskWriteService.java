@@ -38,6 +38,12 @@ public interface SkuStockTaskWriteService {
      */
     Response<Boolean> updateTimeOutHandleTask();
 
+    /**
+     * 根据主键id更新SkuStockTask状态
+     * @param skuStockTaskId 任务
+     * @return 是否成功
+     */
+    Response<Boolean> updateStatusById(Long skuStockTaskId,int status);
 
 
 }

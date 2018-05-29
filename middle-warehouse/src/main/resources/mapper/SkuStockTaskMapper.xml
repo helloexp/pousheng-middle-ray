@@ -69,13 +69,15 @@
     </select>
 
 
-    <select id="findWaiteHandleLimit" resultMap="SkuStockTaskMap" >
+    <select id="findWaiteHandleLimit" resultMap="SkuStockTaskMap"  parameterType="map">
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE status = 0 ORDER BY created_at LIMIT 100
+        WHERE status = #{status} ORDER BY id asc LIMIT #{qty}
     </select>
 
-   <select id="findByIds" parameterType="list" resultMap="SkuStockTaskMap">
+
+
+    <select id="findByIds" parameterType="list" resultMap="SkuStockTaskMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
@@ -128,12 +130,12 @@
         WHERE id = #{id} AND status =0
     </update>
 
-    <update id="updateToHandleBatch" parameterType="java.util.List">
+    <update id="updateToHandleBatch" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET timeout_at = (now() + interval 10 MINUTE),status =1, updated_at = now()
-        WHERE status =0 AND id IN
-        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+        SET status =#{toStatus}, updated_at = now()
+        WHERE status =#{fromStatus} AND id IN
+        <foreach collection="ids" index="index" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </update>
@@ -145,6 +147,13 @@
         WHERE status = 1 AND timeout_at &lt; #{endAt}
     </update>
 
+
+    <update id="updateStatusById" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET status = #{status}, updated_at = now()
+        WHERE id = #{id}
+    </update>
 
 
 </mapper>

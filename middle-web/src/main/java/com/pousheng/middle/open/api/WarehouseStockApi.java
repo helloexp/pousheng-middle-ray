@@ -52,8 +52,8 @@ public class WarehouseStockApi {
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
-        log.info("HKSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
-
+        //log.info("HKSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
+        log.info("HKSTOCK -- begin to handle erp total:{}, ", total);
         List<ErpStock> erpStocks;
         try {
            erpStocks = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(data, LIST_OF_ERP_STOCK);

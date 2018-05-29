@@ -75,7 +75,9 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
 
     @Test
     public void findWaiteHandleLimit() {
-        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit();
+        int qty = 1;
+
+        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit(qty,1);
         assertNotNull(skuStockTaskList);
     }
 
@@ -89,6 +91,13 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
         assertEquals(skuStockTaskPaging.getData().get(0).getId(), skuStockTask.getId());
     }
 
+    @Test
+    public void testUpdateStatusById(){
+        Boolean toHandle = skuStockTaskDao.updateStatusById(skuStockTask.getId(),2);
+        assertEquals(toHandle,Boolean.TRUE);
+
+    }
+
     private SkuStockTask make() {
         SkuStockTask skuStockTask = new SkuStockTask();
 
@@ -98,7 +107,7 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
         skuStockTask.setSkuCount(300);
 
         try {
-            skuStockTask.setSkuJson("json");
+            skuStockTask.setSkuJson("");
         } catch (Exception e) {
             e.printStackTrace();
         }

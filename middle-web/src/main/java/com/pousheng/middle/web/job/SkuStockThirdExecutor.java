@@ -11,20 +11,20 @@ import java.util.concurrent.*;
 
 @Component
 @Slf4j
-public class SkuStockExecutor {
+public class SkuStockThirdExecutor {
 
     private final ExecutorService executorService;
     private final BlockingQueue<Runnable> blockingQueue;
 
     @Autowired
-    public SkuStockExecutor(@Value("${stock.task.queue.size: 50}")int queueSize,
-                            @Value("${stock.task.single.process.pool.core.size: 2}")int singleCorePoolSize,
-                            @Value("${stock.task.single.process.pool.max.size: 3}")int singleMaxPoolSize) {
+    public SkuStockThirdExecutor(@Value("${stock.task.queue.size: 50}")int queueSize,
+                                 @Value("${stock.task.single.process.pool.core.size: 2}")int singleCorePoolSize,
+                                 @Value("${stock.task.single.process.pool.max.size: 3}")int singleMaxPoolSize) {
         blockingQueue = new ArrayBlockingQueue<>(queueSize);
         this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * singleCorePoolSize, Runtime.getRuntime().availableProcessors() * singleMaxPoolSize, 60L, TimeUnit.MINUTES,
                 blockingQueue,
                 new ThreadFactoryBuilder().setNameFormat("stock-pusher-%d").build(),
-                (r, executor) -> log.error("stock push task {} is rejected", r));
+                (r, executor) -> log.error("stock push  third task {} is rejected", r));
     }
 
     public void submit(Runnable r) {

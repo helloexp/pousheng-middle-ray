@@ -227,7 +227,7 @@ public class MposJob {
     /**
      * 每隔10分钟尝试把超时处理中的任务状态回滚到待处理
      */
-    @Scheduled(cron = "0 */10 * * * ?")
+    //@Scheduled(cron = "0 */10 * * * ?")
     public void compensationSkuStockTask() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());

@@ -198,3 +198,6 @@ jd.yunding.secret: 6a0e@93204aefe45d47f6e488
 jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 
 is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
+stock.task.queue.size: ${STOCK_TASK_QUEUE.SIZE}
+stock.task.single.process.pool.core.size: ${STOCK_TASK_SINGLE.PROCESS_POOL_CORE_SIZE}
+stock.task.single.process.pool.max.size: ${STOCK_TASK_SINGLE_PROCESS_POOL_MAX_SIZE}

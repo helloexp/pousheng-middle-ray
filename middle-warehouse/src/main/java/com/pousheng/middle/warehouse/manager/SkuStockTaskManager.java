@@ -12,6 +12,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Created by songrenfei on 2018/5/24
@@ -28,9 +29,9 @@ public class SkuStockTaskManager {
      * 根据查询待处理的sku库存同步任务
      * @return sku库存同步任务
      */
-    public List<SkuStockTask> findWaiteHandleLimit() {
+    public List<SkuStockTask> findWaiteHandleLimit(int qty,Integer status) {
 
-        List<SkuStockTask> skuStockTasks = skuStockTaskDao.findWaiteHandleLimit();
+        List<SkuStockTask> skuStockTasks = skuStockTaskDao.findWaiteHandleLimit(qty,status);
 
         List<SkuStockTask> validSkuStockTasks = Lists.newArrayListWithCapacity(skuStockTasks.size());
         if (CollectionUtils.isEmpty(skuStockTasks)) {
@@ -44,16 +45,26 @@ public class SkuStockTaskManager {
             }
         }*/
 
-        List list = new ArrayList();
+        List<Long> ids = new ArrayList();
         for (SkuStockTask skuStockTask : skuStockTasks) {
-            list.add(skuStockTask.getId());
+            ids.add(skuStockTask.getId());
         }
-        if(skuStockTaskDao.updateToHandleBatch(list)) {
-            for (SkuStockTask skuStockTask : skuStockTasks) {
-                validSkuStockTasks.add(skuStockTask);
+
+        if (Objects.equals(status,0)){
+            if (skuStockTaskDao.updateToHandleBatch(ids,0,1)) {
+                for (SkuStockTask skuStockTask : skuStockTasks) {
+                    validSkuStockTasks.add(skuStockTask);
+                }
             }
         }
 
+        if (Objects.equals(status,2)){
+            if (skuStockTaskDao.updateToHandleBatch(ids,2,3)) {
+                for (SkuStockTask skuStockTask : skuStockTasks) {
+                    validSkuStockTasks.add(skuStockTask);
+                }
+            }
+        }
         return validSkuStockTasks;
     }
 

@@ -18,21 +18,25 @@ import java.util.List;
 public class SkuStockTaskDao extends MyBatisDao<SkuStockTask> {
 
 
-    public List<SkuStockTask> findWaiteHandleLimit(){
-        return getSqlSession().selectList(sqlId("findWaiteHandleLimit"));
+    public List<SkuStockTask> findWaiteHandleLimit(Integer qty,Integer status){
+        return getSqlSession().selectList(sqlId("findWaiteHandleLimit"),ImmutableMap.of("qty",qty,"status",status));
     }
+
 
     public boolean updateToHandle(Long id, Date timeOutAt){
-        return getSqlSession().update("updateToHandle", ImmutableMap.of("id",id,"timeoutAt",timeOutAt))> 0;
+        return getSqlSession().update(sqlId("updateToHandle"), ImmutableMap.of("id",id,"timeoutAt",timeOutAt))> 0;
     }
 
-    public boolean updateToHandleBatch(List list){
-        return getSqlSession().update("updateToHandleBatch",list)> 0;
+    public boolean updateToHandleBatch(List<Long> ids,Integer fromStatus,Integer toStatus){
+        return getSqlSession().update(sqlId("updateToHandleBatch"),ImmutableMap.of("ids",ids,"fromStatus",fromStatus,"toStatus",toStatus)) == ids.size();
     }
 
     public boolean updateTimeOutHandleTask(){
-        return getSqlSession().update("updateTimeOutHandleTask", ImmutableMap.of("timeoutAt", DateTime.now().plusMinutes(10).toDate(),"endAt",new Date()))> 0;
+        return getSqlSession().update(sqlId("updateTimeOutHandleTask"), ImmutableMap.of("timeoutAt", DateTime.now().plusMinutes(10).toDate(),"endAt",new Date()))> 0;
 
     }
 
+    public Boolean updateStatusById(Long skuStockTaskId, int status) {
+        return getSqlSession().update(sqlId("updateStatusById"),ImmutableMap.of("id",skuStockTaskId,"status",status))> 0;
+    }
 }

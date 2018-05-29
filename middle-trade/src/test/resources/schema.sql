@@ -421,7 +421,7 @@ CREATE TABLE `pousheng_compensate_biz` (
   `context` LONGTEXT  COMMENT '明细内容',
   `status` VARCHAR(32) COMMENT '状态',
   `cnt` tinyint(4) DEFAULT 0 COMMENT '失败次数',
-  `last_failed_reason` VARCHAR(500)  COMMENT '上次失败原因',
+  `last_failed_reason` TEXT  COMMENT '上次失败原因',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)

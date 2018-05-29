@@ -3,9 +3,8 @@ package com.pousheng.middle.web.biz.impl;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.Exception.BizException;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizService;
-import com.pousheng.middle.web.biz.annotation.PoushengMiddleCompensateAnnotation;
-import io.terminus.common.model.Response;
+import com.pousheng.middle.web.biz.CompensateBizService;
+import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -14,10 +13,10 @@ import org.springframework.stereotype.Service;
  * Date: 2018/5/28
  * pousheng-middle
  */
-@PoushengMiddleCompensateAnnotation(bizType = PoushengCompensateBizType.NOTIFY_HK)
+@CompensateAnnotation(bizType = PoushengCompensateBizType.NOTIFY_HK)
 @Service
 @Slf4j
-public class HkNotifyService  implements PoushengMiddleCompensateBizService{
+public class HkNotifyService  implements CompensateBizService {
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) throws BizException {
         // TODO: 2018/5/28 将来需要删除

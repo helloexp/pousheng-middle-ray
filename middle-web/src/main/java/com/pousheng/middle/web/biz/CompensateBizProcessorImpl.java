@@ -1,10 +1,7 @@
 package com.pousheng.middle.web.biz;
 
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.Exception.BizException;
-import io.terminus.common.model.Response;
-import io.terminus.open.client.order.service.OpenClientOrderService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,10 +13,10 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @Slf4j
-public class PoushengMiddleCompensateBizProcessorImpl implements PoushengMiddleCompensateBizProcessor {
+public class CompensateBizProcessorImpl implements CompensateBizProcessor {
 
     @Autowired
-    private PoushengMiddleCompensateBizRegistryCenter poushengMiddleCompensateBizRegistryCenter;
+    private CompensateBizRegistryCenter compensateBizRegistryCenter;
 
 
 
@@ -30,7 +27,7 @@ public class PoushengMiddleCompensateBizProcessorImpl implements PoushengMiddleC
     }
 
 
-    private PoushengMiddleCompensateBizService getService(PoushengCompensateBiz poushengCompensateBiz) {
-        return poushengMiddleCompensateBizRegistryCenter.getBizProcessor(poushengCompensateBiz);
+    private CompensateBizService getService(PoushengCompensateBiz poushengCompensateBiz) {
+        return compensateBizRegistryCenter.getBizProcessor(poushengCompensateBiz);
     }
 }

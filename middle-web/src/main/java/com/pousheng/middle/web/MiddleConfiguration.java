@@ -16,17 +16,13 @@ import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
 import com.pousheng.middle.order.dispatch.link.*;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizProcessor;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizRegistryCenter;
-import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizService;
-import com.pousheng.middle.web.biz.annotation.PoushengMiddleCompensateAnnotation;
+import com.pousheng.middle.web.biz.CompensateBizRegistryCenter;
+import com.pousheng.middle.web.biz.CompensateBizService;
+import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
-import io.terminus.open.client.center.OrderServiceRegistryCenter;
-import io.terminus.open.client.common.OpenClientService;
-import io.terminus.open.client.order.service.OpenClientOrderService;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
@@ -278,15 +274,15 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return new BeanPostProcessor() {
             @Override
             public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-                if (!(bean instanceof PoushengMiddleCompensateBizRegistryCenter)) {
+                if (!(bean instanceof CompensateBizRegistryCenter)) {
                     return bean;
                 }
-                PoushengMiddleCompensateBizRegistryCenter registryCenter = (PoushengMiddleCompensateBizRegistryCenter) bean;
-                Map<String, Object> beanMap = applicationContext.getBeansWithAnnotation(PoushengMiddleCompensateAnnotation.class);
+                CompensateBizRegistryCenter registryCenter = (CompensateBizRegistryCenter) bean;
+                Map<String, Object> beanMap = applicationContext.getBeansWithAnnotation(CompensateAnnotation.class);
                 for (Object service : beanMap.values()) {
-                    if (service instanceof PoushengMiddleCompensateBizService) {
-                        PoushengMiddleCompensateAnnotation annotation = service.getClass().getAnnotation(PoushengMiddleCompensateAnnotation.class);
-                        registryCenter.register(annotation.bizType(), (PoushengMiddleCompensateBizService) service);
+                    if (service instanceof CompensateBizService) {
+                        CompensateAnnotation annotation = service.getClass().getAnnotation(CompensateAnnotation.class);
+                        registryCenter.register(annotation.bizType(), (CompensateBizService) service);
                     }
                 }
                 return registryCenter;

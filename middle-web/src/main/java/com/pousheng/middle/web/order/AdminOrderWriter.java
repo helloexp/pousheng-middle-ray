@@ -32,11 +32,9 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.open.component.OpenClientOrderLogic;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.dto.OrderDetail;
+import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -108,6 +106,9 @@ public class AdminOrderWriter {
     @Autowired
     private OpenClientOrderLogic openClientOrderLogic;
 
+    @Autowired
+    private OrderReadService orderReadService;
+
     @Value("${logging.path}")
     private String filePath;
 
@@ -124,7 +125,7 @@ public class AdminOrderWriter {
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue()) && !Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())
-                && !Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
+                && !Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())) {
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
@@ -304,15 +305,16 @@ public class AdminOrderWriter {
             log.error("failed to parse receiverInfoMap:{}", data);
             throw new JsonResponseException("receiver.info.map.invalid");
         }
+        //更新收货信息以及更新订单表中的手机号字段（中台是使用outBuyerId作为手机号）
         Response<Boolean> response = middleOrderWriteService.updateReceiveInfos(id, receiverInfoMap, buyerNote);
         if (!response.isSuccess()) {
             log.error("failed to edit receiver info:{},shopOrderId is(={})", data, id);
             throw new JsonResponseException(response.getError());
         }
         //抛出一个事件用来修改手机号
-        ModifyMobileEvent event = new ModifyMobileEvent();
-        event.setShopOrderId(id);
-        eventBus.post(event);
+        // ModifyMobileEvent event = new ModifyMobileEvent();`
+        // event.setShopOrderId(id);
+        // eventBus.post(event);
     }
 
     /**
@@ -526,6 +528,7 @@ public class AdminOrderWriter {
 
     /**
      * 创建订单
+     *
      * @param openFullOrderInfo
      * @return
      */
@@ -544,6 +547,7 @@ public class AdminOrderWriter {
 
     /**
      * 导入订单
+     *
      * @param file
      * @return
      */
@@ -552,7 +556,7 @@ public class AdminOrderWriter {
     @OperationLogType("导入订单")
     public Response<Boolean> importMiddleOrder(MultipartFile file) {
         try {
-            Set<String> allowExts = Sets.newHashSet( "xlsx");
+            Set<String> allowExts = Sets.newHashSet("xlsx");
 
             String fileExtName = getExtName(file);
             if (!allowExts.contains(fileExtName)) {

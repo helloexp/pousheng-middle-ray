@@ -12,6 +12,7 @@ public class MiddleOrderFlowPicker {
 
     /**
      * 获取订单流程
+     *
      * @return flow
      */
     public Flow pickOrder() {
@@ -20,6 +21,7 @@ public class MiddleOrderFlowPicker {
 
     /**
      * 获取发货单流程
+     *
      * @return flow
      */
     public Flow pickShipments() {
@@ -28,6 +30,7 @@ public class MiddleOrderFlowPicker {
 
     /**
      * 获取售后单流程
+     *
      * @return flow
      */
     public Flow pickAfterSales() {
@@ -36,19 +39,28 @@ public class MiddleOrderFlowPicker {
 
     /**
      * 获取订单通知电商流程
+     *
      * @return
      */
-    public Flow pickEcpOrder(){ return MiddleFlowBook.ecpOrderFlow;}
+    public Flow pickEcpOrder() {
+        return MiddleFlowBook.ecpOrderFlow;
+    }
 
     /**
      * 获取发货单同步淘宝流程
+     *
      * @return
      */
-    public Flow pickSyncTaobao(){ return MiddleFlowBook.syncTaobaoFlow;}
+    public Flow pickSyncTaobao() {
+        return MiddleFlowBook.syncTaobaoFlow;
+    }
 
     /**
-     *  获取赠品活动列表状态
+     * 获取赠品活动列表状态
+     *
      * @return
      */
-    public Flow pickGiftActivity(){return MiddleFlowBook.activityFlow;}
+    public Flow pickGiftActivity() {
+        return MiddleFlowBook.activityFlow;
+    }
 }

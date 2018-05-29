@@ -118,7 +118,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
             originReceiverMap.putAll(receiverInfoMap);
             //将合并的map转化为json
             orderReceiverInfo.setReceiverInfoJson(objectMapper.writeValueAsString(originReceiverMap));
-            //在一个事务中更新收货信息,买家备注
+            //在一个事务中更新收货信息,买家备注及手机号
             middleOrderManager.updateReceiverInfoAndBuyerNote(shopOrderId, orderReceiverInfo, buyerNote);
 
             return Response.ok();

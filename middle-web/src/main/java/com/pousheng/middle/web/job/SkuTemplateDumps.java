@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Author: songrenfei
  * Date: 2017-11-11
  */
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @RestController
 @RequestMapping("/api/search/sku/template/")
 @Slf4j

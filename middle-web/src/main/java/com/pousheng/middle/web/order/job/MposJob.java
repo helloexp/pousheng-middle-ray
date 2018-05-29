@@ -33,6 +33,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -56,6 +57,7 @@ import java.util.concurrent.TimeUnit;
  * 定时拉取Mpos订单跟踪发货单状态
  */
 @Slf4j
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @RestController
 public class MposJob {

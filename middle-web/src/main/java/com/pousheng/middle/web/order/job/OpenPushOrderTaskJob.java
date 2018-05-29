@@ -11,6 +11,7 @@ import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -25,6 +26,7 @@ import java.util.Map;
  * Date: 2018/1/22
  * pousheng-middle
  */
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @Slf4j
 @RestController

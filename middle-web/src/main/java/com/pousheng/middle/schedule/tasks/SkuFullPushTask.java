@@ -14,6 +14,7 @@ import org.springframework.batch.core.explore.JobExplorer;
 import org.springframework.batch.core.explore.support.SimpleJobExplorer;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +30,8 @@ import static java.util.Objects.isNull;
  * Author: xiao
  * Date: 2018/05/29
  */
+
+@ConditionalOnProperty(name = "stock.job.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @Component
 public class SkuFullPushTask {

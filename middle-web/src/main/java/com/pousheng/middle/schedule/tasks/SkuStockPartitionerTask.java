@@ -9,6 +9,7 @@ import org.springframework.batch.core.JobParameters;
 import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Component;
  * Author: xiao
  * Date: 2018/05/29
  */
+@ConditionalOnProperty(name = "stock.job.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @Component
 public class SkuStockPartitionerTask {

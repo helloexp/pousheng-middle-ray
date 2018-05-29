@@ -29,8 +29,8 @@ spring:
     initialize: false
     continue-on-error: false
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 10
+      maximum-pool-size: 100
+      minimum-idle: 25
       idle-timeout: 30000
       max-lifetime: 30000
       connection-timeout: 30000
@@ -138,7 +138,7 @@ taobao.token:
 curator:
   zk.host: ${POUSHENG_ZK_HOST}
   zk.port: ${POUSHENG_ZK_PORT}
-  leader.path: /middle
+  leader.path: ${POUSHENG_ZK_PATH}
 ## 这个是开启写入订单和售后单，供roger进行压测，压测后去掉这个配置
 open.client.import.enable: true
 
@@ -222,3 +222,12 @@ stock.sync.middle.full.time.end: ${STOCK_SYNC_MIDDLE_FULL_TIME_END}
 #中台全量推送第三方时间
 stock.sync.third.full.time.start: ${STOCK_SYNC_THIRD_FULL_TIME_START}
 stock.sync.third.full.time.end: ${STOCK_SYNC_THIRD_FULL_TIME_END}
+
+trade.job.enable: ${TRADE_JOB_ENABLE}
+stock.job.enable: ${STOCK_JOB_ENABLE}
+
+open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.item.mapping.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.item.open.id.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.order.job.enable: ${TRADE_JOB_ENABLE}

@@ -647,10 +647,17 @@ public class Shipments {
             log.error("cancel shipment(id:{}) fail,error:{}", shipmentId, cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
         }
+        //获取发货仓信息
+        ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
+
+        Response<Boolean> unlockRlt =  mposSkuStockLogic.unLockStock(shipment);
+        if (!unlockRlt.isSuccess()){
+            log.error("this shipment can not unlock stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
+        }
         //解锁库存
-        UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
-        unLockStockEvent.setShipment(shipment);
-        eventBus.post(unLockStockEvent);
+        // UnLockStockEvent unLockStockEvent = new UnLockStockEvent();
+        // unLockStockEvent.setShipment(shipment);
+        // eventBus.post(unLockStockEvent);
     }
 
     /**

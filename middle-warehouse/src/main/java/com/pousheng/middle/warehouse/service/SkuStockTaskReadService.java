@@ -25,7 +25,7 @@ public interface SkuStockTaskReadService {
      * 根据查询待处理的sku库存同步任务
      * @return sku库存同步任务
      */
-    Response<List<SkuStockTask>> findWaiteHandleLimit(int qty,Integer status);
+    Response<List<SkuStockTask>> findWaiteHandleLimit(int qty,Integer status,String type);
 
 
 

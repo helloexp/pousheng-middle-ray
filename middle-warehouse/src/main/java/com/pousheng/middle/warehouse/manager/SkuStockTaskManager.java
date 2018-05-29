@@ -30,9 +30,9 @@ public class SkuStockTaskManager {
      *
      * @return sku库存同步任务
      */
-    public List<SkuStockTask> findWaiteHandleLimit(int qty, Integer status) {
+    public List<SkuStockTask> findWaiteHandleLimit(int qty,Integer status,String type) {
 
-        List<SkuStockTask> skuStockTasks = skuStockTaskDao.findWaiteHandleLimit(qty, status);
+        List<SkuStockTask> skuStockTasks = skuStockTaskDao.findWaiteHandleLimit(qty,status,type);
 
         List<SkuStockTask> validSkuStockTasks = Lists.newArrayListWithCapacity(skuStockTasks.size());
         if (CollectionUtils.isEmpty(skuStockTasks)) {

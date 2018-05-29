@@ -57,6 +57,8 @@ public class SkuStockTask implements Serializable {
 
     private Date updatedAt;
 
+    private String Type;
+
 
     /**
      * json转对象

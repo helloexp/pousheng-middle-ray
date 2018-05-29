@@ -2,6 +2,7 @@ package com.pousheng.middle.warehouse.impl.dao;
 
 import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
+import com.pousheng.middle.warehouse.model.SkuStockUpdated;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.joda.time.DateTime;
 import org.springframework.stereotype.Repository;
@@ -10,19 +11,20 @@ import java.util.Date;
 import java.util.List;
 
 /**
- * Author: songrenfei
- * Desc: sku库存同步任务Dao类
- * Date: 2018-05-24
+ * Author: lyj
+ * Desc: sku库存同步任务临时表Dao类
+ * Date: 2018-05-29
  */
 @Repository
-public class SkuStockTaskDao extends MyBatisDao<SkuStockTask> {
-
-
-    public List<SkuStockTask> findWaiteHandleLimit(Integer qty,Integer status,String type){
-        return getSqlSession().selectList(sqlId("findWaiteHandleLimit"),ImmutableMap.of("qty",qty,"status",status,"type",type));
+public class SkuStockUpdatedDao extends MyBatisDao<SkuStockUpdated> {
+    public List<String> findWaiteHandle(){
+        return getSqlSession().selectList(sqlId("findWaiteHandle"));
+    }
+    public boolean deleteAll(){
+        return getSqlSession().delete(sqlId("deleteAll"))>=0;
     }
 
-
+/*
     public boolean updateToHandle(Long id, Date timeOutAt){
         return getSqlSession().update(sqlId("updateToHandle"), ImmutableMap.of("id",id,"timeoutAt",timeOutAt))> 0;
     }
@@ -38,5 +40,5 @@ public class SkuStockTaskDao extends MyBatisDao<SkuStockTask> {
 
     public Boolean updateStatusById(Long skuStockTaskId, int status) {
         return getSqlSession().update(sqlId("updateStatusById"),ImmutableMap.of("id",skuStockTaskId,"status",status))> 0;
-    }
+    }*/
 }

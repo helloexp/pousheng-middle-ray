@@ -10,9 +10,11 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 
 import javax.annotation.PostConstruct;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -29,6 +31,11 @@ public class SkuStockTaskTimeIndexer {
     private SkuStockTaskWriteService skuStockTaskWriteService;
     @Autowired
     private SkuStockExecutor skuStockExecutor;
+
+    @Value("${stock.sync.middle.full.time.start:00:00:00}")
+    String stockSyncMiddleFullTimeStart;
+    @Value("${stock.sync.middle.full.time.end:00:30:00}")
+    String stockSyncMiddleFullTimeEnd;
 
     @PostConstruct
     public void doIndex() {
@@ -51,7 +58,6 @@ public class SkuStockTaskTimeIndexer {
         }
 
 
-
         @Override
         public void run() {
             Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
@@ -64,7 +70,13 @@ public class SkuStockTaskTimeIndexer {
 
                     if (capacity > 0) {
                         // fetch data
-                        Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity,0);
+                        String type;
+                        if(isFullRunTime()) {
+                            type = "FULL";
+                        }else{
+                            type = "INCR";
+                        }
+                        Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity,0,type);
                             if (listRes.isSuccess() && !CollectionUtils.isEmpty(listRes.getResult())) {
                                 if (log.isDebugEnabled()) {
                                     log.debug("Fetch data {}",
@@ -117,6 +129,7 @@ public class SkuStockTaskTimeIndexer {
             }
             log.debug("start update sku stock task (id:{}) to middle db status to 2", skuStockTask.getId());
             Response<Boolean> updateRes = skuStockTaskWriteService.updateStatusById(skuStockTask.getId(),2);
+
             if (!updateRes.isSuccess()) {
                 log.error("update sku stock task by id:{} to middle db  over fail,error:{}", skuStockTask.getId(), updateRes.getError());
             }
@@ -126,4 +139,24 @@ public class SkuStockTaskTimeIndexer {
         }
 
     }
+
+    /**
+     * @Description 是否在全量退第三方时间段内
+     * @Date        2018/5/29
+     * @param
+     * @return
+     */
+
+    private boolean isFullRunTime(){
+        LocalTime localTime = LocalTime.now();
+        LocalTime startTime = LocalTime.parse(stockSyncMiddleFullTimeStart);
+        LocalTime endTime = LocalTime.parse(stockSyncMiddleFullTimeEnd);
+
+        if(localTime.compareTo(startTime)>0 && localTime.compareTo(endTime)<0){
+            return true;
+        }
+        return false;
+    }
+
+
 }

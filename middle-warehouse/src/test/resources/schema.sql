@@ -197,3 +197,15 @@ CREATE TABLE `pousheng_sku_stock_tasks` (
   PRIMARY KEY (`id`),
   KEY `idx_sst_status` (`status`)
 )COMMENT='sku库存同步任务';
+
+drop table if exists `pousheng_temp_sku_stock_updated`;
+CREATE TABLE `pousheng_temp_sku_stock_updated` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `task_id` bigint(20) NOT NULL COMMENT '库存同步任务ID',
+  `sku_code` varchar(40) DEFAULT '',
+  `status` varchar(10) DEFAULT '' COMMENT '状态, 0 待处理，1处理完成',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sku_code` (`sku_code`)
+) COMMENT='sku库存同步任务临时表';

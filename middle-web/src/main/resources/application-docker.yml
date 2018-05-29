@@ -207,3 +207,15 @@ is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
 stock.task.queue.size: ${STOCK_TASK_QUEUE.SIZE}
 stock.task.single.process.pool.core.size: ${STOCK_TASK_SINGLE.PROCESS_POOL_CORE_SIZE}
 stock.task.single.process.pool.max.size: ${STOCK_TASK_SINGLE_PROCESS_POOL_MAX_SIZE}
+
+#恒康全量同步中台时间
+stock.sync.task.full.time.start: ${STOCK_SYNC_TASK_FULL_TIME_START}
+stock.sync.task.full.time.end: ${STOCK_SYNC_TASK_FULL_TIME_END}
+
+#中台全量更新库存时间
+stock.sync.middle.full.time.start: ${STOCK_SYNC_MIDDLE_FULL_TIME_START}
+stock.sync.middle.full.time.end: ${STOCK_SYNC_MIDDLE_FULL_TIME_END}
+
+#中台全量推送第三方时间
+stock.sync.third.full.time.start: ${STOCK_SYNC_THIRD_FULL_TIME_START}
+stock.sync.third.full.time.end: ${STOCK_SYNC_THIRD_FULL_TIME_END}

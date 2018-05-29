@@ -60,4 +60,17 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
             return Response.fail("poushengCompensateBiz.update.status.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> updateLastFailedReason(Long id, String lastFailedReason) {
+        try {
+            PoushengCompensateBiz biz = new PoushengCompensateBiz();
+            biz.setId(id);
+            biz.setLastFailedReason(lastFailedReason);
+            return Response.ok(poushengCompensateBizDao.update(biz));
+        } catch (Exception e) {
+            log.error("update poushengCompensateBiz failed, id:{},lastFailedReason:{}, cause:{}", id,lastFailedReason, Throwables.getStackTraceAsString(e));
+            return Response.fail("poushengCompensateBiz.update.fail");
+        }
+    }
 }

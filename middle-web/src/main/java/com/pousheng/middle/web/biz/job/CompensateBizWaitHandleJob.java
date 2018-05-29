@@ -7,6 +7,7 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.PoushengMiddleCompensateBizProcessor;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -66,13 +67,19 @@ public class PoushengMiddleCompensateBizWaitHandleJob {
                     continue;
                 }
                 //业务处理
-                Response<Boolean> processResponse =  poushengMiddleCompensateBizProcessor.doProcess(PoushengCompensateBizType.valueOf(poushengCompensateBiz.getBizType()),poushengCompensateBiz);
-                if (!processResponse.isSuccess()){
-                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),processResponse.getError());
-                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
-                }else{
+                try{
+                    poushengMiddleCompensateBizProcessor.doProcess(poushengCompensateBiz);
                     poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
+                }catch (BizException e0){
+                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e0);
+                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
+                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),e0.getMessage());
+                }catch (Exception e1){
+                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e1);
+                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
+                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),e1.getMessage());
                 }
+
             }
             pageNo++;
 

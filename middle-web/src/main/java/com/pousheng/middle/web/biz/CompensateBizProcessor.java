@@ -2,6 +2,7 @@ package com.pousheng.middle.web.biz;
 
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import io.terminus.common.model.Response;
 
 /**
@@ -13,9 +14,8 @@ public interface PoushengMiddleCompensateBizProcessor {
 
     /**
      * 业务处理过程
-     * @param bizType 业务处理类型
      * @param poushengCompensateBiz 业务处理domain
      * @return
      */
-    public Response<Boolean> doProcess(PoushengCompensateBizType bizType, PoushengCompensateBiz poushengCompensateBiz);
+    public void doProcess( PoushengCompensateBiz poushengCompensateBiz) throws BizException;
 }

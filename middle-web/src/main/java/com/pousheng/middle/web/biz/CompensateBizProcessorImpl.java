@@ -2,6 +2,7 @@ package com.pousheng.middle.web.biz;
 
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.order.service.OpenClientOrderService;
 import lombok.extern.slf4j.Slf4j;
@@ -24,12 +25,12 @@ public class PoushengMiddleCompensateBizProcessorImpl implements PoushengMiddleC
 
 
     @Override
-    public Response<Boolean> doProcess(PoushengCompensateBizType bizType, PoushengCompensateBiz poushengCompensateBiz) {
-        return getService(bizType).doProcess(poushengCompensateBiz);
+    public void  doProcess(PoushengCompensateBiz poushengCompensateBiz) throws BizException {
+         this.getService(poushengCompensateBiz).doProcess(poushengCompensateBiz);
     }
 
 
-    private PoushengMiddleCompensateBizService getService(PoushengCompensateBizType bizType) {
-        return poushengMiddleCompensateBizRegistryCenter.getBizProcessor(bizType);
+    private PoushengMiddleCompensateBizService getService(PoushengCompensateBiz poushengCompensateBiz) {
+        return poushengMiddleCompensateBizRegistryCenter.getBizProcessor(poushengCompensateBiz);
     }
 }

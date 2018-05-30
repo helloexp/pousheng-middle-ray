@@ -111,7 +111,7 @@ public class YyediSyncShipmentServiceTest extends AbstractRestApiTest {
         biz.setBizType(PoushengCompensateBizType.YYEDI_SYNC_SHIPMENT_RESULT.toString());
         biz.setContext(data);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        yyediSyncShipmentService.doProcess(any());
+        yyediSyncShipmentService.doProcess(biz);
 
     }
 

@@ -1,8 +1,12 @@
 # RELEASE NOTES
 
-## 2.1.2 (2018-05-26)
+## 2.1.1 (2018-05-30)
 
 * 增加全量处理库存同步的批处理任务
+* 增加trade.job.enable: ${TRADE_JOB_ENABLE}、stock.job.enable: ${STOCK_JOB_ENABLE}环境变量区分交易job和库存job
+* 增加leader.path: ${POUSHENG_ZK_PATH}环境变量，区分库存和交易集群leader
+* 增加库存推送任务处理临时表(pousheng_temp_sku_stock_updated)，减少全量库存推送第三方请求次数
+* 增加 trigger_insert_on_sku_stocks 、 trigger_update_on_sku_stocks 触发器
 
 
 ## 2.1.0 (2018-05-25)

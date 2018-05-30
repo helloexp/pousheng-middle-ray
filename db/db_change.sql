@@ -297,3 +297,39 @@ CREATE TABLE `pousheng_temp_sku_stock_push_id` (
   `push_finish_at`  DATETIME    NULL COMMENT '完成推送时间',
   PRIMARY KEY (`id`)
 );
+
+-- 全量库存同步任务处理临时表
+CREATE TABLE `pousheng_temp_sku_stock_updated` (
+  `id` bigint(20) NOT NULL AUTO_INCREMENT,
+  `task_id` bigint(20) DEFAULT NULL COMMENT '库存同步任务ID',
+  `sku_code` varchar(40) DEFAULT '',
+  `status` varchar(10) DEFAULT '' COMMENT '状态, 0 待处理，1处理完成',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_sku_code` (`sku_code`)
+);
+-- 库存新增记录或库存数量更新 写入临时表
+DROP trigger IF EXISTS `trigger_insert_on_sku_stocks`;
+DELIMITER ;;
+create trigger trigger_insert_on_sku_stocks after insert  on pousheng_warehouse_sku_stocks FOR EACH ROW begin
+ insert into pousheng_temp_sku_stock_updated(sku_code,status,created_at) values(NEW.SKU_CODE,'0',now() );
+end
+;;
+DELIMITER ;
+
+DROP trigger IF EXISTS `trigger_update_on_sku_stocks`;
+DELIMITER ;;
+create trigger trigger_update_on_sku_stocks after update  on pousheng_warehouse_sku_stocks FOR EACH ROW begin
+ if new.base_stock!=old.base_stock then
+	insert into pousheng_temp_sku_stock_updated(sku_code,status,created_at) values(NEW.SKU_CODE,'0',now() );
+ end if;
+	 end
+;;
+DELIMITER ;
+-- 库存同步任务增加类型字段
+ALTER TABLE `pousheng_sku_stock_tasks` add `type` VARCHAR(4)
+ NULL
+ DEFAULT 'INCR'
+ COMMENT '同步类型，FULL:全量；INCR:增量'
+ AFTER `status`;

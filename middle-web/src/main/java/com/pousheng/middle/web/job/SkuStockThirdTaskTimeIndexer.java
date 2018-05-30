@@ -2,6 +2,7 @@ package com.pousheng.middle.web.job;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.enums.StockTaskType;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
@@ -41,7 +42,6 @@ public class SkuStockThirdTaskTimeIndexer {
         new Thread(new IndexTask()).start();
     }
 
-
     class IndexTask implements Runnable {
 
         @Override
@@ -55,9 +55,8 @@ public class SkuStockThirdTaskTimeIndexer {
 
                     if (capacity > 0) {
                         // fetch data
-                        String type;
                         if(!isFullRunTime()) {
-                            type = "INCR";
+                           String type = StockTaskType.INCR_TYPE.getValue();
                             Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity, 2, type);
                             if (listRes.isSuccess() && !CollectionUtils.isEmpty(listRes.getResult())) {
                                 if (log.isDebugEnabled()) {
@@ -125,19 +124,16 @@ public class SkuStockThirdTaskTimeIndexer {
 
     }
 
-
     /**
-     * @Description 是否在全量退第三方时间段内
+     * @Description 是否在全量推送第三方时间段内
      * @Date        2018/5/29
      * @param
      * @return
      */
-
     private boolean isFullRunTime(){
         java.time.LocalTime localTime = java.time.LocalTime.now();
         java.time.LocalTime startTime = java.time.LocalTime.parse(stockSyncThirdFullTimeStart);
         java.time.LocalTime endTime = java.time.LocalTime.parse(stockSyncThirdFullTimeEnd);
-
         if(localTime.compareTo(startTime)>0 && localTime.compareTo(endTime)<0){
             return true;
         }

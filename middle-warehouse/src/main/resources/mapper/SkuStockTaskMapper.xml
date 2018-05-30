@@ -128,8 +128,8 @@
     <update id="updateToHandle" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET timeout_at = #{timeoutAt},status =1, updated_at = now()
-        WHERE id = #{id} AND status =0
+        SET timeout_at = #{timeoutAt},status =#{toStatus}, updated_at = now()
+        WHERE id = #{id} AND status =#{fromStatus}
     </update>
 
     <update id="updateToHandleBatch" parameterType="map">

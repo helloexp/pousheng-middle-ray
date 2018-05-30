@@ -65,7 +65,7 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
 
     @Test
     public void updateToHandle() {
-        Boolean toHandle = skuStockTaskDao.updateToHandle(skuStockTask.getId(),new Date());
+        Boolean toHandle = skuStockTaskDao.updateToHandle(skuStockTask.getId(),new Date(),0,1);
         assertEquals(toHandle,Boolean.TRUE);
     }
 

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.enums.StockTaskType;
 import com.pousheng.middle.open.api.dto.ErpStock;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
@@ -72,9 +73,9 @@ public class WarehouseStockApi {
         task.setStatus(0);
         //任务表类型，如果是2：00至2：30则认为是全量
         if(this.isFullRunTime()){
-            task.setType("FULL");
+            task.setType(StockTaskType.FULL_TYPE.getValue());
         }else{
-            task.setType("INCR");
+            task.setType(StockTaskType.INCR_TYPE.getValue());
         }
 
         Response<Long> response = skuStockTaskWriteService.create(task);
@@ -82,7 +83,6 @@ public class WarehouseStockApi {
             log.error("create task:{} fail,error:{}",task,response.getError());
             throw new OPServerException(200,response.getError());
         }
-
 
         /*BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
         syncStockEvent.setStockDtos(stockDtos);
@@ -122,17 +122,15 @@ public class WarehouseStockApi {
     }
 
     /**
-     * @Description 是否在全量写入TASK时间段
+     * @Description 是否在全量写入TASK的时间段内
      * @Date        2018/5/29
      * @param
      * @return
      */
-
     private boolean isFullRunTime(){
         java.time.LocalTime localTime = java.time.LocalTime.now();
         java.time.LocalTime startTime = java.time.LocalTime.parse(stockSyncTaskFullTimeStart);
         java.time.LocalTime endTime = java.time.LocalTime.parse(stockSyncTaskFullTimeEnd);
-
         if(localTime.compareTo(startTime)>0 && localTime.compareTo(endTime)<0){
             return true;
         }

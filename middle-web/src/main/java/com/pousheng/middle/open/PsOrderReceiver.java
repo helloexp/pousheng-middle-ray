@@ -6,6 +6,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.open.component.NotifyHkOrderDoneLogic;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.GiftItem;
@@ -111,6 +112,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+
+    @Autowired
+    private NotifyHkOrderDoneLogic notifyHkOrderDoneLogic;
 
     /**
      * 天猫加密字段占位符
@@ -249,9 +253,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
                 if (response.isSuccess()) {
                     //通知恒康发货单收货时间
-                    NotifyHkOrderDoneEvent event = new NotifyHkOrderDoneEvent();
-                    event.setShopOrderId(shopOrder.getId());
-                    eventBus.post(event);
+                    Response<Long> result =notifyHkOrderDoneLogic.ctreateNotifyHkOrderDoneTask(shopOrder.getId());
+                    if(!result.isSuccess()){
+                        log.error("notifyHkOrderDoneLogic ctreateNotifyHkOrderDoneTask error shopOrderId ({})",shopOrder.getId());
+                    }
+                    // NotifyHkOrderDoneEvent event = new NotifyHkOrderDoneEvent();
+                    // event.setShopOrderId(shopOrder.getId());
+                    // eventBus.post(event);
                 }
             }
         }

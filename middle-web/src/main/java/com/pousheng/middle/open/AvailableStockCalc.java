@@ -1,11 +1,9 @@
 package com.pousheng.middle.open;
 
-import com.google.common.base.Optional;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
-import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.*;

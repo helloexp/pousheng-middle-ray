@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.sync.erp;
 
-import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;

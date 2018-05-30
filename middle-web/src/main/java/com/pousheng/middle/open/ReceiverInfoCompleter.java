@@ -19,9 +19,6 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-
-import static com.pousheng.middle.order.enums.Municipality.SHANGHAI;
 
 /**
  * Created by cp on 9/4/17

@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.order.sync.erp;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;

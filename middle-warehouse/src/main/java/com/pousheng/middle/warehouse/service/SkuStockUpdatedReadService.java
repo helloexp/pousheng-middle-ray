@@ -1,13 +1,8 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.SkuStockTask;
-import com.pousheng.middle.warehouse.model.SkuStockUpdated;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.open.client.common.shop.model.OpenShop;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Author:  lyj

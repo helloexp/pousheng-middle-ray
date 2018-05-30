@@ -1,17 +1,14 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.impl.dao.SkuStockTaskDao;
 import com.pousheng.middle.warehouse.manager.SkuStockTaskManager;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
 import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 

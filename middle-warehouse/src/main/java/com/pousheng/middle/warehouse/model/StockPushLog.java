@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.model;
 
 import lombok.Data;
+
 import java.util.Date;
 
 /**

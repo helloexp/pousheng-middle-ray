@@ -1,7 +1,5 @@
 package com.pousheng.middle.order.service;
 
-import com.pousheng.middle.order.model.ShopOrderExt;
-import com.sun.org.apache.regexp.internal.RE;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.ReceiverInfo;

@@ -1,17 +1,9 @@
 package com.pousheng.middle.warehouse.model;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import com.pousheng.middle.warehouse.dto.StockDto;
-import io.terminus.common.utils.JsonMapper;
 import lombok.Data;
-import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.Date;
-import java.util.List;
 
 
 @Data

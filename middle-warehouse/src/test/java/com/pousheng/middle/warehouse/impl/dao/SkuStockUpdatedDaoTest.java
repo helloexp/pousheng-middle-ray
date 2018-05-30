@@ -7,7 +7,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 
 import java.util.Date;
 import java.util.List;
-import static org.junit.Assert.*;
 
 public class SkuStockUpdatedDaoTest extends BaseDaoTest {
 

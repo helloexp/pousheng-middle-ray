@@ -3,7 +3,6 @@ package com.pousheng.middle.hksyc.pos.dto;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * 恒康生成发货pos单请求主体

@@ -1,6 +1,5 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.SkuStockUpdated;
 import io.terminus.common.model.Response;
 
 /**

@@ -16,7 +16,6 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;

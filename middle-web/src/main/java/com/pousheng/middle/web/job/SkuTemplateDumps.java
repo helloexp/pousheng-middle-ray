@@ -6,8 +6,6 @@ package com.pousheng.middle.web.job;
 
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.parana.search.item.ItemDumpService;
-import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

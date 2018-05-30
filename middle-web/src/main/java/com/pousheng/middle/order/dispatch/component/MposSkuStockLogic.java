@@ -26,7 +26,6 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 
 /**
  * mpos商品库存操作

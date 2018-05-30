@@ -5,7 +5,6 @@
 package com.pousheng.middle.item.service;
 
 import io.terminus.common.model.Response;
-import io.terminus.parana.search.dto.SearchedItemInShopWithAggs;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.search.api.model.Pagination;
 

@@ -1,7 +1,6 @@
 package com.pousheng.middle.order.impl.dao;
 
 import com.pousheng.middle.order.model.RefundAmount;
-import com.pousheng.middle.order.model.ShipmentAmount;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 

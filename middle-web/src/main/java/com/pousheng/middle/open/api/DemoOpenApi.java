@@ -1,8 +1,5 @@
 package com.pousheng.middle.open.api;
 
-import com.google.common.collect.Lists;
-import com.pousheng.middle.open.api.dto.SkuIsMposDto;
-import io.terminus.common.utils.Splitters;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.parana.user.model.User;
@@ -11,7 +8,6 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
-import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/10

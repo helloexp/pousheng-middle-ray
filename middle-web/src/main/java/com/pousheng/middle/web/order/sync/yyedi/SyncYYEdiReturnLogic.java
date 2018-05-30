@@ -3,8 +3,6 @@ package com.pousheng.middle.web.order.sync.yyedi;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.hksyc.dto.HkResponseHead;
-import com.pousheng.middle.hksyc.dto.trade.SycRefundResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
@@ -42,7 +40,10 @@ import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 同步恒康逆向订单逻辑

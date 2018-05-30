@@ -4,7 +4,6 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;

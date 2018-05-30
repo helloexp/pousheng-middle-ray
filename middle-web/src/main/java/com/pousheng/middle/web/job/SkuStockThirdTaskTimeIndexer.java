@@ -10,7 +10,6 @@ import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.LocalTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;

@@ -5,9 +5,6 @@
 package com.pousheng.middle.item.service;
 
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
-import io.terminus.parana.item.model.Item;
-import io.terminus.parana.item.model.ItemAttribute;
-import io.terminus.parana.search.dto.IndexedItem;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.model.SpuAttribute;

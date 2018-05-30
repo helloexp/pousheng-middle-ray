@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.service;
 
-import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import io.terminus.common.model.Response;
 

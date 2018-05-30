@@ -34,7 +34,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.CannotSerializeTransactionException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 

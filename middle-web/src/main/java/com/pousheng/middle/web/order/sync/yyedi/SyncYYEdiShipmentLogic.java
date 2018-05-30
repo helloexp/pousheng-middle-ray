@@ -22,7 +22,6 @@ import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiShipmentOrderApi;
-import com.pousheng.middle.yyedisyc.dto.YYEdiCancelResponse;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;

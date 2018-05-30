@@ -4,7 +4,6 @@
 
 package com.pousheng.middle.web.events.trade.listener;
 
-import com.google.common.base.Throwables;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -13,7 +12,6 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
-import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;

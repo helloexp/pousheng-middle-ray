@@ -1,16 +1,15 @@
 package com.pousheng.middle.order.dispatch.component;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.order.cache.AddressGpsCacher;
 import com.pousheng.middle.order.dispatch.dto.DistanceDto;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
+import com.pousheng.middle.warehouse.dto.ShopShipment;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;

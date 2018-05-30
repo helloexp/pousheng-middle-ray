@@ -2,7 +2,6 @@ package com.pousheng.middle.yyedisyc.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.Data;
 
 import java.io.Serializable;
 import java.util.List;

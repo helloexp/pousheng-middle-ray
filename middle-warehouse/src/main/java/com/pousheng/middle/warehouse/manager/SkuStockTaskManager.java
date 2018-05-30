@@ -3,14 +3,11 @@ package com.pousheng.middle.warehouse.manager;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.impl.dao.SkuStockTaskDao;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
-import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 

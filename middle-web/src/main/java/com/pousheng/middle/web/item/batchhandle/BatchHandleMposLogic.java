@@ -4,7 +4,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.item.constant.PsItemConstants;
-import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import io.terminus.common.exception.JsonResponseException;

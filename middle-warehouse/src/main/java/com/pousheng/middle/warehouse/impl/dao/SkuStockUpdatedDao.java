@@ -1,13 +1,9 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
-import com.google.common.collect.ImmutableMap;
-import com.pousheng.middle.warehouse.model.SkuStockTask;
 import com.pousheng.middle.warehouse.model.SkuStockUpdated;
 import io.terminus.common.mysql.dao.MyBatisDao;
-import org.joda.time.DateTime;
 import org.springframework.stereotype.Repository;
 
-import java.util.Date;
 import java.util.List;
 
 /**

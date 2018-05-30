@@ -3,11 +3,9 @@ package com.pousheng.middle.order.service;
 import com.pousheng.middle.order.dto.MiddleChangeReceiveInfo;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Refund;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/6/26

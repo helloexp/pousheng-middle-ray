@@ -3,7 +3,6 @@ package com.pousheng.middle.order.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 
-import javax.annotation.Nonnull;
 import java.io.Serializable;
 import java.util.Date;
 

@@ -2,8 +2,6 @@ package com.pousheng.middle.order.dto;
 
 import lombok.Data;
 
-import java.util.List;
-
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2017/12/13

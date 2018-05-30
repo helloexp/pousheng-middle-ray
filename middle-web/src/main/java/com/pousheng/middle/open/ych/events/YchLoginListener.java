@@ -14,8 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.TreeMap;
 
 import static com.pousheng.middle.open.ych.utils.IpUtils.isPrivateIPAddress;

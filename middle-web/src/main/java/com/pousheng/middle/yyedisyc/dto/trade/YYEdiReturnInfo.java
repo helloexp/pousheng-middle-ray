@@ -2,10 +2,8 @@ package com.pousheng.middle.yyedisyc.dto.trade;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.springframework.format.annotation.DateTimeFormat;
 
 import java.math.BigDecimal;
-import java.util.Date;
 import java.util.List;
 
 /**

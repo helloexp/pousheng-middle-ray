@@ -9,7 +9,6 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
-import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
 import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;

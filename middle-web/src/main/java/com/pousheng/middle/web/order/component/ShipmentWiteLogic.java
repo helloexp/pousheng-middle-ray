@@ -19,13 +19,9 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.ShipmentAmount;
-import com.pousheng.middle.order.service.MiddleOrderWriteService;
-import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
-import com.pousheng.middle.order.service.ShipmentAmountWriteService;
-import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.order.model.ZoneContract;
 import com.pousheng.middle.order.service.*;
+import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
@@ -49,6 +45,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.service.MsgService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -67,7 +64,6 @@ import org.springframework.util.CollectionUtils;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-import io.terminus.parana.cache.ShopCacher;
 /**
  * 发货单写服务
  * Created by songrenfei on 2017/7/2

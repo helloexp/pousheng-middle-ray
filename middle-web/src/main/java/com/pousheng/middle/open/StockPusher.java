@@ -92,8 +92,6 @@ public class StockPusher {
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     @Autowired
-    private RedisQueueProvider redisQueueProvider;
-    @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
 
     @Autowired
@@ -235,7 +233,9 @@ public class StockPusher {
         log.info("send to parana by parall update stock return");
         //库存日志推送
         if (!thirdStockPushLogs.isEmpty()) {
-            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
+            thirdStockPushLogs.forEach(item->{
+                log.info("stock push third shop log info:{}",item.toString());
+            });
         }
 
 
@@ -273,9 +273,7 @@ public class StockPusher {
             stockPushLog.setSyncAt(new Date());
             stockPushLogs.add(stockPushLog);
             //库存日志推送
-
-            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
-
+            log.info("stock push third shop log info:{}",stockPushLogs.toString());
         });
     }
 

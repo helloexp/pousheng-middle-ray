@@ -22,9 +22,8 @@ public class SkuStockTaskDao extends MyBatisDao<SkuStockTask> {
         return getSqlSession().selectList(sqlId("findWaiteHandleLimit"),ImmutableMap.of("qty",qty,"status",status,"type",type));
     }
 
-
-    public boolean updateToHandle(Long id, Date timeOutAt){
-        return getSqlSession().update(sqlId("updateToHandle"), ImmutableMap.of("id",id,"timeoutAt",timeOutAt))> 0;
+    public boolean updateToHandle(Long id, Date timeOutAt,Integer fromStatus,Integer toStatus){
+        return getSqlSession().update(sqlId("updateToHandle"), ImmutableMap.of("id",id,"timeoutAt",timeOutAt,"fromStatus",fromStatus,"toStatus",toStatus))> 0;
     }
 
     public boolean updateToHandleBatch(List<Long> ids,Integer fromStatus,Integer toStatus){

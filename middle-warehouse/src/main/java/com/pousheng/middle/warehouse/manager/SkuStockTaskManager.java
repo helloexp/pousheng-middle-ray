@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.impl.dao.SkuStockTaskDao;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -36,27 +37,25 @@ public class SkuStockTaskManager {
             return validSkuStockTasks;
         }
 
-        /*
-        for (SkuStockTask skuStockTask : skuStockTasks) {
-            if (skuStockTaskDao.updateToHandle(skuStockTask.getId(), DateTime.now().plusMinutes(10).toDate())) {
-                validSkuStockTasks.add(skuStockTask);
-            }
-        }*/
-
         List<Long> ids = Lists.newArrayList();
         for (SkuStockTask skuStockTask : skuStockTasks) {
             ids.add(skuStockTask.getId());
         }
 
         if (Objects.equals(status, 0)) {
-            if (skuStockTaskDao.updateToHandleBatch(ids, 0, 1)) {
-                validSkuStockTasks.addAll(skuStockTasks);
+            for (SkuStockTask skuStockTask : skuStockTasks) {
+                if (skuStockTaskDao.updateToHandle(skuStockTask.getId(), DateTime.now().plusMinutes(10).toDate(),0,1)) {
+                    validSkuStockTasks.add(skuStockTask);
+                }
             }
+
         }
 
         if (Objects.equals(status, 2)) {
-            if (skuStockTaskDao.updateToHandleBatch(ids, 2, 3)) {
-                validSkuStockTasks.addAll(skuStockTasks);
+            for (SkuStockTask skuStockTask : skuStockTasks) {
+                if (skuStockTaskDao.updateToHandle(skuStockTask.getId(), DateTime.now().plusMinutes(10).toDate(),2,3)) {
+                    validSkuStockTasks.add(skuStockTask);
+                }
             }
         }
         return validSkuStockTasks;

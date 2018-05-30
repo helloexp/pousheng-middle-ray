@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.job;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.enums.StockTaskType;
 import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.model.SkuStockTask;
 import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
@@ -42,7 +43,6 @@ public class SkuStockTaskTimeIndexer {
         new Thread(new IndexTask(skuStockTaskReadService, warehouseSkuWriteService, skuStockTaskWriteService)).start();
     }
 
-
     class IndexTask implements Runnable {
 
         private final SkuStockTaskReadService skuStockTaskReadService;
@@ -72,9 +72,9 @@ public class SkuStockTaskTimeIndexer {
                         // fetch data
                         String type;
                         if(isFullRunTime()) {
-                            type = "FULL";
+                            type = StockTaskType.FULL_TYPE.getValue();
                         }else{
-                            type = "INCR";
+                            type = StockTaskType.INCR_TYPE.getValue();
                         }
                         Response<List<SkuStockTask>> listRes = skuStockTaskReadService.findWaiteHandleLimit(capacity,0,type);
                             if (listRes.isSuccess() && !CollectionUtils.isEmpty(listRes.getResult())) {
@@ -141,7 +141,7 @@ public class SkuStockTaskTimeIndexer {
     }
 
     /**
-     * @Description 是否在全量退第三方时间段内
+     * @Description 是否在全量更新中台库存时间段内
      * @Date        2018/5/29
      * @param
      * @return
@@ -157,6 +157,5 @@ public class SkuStockTaskTimeIndexer {
         }
         return false;
     }
-
 
 }

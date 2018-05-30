@@ -18,6 +18,7 @@ import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
@@ -36,6 +37,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -194,7 +196,7 @@ public class StockPusher {
 
                         //计算每个店铺的可用库存
                         Long stock = availableStockCalc.availableStock(shopId, skuCode);
-                        //log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
+                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
 
 
 
@@ -231,10 +233,10 @@ public class StockPusher {
         log.info("send to parana by parall update stock start");
         sendToParana(shopSkuStock);
         log.info("send to parana by parall update stock return");
-//        //库存日志推送
-//        if (!thirdStockPushLogs.isEmpty()) {
-//            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
-//        }
+        //库存日志推送
+        if (!thirdStockPushLogs.isEmpty()) {
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
+        }
 
 
     }
@@ -258,21 +260,21 @@ public class StockPusher {
                             skuCode, shopId, rP.getError());
                 }
             }
-            //log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-            //        stock.intValue(), skuCode, shopId);
+            log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
+                    stock.intValue(), skuCode, shopId);
             //异步生成库存推送日志
-//            StockPushLog stockPushLog = new StockPushLog();
-//            stockPushLog.setShopId(shopId);
-//            stockPushLog.setShopName(shopName);
-//            stockPushLog.setSkuCode(skuCode);
-//            stockPushLog.setQuantity((long) stock.intValue());
-//            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
-//            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
-//            stockPushLog.setSyncAt(new Date());
-//            stockPushLogs.add(stockPushLog);
-//            //库存日志推送
-//
-//            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
+            StockPushLog stockPushLog = new StockPushLog();
+            stockPushLog.setShopId(shopId);
+            stockPushLog.setShopName(shopName);
+            stockPushLog.setSkuCode(skuCode);
+            stockPushLog.setQuantity((long) stock.intValue());
+            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
+            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
+            stockPushLog.setSyncAt(new Date());
+            stockPushLogs.add(stockPushLog);
+            //库存日志推送
+
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(stockPushLogs));
 
         });
     }
@@ -291,7 +293,7 @@ public class StockPusher {
                         paranaSkuStock.setStock(skuStockMap.get(skuCode));
                         paranaSkuStocks.add(paranaSkuStock);
                     }
-                    //log.info("search sku stock by shopId  is {},paranaSkuStocks is {}", shopId, paranaSkuStocks);
+                    log.info("search sku stock by shopId  is {},paranaSkuStocks is {}", shopId, paranaSkuStocks);
                     Response<Boolean> r = itemServiceCenter.batchUpdateSkuStock(shopId, paranaSkuStocks);
                     if (!r.isSuccess()) {
                         log.error("failed to push stocks {} to shop(id={}), error code{}",

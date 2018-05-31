@@ -22,8 +22,12 @@ public enum PoushengCompensateBizType {
     /**
      * 通知恒康发货单时间
      */
-    NOTIFY_HK_ORDER_DOWN;
+    NOTIFY_HK_ORDER_DOWN,
 
+    /**
+     * YYEDI回传售后单信息
+     */
+    YYEDI_SYNC_REFUND_RESULT;
 
 
 }

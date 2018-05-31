@@ -10,19 +10,24 @@
  */
 package com.pousheng.middle.open.api;
 
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.AbstractRestApiTest;
+import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleFlowBook;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import org.junit.Test;
+import org.mockito.internal.matchers.Any;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyList;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
@@ -53,7 +58,6 @@ public class YyEDIOpenApiTest extends AbstractRestApiTest {
         private EventBus eventBus;
         @MockBean
         private SyncShipmentPosLogic syncShipmentPosLogic;
-
         @MockBean
         private ReceiveYyediResultLogic receiveYyediResultLogic;
 
@@ -65,6 +69,8 @@ public class YyEDIOpenApiTest extends AbstractRestApiTest {
     ShipmentReadLogic shipmentReadLogic;
     MiddleOrderFlowPicker flowPicker;
     ReceiveYyediResultLogic receiveYyediResultLogic;
+    RefundReadLogic refundReadLogic;
+    RefundWriteLogic refundWriteLogic;
     yyEDIOpenApi yyEDIOpenApi;
 
     @Override
@@ -78,6 +84,8 @@ public class YyEDIOpenApiTest extends AbstractRestApiTest {
         yyEDIOpenApi = get(yyEDIOpenApi.class);
         flowPicker  = get(MiddleOrderFlowPicker.class);
         receiveYyediResultLogic  = get(ReceiveYyediResultLogic.class);
+        refundReadLogic  = get(RefundReadLogic.class);
+        refundWriteLogic  = get(RefundWriteLogic.class);
 
     }
 
@@ -85,11 +93,22 @@ public class YyEDIOpenApiTest extends AbstractRestApiTest {
     @Test
     public void receiveYYEDIShipmentResult(){
 
-    when(shipmentReadLogic.findShipmentByShipmentCode(anyString())).thenReturn(new Shipment(){{setStatus(4);}});
-    when(flowPicker.pickShipments()).thenReturn(MiddleFlowBook.shipmentsFlow);
-    when(receiveYyediResultLogic.createShipmentResultTask(anyList())).thenReturn(Response.ok());
-    String data = "[{\"shipmentId\":\"1000221232312\",\"yyEDIShipmentId\":\"2341342132222\",\"shipmentCorpCode\":\"123\",\"shipmentSerialNo\":\"21312333333\",\"shipmentDate\":\"20180912\",\"weight\":12}]";
-    yyEDIOpenApi.receiveYYEDIShipmentResult(data);
+        when(shipmentReadLogic.findShipmentByShipmentCode(anyString())).thenReturn(new Shipment(){{setStatus(4);}});
+        when(flowPicker.pickShipments()).thenReturn(MiddleFlowBook.shipmentsFlow);
+        when(receiveYyediResultLogic.createShipmentResultTask(anyList())).thenReturn(Response.ok());
+        String data = "[{\"shipmentId\":\"1000221232312\",\"yyEDIShipmentId\":\"2341342132222\",\"shipmentCorpCode\":\"123\",\"shipmentSerialNo\":\"21312333333\",\"shipmentDate\":\"20180912\",\"weight\":12}]";
+        yyEDIOpenApi.receiveYYEDIShipmentResult(data);
+    }
+
+     @Test
+    public void syncHkRefundStatus(){
+
+        when(refundReadLogic.findRefundByRefundCode(anyString())).thenReturn(new Refund(){{setRefundType(2);setId(123L);setExtra(Maps.newHashMap());}});
+        when(refundReadLogic.findRefundExtra(any())).thenReturn(new RefundExtra());
+        when(refundWriteLogic.updateStatus(any(),any())).thenReturn(Response.ok());
+        when(receiveYyediResultLogic.createRefundStatusTask(anyList())).thenReturn(Response.ok());
+        String data = "{\"itemCode\":\"1000221232312\",\"warhouseCode\":\"123\",\"quantity\":\"123\"}";
+        yyEDIOpenApi.syncHkRefundStatus("123","12312",data,"20180531151212");
     }
 
 }

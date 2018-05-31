@@ -29,6 +29,7 @@ public class WarehouseSkuStockManager {
 
     /**
      * 锁定库存
+     *
      * @param warehouses 待锁定的库存明细
      */
     @Transactional
@@ -76,9 +77,9 @@ public class WarehouseSkuStockManager {
                 boolean success = warehouseSkuStockDao.decreaseStock(warehouseId,
                         skuCode,
                         quantity);
-                if(!success){
+                if (!success) {
                     log.error("failed to decrease stock of warehouse where warehouseId={} and skuCode={}, delta={}",
-                            warehouseId, skuCode, quantity );
+                            warehouseId, skuCode, quantity);
                     throw new ServiceException("stock.decrease.fail");
                 }
             }
@@ -93,6 +94,7 @@ public class WarehouseSkuStockManager {
      */
     @Transactional
     public void unlockStock(List<WarehouseShipment> warehouseShipments) {
+
         doUnlock(warehouseShipments);
     }
 
@@ -103,12 +105,26 @@ public class WarehouseSkuStockManager {
             for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
                 String skuCode = skuCodeAndQuantity.getSkuCode();
                 Integer quantity = skuCodeAndQuantity.getQuantity();
+
+                //先查询
+                WarehouseSkuStock warehouseSkuStock = warehouseSkuStockDao.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+                if(null == warehouseSkuStock){
+                log.warn("findByWarehouseIdAndSkuCode return null warehouseId ({})  skuCode ({}) ",warehouseId,skuCode);
+                    continue;
+                }
+                Long currentLock = warehouseSkuStock.getLockedStock();
+
+                if(Long.valueOf(quantity).longValue()>currentLock.longValue()){
+                    //购买数量大于当前锁定库存时，直接将锁定库存扣减为0
+                    quantity = Integer.valueOf(String.valueOf(currentLock));
+
+                }
                 boolean success = warehouseSkuStockDao.unlockStock(warehouseId,
                         skuCode,
-                        quantity);
-                if(!success){
+                        quantity,currentLock);
+                if (!success) {
                     log.error("failed to unlock stock of warehouse where warehouseId={} and skuCode={}, delta={}",
-                            warehouseId, skuCode, quantity );
+                            warehouseId, skuCode, quantity);
                     throw new ServiceException("stock.unlock.fail");
                 }
             }

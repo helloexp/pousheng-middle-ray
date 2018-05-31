@@ -130,21 +130,21 @@ public class WarehouseSkuStockDaoTest extends BaseDaoTest {
     private WarehouseSkuStock make(String skuCode) {
         WarehouseSkuStock warehouseSkuStock = new WarehouseSkuStock();
 
-        
+
         warehouseSkuStock.setWarehouseId(2L);
-        
+
         warehouseSkuStock.setSkuCode(skuCode);
-        
+
         warehouseSkuStock.setBaseStock(12L);
-        
+
         warehouseSkuStock.setAvailStock(32L);
-        
+
         warehouseSkuStock.setLockedStock(4L);
-        
+
         warehouseSkuStock.setSyncAt(Date.from(LocalDate.now().minusDays(1).atStartOfDay(ZoneId.systemDefault()).toInstant()));
-        
+
         warehouseSkuStock.setCreatedAt(new Date());
-        
+
         warehouseSkuStock.setUpdatedAt(new Date());
         return warehouseSkuStock;
     }

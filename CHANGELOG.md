@@ -2,7 +2,10 @@
 
 ## 2.1.2 (2018-05-31)
 
-* 修复Skx去数逻辑
+* 修复Skx取数逻辑
+* 【BUG】生产：天猫Levis售后换货发货单，在订单派发中心收件人电话显示为空 http://pmp.terminus.io/console/project/178/issues/38147
+* 【BUG】生产环境-中台系统卖家信息中的电话号码不能同步到EDI http://pmp.terminus.io/console/project/178/issues/38561
+* 【BUG】锁定库存为负数 http://pmp.terminus.io/console/project/178/issues/38638
 
 ## 2.1.1 (2018-05-30)
 

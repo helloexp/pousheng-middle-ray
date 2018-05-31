@@ -47,6 +47,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -330,9 +331,15 @@ public class SyncYYEdiShipmentLogic {
         //邮编
         shipmentInfo.setZipCode(receiverInfo.getPostcode());
         //收件人电话
-        shipmentInfo.setBuyerTel(receiverInfo.getMobile());
-        //手机号码
-        shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
+        if (!StringUtils.isEmpty(receiverInfo.getMobile())){
+            shipmentInfo.setBuyerTel(receiverInfo.getMobile());
+            //手机号码
+            shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
+        } else {
+            shipmentInfo.setBuyerTel(receiverInfo.getPhone());
+            //手机号码
+            shipmentInfo.setBuyerMobileTel(receiverInfo.getPhone());
+        }
         //寄件人姓名
         shipmentInfo.setSendContact("");
         //寄件人电话

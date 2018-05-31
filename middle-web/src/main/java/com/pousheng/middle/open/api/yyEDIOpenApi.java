@@ -162,10 +162,10 @@ public class yyEDIOpenApi {
             if (count > 0) {
                 throw new ServiceException("shipment.receive.shipinfo.failed");
             }
-            if(CollectionUtils.isNotEmpty(okShipInfos)){
+            if (CollectionUtils.isNotEmpty(okShipInfos)) {
                 Response<Long> response = receiveYyediResultLogic.createShipmentResultTask(okShipInfos);
-                if(!response.isSuccess()){
-                    log.error("yyEDI.shipments.api.createShipmentResultTask.failed,caused by {}",response.getError());
+                if (!response.isSuccess()) {
+                    log.error("yyEDI.shipments.api.createShipmentResultTask.failed,caused by {}", response.getError());
                     throw new ServiceException("yyEDI.shipments.api.createShipmentResultTask.failed");
                 }
             }
@@ -220,36 +220,47 @@ public class yyEDIOpenApi {
                 error.setErrorMsg("已经通知中台退货，请勿再次通知");
                 throw new ServiceException(updateStatusRes.getError());
             }
-            //更新扩展信息
-            Refund update = new Refund();
-            update.setId(refund.getId());
+            //异步任务
             Map<String, String> extra = refund.getExtra();
             extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO, mapper.toJson(items));
-            update.setExtra(extra);
+            refund.setExtraJson(mapper.toJson(extra));
+            Response<Long> response = receiveYyediResultLogic.createRefundStatusTask(Lists.newArrayList(refund));
+            if (!response.isSuccess()) {
+                log.error("yyEDI.refund.confirm.received.api.failed,caused by {}", response.getError());
+                throw new ServiceException("yyEDI.refund.confirm.received.api.failed");
+            }
 
-            Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
-            if (!updateExtraRes.isSuccess()) {
-                log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
-            }
-            //同步pos单到恒康
-            //判断pos单是否需要同步恒康,如果退货仓数量全是0
-            if (validateYYConfirmedItems(items)) {
-                try {
-                    Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-                    if (!r.isSuccess()) {
-                        Map<String, Object> param1 = Maps.newHashMap();
-                        param1.put("refundId", refund.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
-                    }
-                } catch (Exception e) {
-                    Map<String, Object> param1 = Maps.newHashMap();
-                    param1.put("refundId", refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
-                }
-            }
-            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-            refundWriteLogic.getThirdRefundResult(refund);
+            // //更新扩展信息
+            // Refund update = new Refund();
+            // update.setId(refund.getId());
+            // Map<String, String> extra = refund.getExtra();
+            // extra.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+            // extra.put(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO, mapper.toJson(items));
+            // update.setExtra(extra);
+            //
+            // Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
+            // if (!updateExtraRes.isSuccess()) {
+            //     log.error("update rMatrixRequestHeadefund(id:{}) extra:{} fail,error:{}", refundOrderId, refundExtra, updateExtraRes.getError());
+            // }
+            // //同步pos单到恒康
+            // //判断pos单是否需要同步恒康,如果退货仓数量全是0
+            // if (validateYYConfirmedItems(items)) {
+            //     try {
+            //         Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+            //         if (!r.isSuccess()) {
+            //             Map<String, Object> param1 = Maps.newHashMap();
+            //             param1.put("refundId", refund.getId());
+            //             autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+            //         }
+            //     } catch (Exception e) {
+            //         Map<String, Object> param1 = Maps.newHashMap();
+            //         param1.put("refundId", refund.getId());
+            //         autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
+            //     }
+            // }
+            // //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            // refundWriteLogic.getThirdRefundResult(refund);
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
             if (Objects.nonNull(error) && Objects.nonNull(error.getErrorCode())) {

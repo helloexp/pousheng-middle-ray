@@ -17,6 +17,7 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.Refund;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -54,6 +55,27 @@ public class ReceiveYyediResultLogic {
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         return poushengCompensateBizWriteService.create(biz);
     }
+
+
+    
+    /**
+     * 〈yyEDi回传售后单信息任务创建〉
+     *
+     * @param refunds 退货单信息
+     * @return: Response
+     * Author:xiehong
+     * Date: 2018/5/31 上午11:31
+     */
+    public Response<Long> createRefundStatusTask(List<Refund> refunds){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.YYEDI_SYNC_REFUND_RESULT.toString());
+        biz.setContext(mapper.toJson(refunds));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        return poushengCompensateBizWriteService.create(biz);
+
+    }
+
+
 
 
 

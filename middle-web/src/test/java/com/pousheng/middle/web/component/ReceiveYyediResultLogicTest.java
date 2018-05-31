@@ -61,4 +61,11 @@ public class ReceiveYyediResultLogicTest extends AbstractRestApiTest {
         receiveYyediResultLogic.createShipmentResultTask(anyList());
 
     }
+
+    @Test
+    public void createRefundStatusTask(){
+
+        receiveYyediResultLogic.createRefundStatusTask(anyList());
+
+    }
 }

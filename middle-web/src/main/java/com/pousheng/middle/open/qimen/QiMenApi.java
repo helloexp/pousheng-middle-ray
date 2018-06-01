@@ -7,12 +7,18 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
+import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.utils.XmlUtils;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.channel.OpenClientChannel;
@@ -28,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -45,16 +52,26 @@ public class QiMenApi {
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
 
-    @Autowired
-    private ReceiverInfoCompleter receiverInfoCompleter;
-    @Autowired
-    private EventBus eventBus;
-    @Autowired
-    private ErpOpenApiClient erpOpenApiClient;
+    private final ReceiverInfoCompleter receiverInfoCompleter;
+    private final EventBus eventBus;
+    private final ErpOpenApiClient erpOpenApiClient;
+    private final PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     private static final String WMS_APP_KEY = "terminus-wms";
 
     private static final String WMS_APP_SECRET = "anywhere-wms";
+
+    @Autowired
+    public QiMenApi(ReceiverInfoCompleter receiverInfoCompleter,
+                    EventBus eventBus,
+                    ErpOpenApiClient erpOpenApiClient,
+                    PoushengCompensateBizWriteService poushengCompensateBizWriteService) {
+        this.receiverInfoCompleter = receiverInfoCompleter;
+        this.eventBus = eventBus;
+        this.erpOpenApiClient = erpOpenApiClient;
+        this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
+    }
 
     @PostMapping(value = "/wms")
     public String gatewayOfWms(HttpServletRequest request) {
@@ -103,10 +120,28 @@ public class QiMenApi {
             }
         }
         //抛出一个事件用于天猫自动生成发货单
-        OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
-        eventBus.post(event);
+        //OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
+        //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
+        //eventBus.post(event);
+        this.createShipmentResultTask(shopOrder.getId());
+
         return XmlUtils.toXml(QimenResponse.ok());
     }
+
+    /**
+     * @Description TODO
+     * @Date        2018/5/31
+     * @param       shopOrderId
+     * @return
+     */
+    private void createShipmentResultTask(Long shopOrderId){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.TMALL_ORDER_CREATE_SHIP.toString());
+        biz.setContext(mapper.toJson(shopOrderId));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
+    }
+
 
     @PostMapping(value = "/erp")
     public String gatewayOfErp(HttpServletRequest request) {

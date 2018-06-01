@@ -27,7 +27,11 @@ public enum PoushengCompensateBizType {
     /**
      * YYEDI回传售后单信息
      */
-    YYEDI_SYNC_REFUND_RESULT;
+    YYEDI_SYNC_REFUND_RESULT,
 
+    /**
+     * 天猫订单生成发货单
+     */
+    TMALL_ORDER_CREATE_SHIP;
 
 }

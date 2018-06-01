@@ -171,8 +171,8 @@ public class MposJob {
         param.put("status",0);
         param.put("time",autoTryNumber);
         int pageNo = 1;
-        while (true) {
-            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,20,param);
+        while (pageNo < 10) {
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,40,param);
             if(!response.isSuccess()){
                 log.error("fail to find compensation task");
                 return ;
@@ -184,11 +184,10 @@ public class MposJob {
             }
             //异步处理
             executorService.submit(new CompensationTask(autoCompensations));
-            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
-                break;
-            }
+//            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
+//                break;
+//            }
             pageNo++;
-            break;
         }
 
         stopwatch.stop();

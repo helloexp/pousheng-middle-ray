@@ -1232,6 +1232,7 @@ public class ShipmentWiteLogic {
         return emails;
     }
 
+
     /**
      * 单个发货单撤销
      *
@@ -1241,7 +1242,17 @@ public class ShipmentWiteLogic {
     public Response<Boolean> rollbackShipment(Long shipmentId) {
 
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        return rollbackShipment(shipment);
+    }
+    /**
+     * 单个发货单撤销
+     *
+     * @param shipment 发货单
+     * @return
+     */
+    public Response<Boolean> rollbackShipment(Shipment shipment) {
+
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         //判断该发货单是否可以撤销，已取消的或者已经发货的发货单是不能撤销的
         if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) || shipment.getStatus() > MiddleShipmentsStatus.SHIPPED.getValue()) {
             throw new JsonResponseException("invalid.shipment.status.can.not.cancel");

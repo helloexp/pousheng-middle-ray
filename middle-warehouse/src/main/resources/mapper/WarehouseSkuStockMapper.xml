@@ -109,7 +109,7 @@
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock - #{delta}
-        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and avail_stock >= #{delta}
     </update>
 
     <update id="lockStock" parameterType="map">

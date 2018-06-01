@@ -472,16 +472,19 @@ public class OrderWriteLogic {
         //取消发货单
         int count = 0;//计数器用来记录是否有发货单取消失败的
         String errorMsg = "";
+        List<SkuOrder> failSkuOrders = new ArrayList<SkuOrder>();
         for (Shipment shipment : shipments) {
             Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 1);
             if (!cancelShipmentResponse.isSuccess()) {
                 errorMsg = cancelShipmentResponse.getError();
                 count++;
+                //如果取消发货单失败，则只更新相应的子单状态
+                failSkuOrders.addAll(skuOrders.stream().filter(skuOrder -> shipment.getSkuInfos().containsKey(skuOrder.getId())).collect(Collectors.toList()));
             }
         }
 
         if (count > 0) {
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
         } else {
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
         }

@@ -93,7 +93,9 @@ public class RefundWriteLogic {
      *
      * @param skuCodeAndQuantity 商品编码及数量
      */
-    public void updateSkuHandleNumber(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+    public boolean updateSkuHandleNumber(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+
+        boolean result = true;
 
         Refund refund = refundReadLogic.findRefundById(refundId);
         //换货商品
@@ -126,6 +128,7 @@ public class RefundWriteLogic {
 
         Response<Boolean> updateRes = refundWriteService.update(update);
         if (!updateRes.isSuccess()) {
+            result = false;
             log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
         }
 
@@ -134,10 +137,11 @@ public class RefundWriteLogic {
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.CREATE_SHIPMENT.toOrderOperation());
             Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
+                result = false;
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
         }
-
+        return result;
     }
 
     /**
@@ -146,8 +150,9 @@ public class RefundWriteLogic {
      *
      * @param skuCodeAndQuantity 商品编码及数量
      */
-    public void updateSkuHandleNumberForLost(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+    public boolean updateSkuHandleNumberForLost(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
 
+        boolean result = true;
         Refund refund = refundReadLogic.findRefundById(refundId);
         //丢件补发商品
         List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
@@ -179,6 +184,7 @@ public class RefundWriteLogic {
 
         Response<Boolean> updateRes = refundWriteService.update(update);
         if (!updateRes.isSuccess()) {
+            result = false;
             log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
         }
 
@@ -187,9 +193,11 @@ public class RefundWriteLogic {
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation());
             Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
+                result = false;
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
         }
+        return result;
 
     }
 

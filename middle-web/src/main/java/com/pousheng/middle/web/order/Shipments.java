@@ -53,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -141,6 +142,9 @@ public class Shipments {
 
     @Autowired
     private ShopCacher shopCacher;
+
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -483,6 +487,7 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成换货发货单")
+    @Transactional
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
@@ -571,9 +576,12 @@ public class Shipments {
                 throw new JsonResponseException(createResp.getError());
             }
             Long shipmentId = createResp.getResult();
-            log.info("Shipments.createAfterShipment eventBus post before refundId:{}, shipmentId:{}",refundId,shipmentId);
-            eventBus.post(new RefundShipmentEvent(shipmentId));
-            log.info("Shipments.createAfterShipment eventBus post after refundId:{}, shipmentId:{}",refundId,shipmentId);
+
+            //由于eventsbus监听事件RefundShipmentEvent执行存在问题，暂时改为同步执行
+            //eventBus.post(new RefundShipmentEvent(shipmentId));
+            if (!this.refundShipment(shipmentId)){
+                throw new JsonResponseException("update.refund.error");
+            }
 
             shipmentIds.add(shipmentId);
         }
@@ -1614,4 +1622,33 @@ public class Shipments {
         }
     }
 
+
+    /**
+     * @Description 退换货售后单创建退货单后修改售后单状态
+     *              由于eventsbus监听事件RefundShipmentEvent执行存在问题，暂时改为同步执行
+     * @Date        2018/5/24
+     * @param       shipmentId
+     * @return
+     */
+    private boolean refundShipment(Long shipmentId) {
+        boolean result = true;
+        try {
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+
+            Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
+            Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+            if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
+                result = refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);
+            } else {
+                result = refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);
+            }
+        } catch ( Exception e){
+            result = false;
+            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}",shipmentId,e.getMessage());
+        }
+        return result;
+    }
 }

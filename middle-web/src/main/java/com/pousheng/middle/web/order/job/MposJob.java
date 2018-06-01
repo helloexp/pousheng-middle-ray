@@ -184,9 +184,9 @@ public class MposJob {
             }
             //异步处理
             executorService.submit(new CompensationTask(autoCompensations));
-            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
-                break;
-            }
+//            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
+//                break;
+//            }
             pageNo++;
         }
 

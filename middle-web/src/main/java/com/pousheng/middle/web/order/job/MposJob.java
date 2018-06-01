@@ -117,7 +117,7 @@ public class MposJob {
 
     @Autowired
     public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
-        this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(8, 8, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
                 new ThreadFactoryBuilder().setNameFormat("mpos-shipment-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));

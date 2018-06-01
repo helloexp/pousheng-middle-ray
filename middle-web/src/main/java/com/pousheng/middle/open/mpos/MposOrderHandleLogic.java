@@ -138,13 +138,13 @@ public class MposOrderHandleLogic {
         if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)) {
             shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
         }
-        if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
-            mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
-        }
         if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)){
             //回滚发货单
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
             shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment1);
+        }
+        if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
+            mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
         }
         log.info("sync shipment(id:{}) success",shipment.getId());
     }

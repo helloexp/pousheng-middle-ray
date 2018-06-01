@@ -154,9 +154,22 @@ public class yyEDIOpenApi {
                     autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.YYEDI_SHIP_NOTIFICATION,null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
+                    YyEdiResponseDetail field = new YyEdiResponseDetail();
+                    field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                    field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                    field.setErrorCode("-100");
+                    field.setErrorMsg(e.getMessage());
+                    fields.add(field);
+                    count++;
                     continue;
 
                 }
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                field.setErrorCode("200");
+                field.setErrorMsg("");
+                fields.add(field);
             }
             if (count > 0) {
                 throw new ServiceException("shipment.receive.shipinfo.failed");

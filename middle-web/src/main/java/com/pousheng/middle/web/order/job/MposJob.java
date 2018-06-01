@@ -117,7 +117,7 @@ public class MposJob {
 
     @Autowired
     public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
-        this.executorService = new ThreadPoolExecutor(8, 8, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(10, 10, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
                 new ThreadFactoryBuilder().setNameFormat("mpos-shipment-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
@@ -172,7 +172,7 @@ public class MposJob {
         param.put("time",autoTryNumber);
         int pageNo = 1;
         while (pageNo < 10) {
-            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,40,param);
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,80,param);
             if(!response.isSuccess()){
                 log.error("fail to find compensation task");
                 return ;

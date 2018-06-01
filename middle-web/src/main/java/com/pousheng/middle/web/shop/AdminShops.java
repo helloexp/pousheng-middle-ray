@@ -353,17 +353,6 @@ public class AdminShops {
     }
 
     private Long createShop(Shop shop, Long userId, String userName) {
-        Response<Boolean> checkResp = shopReadService.checkExistByName(shop.getName());
-        if (!checkResp.isSuccess()) {
-            log.error("fail to check shop if existed by name:{},cause:{}",
-                    shop.getName(), checkResp.getError());
-            throw new JsonResponseException(checkResp.getError());
-        }
-        if (checkResp.getResult()) {
-            log.error("shop name({}) duplicated");
-            throw new JsonResponseException("shop.name.duplicated");
-        }
-
         Shop toCreate = new Shop();
         toCreate.setName(shop.getName());
         toCreate.setBusinessId(shop.getBusinessId());

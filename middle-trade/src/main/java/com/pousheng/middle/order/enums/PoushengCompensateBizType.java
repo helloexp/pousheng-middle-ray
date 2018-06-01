@@ -30,6 +30,11 @@ public enum PoushengCompensateBizType {
     YYEDI_SYNC_REFUND_RESULT,
 
     /**
+     * 第三方售后单状态查询任务
+     */
+    THIRD_REFUND_RESULT,
+
+    /**
      * 天猫订单生成发货单
      */
     TMALL_ORDER_CREATE_SHIP;

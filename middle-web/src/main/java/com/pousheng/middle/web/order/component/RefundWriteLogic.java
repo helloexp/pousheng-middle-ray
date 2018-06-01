@@ -5,11 +5,18 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.collect.Sets.SetView;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
+import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.model.PoushengSettlementPos;
+import com.pousheng.middle.order.model.RefundAmount;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -76,6 +83,8 @@ public class RefundWriteLogic {
     @Autowired
     private SyncRefundLogic syncRefundLogic;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
 
     /**
@@ -1039,7 +1048,9 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
-                eventBus.post(event);
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                this.createRefundResultTask(event);
             }
         }
         //如果是苏宁的售后单，将会主动查询售后单的状态
@@ -1055,9 +1066,25 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenOrderId(shopOrder.getOutId());
-                eventBus.post(event);
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                this.createRefundResultTask(event);
             }
         }
+    }
+
+    /**
+     * @Description 查询第三方（天猫、苏宁）售后单确认状态任务创建
+     * @Date        2018/5/31
+     * @param       event
+     * @return
+     */
+    private void createRefundResultTask(TaobaoConfirmRefundEvent event){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.THIRD_REFUND_RESULT.toString());
+        biz.setContext(mapper.toJson(event));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
     }
 
     /**

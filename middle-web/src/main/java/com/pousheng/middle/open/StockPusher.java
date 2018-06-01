@@ -78,6 +78,8 @@ public class StockPusher {
 
     @Autowired
     private MessageSource messageSource;
+    @Autowired
+    private RedisQueueProvider redisQueueProvider;
 
 
     @Value("${mpos.open.shop.id}")
@@ -236,6 +238,11 @@ public class StockPusher {
             thirdStockPushLogs.forEach(item->{
                 log.info("stock push third shop log info:{}",item.toString());
             });
+        }
+
+        //库存日志推送
+        if (!thirdStockPushLogs.isEmpty()) {
+            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
         }
 
 

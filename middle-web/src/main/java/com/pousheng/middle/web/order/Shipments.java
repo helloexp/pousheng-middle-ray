@@ -816,6 +816,7 @@ public class Shipments {
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
             shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_WAREHOUSE_DELIVER));
+            shipment.setShipId(warehouse.getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
             shipmentExtra.setWarehouseId(warehouse.getId());
         }else {
@@ -828,6 +829,7 @@ public class Shipments {
             }
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(extra.get("outCode"),Long.valueOf(warehouse.getCompanyId()));
             shipmentExtra.setWarehouseId(shop.getId());
+            shipment.setShipId(getShipIdByDeliverId(shop.getId()));
         }
 
         shipmentExtra.setWarehouseName(warehouse.getName());

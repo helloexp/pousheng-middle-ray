@@ -140,8 +140,6 @@ public class ShipmentWiteLogic {
     private ShipmentWriteManger shipmentWriteManger;
     @Autowired
     private ZoneContractReadService zoneContractReadService;
-    @Autowired
-    private WarehouseSkuWriteService warehouseSkuWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -343,14 +341,6 @@ public class ShipmentWiteLogic {
         }
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
-
-            //锁定电商库存
-            Response<Boolean> lockResponse = warehouseSkuWriteService.lockStock(warehouseShipments);
-            if (!lockResponse.isSuccess()){
-                log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,lockResponse.getError());
-                return false;
-            }
-
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
 
 

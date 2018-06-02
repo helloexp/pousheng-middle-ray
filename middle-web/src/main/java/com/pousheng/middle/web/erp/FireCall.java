@@ -466,17 +466,20 @@ public class FireCall {
         }
     }
 
+
     /**
      * 取消发货单
      */
     @RequestMapping(value = "/cancel/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void cancelShipments(){
+    public void cancelShipments(@RequestParam String fileName){
 
-        File file1 = new File("/pousheng/file/error_shipment_code.csv");
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
 
         List<String> codes =  readShipmentCode(file1);
 
-        log.info("START-HANDLE-SHIPMENT-API");
+        log.info("START-HANDLE-SHIPMENT-API for:{}",url);
 
         for (String code : codes){
             log.info("START-HANDLE-SHIPMENT-CODE:{}",code);
@@ -503,7 +506,7 @@ public class FireCall {
             log.info("END-HANDLE-SHIPMENT-CODE:{}",code);
         }
 
-        log.info("END-HANDLE-SHIPMENT-API");
+        log.info("END-HANDLE-SHIPMENT-API for:{}",url);
 
     }
 
@@ -513,13 +516,15 @@ public class FireCall {
      * 创建发货单
      */
     @RequestMapping(value = "/create/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void autoShipments(){
+    public void autoShipments(@RequestParam String fileName){
 
-        File file1 = new File("/pousheng/file/create_shipment_code.csv");
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
 
         List<String> codes =  readShipmentCode(file1);
 
-        log.info("START-HANDLE-CREATE-SHIPMENT-API");
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}",url);
 
         for (String code : codes){
             log.info("START-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
@@ -551,7 +556,7 @@ public class FireCall {
             log.info("END-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
         }
 
-        log.info("END-HANDLE-CREATE-SHIPMENT-API");
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}",url);
 
     }
 

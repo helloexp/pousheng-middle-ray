@@ -29,6 +29,7 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -139,6 +140,8 @@ public class ShipmentWiteLogic {
     private ShipmentWriteManger shipmentWriteManger;
     @Autowired
     private ZoneContractReadService zoneContractReadService;
+    @Autowired
+    private WarehouseSkuWriteService warehouseSkuWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -341,7 +344,16 @@ public class ShipmentWiteLogic {
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
 
+            //锁定电商库存
+            Response<Boolean> lockResponse = warehouseSkuWriteService.lockStock(warehouseShipments);
+            if (!lockResponse.isSuccess()){
+                log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,lockResponse.getError());
+                return false;
+            }
+
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
+
+
             //修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId != null) {
                 Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);

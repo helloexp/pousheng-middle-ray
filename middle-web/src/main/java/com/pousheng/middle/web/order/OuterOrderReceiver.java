@@ -49,6 +49,9 @@ import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -200,6 +203,38 @@ public class OuterOrderReceiver {
 
 
 
+
+    /**
+     * 创建发货单
+     */
+    @RequestMapping(value = "/create/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoShipments(@RequestParam String fileName) {
+
+        String url = "/pousheng/file/" + fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> orderIds = readShipmentCode(file1);
+
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
+
+        for (String orderIdStr : orderIds){
+            log.info("START-AUTO-DISPATCH ORDER ID:{}",orderIdStr);
+            OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(Long.valueOf(orderIdStr));
+            try {
+                autoCreateShipmetsListener.onShipment(event);
+            } catch (Exception e){
+                log.info("fail to auto create shipment, shop order id is {} ",orderIdStr);
+            }
+            log.info("END-AUTO-DISPATCH ORDER ID:{}",orderIdStr);
+        }
+
+
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+
+    }
+
+
     @RequestMapping(value = "/auto/handle", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public void autoHandle() {
 
@@ -257,6 +292,21 @@ public class OuterOrderReceiver {
         return current == size;  // 判断是否存在下一个要处理的批次
     }
 
+
+    private  List<String> readShipmentCode(File file){
+        List<String> result = Lists.newArrayList();
+        try{
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            while ((s = br.readLine()) != null){ //使用readLine方法，一次读一行
+                result.add(s);
+            }
+            br.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return result;
+    }
 
 
 

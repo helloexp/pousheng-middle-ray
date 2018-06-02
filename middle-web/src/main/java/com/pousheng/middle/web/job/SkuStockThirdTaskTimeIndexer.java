@@ -10,6 +10,8 @@ import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
 import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -32,8 +34,12 @@ public class SkuStockThirdTaskTimeIndexer {
     @Autowired
     private SkuStockThirdExecutor skuStockThridExecutor;
 
+    @Getter
+    @Setter
     @Value("${stock.sync.third.full.time.start:00:00:00}")
     String stockSyncThirdFullTimeStart;
+    @Getter
+    @Setter
     @Value("${stock.sync.third.full.time.end:00:30:00}")
     String stockSyncThirdFullTimeEnd;
 

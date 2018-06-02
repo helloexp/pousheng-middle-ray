@@ -78,7 +78,7 @@ public class NotifyHkOrderDoneListener {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //如果是店发，通知给hk（针对mpos订单）
             if(Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)){
-                Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation());
+                Response<Boolean> res = shipmentWiteLogic.updateStatusLocking(shipment,MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation());
                 if(!res.isSuccess()){
                     log.error("shipment(id:{}) confirm failed,cause:{}",shipment.getId(),res.getError());
                 }

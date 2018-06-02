@@ -110,7 +110,7 @@ public class SyncErpReturnLogic {
     private Response<Boolean> syncReturnPos(Refund refund) {
         try{
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -171,7 +171,7 @@ public class SyncErpReturnLogic {
     }
     private void updateRefundSyncFial(Refund refund){
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }

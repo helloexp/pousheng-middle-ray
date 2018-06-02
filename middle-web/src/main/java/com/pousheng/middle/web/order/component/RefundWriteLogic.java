@@ -123,7 +123,7 @@ public class RefundWriteLogic {
         if (isAllHandle) {
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.CREATE_SHIPMENT.toOrderOperation());
-            Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refundId, targetStatus);
+            Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
@@ -176,7 +176,7 @@ public class RefundWriteLogic {
         if (isAllHandle) {
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation());
-            Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refundId, targetStatus);
+            Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
@@ -195,6 +195,31 @@ public class RefundWriteLogic {
 
         Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
         Response<Boolean> updateRes = refundWriteService.updateStatus(refund.getId(), targetStatus);
+        if (!updateRes.isSuccess()) {
+            log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+
+        return Response.ok(Boolean.TRUE);
+
+    }
+
+    /**
+     * 以乐观锁的方式更新售后单状态
+     * @param refund 售后单
+     * @param orderOperation 状态机节点
+     * @return
+     */
+    public Response<Boolean> updateStatusLocking(Refund refund, OrderOperation orderOperation) {
+
+        Flow flow = flowPicker.pickAfterSales();
+        if (!flow.operationAllowed(refund.getStatus(), orderOperation)) {
+            log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), orderOperation.getText());
+            return Response.fail("refund.status.not.allow.current.operation");
+        }
+
+        Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
+        Response<Boolean> updateRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refund.getId(),refund.getStatus(), targetStatus);
         if (!updateRes.isSuccess()) {
             log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateRes.getError());
             return Response.fail(updateRes.getError());
@@ -239,7 +264,7 @@ public class RefundWriteLogic {
 
 
         //更新状态
-        Response<Boolean> updateRes = this.updateStatus(refund, MiddleOrderEvent.DELETE.toOrderOperation());
+        Response<Boolean> updateRes = this.updateStatusLocking(refund, MiddleOrderEvent.DELETE.toOrderOperation());
         if (!updateRes.isSuccess()) {
             log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
@@ -433,7 +458,7 @@ public class RefundWriteLogic {
         //提交动作
         if (Objects.equals(submitRefundInfo.getOperationType(), 2)) {
             //更新售后单状态
-            Response<Boolean> updateStatusRes = updateStatus(refund, MiddleOrderEvent.HANDLE.toOrderOperation());
+            Response<Boolean> updateStatusRes = updateStatusLocking(refund, MiddleOrderEvent.HANDLE.toOrderOperation());
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateStatusRes.getError());
                 throw new JsonResponseException(updateStatusRes.getError());
@@ -961,7 +986,7 @@ public class RefundWriteLogic {
         //提交动作
         if (Objects.equals(submitRefundInfo.getOperationType(), 2)) {
             //更新售后单状态
-            Response<Boolean> updateStatusRes = updateStatus(refund, MiddleOrderEvent.LOST_HANDLE.toOrderOperation());
+            Response<Boolean> updateStatusRes = updateStatusLocking(refund, MiddleOrderEvent.LOST_HANDLE.toOrderOperation());
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateStatusRes.getError());
                 throw new JsonResponseException(updateStatusRes.getError());
@@ -990,7 +1015,7 @@ public class RefundWriteLogic {
             throw new JsonResponseException("third.party.refund.can.not.delete");
         }
         //更新状态
-        Response<Boolean> updateRes = this.updateStatus(refund, MiddleOrderEvent.DELETE.toOrderOperation());
+        Response<Boolean> updateRes = this.updateStatusLocking(refund, MiddleOrderEvent.DELETE.toOrderOperation());
         if (!updateRes.isSuccess()) {
             log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
             throw new JsonResponseException(updateRes.getError());

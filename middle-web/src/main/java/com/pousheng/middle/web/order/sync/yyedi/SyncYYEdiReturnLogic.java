@@ -86,7 +86,7 @@ public class SyncYYEdiReturnLogic {
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
         try {
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -126,7 +126,7 @@ public class SyncYYEdiReturnLogic {
 
     private void updateRefundSyncFial(Refund refund){
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }
@@ -346,7 +346,7 @@ public class SyncYYEdiReturnLogic {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -380,7 +380,7 @@ public class SyncYYEdiReturnLogic {
     private Response<Boolean> upateCancelRefundSuccess(Refund refund, OrderOperation orderOperation, Response<Boolean> updateStatusRes) {
         Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
         OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(newStatusRefund, syncSuccessOrderOperation);
         if (!updateStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
             return Response.fail(updateSyncStatusRes.getError());
@@ -392,7 +392,7 @@ public class SyncYYEdiReturnLogic {
     private Response<Boolean> updateCancelRefundFailed(Refund refund) {
         Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
         OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(newStatusRefund, syncSuccessOrderOperation);
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(newStatusRefund, syncSuccessOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
             return Response.fail(updateSyncStatusRes.getError());

@@ -168,6 +168,32 @@ public class ShipmentWiteLogic {
 
     }
 
+    /**
+     *
+     * @param shipment
+     * @param orderOperation
+     * @return
+     */
+    public Response<Boolean> updateStatusLocking(Shipment shipment, OrderOperation orderOperation) {
+
+        Flow flow = flowPicker.pickShipments();
+        if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+            log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipment.getStatus(), orderOperation.getText());
+            return Response.fail("shipment.status.not.allow.current.operation");
+        }
+
+        Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), targetStatus);
+        if (!updateRes.isSuccess()) {
+            log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),targetStatus,shipment.getStatus(), updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        return Response.ok();
+
+    }
+
+
+
 
     //更新发货单
     public void update(Shipment shipment) {
@@ -201,7 +227,7 @@ public class ShipmentWiteLogic {
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
-                Response<Boolean> cancelRes = this.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
                     throw new JsonResponseException(cancelRes.getError());
@@ -223,7 +249,7 @@ public class ShipmentWiteLogic {
                     boolean result = syncMposShipmentLogic.revokeMposShipment(shipment);
                     if (!result) {
                         //撤销失败
-                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
+                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
                         if (!updateRes.isSuccess()) {
                             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
                         }
@@ -231,7 +257,7 @@ public class ShipmentWiteLogic {
                     }
                 }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
-                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     throw new JsonResponseException(updateStatus.getError());

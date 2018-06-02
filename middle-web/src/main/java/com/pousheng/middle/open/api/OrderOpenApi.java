@@ -190,7 +190,7 @@ public class OrderOpenApi {
                 log.warn("shipment(id:{}) duplicate request to handle,so skip",shipment.getId());
                 return;
             }
-            Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
+            Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), MiddleShipmentsStatus.WAIT_SHIP.getValue());
             if (!updateRes.isSuccess()) {
                 log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(),MiddleShipmentsStatus.WAIT_SHIP.getValue(), updateRes.getError());
             }
@@ -207,7 +207,7 @@ public class OrderOpenApi {
             log.info("end update erpShipmentId is {}",erpShipmentId);
         }else{
             OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             }
@@ -278,7 +278,7 @@ public class OrderOpenApi {
             update.setExtra(extraMap);
 
             //更新状态
-            Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
+            Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
                 throw new ServiceException(updateStatusRes.getError());
@@ -371,7 +371,7 @@ public class OrderOpenApi {
 
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 throw new OPServerException(200,"已经通知中台退货，请勿再次通知");

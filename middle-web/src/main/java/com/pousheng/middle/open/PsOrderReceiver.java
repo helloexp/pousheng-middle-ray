@@ -229,7 +229,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
                 List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
                 Shipment shipment = shipments.get(0);
-                shipmentWiteLogic.updateStatus(shipment,MiddleOrderEvent.SHIP.toOrderOperation());
+                shipmentWiteLogic.updateStatusLocking(shipment,MiddleOrderEvent.SHIP.toOrderOperation());
             }
 
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(), MiddleOrderStatus.SHIPPED.getValue());

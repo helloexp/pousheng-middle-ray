@@ -126,7 +126,7 @@ public class MposOrderHandleLogic {
         if(Objects.isNull(orderEvent)) {
             return;
         }
-        Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment,orderEvent.toOrderOperation());
+        Response<Boolean> res = shipmentWiteLogic.updateStatusLocking(shipment,orderEvent.toOrderOperation());
         if(!res.isSuccess()){
             log.error("sync shipment(id:{}) fail,cause:{}",shipment.getId(),res.getError());
             return ;

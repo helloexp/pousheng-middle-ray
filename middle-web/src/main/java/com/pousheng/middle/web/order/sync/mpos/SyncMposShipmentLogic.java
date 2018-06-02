@@ -89,7 +89,7 @@ public class SyncMposShipmentLogic{
     public Response<Boolean> syncShipmentToMpos(Shipment shipment){
         // 更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_MPOS.toOrderOperation();
-        Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
+        Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, orderOperation);
         if (!updateStatusRes.isSuccess()) {
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
             return Response.fail(updateStatusRes.getError());
@@ -111,7 +111,7 @@ public class SyncMposShipmentLogic{
                 log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
                 // 同步失败
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
@@ -123,7 +123,7 @@ public class SyncMposShipmentLogic{
             // 同步失败
             log.error("sync shipment(id:{}) to mpos failed,cause:{}",shipment.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_FAIL.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+            Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             }
@@ -132,7 +132,7 @@ public class SyncMposShipmentLogic{
         // 同步成功
         log.info("sync shipment:（id:{}) to mpos success",shipment.getId());
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_MPOS_ACCEPT_SUCCESS.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
             return Response.fail(updateSyncStatusRes.getError());
@@ -141,7 +141,7 @@ public class SyncMposShipmentLogic{
         if(Objects.equals(shipmentExtra.getIsAppint(),"1")){
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
             OrderOperation syncOrderOperation1 = MiddleOrderEvent.MPOS_RECEIVE.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes1 = shipmentWiteLogic.updateStatus(shipment1, syncOrderOperation1);
+            Response<Boolean> updateSyncStatusRes1 = shipmentWiteLogic.updateStatusLocking(shipment1, syncOrderOperation1);
             if (!updateSyncStatusRes1.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 return Response.fail(updateSyncStatusRes1.getError());

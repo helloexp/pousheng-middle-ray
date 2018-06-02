@@ -112,6 +112,7 @@ public class MposSkuStockManager {
      */
     @Transactional
     public void unLockStockShop(List<ShopShipment> shopShipments) {
+        log.info("start to unlock shipment:{}",shopShipments);
         for (ShopShipment shopShipment : shopShipments) {
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shopShipment.getSkuCodeAndQuantities();
             Long shopId = shopShipment.getShopId();
@@ -119,12 +120,13 @@ public class MposSkuStockManager {
             for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
                 String skuCode = skuCodeAndQuantity.getSkuCode();
                 Integer quantity = skuCodeAndQuantity.getQuantity();
-                if(checkIsNeedCreateShopSkuStock(shopId,skuCode,Long.valueOf(quantity))){
+                if (checkIsNeedCreateShopSkuStock(shopId,skuCode,Long.valueOf(quantity))){
                     boolean success = mposSkuStockDao.unlockStockShop(shopId,
                             skuCode,
                             quantity);
+                    log.info("unlock shop(id:{}) sku code:{} quantity:{}",shopId,skuCode,quantity);
                     if (!success) {
-                        log.error("unlock sku stock(skuCode={}, stock={}) for shop(id={})",
+                        log.error("fail to unlock sku stock(skuCode={}, stock={}) for shop(id={})",
                                 skuCode, quantity,  shopId);
                         throw new ServiceException("unlock.sku.stock.fail");
                     }

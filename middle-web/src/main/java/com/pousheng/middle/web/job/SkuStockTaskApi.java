@@ -24,11 +24,11 @@ import java.util.*;
 @RequestMapping("/api/job/stock")
 public class SkuStockTaskApi {
 
-    @Autowired
+    @Autowired(required=false)
     WarehouseStockApi warehouseStockApi;
-    @Autowired
+    @Autowired(required=false)
     SkuStockThirdTaskTimeIndexer skuStockThirdTaskTimeIndexer;
-    @Autowired
+    @Autowired(required=false)
     SkuStockTaskTimeIndexer skuStockTaskTimeIndexer;
 
     @ApiOperation("获取当前库存全量同步时间设置")
@@ -68,7 +68,5 @@ public class SkuStockTaskApi {
         skuStockThirdTaskTimeIndexer.setStockSyncThirdFullTimeEnd(stockSyncThirdFullTimeEnd);
         return true;
     }
-
-
 
 }

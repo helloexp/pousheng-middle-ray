@@ -16,12 +16,16 @@ import com.pousheng.middle.open.PsPersistedOrderMaker;
 import com.pousheng.middle.open.erp.ErpOpenApiToken;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderChain;
 import com.pousheng.middle.order.dispatch.link.*;
+import com.pousheng.middle.schedule.jobs.BatchConfig;
+import com.pousheng.middle.schedule.jobs.BatchJobProperties;
+import com.pousheng.middle.schedule.jobs.TaskConfig;
 import com.pousheng.middle.web.biz.CompensateBizRegistryCenter;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
+import com.pousheng.middle.web.job.SkuStockThirdTaskTimeIndexer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
@@ -73,7 +77,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.RejectedExecutionHandler;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Description: add something here
@@ -90,6 +97,8 @@ import java.util.concurrent.*;
         AuthConfiguration.class,
         AuthApiConfiguration.class,
         OpenClientCenterAutoConfig.class,
+        BatchConfig.class,
+        TaskConfig.class,
         MultipartAutoConfiguration.class})
 
 @ComponentScan(
@@ -107,7 +116,7 @@ import java.util.concurrent.*;
 @EnableScheduling
 @EnableAutoConfiguration
 @EnableConfigurationProperties({
-        ErpOpenApiToken.class,GDMapToken.class
+        ErpOpenApiToken.class, GDMapToken.class, BatchJobProperties.class
 })
 @Slf4j
 public class MiddleConfiguration extends WebMvcConfigurerAdapter {
@@ -132,6 +141,19 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     public SkuStockTaskTimeIndexer skuStockTaskTimeIndexer() {
         return new SkuStockTaskTimeIndexer();
     }
+
+
+
+    //@Configuration
+    @ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+    @Bean
+    public SkuStockThirdTaskTimeIndexer skuStockThirdTaskTimeIndexer() {
+        return new SkuStockThirdTaskTimeIndexer();
+    }
+
+
+
+
 
     /**
      * 中台不需要计算运费

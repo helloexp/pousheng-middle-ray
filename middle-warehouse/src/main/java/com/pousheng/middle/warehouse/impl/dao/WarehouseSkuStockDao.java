@@ -108,11 +108,12 @@ public class WarehouseSkuStockDao extends MyBatisDao<WarehouseSkuStock> {
      * @param warehouseId 仓库id
      * @param skuCode     sku编码
      * @param delta       变化的数值
+     * @param currentLock  当前锁定库存数量
      * @return 是否操作成功
      */
-    public boolean unlockStock(Long warehouseId, String skuCode, Integer delta) {
+    public boolean unlockStock(Long warehouseId, String skuCode, Integer delta,Long currentLock) {
         return this.sqlSession.update(sqlId("unlockStock"),
-                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "delta", delta))
+                ImmutableMap.of("warehouseId", warehouseId, "skuCode", skuCode, "delta", delta,"currentLock",currentLock))
                 == 1;
     }
 

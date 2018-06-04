@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.sync.hk;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
@@ -10,7 +11,6 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
-import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -121,7 +121,7 @@ public class SyncShipmentPosLogic {
 
             return Response.ok();
         } catch (Exception e) {
-            log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("sync.hk.pos.shipment.fail");
         }
 
@@ -161,7 +161,7 @@ public class SyncShipmentPosLogic {
             }
             return Response.ok();
         } catch (Exception e) {
-            log.error("sync hk shipment confirm at failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk shipment confirm at failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("sync.hk.shipment.confirm.at.fail");
         }
 

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="SkuStockUpdated">
+    <resultMap id="SkuStockUpdatedMap" type="SkuStockUpdated">
+        <id column="id" property="id"/>
+        <result column="task_id" property="taskId"/>
+        <result column="sku_code" property="skuCode"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="tb">
+        pousheng_temp_sku_stock_updated
+    </sql>
+
+    <sql id="cols_all">
+        id, <include refid="cols_exclude_id" />
+    </sql>
+
+    <sql id="cols_exclude_id">
+        task_id, sku_code, created_at, updated_at
+    </sql>
+
+    <sql id="vals">
+        #{taskId}, #{skuCode}, now(), now()
+    </sql>
+
+    <sql id="queryCondition">
+
+        <if test="taskId != null">and `task_id` = #{taskId}</if>
+
+        <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
+
+        <if test="createdAt != null">and `created_at` = #{createdAt}</if>
+
+        <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
+
+    </sql>
+
+    <sql id="order">
+        order by id desc
+    </sql>
+
+    <insert id="create" parameterType="SkuStockUpdated" keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO
+        <include refid="tb" />
+        (<include refid="cols_exclude_id" />)
+        VALUES
+        (<include refid="vals" />)
+    </insert>
+
+    <select id="findById" parameterType="long" resultMap="SkuStockUpdatedMap" >
+        SELECT <include refid="cols_all" />
+        FROM <include refid="tb" />
+        WHERE id = #{id}
+    </select>
+
+    <update id="update" parameterType="SkuStockUpdated">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="taskId != null">task_id = #{taskId},</if>
+            <if test="skuCode != null">sku_code = #{skuCode},</if>
+            updated_at=now()
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="delete" parameterType="long">
+        DELETE FROM <include refid="tb"/>
+        WHERE id = #{id}
+    </delete>
+
+    <select id="paging" parameterType="list" resultMap="SkuStockUpdatedMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+        <include refid="queryCondition"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
+    <select id="count" parameterType="list" resultType="long">
+        select count(1)
+        from <include refid="tb"/>
+        <where>
+        <include refid="queryCondition"/>
+        </where>
+    </select>
+
+    <select id="findWaiteHandle" resultType="string">
+        SELECT sku_code skuCode
+        FROM <include refid="tb" />
+        group by sku_code
+    </select>
+
+    <delete id="deleteAll">
+        DELETE FROM <include refid="tb"/>
+    </delete>
+
+</mapper>

@@ -1,8 +1,25 @@
 # RELEASE NOTES
 
+## 2.1.2 (2018-05-31)
+
+* 修复Skx取数逻辑
+* 【BUG】生产：天猫Levis售后换货发货单，在订单派发中心收件人电话显示为空 http://pmp.terminus.io/console/project/178/issues/38147
+* 【BUG】生产环境-中台系统卖家信息中的电话号码不能同步到EDI http://pmp.terminus.io/console/project/178/issues/38561
+* 【BUG】锁定库存为负数 http://pmp.terminus.io/console/project/178/issues/38638
+
+## 2.1.1 (2018-05-30)
+
+* 增加全量处理库存同步的批处理任务
+* 增加trade.job.enable: ${TRADE_JOB_ENABLE}、stock.job.enable: ${STOCK_JOB_ENABLE}环境变量区分交易job和库存job
+* 增加leader.path: ${POUSHENG_ZK_PATH}环境变量，区分库存和交易集群leader
+* 增加库存推送任务处理临时表(pousheng_temp_sku_stock_updated)，减少全量库存推送第三方请求次数
+* 增加 trigger_insert_on_sku_stocks 、 trigger_update_on_sku_stocks 触发器
+
+
 ## 2.1.0 (2018-05-25)
 
 * 恒康库存库存改造，先将数据落到DB然后再消费
+* 库存推送调优
 
 ## 2.0.9 (2018-05-24)
 

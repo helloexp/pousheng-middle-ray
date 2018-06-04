@@ -1,7 +1,6 @@
 package com.pousheng.middle.hksyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
-import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundDto;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
@@ -15,7 +14,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/7/19

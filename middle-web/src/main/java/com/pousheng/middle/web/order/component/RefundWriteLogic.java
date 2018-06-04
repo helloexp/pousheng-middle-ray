@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.component;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -8,13 +7,16 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.RefundAmount;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
@@ -24,7 +26,6 @@ import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
@@ -40,7 +41,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
-import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -83,6 +83,8 @@ public class RefundWriteLogic {
     @Autowired
     private SyncRefundLogic syncRefundLogic;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
 
     /**
@@ -91,7 +93,9 @@ public class RefundWriteLogic {
      *
      * @param skuCodeAndQuantity 商品编码及数量
      */
-    public void updateSkuHandleNumber(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+    public boolean updateSkuHandleNumber(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+
+        boolean result = true;
 
         Refund refund = refundReadLogic.findRefundById(refundId);
         //换货商品
@@ -124,18 +128,20 @@ public class RefundWriteLogic {
 
         Response<Boolean> updateRes = refundWriteService.update(update);
         if (!updateRes.isSuccess()) {
+            result = false;
             log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
         }
 
         if (isAllHandle) {
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.CREATE_SHIPMENT.toOrderOperation());
-            Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refundId, targetStatus);
+            Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
+                result = false;
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
         }
-
+        return result;
     }
 
     /**
@@ -144,8 +150,9 @@ public class RefundWriteLogic {
      *
      * @param skuCodeAndQuantity 商品编码及数量
      */
-    public void updateSkuHandleNumberForLost(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
+    public boolean updateSkuHandleNumberForLost(Long refundId, Map<String, Integer> skuCodeAndQuantity) {
 
+        boolean result = true;
         Refund refund = refundReadLogic.findRefundById(refundId);
         //丢件补发商品
         List<RefundItem> refundLostItems = refundReadLogic.findRefundLostItems(refund);
@@ -177,17 +184,20 @@ public class RefundWriteLogic {
 
         Response<Boolean> updateRes = refundWriteService.update(update);
         if (!updateRes.isSuccess()) {
+            result = false;
             log.error("update refund(id:{}) fail,error:{}", refund, updateRes.getError());
         }
 
         if (isAllHandle) {
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.LOST_CREATE_SHIP.toOrderOperation());
-            Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refundId, targetStatus);
+            Response<Boolean> updateStatusRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refundId,refund.getStatus(), targetStatus);
             if (!updateStatusRes.isSuccess()) {
+                result = false;
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateRes.getError());
             }
         }
+        return result;
 
     }
 
@@ -202,6 +212,31 @@ public class RefundWriteLogic {
 
         Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
         Response<Boolean> updateRes = refundWriteService.updateStatus(refund.getId(), targetStatus);
+        if (!updateRes.isSuccess()) {
+            log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+
+        return Response.ok(Boolean.TRUE);
+
+    }
+
+    /**
+     * 以乐观锁的方式更新售后单状态
+     * @param refund 售后单
+     * @param orderOperation 状态机节点
+     * @return
+     */
+    public Response<Boolean> updateStatusLocking(Refund refund, OrderOperation orderOperation) {
+
+        Flow flow = flowPicker.pickAfterSales();
+        if (!flow.operationAllowed(refund.getStatus(), orderOperation)) {
+            log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), orderOperation.getText());
+            return Response.fail("refund.status.not.allow.current.operation");
+        }
+
+        Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
+        Response<Boolean> updateRes = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refund.getId(),refund.getStatus(), targetStatus);
         if (!updateRes.isSuccess()) {
             log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateRes.getError());
             return Response.fail(updateRes.getError());
@@ -246,7 +281,7 @@ public class RefundWriteLogic {
 
 
         //更新状态
-        Response<Boolean> updateRes = this.updateStatus(refund, MiddleOrderEvent.DELETE.toOrderOperation());
+        Response<Boolean> updateRes = this.updateStatusLocking(refund, MiddleOrderEvent.DELETE.toOrderOperation());
         if (!updateRes.isSuccess()) {
             log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
@@ -440,7 +475,7 @@ public class RefundWriteLogic {
         //提交动作
         if (Objects.equals(submitRefundInfo.getOperationType(), 2)) {
             //更新售后单状态
-            Response<Boolean> updateStatusRes = updateStatus(refund, MiddleOrderEvent.HANDLE.toOrderOperation());
+            Response<Boolean> updateStatusRes = updateStatusLocking(refund, MiddleOrderEvent.HANDLE.toOrderOperation());
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateStatusRes.getError());
                 throw new JsonResponseException(updateStatusRes.getError());
@@ -968,7 +1003,7 @@ public class RefundWriteLogic {
         //提交动作
         if (Objects.equals(submitRefundInfo.getOperationType(), 2)) {
             //更新售后单状态
-            Response<Boolean> updateStatusRes = updateStatus(refund, MiddleOrderEvent.LOST_HANDLE.toOrderOperation());
+            Response<Boolean> updateStatusRes = updateStatusLocking(refund, MiddleOrderEvent.LOST_HANDLE.toOrderOperation());
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status to:{} fail,error:{}", refund.getId(), updateStatusRes.getError());
                 throw new JsonResponseException(updateStatusRes.getError());
@@ -997,7 +1032,7 @@ public class RefundWriteLogic {
             throw new JsonResponseException("third.party.refund.can.not.delete");
         }
         //更新状态
-        Response<Boolean> updateRes = this.updateStatus(refund, MiddleOrderEvent.DELETE.toOrderOperation());
+        Response<Boolean> updateRes = this.updateStatusLocking(refund, MiddleOrderEvent.DELETE.toOrderOperation());
         if (!updateRes.isSuccess()) {
             log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
@@ -1021,7 +1056,9 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenAfterSaleId(refundReadLogic.getOutafterSaleIdTaobao(outId));
-                eventBus.post(event);
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                this.createRefundResultTask(event);
             }
         }
         //如果是苏宁的售后单，将会主动查询售后单的状态
@@ -1037,9 +1074,25 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenOrderId(shopOrder.getOutId());
-                eventBus.post(event);
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                this.createRefundResultTask(event);
             }
         }
+    }
+
+    /**
+     * @Description 查询第三方（天猫、苏宁）售后单确认状态任务创建
+     * @Date        2018/5/31
+     * @param       event
+     * @return
+     */
+    private void createRefundResultTask(TaobaoConfirmRefundEvent event){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.THIRD_REFUND_RESULT.toString());
+        biz.setContext(mapper.toJson(event));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
     }
 
     /**

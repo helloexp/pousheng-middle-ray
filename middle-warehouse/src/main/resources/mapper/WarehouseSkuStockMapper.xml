@@ -109,7 +109,7 @@
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock - #{delta}
-        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and avail_stock >= #{delta}
     </update>
 
     <update id="lockStock" parameterType="map">
@@ -117,20 +117,20 @@
         <include refid="tb"/>
         SET avail_stock = avail_stock - #{delta}, locked_stock = locked_stock + #{delta}
         WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and
-        <![CDATA[ avail_stock>=#{delta} ]]>
+        <![CDATA[ avail_stock>=#{delta} ]]> and <![CDATA[ base_stock>=#{delta} ]]>
     </update>
 
     <update id="unlockStock" parameterType="map">
         UPDATE
         <include refid="tb"/>
         SET avail_stock = avail_stock + #{delta}, locked_stock = locked_stock - #{delta}
-        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode}
+        WHERE warehouse_id= #{warehouseId} and sku_code=#{skuCode} and locked_stock = #{currentLock}
     </update>
 
     <update id="syncStock" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{updatedAt}
+        SET base_stock= #{erpStock}, avail_stock = #{erpStock} - locked_stock, sync_at = #{updatedAt},updated_at = now()
         WHERE id = #{id} and
         <![CDATA[ sync_at < #{updatedAt} ]]>
     </update>

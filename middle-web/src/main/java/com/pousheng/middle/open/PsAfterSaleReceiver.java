@@ -6,7 +6,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.*;
+import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -293,7 +296,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             if (flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation())
                     || flow.operationAllowed(refund.getStatus(), MiddleOrderEvent.SYNC_HK.toOrderOperation())) {
                 //直接售后单的状态为已取消即可
-                Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.CANCELED.getValue());
+                Response<Boolean> updateR = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refund.getId(),refund.getStatus(), MiddleRefundStatus.CANCELED.getValue());
                 if (!updateR.isSuccess()) {
                     log.error("fail to update refund(id={}) status to {}cause:{}",
                             refund.getId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
@@ -328,7 +331,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 && !Objects.equals(refund.getStatus(), MiddleRefundStatus.SYNC_ECP_SUCCESS_WAIT_REFUND.getValue())) {
             return;
         }
-        Response<Boolean> updateR = refundWriteService.updateStatus(refund.getId(), MiddleRefundStatus.REFUND.getValue());
+        Response<Boolean> updateR = refundWriteService.updateStatusByRefundIdAndCurrentStatus(refund.getId(),refund.getStatus(), MiddleRefundStatus.REFUND.getValue());
         if (!updateR.isSuccess()) {
             log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",
                     refund.getId(), MiddleRefundStatus.REFUND.getValue(), afterSale, updateR.getError());

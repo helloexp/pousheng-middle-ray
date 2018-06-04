@@ -5,7 +5,6 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
-import io.terminus.common.exception.JsonResponseException;
 import org.springframework.util.StringUtils;
 
 import java.util.List;

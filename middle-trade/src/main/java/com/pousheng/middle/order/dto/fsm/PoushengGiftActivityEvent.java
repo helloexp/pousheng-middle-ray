@@ -1,9 +1,7 @@
 package com.pousheng.middle.order.dto.fsm;
 
-import io.terminus.parana.order.dto.fsm.OrderEvent;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import lombok.Getter;
-import org.springframework.core.annotation.Order;
 
 import java.util.Objects;
 

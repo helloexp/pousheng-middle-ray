@@ -1,16 +1,12 @@
 package com.pousheng.middle.web.item.batchhandle;
 
-import com.pousheng.middle.web.utils.export.FileRecord;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 

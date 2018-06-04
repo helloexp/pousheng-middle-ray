@@ -9,7 +9,6 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
-import com.pousheng.middle.warehouse.service.SkuStockTaskReadService;
 import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
@@ -33,6 +32,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -56,6 +56,7 @@ import java.util.concurrent.TimeUnit;
  * 定时拉取Mpos订单跟踪发货单状态
  */
 @Slf4j
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @RestController
 public class MposJob {
@@ -116,7 +117,7 @@ public class MposJob {
 
     @Autowired
     public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
-        this.executorService = new ThreadPoolExecutor(2, 4, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(10, 10, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
                 new ThreadFactoryBuilder().setNameFormat("mpos-shipment-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
@@ -170,8 +171,8 @@ public class MposJob {
         param.put("status",0);
         param.put("time",autoTryNumber);
         int pageNo = 1;
-        while (true) {
-            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,20,param);
+        while (pageNo < 10) {
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,80,param);
             if(!response.isSuccess()){
                 log.error("fail to find compensation task");
                 return ;
@@ -183,11 +184,10 @@ public class MposJob {
             }
             //异步处理
             executorService.submit(new CompensationTask(autoCompensations));
-            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
-                break;
-            }
+//            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
+//                break;
+//            }
             pageNo++;
-            break;
         }
 
         stopwatch.stop();
@@ -227,7 +227,7 @@ public class MposJob {
     /**
      * 每隔10分钟尝试把超时处理中的任务状态回滚到待处理
      */
-    @Scheduled(cron = "0 */10 * * * ?")
+    //@Scheduled(cron = "0 */10 * * * ?")
     public void compensationSkuStockTask() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());

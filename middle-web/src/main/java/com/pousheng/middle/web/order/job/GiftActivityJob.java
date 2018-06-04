@@ -9,6 +9,7 @@ import com.pousheng.middle.web.order.component.PoushengGiftActivityWriteLogic;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +21,7 @@ import java.util.Objects;
  * Date: 2017/11/29
  * pousheng-middle
  */
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @Slf4j
 public class GiftActivityJob {

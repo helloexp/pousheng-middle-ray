@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.redis;
 
 import com.google.common.base.Strings;
-import com.pousheng.middle.web.redis.RedisConstants;
 import io.terminus.common.redis.utils.JedisTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -2,12 +2,9 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
-import com.google.common.collect.ListMultimap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Sets;
+import com.google.common.collect.*;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -21,24 +18,17 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
-import io.terminus.open.client.order.dto.OpenFullOrder;
-import io.terminus.open.client.order.dto.OpenFullOrderAddress;
-import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.open.client.order.dto.OpenFullOrderInvoice;
-import io.terminus.open.client.order.dto.OpenFullOrderItem;
+import io.terminus.open.client.order.dto.*;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderBase;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -49,11 +39,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -486,16 +472,19 @@ public class OrderWriteLogic {
         //取消发货单
         int count = 0;//计数器用来记录是否有发货单取消失败的
         String errorMsg = "";
+        List<SkuOrder> failSkuOrders = new ArrayList<SkuOrder>();
         for (Shipment shipment : shipments) {
             Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 1);
             if (!cancelShipmentResponse.isSuccess()) {
                 errorMsg = cancelShipmentResponse.getError();
                 count++;
+                //如果取消发货单失败，则只更新相应的子单状态
+                failSkuOrders.addAll(skuOrders.stream().filter(skuOrder -> shipment.getSkuInfos().containsKey(skuOrder.getId())).collect(Collectors.toList()));
             }
         }
 
         if (count > 0) {
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
         } else {
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
         }
@@ -850,5 +839,70 @@ public class OrderWriteLogic {
         openFullOrderInfo.setInvoice(invoice);
         return openFullOrderInfo;
     }
+
+    /**
+     * 天猫订单修复
+     * @param shopId
+     */
+    public void updateOrderAmount(Long shopId){
+        int pageNo=1;
+        while(true){
+            MiddleOrderCriteria criteria = new MiddleOrderCriteria();
+            criteria.setShopId(shopId);
+            criteria.setStatus(Lists.newArrayList(1,2,3,4,5,6,-1,-2,-3,-4,-5,-6));
+            criteria.setPageNo(pageNo);
+            log.info("pageNo i=========s {}",pageNo);
+            Response<Paging<ShopOrder>> r =  middleOrderReadService.pagingShopOrder(criteria);
+            if (r.isSuccess()){
+                Paging<ShopOrder> shopOrderPaging  = r.getResult();
+                List<ShopOrder> shopOrders  = shopOrderPaging.getData();
+                if (!shopOrders.isEmpty()){
+                    for (ShopOrder shopOrder:shopOrders){
+                        Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId,shopOrder.getOutId());
+                        if (orderResponse.isSuccess()){
+                            OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
+                            ShopOrder newShopOrder = new ShopOrder();
+                            newShopOrder.setId(shopOrder.getId());
+                            newShopOrder.setFee(openClientFullOrder.getFee());
+                            newShopOrder.setDiscount(openClientFullOrder.getDiscount());
+                            newShopOrder.setShipFee(openClientFullOrder.getShipFee());
+                            newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
+                            Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
+                            if (!shopOrderR.isSuccess()){
+                                log.error("shopOrder failed,id is {}",shopOrder.getId());
+                            }else{
+                                List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+                                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                                for (SkuOrder skuOrder:skuOrders){
+                                    for (OpenClientOrderItem item:items){
+                                        if (Objects.equals(skuOrder.getOutSkuId(),item.getSkuId())){
+                                            log.info("update skuOrder");
+                                            SkuOrder newSkuOrder = new SkuOrder();
+                                            newSkuOrder.setId(skuOrder.getId());
+                                            newSkuOrder.setOriginFee(Long.valueOf(item.getPrice()*item.getQuantity()));
+                                            newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                                            newSkuOrder.setFee(newSkuOrder.getOriginFee()-newSkuOrder.getDiscount());
+                                            Response<Boolean>  skuOrderR =  middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                                            if (!skuOrderR.isSuccess()){
+                                                log.error("skuOrder failed,id is",newSkuOrder.getId());
+                                            }
+                                        }else{
+                                            log.info("do not update skuOrder");
+                                        }
+                                    }
+                                }
+                            }
+                        }else{
+                            log.info("shop order failed");
+                        }
+                    }
+                }else{
+                    break;
+                }
+                pageNo++;
+            }
+        }
+    }
+
 }
 

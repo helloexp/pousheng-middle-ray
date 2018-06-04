@@ -128,7 +128,7 @@
     <update id="lockStockShop" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET locked_stock = locked_stock + #{quantity}
+        SET locked_stock = locked_stock + #{quantity},updated_at = now()
         WHERE shop_id= #{shopId} and sku_code=#{skuCode}
     </update>
 
@@ -159,8 +159,8 @@
     <update id="unlockStockShop" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET locked_stock = locked_stock - #{quantity}
-        WHERE shop_id= #{shopId} and sku_code=#{skuCode}
+        SET locked_stock = locked_stock - #{quantity},updated_at = now()
+        WHERE shop_id= #{shopId} and sku_code=#{skuCode} and locked_stock >= #{quantity}
     </update>
 
 

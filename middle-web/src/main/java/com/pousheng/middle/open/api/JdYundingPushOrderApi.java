@@ -1,6 +1,5 @@
 package com.pousheng.middle.open.api;
 
-import com.pousheng.middle.open.api.dto.ErpHandleShipmentResult;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.api.OrderReceiver;
@@ -16,7 +15,6 @@ import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
 
 /**

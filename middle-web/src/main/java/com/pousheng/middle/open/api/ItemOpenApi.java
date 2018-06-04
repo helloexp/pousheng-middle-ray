@@ -4,7 +4,6 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.item.PsItemTool;
-import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.open.api.dto.SkuIsMposDto;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -18,12 +17,9 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
-import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 /**

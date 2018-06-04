@@ -7,11 +7,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import io.terminus.common.exception.ServiceException;
-import io.terminus.common.model.Response;
 import io.terminus.open.client.common.OpenClientException;
-import io.terminus.open.client.common.token.Token;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
-import io.terminus.open.client.parana.dto.ParanaCallResult;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 

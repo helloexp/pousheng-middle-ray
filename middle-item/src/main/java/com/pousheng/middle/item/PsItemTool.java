@@ -1,12 +1,8 @@
 package com.pousheng.middle.item;
 
 import com.google.common.base.Objects;
-import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.enums.PsSpuType;
 import io.terminus.parana.spu.model.SkuTemplate;
-import org.springframework.util.CollectionUtils;
-
-import java.util.Map;
 
 /**
  * Created by songrenfei on 2018/1/16

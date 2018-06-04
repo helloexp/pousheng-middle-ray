@@ -13,7 +13,7 @@
         <result column="timeout_at" property="timeoutAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-        
+        <result column="type" property="type"/>
     </resultMap>
 
     <sql id="tb">
@@ -25,11 +25,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        status, sku_count, sku_json, timeout_at, created_at, updated_at
+        status, sku_count, sku_json, timeout_at, created_at, updated_at,type
     </sql>
 
     <sql id="vals">
-        #{status}, #{skuCount}, #{skuJson}, #{timeoutAt}, now(), now()
+        #{status}, #{skuCount}, #{skuJson}, #{timeoutAt}, now(), now(),#{type}
     </sql>
 
     <sql id="queryCondition">
@@ -48,6 +48,8 @@
         
         <if test="startAt != null">and created_at &gt; #{startAt}</if>
         <if test="endAt != null">and created_at &lt; #{endAt}</if>
+
+        <if test="type != null">and type &lt; #{type}</if>
     </sql>
 
     <sql id="order">
@@ -69,13 +71,15 @@
     </select>
 
 
-    <select id="findWaiteHandleLimit" resultMap="SkuStockTaskMap" >
+    <select id="findWaiteHandleLimit" resultMap="SkuStockTaskMap"  parameterType="map">
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
-        WHERE status = 0 ORDER BY created_at LIMIT 100
+        WHERE status = #{status} and type = #{type} ORDER BY id asc LIMIT #{qty}
     </select>
 
-   <select id="findByIds" parameterType="list" resultMap="SkuStockTaskMap">
+
+
+    <select id="findByIds" parameterType="list" resultMap="SkuStockTaskMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
@@ -124,16 +128,16 @@
     <update id="updateToHandle" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET timeout_at = #{timeoutAt},status =1, updated_at = now()
-        WHERE id = #{id} AND status =0
+        SET timeout_at = #{timeoutAt},status =#{toStatus}, updated_at = now()
+        WHERE id = #{id} AND status =#{fromStatus}
     </update>
 
-    <update id="updateToHandleBatch" parameterType="java.util.List">
+    <update id="updateToHandleBatch" parameterType="map">
         UPDATE
         <include refid="tb"/>
-        SET timeout_at = (now() + interval 10 MINUTE),status =1, updated_at = now()
-        WHERE status =0 AND id IN
-        <foreach collection="list" index="index" item="id" open="(" separator="," close=")">
+        SET status =#{toStatus}, updated_at = now()
+        WHERE status =#{fromStatus} AND id IN
+        <foreach collection="ids" index="index" item="id" open="(" separator="," close=")">
             #{id}
         </foreach>
     </update>
@@ -145,6 +149,13 @@
         WHERE status = 1 AND timeout_at &lt; #{endAt}
     </update>
 
+
+    <update id="updateStatusById" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        SET status = #{status}, updated_at = now()
+        WHERE id = #{id}
+    </update>
 
 
 </mapper>

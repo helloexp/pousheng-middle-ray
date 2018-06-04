@@ -9,7 +9,6 @@ import com.pousheng.middle.item.SearchSkuTemplateProperties;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
-import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.parana.cache.CategoryBindingCacher;
 import io.terminus.parana.cache.FrontCategoryCacher;
 import io.terminus.parana.category.dto.FrontCategoryTree;

@@ -5,7 +5,6 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.pousheng.middle.order.dispatch.link.DispatchOrderLink;
-import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;

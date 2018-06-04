@@ -11,7 +11,10 @@ import com.pousheng.middle.hksyc.component.SycHkRefundOrderApi;
 import com.pousheng.middle.hksyc.component.SycHkShipmentOrderApi;
 import com.pousheng.middle.hksyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.order.dto.*;
+import io.terminus.open.client.order.dto.OpenFullOrder;
+import io.terminus.open.client.order.dto.OpenFullOrderAddress;
+import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 

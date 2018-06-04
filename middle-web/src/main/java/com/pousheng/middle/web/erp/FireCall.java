@@ -26,18 +26,27 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.order.model.OrderBase;
+import io.terminus.parana.order.model.OrderLevel;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
@@ -102,6 +111,16 @@ public class FireCall {
     private MappingReadService mappingReadService;
     @Autowired
     private StockPusher stockPusher;
+    @RpcConsumer
+    private ShipmentReadService shipmentReadService;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
+    @Autowired
+    private AutoCreateShipmetsListener autoCreateShipmetsListener;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -445,6 +464,117 @@ public class FireCall {
         }else{
             return  "not ok";
         }
+    }
+
+
+    /**
+     * 取消发货单
+     */
+    @RequestMapping(value = "/cancel/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void cancelShipments(@RequestParam String fileName){
+
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> codes =  readShipmentCode(file1);
+
+        log.info("START-HANDLE-SHIPMENT-API for:{}",url);
+
+        for (String code : codes){
+            log.info("START-HANDLE-SHIPMENT-CODE:{}",code);
+
+            Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(code);
+            if (!shipmentRes.isSuccess()) {
+                log.error("find shipment by code :{} fail,error:{}",code,shipmentRes.getError());
+                continue;
+            }
+
+            Shipment shipment = shipmentRes.getResult();
+            if (!Objects.equals(shipment.getStatus(),4)){
+                log.error("shipment code:{} status is :{} so skip cancel",code,shipment.getStatus());
+                continue;
+            }
+            //to cancel
+            log.info("try to cancel shipment, shipment code is {}",code);
+            Response<Boolean> response = shipmentWiteLogic.rollbackShipment(shipment);
+            if (!response.isSuccess()){
+                log.info("try to cancel shipment fail, shipment code is {},error:{}", code,response.getError());
+                continue;
+            }
+
+            log.info("END-HANDLE-SHIPMENT-CODE:{}",code);
+        }
+
+        log.info("END-HANDLE-SHIPMENT-API for:{}",url);
+
+    }
+
+
+
+    /**
+     * 创建发货单
+     */
+    @RequestMapping(value = "/create/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoShipments(@RequestParam String fileName){
+
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> codes =  readShipmentCode(file1);
+
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+
+        for (String code : codes){
+            log.info("START-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
+
+            Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(code);
+            if (!shipmentRes.isSuccess()) {
+                log.error("find shipment by code :{} fail,error:{}",code,shipmentRes.getError());
+                continue;
+            }
+
+            Shipment shipment = shipmentRes.getResult();
+
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+
+            OrderBase orderBase = orderReadLogic.findOrder(orderShipment.getOrderId(), OrderLevel.SHOP);
+            if (!Objects.equals(orderBase.getStatus(),1)){
+                log.error("orderBase id:{} status is :{} so skip create shipment by shipment code:{}",orderBase.getId(),orderBase.getStatus(),code);
+                continue;
+            }
+            //to create shipment
+            log.info("try to create shipment, shipment code is {} order id:{}",code,orderBase.getId());
+            OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(orderBase.getId());
+            try {
+                autoCreateShipmetsListener.onShipment(event);
+            } catch (Exception e){
+                log.info("fail to create shipment, shipment code is {} order id:{}",code,orderBase.getId());
+            }
+
+            log.info("END-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
+        }
+
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+
+    }
+
+
+
+    private  List<String> readShipmentCode(File file){
+        List<String> result = Lists.newArrayList();
+        try{
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            while ((s = br.readLine()) != null){ //使用readLine方法，一次读一行
+                result.add(s);
+            }
+            br.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return result;
     }
 }
 

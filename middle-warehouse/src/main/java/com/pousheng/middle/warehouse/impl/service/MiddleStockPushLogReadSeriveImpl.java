@@ -3,7 +3,6 @@ package com.pousheng.middle.warehouse.impl.service;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.impl.dao.StockPushLogDao;
 import com.pousheng.middle.warehouse.model.StockPushLog;
-import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;

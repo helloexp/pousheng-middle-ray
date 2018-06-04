@@ -16,6 +16,7 @@ import com.pousheng.middle.AbstractRestApiTest;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
@@ -32,6 +33,8 @@ import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.order.service.SkuOrderReadService;
@@ -41,6 +44,10 @@ import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.test.util.ReflectionTestUtils;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -115,7 +122,8 @@ public class ShipmentsTest extends AbstractRestApiTest {
 
         @MockBean
         private ShopCacher shopCacher;
-
+        @MockBean
+        private RefundWriteLogic refundWriteLogic;
         @SpyBean
         private Shipments shipments;
     }
@@ -130,6 +138,8 @@ public class ShipmentsTest extends AbstractRestApiTest {
     ShipmentWiteLogic shipmentWiteLogic;
     MposSkuStockLogic mposSkuStockLogic;
     Shipments shipments;
+    RefundReadLogic refundReadLogic;
+    RefundWriteLogic refundWriteLogic;
 
     @Override
     protected void init() {
@@ -137,6 +147,8 @@ public class ShipmentsTest extends AbstractRestApiTest {
         shipmentWiteLogic = get(ShipmentWiteLogic.class);
         mposSkuStockLogic = get(MposSkuStockLogic.class);
         shipments = get(Shipments.class);
+        refundReadLogic = get(RefundReadLogic.class);
+        refundWriteLogic = get(RefundWriteLogic.class);
     }
 
 
@@ -148,4 +160,26 @@ public class ShipmentsTest extends AbstractRestApiTest {
         when(mposSkuStockLogic.unLockStock(any())).thenReturn(Response.ok());
         shipments.cancleShipment(anyLong());
     }
+    @Test
+    public void refundShipment(){
+        Long shipmentId = 100l;
+
+        Shipment shipment = new Shipment();
+        OrderShipment orderShipment = new OrderShipment();
+        List<ShipmentItem> shipmentItems = new ArrayList<ShipmentItem>();
+        ShipmentItem shipmentItem = new ShipmentItem();
+        shipmentItems.add(shipmentItem);
+
+        Refund refund = new Refund();
+
+        when(shipmentReadLogic.findShipmentById(anyLong())).thenReturn(shipment);
+        when(shipmentReadLogic.findOrderShipmentByShipmentId(anyLong())).thenReturn(orderShipment);
+        when(shipmentReadLogic.getShipmentItems(any())).thenReturn(shipmentItems);
+        when(refundReadLogic.findRefundById(anyLong())).thenReturn(refund);
+        when(refundWriteLogic.updateSkuHandleNumber(any(),any())).thenReturn(true);
+        when(refundWriteLogic.updateSkuHandleNumberForLost(any(),any())).thenReturn(true);
+
+        ReflectionTestUtils.invokeMethod(shipments,"refundShipment", shipmentId);
+    }
+
 }

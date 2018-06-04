@@ -14,6 +14,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
@@ -52,6 +53,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -60,7 +62,6 @@ import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.pousheng.middle.shop.dto.ShopExtraInfo;
 
 
 /**
@@ -141,6 +142,9 @@ public class Shipments {
 
     @Autowired
     private ShopCacher shopCacher;
+
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -483,6 +487,7 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("生成换货发货单")
+    @Transactional
     public List<Long> createAfterShipment(@PathVariable("id") @OperationLogParam Long refundId,
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
@@ -571,9 +576,12 @@ public class Shipments {
                 throw new JsonResponseException(createResp.getError());
             }
             Long shipmentId = createResp.getResult();
-            log.info("Shipments.createAfterShipment eventBus post before refundId:{}, shipmentId:{}",refundId,shipmentId);
-            eventBus.post(new RefundShipmentEvent(shipmentId));
-            log.info("Shipments.createAfterShipment eventBus post after refundId:{}, shipmentId:{}",refundId,shipmentId);
+
+            //由于eventsbus监听事件RefundShipmentEvent执行存在问题，暂时改为同步执行
+            //eventBus.post(new RefundShipmentEvent(shipmentId));
+            if (!this.refundShipment(shipmentId)){
+                throw new JsonResponseException("update.refund.error");
+            }
 
             shipmentIds.add(shipmentId);
         }
@@ -642,7 +650,7 @@ public class Shipments {
     @OperationLogType("取消发货单")
     public void cancleShipment(@PathVariable(value = "id") @OperationLogParam Long shipmentId) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> cancelRes = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+        Response<Boolean> cancelRes = shipmentWiteLogic.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
         if (!cancelRes.isSuccess()) {
             log.error("cancel shipment(id:{}) fail,error:{}", shipmentId, cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
@@ -823,6 +831,7 @@ public class Shipments {
         //仓库区分是店仓还是总仓
         if (Objects.equals(warehouse.getType(),0)){
             shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_WAREHOUSE_DELIVER));
+            shipment.setShipId(warehouse.getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
             shipmentExtra.setWarehouseId(warehouse.getId());
         }else {
@@ -835,6 +844,7 @@ public class Shipments {
             }
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(extra.get("outCode"),Long.valueOf(warehouse.getCompanyId()));
             shipmentExtra.setWarehouseId(shop.getId());
+            shipment.setShipId(getShipIdByDeliverId(shop.getId()));
         }
 
         shipmentExtra.setWarehouseName(warehouse.getName());
@@ -1522,5 +1532,123 @@ public class Shipments {
         Shop shop = shopCacher.findShopById(deliverShopId);
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         return shopExtraInfo != null ? shopExtraInfo.getOpenShopId(): null ;
+    }
+
+    /**
+     * 修复发货单金额
+     * @param shopId
+     */
+    @RequestMapping(value = "api/shipment/{shopId}/update/amount",method = RequestMethod.PUT)
+    public void updateShipmentsAmount(@PathVariable(value = "shopId")Long shopId){
+        int pageNo= 0;
+        while(true){
+            OrderShipmentCriteria shipmentCriteria = new OrderShipmentCriteria();
+            shipmentCriteria.setShopId(shopId);
+            log.info("pageNo is {}",pageNo);
+            shipmentCriteria.setPageNo(pageNo);
+            Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(shipmentCriteria);
+            if (!response.isSuccess()) {
+                log.error("find shipment by criteria:{} fail,error:{}", shipmentCriteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            List<ShipmentPagingInfo> shipmentPagingInfos = response.getResult().getData();
+            if (shipmentPagingInfos.isEmpty()){
+                break;
+            }
+            for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos) {
+                try{
+
+                    Shipment shipment  = shipmentPagingInfo.getShipment();
+                    if (shipment.getStatus()<0){
+                        log.info("shipment status <0");
+                        continue;
+                    }
+                    Map<Long,Integer> skuInfos = shipment.getSkuInfos();
+                    ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
+                    List<Long> skuOrderIds = skuInfos.keySet().stream().collect(Collectors.toList());
+                    log.info("skuOrderIds is {}",skuOrderIds);
+                    List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(shipmentPagingInfo.getOrderShipment().getOrderId());
+                    //判断发货单中的运费是否被计算过
+                    List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+                    //查询发货单中的shipmentExtra的运费金额是否大于0
+                    Optional<ShipmentExtra> shipFeeShipmentExtra = shipments.stream().filter(Objects::nonNull).filter(s->(s.getStatus()>0)).
+                            flatMap(s1->Lists.newArrayList(shipmentReadLogic.getShipmentExtra(s1)).stream()).filter(extra->(extra.getShipmentShipFee()>0)).findAny();
+                    //运费
+                    Long shipmentShipFee = 0L;
+                    //运费优惠
+                    Long shipmentShipDiscountFee = 0L;
+
+                    if (!shipFeeShipmentExtra.isPresent()){
+                        shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee() == null ? 0 : shopOrder.getOriginShipFee());
+                        shipmentShipDiscountFee = shipmentShipFee - Long.valueOf(shopOrder.getShipFee() == null ? 0 : shopOrder.getShipFee());
+                    }
+
+                    List<ShipmentItem> newShipmentItems =  shipmentWiteLogic.makeShipmentItems(skuOrders,skuInfos);
+                    //发货单商品金额
+                    Long shipmentItemFee = 0L;
+                    //发货单总的优惠
+                    Long shipmentDiscountFee = 0L;
+                    //发货单总的净价
+                    Long shipmentTotalFee = 0L;
+                    for (ShipmentItem shipmentItem : newShipmentItems) {
+                        shipmentItemFee = shipmentItem.getSkuPrice() * shipmentItem.getQuantity() + shipmentItemFee;
+                        shipmentDiscountFee = shipmentItem.getSkuDiscount() + shipmentDiscountFee;
+                        shipmentTotalFee = shipmentItem.getCleanFee() + shipmentTotalFee;
+                    }
+                    Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
+
+                    shipmentExtra.setShipmentItemFee(shipmentItemFee);
+                    //发货单运费金额
+                    shipmentExtra.setShipmentShipFee(shipmentShipFee);
+                    //发货单优惠金额
+                    shipmentExtra.setShipmentDiscountFee(shipmentDiscountFee);
+                    //发货单总的净价
+                    shipmentExtra.setShipmentTotalFee(shipmentTotalFee);
+                    shipmentExtra.setShipmentShipDiscountFee(shipmentShipDiscountFee);
+
+                    shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
+                    Map<String, String> extraMap = shipment.getExtra();
+                    extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(newShipmentItems));
+                    extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
+                    shipment.setExtra(extraMap);
+                    shipmentWiteLogic.update(shipment);
+                }catch (Exception e){
+                    log.error("update shipment amount failed, caused by {}",Throwables.getStackTraceAsString(e));
+                }
+            }
+            pageNo++;
+        }
+    }
+
+
+    /**
+     * @Description 退换货售后单创建退货单后修改售后单状态
+     *              由于eventsbus监听事件RefundShipmentEvent执行存在问题，暂时改为同步执行
+     * @Date        2018/5/24
+     * @param       shipmentId
+     * @return
+     */
+    private boolean refundShipment(Long shipmentId) {
+        boolean result = true;
+        try {
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+
+            Map<String, Integer> skuCodeAndQuantityMap = shipmentItems.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getQuantity));
+            Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+            if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
+                result = refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);
+            } else {
+                result = refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantityMap);
+            }
+        } catch ( Exception e){
+            result = false;
+            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}",shipmentId,e.getMessage());
+        }
+        return result;
     }
 }

@@ -9,28 +9,18 @@ import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
-import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
-import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * 发货单自动发货的事件

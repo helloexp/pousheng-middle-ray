@@ -12,10 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 
 /**
@@ -68,14 +65,17 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
 
     @Test
     public void updateToHandle() {
-        Boolean toHandle = skuStockTaskDao.updateToHandle(skuStockTask.getId(),new Date());
+        Boolean toHandle = skuStockTaskDao.updateToHandle(skuStockTask.getId(),new Date(),0,1);
         assertEquals(toHandle,Boolean.TRUE);
     }
 
 
     @Test
     public void findWaiteHandleLimit() {
-        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit();
+        int qty = 1;
+        String type = "INCR";
+
+        List<SkuStockTask> skuStockTaskList = skuStockTaskDao.findWaiteHandleLimit(qty,1,type);
         assertNotNull(skuStockTaskList);
     }
 
@@ -89,6 +89,13 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
         assertEquals(skuStockTaskPaging.getData().get(0).getId(), skuStockTask.getId());
     }
 
+    @Test
+    public void testUpdateStatusById(){
+        Boolean toHandle = skuStockTaskDao.updateStatusById(skuStockTask.getId(),2);
+        assertEquals(toHandle,Boolean.TRUE);
+
+    }
+
     private SkuStockTask make() {
         SkuStockTask skuStockTask = new SkuStockTask();
 
@@ -98,7 +105,7 @@ public class SkuStockTaskDaoTest extends BaseDaoTest {
         skuStockTask.setSkuCount(300);
 
         try {
-            skuStockTask.setSkuJson("json");
+            skuStockTask.setSkuJson("");
         } catch (Exception e) {
             e.printStackTrace();
         }

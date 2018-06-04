@@ -1,9 +1,6 @@
 package com.pousheng.middle.yyedisyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
-import com.pousheng.middle.hksyc.dto.HkRequestHead;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderBody;
-import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrderDto;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfoBody;

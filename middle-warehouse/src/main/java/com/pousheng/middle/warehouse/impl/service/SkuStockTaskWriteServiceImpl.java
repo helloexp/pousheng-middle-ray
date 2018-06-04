@@ -66,4 +66,16 @@ public class SkuStockTaskWriteServiceImpl implements SkuStockTaskWriteService {
             return Response.fail("update.sku.stock.task.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> updateStatusById(Long skuStockTaskId,int status) {
+        try {
+            return Response.ok(skuStockTaskDao.updateStatusById(skuStockTaskId,status));
+        } catch (Exception e) {
+            log.error("update skuStockTask status failed, skuStockTaskId:{}, cause:{}", skuStockTaskId, Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.stock.task.update.status.fail");
+        }
+    }
+
+
 }

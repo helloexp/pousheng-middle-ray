@@ -5,16 +5,12 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
-import com.pousheng.middle.open.api.dto.ErpStock;
-import io.terminus.common.utils.JsonMapper;
-import org.assertj.core.util.Lists;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 

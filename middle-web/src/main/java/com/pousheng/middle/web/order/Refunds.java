@@ -19,7 +19,6 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
-import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.common.exception.JsonResponseException;
@@ -205,14 +204,14 @@ public class Refunds {
         refunds.forEach(refund -> {
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
                 OrderOperation orderOperation = MiddleOrderEvent.LOST_HANDLE.toOrderOperation();
-                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                Response<Boolean> response = refundWriteLogic.updateStatusLocking(refund, orderOperation);
                 if (!response.isSuccess()) {
                     log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
                     throw new JsonResponseException(response.getError());
                 }
             }else{
                 OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
-                Response<Boolean> response = refundWriteLogic.updateStatus(refund, orderOperation);
+                Response<Boolean> response = refundWriteLogic.updateStatusLocking(refund, orderOperation);
                 if (!response.isSuccess()) {
                     log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
                     throw new JsonResponseException(response.getError());
@@ -308,7 +307,7 @@ public class Refunds {
     @OperationLogType("取消销售单")
     public void cancleRefund(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long refundId) {
         Refund refund = refundReadLogic.findRefundById(refundId);
-        Response<Boolean> cancelRes = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
+        Response<Boolean> cancelRes = refundWriteLogic.updateStatusLocking(refund, MiddleOrderEvent.CANCEL.toOrderOperation());
         if (!cancelRes.isSuccess()) {
             log.error("cancel refund(id:{}) fail,error:{}", refundId, cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
@@ -332,7 +331,7 @@ public class Refunds {
         //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
         if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){
             OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
-            Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+            Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, syncSuccessOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                 throw new JsonResponseException(updateSyncStatusRes.getError());
@@ -385,7 +384,7 @@ public class Refunds {
             log.error("confirm refund(id:{}) fail,error:{}", refundId, cancelRes.getError());
             throw new JsonResponseException(cancelRes.getError());
         }
-        Response<Boolean> cancelRes1 = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.CONFIRM.toOrderOperation());
+        Response<Boolean> cancelRes1 = refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.CONFIRM.toOrderOperation());
         if (!cancelRes1.isSuccess()) {
             log.error("confirm refund(id:{}) fail,error:{}", refundId, cancelRes1.getError());
             throw new JsonResponseException(cancelRes1.getError());
@@ -414,7 +413,7 @@ public class Refunds {
         Refund refund = refundReadLogic.findRefundById(id);
         if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
             //如果允许取消发货则修改状态
-            refundWriteLogic.updateStatus(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
+            refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             RefundExtra refundExtra  = refundReadLogic.findRefundExtra(refund);
@@ -449,7 +448,7 @@ public class Refunds {
            log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), MiddleOrderEvent.REFUND.toOrderOperation().getText());
            throw new JsonResponseException("order.status.invalid");
        }
-       Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.REFUND.toOrderOperation());
+       Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.REFUND.toOrderOperation());
        if(!updateStatusRes.isSuccess()){
             log.error("refund(id:{}) operation :{} fail,error:{}",refund.getId(),MiddleOrderEvent.REFUND.toOrderOperation().getText(),updateStatusRes.getError());
             throw new JsonResponseException("update.refund.error");
@@ -475,7 +474,7 @@ public class Refunds {
             log.error("refund(id:{}) current status:{} not allow operation:{}", refund.getId(), refund.getStatus(), MiddleOrderEvent.RETURN.toOrderOperation().getText());
             throw new JsonResponseException("order.status.invalid");
         }
-        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.RETURN.toOrderOperation());
+        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.RETURN.toOrderOperation());
         if(!updateStatusRes.isSuccess()){
             log.error("refund(id:{}) operation :{} fail,error:{}",refund.getId(),MiddleOrderEvent.RETURN.toOrderOperation().getText(),updateStatusRes.getError());
             throw new JsonResponseException("update.refund.error");
@@ -530,7 +529,7 @@ public class Refunds {
     @OperationLogType("丢件补发客服确认收货")
     public Response<Boolean> confirmDoneForLost(@PathVariable("id") @OperationLogParam Long id){
         Refund refund = refundReadLogic.findRefundById(id);
-        Response<Boolean> r = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
+        Response<Boolean> r = refundWriteLogic.updateStatusLocking(refund, MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation());
         return Response.ok(r.isSuccess());
     }
 

@@ -12,6 +12,8 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
@@ -102,14 +104,24 @@ public class yyEDIOpenApi {
                     Flow flow = flowPicker.pickShipments();
                     OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
                     if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+
                         log.error("shipment(id={})'s status({}) not fit for ship",
                                 shipment.getId(), shipment.getStatus());
-                        YyEdiResponseDetail field = new YyEdiResponseDetail();
-                        field.setShipmentId(yyEdiShipInfo.getShipmentId());
-                        field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                        field.setErrorCode("300");
-                        field.setErrorMsg("已经发货完成，请勿再次发货");
-                        fields.add(field);
+                        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())){
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                            field.setErrorCode("300");
+                            field.setErrorMsg("已经发货完成，请勿再次发货");
+                            fields.add(field);
+                        }else{
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                            field.setErrorCode("400");
+                            field.setErrorMsg("发货单状态异常");
+                            fields.add(field);
+                        }
                         count++;
                         continue;
                     }
@@ -155,9 +167,22 @@ public class yyEDIOpenApi {
                     // autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
+                    YyEdiResponseDetail field = new YyEdiResponseDetail();
+                    field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                    field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                    field.setErrorCode("-100");
+                    field.setErrorMsg(e.getMessage());
+                    fields.add(field);
+                    count++;
                     continue;
 
                 }
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                field.setErrorCode("200");
+                field.setErrorMsg("");
+                fields.add(field);
             }
             if (count > 0) {
                 throw new ServiceException("shipment.receive.shipinfo.failed");
@@ -213,7 +238,7 @@ public class yyEDIOpenApi {
             refundExtra.setYyediRefundId(yyEDIRefundOrderId);
             //更新状态
             OrderOperation orderOperation = getSyncConfirmSuccessOperation(refund);
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("update refund(id:{}) status,operation:{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 error.setErrorCode("300");

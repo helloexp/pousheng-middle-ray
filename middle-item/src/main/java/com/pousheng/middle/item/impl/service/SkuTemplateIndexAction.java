@@ -6,7 +6,6 @@ package com.pousheng.middle.item.impl.service;
 
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
-import io.terminus.parana.search.dto.IndexedItem;
 import io.terminus.search.api.IndexTaskBuilder;
 import io.terminus.search.api.model.IndexAction;
 import io.terminus.search.api.model.IndexTask;

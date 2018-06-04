@@ -4,7 +4,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import org.assertj.core.util.Lists;
 
-import java.util.Date;
 import java.util.List;
 import java.util.concurrent.*;
 

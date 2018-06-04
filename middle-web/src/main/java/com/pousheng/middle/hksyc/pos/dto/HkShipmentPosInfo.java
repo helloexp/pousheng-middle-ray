@@ -3,7 +3,6 @@ package com.pousheng.middle.hksyc.pos.dto;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.Date;
 
 /**
  * Created by songrenfei on 2018/1/16

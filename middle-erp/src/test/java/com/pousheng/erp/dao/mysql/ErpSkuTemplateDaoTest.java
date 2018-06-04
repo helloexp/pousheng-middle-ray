@@ -10,10 +10,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.Random;
 
-import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertThat;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>

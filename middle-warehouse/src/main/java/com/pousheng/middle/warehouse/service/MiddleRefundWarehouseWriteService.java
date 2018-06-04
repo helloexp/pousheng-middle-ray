@@ -1,6 +1,5 @@
 package com.pousheng.middle.warehouse.service;
 
-import com.pousheng.middle.warehouse.model.WarehouseRule;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 

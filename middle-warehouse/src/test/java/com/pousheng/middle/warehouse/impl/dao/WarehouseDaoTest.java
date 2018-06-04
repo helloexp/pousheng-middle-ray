@@ -3,7 +3,6 @@ package com.pousheng.middle.warehouse.impl.dao;
 import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.model.Paging;
-import io.terminus.common.model.Response;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;

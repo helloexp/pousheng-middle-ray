@@ -14,6 +14,12 @@ server:
   context-path: /
   port: 8082
 
+pousheng:
+  middle:
+    stock-full-dump:
+      page-size: ${POUSHENG_MIDDLE_PAGE_SIZE}
+      chunk-size: ${POUSHENG_MIDDLE_CHUNK_SIZE}
+      throttle-limit: ${POUSHENG_MIDDLE_THROTTLE_LIMIT}
 
 spring:
   datasource:
@@ -23,8 +29,8 @@ spring:
     initialize: false
     continue-on-error: false
     hikari:
-      maximum-pool-size: 50
-      minimum-idle: 10
+      maximum-pool-size: 100
+      minimum-idle: 25
       idle-timeout: 30000
       max-lifetime: 30000
       connection-timeout: 30000
@@ -33,6 +39,9 @@ spring:
     name: pousheng-middle
   messages:
     basename: middle_messages
+  batch:
+    job:
+      enabled: false
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
@@ -129,7 +138,7 @@ taobao.token:
 curator:
   zk.host: ${POUSHENG_ZK_HOST}
   zk.port: ${POUSHENG_ZK_PORT}
-  leader.path: /middle
+  leader.path: ${POUSHENG_ZK_PATH}
 ## 这个是开启写入订单和售后单，供roger进行压测，压测后去掉这个配置
 open.client.import.enable: true
 
@@ -153,8 +162,7 @@ gd_map:
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
 
 index.queue.size: 500000
-## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
-open.client.sync.item.mapping.job.enable: true
+
 
 # mpos系统调用的api白名单
 mpos.white.url.list: '/api/middle/sku/template/search,/api/middle/region/.*,/api/middle/address/.*,/api/middle/task/count/stock/.*'
@@ -198,3 +206,27 @@ jd.yunding.secret: 6a0e@93204aefe45d47f6e488
 jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 
 is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
+stock.task.queue.size: ${STOCK_TASK_QUEUE.SIZE}
+stock.task.single.process.pool.core.size: ${STOCK_TASK_SINGLE.PROCESS_POOL_CORE_SIZE}
+stock.task.single.process.pool.max.size: ${STOCK_TASK_SINGLE_PROCESS_POOL_MAX_SIZE}
+
+#恒康全量同步中台时间
+stock.sync.task.full.time.start: ${STOCK_SYNC_TASK_FULL_TIME_START}
+stock.sync.task.full.time.end: ${STOCK_SYNC_TASK_FULL_TIME_END}
+
+#中台全量更新库存时间
+stock.sync.middle.full.time.start: ${STOCK_SYNC_MIDDLE_FULL_TIME_START}
+stock.sync.middle.full.time.end: ${STOCK_SYNC_MIDDLE_FULL_TIME_END}
+
+#中台全量推送第三方时间
+stock.sync.third.full.time.start: ${STOCK_SYNC_THIRD_FULL_TIME_START}
+stock.sync.third.full.time.end: ${STOCK_SYNC_THIRD_FULL_TIME_END}
+
+trade.job.enable: ${TRADE_JOB_ENABLE}
+stock.job.enable: ${STOCK_JOB_ENABLE}
+
+open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.item.mapping.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.item.open.id.job.enable: ${TRADE_JOB_ENABLE}
+open.client.sync.order.job.enable: ${TRADE_JOB_ENABLE}

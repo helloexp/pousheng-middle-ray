@@ -19,13 +19,9 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.ShipmentAmount;
-import com.pousheng.middle.order.service.MiddleOrderWriteService;
-import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
-import com.pousheng.middle.order.service.ShipmentAmountWriteService;
-import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.order.model.ZoneContract;
 import com.pousheng.middle.order.service.*;
+import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
@@ -33,6 +29,7 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -49,6 +46,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.service.MsgService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -67,7 +65,6 @@ import org.springframework.util.CollectionUtils;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
-import io.terminus.parana.cache.ShopCacher;
 /**
  * 发货单写服务
  * Created by songrenfei on 2017/7/2
@@ -171,6 +168,32 @@ public class ShipmentWiteLogic {
 
     }
 
+    /**
+     *
+     * @param shipment
+     * @param orderOperation
+     * @return
+     */
+    public Response<Boolean> updateStatusLocking(Shipment shipment, OrderOperation orderOperation) {
+
+        Flow flow = flowPicker.pickShipments();
+        if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+            log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipment.getStatus(), orderOperation.getText());
+            return Response.fail("shipment.status.not.allow.current.operation");
+        }
+
+        Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), targetStatus);
+        if (!updateRes.isSuccess()) {
+            log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),targetStatus,shipment.getStatus(), updateRes.getError());
+            return Response.fail(updateRes.getError());
+        }
+        return Response.ok();
+
+    }
+
+
+
 
     //更新发货单
     public void update(Shipment shipment) {
@@ -204,7 +227,7 @@ public class ShipmentWiteLogic {
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
-                Response<Boolean> cancelRes = this.updateStatus(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
                     throw new JsonResponseException(cancelRes.getError());
@@ -226,7 +249,7 @@ public class ShipmentWiteLogic {
                     boolean result = syncMposShipmentLogic.revokeMposShipment(shipment);
                     if (!result) {
                         //撤销失败
-                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
+                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
                         if (!updateRes.isSuccess()) {
                             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
                         }
@@ -234,7 +257,7 @@ public class ShipmentWiteLogic {
                     }
                 }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
-                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     throw new JsonResponseException(updateStatus.getError());
@@ -344,8 +367,9 @@ public class ShipmentWiteLogic {
         }
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
-
             Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
+
+
             //修改子单和总单的状态,待处理数量,并同步恒康
             if (shipmentId != null) {
                 Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
@@ -1236,6 +1260,7 @@ public class ShipmentWiteLogic {
         return emails;
     }
 
+
     /**
      * 单个发货单撤销
      *
@@ -1245,7 +1270,17 @@ public class ShipmentWiteLogic {
     public Response<Boolean> rollbackShipment(Long shipmentId) {
 
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        return rollbackShipment(shipment);
+    }
+    /**
+     * 单个发货单撤销
+     *
+     * @param shipment 发货单
+     * @return
+     */
+    public Response<Boolean> rollbackShipment(Shipment shipment) {
+
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         //判断该发货单是否可以撤销，已取消的或者已经发货的发货单是不能撤销的
         if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) || shipment.getStatus() > MiddleShipmentsStatus.SHIPPED.getValue()) {
             throw new JsonResponseException("invalid.shipment.status.can.not.cancel");

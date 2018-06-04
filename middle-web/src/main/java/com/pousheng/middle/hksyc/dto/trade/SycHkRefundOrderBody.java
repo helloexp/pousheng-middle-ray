@@ -4,7 +4,6 @@ import com.pousheng.middle.hksyc.utils.Numbers;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/19

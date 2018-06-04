@@ -6,7 +6,6 @@ package com.pousheng.middle.item.impl.service;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.item.PsItemTool;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
 import io.terminus.common.utils.Arguments;

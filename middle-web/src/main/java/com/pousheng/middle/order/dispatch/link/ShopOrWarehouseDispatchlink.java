@@ -1,7 +1,6 @@
 package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.*;
 import com.pousheng.middle.gd.Location;

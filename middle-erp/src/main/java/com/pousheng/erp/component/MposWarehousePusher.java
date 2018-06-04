@@ -2,10 +2,7 @@ package com.pousheng.erp.component;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
-import com.pousheng.erp.model.SpuMaterial;
-import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -17,7 +14,6 @@ import org.springframework.stereotype.Component;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * 同步恒康 新增或删除mpos仓或门店

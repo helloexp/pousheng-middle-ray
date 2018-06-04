@@ -1,12 +1,15 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.shop.constant.ShopConstants;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -16,13 +19,17 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.center.job.order.api.OrderReceiver;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.parana.component.ParanaOrderConverter;
 import io.terminus.open.client.parana.dto.OrderInfo;
+import io.terminus.parana.order.dto.OrderCriteria;
+import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -34,11 +41,19 @@ import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 外部订单接收器（供内网系统之间调用）
@@ -74,6 +89,14 @@ public class OuterOrderReceiver {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private AutoCreateShipmetsListener autoCreateShipmetsListener;
+
+    private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+    private static final Integer BATCH_SIZE = 100;     // 批处理数量
+
+
+
 
     @ApiOperation("创建外部订单")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -176,6 +199,113 @@ public class OuterOrderReceiver {
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
+    }
+
+
+
+
+    /**
+     * 创建发货单
+     */
+    @RequestMapping(value = "/create/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoShipments(@RequestParam String fileName) {
+
+        String url = "/pousheng/file/" + fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> orderIds = readShipmentCode(file1);
+
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
+
+        for (String orderIdStr : orderIds){
+            log.info("START-AUTO-DISPATCH ORDER ID:{}",orderIdStr);
+            OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(Long.valueOf(orderIdStr));
+            try {
+                autoCreateShipmetsListener.onShipment(event);
+            } catch (Exception e){
+                log.info("fail to auto create shipment, shop order id is {} ",orderIdStr);
+            }
+            log.info("END-AUTO-DISPATCH ORDER ID:{}",orderIdStr);
+        }
+
+
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+
+    }
+
+
+    @RequestMapping(value = "/auto/handle", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoHandle() {
+
+        log.info("[AUTO-HANDLE-ORDER-DISPATCH-BEGIN] begin {}", DFT.print(DateTime.now()));
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        List<ShopOrder> notDispatchOrders = Lists.newArrayList();
+
+        int pageNo = 1;
+        boolean next = batchHandle(pageNo, BATCH_SIZE,notDispatchOrders);
+        while (next) {
+            pageNo ++;
+            next = batchHandle(pageNo, BATCH_SIZE,notDispatchOrders);
+        }
+
+        log.info("TOTAL-WAIT-HANDLE number is:{}",notDispatchOrders.size());
+
+        for (ShopOrder shopOrder : notDispatchOrders){
+            log.info("START-AUTO-DISPATCH ORDER:{}",shopOrder.getOrderCode());
+            OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(shopOrder.getId());
+            try {
+                autoCreateShipmetsListener.onShipment(event);
+            } catch (Exception e){
+                log.info("fail to auto create shipment, shop order code is {} ",shopOrder.getOrderCode());
+            }
+            log.info("END-AUTO-DISPATCH ORDER:{}",shopOrder.getOrderCode());
+        }
+
+        stopwatch.stop();
+        log.info("[AUTO-HANDLE-ORDER-DISPATCH-END] done at {} cost {} ms", DFT.print(DateTime.now()), stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
+
+    }
+
+    @SuppressWarnings("unchecked")
+    private boolean batchHandle(int pageNo, int size,List<ShopOrder> notDispatchOrders) {
+
+        List<Integer> status = Lists.newArrayList(MiddleOrderStatus.WAIT_HANDLE.getValue());
+        OrderCriteria criteria = new OrderCriteria();
+        criteria.setStatus(status);
+        Response<Paging<ShopOrder>> pagingRes = shopOrderReadService.findBy(pageNo, size, criteria);
+        if (!pagingRes.isSuccess()){
+            log.error("paging shop order fail,criteria:{},error:{}",criteria,pagingRes.getError());
+            return Boolean.FALSE;
+        }
+
+        Paging<ShopOrder> paging = pagingRes.getResult();
+        List<ShopOrder> shopOrders = paging.getData();
+
+        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(shopOrders)) {
+            return Boolean.FALSE;
+        }
+        notDispatchOrders.addAll(shopOrders);
+
+        int current = shopOrders.size();
+        return current == size;  // 判断是否存在下一个要处理的批次
+    }
+
+
+    private  List<String> readShipmentCode(File file){
+        List<String> result = Lists.newArrayList();
+        try{
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            while ((s = br.readLine()) != null){ //使用readLine方法，一次读一行
+                result.add(s);
+            }
+            br.close();
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        return result;
     }
 
 

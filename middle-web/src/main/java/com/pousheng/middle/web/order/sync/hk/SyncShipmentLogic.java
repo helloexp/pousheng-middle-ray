@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.hk;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.hksyc.component.SycHkShipmentOrderApi;
@@ -34,7 +35,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.dao.CannotSerializeTransactionException;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -82,7 +82,7 @@ public class SyncShipmentLogic {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
-            Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
+            Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -99,7 +99,7 @@ public class SyncShipmentLogic {
             if (Objects.equals(errorCode,200)) {
                 //更新发货单的状态
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_SUCCESS.toOrderOperation();
-                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+                Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
@@ -112,7 +112,7 @@ public class SyncShipmentLogic {
             }
             return Response.ok();
         } catch (Exception e) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             //更新状态为同步失败
             updateShipmetSyncFail(shipment);
             return Response.fail("sync.hk.shipment.fail");
@@ -124,7 +124,7 @@ public class SyncShipmentLogic {
     private void updateShipmetSyncFail(Shipment shipment){
         //更新发货单的状态
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_ACCEPT_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
@@ -135,7 +135,7 @@ public class SyncShipmentLogic {
     private void updateShipmetSyncCancelFail(Shipment shipment){
         //更新发货单的状态
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
@@ -143,7 +143,7 @@ public class SyncShipmentLogic {
     }
 
     private void updateShipmetDoneToHkFail(Shipment shipment,OrderOperation syncOrderOperation){
-        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
@@ -160,7 +160,7 @@ public class SyncShipmentLogic {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
-            Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatus(shipment, orderOperation);
+            Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -176,7 +176,7 @@ public class SyncShipmentLogic {
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
-                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     return Response.fail(updateStatusRes.getError());
@@ -188,12 +188,12 @@ public class SyncShipmentLogic {
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e1));
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
             return Response.fail(e1.getMessage());
         } catch (Exception e) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             //更新状态取消失败
             updateShipmetSyncCancelFail(shipment);
             return Response.fail("sync.hk.cancel.shipment.failed");
@@ -217,7 +217,7 @@ public class SyncShipmentLogic {
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
                 OrderOperation operation = MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation();
-                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     return Response.fail(updateStatus.getError());
@@ -229,12 +229,12 @@ public class SyncShipmentLogic {
             }
             return Response.ok(Boolean.TRUE);
         } catch (ServiceException e1) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e1.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e1));
             //更新状态取消失败
             updateShipmetDoneToHkFail(shipment,syncOrderOperation);
             return Response.fail(e1.getMessage());
         } catch (Exception e) {
-            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), e.getMessage());
+            log.error("sync hk shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
             //更新状态取消失败
             updateShipmetDoneToHkFail(shipment,syncOrderOperation);
             return Response.fail("sync.hk.cancel.shipment.failed");

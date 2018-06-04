@@ -161,7 +161,7 @@ public class SkxItemOpenApi {
         Optional<SkuTemplate> skuOp = skuTempRes.getResult().getData().stream().findFirst();
 
         if (!skuOp.isPresent()) {
-            log.error("Fail to find unique sku with empty");
+            log.error("Fail to find unique sku with:{} empty",params);
             throw new OPServerException(200, "SkxItemOpenApi.notFoundSku");
         }
 
@@ -170,7 +170,7 @@ public class SkxItemOpenApi {
         Map<String, String> extra = skuTemplate.getExtra();
 
         if (isNull(extra) || !extra.containsKey("materialId")) {
-            log.error("Fail to find unique sku, sku extra is incorrect {}", extra);
+            log.error("Fail to find unique sku template(id:{}), sku extra is incorrect {}",skuTemplate.getId(), extra);
             throw new OPServerException(200, "SkxItemOpenApi.withoutMaterialIdOrEmpty");
         }
 
@@ -181,7 +181,7 @@ public class SkxItemOpenApi {
         //销售属性
         List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
         if (CollectionUtils.isEmpty(skuAttributes)) {
-            log.error("Fail to find unique sku, sku attrs is incorrect {}", skuAttributes);
+            log.error("Fail to find unique sku template(id:{}), sku attrs is incorrect {}",skuTemplate.getId(), skuAttributes);
             throw new OPServerException(200, "SkxItemOpenApi.withIncorrectAttrs");
         }
 
@@ -193,7 +193,7 @@ public class SkxItemOpenApi {
         }
 
         if (isNull(onSaleSku.getSize())) {
-            log.error("Fail to find unique sku, sku attrs has no size attr {}", skuAttributes);
+            log.error("Fail to find unique sku template(id:{}), sku attrs has no size attr {}",skuTemplate.getId(), skuAttributes);
             throw new OPServerException(200, "SkxItemOpenApi.withIncorrectSize");
         }
 

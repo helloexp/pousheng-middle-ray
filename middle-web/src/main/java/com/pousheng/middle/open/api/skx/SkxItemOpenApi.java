@@ -86,27 +86,15 @@ public class SkxItemOpenApi {
             log.info("QUERY-ERP-ON-SALE-ITEM-START param pageNo is:{},pageSize:{},startAt:{} ,endAt:{} skxOpenShopId:{} ",
                     pageNo, pageSize, startAt, endAt, skxOpenShopId);
 
-            Date startDate = null;
-            Date endDate = null;
-            if (nonNull(startAt)) {
-                try {
-                    startDate = new DateTime(Long.parseLong(startAt)).toDate();
-                } catch (Exception e) {
-                    log.warn("Fail to convert startAt with {}", startAt);
-                    throw new OPServerException(200, "SkxItemOpenApi.failToConvertStartDate");
-                }
+            Date startDate;
+            Date endDate;
+            try {
+                startDate = DFT.parseDateTime(startAt).toDate();
+                endDate = DFT.parseDateTime(endAt).toDate();
+            } catch (Exception e) {
+                log.warn("Fail to convert startAt with {} endAt:{}", startAt,endAt);
+                throw new OPServerException(200, "SkxItemOpenApi.failToConvertStartDate");
             }
-            if (nonNull(endAt)) {
-                try {
-
-                    endDate = new DateTime(Long.parseLong(endAt)).toDate();
-                } catch (Exception e) {
-                    log.warn("Fail to convert endAt with {}", startAt);
-                    throw new OPServerException(200, "SkxItemOpenApi.failToConvertEndDate");
-                }
-            }
-
-
             ItemMappingCriteria criteria = new ItemMappingCriteria();
             criteria.setStartAt(startDate);
             criteria.setEndAt(endDate);

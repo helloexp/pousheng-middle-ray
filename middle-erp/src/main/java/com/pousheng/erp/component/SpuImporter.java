@@ -404,4 +404,43 @@ public class SpuImporter {
         }
         return true;
     }
+
+    /**
+     * 根据skucode修复skutemplate
+     * @param skuCode
+     */
+    public void dealFixSkuTemplateBySkucode(String skuCode){
+        List<PoushengMaterial> materials = materialFetcher.fetchByBarCode(skuCode);
+        for (PoushengMaterial poushengMaterial:materials){
+            //获取货号，颜色
+            String materialCode = poushengMaterial.getMaterial_code();
+            String materialId = poushengMaterial.getMaterial_id();
+            String colorId = poushengMaterial.getColor_id();
+            //获取尺码，sku信息
+            List<PoushengSize> size = poushengMaterial.getSize();
+            for (PoushengSize poushengSize:size){
+                String skuCode2 = poushengSize.getBarcode();
+                Response<List<SkuTemplate>>  skutemplateListResponse = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode2));
+                List<SkuTemplate> skuTemplateList = skutemplateListResponse.getResult();
+                for (SkuTemplate skuTemplate:skuTemplateList){
+                    if (skuTemplate.getExtra() == null || skuTemplate.getExtra().isEmpty()
+                            || (skuTemplate.getExtra() != null && skuTemplate.getExtra().get("materialCode") ==null )){
+                        SkuTemplate updateSkuTemplate = new SkuTemplate();
+                        updateSkuTemplate.setId(skuTemplate.getId());
+                        Map<String, String> extra = Maps.newHashMap();
+                        extra.put("colorId",colorId);
+                        extra.put("sizeId", poushengSize.getSize_id());
+                        extra.put("materialId", materialId);
+                        extra.put("materialCode", materialCode);
+                        updateSkuTemplate.setExtra(extra);
+                        try {
+                            skuTemplateDao.update(updateSkuTemplate);
+                        } catch (Exception e) {
+                            log.error("failed to update skuTemplate:{}, cause:{}", skuTemplate.getSkuCode(), Throwables.getStackTraceAsString(e));
+                        }
+                    }
+                }
+            }
+        }
+    }
 }

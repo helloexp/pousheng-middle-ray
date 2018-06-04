@@ -561,6 +561,34 @@ public class FireCall {
     }
 
 
+    /**
+     * 修复shutemplate中extra为空或者缺少货号的数据
+     */
+    @RequestMapping(value = "/fix/skuTemplate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixSkutemplate(@RequestParam String fileName){
+
+        String url = "/pousheng/file/"+ fileName + ".csv";
+        File file1 = new File(url);
+
+        List<String> skuCodes =  readShipmentCode(file1);
+
+        log.info("START-HANDLE-SKUTEMPLATE-API for:{}",url);
+
+        for (String skuCode : skuCodes){
+            log.info("START-HANDLE-SKUTEMPLATE-CODE:{}",skuCode);
+            if ("\"sku_code\"".equals(skuCode)){
+                continue;
+            }
+            spuImporter.dealFixSkuTemplateBySkucode(skuCode);
+            log.info("END-HANDLE-SKUTEMPLATE-CODE:{}",skuCode);
+        }
+
+        log.info("END-HANDLE-SKUTEMPLATE-API for:{}",url);
+
+    }
+
+
+
 
     private  List<String> readShipmentCode(File file){
         List<String> result = Lists.newArrayList();

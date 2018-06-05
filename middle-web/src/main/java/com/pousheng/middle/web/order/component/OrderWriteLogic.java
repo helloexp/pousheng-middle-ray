@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -17,6 +18,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
@@ -833,6 +835,121 @@ public class OrderWriteLogic {
         openFullOrderInfo.setAddress(address);
         openFullOrderInfo.setInvoice(invoice);
         return openFullOrderInfo;
+    }
+
+    /**
+     * 天猫订单修复
+     *
+     * @param shopId
+     */
+    public void updateOrderAmount(Long shopId) {
+        int pageNo = 1;
+        while (true) {
+            MiddleOrderCriteria criteria = new MiddleOrderCriteria();
+            criteria.setShopId(shopId);
+            criteria.setStatus(Lists.newArrayList(1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6));
+            criteria.setPageNo(pageNo);
+            log.info("pageNo i=========s {}", pageNo);
+            Response<Paging<ShopOrder>> r = middleOrderReadService.pagingShopOrder(criteria);
+            if (r.isSuccess()) {
+                Paging<ShopOrder> shopOrderPaging = r.getResult();
+                List<ShopOrder> shopOrders = shopOrderPaging.getData();
+                if (!shopOrders.isEmpty()) {
+                    for (ShopOrder shopOrder : shopOrders) {
+                        Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId, shopOrder.getOutId());
+                        if (orderResponse.isSuccess()) {
+                            OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
+                            ShopOrder newShopOrder = new ShopOrder();
+                            newShopOrder.setId(shopOrder.getId());
+                            newShopOrder.setFee(openClientFullOrder.getFee());
+                            newShopOrder.setDiscount(openClientFullOrder.getDiscount());
+                            newShopOrder.setShipFee(openClientFullOrder.getShipFee());
+                            newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
+                            Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
+                            if (!shopOrderR.isSuccess()) {
+                                log.error("shopOrder failed,id is {}", shopOrder.getId());
+                            } else {
+                                List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+                                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                                for (SkuOrder skuOrder : skuOrders) {
+                                    for (OpenClientOrderItem item : items) {
+                                        if (Objects.equals(skuOrder.getOutSkuId(), item.getSkuId())) {
+                                            log.info("update skuOrder");
+                                            SkuOrder newSkuOrder = new SkuOrder();
+                                            newSkuOrder.setId(skuOrder.getId());
+                                            newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
+                                            newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                                            newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
+                                            Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                                            if (!skuOrderR.isSuccess()) {
+                                                log.error("skuOrder failed,id is", newSkuOrder.getId());
+                                            }
+                                        } else {
+                                            log.info("do not update skuOrder");
+                                        }
+                                    }
+                                }
+                            }
+                        } else {
+                            log.info("shop order failed");
+                        }
+                    }
+                } else {
+                    break;
+                }
+                pageNo++;
+            }
+        }
+    }
+
+    /**
+     * 天猫订单修复
+     *
+     * @param shopId
+     */
+    public void updateOrderAmountByOrderId(Long shopId, Long shopOrderId) {
+        log.info("order amount recover ,shopOrderId={},shopId={}",shopOrderId,shopId);
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId, shopOrder.getOutId());
+        if (orderResponse.isSuccess()) {
+            OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
+            log.info("find open client full order,openClientFullOrder={}",openClientFullOrder);
+            ShopOrder newShopOrder = new ShopOrder();
+            newShopOrder.setId(shopOrder.getId());
+            newShopOrder.setFee(openClientFullOrder.getFee());
+            newShopOrder.setDiscount(openClientFullOrder.getDiscount());
+            newShopOrder.setShipFee(openClientFullOrder.getShipFee());
+            newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
+            Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
+            if (!shopOrderR.isSuccess()) {
+                log.error("shopOrder failed,id is {}", shopOrder.getId());
+            } else {
+                List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                for (SkuOrder skuOrder : skuOrders) {
+                    for (OpenClientOrderItem item : items) {
+                        if (Objects.equals(skuOrder.getOutSkuId(), item.getSkuId())) {
+                            log.info("update skuOrder");
+                            SkuOrder newSkuOrder = new SkuOrder();
+                            newSkuOrder.setId(skuOrder.getId());
+                            newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
+                            newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                            newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
+                            Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                            if (!skuOrderR.isSuccess()) {
+                                log.error("skuOrder failed,id is", newSkuOrder.getId());
+                            }
+                        } else {
+                            log.info("do not update skuOrder");
+                        }
+                    }
+                }
+            }
+        } else {
+            log.info("shop order failed");
+        }
+
+
     }
 }
 

@@ -728,4 +728,24 @@ public class AdminOrderWriter {
                 "3 精度必须小于等于2位");
         return middleOrderInfo;
     }
+
+    /**
+     * 修复订单数据
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{shopId}/update/amount",method = RequestMethod.GET)
+    public void updateOrderAmount(@PathVariable("shopId") Long shopId){
+        orderWriteLogic.updateOrderAmount(shopId);
+    }
+
+    /**
+     * 修复订单数据,根据订单id
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{shopId}/update/amount/by/order/id",method = RequestMethod.GET)
+    public void updateOrderAmountByOrderId(@PathVariable("shopId") Long shopId,@RequestParam("shopOrderId")Long shopOrderId){
+        orderWriteLogic.updateOrderAmountByOrderId(shopId,shopOrderId);
+    }
 }

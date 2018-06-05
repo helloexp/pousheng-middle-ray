@@ -163,7 +163,7 @@ gd_map:
 
 index.queue.size: 500000
 ## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
-open.client.sync.item.mapping.job.enable: true
+## open.client.sync.item.mapping.job.enable: true
 
 
 # mpos系统调用的api白名单

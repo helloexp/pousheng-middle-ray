@@ -5,6 +5,8 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
 import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -16,6 +18,7 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.SkuOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,11 +85,21 @@ public class CreateShipments {
     public Response<List<ShipmentPreview>> shipPreview(@RequestParam Long id,
                                                  @RequestParam(value = "dataList") String dataList,
                                                  @RequestParam(defaultValue = "1") Integer type) {
-
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(id);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         if(Arguments.isNull(requestDataList)){
             log.error("data json :{} invalid",dataList);
             throw new JsonResponseException("analysis.shipment.json.error");
+        }
+        //京东货到付款订单不允许拆分
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
+            if (requestDataList.size() > 1 || requestDataList.get(0).getData().size() != skuOrders.size()) {
+                log.info("data json :{} invalid", dataList);
+                throw new JsonResponseException("jingdong.delivery.cannot.dispatch");
+            }
+
         }
         //用于判断运费是否计算
         int shipmentFeeCount=0;
@@ -156,8 +169,6 @@ public class CreateShipments {
 
                 //判断运费是否已经加过
                 if (!shipmentReadLogic.isShipmentFeeCalculated(id)&&shipmentFeeCount==0) {
-
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
                     shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());
                     shipmentShipDiscountFee = shipmentShipFee-Long.valueOf(shopOrder.getShipFee()==null?0:shopOrder.getShipFee());
                     shipmentFeeCount++;

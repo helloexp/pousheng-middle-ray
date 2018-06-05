@@ -3,6 +3,8 @@ package com.pousheng.middle.web.warehouses.algorithm;
 import com.google.common.base.Function;
 import com.google.common.collect.*;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -19,6 +21,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -26,6 +29,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 根据收货地址选择仓库的算法
@@ -70,7 +74,7 @@ public class WarehouseChooser {
      * @param skuCodeAndQuantities sku及数量
      * @return 对应的仓库及每个仓库应发货的数量
      */
-    public List<WarehouseShipment> choose(Long shopId, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+    public List<WarehouseShipment> choose(ShopOrder shopOrder, Long addressId, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
 
         List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
         Long currentAddressId = addressId;
@@ -80,11 +84,16 @@ public class WarehouseChooser {
             addressIds.add(address.getPid());
             currentAddressId= address.getPid();
         }
-
-        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopId, addressIds);
+        Boolean needSingle = false;
+        //京东货到付款订单不允许拆分
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
+            needSingle = true;
+        }
+        Response<List<Warehouses4Address>> r = warehouseAddressRuleReadService.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",
-                    addressIds, shopId, r.getError());
+                    addressIds, shopOrder.getShopId(), r.getError());
             throw new JsonResponseException(r.getError());
         }
 
@@ -92,7 +101,7 @@ public class WarehouseChooser {
         for (Warehouses4Address warehouses4Address : warehouses4Addresses) {
             List<WarehouseWithPriority> warehouseWithPriorities = warehouses4Address.getWarehouses();
             List<WarehouseShipment> warehouseShipments = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
-                    skuCodeAndQuantities);
+                    skuCodeAndQuantities, needSingle);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 // 先锁定库存, 锁定成功后再返回结果
                 Response<Boolean> rDecrease = warehouseSkuWriteService.lockStock(warehouseShipments);
@@ -116,9 +125,9 @@ public class WarehouseChooser {
     }
 
 
-
     private List<WarehouseShipment> chooseWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
-                                                    List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+                                                    List<SkuCodeAndQuantity> skuCodeAndQuantities,
+                                                    Boolean needSingle) {
         Table<Long, String, Integer> widskucode2stock = HashBasedTable.create();
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
@@ -127,6 +136,10 @@ public class WarehouseChooser {
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 return warehouseShipments;
             }
+        }
+        //如果标记为只允许单一仓库发货
+        if (needSingle) {
+            return Collections.emptyList();
         }
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();

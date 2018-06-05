@@ -1,4 +1,10 @@
 # RELEASE NOTES
+
+## 2.1.4 (2018-06-05)
+
+* 京东优惠分配调整
+* 修复shopReadeService.findByName改为shopReadeService.findById
+
 ## 2.1.3 (2018-06-04)
 
 * 修复Skx下载电商在售商品接口时间处理方式

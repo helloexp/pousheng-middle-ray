@@ -481,15 +481,6 @@ public class Shipments {
             } catch (Exception e) {
                 log.error("failed to gen shipment shopOrderId : {} :", shopOrderId, Throwables.getStackTraceAsString(e));
             }
-            if(null==shipmentId){
-                Response<Boolean> response =   mposSkuStockLogic.unLockStock(shipment);
-                log.info("shopOrderId : {}  mposSkuStockLogic.unLockStock is {}",shopOrderId,response.getResult());
-                if(!response.isSuccess()){
-                    log.warn("shopOrderId : {}  mposSkuStockLogic.unLockStock is fail : {}",shopOrderId,response.getError());
-                }
-                continue;
-            }
-
             shipmentIds.add(shipmentId);
             Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
             if (!shipmentRes.isSuccess()) {

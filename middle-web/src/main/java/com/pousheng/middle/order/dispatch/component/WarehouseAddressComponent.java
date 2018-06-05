@@ -112,10 +112,12 @@ public class WarehouseAddressComponent {
                                      List<ShopShipment> shopShipments){
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         //优先级最高的店ID
-        Long shopId = warehouseWithPriorities.get(0).getShopId();
-        for (ShopShipment shopShipment : shopShipments) {
-            if (Objects.equals(shopShipment.getShopId(),shopId)) {
-                return shopShipment;
+        for(WarehouseWithPriority w:warehouseWithPriorities){
+            Long shopId = w.getShopId();
+            for (ShopShipment shopShipment : shopShipments) {
+                if (Objects.equals(shopShipment.getShopId(),shopId)) {
+                    return shopShipment;
+                }
             }
         }
         throw new ServiceException("calculate.shop.shipment.fail");

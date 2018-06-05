@@ -439,22 +439,14 @@ public class FireCall {
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
-            if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
-                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
-                    Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
-                    Map<String, String> extra = warehouse.getExtra();
-                    Integer safeStock = 0;
-                    if (!CollectionUtils.isEmpty(extra) && extra.containsKey("safeStock")) {
-                        //安全库存
-                        safeStock = Integer.valueOf(extra.get("safeStock"));
-                    }
-
+            if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
                     //锁定库存
                     Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
                     if (lockStock < 0L) {
                         lockStock = 0L;
                     }
-                    Long warehouseStock = skuAndQuantityInfo.getQuantity() - lockStock - safeStock;
+                    Long warehouseStock = skuAndQuantityInfo.getQuantity() - lockStock;
                     if (warehouseStock < 0L) {
                         warehouseStock = 0L;
                     }

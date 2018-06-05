@@ -885,7 +885,36 @@ public class ShipmentWiteLogic {
             shipmentItems.add(shipmentItem);
 
         }
-
+        //由cleanPrice计算出来的金额
+        Integer totalCleanPriceAndQuantity = 0;
+        //由cleanFee计算出来的金额
+        Integer totalCleanFee = 0;
+        for (ShipmentItem shipmentItem:shipmentItems){
+            totalCleanPriceAndQuantity = shipmentItem.getCleanPrice()*shipmentItem.getQuantity()+totalCleanPriceAndQuantity;
+            totalCleanFee = shipmentItem.getCleanFee()+totalCleanFee;
+        }
+        //计算差额,以cleanFee计算出来的金额为准,插入到第一个里面，可能最终会有1分钱的误差
+        if ((totalCleanFee-totalCleanPriceAndQuantity)>0){
+            //这边属于cleanPrice计算少了
+            Integer cleanPrice = shipmentItems.get(0).getCleanPrice();
+            Integer quantity = shipmentItems.get(0).getQuantity();
+            Integer error = totalCleanFee-totalCleanPriceAndQuantity;
+            Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) + error);
+            Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee)/Long.valueOf(quantity));
+            shipmentItems.get(0).setCleanPrice(newCleanPrice);
+        }else if((totalCleanFee-totalCleanPriceAndQuantity)<0){
+            for (ShipmentItem shipmentItem:shipmentItems){
+                Integer error = totalCleanPriceAndQuantity-totalCleanFee;
+                Integer cleanPrice = shipmentItem.getCleanPrice();
+                Integer quantity = shipmentItems.get(0).getQuantity();
+                Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) - error);
+                if (cleanFee>0){
+                    Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee)/Long.valueOf(quantity));
+                    shipmentItem.setCleanPrice(newCleanPrice);
+                    break;
+                }
+            }
+        }
 
         return shipmentItems;
     }
@@ -898,7 +927,7 @@ public class ShipmentWiteLogic {
      * @return 返回四舍五入的计算结果, 得到发货单中的sku商品的折扣
      */
     private Integer getDiscount(Integer skuQuantity, Integer shipSkuQuantity, Integer skuDiscount) {
-        return Math.round(skuDiscount * shipSkuQuantity / skuQuantity);
+        return Math.round(Long.valueOf(skuDiscount) * Long.valueOf(shipSkuQuantity) / Long.valueOf(skuQuantity));
     }
 
     /**
@@ -922,7 +951,7 @@ public class ShipmentWiteLogic {
      * @return 返回sku商品净价
      */
     private Integer getCleanPrice(Integer cleanFee, Integer shipSkuQuantity) {
-        return Math.round(cleanFee / shipSkuQuantity);
+        return Math.round(Long.valueOf(cleanFee) / Long.valueOf(shipSkuQuantity));
     }
 
     /**

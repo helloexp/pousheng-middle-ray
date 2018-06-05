@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.cache.ErpBrandCacher;
@@ -14,9 +15,11 @@ import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.erp.model.PoushengMaterial;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.ItemNameAndStock;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsSpuType;
+import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
@@ -26,7 +29,12 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
 import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
+import com.pousheng.middle.web.events.item.BatchAsyncImportMposFlagEvent;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
+import com.pousheng.middle.web.item.batchhandle.AbnormalRecord;
+import com.pousheng.middle.web.item.batchhandle.ExcelExportHelper;
+import com.pousheng.middle.web.item.batchhandle.ExcelUtil;
+import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -49,6 +57,8 @@ import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.spu.model.SkuTemplate;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.joda.time.DateTime;
@@ -64,6 +74,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -121,6 +132,13 @@ public class FireCall {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private AutoCreateShipmetsListener autoCreateShipmetsListener;
+    @Autowired
+    private SkuTemplateDumpService skuTemplateDumpService;
+
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
+    @Autowired
+    private PushMposItemComponent pushMposItemComponent;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -589,6 +607,27 @@ public class FireCall {
 
 
 
+    /**
+     * 商品打标
+     */
+    @RequestMapping(value = "/make/flag", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void makeFlag(@RequestParam String fileName){
+
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> codes =  readShipmentCode(file1);
+
+        log.info("START-HANDLE-MAKE-FLAG-API for:{}",url);
+
+        onImportMposFlag(codes);
+
+
+        log.info("END-HANDLE-MAKE-FLAG-API for:{}",url);
+
+    }
+
 
     private  List<String> readShipmentCode(File file){
         List<String> result = Lists.newArrayList();
@@ -604,6 +643,64 @@ public class FireCall {
         }
         return result;
     }
+
+
+
+    private void onImportMposFlag(List<String> skuTemplateIds) {
+
+        List<SkuTemplate> skuTemplates = Lists.newArrayList();
+
+        for (int i = 0;i< skuTemplateIds.size();i++) {
+
+            Long  skuTemplateId = Long.valueOf(skuTemplateIds.get(i));
+            try {
+                //判断商品是否有效
+                Response<SkuTemplate> skuTemplateRes = skuTemplateReadService.findById(skuTemplateId);
+                if( !skuTemplateRes.isSuccess()){
+                    log.error("make-flag-fail find sku template by id:{} fail,error:{}",skuTemplateId,skuTemplateRes.getError());
+                    continue;
+                }
+
+                SkuTemplate skuTemplate = skuTemplateRes.getResult();
+
+                //同步电商
+                //syncParanaMposSku(skuTemplateId, PsSpuType.MPOS.value());
+                Response<Boolean> syncParanaRes = syncParanaMposSku(skuTemplate);
+                if( !syncParanaRes.isSuccess()){
+                    log.error("make-flag-fail sync parana mpos item(sku template id:{}) fail",skuTemplateId);
+                    continue;
+                }
+
+                skuTemplates.add(skuTemplate);
+
+                //每1000条更新下mysql和search
+                if (i % 1000 == 0) {
+                    //更新es
+                    skuTemplateDumpService.batchDump(skuTemplates,2);
+                    //设置默认折扣 和价格
+                    pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
+                    skuTemplates.clear();
+                }
+            } catch (Exception e){
+                log.error("make-flag-fail import make sku id:{} flag fail, cause:{}",skuTemplateId,Throwables.getStackTraceAsString(e));
+            }
+        }
+
+        //非1000条的更新下
+        if (!CollectionUtils.isEmpty(skuTemplates)){
+            skuTemplateDumpService.batchDump(skuTemplates,2);
+            pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
+        }
+    }
+
+    /**
+     * 同步电商
+     * @param exist 货品
+     */
+    private Response<Boolean> syncParanaMposSku(SkuTemplate exist){
+        return pushMposItemComponent.syncParanaMposItem(exist);
+    }
+
 }
 
 

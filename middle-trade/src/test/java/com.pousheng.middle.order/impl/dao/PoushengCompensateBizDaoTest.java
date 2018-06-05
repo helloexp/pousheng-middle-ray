@@ -2,7 +2,6 @@ package com.pousheng.middle.order.impl.dao;
 
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
-import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import org.junit.Before;
 import org.junit.Test;

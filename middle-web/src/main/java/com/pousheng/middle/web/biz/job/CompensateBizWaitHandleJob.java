@@ -36,7 +36,7 @@ public class CompensateBizWaitHandleJob {
     @Autowired
     private CompensateBizProcessor compensateBizProcessor;
 
-    @Scheduled(cron = "0 */1 * * * ?")
+//    @Scheduled(cron = "0 */1 * * * ?")
     @GetMapping("/api/compensate/biz/wait/handle/job")
     public void processWaitHandleJob() {
         log.info("[pousheng-middle-compensate-biz-wait-handle-job] start...");

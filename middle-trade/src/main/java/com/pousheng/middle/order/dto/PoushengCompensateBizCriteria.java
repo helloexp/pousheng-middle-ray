@@ -40,4 +40,9 @@ public class PoushengCompensateBizCriteria  extends PagingCriteria implements Se
      */
     private Integer cnt;
 
+    /**
+     * 忽略失败次数
+     */
+    private Integer ignoreCnt;
+
 }

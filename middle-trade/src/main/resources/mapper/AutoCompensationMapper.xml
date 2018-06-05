@@ -43,7 +43,9 @@
 
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
 
-        <if test="time != null">and <![CDATA[ time <= #{time} ]]> </if>
+        <if test="time != null">and <![CDATA[ `time` <= #{time} ]]> </if>
+
+        <if test="otherType != null">and `type` != #{otherType}</if>
 
     </sql>
 
@@ -63,14 +65,6 @@
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE id = #{id}
-    </select>
-
-    <select id="findAutoCompensationTask" parameterType="map" resultMap="AutoCompensationMap" >
-        SELECT <include refid="cols_all" />
-        FROM <include refid="tb" />
-        <where>
-            <include refid="queryCondition"/>
-        </where>
     </select>
 
     <select id="findByIds" parameterType="list" resultMap="AutoCompensationMap">
@@ -118,5 +112,30 @@
             <include refid="queryCondition"/>
         </where>
     </select>
+
+    <update id="updateStatus" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = #{status},
+            updated_at=now()
+        </set>
+        where id in
+        <foreach collection="ids" open="(" separator="," close=")"
+                 item="id">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="resetStatus">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = #{targetStatus},
+            updated_at=now()
+        </set>
+        where status = #{srcStatus} AND <![CDATA[ updated_at < date_add(now(),interval - 10 minute) ]]>
+    </update>
+
 
 </mapper>

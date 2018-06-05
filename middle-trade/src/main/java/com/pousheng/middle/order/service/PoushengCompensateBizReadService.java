@@ -6,6 +6,8 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 
+import java.util.List;
+
 /**
  * 中台业务处理写服务
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -29,4 +31,13 @@ public interface PoushengCompensateBizReadService {
      * @return
      */
     Response<Paging<PoushengCompensateBiz>> paging(PoushengCompensateBizCriteria criteria);
+
+    /**
+     * 根据id集合查询
+     *
+     * @param ids id集合
+     * @return
+     */
+    Response<List<PoushengCompensateBiz>> findByIds(List<Long> ids);
+
 }

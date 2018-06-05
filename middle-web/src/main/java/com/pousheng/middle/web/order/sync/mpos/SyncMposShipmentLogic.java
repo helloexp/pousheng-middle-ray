@@ -203,7 +203,7 @@ public class SyncMposShipmentLogic{
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
         param.put("orderId",shopOrder.getOutId());
-        Response<Shop> shopResponse = shopReadService.findByName(shipmentExtra.getWarehouseName());
+        Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
         if(!shopResponse.isSuccess()){
             log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
             throw new ServiceException("find.shop.not.exists");

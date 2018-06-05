@@ -1202,7 +1202,7 @@ public class ShipmentWiteLogic {
                     }
                     //邮件提醒接单店铺
                     ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                    Response<Shop> shopResponse = shopReadService.findByName(shipmentExtra.getWarehouseName());
+                    Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
                     if (!shopResponse.isSuccess()) {
                         log.error("email notify shop(id:{}) failed,cause:{}", shipmentExtra.getWarehouseId(), shopResponse.getError());
                     }

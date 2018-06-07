@@ -166,7 +166,7 @@ public class SyncYYEdiShipmentLogic {
             reqeustData.add(cancelShipmentInfo);
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-            //如果订单派发中心返回没有该订单，则直接取消成功
+            //如果订单派发中心返回没有该订单，nc
             if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CANCELED)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);

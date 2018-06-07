@@ -66,7 +66,7 @@ public class SyncErpReturnLogic {
      * @return
      */
     public Response<Boolean> syncReturn(Refund refund){
-
+        log.info("sync refund start,refund is {}",refund);
         Response<OpenShop> openShopResponse = openShopReadService.findById(refund.getShopId());
         if (!openShopResponse.isSuccess()){
             log.error("find open shop by openShopId {} failed,caused by {}",refund.getShopId(),openShopResponse.getError());
@@ -109,6 +109,7 @@ public class SyncErpReturnLogic {
     @NotNull
     private Response<Boolean> syncReturnPos(Refund refund) {
         try{
+            log.info("sync refund pos start,refund is {}",refund);
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
             Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
@@ -148,7 +149,7 @@ public class SyncErpReturnLogic {
      * @return 同步结果
      */
     public Response<Boolean> syncReturnCancel(Refund refund){
-
+        log.info("cancel refund start,refund is {}",refund);
         Response<OpenShop> openShopResponse = openShopReadService.findById(refund.getShopId());
         if (!openShopResponse.isSuccess()){
             log.error("find open shop by openShopId {} failed,caused by {}",refund.getShopId(),openShopResponse.getError());

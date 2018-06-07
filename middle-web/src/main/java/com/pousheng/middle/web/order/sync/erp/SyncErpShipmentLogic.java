@@ -56,6 +56,7 @@ public class SyncErpShipmentLogic {
      * @return
      */
     public Response<Boolean> syncShipment(Shipment shipment){
+        log.info("sync shipment start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
@@ -84,6 +85,7 @@ public class SyncErpShipmentLogic {
      * @return
      */
     public Response<Boolean> syncShipmentCancel(Shipment shipment,Integer operationType){
+        log.info("cancel shipment start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
@@ -112,6 +114,7 @@ public class SyncErpShipmentLogic {
      * @return 同步结果, 同步成功true, 同步失败false
      */
     public Response<Boolean> syncShipmentDone(Shipment shipment,Integer operationType,OrderOperation syncOrderOperation){
+        log.info("sync shipment done start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());

@@ -149,16 +149,6 @@ public class SyncYYEdiShipmentLogic {
     public Response<Boolean> syncShipmentCancelToYYEdi(Shipment shipment) {
         try {
             Flow flow = flowPicker.pickShipments();
-            //如果同步订单派发中心失败，则直接取消
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation())){
-                OrderOperation operation = MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation();
-                Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
-                if (!updateStatus.isSuccess()) {
-                    log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
-                    return Response.fail(updateStatus.getError());
-                }
-                return Response.ok(Boolean.TRUE);
-            }
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
             Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, orderOperation);
@@ -177,7 +167,7 @@ public class SyncYYEdiShipmentLogic {
             String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
             //如果订单派发中心返回没有该订单，则直接取消成功
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_NOT_EXIST_ORDER)) {
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CANCELED)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {

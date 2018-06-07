@@ -356,7 +356,7 @@ public class SyncYYEdiReturnLogic {
             yyEdiCancelInfo.setReMark(refund.getBuyerNote());
             String response = sycYYEdiRefundCancelApi.doCancelOrder(Lists.newArrayList(yyEdiCancelInfo));
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
+            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CANCELED)) {
                 //同步调用成功后，更新售后单的状态
                 Response<Boolean> updateSyncStatusRes = this.upateCancelRefundSuccess(refund, orderOperation, updateStatusRes);
                 if (updateSyncStatusRes != null){

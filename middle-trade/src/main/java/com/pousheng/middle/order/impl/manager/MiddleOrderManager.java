@@ -187,8 +187,10 @@ public class MiddleOrderManager {
         ShopOrderExt shopOrderExt = new ShopOrderExt();
         shopOrderExt.setId(shopOrderId);
         shopOrderExt.setBuyerNote(buyerNote);
+        if(null != orderReceiverInfo.getReceiverInfo()){
+            shopOrderExt.setOutBuyerId(orderReceiverInfo.getReceiverInfo().getMobile());
+        }
         //更新订单表中的手机号字段（中台是使用outBuyerId作为手机号）
-        shopOrderExt.setOutBuyerId(orderReceiverInfo.getMobile());
         boolean shopOrderResult = shopOrderExtDao.update(shopOrderExt);
         if (!shopOrderResult){
             log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);

@@ -736,14 +736,4 @@ public class AdminOrderWriter {
         return middleOrderInfo;
     }
 
-
-    /**
-     * 修复订单数据
-     * @param shopId
-     * @return
-     */
-    @RequestMapping(value = "/api/order/{shopId}/update/amount",method = RequestMethod.PUT)
-    public void updateOrderAmount(@PathVariable("shopId") Long shopId){
-        orderWriteLogic.updateOrderAmount(shopId);
-    }
 }

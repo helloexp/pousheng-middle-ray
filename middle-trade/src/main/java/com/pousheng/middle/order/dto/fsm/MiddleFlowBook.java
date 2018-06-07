@@ -646,6 +646,10 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.LOST_SHIPPED.getValue(),
                     MiddleOrderEvent.LOST_CONFIRMED.toOrderOperation(),
                     MiddleRefundStatus.LOST_DONE.getValue());
+            //待收货->客服确认收货->已完成
+            addTransition(MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue(),
+                    MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
+                    MiddleRefundStatus.CANCELED.getValue());
 
         }
     };

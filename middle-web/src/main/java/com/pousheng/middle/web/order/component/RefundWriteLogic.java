@@ -261,12 +261,12 @@ public class RefundWriteLogic {
 
     //删除逆向订单 限手动创建的
     public void deleteRefund(Refund refund) {
-        //判断类型
-        RefundSource refundSource = refundReadLogic.findRefundSource(refund);
+        //判断类型 -----去除第三方售后单不能删除的逻辑
+        /*RefundSource refundSource = refundReadLogic.findRefundSource(refund);
         if (Objects.equals(refundSource.value(), RefundSource.THIRD.value())) {
             log.error("refund(id:{}) is third party refund  so cant not delete", refund.getId());
             throw new JsonResponseException("third.party.refund.can.not.delete");
-        }
+        }*/
 
         //退货信息
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);

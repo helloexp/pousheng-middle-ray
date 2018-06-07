@@ -304,7 +304,7 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
                 for (Object service : beanMap.values()) {
                     if (service instanceof CompensateBizService) {
                         CompensateAnnotation annotation = service.getClass().getAnnotation(CompensateAnnotation.class);
-                        registryCenter.register(annotation.bizType(), (CompensateBizService) service);
+                        registryCenter.register(annotation.bizType().name(), (CompensateBizService) service);
                     }
                 }
                 return registryCenter;

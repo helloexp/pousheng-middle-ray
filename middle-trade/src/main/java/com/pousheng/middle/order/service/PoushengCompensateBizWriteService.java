@@ -48,5 +48,5 @@ public interface PoushengCompensateBizWriteService {
      * @param lastFailedReason
      * @return
      */
-    Response<Boolean> updateLastFailedReason(Long id,String lastFailedReason);
+    Response<Boolean> updateLastFailedReason(Long id,String lastFailedReason,Integer cnt);
 }

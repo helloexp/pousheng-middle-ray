@@ -17,7 +17,7 @@ import java.util.Map;
 @Component
 public class CompensateBizRegistryCenter {
 
-    private Map<PoushengCompensateBizType, CompensateBizService> registry = new HashMap<>();
+    private Map<String, CompensateBizService> registry = new HashMap<>();
 
     /**
      * 注册相应的bean
@@ -25,7 +25,7 @@ public class CompensateBizRegistryCenter {
      * @param bizType
      * @param compensateBizService
      */
-    public void register(PoushengCompensateBizType bizType, CompensateBizService compensateBizService) {
+    public void register(String bizType, CompensateBizService compensateBizService) {
         if (bizType == null) {
             throw new IllegalArgumentException("compensateBizService bizType not provided");
         }

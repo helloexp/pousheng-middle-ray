@@ -23,6 +23,7 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     @Override
     public Response<Long> create(PoushengCompensateBiz poushengCompensateBiz) {
         try {
+            poushengCompensateBiz.setCnt(0);
             poushengCompensateBizDao.create(poushengCompensateBiz);
             return Response.ok(poushengCompensateBiz.getId());
         } catch (Exception e) {
@@ -62,10 +63,11 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     }
 
     @Override
-    public Response<Boolean> updateLastFailedReason(Long id, String lastFailedReason) {
+    public Response<Boolean> updateLastFailedReason(Long id, String lastFailedReason,Integer cnt) {
         try {
             PoushengCompensateBiz biz = new PoushengCompensateBiz();
             biz.setId(id);
+            biz.setCnt(cnt);
             biz.setLastFailedReason(lastFailedReason);
             return Response.ok(poushengCompensateBizDao.update(biz));
         } catch (Exception e) {

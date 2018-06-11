@@ -14,7 +14,11 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
@@ -24,6 +28,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -42,6 +47,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
+import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -115,6 +121,13 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private NotifyHkOrderDoneLogic notifyHkOrderDoneLogic;
+
+    @RpcConsumer
+    private ShopOrderReadService shopOrderReadService;
+
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     /**
      * 天猫加密字段占位符
@@ -480,7 +493,32 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected void saveParanaOrder(RichOrder richOrder) {
         RichSkusByShop orginRichSkusByShop = richOrder.getRichSkusByShops().get(0);
         if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())){
-            super.saveParanaOrder(richOrder);
+
+            //super.saveParanaOrder(richOrder);
+            //重新实现父类saveParanaOrder逻辑，将eventBus修改为定时任务批处理方式
+            if (richOrder == null) {
+                return;
+            }
+            Response<List<Long>> createR = orderWriteService.create(richOrder);
+            if (!createR.isSuccess()) {
+                log.error("fail to save order:{},cause:{}", richOrder, createR.getError());
+                return;
+            }
+
+            for (Long shopOrderId : createR.getResult()) {
+                Response<ShopOrder> r = shopOrderReadService.findById(shopOrderId);
+                if (!r.isSuccess()){
+                    log.error("find shop order failed,shop order id is {},caused by {}",shopOrderId,r.getError());
+                }else{
+                    ShopOrder shopOrder = r.getResult();
+                    //只有非淘宝的订单可以抛出事件
+                    if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
+                        //eventBus.post(new OpenClientOrderSyncEvent(shopOrderId));
+                        //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
+                        this.createShipmentResultTask(shopOrder.getId());
+                    }
+                }
+            }
 
             for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
                 //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
@@ -489,6 +527,20 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }
             }
         }
+    }
+
+    /**
+     * @Description TODO
+     * @Date        2018/5/31
+     * @param       shopOrderId
+     * @return
+     */
+    private void createShipmentResultTask(Long shopOrderId){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
+        biz.setContext(mapper.toJson(shopOrderId));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
     }
 
 

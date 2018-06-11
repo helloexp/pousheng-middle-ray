@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.biz.impl;
 
-import com.jd.open.api.sdk.domain.ECLP.EclpOpenService.ShipperOut;
 import com.pousheng.middle.AbstractRestApiTest;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -10,7 +9,6 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.OrderWriteService;
 import org.junit.Test;
@@ -22,9 +20,9 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 
-public class TmallCreateShipmentServiceTest extends AbstractRestApiTest {
+public class ThirdCreateShipmentServiceTest extends AbstractRestApiTest {
 
-    private TmallCreateShipmentService tmallCreateShipmentService;
+    private ThirdCreateShipmentService tmallCreateShipmentService;
     private OrderReadLogic orderReadLogic;
     private ShipmentWiteLogic shipmentWiteLogic;
     private OrderWriteService orderWriteService;
@@ -33,7 +31,7 @@ public class TmallCreateShipmentServiceTest extends AbstractRestApiTest {
     @Configuration
     public static class MockitoBeans {
         @SpyBean
-        private TmallCreateShipmentService tmallCreateShipmentService;
+        private ThirdCreateShipmentService tmallCreateShipmentService;
         @MockBean
         private OrderReadLogic orderReadLogic;
         @MockBean
@@ -51,7 +49,7 @@ public class TmallCreateShipmentServiceTest extends AbstractRestApiTest {
 
     @Override
     protected void init() {
-        tmallCreateShipmentService = get(TmallCreateShipmentService.class);
+        tmallCreateShipmentService = get(ThirdCreateShipmentService.class);
         orderReadLogic = get(OrderReadLogic.class);
         shipmentWiteLogic =get(ShipmentWiteLogic.class);
         orderWriteService =get(OrderWriteService.class);
@@ -72,7 +70,7 @@ public class TmallCreateShipmentServiceTest extends AbstractRestApiTest {
         String jsonStr = JsonMapper.nonEmptyMapper().toJson(shopOrderId);
 
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
-        biz.setBizType(PoushengCompensateBizType.TMALL_ORDER_CREATE_SHIP.toString());
+        biz.setBizType(PoushengCompensateBizType.THIRD_REFUND_RESULT.toString());
         biz.setContext(jsonStr);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         tmallCreateShipmentService.doProcess(biz);

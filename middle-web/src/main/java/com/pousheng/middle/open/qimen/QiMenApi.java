@@ -55,7 +55,8 @@ public class QiMenApi {
     private final ReceiverInfoCompleter receiverInfoCompleter;
     private final EventBus eventBus;
     private final ErpOpenApiClient erpOpenApiClient;
-    private final PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     private static final String WMS_APP_KEY = "terminus-wms";
@@ -65,12 +66,10 @@ public class QiMenApi {
     @Autowired
     public QiMenApi(ReceiverInfoCompleter receiverInfoCompleter,
                     EventBus eventBus,
-                    ErpOpenApiClient erpOpenApiClient,
-                    PoushengCompensateBizWriteService poushengCompensateBizWriteService) {
+                    ErpOpenApiClient erpOpenApiClient) {
         this.receiverInfoCompleter = receiverInfoCompleter;
         this.eventBus = eventBus;
         this.erpOpenApiClient = erpOpenApiClient;
-        this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
     }
 
     @PostMapping(value = "/wms")
@@ -136,7 +135,7 @@ public class QiMenApi {
      */
     private void createShipmentResultTask(Long shopOrderId){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
-        biz.setBizType(PoushengCompensateBizType.TMALL_ORDER_CREATE_SHIP.toString());
+        biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
         biz.setContext(mapper.toJson(shopOrderId));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         poushengCompensateBizWriteService.create(biz);

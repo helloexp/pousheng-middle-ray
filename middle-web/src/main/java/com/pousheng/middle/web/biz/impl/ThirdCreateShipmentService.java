@@ -39,10 +39,10 @@ import java.util.Objects;
  * User:        liangyj
  * Date:        2018/5/31
  */
-@CompensateAnnotation(bizType = PoushengCompensateBizType.TMALL_ORDER_CREATE_SHIP)
+@CompensateAnnotation(bizType = PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP)
 @Service
 @Slf4j
-public class TmallCreateShipmentService implements CompensateBizService {
+public class ThirdCreateShipmentService implements CompensateBizService {
 
     @Autowired
     private OrderReadLogic orderReadLogic;
@@ -56,19 +56,19 @@ public class TmallCreateShipmentService implements CompensateBizService {
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
         if (null == poushengCompensateBiz) {
-            log.warn("TmallCreateShipmentService.doProcess params is null");
+            log.warn("ThirdCreateShipmentService.doProcess params is null");
             return;
         }
 
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
             log.warn("TmallCreateShipmentService.doProcess context is null");
-            new BizException("TmallCreateShipmentService.doProcess context is null");
+            new BizException("ThirdCreateShipmentService.doProcess context is null");
         }
         Long shopOrderId = JsonMapper.nonEmptyMapper().fromJson(context, Long.class);
         if (shopOrderId == null) {
             log.warn("TmallCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
-            new BizException("TmallCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
+            new BizException("ThirdCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
         }
 
         try {

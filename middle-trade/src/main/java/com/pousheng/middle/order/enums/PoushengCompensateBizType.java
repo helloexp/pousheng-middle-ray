@@ -36,8 +36,8 @@ public enum PoushengCompensateBizType {
     THIRD_REFUND_RESULT,
 
     /**
-     * 天猫订单生成发货单
+     * 第三方渠道订单生成发货单
      */
-    TMALL_ORDER_CREATE_SHIP;
+    THIRD_ORDER_CREATE_SHIP;
 
 }

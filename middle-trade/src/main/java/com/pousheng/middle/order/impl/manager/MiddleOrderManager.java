@@ -175,6 +175,7 @@ public class MiddleOrderManager {
      * @param shopOrderId 店铺订单主键
      * @param orderReceiverInfo 收货信息
      * @param buyerNote 买家备注
+     *
      */
     @Transactional
     public void updateReceiverInfoAndBuyerNote(long shopOrderId,OrderReceiverInfo orderReceiverInfo,String buyerNote){
@@ -186,12 +187,17 @@ public class MiddleOrderManager {
         ShopOrderExt shopOrderExt = new ShopOrderExt();
         shopOrderExt.setId(shopOrderId);
         shopOrderExt.setBuyerNote(buyerNote);
+        if(null != orderReceiverInfo.getReceiverInfo()){
+            shopOrderExt.setOutBuyerId(orderReceiverInfo.getReceiverInfo().getMobile());
+        }
+        //更新订单表中的手机号字段（中台是使用outBuyerId作为手机号）
         boolean shopOrderResult = shopOrderExtDao.update(shopOrderExt);
         if (!shopOrderResult){
             log.error("failed to update shopOrder failed,(shopOrderId={})),buyerNote(={})",shopOrderId,buyerNote);
             throw new ServiceException("receiveInfo.update.fail");
         }
     }
+
     public Flow pickOrder() {
         return MiddleFlowBook.orderFlow;
     }

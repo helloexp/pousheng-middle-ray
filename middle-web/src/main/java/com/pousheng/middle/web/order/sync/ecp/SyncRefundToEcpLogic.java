@@ -46,7 +46,7 @@ public class SyncRefundToEcpLogic {
 
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
-        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund,orderOperation);
+        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund,orderOperation);
         if(!updateStatusRes.isSuccess()){
             log.error("refund(id:{}) operation :{} fail,error:{}",refund.getId(),orderOperation.getText(),updateStatusRes.getError());
             return Response.fail(updateStatusRes.getError());

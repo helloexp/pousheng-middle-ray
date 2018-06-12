@@ -97,7 +97,7 @@ public class SyncRefundLogic {
 
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
-        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+        Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
         if (!updateStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
             return Response.fail(updateStatusRes.getError());
@@ -216,7 +216,7 @@ public class SyncRefundLogic {
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
         try {
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());
@@ -233,7 +233,7 @@ public class SyncRefundLogic {
             if (Objects.equals(head.getCode(), "0")) {
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
                 OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
-                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, syncSuccessOrderOperation);
                 if (!updateStatusRes.isSuccess()) {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
@@ -287,7 +287,7 @@ public class SyncRefundLogic {
 
     private void updateRefundSyncFial(Refund refund){
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
-        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+        Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateSyncStatusRes.getError());
         }
@@ -326,7 +326,7 @@ public class SyncRefundLogic {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
-            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatus(refund, orderOperation);
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
             if (!updateStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
                 return Response.fail(updateStatusRes.getError());

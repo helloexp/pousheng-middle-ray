@@ -119,7 +119,7 @@ public class HKShipmentDoneLogic {
                 if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
-                    Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.SHIP.toOrderOperation());
+                    Response<Boolean> resRlt = refundWriteLogic.updateStatusLocking(refund, MiddleOrderEvent.SHIP.toOrderOperation());
                     if (!resRlt.isSuccess()) {
                         log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
                         throw new JsonResponseException("update.refund.status.error");

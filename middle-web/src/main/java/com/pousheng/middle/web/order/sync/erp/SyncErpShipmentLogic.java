@@ -56,6 +56,7 @@ public class SyncErpShipmentLogic {
      * @return
      */
     public Response<Boolean> syncShipment(Shipment shipment){
+        log.info("sync shipment start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
@@ -84,6 +85,7 @@ public class SyncErpShipmentLogic {
      * @return
      */
     public Response<Boolean> syncShipmentCancel(Shipment shipment,Integer operationType){
+        log.info("cancel shipment start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
@@ -112,6 +114,7 @@ public class SyncErpShipmentLogic {
      * @return 同步结果, 同步成功true, 同步失败false
      */
     public Response<Boolean> syncShipmentDone(Shipment shipment,Integer operationType,OrderOperation syncOrderOperation){
+        log.info("sync shipment done start,shipment is {}",shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
@@ -128,7 +131,7 @@ public class SyncErpShipmentLogic {
                 Response<Boolean> r = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
                 if (r.isSuccess()){
                     OrderOperation operation = MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation();
-                    Response<Boolean> updateStatus = shipmentWiteLogic.updateStatus(shipment, operation);
+                    Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                     if (!updateStatus.isSuccess()) {
                         log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                         return Response.fail(updateStatus.getError());
@@ -147,7 +150,7 @@ public class SyncErpShipmentLogic {
         }
     }
     private void updateShipmetDoneToHkFail(Shipment shipment,OrderOperation syncOrderOperation){
-        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatus(shipment, syncOrderOperation);
+        Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());

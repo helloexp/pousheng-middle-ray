@@ -152,6 +152,8 @@ public class TradeConstants {
     public static final String SKU_ORDER_SHIPMENT_CODE = "skuShipmentCode";
     //没有有效的订单
     public static final String  YYEDI_RESPONSE_NOT_EXIST_ORDER= "-120";
+    //订单已经取消
+    public static final String  YYEDI_RESPONSE_CANCELED="300";
     //店铺订单选择的快递单号
     public static final String SHOP_ORDER_HK_EXPRESS_CODE = "orderHkExpressCode";
     public static final String SHOP_ORDER_HK_EXPRESS_NAME = "orderHkExpressName";

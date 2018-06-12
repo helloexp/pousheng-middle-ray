@@ -340,6 +340,32 @@ public class Shipments {
         return shipments;
     }
 
+    /**
+     * 售后单下的发货单
+     *
+     * @param afterSaleOrderCode 售后单code
+     * @return 发货单
+     */
+    @RequestMapping(value = "/api/ps/after/sale/{code}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Shipment> afterSaleShipmentsByCode(@PathVariable("code") String afterSaleOrderCode) {
+        OrderShipmentCriteria orderShipmentCriteria = new OrderShipmentCriteria();
+        orderShipmentCriteria.setAfterSaleOrderCode(afterSaleOrderCode);
+        Response<Paging<ShipmentPagingInfo>> pagingResponse = orderShipmentReadService.findBy(orderShipmentCriteria);
+        if (!pagingResponse.isSuccess()){
+            throw new  JsonResponseException("find.shipments.failed");
+        }
+        List<ShipmentPagingInfo> shipmentPagingInfos = pagingResponse.getResult().getData();
+        List<Shipment> shipments = Lists.newArrayList();
+        for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
+            Shipment shipment = shipmentPagingInfo.getShipment();
+            if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())){
+                continue;
+            }
+            shipments.add(shipment);
+        }
+        return shipments;
+    }
+
 
     //获取发货单商品明细
     @RequestMapping(value = "/api/shipment/{id}/items", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

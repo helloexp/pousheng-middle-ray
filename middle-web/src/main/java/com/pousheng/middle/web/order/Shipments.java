@@ -228,6 +228,7 @@ public class Shipments {
     }
 
     /**
+     * 订单下的发货单
      *
      * @param orderCode 店铺订单code
      * @return 发货单

@@ -27,8 +27,10 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.msg.common.StringUtil;
+import io.terminus.parana.order.enums.ShipmentWay;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -55,9 +57,6 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
 
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-
-
-
     @Autowired
     private PoushengSettlementPosReadService poushengSettlementPosReadService;
     @Autowired
@@ -70,6 +69,8 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncMposShipmentLogic syncMposShipmentLogic;
 
 
     @Override
@@ -83,7 +84,6 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
             log.warn("NotifyHkOrderDoneService.doProcess context is null");
             return;
         }
-
         Long shopOrderId = Long.valueOf(context);
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         //获取已发货的发货单
@@ -93,22 +93,6 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
         for (OrderShipment orderShipment : orderShipmentsFilter) {
             Long shipmentId = orderShipment.getShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            //如果是店发，通知给hk（针对mpos订单）
-            if (Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
-                Response<Boolean> res = shipmentWiteLogic.updateStatus(shipment, MiddleOrderEvent.HK_CONFIRMD_SUCCESS.toOrderOperation());
-                if (!res.isSuccess()) {
-                    log.error("shipment(id:{}) confirm failed,cause:{}", shipment.getId(), res.getError());
-                }
-                Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
-                if (!response.isSuccess()) {
-                    log.error("shipment(id:{}) notify hk failed,cause:{}", response.getError());
-                    Map<String, Object> param = Maps.newHashMap();
-                    param.put("shipmentId", shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK, response.getError());
-                }
-                continue;
-            }
             //通知恒康已经发货
             Response<Boolean> response = syncErpShipmentLogic.syncShipmentDone(shipment, 2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()) {

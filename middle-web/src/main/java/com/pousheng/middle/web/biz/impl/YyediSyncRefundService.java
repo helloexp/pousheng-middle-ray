@@ -6,17 +6,24 @@ package com.pousheng.middle.web.biz.impl;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -44,6 +51,10 @@ public class YyediSyncRefundService implements CompensateBizService {
     private AutoCompensateLogic autoCompensateLogic;
     @Autowired
     private SyncRefundPosLogic syncRefundPosLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
 
     @Override
@@ -82,16 +93,21 @@ public class YyediSyncRefundService implements CompensateBizService {
 
     private void refundBiz(Refund refund) {
         //更新扩展信息
-        Map<String,String> extra = refund.getExtra();
-        if(MapUtils.isEmpty(extra))
+        Map<String, String> extra = refund.getExtra();
+        if (MapUtils.isEmpty(extra))
             return;
         Refund update = new Refund();
         update.setId(refund.getId());
         update.setExtra(extra);
-
         Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
         if (!updateExtraRes.isSuccess()) {
-            log.error("update rMatrixRequestHeadefund(refundCode:{}) fail,error:{}", refund.getRefundCode(),updateExtraRes.getError());
+            log.error("update rMatrixRequestHeadefund(refundCode:{}) fail,error:{}", refund.getRefundCode(), updateExtraRes.getError());
+        }
+        //店发发货单对应的拒收单不能同步恒康生成pos单
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        if (Objects.equals(shipment.getShipWay(), 1) && Objects.equals(refund.getRefundType(), MiddleRefundType.REJECT_GOODS.value())) {
+            throw new JsonResponseException("shop.refunds.can.not.sync.yyedi");
         }
         //同步pos单到恒康
         //判断pos单是否需要同步恒康,如果退货仓数量全是0

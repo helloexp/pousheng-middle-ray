@@ -22,8 +22,11 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
@@ -76,6 +79,9 @@ public class SyncMposShipmentLogic{
 
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private OpenShopReadService openShopReadService;
+
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -101,12 +107,21 @@ public class SyncMposShipmentLogic{
         try{
             //判断该发货单是全渠道订单的店发发货单还是普通的mpos发货单
             MposResponse res = null;
-            Map<String,Object> param = this.assembShipmentParam(shipment);
-            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())){
-                res = mapper.fromJson(syncMposApi.syncAllChannelShipmnetToMpos(param),MposResponse.class);
+            //不是新的全渠道订单,走老的全渠道订单
+            if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())){
+                Map<String,Object> param = this.assembShipmentParam(shipment);
+                if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())){
+                    res = mapper.fromJson(syncMposApi.syncAllChannelShipmnetToMpos(param),MposResponse.class);
+                }else{
+                    res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+                }
             }else{
-                res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
+                Map<String,Object> param = this.assembNewShipmentParam(shipment);
+                res = mapper.fromJson(syncMposApi.syncNewAllChannelShipmnetToMpos(param),MposResponse.class);
             }
+
+            log.info("sync mpos shipment result,res is {}",res);
+
             if(!res.isSuccess()){
                 log.error("sync shipments:(id:{}) fail.error:{}",shipment.getId(),res.getError());
                 // 同步失败
@@ -186,7 +201,7 @@ public class SyncMposShipmentLogic{
             }
             return resp.getResult();
         }catch (Exception e) {
-            log.error("sync mpos shipment status fail,cause by {}", e.getMessage());
+            log.error("sync mpos shipment status fail,cause by {}", Throwables.getStackTraceAsString(e));
             return Paging.empty(MposShipmentExtra.class);
         }
     }
@@ -226,18 +241,112 @@ public class SyncMposShipmentLogic{
         return param;
     }
 
-    public boolean revokeMposShipment(Shipment shipment){
+    public MposResponse revokeMposShipment(Shipment shipment){
+        MposResponse res = new MposResponse();
         try {
             Map<String,Object> param = Maps.newHashMap();
             param.put("outerShipmentId",shipment.getId());
-            MposResponse res = mapper.fromJson(syncMposApi.revokeMposShipment(param),MposResponse.class);
+            res = mapper.fromJson(syncMposApi.revokeMposShipment(param),MposResponse.class);
+            return res;
+        }catch (Exception e){
+            log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
+            res.setResult(e.getMessage());
+            res.setError(e.getMessage());
+            res.setSuccess(false);
+            return res;
+        }
+    }
+
+    public MposResponse revokeNewMposShipment(Shipment shipment){
+        MposResponse res = new MposResponse();
+        try {
+            Map<String,Object> param = Maps.newHashMap();
+            param.put("outerShipmentId",shipment.getId());
+            res = mapper.fromJson(syncMposApi.revokeNewMposShipment(param),MposResponse.class);
+            return res;
+        }catch (Exception e){
+            log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
+            res.setResult(e.getMessage());
+            res.setError(e.getMessage());
+            res.setSuccess(false);
+            return res;
+        }
+    }
+
+    /**
+     * 组装发货单参数
+     * @param shipment 发货单
+     * @return
+     */
+    private Map<String,Object> assembNewShipmentParam(Shipment shipment){
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
+        //查询接单店铺
+        Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+        if(!shopResponse.isSuccess()){
+            log.error("find shop by id:{} failed,cause:{}",shopResponse.getError());
+            throw new ServiceException("find.shop.not.exists");
+        }
+        Shop shop = shopResponse.getResult();
+
+        //查询下单店铺
+        Response<OpenShop>  openShopResponse  = openShopReadService.findById(shipment.getShopId());
+        if(!openShopResponse.isSuccess()){
+            log.error("find open shop by id:{} failed,cause:{}",shopResponse.getError());
+            throw new ServiceException("find.open.shop.not.exists");
+        }
+        OpenShop openShop = openShopResponse.getResult();
+
+        //下单店铺的恒康店铺外码
+        String orderShopCode = openShop.getExtra().get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
+        //下单店铺的恒康公司码
+        String orderBusinessId = openShop.getExtra().get(TradeConstants.HK_COMPANY_CODE);
+
+        Map<String,Object> param = Maps.newHashMap();
+        //接单店铺公司码
+        param.put("shipShopBizId",shop.getBusinessId());
+        //接单店铺外码
+        param.put("shipShopCode",shop.getOuterId());
+        //下单店铺公司码
+        param.put("orderShopBizId",orderBusinessId);
+        //下单店铺公司码
+        param.put("orderShopCode",orderShopCode);
+        //中台发货单号
+        param.put("outerShipmentId",shipment.getId());
+        //发货单商品信息
+        param.put("skuInfo",mapper.toJson(shipmentReadLogic.getShipmentItems(shipment)));
+        //外部订单号
+        param.put("outOrderId",shopOrder.getOutId());
+        //中台联系人信息
+        ReceiverInfo receiverInfo =  orderReadLogic.findReceiverInfo(shopOrder.getId());
+        param.put("receiverInfoJson",mapper.toJson(receiverInfo));
+        //是否指定门店:1:指定门店,2.不指定门店
+        param.put("isAssignShop",2);
+        return param;
+    }
+
+    /**
+     * mpos发货单确认收货
+     * @param shipment
+     * @return
+     */
+    public boolean omniShipmmentConfirm(Shipment shipment){
+        try{
+            log.info("omni shipment confirm start ,shipmentId {}",shipment);
+            Map<String,Object> param = Maps.newHashMap();
+            param.put("outerShipmentId",shipment.getId());
+            param.put("confirmedAt",System.currentTimeMillis());
+            MposResponse res = mapper.fromJson(syncMposApi.omniShipmmentConfirm(param),MposResponse.class);
             if (res.isSuccess()){
                 return true;
             }else{
+                log.info("omni shipment confirm shipped failed,shipment is {},caused by {}",shipment,res.getError());
                 return false;
             }
         }catch (Exception e){
-            log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),e.getMessage());
+            log.info("omni shipment confirm shipped failed,shipment is {},caused by {}",shipment,Throwables.getStackTraceAsString(e));
             return false;
         }
     }

@@ -10,6 +10,7 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
@@ -63,18 +64,18 @@ public class ThirdCreateShipmentService implements CompensateBizService {
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
             log.warn("TmallCreateShipmentService.doProcess context is null");
-            new BizException("ThirdCreateShipmentService.doProcess context is null");
+            throw new BizException("ThirdCreateShipmentService.doProcess context is null");
         }
         Long shopOrderId = JsonMapper.nonEmptyMapper().fromJson(context, Long.class);
         if (shopOrderId == null) {
             log.warn("TmallCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
-            new BizException("ThirdCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
+            throw new BizException("ThirdCreateShipmentService.doProcess OpenClientOrderSyncEvent is null");
         }
 
         try {
             this.onShipment(shopOrderId);
         }catch (Exception e){
-            new BizException("auto create shipment fail,caused by {}",e.getCause());
+            throw new BizException("auto create shipment fail,caused by {}", e);
         }
     }
 

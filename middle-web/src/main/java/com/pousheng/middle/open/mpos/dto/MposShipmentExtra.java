@@ -57,7 +57,7 @@ public class MposShipmentExtra {
     /**
      * 店铺订单ID
      */
-    private Long shopOrderId;
+    private String shopOrderId;
 
     /**
      * 子订单IDS

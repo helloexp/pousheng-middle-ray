@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.sync.erp;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.web.order.component.*;
@@ -19,6 +20,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Refund;
+import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +61,8 @@ public class SyncErpReturnLogic {
     private OpenShopReadService openShopReadService;
     @Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     /**
      * 对于退货退款和换货的售后单需要同步到yyedi，对于仅退款的售后单需要直接同步到恒康
@@ -70,6 +74,12 @@ public class SyncErpReturnLogic {
         Response<OpenShop> openShopResponse = openShopReadService.findById(refund.getShopId());
         if (!openShopResponse.isSuccess()){
             log.error("find open shop by openShopId {} failed,caused by {}",refund.getShopId(),openShopResponse.getError());
+        }
+        //店发发货单对应的拒收单不允许同步恒康，不允许同步订单派发中心
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        Shipment shipment =  shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        if (Objects.equals(shipment.getShipWay(),1)&&Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+            throw new JsonResponseException("shop.refunds.can.not.sync.yyedi");
         }
         OpenShop openShop = openShopResponse.getResult();
         Map<String, String> openShopExtra =  openShop.getExtra();

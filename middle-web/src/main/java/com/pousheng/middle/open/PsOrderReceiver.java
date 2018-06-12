@@ -263,16 +263,18 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             } else {
                 //更新同步电商状态为已确认收货
                 OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
-                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                    Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
                 if (response.isSuccess()) {
                     //通知恒康发货单收货时间
                     Response<Long> result =notifyHkOrderDoneLogic.ctreateNotifyHkOrderDoneTask(shopOrder.getId());
                     if(!result.isSuccess()){
                         log.error("notifyHkOrderDoneLogic ctreateNotifyHkOrderDoneTask error shopOrderId ({})",shopOrder.getId());
                     }
-                    // NotifyHkOrderDoneEvent event = new NotifyHkOrderDoneEvent();
-                    // event.setShopOrderId(shopOrder.getId());
-                    // eventBus.post(event);
+                    //通知mpos店发发货单确认收货
+                    Response<Boolean> mposTaskResult = notifyHkOrderDoneLogic.createNotifyMposDoneTask(shopOrder.getId());
+                    if(!mposTaskResult.isSuccess()){
+                        log.error("notifyHkOrderDoneLogic ctreateNotifyMposDoneTask error shopOrderId ({})",shopOrder.getId());
+                    }
                 }
             }
         }

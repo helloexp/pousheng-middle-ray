@@ -70,6 +70,8 @@ public class MposShipmentLogic {
 
     @Autowired
     private SyncMposOrderLogic syncMposOrderLogic;
+    @Autowired
+    private EcpOrderLogic ecpOrderLogic;
 
     /**
      * 判断是否所有发货单都更新了 更新订单状态
@@ -110,7 +112,7 @@ public class MposShipmentLogic {
      * @param expectOrderStatus   期望订单状态
      */
     private void syncOrderStatus(Shipment shipment,Integer expectOrderStatus){
-
+        log.info("sync mpos order status start,shipment is {},expected order status is {}",shipment,expectOrderStatus);
         //更新子单状态
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         List<Long> skuOrderIds = shipmentItems.stream().map(ShipmentItem::getSkuOrderId).collect(Collectors.toList());
@@ -122,16 +124,24 @@ public class MposShipmentLogic {
                 throw new JsonResponseException("update.sku.order.status.error");
             }
         }
+        log.info("sync mpos order status end");
 
+        log.info("start sync mpos,all channel,new allchannel order sync to ecp start.....");
         //如果订单状态变成已发货，同步ecpstatus
-        if(Objects.equals(expectOrderStatus,MiddleOrderStatus.SHIPPED.getValue())){
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
-            long orderShopId = orderShipment.getOrderId();
-            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-            if(Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.SHIPPED.getValue())){
-                OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
-                orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+        if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())){
+            log.info("mpos order notify ecp start,shipment is {}",shipment);
+            if(Objects.equals(expectOrderStatus,MiddleOrderStatus.SHIPPED.getValue())){
+                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+                long orderShopId = orderShipment.getOrderId();
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
+                if(Objects.equals(shopOrder.getStatus(),MiddleOrderStatus.SHIPPED.getValue())){
+                    OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                }
             }
+        }else{
+            log.info("new all channel  order notify ecp start,shipment is {}",shipment);
+            ecpOrderLogic.shipToEcp(shipment.getId());
         }
     }
 }

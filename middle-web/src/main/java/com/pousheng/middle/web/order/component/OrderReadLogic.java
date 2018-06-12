@@ -498,6 +498,33 @@ public class OrderReadLogic {
 
 
     /**
+     * 是否是新的全渠道订单类型
+     *
+     * @param openShopId open shop id
+     * @return 是否参与全渠道
+     */
+    public Boolean isNewAllChannelOpenShop(Long openShopId) {
+
+        OpenShop openShop = findOpenShopByShopId(openShopId);
+
+        Map<String, String> extraMap = openShop.getExtra();
+        if (CollectionUtils.isEmpty(extraMap)) {
+            log.error("open shop (id:{}) extra map is empty", openShop.getId());
+            throw new JsonResponseException("open.shop.extra.is.null");
+        }
+        if (!extraMap.containsKey(TradeConstants.IS_NEW_ALL_CHANNEL_SHOP)) {
+            log.warn("open shop (id:{}) extra map not contains key:{}", openShop.getId(), TradeConstants.IS_NEW_ALL_CHANNEL_SHOP);
+            return Boolean.FALSE;
+        }
+
+        String value = extraMap.get(TradeConstants.IS_NEW_ALL_CHANNEL_SHOP);
+
+        return Objects.equals(value, "true");
+
+    }
+
+
+    /**
      * 查询open shop是mpos门店
      *
      * @param openShopId open shop id

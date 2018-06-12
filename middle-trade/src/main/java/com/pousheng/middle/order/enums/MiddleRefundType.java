@@ -16,7 +16,8 @@ public enum MiddleRefundType {
     AFTER_SALES_RETURN(2,"售后退货"),
     AFTER_SALES_CHANGE(3,"售后换货"),
     ON_SALES_REFUND(4,"售中仅退款"),
-    LOST_ORDER_RE_SHIPMENT(5,"丢件补发");
+    LOST_ORDER_RE_SHIPMENT(5,"丢件补发"),
+    REJECT_GOODS(6,"拒收");
 
     private final int value;
     private final String desc;

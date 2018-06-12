@@ -1,5 +1,3 @@
-# RELEASE NOTES
-
 ## 2.2.0 (2018-06-12)
 
 *【BUG】问题：YYEDI 通知发货单超时 http://pmp.terminus.io/console/project/178/issues/38115 负责人：谢洪
@@ -13,6 +11,8 @@
 *【BUG】问题：发货单状态与订单状态不同步，状态机未得到严格执行 http://pmp.terminus.io/console/project/178/issues/37679 负责人：谢洪
 *【BUG】EventBus- NotifyHkOrderDoneEvent(通知恒康发货单时间)优化 http://pmp.terminus.io/console/project/178/issues/37682 负责人：谢洪
 *【BUG】订单详情取消发货单状态更新问题调整 http://pmp.terminus.io/console/project/178/issues/39006 负责人：梁云举
+# RELEASE NOTES
+
 ## 2.1.5 (2018-06-05)
  * 京东货到付款不拆单
 ## 2.1.4 (2018-06-05)

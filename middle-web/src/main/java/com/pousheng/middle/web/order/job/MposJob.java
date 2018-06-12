@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
@@ -132,25 +133,29 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+        this.syncMposShipmentDetail(syncAllOrderDurationInMinute);
+    }
+
+    private void syncMposShipmentDetail(Integer beforeInMinute) {
         DateTime now = DateTime.now();
-        DateTime startAt = now.minusMinutes(syncAllOrderDurationInMinute);
+        DateTime startAt = now.minusMinutes(beforeInMinute);
         Stopwatch stopwatch = Stopwatch.createStarted();
         log.info("start to sync mpos shipment...");
-            int pageNo = 1;
-            while (true) {
-                Paging<MposShipmentExtra> pagination = syncMposShipmentLogic.syncMposShimentStatus(pageNo,shipmentFetchSize,startAt.toDate(),now.toDate());
-                final List<MposShipmentExtra> mposShipmentExtras = pagination.getData();
-                if (CollectionUtils.isEmpty(mposShipmentExtras)) {
-                    break;
-                }
-                //异步处理
-                executorService.submit(new OrderHandleTask(mposShipmentExtras));
-                if (!Objects.equals(mposShipmentExtras.size(),shipmentFetchSize)) {
-                    break;
-                }
-                pageNo++;
+        int pageNo = 1;
+        while (true) {
+            Paging<MposShipmentExtra> pagination = syncMposShipmentLogic.syncMposShimentStatus(pageNo,shipmentFetchSize,startAt.toDate(),now.toDate());
+            final List<MposShipmentExtra> mposShipmentExtras = pagination.getData();
+            if (CollectionUtils.isEmpty(mposShipmentExtras)) {
                 break;
             }
+            //异步处理
+            executorService.submit(new OrderHandleTask(mposShipmentExtras));
+            if (!Objects.equals(mposShipmentExtras.size(),shipmentFetchSize)) {
+                break;
+            }
+            pageNo++;
+            break;
+        }
         stopwatch.stop();
         log.info("end to sync mpos shipment,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
@@ -164,6 +169,10 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+        this.autoCompensateMposFailedTaskDetail();
+    }
+
+    private void autoCompensateMposFailedTaskDetail() {
         Stopwatch stopwatch = Stopwatch.createStarted();
         log.info("start to compensate mpos not dispatcher sku...");
 
@@ -195,13 +204,13 @@ public class MposJob {
     }
 
     @RequestMapping(value = "api/mpos/sync/shipment/job",method = RequestMethod.GET)
-    public void syncMposShipmentBySelf(){
-        this.syncMposShipment();
+    public void syncMposShipmentBySelf(@RequestParam(value = "beforeInMinute",defaultValue = "20") Integer beforeInMinute){
+        this.syncMposShipmentDetail(beforeInMinute);
     }
 
     @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
     public void autoCompensateMposFailTaskBySelf(){
-        this.autoCompensateMposFailTask();
+        this.autoCompensateMposFailedTaskDetail();
     }
 
 

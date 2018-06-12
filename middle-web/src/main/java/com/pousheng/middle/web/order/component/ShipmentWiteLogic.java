@@ -9,6 +9,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
+import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
@@ -226,7 +227,7 @@ public class ShipmentWiteLogic {
             log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipment.getId(), type);
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
+            if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())&&flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
                 Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
@@ -246,14 +247,19 @@ public class ShipmentWiteLogic {
             if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
                 //撤销
                 if (Objects.equals(type, 1)) {
-                    boolean result = syncMposShipmentLogic.revokeMposShipment(shipment);
-                    if (!result) {
+                    MposResponse  res = null;
+                    if (orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())){
+                        res = syncMposShipmentLogic.revokeNewMposShipment(shipment);
+                    }else{
+                        res = syncMposShipmentLogic.revokeMposShipment(shipment);
+                    }
+                    if (!res.isSuccess()) {
                         //撤销失败
                         Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
                         if (!updateRes.isSuccess()) {
                             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
                         }
-                        throw new JsonResponseException("revoke.shipment.failed");
+                        throw new JsonResponseException(res.getErrorMessage());
                     }
                 }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
@@ -281,7 +287,7 @@ public class ShipmentWiteLogic {
      */
     public void doAutoCreateShipment(ShopOrder shopOrder) {
         //如果是全渠道订单且不是创建的或者导入的订单可以使用店发
-        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())&&!orderReadLogic.isCreateOrderImportOrder(shopOrder)){
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())){
             log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
             log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
@@ -1251,7 +1257,7 @@ public class ShipmentWiteLogic {
             }
         } catch (Exception e) {
             log.error("sync shipment(id:{}) failed,cause:{}", shipment.getId(), Throwables.getStackTraceAsString(e));
-        }
+         }
     }
 
     private String getShopEmail(Shop shop) {

@@ -17,7 +17,7 @@ import java.util.Map;
 public class SyncMposApi {
 
     @Autowired
-    private ParanaClient paranaClient;
+    private MiddleParanaClient paranaClient;
 
     @Value("${mpos.open.shop.id:180}")
     private Long shopId;
@@ -96,6 +96,36 @@ public class SyncMposApi {
     public String revokeMposShipment(Map<String,Object> param){
         log.info("revoke shipments for mpos,param:{}",param);
         String responseBody = paranaClient.post(shopId,"sync.mposShipment.cancel.api",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    public String revokeNewMposShipment(Map<String,Object> param){
+        log.info("revoke shipments for mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"omni.shipment.cancel.api",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+    /**
+     * 同步new全渠道订单的发货单到mpos
+     * @param param
+     * @return
+     */
+    public String syncNewAllChannelShipmnetToMpos(Map<String,Object> param){
+        log.info("sync all-channel-order shipments to mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"omni.shipment.api",param);
+        log.info("response:{}",responseBody);
+        return responseBody;
+    }
+
+    /**
+     * 第三方确认收货之后，将售后单同步通知到mpos
+     * @param param
+     * @return
+     */
+    public String omniShipmmentConfirm(Map<String,Object> param){
+        log.info("sync all-channel-order shipments to mpos,param:{}",param);
+        String responseBody = paranaClient.post(shopId,"omni.shipment.confirm.api",param);
         log.info("response:{}",responseBody);
         return responseBody;
     }

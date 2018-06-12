@@ -29,6 +29,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
@@ -376,7 +377,7 @@ public class RefundWriteLogic {
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
             for (RefundItem refundItem :refundItems){
-                totalRefundAmount = totalRefundAmount+refundItem.getCleanFee()*refundItem.getApplyQuantity();
+                totalRefundAmount = totalRefundAmount+refundItem.getCleanPrice()*refundItem.getApplyQuantity();
             }
             refund.setFee(totalRefundAmount);
         }else{
@@ -651,6 +652,20 @@ public class RefundWriteLogic {
             refundExtra.setWarehouseId(warehouse.getId());
             //填入售后单仓库名称
             refundExtra.setWarehouseName(warehouse.getName());
+            //填入物流编码，公司
+            refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
+            //物流公司名称
+            refundExtra.setShipmentCorpName(submitRefundInfo.getShipmentCorpName());
+            //物流单号
+            refundExtra.setShipmentSerialNo(submitRefundInfo.getShipmentSerialNo());
+        }else{
+            //仅退款的售后单默认退货仓是店铺配置的发货仓
+            Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(submitRefundInfo.getShipmentCode());
+            OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
+            String warehouseId = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID, openShop);
+            String warehouseName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME, openShop);
+            refundExtra.setWarehouseId(Long.valueOf(warehouseId));
+            refundExtra.setWarehouseName(warehouseName);
         }
     }
 

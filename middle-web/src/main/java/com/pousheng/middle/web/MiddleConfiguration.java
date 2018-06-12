@@ -99,7 +99,8 @@ import java.util.concurrent.TimeUnit;
         OpenClientCenterAutoConfig.class,
         BatchConfig.class,
         TaskConfig.class,
-        MultipartAutoConfiguration.class})
+        MultipartAutoConfiguration.class,
+        BizBeanConfiguration.class})
 
 @ComponentScan(
         {"com.pousheng.middle.order",
@@ -291,30 +292,5 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
     }
 
 
-    @Bean(name = "pousheng-compensate-biz-registry-center-bean-processor")
-    public BeanPostProcessor beanPostProcessorForPoushengCompensateBiz() {
-        return new BeanPostProcessor() {
-            @Override
-            public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
-                if (!(bean instanceof CompensateBizRegistryCenter)) {
-                    return bean;
-                }
-                CompensateBizRegistryCenter registryCenter = (CompensateBizRegistryCenter) bean;
-                Map<String, Object> beanMap = applicationContext.getBeansWithAnnotation(CompensateAnnotation.class);
-                for (Object service : beanMap.values()) {
-                    if (service instanceof CompensateBizService) {
-                        CompensateAnnotation annotation = service.getClass().getAnnotation(CompensateAnnotation.class);
-                        registryCenter.register(annotation.bizType().name(), (CompensateBizService) service);
-                    }
-                }
-                return registryCenter;
-            }
-
-            @Override
-            public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
-                return bean;
-            }
-        };
-    }
 
 }

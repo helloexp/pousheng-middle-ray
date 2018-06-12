@@ -510,8 +510,8 @@ public class Refunds {
      * @param  list skuCode-applyQuantity 集合
      * @return
      */
-    @RequestMapping(value = "/api/refund/{id}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
-    public int getAlreadyRefundFee(@PathVariable("id") String orderCode,@RequestParam("shipmentId") String shipmentCode,@RequestParam(required = false) Long refundId,
+    @RequestMapping(value = "/api/refund/{code}/already/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public int getAlreadyRefundFee(@PathVariable("code") String orderCode,@RequestParam("shipmentId") String shipmentCode,@RequestParam(required = false) Long refundId,
                                    @RequestParam(value = "list") String list){
         List<RefundFeeData> refundFeeDatas = JsonMapper.nonEmptyMapper().fromJson(list, JsonMapper.nonEmptyMapper().createCollectionType(List.class,RefundFeeData.class));
         return refundReadLogic.getAlreadyRefundFee(orderCode,refundId,shipmentCode,refundFeeDatas);

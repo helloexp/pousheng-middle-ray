@@ -219,8 +219,20 @@ public class Shipments {
     }
 
     /**
-     * todo code
+     *
+     * @param orderCode 店铺订单code
+     * @return 发货单
      */
+    @RequestMapping(value = "/api/ps/order/{code}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Shipment> shipmentsByCode(@PathVariable("code") String orderCode) {
+        Response<List<Shipment>> response = shipmentReadService.findByOrderCodeAndOrderLevel(orderCode, OrderLevel.SHOP);
+        if (!response.isSuccess()) {
+            log.error("find shipment by shopOrderCode ({}) failed,caused by ({})", orderCode, response.getError());
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        return response.getResult();
+    }
+
 
     /**
      * 换货单下的发货单
@@ -260,6 +272,32 @@ public class Shipments {
         return shipments;
     }
 
+    /**
+     * 售后单下的发货单
+     *
+     * @param afterSaleOrderCode 售后单code
+     * @return 发货单
+     */
+    @RequestMapping(value = "/api/ps/after/sale/{code}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Shipment> afterSaleShipmentsByCode(@PathVariable("code") String afterSaleOrderCode) {
+        OrderShipmentCriteria orderShipmentCriteria = new OrderShipmentCriteria();
+        orderShipmentCriteria.setAfterSaleOrderCode(afterSaleOrderCode);
+        Response<Paging<ShipmentPagingInfo>> pagingResponse = orderShipmentReadService.findBy(orderShipmentCriteria);
+        if (!pagingResponse.isSuccess()){
+            throw new  JsonResponseException("find.shipments.failed");
+        }
+        List<ShipmentPagingInfo> shipmentPagingInfos = pagingResponse.getResult().getData();
+        List<Shipment> shipments = Lists.newArrayList();
+        for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
+            Shipment shipment = shipmentPagingInfo.getShipment();
+            if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())){
+                continue;
+            }
+            shipments.add(shipment);
+        }
+        return shipments;
+    }
+
 
     //获取发货单商品明细
     @RequestMapping(value = "/api/shipment/{id}/items", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -277,29 +315,28 @@ public class Shipments {
      * 2、发货单状态是否为已发货
      *
      * @param shipmentCode 发货单主键id
-     * @param orderId    订单或售后单id
+     * @param orderCode    订单或售后单code
      * @param type    1 订单 2售后单
      * @return 是否有效
      */
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> checkExist(@PathVariable("id") String shipmentCode, @RequestParam Long orderId, @RequestParam Integer type) {
+    public Response<Boolean> checkExist(@PathVariable("id") String shipmentCode, @RequestParam String orderCode, @RequestParam Integer type) {
 
         try {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             //是否属于当前订单
             if(Objects.equals(type,1)){
-                if (!Objects.equals(orderShipment.getOrderId(), orderId)) {
-                    log.error("shipment(id:{}) order id:{} not equal :{}", shipment.getId(), orderShipment.getOrderId(), orderId);
+                if (!Objects.equals(orderShipment.getOrderCode(), orderCode)) {
+                    log.error("shipment(id:{}) order code:{} not equal :{}", shipment.getId(), orderShipment.getOrderId(), orderCode);
                     return Response.fail("shipment.not.belong.to.order");
                 }
             }else {
-                if (!Objects.equals(orderShipment.getAfterSaleOrderId(), orderId)) {
-                    log.error("shipment(id:{}) after sale order id:{} not equal :{}", shipment.getId(), orderShipment.getAfterSaleOrderId(), orderId);
+                if (!Objects.equals(orderShipment.getAfterSaleOrderCode(), orderCode)) {
+                    log.error("shipment(id:{}) after sale order code:{} not equal :{}", shipment.getId(), orderShipment.getAfterSaleOrderId(), orderCode);
                     return Response.fail("shipment.not.belong.to.refund.order");
                 }
             }
-
 
             //发货单状态是否为恒康已经确认收货
             if(!Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())

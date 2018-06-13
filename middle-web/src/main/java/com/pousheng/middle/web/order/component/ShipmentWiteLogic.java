@@ -9,6 +9,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
+import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
@@ -65,6 +66,7 @@ import org.springframework.util.CollectionUtils;
 import java.io.Serializable;
 import java.util.*;
 import java.util.stream.Collectors;
+
 /**
  * 发货单写服务
  * Created by songrenfei on 2017/7/2
@@ -149,6 +151,9 @@ public class ShipmentWiteLogic {
     @Autowired
     private ShopCacher shopCacher;
 
+    @Autowired
+    private WarehouseSkuWriteService warehouseSkuWriteService;
+
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
 
@@ -169,7 +174,6 @@ public class ShipmentWiteLogic {
     }
 
     /**
-     *
      * @param shipment
      * @param orderOperation
      * @return
@@ -183,16 +187,14 @@ public class ShipmentWiteLogic {
         }
 
         Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
-        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), targetStatus);
+        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), targetStatus);
         if (!updateRes.isSuccess()) {
-            log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),targetStatus,shipment.getStatus(), updateRes.getError());
+            log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(), targetStatus, shipment.getStatus(), updateRes.getError());
             return Response.fail(updateRes.getError());
         }
         return Response.ok();
 
     }
-
-
 
 
     //更新发货单
@@ -226,7 +228,7 @@ public class ShipmentWiteLogic {
             log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipment.getId(), type);
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
+            if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId()) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
                 Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
                 if (!cancelRes.isSuccess()) {
                     log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
@@ -246,14 +248,19 @@ public class ShipmentWiteLogic {
             if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
                 //撤销
                 if (Objects.equals(type, 1)) {
-                    boolean result = syncMposShipmentLogic.revokeMposShipment(shipment);
-                    if (!result) {
+                    MposResponse res = null;
+                    if (orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())) {
+                        res = syncMposShipmentLogic.revokeNewMposShipment(shipment);
+                    } else {
+                        res = syncMposShipmentLogic.revokeMposShipment(shipment);
+                    }
+                    if (!res.isSuccess()) {
                         //撤销失败
-                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
+                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
                         if (!updateRes.isSuccess()) {
                             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
                         }
-                        throw new JsonResponseException("revoke.shipment.failed");
+                        throw new JsonResponseException(res.getErrorMessage());
                     }
                 }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
@@ -281,11 +288,11 @@ public class ShipmentWiteLogic {
      */
     public void doAutoCreateShipment(ShopOrder shopOrder) {
         //如果是全渠道订单且不是创建的或者导入的订单可以使用店发
-        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())&&!orderReadLogic.isCreateOrderImportOrder(shopOrder)){
-            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}",shopOrder.getId(),shopOrder.getOutId());
+        if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
+            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
             shipmentWiteLogic.toDispatchOrder(shopOrder);
-            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...",shopOrder.getId(),shopOrder.getOutId());
-        }else{
+            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
+        } else {
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
                     MiddleOrderStatus.WAIT_HANDLE.getValue());
             if (skuOrders.size() == 0) {
@@ -308,10 +315,10 @@ public class ShipmentWiteLogic {
     public Response<String> autoHandleOrder(ShopOrder shopOrder) {
         //没有经过自动生成发货单逻辑的订单时不能自动处理的，可能存在冲突
         String orderWaitHandleType;
-        if(shopOrder.getHandleStatus() == null){
+        if (shopOrder.getHandleStatus() == null) {
             Map<String, String> shopOrderExtra = shopOrder.getExtra();
             orderWaitHandleType = shopOrderExtra.get(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE);
-        }else{
+        } else {
             orderWaitHandleType = shopOrder.getHandleStatus().toString();
         }
         if (Objects.equals(orderWaitHandleType, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()))) {
@@ -367,34 +374,46 @@ public class ShipmentWiteLogic {
         }
         //遍历不同的发货仓生成相应的发货单
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
-            Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
-
+            Long shipmentId = null;
+            try {
+                shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
+            } catch (Exception e) {
+                log.error("shopOrder [{}] failed to gen shipment order error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
+            }
+            if (null == shipmentId) {
+                //解锁库存
+                Response<Boolean> res = warehouseSkuWriteService.unlockStock(new ArrayList<WarehouseShipment>() {{
+                    add(warehouseShipment);
+                }});
+                if (!res.isSuccess()) {
+                    log.warn("shopOrderId : {}  mposSkuStockLogic.unLockStock is fail : {}", shopOrder.getId(), res.getError());
+                }
+                continue;
+            }
 
             //修改子单和总单的状态,待处理数量,并同步恒康
-            if (shipmentId != null) {
-                Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
-                if (!shipmentRes.isSuccess()) {
-                    log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
-                    return false;
+            Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+            if (!shipmentRes.isSuccess()) {
+                log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+                return false;
+            }
+            try {
+                orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+            } catch (ServiceException e) {
+                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, e.getMessage());
+            }
+            //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
+            Map<String, String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                    continue;
                 }
-                try {
-                    orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
-                } catch (ServiceException e) {
-                    log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, e.getMessage());
-                }
-                //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
-                Map<String, String> extraMap = shopOrder.getExtra();
-                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-                if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                    if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
-                        continue;
-                    }
-                }
-                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                }
+            }
+            Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
+            if (!syncRes.isSuccess()) {
+                log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             }
         }
         this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
@@ -424,7 +443,7 @@ public class ShipmentWiteLogic {
      * @param skuOrders         子单
      * @param warehouseShipment 发货仓库信息
      */
-    private Long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment){
+    private Long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment) {
         //获取该仓库中可发货的skuCode和数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantitiesChooser = warehouseShipment.getSkuCodeAndQuantities();
         //获取仓库的id
@@ -480,7 +499,7 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment,shopOrder);
+        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
         //生成发货单之后需要将发货单id添加到子单中
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
@@ -787,16 +806,15 @@ public class ShipmentWiteLogic {
 
     /**
      * 查找店发时，店仓对应的店铺id
+     *
      * @param deliverShopId
      * @returnshipID
-     *
      */
     private Long getShipIdByDeliverId(Long deliverShopId) {
         Shop shop = shopCacher.findShopById(deliverShopId);
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-        return shopExtraInfo != null ? shopExtraInfo.getOpenShopId(): null ;
+        return shopExtraInfo != null ? shopExtraInfo.getOpenShopId() : null;
     }
-
 
 
     /**
@@ -915,27 +933,27 @@ public class ShipmentWiteLogic {
         Integer totalCleanPriceAndQuantity = 0;
         //由cleanFee计算出来的金额
         Integer totalCleanFee = 0;
-        for (ShipmentItem shipmentItem:shipmentItems){
-            totalCleanPriceAndQuantity = shipmentItem.getCleanPrice()*shipmentItem.getQuantity()+totalCleanPriceAndQuantity;
-            totalCleanFee = shipmentItem.getCleanFee()+totalCleanFee;
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            totalCleanPriceAndQuantity = shipmentItem.getCleanPrice() * shipmentItem.getQuantity() + totalCleanPriceAndQuantity;
+            totalCleanFee = shipmentItem.getCleanFee() + totalCleanFee;
         }
         //计算差额,以cleanFee计算出来的金额为准,插入到第一个里面，可能最终会有1分钱的误差
-        if ((totalCleanFee-totalCleanPriceAndQuantity)>0){
+        if ((totalCleanFee - totalCleanPriceAndQuantity) > 0) {
             //这边属于cleanPrice计算少了
             Integer cleanPrice = shipmentItems.get(0).getCleanPrice();
             Integer quantity = shipmentItems.get(0).getQuantity();
-            Integer error = totalCleanFee-totalCleanPriceAndQuantity;
+            Integer error = totalCleanFee - totalCleanPriceAndQuantity;
             Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) + error);
-            Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee)/Long.valueOf(quantity));
+            Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee) / Long.valueOf(quantity));
             shipmentItems.get(0).setCleanPrice(newCleanPrice);
-        }else if((totalCleanFee-totalCleanPriceAndQuantity)<0){
-            for (ShipmentItem shipmentItem:shipmentItems){
-                Integer error = totalCleanPriceAndQuantity-totalCleanFee;
+        } else if ((totalCleanFee - totalCleanPriceAndQuantity) < 0) {
+            for (ShipmentItem shipmentItem : shipmentItems) {
+                Integer error = totalCleanPriceAndQuantity - totalCleanFee;
                 Integer cleanPrice = shipmentItem.getCleanPrice();
                 Integer quantity = shipmentItems.get(0).getQuantity();
                 Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) - error);
-                if (cleanFee>0){
-                    Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee)/Long.valueOf(quantity));
+                if (cleanFee > 0) {
+                    Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee) / Long.valueOf(quantity));
                     shipmentItem.setCleanPrice(newCleanPrice);
                     break;
                 }
@@ -1074,7 +1092,7 @@ public class ShipmentWiteLogic {
         if (!commValidateOfOrder(shopOrder, skuOrders)) {
             return;
         }
-        this.toDispatchOrder(shopOrder,Collections.EMPTY_LIST);
+        this.toDispatchOrder(shopOrder, Collections.EMPTY_LIST);
     }
 
     /**
@@ -1083,7 +1101,7 @@ public class ShipmentWiteLogic {
      * @param skuCodeAndQuantities 被拒单的商品
      * @param shopOrder            订单
      */
-    public void toDispatchOrder(ShopOrder shopOrder,List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+    public void toDispatchOrder(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
         Response<List<SkuOrder>> skuOrdersRes = skuOrderReadService.findByShopOrderId(shopOrder.getId());
         if (!skuOrdersRes.isSuccess()) {
             throw new JsonResponseException(skuOrdersRes.getError());
@@ -1099,8 +1117,8 @@ public class ShipmentWiteLogic {
             //获取skuCode,数量的集合
             skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
             //只取待处理的
-            List<SkuOrder> waitHandles = skuOrders.stream().filter(skuOrder -> Objects.equals(skuOrder.getStatus(),MiddleOrderStatus.WAIT_HANDLE.getValue())).collect(Collectors.toList());
-            for (SkuOrder skuOrder:waitHandles) {
+            List<SkuOrder> waitHandles = skuOrders.stream().filter(skuOrder -> Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())).collect(Collectors.toList());
+            for (SkuOrder skuOrder : waitHandles) {
                 SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
                 skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
                 skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
@@ -1233,13 +1251,13 @@ public class ShipmentWiteLogic {
                         log.error("email notify shop(id:{}) failed,cause:{}", shipmentExtra.getWarehouseId(), shopResponse.getError());
                     }
                     Shop shop = shopResponse.getResult();
-                    Map<String,Serializable> context = Maps.newHashMap();
-                    context.put("shopName",shop.getName());
-                    context.put("orderId",shopOrder.getOutId());
+                    Map<String, Serializable> context = Maps.newHashMap();
+                    context.put("shopName", shop.getName());
+                    context.put("orderId", shopOrder.getOutId());
                     List<String> list = Lists.newArrayList();
                     //门店邮箱实时查询会员中心
                     String email = getShopEmail(shop);
-                    if(StringUtils.isNotEmpty(email))
+                    if (StringUtils.isNotEmpty(email))
                         list.add(email);
                     if (!CollectionUtils.isEmpty(Arrays.asList(mposEmailGroup)))
                         list.addAll(Arrays.asList(mposEmailGroup));
@@ -1256,8 +1274,8 @@ public class ShipmentWiteLogic {
 
     private String getShopEmail(Shop shop) {
 
-        Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(),1,shop.getBusinessId().toString());
-        if(memberShopOptional.isPresent()){
+        Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(), 1, shop.getBusinessId().toString());
+        if (memberShopOptional.isPresent()) {
             return memberShopOptional.get().getEmail();
         }
         return null;
@@ -1301,6 +1319,7 @@ public class ShipmentWiteLogic {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         return rollbackShipment(shipment);
     }
+
     /**
      * 单个发货单撤销
      *
@@ -1616,5 +1635,25 @@ public class ShipmentWiteLogic {
             default:
                 return OrderWaitHandleType.UNKNOWN_ERROR.value();
         }
+    }
+
+    /**
+     * 换货发货单同步erp
+     * @param shipmentId
+     */
+    public void syncExchangeShipment(Long shipmentId){
+        log.info("sync exchange handle start shipment id:{}",shipmentId);
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        //判断发货单是仓发还是店发
+        if (Objects.equals(shipment.getShipWay(),1)){
+            log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+            this.handleSyncShipment(shipment,2,shopOrder);;
+        }else{
+            log.info("sync shipment to ecp,shipmentId is {}",shipment.getId());
+            this.handleSyncShipment(shipment,1,shopOrder);;
+        }
+
     }
 }

@@ -121,6 +121,8 @@ public class OrderWriteLogic {
      */
     public void updateSkuHandleNumber(Map<Long, Integer> skuOrderIdAndQuantity) {
 
+        log.info("update sku handle number start ....map is {}",skuOrderIdAndQuantity);
+
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
@@ -951,8 +953,6 @@ public class OrderWriteLogic {
         } else {
             log.info("shop order failed");
         }
-
-
     }
 }
 

@@ -520,7 +520,7 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @OperationLogType("创建订单")
-    public Response<Boolean> createMiddleOrder(@OperationLogParam @RequestBody OpenFullOrderInfo openFullOrderInfo) {
+    public Response<Boolean> createMiddleOrder(@RequestBody OpenFullOrderInfo openFullOrderInfo) {
         try {
             openFullOrderInfo.getOrder().setStatus(1);
             return openClientOrderLogic.createOrder(openFullOrderInfo);

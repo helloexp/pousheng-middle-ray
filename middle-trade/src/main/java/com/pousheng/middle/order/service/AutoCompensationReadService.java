@@ -13,12 +13,6 @@ import java.util.Map;
 public interface AutoCompensationReadService {
 
     /**
-     * 查询自动补偿任务
-     * @return
-     */
-    Response<List<AutoCompensation>> findAutoCompensationTask(Integer type,Integer status);
-
-    /**
      * 分页查询自动补偿任务
      * @param pageNo
      * @param pageSize
@@ -26,4 +20,11 @@ public interface AutoCompensationReadService {
      * @return
      */
     Response<Paging<AutoCompensation>> pagination(Integer pageNo, Integer pageSize, Map<String,Object> param);
+
+    /**
+     * 根据id集合查询
+     * @param ids
+     * @return
+     */
+    Response<List<AutoCompensation>> findByIdsAndStatus(List<Long> ids, Integer status);
 }

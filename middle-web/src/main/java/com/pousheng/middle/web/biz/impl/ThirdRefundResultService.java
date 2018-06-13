@@ -52,17 +52,17 @@ public class ThirdRefundResultService implements CompensateBizService {
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
             log.warn("ThirdRefundResultService.doProcess context is null");
-            new BizException("ThirdRefundResultService.doProcess context is null");
+            throw new BizException("ThirdRefundResultService.doProcess context is null");
         }
         TaobaoConfirmRefundEvent event = JsonMapper.nonEmptyMapper().fromJson(context, TaobaoConfirmRefundEvent.class);
         if (event == null) {
             log.warn("ThirdRefundResultService.doProcess taobaoConfirmRefundEvent is null");
-            new BizException("ThirdRefundResultService.doProcess taobaoConfirmRefundEvent is null");
+            throw new BizException("ThirdRefundResultService.doProcess taobaoConfirmRefundEvent is null");
         }
         try {
             updateRefundStatusForTaobao(event);
         }catch (Exception e){
-            new BizException("update third channel refund status,caused by {}",e.getCause());
+            throw new BizException("update third channel refund status,caused by {}",e.getCause());
         }
     }
 

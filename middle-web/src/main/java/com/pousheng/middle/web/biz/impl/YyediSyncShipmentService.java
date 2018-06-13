@@ -21,10 +21,7 @@ import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
-import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
-import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -74,6 +71,8 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -161,6 +160,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
         Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
         if (!response.isSuccess()) {
             log.error("syncShipmentPosToHk shipment (id:{}) is error ", shipmentId);
+            Map<String, Object> param1 = Maps.newHashMap();
+            param1.put("shipmentId", shipment.getId());
+            autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
         }
 
     }

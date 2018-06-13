@@ -12,6 +12,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/5/28
@@ -40,6 +42,16 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
         } catch (Exception e) {
             log.error("failed to paging poushengCompensateBiz, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
             return Response.fail("paging.poushengCompensateBiz.find.fail");
+        }
+    }
+
+    @Override
+    public Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status) {
+        try {
+            return Response.ok(poushengCompensateBizDao.findByIdsAndStatus(ids, status));
+        } catch (Exception e) {
+            log.error("find poushengCompensateBiz by ids :{} failed,  cause:{}", ids, Throwables.getStackTraceAsString(e));
+            return Response.fail("poushengCompensateBiz.find.fail");
         }
     }
 }

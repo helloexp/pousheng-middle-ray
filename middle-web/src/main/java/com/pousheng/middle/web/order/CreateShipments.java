@@ -85,21 +85,23 @@ public class CreateShipments {
     public Response<List<ShipmentPreview>> shipPreview(@RequestParam Long id,
                                                  @RequestParam(value = "dataList") String dataList,
                                                  @RequestParam(defaultValue = "1") Integer type) {
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
-        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(id);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         if(Arguments.isNull(requestDataList)){
             log.error("data json :{} invalid",dataList);
             throw new JsonResponseException("analysis.shipment.json.error");
         }
-        //京东货到付款订单不允许拆分
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
-            if (requestDataList.size() > 1 || requestDataList.get(0).getData().size() != skuOrders.size()) {
-                log.info("data json :{} invalid", dataList);
-                throw new JsonResponseException("jingdong.delivery.cannot.dispatch");
-            }
+        if (Objects.equals(type,1)){
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(id);
+            //京东货到付款订单不允许拆分
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
+                if (requestDataList.size() > 1 || requestDataList.get(0).getData().size() != skuOrders.size()) {
+                    log.info("data json :{} invalid", dataList);
+                    throw new JsonResponseException("jingdong.delivery.cannot.dispatch");
+                }
 
+            }
         }
         //用于判断运费是否计算
         int shipmentFeeCount=0;
@@ -165,8 +167,7 @@ public class CreateShipments {
             //运费优惠
             Long shipmentShipDiscountFee = 0L;
             if (Objects.equals(1, type)) {
-                //运费
-
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
                 //判断运费是否已经加过
                 if (!shipmentReadLogic.isShipmentFeeCalculated(id)&&shipmentFeeCount==0) {
                     shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee()==null?0:shopOrder.getOriginShipFee());

@@ -13,8 +13,32 @@ import java.util.List;
 @Repository
 public class AutoCompensationDao extends MyBatisDao<AutoCompensation> {
 
-    public List<AutoCompensation> findAutoCompensationTask(Integer type,Integer status){
-        return getSqlSession().selectList(sqlId("findAutoCompensationTask"), ImmutableMap.of("type",type,"status",status));
+    /**
+     * 批量更新状态
+     *
+     * @param ids    id集合
+     * @param status 状态
+     */
+    public void updateStatus(List<Long> ids, Integer status) {
+        getSqlSession().update(sqlId("updateStatus"), ImmutableMap.of("ids", ids, "status", status));
+    }
+
+    /**
+     * 重置状态
+     */
+    public void resetStatus() {
+        getSqlSession().update(sqlId("resetStatus"));
+    }
+
+    /**
+     * 查询指定状态的id集合
+     *
+     * @param ids    id集合
+     * @param status 状态
+     * @return
+     */
+    public List<AutoCompensation> findByIdsAndStatus(List<Long> ids, Integer status) {
+        return getSqlSession().selectList(sqlId("findByIdsAndStatus"), ImmutableMap.of("ids", ids, "status", status));
     }
 
 }

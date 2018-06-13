@@ -9,6 +9,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/5/28
@@ -93,6 +95,28 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
         } catch (Exception e) {
             log.error("update poushengCompensateBiz failed, id:{},lastFailedReason:{}, cause:{}", id,lastFailedReason, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.update.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> batchUpdateStatus(List<Long> ids, String status) {
+        try {
+            poushengCompensateBizDao.batchUpdateStatus(ids, status);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("batch update poushengCompensateBiz status to {} failed, ids:{}, cause:{}",status, ids, Throwables.getStackTraceAsString(e));
+            return Response.fail("poushengCompensateBiz.update.status.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> resetStatus() {
+        try {
+            poushengCompensateBizDao.resetStatus();
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("reset biz compensation task failed,cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("reset.compensation.status.fail");
         }
     }
 }

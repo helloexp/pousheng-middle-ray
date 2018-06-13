@@ -46,6 +46,8 @@
 
         <if test="cnt != null">and `cnt` = #{cnt}</if>
 
+        <if test="ignoreCnt != null">and <![CDATA[ cnt < #{ignoreCnt} ]]></if>
+
         <if test="lastFailedReason != null">and `last_failed_reason` = #{lastFailedReason}</if>
         
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
@@ -82,6 +84,18 @@
                  item="item">
             #{item}
         </foreach>
+        <include refid="order" />
+    </select>
+
+    <select id="findByIdsAndStatus" parameterType="map" resultMap="PoushengCompensateBizMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        where id in
+        <foreach collection="ids" open="(" separator="," close=")"
+                 item="item">
+            #{item}
+        </foreach>
+        and status = #{status}
         <include refid="order" />
     </select>
 
@@ -129,6 +143,30 @@
         SET updated_at=now(),
         status = #{newStatus}
         WHERE id=#{id} AND status = #{currentStatus}
+    </update>
+
+    <update id="batchUpdateStatus" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = #{status},
+            updated_at=now()
+        </set>
+        where id in
+        <foreach collection="ids" open="(" separator="," close=")"
+                 item="id">
+            #{id}
+        </foreach>
+    </update>
+
+    <update id="resetStatus">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            status = 'WAIT_HANDLE',
+            updated_at=now()
+        </set>
+        where status = 'PROCESSING' and <![CDATA[ updated_at < date_add(now(),interval - 10 minute) ]]>
     </update>
 
 

@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -9,6 +10,7 @@ import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
+import com.pousheng.middle.order.service.AutoCompensationWriteService;
 import com.pousheng.middle.warehouse.service.SkuStockTaskWriteService;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PreDestroy;
@@ -50,6 +53,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Created by ph on 2018/1/10
@@ -78,6 +82,9 @@ public class MposJob {
 
     @Autowired
     private AutoCompensationReadService autoCompensationReadService;
+
+    @Autowired
+    private AutoCompensationWriteService autoCompensationWriteService;
 
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
@@ -112,13 +119,13 @@ public class MposJob {
     @Value("${open.client.sync.order.fetch.size:40}")
     private Integer shipmentFetchSize;
 
-    @Value("${auto.task.try.number:10}")
+    @Value("${auto.task.try.number:3}")
     private Integer autoTryNumber;
 
     @Autowired
-    public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder){
-        this.executorService = new ThreadPoolExecutor(10, 10, 60L, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<Runnable>(queueSizeOfOrder),
+    public MposJob(@Value("${shipment.queue.size: 20000}") int queueSizeOfOrder) {
+        this.executorService = new ThreadPoolExecutor(5, 5, 60L, TimeUnit.MINUTES,
+                new ArrayBlockingQueue<>(queueSizeOfOrder),
                 new ThreadFactoryBuilder().setNameFormat("mpos-shipment-fetcher-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
     }
@@ -132,25 +139,28 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+        this.syncMposShipmentDetail(syncAllOrderDurationInMinute);
+    }
+
+    private void syncMposShipmentDetail(Integer beforeInMinute) {
         DateTime now = DateTime.now();
-        DateTime startAt = now.minusMinutes(syncAllOrderDurationInMinute);
+        DateTime startAt = now.minusMinutes(beforeInMinute);
         Stopwatch stopwatch = Stopwatch.createStarted();
         log.info("start to sync mpos shipment...");
-            int pageNo = 1;
-            while (true) {
-                Paging<MposShipmentExtra> pagination = syncMposShipmentLogic.syncMposShimentStatus(pageNo,shipmentFetchSize,startAt.toDate(),now.toDate());
-                final List<MposShipmentExtra> mposShipmentExtras = pagination.getData();
-                if (CollectionUtils.isEmpty(mposShipmentExtras)) {
-                    break;
-                }
-                //异步处理
-                executorService.submit(new OrderHandleTask(mposShipmentExtras));
-                if (!Objects.equals(mposShipmentExtras.size(),shipmentFetchSize)) {
-                    break;
-                }
-                pageNo++;
+        int pageNo = 1;
+        while (true) {
+            Paging<MposShipmentExtra> pagination = syncMposShipmentLogic.syncMposShimentStatus(pageNo,shipmentFetchSize,startAt.toDate(),now.toDate());
+            final List<MposShipmentExtra> mposShipmentExtras = pagination.getData();
+            if (CollectionUtils.isEmpty(mposShipmentExtras)) {
                 break;
             }
+            //异步处理
+            executorService.submit(new OrderHandleTask(mposShipmentExtras));
+            if (!Objects.equals(mposShipmentExtras.size(), shipmentFetchSize)) {
+                break;
+            }
+            pageNo++;
+        }
         stopwatch.stop();
         log.info("end to sync mpos shipment,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
@@ -158,54 +168,57 @@ public class MposJob {
     /**
      * 自动同步失败任务
      */
-    @Scheduled(cron = "0 */3 * * * ?")
-    public void autoCompensateMposFailTask(){
+    @Scheduled(cron = "0 */10 * * * ?")
+    public void autoCompensateMposFailTask() {
         if (!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
-        Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("start to compensate mpos not dispatcher sku...");
+        this.autoCompensateMposFailedTaskDetail();
+    }
 
-        Map<String,Object> param = Maps.newHashMap();
-        param.put("status",0);
-        param.put("time",autoTryNumber);
+    private void autoCompensateMposFailedTaskDetail() {
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        log.info("start to compensate task...");
+        Map<String, Object> param = Maps.newHashMap();
+        param.put("status", 0);
+        param.put("time", autoTryNumber);
+        // 区分开来，先这样写
+        param.put("otherType", 10);
         int pageNo = 1;
-        while (pageNo < 10) {
-            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo,80,param);
-            if(!response.isSuccess()){
+        while (true) {
+            Response<Paging<AutoCompensation>> response = autoCompensationReadService.pagination(pageNo, shipmentFetchSize, param);
+            if (!response.isSuccess()) {
                 log.error("fail to find compensation task");
-                return ;
+                return;
             }
             Paging<AutoCompensation> pagination = response.getResult();
             final List<AutoCompensation> autoCompensations = pagination.getData();
             if (CollectionUtils.isEmpty(autoCompensations)) {
                 break;
             }
+            List<Long> ids = autoCompensations.stream().map(AutoCompensation::getId).collect(Collectors.toList());
+            autoCompensationWriteService.updateStatus(ids, 1);
             //异步处理
             executorService.submit(new CompensationTask(autoCompensations));
-//            if (!Objects.equals(autoCompensations.size(),shipmentFetchSize)) {
-//                break;
-//            }
+            if (!Objects.equals(autoCompensations.size(), shipmentFetchSize)) {
+                break;
+            }
             pageNo++;
         }
-
         stopwatch.stop();
-        log.info("end to compensate not dispatcher sku to mpos,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
+        log.info("end to compensate task,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
     @RequestMapping(value = "api/mpos/sync/shipment/job",method = RequestMethod.GET)
-    public void syncMposShipmentBySelf(){
-        this.syncMposShipment();
+    public void syncMposShipmentBySelf(@RequestParam(value = "beforeInMinute",defaultValue = "20") Integer beforeInMinute){
+        this.syncMposShipmentDetail(beforeInMinute);
     }
 
     @RequestMapping(value = "api/mpos/compensate/job",method = RequestMethod.GET)
     public void autoCompensateMposFailTaskBySelf(){
-        this.autoCompensateMposFailTask();
+        this.autoCompensateMposFailedTaskDetail();
     }
-
-
-
 
     @RequestMapping(value = "api/mpos/shop/address/sync", produces = MediaType.APPLICATION_JSON_VALUE)
     @Scheduled(cron = "0 0 2 * * ?")
@@ -218,7 +231,7 @@ public class MposJob {
         int pageNo = 1;
         boolean next = batchSyncShopAddress(pageNo, 500);
         while (next) {
-            pageNo ++;
+            pageNo++;
             next = batchSyncShopAddress(pageNo, 500);
         }
         log.info("sync mpos shop address end");
@@ -236,8 +249,8 @@ public class MposJob {
         log.info("start to compensationSkuStockTask...");
 
         Response<Boolean> updateRes = skuStockTaskWriteService.updateTimeOutHandleTask();
-        if (!updateRes.isSuccess()){
-            log.error("updateTimeOutHandleTask fail,error:{}",updateRes.getError());
+        if (!updateRes.isSuccess()) {
+            log.error("updateTimeOutHandleTask fail,error:{}", updateRes.getError());
         }
     }
 
@@ -246,21 +259,21 @@ public class MposJob {
     private boolean batchSyncShopAddress(int pageNo, int size) {
 
         //String name, Long userId, Integer type, Integer status, Integer pageNo, Integer pageSize
-        Response<Paging<Shop>> pagingRes = shopReadService.pagination(null,null,null,1,pageNo, size);
-        if(!pagingRes.isSuccess()){
-            log.error("paging shop fail,error:{}",pagingRes.getError());
+        Response<Paging<Shop>> pagingRes = shopReadService.pagination(null, null, null, 1, pageNo, size);
+        if (!pagingRes.isSuccess()) {
+            log.error("paging shop fail,error:{}", pagingRes.getError());
             return Boolean.FALSE;
         }
 
         Paging<Shop> paging = pagingRes.getResult();
         List<Shop> shops = paging.getData();
 
-        if (paging.getTotal().equals(0L)  || CollectionUtils.isEmpty(shops)) {
+        if (paging.getTotal().equals(0L) || CollectionUtils.isEmpty(shops)) {
             return Boolean.FALSE;
         }
 
-        for (Shop shop : shops){
-            UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(),shop.getBusinessId(),shop.getOuterId());
+        for (Shop shop : shops) {
+            UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(), shop.getBusinessId(), shop.getOuterId());
             eventBus.post(updateShopEvent);
         }
 
@@ -269,15 +282,14 @@ public class MposJob {
     }
 
 
-
     /**
      * 处理发货单状态更新任务
      */
-    private class OrderHandleTask implements Runnable{
+    private class OrderHandleTask implements Runnable {
 
         private final List<MposShipmentExtra> mposShipmentExtras;
 
-        public OrderHandleTask(List<MposShipmentExtra> mposShipmentExtras){
+        public OrderHandleTask(List<MposShipmentExtra> mposShipmentExtras) {
             this.mposShipmentExtras = mposShipmentExtras;
         }
 
@@ -290,98 +302,81 @@ public class MposJob {
     /**
      * 自动补偿任务
      */
-    private class CompensationTask implements Runnable{
+    private class CompensationTask implements Runnable {
         private final List<AutoCompensation> autoCompensations;
 
-        public CompensationTask(List<AutoCompensation> autoCompensations){
+        public CompensationTask(List<AutoCompensation> autoCompensations) {
             this.autoCompensations = autoCompensations;
         }
 
         @Override
         public void run() {
-            if(!CollectionUtils.isEmpty(autoCompensations)){
+            if (!CollectionUtils.isEmpty(autoCompensations)) {
                 autoCompensations.forEach(autoCompensation -> {
-                    if(Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS)){
-                        Map<String,String> extra = autoCompensation.getExtra();
-                        if(Objects.nonNull(extra.get("param"))){
-                            Response<Boolean> response = syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"),Map.class));
-                            if(response.isSuccess()){
-                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            }else{
-                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
-                            }
-                        }
-                    }
-                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS)){
-                        Map<String,String> extra = autoCompensation.getExtra();
-                        if(Objects.nonNull(extra.get("param"))){
-                            Response<Boolean> response = syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"),Map.class));
-                            if(response.isSuccess()){
-                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            }else{
-                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
-                            }
-                        }
-                    }
-                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_POS_TO_HK)){
-                        Map<String,String> extra = autoCompensation.getExtra();
-                        if(Objects.nonNull(extra.get("param"))){
-                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
-                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
-                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                            if(response.isSuccess()){
-                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            }else{
-                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
-                            }
-                        }
-                    }
-                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK)){
-                        Map<String,String> extra = autoCompensation.getExtra();
-                        if(Objects.nonNull(extra.get("param"))){
-                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
-                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
-                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
-                            if(response.isSuccess()){
-                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            }else{
-                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
-                            }
-                        }
-                    }
-                    if(Objects.equals(autoCompensation.getType(),TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK)) {
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_NOT_DISPATCHER_SKU_TO_MPOS)) {
                         Map<String, String> extra = autoCompensation.getExtra();
                         if (Objects.nonNull(extra.get("param"))) {
-                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Response<Boolean> response = syncMposOrderLogic.syncNotDispatcherSkuToMpos(mapper.fromJson(extra.get("param"), Map.class));
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_REFUND_RECEIVE_TO_MPOS)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Response<Boolean> response = syncMposOrderLogic.notifyMposRefundReceived(mapper.fromJson(extra.get("param"), Map.class));
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_SYNC_POS_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
+                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentDoneToHk(shipment);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
                             Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
                             Response<Boolean> response = syncRefundPosLogic.syncRefundPosToHk(refund);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            }else{
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
                                 autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
                             }
-                        }
-                    }
-
-                    if(Objects.equals(autoCompensation.getType(),TradeConstants.YYEDI_SHIP_NOTIFICATION)){
-                        Map<String, String> extra = autoCompensation.getExtra();
-                        if (Objects.nonNull(extra.get("param"))) {
-                            Map<String,Long> param =  mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
-                            Long shipmentId = Long.valueOf(param.get(TradeConstants.SHIPMENT_ID));
-                            log.info("try to sync shipment(id:{}) to hk",shipmentId);
-                            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-
-                            //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
-                            hkShipmentDoneLogic.doneShipment(shipment);
-
-                            //同步pos单到恒康
-                            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                            if (!response.isSuccess()) {
-                                Map<String, Object> param1 = Maps.newHashMap();
-                                param1.put("shipmentId", shipment.getId());
-                                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-                            }
-                            autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                         }
                     }
                 });

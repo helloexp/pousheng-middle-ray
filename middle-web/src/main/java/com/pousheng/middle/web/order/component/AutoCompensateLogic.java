@@ -22,7 +22,6 @@ public class AutoCompensateLogic {
 
     /**
      * 同步失败，创建自动补偿任务
-     * @param param
      */
     public void createAutoCompensationTask(Map<String,Object> param, Integer type,String error){
         AutoCompensation autoCompensation = new AutoCompensation();
@@ -38,25 +37,25 @@ public class AutoCompensateLogic {
 
     /**
      * 同步成功，修改任务状态
-     * @param id
      */
     public void updateAutoCompensationTask(Long id){
         AutoCompensation autoCompensation = new AutoCompensation();
         autoCompensation.setId(id);
-        autoCompensation.setStatus(1);
+        autoCompensation.setStatus(2);
         autoCompensationWriteService.update(autoCompensation);
     }
 
     /**
      * 同步失败，增加失败次数
-     * @param autoCompensation
      */
     public void autoCompensationTaskExecuteFail(AutoCompensation autoCompensation){
         AutoCompensation update = new AutoCompensation();
         update.setId(autoCompensation.getId());
+        update.setStatus(0);
         if(autoCompensation.getTime() == null){
             autoCompensation.setTime(0);
         }
+        update.setExtra(autoCompensation.getExtra());
         update.setTime(autoCompensation.getTime() + 1);
         autoCompensationWriteService.update(update);
     }

@@ -239,6 +239,10 @@ public class TradeConstants {
     //是否参与全渠道店铺 1参与 0 不参与
     public static final String IS_ALL_CHANNEL_SHOP = "isAllChannelShop";
 
+
+    //是否是新的全渠道订单
+    public static final String IS_NEW_ALL_CHANNEL_SHOP = "isNewAllChannelShop";
+
     public static final String IS_HK_POS_ORDER = "isHkPosOrder";
     public static final String SHIPMENT_ID = "shipmentId";
     public static final String ORDER_PREFIX = "SAL";

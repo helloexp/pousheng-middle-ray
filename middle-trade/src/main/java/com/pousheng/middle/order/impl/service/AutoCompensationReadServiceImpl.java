@@ -19,32 +19,31 @@ import java.util.Map;
  */
 @Service
 @Slf4j
-public class AutoCompensationReadServiceImpl implements AutoCompensationReadService{
+public class AutoCompensationReadServiceImpl implements AutoCompensationReadService {
 
     @Autowired
     private AutoCompensationDao autoCompensationDao;
 
     @Override
-    public Response<List<AutoCompensation>> findAutoCompensationTask(Integer type, Integer status) {
+    public Response<Paging<AutoCompensation>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> param) {
         try {
-            List<AutoCompensation> list = autoCompensationDao.findAutoCompensationTask(type, status);
-            return Response.ok(list);
+            PageInfo pageInfo = new PageInfo(pageNo, pageSize);
+            Paging<AutoCompensation> p = autoCompensationDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), param);
+            return Response.ok(p);
         } catch (Exception e) {
-            log.error("failed to find autoCompensation task, type={},statu={}, cause:{}", type,status, Throwables.getStackTraceAsString(e));
-            return Response.fail("paging.autoCompensation.find.fail");
+            log.error("failed to pagination autoCompensation with params:{}, cause:{}",
+                    param, Throwables.getStackTraceAsString(e));
+            return Response.fail("autoCompensation.find.fail");
         }
     }
 
     @Override
-    public Response<Paging<AutoCompensation>> pagination(Integer pageNo, Integer pageSize, Map<String, Object> param) {
-        try{
-            PageInfo pageInfo = new PageInfo(pageNo, pageSize);
-            Paging<AutoCompensation> p = autoCompensationDao.paging(pageInfo.getOffset(), pageInfo.getLimit(), param);
-            return Response.ok(p);
-        }catch (Exception e){
-            log.error("failed to pagination autoCompensation with params:{}, cause:{}",
-                    param, Throwables.getStackTraceAsString(e));
-            return Response.fail("autoCompensation.find.fail");
+    public Response<List<AutoCompensation>> findByIdsAndStatus(List<Long> ids, Integer status) {
+        try {
+            return Response.ok(autoCompensationDao.findByIdsAndStatus(ids, status));
+        } catch (Exception e) {
+            log.error("fail to find task by ids");
+            return Response.fail("find.async.task.by.id.fail");
         }
     }
 }

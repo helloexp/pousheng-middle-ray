@@ -36,7 +36,7 @@ public class CompensateBizFailedJob {
     @Autowired
     private CompensateBizProcessor compensateBizProcessor;
 
-    @Scheduled(cron = "0 */1 * * * ?")
+//    @Scheduled(cron = "0 */1 * * * ?")
     @GetMapping("/api/compensate/biz/failed/job")
     public void processFailedJob() {
         log.info("[pousheng-middle-compensate-biz-failed-job] start...");
@@ -59,9 +59,6 @@ public class CompensateBizFailedJob {
             }
             //轮询业务处理
             for (PoushengCompensateBiz poushengCompensateBiz : poushengCompensateBizs) {
-                if (poushengCompensateBiz.getCnt() > 3) {
-                    continue;
-                }
                 //乐观锁控制更新为处理中
                 Response<Boolean> rU = poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(), poushengCompensateBiz.getStatus(), PoushengCompensateBizStatus.PROCESSING.name());
                 if (!rU.isSuccess()) {

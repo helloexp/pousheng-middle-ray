@@ -17,4 +17,6 @@ public class MposResponse implements Serializable{
     private String result;
 
     private String error;
+
+    private String errorMessage;
 }

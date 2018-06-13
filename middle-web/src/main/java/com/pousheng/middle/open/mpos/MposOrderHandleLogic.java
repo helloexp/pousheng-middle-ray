@@ -89,6 +89,7 @@ public class MposOrderHandleLogic {
             case TradeConstants.MPOS_SHIPMENT_WAIT_SHIP:
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;
                 shipmentExtra.setReceiveStaff(extra.get(TradeConstants.MPOS_RECEIVE_STAFF));
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 break;
             case TradeConstants.MPOS_SHIPMENT_CALL_SHIP:
                 orderEvent = MiddleOrderEvent.MPOS_RECEIVE;

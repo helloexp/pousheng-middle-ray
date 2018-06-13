@@ -399,7 +399,10 @@ public class ExportTradeBillListener {
                             });
                         }
                         export.setWarehousingDate(refundExtra.getHkReturnDoneAt());
-
+                        //申请数量
+                        export.setApplyQuantity(item.getApplyQuantity());
+                        //实际数量
+                        export.setActualQuantity(item.getApplyQuantity());
                         refundExportData.add(export);
                     });
 

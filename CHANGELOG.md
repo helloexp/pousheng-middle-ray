@@ -1,3 +1,11 @@
+
+
+# 2.3.0 (2018-06-12)
+
+* 京东匡威全渠道店铺
+* 非mpos商品不参与门店发货
+* 彭晖redis队列
+
 ## 2.2.0 (2018-06-12)
 
 *【BUG】问题：YYEDI 通知发货单超时 http://pmp.terminus.io/console/project/178/issues/38115 负责人：谢洪

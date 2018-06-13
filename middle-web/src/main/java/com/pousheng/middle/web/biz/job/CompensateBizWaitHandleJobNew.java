@@ -147,13 +147,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         if (CollectionUtils.isEmpty(ids)) {
             return;
         }
-        Response<List<PoushengCompensateBiz>> response = poushengCompensateBizReadService.findByIds(ids);
-        if (!response.isSuccess()) {
-            log.error("fail to find compensate biz by ids:{},cause:{}", ids, response.getError());
-            return;
-        }
-        List<PoushengCompensateBiz> list = response.getResult();
-        executorService.submit(new CompensateBizWaitHandleTask(list));
+        executorService.submit(new CompensateBizWaitHandleTask(ids));
     }
 
     @Override
@@ -172,14 +166,20 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
 
     public class CompensateBizWaitHandleTask implements Runnable {
 
-        private List<PoushengCompensateBiz> poushengCompensateBizs;
+        private List<Long> ids;
 
-        public CompensateBizWaitHandleTask(List<PoushengCompensateBiz> list) {
-            this.poushengCompensateBizs = list;
+        public CompensateBizWaitHandleTask(List<Long> ids) {
+            this.ids = ids;
         }
 
         @Override
         public void run() {
+            Response<List<PoushengCompensateBiz>> response = poushengCompensateBizReadService.findByIdsAndStatus(ids, PoushengCompensateBizStatus.PROCESSING.name());
+            if (!response.isSuccess()) {
+                log.error("fail to find compensate biz by ids:{},cause:{}", ids, response.getError());
+                return;
+            }
+            List<PoushengCompensateBiz> poushengCompensateBizs = response.getResult();
             List<Long> successIds = Lists.newArrayList();
             poushengCompensateBizs.forEach(poushengCompensateBiz -> {
                 try {

@@ -141,13 +141,7 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
 
     @Override
     protected void consume(List<Long> ids) {
-        Response<List<AutoCompensation>> response = autoCompensationReadService.findByIds(ids);
-        if (!response.isSuccess()) {
-            log.error("find async task failed,cause:{}", response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        List<AutoCompensation> list = response.getResult();
-        executorService.submit(new YyEdiShipTask(list));
+        executorService.submit(new YyEdiShipTask(ids));
     }
 
     @Override
@@ -161,17 +155,24 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
 
     public class YyEdiShipTask implements Runnable {
 
-        private List<AutoCompensation> autoCompensations;
+        private List<Long> ids;
 
-        public YyEdiShipTask(List<AutoCompensation> autoCompensations) {
-            this.autoCompensations = autoCompensations;
+        public YyEdiShipTask(List<Long> ids) {
+            this.ids = ids;
         }
 
         @Override
         public void run() {
-            if (CollectionUtils.isEmpty(autoCompensations)) {
+            if (CollectionUtils.isEmpty(ids)) {
                 return;
             }
+            Response<List<AutoCompensation>> response1 = autoCompensationReadService.findByIdsAndStatus(ids, HandleStatus.HANDLE_ING.status());
+            if (!response1.isSuccess()) {
+                log.error("find async task failed,cause:{}", response1.getError());
+                throw new JsonResponseException(response1.getError());
+            }
+            List<AutoCompensation> autoCompensations = response1.getResult();
+
             List<Long> successIds = Lists.newArrayList();
             autoCompensations.forEach(autoCompensation -> {
                 try {

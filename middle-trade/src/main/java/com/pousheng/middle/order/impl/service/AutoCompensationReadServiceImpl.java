@@ -38,9 +38,9 @@ public class AutoCompensationReadServiceImpl implements AutoCompensationReadServ
     }
 
     @Override
-    public Response<List<AutoCompensation>> findByIds(List<Long> ids) {
+    public Response<List<AutoCompensation>> findByIdsAndStatus(List<Long> ids, Integer status) {
         try {
-            return Response.ok(autoCompensationDao.findByIds(ids));
+            return Response.ok(autoCompensationDao.findByIdsAndStatus(ids, status));
         } catch (Exception e) {
             log.error("fail to find task by ids");
             return Response.fail("find.async.task.by.id.fail");

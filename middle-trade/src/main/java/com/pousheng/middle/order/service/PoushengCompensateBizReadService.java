@@ -38,6 +38,6 @@ public interface PoushengCompensateBizReadService {
      * @param ids id集合
      * @return
      */
-    Response<List<PoushengCompensateBiz>> findByIds(List<Long> ids);
+    Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status);
 
 }

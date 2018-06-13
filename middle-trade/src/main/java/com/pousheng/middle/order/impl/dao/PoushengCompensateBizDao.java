@@ -45,4 +45,15 @@ public class PoushengCompensateBizDao extends MyBatisDao<PoushengCompensateBiz> 
     public void resetStatus() {
         getSqlSession().update(sqlId("resetStatus"));
     }
+
+    /**
+     * 查询指定状态的id集合
+     *
+     * @param ids    id集合
+     * @param status 状态
+     * @return
+     */
+    public List<PoushengCompensateBiz> findByIdsAndStatus(List<Long> ids, String status) {
+        return getSqlSession().selectList(sqlId("findByIdsAndStatus"), ImmutableMap.of("ids", ids, "status", status));
+    }
 }

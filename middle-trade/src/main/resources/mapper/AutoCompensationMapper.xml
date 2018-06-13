@@ -67,14 +67,15 @@
         WHERE id = #{id}
     </select>
 
-    <select id="findByIds" parameterType="list" resultMap="AutoCompensationMap">
+    <select id="findByIdsAndStatus" parameterType="map" resultMap="AutoCompensationMap">
         select id, <include refid="cols_exclude_id"/>
         from <include refid="tb"/>
         where id in
-        <foreach collection="list" open="(" separator="," close=")"
+        <foreach collection="ids" open="(" separator="," close=")"
                  item="item">
             #{item}
         </foreach>
+        and status = #{status}
         <include refid="order" />
     </select>
 

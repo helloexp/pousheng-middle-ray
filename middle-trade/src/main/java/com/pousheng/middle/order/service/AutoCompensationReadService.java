@@ -26,5 +26,5 @@ public interface AutoCompensationReadService {
      * @param ids
      * @return
      */
-    Response<List<AutoCompensation>> findByIds(List<Long> ids);
+    Response<List<AutoCompensation>> findByIdsAndStatus(List<Long> ids, Integer status);
 }

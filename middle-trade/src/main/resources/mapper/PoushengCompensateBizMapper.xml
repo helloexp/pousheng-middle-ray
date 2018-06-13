@@ -87,6 +87,18 @@
         <include refid="order" />
     </select>
 
+    <select id="findByIdsAndStatus" parameterType="map" resultMap="PoushengCompensateBizMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        where id in
+        <foreach collection="ids" open="(" separator="," close=")"
+                 item="item">
+            #{item}
+        </foreach>
+        and status = #{status}
+        <include refid="order" />
+    </select>
+
     <update id="update" parameterType="PoushengCompensateBiz">
         UPDATE
         <include refid="tb"/>

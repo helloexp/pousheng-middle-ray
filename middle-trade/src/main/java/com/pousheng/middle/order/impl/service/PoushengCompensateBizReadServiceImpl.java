@@ -46,9 +46,9 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
     }
 
     @Override
-    public Response<List<PoushengCompensateBiz>> findByIds(List<Long> ids) {
+    public Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status) {
         try {
-            return Response.ok(poushengCompensateBizDao.findByIds(ids));
+            return Response.ok(poushengCompensateBizDao.findByIdsAndStatus(ids, status));
         } catch (Exception e) {
             log.error("find poushengCompensateBiz by ids :{} failed,  cause:{}", ids, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.find.fail");

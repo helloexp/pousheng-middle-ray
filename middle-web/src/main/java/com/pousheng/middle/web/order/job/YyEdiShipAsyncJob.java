@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
  * Created by penghui on 2018/6/12
  * 为了迎接618大促，先这么写，后期会改到另一个任务表里
  */
-@ConditionalOnProperty(name = "trade.job.enable.test", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @Slf4j
 public class YyEdiShipAsyncJob extends AbstractAsyncJob {

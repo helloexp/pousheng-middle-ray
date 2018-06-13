@@ -361,7 +361,7 @@ public class RefundWriteLogic {
         refundExtra.setReleOrderType(submitRefundInfo.getReleOrderType());
         refund.setReleOrderCode(submitRefundInfo.getReleOrderNo());
         //完善仓库及物流信息
-        completeWareHoseAndExpressInfo(submitRefundInfo.getRefundType(), refundExtra, submitRefundInfo);
+        completeWareHoseAndExpressInfo(shipment,submitRefundInfo.getRefundType(), refundExtra, submitRefundInfo);
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItems));
@@ -434,7 +434,7 @@ public class RefundWriteLogic {
         Map<String, String> extraMap = refund.getExtra();
 
         //完善仓库及物流信息
-        completeWareHoseAndExpressInfo(refund.getRefundType(), refundExtra, submitRefundInfo);
+        completeWareHoseAndExpressInfo(shipment,refund.getRefundType(), refundExtra, submitRefundInfo);
         //添加处理完成时间
         refundExtra.setHandleDoneAt(new Date());
         //todo 是否可以修改售后单id
@@ -642,25 +642,36 @@ public class RefundWriteLogic {
     }
 
     //完善售后单仓库信息
-    private void completeWareHoseAndExpressInfo(Integer refundType, RefundExtra refundExtra, EditSubmitRefundInfo submitRefundInfo) {
+    private void completeWareHoseAndExpressInfo(Shipment shipment,Integer refundType, RefundExtra refundExtra, EditSubmitRefundInfo submitRefundInfo) {
 
         //非仅退款则验证仓库是否有效、物流信息是否有效(因为仅退款不需要仓库信息)
         if (!Objects.equals(refundType, MiddleRefundType.AFTER_SALES_REFUND.value())) {
-            //根据默认售后仓规则填入的仓库id查询仓库信息
-            Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
-            //填入售后单仓库id
-            refundExtra.setWarehouseId(warehouse.getId());
-            //填入售后单仓库名称
-            refundExtra.setWarehouseName(warehouse.getName());
+
+            //拒收
+            if (Objects.equals(refundType, MiddleRefundType.REJECT_GOODS.value())){
+
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                //填入售后单仓库id
+                refundExtra.setWarehouseId(shipmentExtra.getWarehouseId());
+                //填入售后单仓库名称
+                refundExtra.setWarehouseName(shipmentExtra.getWarehouseName());
+            } else {
+                //根据默认售后仓规则填入的仓库id查询仓库信息
+                Warehouse warehouse = findWarehouseById(submitRefundInfo.getWarehouseId());
+                //填入售后单仓库id
+                refundExtra.setWarehouseId(warehouse.getId());
+                //填入售后单仓库名称
+                refundExtra.setWarehouseName(warehouse.getName());
+            }
             //填入物流编码，公司
             refundExtra.setShipmentCorpCode(submitRefundInfo.getShipmentCorpCode());
             //物流公司名称
             refundExtra.setShipmentCorpName(submitRefundInfo.getShipmentCorpName());
             //物流单号
             refundExtra.setShipmentSerialNo(submitRefundInfo.getShipmentSerialNo());
-        }else{
+        } else{
             //仅退款的售后单默认退货仓是店铺配置的发货仓
-            Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(submitRefundInfo.getShipmentCode());
+            //Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(submitRefundInfo.getShipmentCode());
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
             String warehouseId = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_ID, openShop);
             String warehouseName = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.DEFAULT_REFUND_WAREHOUSE_NAME, openShop);

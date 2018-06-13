@@ -1636,4 +1636,24 @@ public class ShipmentWiteLogic {
                 return OrderWaitHandleType.UNKNOWN_ERROR.value();
         }
     }
+
+    /**
+     * 换货发货单同步erp
+     * @param shipmentId
+     */
+    public void syncExchangeShipment(Long shipmentId){
+        log.info("sync exchange handle start shipment id:{}",shipmentId);
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        //判断发货单是仓发还是店发
+        if (Objects.equals(shipment.getShipWay(),1)){
+            log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+            this.handleSyncShipment(shipment,2,shopOrder);;
+        }else{
+            log.info("sync shipment to ecp,shipmentId is {}",shipment.getId());
+            this.handleSyncShipment(shipment,1,shopOrder);;
+        }
+
+    }
 }

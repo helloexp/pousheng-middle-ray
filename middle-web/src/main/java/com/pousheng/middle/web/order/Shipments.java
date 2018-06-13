@@ -596,7 +596,8 @@ public class Shipments {
             if (!this.refundShipment(shipmentId)){
                 throw new JsonResponseException("update.refund.error");
             }
-
+            //同步订单派发中心或者同步mpos
+            shipmentWiteLogic.syncExchangeShipment(shipmentId);
             shipmentIds.add(shipmentId);
         }
         return shipmentIds;

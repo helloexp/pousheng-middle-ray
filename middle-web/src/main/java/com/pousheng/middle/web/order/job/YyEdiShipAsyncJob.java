@@ -39,8 +39,8 @@ import java.util.stream.Collectors;
  * Created by penghui on 2018/6/12
  * 为了迎接618大促，先这么写，后期会改到另一个任务表里
  */
-@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
-@Component
+//@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
+//@Component
 @Slf4j
 public class YyEdiShipAsyncJob extends AbstractAsyncJob {
 
@@ -83,7 +83,7 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
                 (r, executor) -> log.error("task {} is rejected", r));
     }
 
-    @Scheduled(cron = "0 */3 * * * ?")
+//    @Scheduled(cron = "0 */3 * * * ?")
     public void producer() {
         if (canProduce()) {
             super.producer();
@@ -92,7 +92,7 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
         }
     }
 
-    @PostConstruct
+//    @PostConstruct
     public void consumer() {
         log.info("[YYEDI SHIP CONSUMER START...]");
         super.consumer();

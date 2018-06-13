@@ -35,7 +35,12 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     @Override
     public Response<Boolean> update(PoushengCompensateBiz poushengCompensateBiz) {
         try {
-            return Response.ok(poushengCompensateBizDao.update(poushengCompensateBiz));
+            boolean result = poushengCompensateBizDao.update(poushengCompensateBiz);
+            if (result){
+                return Response.ok(Boolean.TRUE);
+            }else{
+                return Response.fail("update.biz.failed");
+            }
         } catch (Exception e) {
             log.error("update poushengCompensateBiz failed, poushengCompensateBiz:{}, cause:{}", poushengCompensateBiz, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.update.fail");
@@ -45,7 +50,12 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     @Override
     public Response<Boolean> deleteById(Long id) {
         try {
-            return Response.ok(poushengCompensateBizDao.delete(id));
+            boolean result = poushengCompensateBizDao.delete(id);
+            if (result){
+                return Response.ok(Boolean.TRUE);
+            }else{
+                return Response.fail("delete.biz.failed");
+            }
         } catch (Exception e) {
             log.error("delete poushengCompensateBiz failed, id:{}, cause:{}", id, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.delete.fail");
@@ -55,7 +65,12 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
     @Override
     public Response<Boolean> updateStatus(Long id, String currentStatus, String newStatus) {
         try {
-            return Response.ok(poushengCompensateBizDao.updateStatus(id,currentStatus,newStatus));
+            boolean result = poushengCompensateBizDao.updateStatus(id,currentStatus,newStatus);
+            if (result){
+                return Response.ok(Boolean.TRUE);
+            }else{
+                return Response.fail("update.biz.status.failed");
+            }
         } catch (Exception e) {
             log.error("update poushengCompensateBiz status to {} failed, id:{},currentStatus is {}, cause:{}",newStatus, id,currentStatus, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.update.status.fail");
@@ -69,7 +84,12 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
             biz.setId(id);
             biz.setCnt(cnt);
             biz.setLastFailedReason(lastFailedReason);
-            return Response.ok(poushengCompensateBizDao.update(biz));
+            boolean result = poushengCompensateBizDao.update(biz);
+            if (result){
+                return Response.ok(Boolean.TRUE);
+            }else{
+                return Response.fail("update.biz.reason.failed");
+            }
         } catch (Exception e) {
             log.error("update poushengCompensateBiz failed, id:{},lastFailedReason:{}, cause:{}", id,lastFailedReason, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.update.fail");

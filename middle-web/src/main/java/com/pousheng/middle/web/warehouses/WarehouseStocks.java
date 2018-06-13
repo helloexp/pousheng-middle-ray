@@ -22,6 +22,7 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -156,7 +157,7 @@ public class WarehouseStocks {
                 skuStock.setStock(warehouseSkuStock.getAvailStock());
                 skuStock.setSkuAttrs(skuTemplate.getAttrs());
                 skuStock.setSpuId(skuTemplate.getSpuId());
-                try{
+                /*try{
                     Response<java.util.Optional<SpuMaterial>> spuMaterialResOptional = spuMaterialReadService.findBySpuId(skuTemplate.getSpuId());
                     if (!spuMaterialResOptional.isSuccess()){
                         log.error("find spuMaterial failed,spuId=({}),caused by {}",skuTemplate.getSpuId(),spuMaterialResOptional.getError());
@@ -166,6 +167,15 @@ public class WarehouseStocks {
                     }
                 }catch (Exception e){
                     log.error("find spuMaterial failed,spuId=({}),caused by {}",skuTemplate.getSpuId(),e.getMessage());
+                }*/
+                //取货品的货号
+                if (!CollectionUtils.isEmpty(skuTemplate.getExtra())) {
+                    if (!Strings.isNullOrEmpty(skuTemplate.getExtra().get("materialCode"))) {
+                        skuStock.setMaterialCode(skuTemplate.getExtra().get("materialCode"));
+                    }
+                }
+                if (Strings.isNullOrEmpty(skuStock.getMaterialCode())){
+                    skuStock.setMaterialCode("该条码货号信息缺失，请联系开发人员排查!");
                 }
                 result.add(skuStock);
             }

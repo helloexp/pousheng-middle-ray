@@ -48,7 +48,7 @@ public class YyediSyncRefundService implements CompensateBizService {
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
-
+        log.info("yyedi sync refund service start ....,poushengCompensateBiz is {}",poushengCompensateBiz);
         if (null == poushengCompensateBiz) {
             log.warn("YyediSyncRefundService.doProcess params is null");
             return;

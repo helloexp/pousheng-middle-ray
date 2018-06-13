@@ -131,24 +131,24 @@ public class MposShipmentLogic {
      * @param shipment          发货单
      * @param expectOrderStatus 期望订单状态
      */
-    private void syncOrderStatus(Shipment shipment, Integer expectOrderStatus) {
+    public void syncOrderStatus(Shipment shipment, Integer expectOrderStatus) {
         log.info("sync mpos order status start,shipment is {},expected order status is {}", shipment, expectOrderStatus);
         //更新子单状态
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        List<Long> skuOrderIds = shipmentItems.stream().map(ShipmentItem::getSkuOrderId).collect(Collectors.toList());
-        List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-        for (SkuOrder skuOrder : skuOrderList) {
-            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), expectOrderStatus);
-            if (!updateRlt.getResult()) {
-                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
-                throw new JsonResponseException("update.sku.order.status.error");
-            }
-        }
-        log.info("sync mpos order status end");
-
         log.info("start sync mpos,all channel,new allchannel order sync to ecp start.....");
         //如果订单状态变成已发货，同步ecpstatus
         if (shipment.getType() == ShipmentType.SALES_SHIP.value()) {
+            //订单修改
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+            List<Long> skuOrderIds = shipmentItems.stream().map(ShipmentItem::getSkuOrderId).collect(Collectors.toList());
+            List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+            for (SkuOrder skuOrder : skuOrderList) {
+                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), expectOrderStatus);
+                if (!updateRlt.getResult()) {
+                    log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                    throw new JsonResponseException("update.sku.order.status.error");
+                }
+            }
+
             if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())) {
                 log.info("mpos order notify ecp start,shipment is {}", shipment);
                 if (Objects.equals(expectOrderStatus, MiddleOrderStatus.SHIPPED.getValue())) {

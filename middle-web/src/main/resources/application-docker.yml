@@ -230,3 +230,13 @@ open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
 open.client.sync.item.mapping.job.enable: ${TRADE_JOB_ENABLE}
 open.client.sync.item.open.id.job.enable: ${TRADE_JOB_ENABLE}
 open.client.sync.order.job.enable: ${TRADE_JOB_ENABLE}
+
+#中台拉取订单时间范围（拉取前多少分钟）
+open.client.sync.paid.order.duration.in.minute: ${PULL_PAID_ORDER_DUARATION}
+open.client.sync.confirmed.order.duration.in.minute: ${PULL_CONFIRMED_ORDER_DUARATION}
+
+#中台拉取售后单时间范围(拉取前多少分钟)
+open.client.sync.after.sale.duration.in.minute: ${PULL_AFTER_SALE_ORDER_DURATION}
+
+#中台拉取映射关系时间范围(拉取前多少分钟发生变动的)
+open.client.sync.item.duration.in.minute: ${PULL_ITEM_MAPPING_DURATION}

@@ -48,7 +48,7 @@ public class YyediSyncRefundService implements CompensateBizService {
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
-
+        log.info("yyedi sync refund service start ....,poushengCompensateBiz is {}",poushengCompensateBiz);
         if (null == poushengCompensateBiz) {
             log.warn("YyediSyncRefundService.doProcess params is null");
             return;
@@ -63,6 +63,7 @@ public class YyediSyncRefundService implements CompensateBizService {
             log.warn("YyediSyncRefundService.doProcess shipInfos is null");
             return;
         }
+        log.info("yyedi sync refund service ,refunds size is {}",refunds.size());
         refunds.stream().forEach(a -> {
             //退货单编码
             String refundCode = a.getRefundCode();

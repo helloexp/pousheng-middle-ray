@@ -1153,7 +1153,7 @@ public class RefundWriteLogic {
         //计算比例
         for (RefundItem refundItem : refundItems) {
             if (totalRefundAmount>0L){
-                Long itemFee = ((refundItem.getCleanFee() * refundItem.getApplyQuantity() * fee) / totalRefundAmount);
+                Long itemFee = ((refundItem.getCleanPrice() * refundItem.getApplyQuantity() * fee) / totalRefundAmount);
                 refundItem.setFee(itemFee);
             }
         }

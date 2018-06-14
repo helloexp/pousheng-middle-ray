@@ -106,7 +106,7 @@ public class QueryHkWarhouseOrShopStockApi {
                     //商品必须打标为mpos标签才可以参与门店发货
                     if(checkIsMposSku(skuStockInfo)){
                         middleStockList.add(skuStockInfo);
-            o        }
+                    }
 
                 }catch (Exception e){
                     log.error("find shop by outer id:{} fail,cause:{}",skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));

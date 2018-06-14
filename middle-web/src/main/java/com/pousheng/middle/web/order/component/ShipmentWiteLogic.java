@@ -1095,6 +1095,37 @@ public class ShipmentWiteLogic {
         this.toDispatchOrder(shopOrder, Collections.EMPTY_LIST);
     }
 
+
+    /**
+     * 订单自动处理逻辑
+     *
+     * @param shopOrder 店铺订单
+     */
+    public Response<String> autoDispatchOrder(ShopOrder shopOrder) {
+        //没有经过自动生成发货单逻辑的订单时不能自动处理的，可能存在冲突
+        String orderWaitHandleType;
+        if (shopOrder.getHandleStatus() == null) {
+            Map<String, String> shopOrderExtra = shopOrder.getExtra();
+            orderWaitHandleType = shopOrderExtra.get(TradeConstants.NOT_AUTO_CREATE_SHIPMENT_NOTE);
+        } else {
+            orderWaitHandleType = shopOrder.getHandleStatus().toString();
+        }
+        if (Objects.equals(orderWaitHandleType, String.valueOf(OrderWaitHandleType.WAIT_HANDLE.value()))) {
+            return Response.fail(OrderWaitHandleType.WAIT_HANDLE.getDesc());
+        }
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrder.getId(),
+                MiddleOrderStatus.WAIT_HANDLE.getValue());
+        if (skuOrders.size() == 0) {
+            return Response.fail("sku.order.not.wait.handle.status");
+        }
+        //判断是否满足自动生成发货单
+        if (!autoHandleOrderParam(shopOrder, skuOrders)) {
+            return Response.fail(OrderWaitHandleType.SKU_NOT_MATCH.getDesc());
+        }
+        this.toDispatchOrder(shopOrder, Collections.EMPTY_LIST);
+        return Response.ok("");
+    }
+
     /**
      * 拆单派单(拒单后重新派单)
      *

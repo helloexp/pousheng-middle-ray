@@ -107,7 +107,9 @@ public class yyEDIOpenApi {
 
                         log.error("shipment(id={})'s status({}) not fit for ship",
                                 shipment.getId(), shipment.getStatus());
-                        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())){
+                        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())
+                                ||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
+                                ||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CONFIRMED_FAIL.getValue())){
                             YyEdiResponseDetail field = new YyEdiResponseDetail();
                             field.setShipmentId(yyEdiShipInfo.getShipmentId());
                             field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());

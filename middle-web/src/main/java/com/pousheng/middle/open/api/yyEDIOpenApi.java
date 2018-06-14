@@ -184,15 +184,15 @@ public class yyEDIOpenApi {
                 field.setErrorMsg("");
                 fields.add(field);
             }
-            if (count > 0) {
-                throw new ServiceException("shipment.receive.shipinfo.failed");
-            }
             if (CollectionUtils.isNotEmpty(okShipInfos)) {
                 Response<Long> response = receiveYyediResultLogic.createShipmentResultTask(okShipInfos);
                 if (!response.isSuccess()) {
                     log.error("yyEDI.shipments.api.createShipmentResultTask.failed,caused by {}", response.getError());
                     throw new ServiceException("yyEDI.shipments.api.createShipmentResultTask.failed");
                 }
+            }
+            if (count > 0) {
+                throw new ServiceException("shipment.receive.shipinfo.failed");
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());

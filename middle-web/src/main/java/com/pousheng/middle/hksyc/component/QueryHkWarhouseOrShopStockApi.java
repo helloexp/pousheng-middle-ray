@@ -106,7 +106,7 @@ public class QueryHkWarhouseOrShopStockApi {
                     //商品必须打标为mpos标签才可以参与门店发货
                     if(checkIsMposSku(skuStockInfo)){
                         middleStockList.add(skuStockInfo);
-                    }
+            o        }
 
                 }catch (Exception e){
                     log.error("find shop by outer id:{} fail,cause:{}",skuStockInfo.getStock_code(),Throwables.getStackTraceAsString(e));
@@ -120,6 +120,7 @@ public class QueryHkWarhouseOrShopStockApi {
 
 
     private Boolean checkIsMposSku(HkSkuStockInfo skuStockInfo){
+
 
         List<String> skuCodes = Lists.transform(skuStockInfo.getMaterial_list(), new Function<HkSkuStockInfo.SkuAndQuantityInfo, String>() {
             @Nullable
@@ -137,13 +138,19 @@ public class QueryHkWarhouseOrShopStockApi {
         }
         List<SkuTemplate> skuTemplates = listRes.getResult();
 
-        if(CollectionUtils.isEmpty(skuTemplates)){
+        if (CollectionUtils.isEmpty(skuTemplates)){
             log.error("not find sku template by sku codes:{} ",skuCodes);
             //这里将查询不到的当做非mpos商品处理（严格意义上这里应该要报错的）
             return Boolean.FALSE;
         }
 
-        return Objects.equal(skuTemplates.get(0).getType(),2);
+        for (SkuTemplate skuTemplate : skuTemplates){
+            if (!Objects.equal(skuTemplate.getType(),2)){
+                return Boolean.FALSE;
+            }
+        }
+
+        return Boolean.TRUE;
 
     }
 

@@ -240,3 +240,6 @@ open.client.sync.after.sale.duration.in.minute: ${PULL_AFTER_SALE_ORDER_DURATION
 
 #中台拉取映射关系时间范围(拉取前多少分钟发生变动的)
 open.client.sync.item.duration.in.minute: ${PULL_ITEM_MAPPING_DURATION}
+
+#获取宿主机ip
+order.current.ip: ${TERMINUS_HOST:localhost}

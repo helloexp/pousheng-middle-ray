@@ -718,7 +718,7 @@ public class RefundWriteLogic {
             //换货商品价格
             changeRefundItem.setSkuPrice(changeItem.getChangeSkuPrice());
             changeRefundItem.setCleanPrice(changeItem.getChangeSkuPrice());
-            changeRefundItem.setCleanFee(changeItem.getChangeSkuPrice());
+            changeRefundItem.setCleanFee(changeItem.getChangeSkuPrice()*changeItem.getChangeQuantity());
             changeRefundItems.add(changeRefundItem);
         });
 

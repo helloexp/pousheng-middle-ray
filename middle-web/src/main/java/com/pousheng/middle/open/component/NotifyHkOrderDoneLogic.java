@@ -74,7 +74,7 @@ public class NotifyHkOrderDoneLogic {
             for (OrderShipment orderShipment:orderShipmentsFilter){
                 PoushengCompensateBiz biz = new PoushengCompensateBiz();
                 biz.setBizType(PoushengCompensateBizType.SYNC_MPOS_CONFIRM_DONE.name());
-                biz.setBizId(String.valueOf(orderShipment.getShipId()));
+                biz.setBizId(String.valueOf(orderShipment.getShipmentId()));
                 biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
                 poushengCompensateBizWriteService.create(biz);
             }

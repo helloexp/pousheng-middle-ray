@@ -143,3 +143,5 @@ is.stock.task.consume:  false
 
 trade.job.enable: true
 stock.job.enable: true
+
+order.current.ip: ${TERMINUS_HOST:localhost}

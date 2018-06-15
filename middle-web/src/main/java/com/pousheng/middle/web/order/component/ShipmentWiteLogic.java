@@ -1294,8 +1294,11 @@ public class ShipmentWiteLogic {
                         list.addAll(Arrays.asList(mposEmailGroup));
                     //获得区部联系人邮箱
                     list.addAll(getZoneContractEmails(shipmentExtra));
-                    if (list.size() > 0)
+                    if (list.size() > 0) {
+                        log.info("send mpos email to : {}", JSON_MAPPER.toJson(list));
                         msgService.send(JSON_MAPPER.toJson(list), "email.order.confirm", context, null);
+                        log.info("send email to mpos success");
+                    }
                 }
             }
         } catch (Exception e) {

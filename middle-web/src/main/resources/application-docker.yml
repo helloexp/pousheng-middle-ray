@@ -198,6 +198,9 @@ msg.template.list:
 # mpos邮件组
 pousheng.order.email.confirm.group: ${EMAIL_GROUP}
 
+# 预警邮件组
+pousheng.order.email.remind.group: ${EMAIL_REMIND_GROUP}
+
 suning.selfmarket.supplier.code: ${SUNING_SALE_SUPPLIER_CODE}
 suning.sale.warehouseCode: ${SUNING_SALE_WAREHOUSE_CODE}
 

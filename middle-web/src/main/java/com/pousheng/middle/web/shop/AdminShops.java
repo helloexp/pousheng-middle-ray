@@ -113,7 +113,7 @@ public class AdminShops {
     private CreateOpenShopRelationListener createOpenShopRelationListener;
     @Autowired
     private ZoneContractReadService zoneContractReadService;
-    @Value("${pousheng.order.email.confirm.group}")
+    @Value("${pousheng.order.email.remind.group}")
     private String[] mposEmailGroup;
 
 

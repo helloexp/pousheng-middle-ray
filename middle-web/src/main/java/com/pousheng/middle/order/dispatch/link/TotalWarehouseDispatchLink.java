@@ -31,6 +31,7 @@ import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 总仓发货规则
@@ -64,9 +65,8 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-TotalWarehouseDispatchLink-2  order(id:{}) start...",shopOrder.getId());
-
-
-
+        String companyCode = (String) context.get(DispatchContants.COMPANY_ID);
+        Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         //收货地址明细
         String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();
         String addressRegion = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion();
@@ -75,6 +75,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
 
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         List<WarehouseWithPriority> totalWarehouseWithPriorities = warehouses4Address.getTotalWarehouses();
+
         //判断上个规则传过来的仓信息中是否有总仓，无则进入下个规则
         if(CollectionUtils.isEmpty(totalWarehouseWithPriorities)){
             return Boolean.TRUE;
@@ -96,6 +97,13 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         });
 
         List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
+
+        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
+        if (oneCompany) {
+            warehouses = warehouses.stream().filter(warehouse -> warehouse.getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        } else {
+            warehouses = warehouses.stream().filter(warehouse -> !warehouse.getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        }
 
         //过滤掉非mpos仓
         /*List<Warehouse> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());

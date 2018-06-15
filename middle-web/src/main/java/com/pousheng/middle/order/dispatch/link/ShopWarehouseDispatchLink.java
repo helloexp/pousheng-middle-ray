@@ -21,6 +21,7 @@ import com.pousheng.middle.warehouse.dto.Warehouses4Address;
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
@@ -75,6 +76,8 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-ShopWarehouseDispatchLink-3  order(id:{}) start...",shopOrder.getId());
 
+        String companyCode = (String) context.get(DispatchContants.COMPANY_ID);
+        Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         List<WarehouseWithPriority> shopWarehouseWithPriorities = warehouses4Address.getShopWarehouses();
         //判断上个规则传过来的仓信息中是否有店仓，无则进入下个规则
@@ -99,9 +102,16 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
         context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
 
-
         //过滤掉已删除或已冻结或已拒绝过的门店
         List<Shop> validShops = shops.stream().filter(shop -> com.google.common.base.Objects.equal(shop.getStatus(),1)&&!rejectShopIds.contains(shop.getId())).collect(Collectors.toList());
+
+        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
+        if (oneCompany) {
+            validShops = validShops.stream().filter(shop -> shop.getBusinessId().toString().equals(companyCode)).collect(Collectors.toList());
+        } else {
+            validShops = validShops.stream().filter(shop -> !shop.getBusinessId().toString().equals(companyCode)).collect(Collectors.toList());
+        }
+
         if(CollectionUtils.isEmpty(validShops)){
             log.warn("not validShops so skip");
             return Boolean.TRUE;
@@ -126,7 +136,10 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
             log.warn("not skuStockInfos so skip");
             return Boolean.TRUE;
         }
-        Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
+        Table<Long, String, Integer> shopSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE);
+        if(Arguments.isNull(shopSkuCodeQuantityTable)){
+            shopSkuCodeQuantityTable = HashBasedTable.create();
+        }
         dispatchComponent.completeShopTab(skuStockInfos,shopSkuCodeQuantityTable);
         context.put(DispatchContants.SHOP_SKUCODE_QUANTITY_TABLE, (Serializable) shopSkuCodeQuantityTable);
         //判断是否有整单

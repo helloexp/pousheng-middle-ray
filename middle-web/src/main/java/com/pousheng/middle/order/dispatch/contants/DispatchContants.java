@@ -44,4 +44,15 @@ public class DispatchContants {
     public static final String WAREHOUSE_FOR_ADDRESS = "warehouseForAddress";
 
 
+    /**
+     * 订单来源所属公司Id
+     */
+    public static final String COMPANY_ID = "companyId";
+
+
+    /**
+     * 是否需要订单来源和仓库同一公司
+     */
+    public static final String ONE_COMPANY = "oneCompany";
+
 }

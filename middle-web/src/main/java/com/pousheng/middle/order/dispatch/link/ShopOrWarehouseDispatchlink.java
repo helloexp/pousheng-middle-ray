@@ -58,16 +58,16 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...",shopOrder.getId());
-
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
-
+        Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
+        if (oneCompany) {
+            return Boolean.TRUE;
+        }
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
         }
-
-
         //全部仓及商品信息
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
         if(Arguments.isNull(warehouseSkuCodeQuantityTable)){

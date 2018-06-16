@@ -59,7 +59,7 @@ public class AvailableStockCalc {
      * @param skuCode sku编码
      * @return  可用库存
      */
-    public Long availableStock(Long shopId, String skuCode){
+    public Long availableStock(Long shopId, String skuCode, Long safeStock){
         //首先通过店铺发货规则确定发货仓库
         Response<List<Long>> rWarehouseIds = warehouseRuleReadService.findWarehouseIdsByShopId(shopId);
         if(!rWarehouseIds.isSuccess()){
@@ -87,6 +87,9 @@ public class AvailableStockCalc {
                 try{
                     Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(companyCode));
                     lockedStock = dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
+                    if(lockedStock<0){
+                        lockedStock = 0L;
+                    }
                 }catch (Exception e){
                     log.error("find shop sku stock failed,warehouse id is {},caused by {}",warehouseId,e.getMessage());
 
@@ -99,7 +102,12 @@ public class AvailableStockCalc {
                         skuCode, warehouseId, r.getError());
             }else{
                 if (Objects.nonNull(r.getResult())){
-                    quantity= quantity + (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock()) - lockedStock;
+                    //quantity= quantity + (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock()) - lockedStock;
+                    //逐个仓库减去线上店铺的安全库存
+                    long availStock = r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock();
+                    if( availStock-lockedStock > safeStock ){
+                        quantity = quantity +  availStock - lockedStock - safeStock;
+                    }
                 }
             }
         }

@@ -195,15 +195,20 @@ public class StockPusher {
                         }
 
                         //计算每个店铺的可用库存
-                        Long stock = availableStockCalc.availableStock(shopId, skuCode);
+                        Long stock = availableStockCalc.availableStock(shopId, skuCode, shopStockRule.getSafeStock());
                         log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
 
-
-
-                        if (shopStockRule.getSafeStock() >= stock) {
+                        /*if (shopStockRule.getSafeStock() >= stock) {
                             log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
                                     shopId, shopStockRule.getSafeStock(), skuCode, stock);
                             Long lastPushStock = shopStockRule.getLastPushStock();
+                            stock = 0L;
+                        }*/
+
+                        //如果库存数量小于0则推送0
+                        if (stock < 0L){
+                            log.warn("shop(id={}) stock is less than 0 for sku(code={}), current stock is:{}",
+                                    shopId, skuCode, stock);
                             stock = 0L;
                         }
 

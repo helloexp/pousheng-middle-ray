@@ -391,11 +391,17 @@ public class RefundReadLogic {
      * @param refundItems
      * @return 可以继续生成发货单，则返回true，不可以继续生成发货单，返回false
      */
-    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems){
+    public boolean checkRefundWaitHandleNumber(List<RefundItem> refundItems,Map<String, Integer> skuCodeAndQuantity){
         int count= 0;
+        if (refundItems.isEmpty()){
+            return count ==0;
+        }
         for (RefundItem refundItem : refundItems) {
-            if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
-                count++;
+            //如果传入的传入的skuCode以及数量的map当中存在该skuCode才会判断已经申请的和初始状态的值是否已经小于等于0
+            if (skuCodeAndQuantity.containsKey(refundItem.getSkuCode())){
+                if((refundItem.getApplyQuantity()-(refundItem.getAlreadyHandleNumber()==null?0:refundItem.getAlreadyHandleNumber()))<=0){
+                    count++;
+                }
             }
         }
         return count==0;

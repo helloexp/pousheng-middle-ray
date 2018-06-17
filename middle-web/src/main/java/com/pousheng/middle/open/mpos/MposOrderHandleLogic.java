@@ -63,6 +63,7 @@ public class MposOrderHandleLogic {
     public void handleOrder(List<MposShipmentExtra> mposShipmentExtras){
         for(MposShipmentExtra mposShipmentExtra:mposShipmentExtras){
             try{
+                log.info("begin to handle order,mposShipmentExtra is {}",mposShipmentExtra);
                 Map<String,String> shipExtra = mposShipmentExtra.transToMap();
                 Shipment shipment = shipmentReadLogic.findShipmentById(mposShipmentExtra.getOuterShipmentId());
                 if(shipment != null && idempotencyValidate(shipment.getStatus(),mposShipmentExtra.getStatus().toString())){

@@ -538,7 +538,7 @@ public class Shipments {
                 if (Objects.equals(shipType, 3)) {
                     refundChangeItems = refundReadLogic.findRefundLostItems(refund);
                 }
-                if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems)) {
+                if (!refundReadLogic.checkRefundWaitHandleNumber(refundChangeItems,skuCodeAndQuantity)) {
                     throw new JsonResponseException("refund.wait.shipment.item.can.not.dupliacte");
                 }
                 OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);

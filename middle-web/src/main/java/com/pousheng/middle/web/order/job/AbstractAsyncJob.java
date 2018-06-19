@@ -203,6 +203,15 @@ public abstract class AbstractAsyncJob {
             try {
                 while (true) {
                     int groupSize = getPopSize();
+                    log.info("[consumer current thread pool remain size : {}]", groupSize);
+                    if (groupSize == 0) {
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            log.error("thread sleep failed");
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                     for (int i = 0; i < groupSize; i++) {
                         String idStr = jedisTemplate.execute(jedis -> {
                             return jedis.rpop(getQueueKey());

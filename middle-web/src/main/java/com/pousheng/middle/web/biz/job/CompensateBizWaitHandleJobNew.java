@@ -65,7 +65,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         this.queueSize = queueSize;
         this.blockingQueue = new ArrayBlockingQueue<>(queueSize);
         this.executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(20000),
+                blockingQueue,
                 new ThreadFactoryBuilder().setNameFormat("biz-handle-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));
     }
@@ -147,6 +147,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         if (CollectionUtils.isEmpty(ids)) {
             return;
         }
+        log.info("pop ids:{} from queue", ids);
         executorService.submit(new CompensateBizWaitHandleTask(ids));
     }
 
@@ -174,6 +175,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
 
         @Override
         public void run() {
+            log.info("The task(ids:{}) is being handle", ids);
             Response<List<PoushengCompensateBiz>> response = poushengCompensateBizReadService.findByIdsAndStatus(ids, PoushengCompensateBizStatus.PROCESSING.name());
             if (!response.isSuccess()) {
                 log.error("fail to find compensate biz by ids:{},cause:{}", ids, response.getError());
@@ -196,6 +198,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
                 }
             });
             poushengCompensateBizWriteService.batchUpdateStatus(successIds, PoushengCompensateBizStatus.SUCCESS.name());
+            log.info("The task(ids:{}) has been handled", ids);
         }
     }
 }

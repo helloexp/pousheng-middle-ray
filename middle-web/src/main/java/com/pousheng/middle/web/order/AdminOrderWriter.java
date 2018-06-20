@@ -764,4 +764,23 @@ public class AdminOrderWriter {
     public void updateOrderAmountByOrderId(@PathVariable("shopId") Long shopId,@RequestParam("shopOrderId")Long shopOrderId){
         orderWriteLogic.updateOrderAmountByOrderId(shopId,shopOrderId);
     }
+
+    /**
+     * 京东云鼎修复订单数据
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/api/jd/yunding/order/{shopId}/update/amount",method = RequestMethod.GET)
+    public void updateJdYunDingOrderAmount(@PathVariable("shopId") Long shopId){
+        orderWriteLogic.updateJdYunDingOrderAmount(shopId);
+    }
+    /**
+     * 修复订单数据,根据订单id
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/api/jd/yunding/order/{shopId}/update/amount/by/order/id",method = RequestMethod.GET)
+    public void updateJdYundingOrderAmountByOrderId(@PathVariable("shopId") Long shopId,@RequestParam("shopOrderId")Long shopOrderId){
+        orderWriteLogic.updateJdYundingOrderAmountByOrderId(shopId,shopOrderId);
+    }
 }

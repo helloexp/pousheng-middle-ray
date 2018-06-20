@@ -172,12 +172,12 @@ public class FireCall {
     }
 
 
-    @RequestMapping(value="/spu/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String spuInput(@RequestParam String file){
+    @RequestMapping(value = "/spu/import", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String spuInput(@RequestParam String file) {
         try {
             ObjectMapper mapper = JsonMapper.nonEmptyMapper().getMapper();
             String path = "/Users/songrenfei/Downloads/";
-            path=path+file+".txt";
+            path = path + file + ".txt";
 
             log.info("handle process {}", path);
             File file1 = new File(path);
@@ -206,7 +206,7 @@ public class FireCall {
 
     @RequestMapping(value = "/brand", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeBrand(@RequestParam String start,
-                                   @RequestParam(name = "end", required = false) String end){
+                                   @RequestParam(name = "end", required = false) String end) {
         Date from = dft.parseDateTime(start).toDate();
         Date to = new Date();
         if (StringUtils.hasText(end)) {
@@ -230,18 +230,18 @@ public class FireCall {
         //log.info("synchronize brand first");
         //int cardCount = brandImporter.process(from, to);
         //log.info("synchronized {} brands", cardCount);
-        int spuCount =spuImporter.process(from, to);
+        int spuCount = spuImporter.process(from, to);
         log.info("synchronized {} spus", spuCount);
         return "ok";
     }
 
 
-    @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean synchronizeWarehouse(@RequestParam(name = "start",required = false,defaultValue = "") String start,
-                                         @RequestParam(name = "end", required = false,defaultValue = "") String end){
-        Date from= DateTime.now().withTimeAtStartOfDay().toDate();
-        if (StringUtils.hasText(start)){
-             from = dft.parseDateTime(start).toDate();
+    @RequestMapping(value = "/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean synchronizeWarehouse(@RequestParam(name = "start", required = false, defaultValue = "") String start,
+                                        @RequestParam(name = "end", required = false, defaultValue = "") String end) {
+        Date from = DateTime.now().withTimeAtStartOfDay().toDate();
+        if (StringUtils.hasText(start)) {
+            from = dft.parseDateTime(start).toDate();
         }
         Date to = DateTime.now().withTimeAtStartOfDay().plusDays(1).minusSeconds(1).toDate();
         if (StringUtils.hasText(end)) {
@@ -255,9 +255,8 @@ public class FireCall {
     }
 
 
-
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpuStock(@RequestParam Long spuId){
+    public String synchronizeSpuStock(@RequestParam Long spuId) {
         //向库存那边推送这个信息, 表示要关注这个商品对应的单据
         materialPusher.addSpus(Lists.newArrayList(spuId));
         //调用恒康抓紧给我返回库存信息
@@ -265,55 +264,93 @@ public class FireCall {
         return "ok";
     }
 
-    @RequestMapping(value="/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String syncMposWarehouse(@RequestParam String companyId,
-                                       @RequestParam String stockId){
-        mposWarehousePusher.addWarehouses(companyId,stockId);
+    @RequestMapping(value = "/shop/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeShopSpuStock(@RequestParam(name = "shopId", required = true) Long shopId, @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit) {
+        try {
+            log.info("begin to synchronizeShopSpuStock shopId is {}", shopId);
+            int pageNo = 1;
+            int pageSize = (null == limit || limit > 1000) ? 1000 : limit;
+            while (true) {
+                Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, null, pageNo, pageSize);
+                if (!res.isSuccess()) {
+                    log.error("fail to find itemIds byshopId={} pageNo={},pageSize={},cause:{}", shopId,
+                            pageNo, pageSize, res.getError());
+                    break;
+                }
+
+                Paging<Long> page = res.getResult();
+                if (null == page) {
+                    break;
+                }
+                List<Long> itemIds = page.getData();
+                if (CollectionUtils.isEmpty(itemIds)) {
+                    break;
+                }
+                log.info("shopId [{}] pageNo [{}] find itemIds []", shopId, pageNo, itemIds.toString());
+                try {
+                    //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+                    materialPusher.addSpus(itemIds);
+                } catch (Exception e) {
+                    log.error("synchronizeShopSpuStock has an error:{}", Throwables.getStackTraceAsString(e));
+                }
+                pageNo++;
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        log.info("end synchronizeShopSpuStock shopId is {}", shopId);
         return "ok";
     }
 
-    @RequestMapping(value="/del/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String syncMposWarehouse(@RequestParam String companyId,
+                                    @RequestParam String stockId) {
+        mposWarehousePusher.addWarehouses(companyId, stockId);
+        return "ok";
+    }
+
+    @RequestMapping(value = "/del/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String delMposWarehouse(@RequestParam String companyId,
-                                    @RequestParam String stockId){
-        mposWarehousePusher.removeWarehouses(companyId,stockId);
+                                   @RequestParam String stockId) {
+        mposWarehousePusher.removeWarehouses(companyId, stockId);
         return "ok";
     }
 
     @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpuByBarCode(@RequestParam String skuCode){
-        int spuCount =spuImporter.processPullMarterials(skuCode);
+    public String synchronizeSpuByBarCode(@RequestParam String skuCode) {
+        int spuCount = spuImporter.processPullMarterials(skuCode);
         log.info("synchronized {} spus", spuCount);
         return "ok";
     }
 
-    @RequestMapping(value="/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/query/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<HkSkuStockInfo> queryStock(@RequestParam(required = false) String stockCodes,
                                            @RequestParam String skuCodes,
-                                           @RequestParam(required = false,defaultValue = "0") Integer stockType){
+                                           @RequestParam(required = false, defaultValue = "0") Integer stockType) {
         List<String> stockCodesList = null;
-        if(!Strings.isNullOrEmpty(stockCodes)){
+        if (!Strings.isNullOrEmpty(stockCodes)) {
             stockCodesList = Splitters.COMMA.splitToList(stockCodes);
         }
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
-        return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
+        return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList, skuCodesList, stockType);
     }
 
 
-
-    @RequestMapping(value="/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long countStock(@RequestParam(required = false) String stockCodes,
-                                           @RequestParam String skuCodes,
-                                           @RequestParam(required = false,defaultValue = "0") Integer stockType){
+                           @RequestParam String skuCodes,
+                           @RequestParam(required = false, defaultValue = "0") Integer stockType) {
         Long total = 0L;
         List<String> stockCodesList = null;
-        if(!Strings.isNullOrEmpty(stockCodes)){
+        if (!Strings.isNullOrEmpty(stockCodes)) {
             stockCodesList = Splitters.COMMA.splitToList(stockCodes);
         }
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList,skuCodesList,stockType);
-        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                total+=skuAndQuantityInfo.getQuantity();
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList, skuCodesList, stockType);
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
+                total += skuAndQuantityInfo.getQuantity();
             }
         }
         return total;
@@ -322,29 +359,30 @@ public class FireCall {
 
     /**
      * 根据货号和尺码查询
+     *
      * @param materialId 货号
-     * @param size 尺码
+     * @param size       尺码
      * @return 商品信息
      */
-    @RequestMapping(value="/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size,
-                                       @RequestParam Long companyId,@RequestParam String outerId){
+                                       @RequestParam Long companyId, @RequestParam String outerId) {
 
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
-        Map<String,String> params = Maps.newHashMap();
+        Map<String, String> params = Maps.newHashMap();
         params.put("type", String.valueOf(PsSpuType.MPOS.value()));
-        params.put("spuCode",materialId);
-        params.put("attrs","尺码:"+size);
-        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(1,20, templateName, params, SearchSkuTemplate.class);
-        if(!response.isSuccess()){
-            log.error("query sku template by materialId:{} and size:{} fail,error:{}",materialId,size,response.getError());
+        params.put("spuCode", materialId);
+        params.put("attrs", "尺码:" + size);
+        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response = skuTemplateSearchReadService.searchWithAggs(1, 20, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by materialId:{} and size:{} fail,error:{}", materialId, size, response.getError());
             throw new JsonResponseException(response.getError());
         }
 
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
-        if(CollectionUtils.isEmpty(searchSkuTemplates)){
-            log.error("middle not find sku template by materialId:{} and size:{} ",materialId,size);
+        if (CollectionUtils.isEmpty(searchSkuTemplates)) {
+            log.error("middle not find sku template by materialId:{} and size:{} ", materialId, size);
             return new ItemNameAndStock();
         }
         SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
@@ -352,33 +390,32 @@ public class FireCall {
         itemNameAndStock.setName(searchSkuTemplate.getName());
 
 
-
         //2、查询店铺是否存在
-        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId,companyId);
+        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
         ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
         Long openShopId = currentShopExtraInfo.getOpenShopId();
-        if(Arguments.isNull(openShopId)){
-            log.error("shop(id:{}) not mapping open shop",currentShop.getId());
+        if (Arguments.isNull(openShopId)) {
+            log.error("shop(id:{}) not mapping open shop", currentShop.getId());
             throw new JsonResponseException("shop.not.mapping.open.shop");
         }
 
         //3、查询门店的发货仓范围
         Response<List<Long>> warehouseIdsRes = warehouseRuleReadService.findWarehouseIdsByShopId(openShopId);
-        if(!warehouseIdsRes.isSuccess()){
-            log.error("find warehouse rule item by shop id:{} fail,error:{}",openShopId,warehouseIdsRes.getError());
+        if (!warehouseIdsRes.isSuccess()) {
+            log.error("find warehouse rule item by shop id:{} fail,error:{}", openShopId, warehouseIdsRes.getError());
             throw new JsonResponseException(warehouseIdsRes.getError());
         }
 
         List<Long> warehouseIds = warehouseIdsRes.getResult();
 
-        if(CollectionUtils.isEmpty(warehouseIds)){
+        if (CollectionUtils.isEmpty(warehouseIds)) {
             itemNameAndStock.setCurrentShopQuantity(0L);
             itemNameAndStock.setStockQuantity(0L);
             return itemNameAndStock;
 
         }
         List<Warehouse> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
-        for (Long warehouseId : warehouseIds){
+        for (Long warehouseId : warehouseIds) {
             warehouseList.add(warehouseCacher.findById(warehouseId));
         }
 
@@ -386,9 +423,9 @@ public class FireCall {
             @Nullable
             @Override
             public String apply(@Nullable Warehouse warehouse) {
-                Map<String, String>  extra = warehouse.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+                Map<String, String> extra = warehouse.getExtra();
+                if (CollectionUtils.isEmpty(extra) || !extra.containsKey("outCode")) {
+                    log.error("warehouse(id:{}) out code invalid", warehouse.getId());
                     throw new JsonResponseException("warehouse.out.code.invalid");
                 }
                 return extra.get("outCode");
@@ -398,49 +435,49 @@ public class FireCall {
         String skuCode = searchSkuTemplate.getSkuCode();
         Long total = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodesList,0);
-        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes, skuCodesList, 0);
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
-            if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
-                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+            if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
                     Warehouse warehouse = warehouseCacher.findById(hkSkuStockInfo.getBusinessId());
-                    Map<String,String> extra = warehouse.getExtra();
-                    Integer safeStock =0;
-                    if(!CollectionUtils.isEmpty(extra)&&extra.containsKey("safeStock")){
+                    Map<String, String> extra = warehouse.getExtra();
+                    Integer safeStock = 0;
+                    if (!CollectionUtils.isEmpty(extra) && extra.containsKey("safeStock")) {
                         //安全库存
                         safeStock = Integer.valueOf(extra.get("safeStock"));
                     }
 
                     //锁定库存
-                    Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
-                    if( lockStock < 0L){
-                        lockStock= 0L;
+                    Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
+                    if (lockStock < 0L) {
+                        lockStock = 0L;
                     }
-                    Long warehouseStock = skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
-                    if(warehouseStock<0L){
-                        warehouseStock=0L;
+                    Long warehouseStock = skuAndQuantityInfo.getQuantity() - lockStock - safeStock;
+                    if (warehouseStock < 0L) {
+                        warehouseStock = 0L;
                     }
 
-                    total+=warehouseStock;
+                    total += warehouseStock;
                 }
-            //店
-            }else {
-                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                //店
+            } else {
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
                     //锁定库存
-                    Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode());
-                    if( lockStock < 0L){
+                    Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
+                    if (lockStock < 0L) {
                         lockStock = 0L;
                     }
                     Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
                     ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                     //安全库存
-                    Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
-                    Long currentShopStock = skuAndQuantityInfo.getQuantity()-lockStock-safeStock;
-                    if(currentShopStock<0L){
-                        currentShopStock=0L;
+                    Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock()) ? 0 : shopExtraInfo.getSafeStock();
+                    Long currentShopStock = skuAndQuantityInfo.getQuantity() - lockStock - safeStock;
+                    if (currentShopStock < 0L) {
+                        currentShopStock = 0L;
                     }
-                    total+=currentShopStock;
-                    if(Objects.equals(shop.getId(),currentShop.getId())){
+                    total += currentShopStock;
+                    if (Objects.equals(shop.getId(), currentShop.getId())) {
                         itemNameAndStock.setCurrentShopQuantity(currentShopStock);
                     }
                 }
@@ -452,59 +489,58 @@ public class FireCall {
     }
 
 
-    private Long findWarehouseSkuStockLockQuantity(Long warehouseId,String skuCode){
-        Response<WarehouseSkuStock> response =  warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
-        if(!response.isSuccess()){
-            log.error("find warehouse sku stock by warehouse id:{} sku code:{} fail,error:{}",warehouseId,skuCode,response.getError());
+    private Long findWarehouseSkuStockLockQuantity(Long warehouseId, String skuCode) {
+        Response<WarehouseSkuStock> response = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+        if (!response.isSuccess()) {
+            log.error("find warehouse sku stock by warehouse id:{} sku code:{} fail,error:{}", warehouseId, skuCode, response.getError());
             return 0L;
         }
-        Long lockQuantity =  response.getResult().getLockedStock();
-        if(Arguments.isNull(lockQuantity)){
+        Long lockQuantity = response.getResult().getLockedStock();
+        if (Arguments.isNull(lockQuantity)) {
             return 0L;
         }
         return lockQuantity;
     }
 
-    private Long findMposSkuStockLockQuantity(Long shopId, String skuCode){
-        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(shopId,skuCode);
-        if(!response.isSuccess()){
-            log.error("find mpos sku sotck by shop id:{} sku code:{} fail,error:{}",shopId,skuCode,response.getError());
+    private Long findMposSkuStockLockQuantity(Long shopId, String skuCode) {
+        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(shopId, skuCode);
+        if (!response.isSuccess()) {
+            log.error("find mpos sku sotck by shop id:{} sku code:{} fail,error:{}", shopId, skuCode, response.getError());
             return 0L;
         }
         Optional<MposSkuStock> stockOptional = response.getResult();
-        if(!stockOptional.isPresent()){
+        if (!stockOptional.isPresent()) {
             return 0L;
         }
-        Long lockQuantity =  stockOptional.get().getLockedStock();
-        if(Arguments.isNull(lockQuantity)){
+        Long lockQuantity = stockOptional.get().getLockedStock();
+        if (Arguments.isNull(lockQuantity)) {
             return 0L;
         }
         return lockQuantity;
 
     }
-
-
 
 
     /**
      * 根据店铺id拉取基础货品信息
+     *
      * @param openShopId
      * @return
      */
     @RequestMapping(value = "/sku/code/by/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeSpuByBarCode(@RequestParam Long openShopId){
+    public String synchronizeSpuByBarCode(@RequestParam Long openShopId) {
         int pageNo = 0;
-        int pageSize= 40;
-        while(true){
-            Response<Paging<ItemMapping>> r =  mappingReadService.findByOpenShopId(openShopId,null,pageNo,pageSize);
+        int pageSize = 40;
+        while (true) {
+            Response<Paging<ItemMapping>> r = mappingReadService.findByOpenShopId(openShopId, null, pageNo, pageSize);
             Paging<ItemMapping> itemMappingPaging = r.getResult();
             List<ItemMapping> itemMappingList = itemMappingPaging.getData();
-            if (itemMappingList.isEmpty()){
+            if (itemMappingList.isEmpty()) {
                 break;
             }
-            for (ItemMapping itemMapping:itemMappingList){
-                if (!Objects.equals(itemMapping.getStatus(),-1)){
-                    int spuCount =spuImporter.processPullMarterials(itemMapping.getSkuCode());
+            for (ItemMapping itemMapping : itemMappingList) {
+                if (!Objects.equals(itemMapping.getStatus(), -1)) {
+                    int spuCount = spuImporter.processPullMarterials(itemMapping.getSkuCode());
                     log.info("synchronized {} spus", spuCount);
                 }
             }
@@ -516,25 +552,26 @@ public class FireCall {
 
     /**
      * 根据skuCode推送库存到第三方或者官网
+     *
      * @param skuCode
      * @return
      */
     @RequestMapping(value = "/sync/stock/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeStockBySkuCode(@RequestParam String skuCode){
+    public String synchronizeStockBySkuCode(@RequestParam String skuCode) {
         stockPusher.submit(Lists.newArrayList(skuCode));
         return "ok";
     }
 
-    public static String readFile(File file){
+    public static String readFile(File file) {
         StringBuilder result = new StringBuilder();
-        try{
+        try {
             BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
             String s = null;
-            while((s = br.readLine())!=null){//使用readLine方法，一次读一行
-                result.append(System.lineSeparator()+s);
+            while ((s = br.readLine()) != null) {//使用readLine方法，一次读一行
+                result.append(System.lineSeparator() + s);
             }
             br.close();
-        }catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return result.toString();
@@ -542,18 +579,19 @@ public class FireCall {
 
     /**
      * 修复skuTemplate表中
+     *
      * @return
      */
     @RequestMapping(value = "/sku/extra/restore", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String skuTemplateExtraRestore(@RequestParam(required = false, value = "skuCode") String skuCode,
                                           @RequestParam(required = false, value = "type") Integer type,
                                           @RequestParam(required = false, value = "pageNo") Integer pageNo,
-                                          @RequestParam(required = false, value = "pageSize") Integer pageSize){
-        boolean result = spuImporter.skuTemplateExtraRestore(skuCode,type,pageNo,pageSize);
-        if (result){
-            return  "ok";
-        }else{
-            return  "not ok";
+                                          @RequestParam(required = false, value = "pageSize") Integer pageSize) {
+        boolean result = spuImporter.skuTemplateExtraRestore(skuCode, type, pageNo, pageSize);
+        if (result) {
+            return "ok";
+        } else {
+            return "not ok";
         }
     }
 
@@ -562,67 +600,66 @@ public class FireCall {
      * 取消发货单
      */
     @RequestMapping(value = "/cancel/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void cancelShipments(@RequestParam String fileName){
+    public void cancelShipments(@RequestParam String fileName) {
 
-        String url = "/pousheng/file/"+ fileName + ".csv";
+        String url = "/pousheng/file/" + fileName + ".csv";
 
         File file1 = new File(url);
 
-        List<String> codes =  readShipmentCode(file1);
+        List<String> codes = readShipmentCode(file1);
 
-        log.info("START-HANDLE-SHIPMENT-API for:{}",url);
+        log.info("START-HANDLE-SHIPMENT-API for:{}", url);
 
-        for (String code : codes){
-            log.info("START-HANDLE-SHIPMENT-CODE:{}",code);
+        for (String code : codes) {
+            log.info("START-HANDLE-SHIPMENT-CODE:{}", code);
 
             Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(code);
             if (!shipmentRes.isSuccess()) {
-                log.error("find shipment by code :{} fail,error:{}",code,shipmentRes.getError());
+                log.error("find shipment by code :{} fail,error:{}", code, shipmentRes.getError());
                 continue;
             }
 
             Shipment shipment = shipmentRes.getResult();
-            if (!Objects.equals(shipment.getStatus(),4)){
-                log.error("shipment code:{} status is :{} so skip cancel",code,shipment.getStatus());
+            if (!Objects.equals(shipment.getStatus(), 4)) {
+                log.error("shipment code:{} status is :{} so skip cancel", code, shipment.getStatus());
                 continue;
             }
             //to cancel
-            log.info("try to cancel shipment, shipment code is {}",code);
+            log.info("try to cancel shipment, shipment code is {}", code);
             Response<Boolean> response = shipmentWiteLogic.rollbackShipment(shipment);
-            if (!response.isSuccess()){
-                log.info("try to cancel shipment fail, shipment code is {},error:{}", code,response.getError());
+            if (!response.isSuccess()) {
+                log.info("try to cancel shipment fail, shipment code is {},error:{}", code, response.getError());
                 continue;
             }
 
-            log.info("END-HANDLE-SHIPMENT-CODE:{}",code);
+            log.info("END-HANDLE-SHIPMENT-CODE:{}", code);
         }
 
-        log.info("END-HANDLE-SHIPMENT-API for:{}",url);
+        log.info("END-HANDLE-SHIPMENT-API for:{}", url);
 
     }
-
 
 
     /**
      * 创建发货单
      */
     @RequestMapping(value = "/create/shipment", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void autoShipments(@RequestParam String fileName){
+    public void autoShipments(@RequestParam String fileName) {
 
-        String url = "/pousheng/file/"+ fileName + ".csv";
+        String url = "/pousheng/file/" + fileName + ".csv";
 
         File file1 = new File(url);
 
-        List<String> codes =  readShipmentCode(file1);
+        List<String> codes = readShipmentCode(file1);
 
-        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
 
-        for (String code : codes){
-            log.info("START-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
+        for (String code : codes) {
+            log.info("START-HANDLE-CREATE-SHIPMENT-CODE:{}", code);
 
             Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(code);
             if (!shipmentRes.isSuccess()) {
-                log.error("find shipment by code :{} fail,error:{}",code,shipmentRes.getError());
+                log.error("find shipment by code :{} fail,error:{}", code, shipmentRes.getError());
                 continue;
             }
 
@@ -631,23 +668,23 @@ public class FireCall {
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
 
             OrderBase orderBase = orderReadLogic.findOrder(orderShipment.getOrderId(), OrderLevel.SHOP);
-            if (!Objects.equals(orderBase.getStatus(),1)){
-                log.error("orderBase id:{} status is :{} so skip create shipment by shipment code:{}",orderBase.getId(),orderBase.getStatus(),code);
+            if (!Objects.equals(orderBase.getStatus(), 1)) {
+                log.error("orderBase id:{} status is :{} so skip create shipment by shipment code:{}", orderBase.getId(), orderBase.getStatus(), code);
                 continue;
             }
             //to create shipment
-            log.info("try to create shipment, shipment code is {} order id:{}",code,orderBase.getId());
+            log.info("try to create shipment, shipment code is {} order id:{}", code, orderBase.getId());
             OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(orderBase.getId());
             try {
                 autoCreateShipmetsListener.onShipment(event);
-            } catch (Exception e){
-                log.info("fail to create shipment, shipment code is {} order id:{}",code,orderBase.getId());
+            } catch (Exception e) {
+                log.info("fail to create shipment, shipment code is {} order id:{}", code, orderBase.getId());
             }
 
-            log.info("END-HANDLE-CREATE-SHIPMENT-CODE:{}",code);
+            log.info("END-HANDLE-CREATE-SHIPMENT-CODE:{}", code);
         }
 
-        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}",url);
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}", url);
 
     }
 
@@ -656,80 +693,78 @@ public class FireCall {
      * 修复shutemplate中extra为空或者缺少货号的数据
      */
     @RequestMapping(value = "/fix/skuTemplate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void fixSkutemplate(@RequestParam String fileName){
+    public void fixSkutemplate(@RequestParam String fileName) {
 
-        String url = "/pousheng/file/"+ fileName + ".csv";
+        String url = "/pousheng/file/" + fileName + ".csv";
         File file1 = new File(url);
 
-        List<String> skuCodes =  readShipmentCode(file1);
+        List<String> skuCodes = readShipmentCode(file1);
 
-        log.info("START-HANDLE-SKUTEMPLATE-API for:{}",url);
+        log.info("START-HANDLE-SKUTEMPLATE-API for:{}", url);
 
-        for (String skuCode : skuCodes){
-            log.info("START-HANDLE-SKUTEMPLATE-CODE:{}",skuCode);
-            if ("\"sku_code\"".equals(skuCode)){
+        for (String skuCode : skuCodes) {
+            log.info("START-HANDLE-SKUTEMPLATE-CODE:{}", skuCode);
+            if ("\"sku_code\"".equals(skuCode)) {
                 continue;
             }
             spuImporter.dealFixSkuTemplateBySkucode(skuCode);
-            log.info("END-HANDLE-SKUTEMPLATE-CODE:{}",skuCode);
+            log.info("END-HANDLE-SKUTEMPLATE-CODE:{}", skuCode);
         }
 
-        log.info("END-HANDLE-SKUTEMPLATE-API for:{}",url);
+        log.info("END-HANDLE-SKUTEMPLATE-API for:{}", url);
 
     }
-
 
 
     /**
      * 商品打标
      */
     @RequestMapping(value = "/make/flag", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void makeFlag(@RequestParam String fileName){
+    public void makeFlag(@RequestParam String fileName) {
 
-        String url = "/pousheng/file/"+ fileName + ".csv";
+        String url = "/pousheng/file/" + fileName + ".csv";
 
         File file1 = new File(url);
 
-        List<String> codes =  readShipmentCode(file1);
+        List<String> codes = readShipmentCode(file1);
 
-        log.info("START-HANDLE-MAKE-FLAG-API for:{}",url);
+        log.info("START-HANDLE-MAKE-FLAG-API for:{}", url);
 
         onImportMposFlag(codes);
 
 
-        log.info("END-HANDLE-MAKE-FLAG-API for:{}",url);
+        log.info("END-HANDLE-MAKE-FLAG-API for:{}", url);
 
     }
 
-    private  List<String> readShipmentCode(File file){
+    private List<String> readShipmentCode(File file) {
         List<String> result = Lists.newArrayList();
-        try{
+        try {
             BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
             String s = null;
-            while ((s = br.readLine()) != null){ //使用readLine方法，一次读一行
+            while ((s = br.readLine()) != null) { //使用readLine方法，一次读一行
                 result.add(s);
             }
             br.close();
-        } catch (Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
         }
         return result;
     }
 
 
-
     private void onImportMposFlag(List<String> skuTemplateIds) {
 
         List<SkuTemplate> skuTemplates = Lists.newArrayList();
 
-        for (int i = 0;i< skuTemplateIds.size();i++) {
+        for (int i = 0; i < skuTemplateIds.size(); i++) {
 
-            Long  skuTemplateId = Long.valueOf(skuTemplateIds.get(i));
+            Long skuTemplateId = Long.valueOf(skuTemplateIds.get(i));
             try {
                 //判断商品是否有效
                 Response<SkuTemplate> skuTemplateRes = skuTemplateReadService.findById(skuTemplateId);
-                if( !skuTemplateRes.isSuccess()){
-                    log.error("make-flag-fail find sku template by id:{} fail,error:{}",skuTemplateId,skuTemplateRes.getError());
+                if (!skuTemplateRes.isSuccess()) {
+                    log.error("make-flag-fail find sku template by id:{} fail,error:{}", skuTemplateId, skuTemplateRes.getError());
                     continue;
                 }
 
@@ -738,8 +773,8 @@ public class FireCall {
                 //同步电商
                 //syncParanaMposSku(skuTemplateId, PsSpuType.MPOS.value());
                 Response<Boolean> syncParanaRes = syncParanaMposSku(skuTemplate);
-                if( !syncParanaRes.isSuccess()){
-                    log.error("make-flag-fail sync parana mpos item(sku template id:{}) fail",skuTemplateId);
+                if (!syncParanaRes.isSuccess()) {
+                    log.error("make-flag-fail sync parana mpos item(sku template id:{}) fail", skuTemplateId);
                     continue;
                 }
 
@@ -748,28 +783,29 @@ public class FireCall {
                 //每1000条更新下mysql和search
                 if (i % 1000 == 0) {
                     //更新es
-                    skuTemplateDumpService.batchDump(skuTemplates,2);
+                    skuTemplateDumpService.batchDump(skuTemplates, 2);
                     //设置默认折扣 和价格
-                    pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
+                    pushMposItemComponent.batchMakeFlag(skuTemplates, PsSpuType.MPOS.value());
                     skuTemplates.clear();
                 }
-            } catch (Exception e){
-                log.error("make-flag-fail import make sku id:{} flag fail, cause:{}",skuTemplateId,Throwables.getStackTraceAsString(e));
+            } catch (Exception e) {
+                log.error("make-flag-fail import make sku id:{} flag fail, cause:{}", skuTemplateId, Throwables.getStackTraceAsString(e));
             }
         }
 
         //非1000条的更新下
-        if (!CollectionUtils.isEmpty(skuTemplates)){
-            skuTemplateDumpService.batchDump(skuTemplates,2);
-            pushMposItemComponent.batchMakeFlag(skuTemplates,PsSpuType.MPOS.value());
+        if (!CollectionUtils.isEmpty(skuTemplates)) {
+            skuTemplateDumpService.batchDump(skuTemplates, 2);
+            pushMposItemComponent.batchMakeFlag(skuTemplates, PsSpuType.MPOS.value());
         }
     }
 
     /**
      * 同步电商
+     *
      * @param exist 货品
      */
-    private Response<Boolean> syncParanaMposSku(SkuTemplate exist){
+    private Response<Boolean> syncParanaMposSku(SkuTemplate exist) {
         return pushMposItemComponent.syncParanaMposItem(exist);
     }
 

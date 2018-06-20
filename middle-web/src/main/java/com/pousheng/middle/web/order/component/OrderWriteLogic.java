@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.component;
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.*;
+import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
@@ -81,6 +82,9 @@ public class OrderWriteLogic {
 
     @RpcConsumer(check = "false")
     private ExpressCodeReadService expressCodeReadService;
+
+    @Autowired
+    private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
 
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {
@@ -953,6 +957,48 @@ public class OrderWriteLogic {
         } else {
             log.info("shop order failed");
         }
+    }
+
+
+
+    /**
+     * 天猫订单修复
+     *
+     * @param shopId
+     */
+    public void updateJdYunDingOrderAmount(Long shopId) {
+        int pageNo = 1;
+        while (true) {
+            MiddleOrderCriteria criteria = new MiddleOrderCriteria();
+            criteria.setShopId(shopId);
+            criteria.setStatus(Lists.newArrayList(1, 2, 3, 4, 5, 6, -1, -2, -3, -4, -5, -6));
+            criteria.setPageNo(pageNo);
+            log.info("pageNo i=========s {}", pageNo);
+            Response<Paging<ShopOrder>> r = middleOrderReadService.pagingShopOrder(criteria);
+            if (r.isSuccess()) {
+                Paging<ShopOrder> shopOrderPaging = r.getResult();
+                List<ShopOrder> shopOrders = shopOrderPaging.getData();
+                if (!shopOrders.isEmpty()) {
+                    for (ShopOrder shopOrder : shopOrders) {
+                        jdYunDingSyncStockLogic.syncUpdateJdOrderAmount(shopOrder.getShopId(),shopOrder.getOutId());
+                    }
+                } else {
+                    break;
+                }
+                pageNo++;
+            }
+        }
+    }
+
+    /**
+     * 天猫订单修复
+     *
+     * @param shopId
+     */
+    public void updateJdYundingOrderAmountByOrderId(Long shopId, Long shopOrderId) {
+        log.info("order amount recover ,shopOrderId={},shopId={}",shopOrderId,shopId);
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        jdYunDingSyncStockLogic.syncUpdateJdOrderAmount(shopOrder.getShopId(),shopOrder.getOutId());
     }
 }
 

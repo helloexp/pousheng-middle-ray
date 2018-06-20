@@ -82,6 +82,29 @@ public class JdYunDingSyncStockLogic {
     }
 
     /**
+     * 更新京东云鼎订单金额
+     * @param shopId 店铺id
+     * @param outerOrderId 京东订单号
+     * @return
+     */
+    public Response<Boolean> syncUpdateJdOrderAmount(Long shopId,String outerOrderId){
+        try{
+            HashMap params = Maps.newHashMap();
+            params.put("shopId", shopId);
+            params.put("outOrderId", outerOrderId);
+            String result = this.post(shopId, "jd.yunding.order.amount.push.api", params);
+            if (!result.contains("success")) {
+                log.error("sync update jd order amount  by params:{} fail, request result:{}", params, result);
+                return Response.fail(result);
+            }
+            return Response.ok(Boolean.TRUE);
+        }catch (Exception e){
+            log.error("sync update jd order amount failed,caused by {}",Throwables.getStackTraceAsString(e));
+            return Response.fail("sync update jd order amount failed");
+        }
+    }
+
+    /**
      * @param shopId
      * @param method
      * @param requestParams

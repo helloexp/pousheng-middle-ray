@@ -108,7 +108,7 @@ public class MposSkuStockLogic {
 
         List<String> skuCodes = dispatchComponent.getWarehouseSkuCodes(warehouseShipments);
         //1、先同步恒康最新库存到中台（这里可以不用担心拉取不到库存，因为既然可以仓发，说明恒康一定有库存）
-        syncStock(warehouseShipments,skuCodes);
+        //syncStock(warehouseShipments,skuCodes);
         //2、锁定库存
         //锁定电商库存
         Response<Boolean> response = warehouseSkuWriteService.lockStock(warehouseShipments);

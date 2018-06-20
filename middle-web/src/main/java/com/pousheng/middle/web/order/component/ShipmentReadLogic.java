@@ -10,9 +10,12 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -25,6 +28,8 @@ import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +60,10 @@ public class ShipmentReadLogic {
     private ShipmentReadService shipmentReadService;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
+    @Autowired
+    private ShopReadService shopReadService;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -566,11 +575,30 @@ public class ShipmentReadLogic {
         DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
         List<SkuCodeAndQuantity> skuCodeAndQuantities = this.findShipmentSkuDetail(shipment);
         if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
-            ShopShipment shopShipment = new ShopShipment();
-            shopShipment.setShopId(shipmentExtra.getWarehouseId());
-            shopShipment.setShopName(shipmentExtra.getWarehouseName());
-            shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
+            // ShopShipment shopShipment = new ShopShipment();
+            // shopShipment.setShopId(shipmentExtra.getWarehouseId());
+            // shopShipment.setShopName(shipmentExtra.getWarehouseName());
+            // shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            // dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
+            //店发改成仓发
+            Long shopId = shipmentExtra.getWarehouseId();
+            Response<Shop> resp = shopReadService.findById(shopId);
+            if(!resp.isSuccess() || null == resp.getResult() ){
+                log.error(" find shop by id {} is error :{} ",shopId,resp.getError());
+                throw new JsonResponseException("find.shop.failed");
+            }
+            Shop shop = resp.getResult();
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            Warehouse warehouse = warehouseCacher.findByCode(shopExtraInfo.getCompanyId()+"-"+shopExtraInfo.getShopInnerCode());
+            if(null == warehouse){
+                log.error(" find warehouse by code {} is null ",shopExtraInfo.getCompanyId()+"-"+shopExtraInfo.getShopInnerCode());
+                throw new JsonResponseException("find.warehouse.failed");
+            }
+            WarehouseShipment warehouseShipment = new WarehouseShipment();
+            warehouseShipment.setWarehouseId(warehouse.getId());
+            warehouseShipment.setWarehouseName(warehouse.getName());
+            warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }else{
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());

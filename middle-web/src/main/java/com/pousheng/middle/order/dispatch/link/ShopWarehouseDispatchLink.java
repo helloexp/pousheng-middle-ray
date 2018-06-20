@@ -84,12 +84,14 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         List<Shop> shops = Lists.newArrayListWithCapacity(shopWarehouseWithPriorities.size());
+        List<Long> shopWarehouseIds =Lists.newArrayListWithCapacity(shopWarehouseWithPriorities.size());
         //封装店铺id
         shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie->{
             Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
             shops.add(shop);
             shopWarehouseWithPrioritie.setShopId(shop.getId());
+            shopWarehouseIds.add(warehouse.getId());
 
         });
 
@@ -119,7 +121,7 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,1);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodes);
         if(CollectionUtils.isEmpty(skuStockInfos)){
             log.warn("not skuStockInfos so skip");
             return Boolean.TRUE;

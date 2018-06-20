@@ -435,7 +435,7 @@ public class FireCall {
         String skuCode = searchSkuTemplate.getSkuCode();
         Long total = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes, skuCodesList, 0);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
             if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {

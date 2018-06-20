@@ -109,7 +109,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
 
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodes,skuCodes,2);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodes);
         if(CollectionUtils.isEmpty(skuStockInfos)){
             return Boolean.TRUE;
         }

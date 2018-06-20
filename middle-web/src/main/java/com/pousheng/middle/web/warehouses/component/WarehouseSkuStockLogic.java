@@ -78,7 +78,7 @@ public class WarehouseSkuStockLogic {
             //查询恒康库存
             String outerId = extra.get("outCode");
             String companyId = warehouse.getCompanyId();
-            List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(outerId),Lists.newArrayList(skuCode),0);
+            List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId),Lists.newArrayList(skuCode));
 
             if( Objects.equals(warehouseId,skxWarehouseId)){
 

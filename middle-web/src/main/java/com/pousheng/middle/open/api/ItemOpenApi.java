@@ -183,28 +183,28 @@ public class ItemOpenApi {
 
         Multimap<String, Integer> stockBySkuCode = HashMultimap.create();
 
-        List<String> shopCodes = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
-        List<String> warehouseCodes = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
+        List<Long> shopWarehouseIds = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
+        List<Long> warehouseIds = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
 
         for (String outCode: stockCodeWarehosueMap.keySet()){
             Warehouse warehouse = stockCodeWarehosueMap.get(outCode);
             if(Objects.equals(warehouse.getType(),0)){
-                warehouseCodes.add(outCode);
+                shopWarehouseIds.add(warehouse.getId());
             }else {
-                shopCodes.add(outCode);
+                warehouseIds.add(warehouse.getId());
             }
         }
 
         //门店
         Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> shopSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopCodes,skuCodesList,1);
+        List<HkSkuStockInfo> shopSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodesList);
         dispatchComponent.completeShopTab(shopSkuStockInfos,shopSkuCodeQuantityTable);
 
         makeStockByStock(stockBySkuCode,skuCodesList,shopSkuCodeQuantityTable);
 
         //仓
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> warehouseSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseCodes,skuCodesList,2);
+        List<HkSkuStockInfo> warehouseSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodesList);
         dispatchComponent.completeWarehouseTab(warehouseSkuStockInfos,warehouseSkuCodeQuantityTable);
 
         makeStockByStock(stockBySkuCode,skuCodesList,warehouseSkuCodeQuantityTable);

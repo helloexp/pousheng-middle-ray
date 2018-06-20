@@ -5,6 +5,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
@@ -14,6 +15,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.event.OpenClientPushItemSuccessEvent;
 import io.terminus.open.client.center.item.component.ItemExecutor;
 import io.terminus.open.client.center.item.dto.ParanaFullItem;
 import io.terminus.open.client.center.item.dto.ParanaItem;
@@ -76,6 +78,8 @@ public class PushMposItemComponent {
     private BatchHandleMposLogic batchHandleMposLogic;
     @Autowired
     private PsSkuTemplateWriteService psSkuTemplateWriteService;
+    @Autowired
+    private EventBus eventBus;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -238,6 +242,10 @@ public class PushMposItemComponent {
             if (!createItemMappingsR.isSuccess()) {
                 log.error("fail to create item mappings:{},cause:{}", createdItemMappings, createItemMappingsR.getError());
             }
+
+            //触发同步恒康电商在售
+            eventBus.post(new OpenClientPushItemSuccessEvent(openShop.getId(), skuTemplate.getSpuId()));
+
 
             PushedItem pushedItem = new PushedItem();
             pushedItem.setChannel(openShop.getChannel());

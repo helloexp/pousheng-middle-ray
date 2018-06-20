@@ -265,15 +265,15 @@ public class FireCall {
     }
 
     @RequestMapping(value = "/shop/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public String synchronizeShopSpuStock(@RequestParam(name = "shopId", required = true) Long shopId, @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit) {
+    public String synchronizeShopSpuStock(@RequestParam(name = "shopId") Long shopId, @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit) {
         try {
             log.info("begin to synchronizeShopSpuStock shopId is {}", shopId);
             int pageNo = 1;
             int pageSize = (null == limit || limit > 1000) ? 1000 : limit;
             while (true) {
-                Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, null, pageNo, pageSize);
+                Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, 1, pageNo, pageSize);
                 if (!res.isSuccess()) {
-                    log.error("fail to find itemIds byshopId={} pageNo={},pageSize={},cause:{}", shopId,
+                    log.error("fail to find item mapping by shopId={} pageNo={},pageSize={},error:{}", shopId,
                             pageNo, pageSize, res.getError());
                     break;
                 }
@@ -286,7 +286,7 @@ public class FireCall {
                 if (CollectionUtils.isEmpty(itemIds)) {
                     break;
                 }
-                log.info("shopId [{}] pageNo [{}] find itemIds []", shopId, pageNo, itemIds.toString());
+                log.info("start to push hk item shopId [{}] pageNo [{}] find itemIds []", shopId, pageNo, itemIds.toString());
                 try {
                     //向库存那边推送这个信息, 表示要关注这个商品对应的单据
                     materialPusher.addSpus(itemIds);
@@ -297,7 +297,7 @@ public class FireCall {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("call synchronizeShopSpuStock fail,cause:{}",Throwables.getStackTraceAsString(e));
         }
         log.info("end synchronizeShopSpuStock shopId is {}", shopId);
         return "ok";

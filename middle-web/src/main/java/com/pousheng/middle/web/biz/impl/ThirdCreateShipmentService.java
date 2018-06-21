@@ -103,37 +103,7 @@ public class ThirdCreateShipmentService implements CompensateBizService {
                 return;
             }
         }
-        // 如果是Mpos订单，进行派单
-        if (isNeedMposDispatch(shopOrder)) {
-            log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
-            shipmentWiteLogic.toDispatchOrder(shopOrder);
-            log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
-        } else {
-            //如果是京东货到付款，默认展示京东快递
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
-                    && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
-                Map<String, String> extraMap = shopOrder.getExtra();
-                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE, TradeConstants.JD_VEND_CUST_ID);
-                extraMap.put(TradeConstants.SHOP_ORDER_HK_EXPRESS_NAME, "京东快递");
-                Response<Boolean> rltRes = orderWriteService.updateOrderExtra(shopOrder.getId(), OrderLevel.SHOP, extraMap);
-                if (!rltRes.isSuccess()) {
-                    log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
-                }
-            }
-            shipmentWiteLogic.doAutoCreateShipment(shopOrder);
-        }
+        shipmentWiteLogic.autoHandleOrderForCreateOrder(shopOrder);
     }
 
-    /**
-     * 是否需要用mpos派单逻辑
-     *
-     * @return 是否
-     */
-    private Boolean isNeedMposDispatch(ShopOrder shopOrder) {
-
-        if (shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)) {
-            return Boolean.TRUE;
-        }
-        return Boolean.FALSE;
-    }
 }

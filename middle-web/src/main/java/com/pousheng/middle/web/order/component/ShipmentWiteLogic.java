@@ -1452,18 +1452,9 @@ public class ShipmentWiteLogic {
         refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundChangeItems));
         refund.setExtra(refundExtra);
         refundWriteLogic.update(refund);
-        Refund newRefund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
-        List<RefundItem> newRefundChangeItems = refundReadLogic.findRefundChangeItems(newRefund);
-        int newCount = 0;
-        for (RefundItem refundItem : newRefundChangeItems) {
-            if (refundItem.getAlreadyHandleNumber() > 0) {
-                newCount++;
-            }
-        }
-        //说明所有的发货单都已经取消了，这个时候可以将换货单的状态改为退货完成待创建发货单的状态了
-        if (newCount == 0) {
-            updateRefundStatus(refund);
-        }
+        //将售后单状态变为创建发货单
+        updateRefundStatus(refund);
+
     }
 
     /**

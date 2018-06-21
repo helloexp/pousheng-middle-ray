@@ -10,6 +10,7 @@ import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -26,6 +27,7 @@ import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.*;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -228,6 +230,9 @@ public class OrderWriteLogic {
         //判断该订单是否有取消订单的权限
         if (!validateAutoCancelShopOrder(shopOrder)) {
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}", shopOrder.getId());
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())) {
+                throw new OPServerException(200, "shop.order.cancel.failed");
+            }
             throw new JsonResponseException("shop.order.cancel.failed");
         }
         //获取该订单下所有的子单和发货单
@@ -254,6 +259,9 @@ public class OrderWriteLogic {
         if (count > 0) {
             //发货单取消失败,订单状态设置为取消失败
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())) {
+                throw new OPServerException(200, "sync.order.to.yyedi.fail");
+            }
         } else {
             //发货单取消成功,订单状态设置为取消成功
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());

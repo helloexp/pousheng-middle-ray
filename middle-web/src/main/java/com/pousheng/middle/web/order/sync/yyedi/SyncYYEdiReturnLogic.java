@@ -204,7 +204,7 @@ public class SyncYYEdiReturnLogic {
         //客户供应商快递公司内码
         refundInfo.setCustomerCode("");
         refundInfo.setCustomerName("");
-        refundInfo.setExpressBillNo("");
+        refundInfo.setExpressBillNo(refundExtra.getShipmentSerialNo());
         refundInfo.setIsRefundInvoice(0);
         //1.退货，0.换货
         refundInfo.setRefundChangeType(refund.getRefundType()==2?1:0);

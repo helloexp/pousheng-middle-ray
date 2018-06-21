@@ -270,13 +270,16 @@ public class ShipmentWiteLogic {
                     throw new JsonResponseException(updateStatus.getError());
                 }
             }
-            //回滚数量
-            shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment);
-            //解锁库存
-            mposSkuStockLogic.unLockStock(shipment);
+            //只有销售发货单才会做扣减库存的事情
+            if (Objects.equals(shipment.getType(),ShipmentType.SALES_SHIP.value())){
+                //回滚数量
+                shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment);
+                //解锁库存
+                mposSkuStockLogic.unLockStock(shipment);
+            }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
+            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
     }

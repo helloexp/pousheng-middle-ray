@@ -270,13 +270,16 @@ public class ShipmentWiteLogic {
                     throw new JsonResponseException(updateStatus.getError());
                 }
             }
-            //回滚数量
-            shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment);
-            //解锁库存
-            mposSkuStockLogic.unLockStock(shipment);
+            //只有销售发货单才会做扣减库存的事情
+            if (Objects.equals(shipment.getType(),ShipmentType.SALES_SHIP.value())){
+                //回滚数量
+                shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment);
+                //解锁库存
+                mposSkuStockLogic.unLockStock(shipment);
+            }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
-            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
+            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
     }
@@ -1449,18 +1452,9 @@ public class ShipmentWiteLogic {
         refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundChangeItems));
         refund.setExtra(refundExtra);
         refundWriteLogic.update(refund);
-        Refund newRefund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
-        List<RefundItem> newRefundChangeItems = refundReadLogic.findRefundChangeItems(newRefund);
-        int newCount = 0;
-        for (RefundItem refundItem : newRefundChangeItems) {
-            if (refundItem.getAlreadyHandleNumber() > 0) {
-                newCount++;
-            }
-        }
-        //说明所有的发货单都已经取消了，这个时候可以将换货单的状态改为退货完成待创建发货单的状态了
-        if (newCount == 0) {
-            updateRefundStatus(refund);
-        }
+        //将售后单状态变为创建发货单
+        updateRefundStatus(refund);
+
     }
 
     /**

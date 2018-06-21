@@ -346,14 +346,22 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setBCMemberName(shopOrder.getBuyerName());
         //会员等级
         shipmentInfo.setBCMemberCard("");
-        //支付类型在中台是1:在线支付,2:货到付款,同步给订单派发中心时时需要变为0:在线支付,1:货到付款
-        shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
-        if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            //代收金额:商品总金额+运费
-            shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
-            //结算金额
-            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        //只有正常销售的发货单才会有货到付款
+        if (Objects.equals(shipment.getType(),ShipmentType.SALES_SHIP.value())){
+            //支付类型在中台是1:在线支付,2:货到付款,同步给订单派发中心时时需要变为0:在线支付,1:货到付款
+            shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
+            if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
+                //代收金额:商品总金额+运费
+                shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+                //结算金额
+                shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            }else{
+                shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+                //结算金额
+                shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            }
         }else{
+            shipmentInfo.setPaymenttype(HkPayType.HK_ONLINE_PAY.getValue());
             shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
             //结算金额
             shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));

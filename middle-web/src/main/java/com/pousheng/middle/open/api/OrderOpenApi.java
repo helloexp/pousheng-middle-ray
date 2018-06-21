@@ -620,6 +620,8 @@ public class OrderOpenApi {
         // 自动推送
         refundInfo.setOperationType(2); //操作类型 //这里不需要同步给yyedi,需要客服审核手动触发推送给yyedi
         refundInfo.setReturnStockid(refundOrder.getReturnStockid()); //退货仓id 文案有点问题存到warehousId
+        // 快递单号
+        refundInfo.setShipmentSerialNo(refundOrder.getExpressCode());
         refundWriteLogic.createYunJURefund(refundInfo);
 
         log.info("cancelOutOrderInfo:", applyRefund);

@@ -35,6 +35,14 @@ spring:
       max-lifetime: 30000
       connection-timeout: 30000
       validation-timeout: 15000
+  redis:
+    host: ${POUSHENG_REDIS_HOST}
+    port: ${POUSHENG_REDIS_PORT}
+    password: ${POUSHENG_REDIS_PASSWORD}
+    pool:
+      max-idle: 100
+      max-wait: -1
+      max-active: 1000
   application:
     name: pousheng-middle
   messages:
@@ -47,6 +55,7 @@ mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: >
         com.pousheng.(erp|auth).model,
+         com.pousheng.middle.(group|task).model,
         com.pousheng.middle.warehouse.model,
         com.pousheng.middle.order.model,
         io.terminus.parana.user.address.model,
@@ -54,7 +63,8 @@ mybatis:
         io.terminus.parana.(item|category|brand|spu|shop).model,
         io.terminus.parana.(order|cart|express|promotion|delivery|settle|auth).model,
         io.terminus.open.client.common.(mappings|token|shop).model,
-        io.terminus.open.client.item.model
+        io.terminus.open.client.item.model,
+        io.terminus.applog.core.model
 
 
 
@@ -82,9 +92,8 @@ redis:
   port: ${POUSHENG_REDIS_PORT}
   auth: ${POUSHENG_REDIS_PASSWORD}
   max-total: 10
-  max-idle: 2
+  max-idle: 100
   test-on-borrow: true
-
 
 rpc.mode: false
 rpc.dubbo:
@@ -162,8 +171,6 @@ gd_map:
   webKey: 'd6e5c2d8e1ae82dd53e5829034145b64'
 
 index.queue.size: 500000
-## 这个开关用于开放拉取第三方的商品与中台的映射关系-生产环境为true
-## open.client.sync.item.mapping.job.enable: true
 
 
 # mpos系统调用的api白名单

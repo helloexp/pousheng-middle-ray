@@ -18,6 +18,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -64,6 +65,8 @@ public class ShipmentReadLogic {
     private ShopReadService shopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private WarehouseReadService warehouseReadService;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -589,9 +592,22 @@ public class ShipmentReadLogic {
             }
             Shop shop = resp.getResult();
             ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            Warehouse warehouse = warehouseCacher.findByCode(shopExtraInfo.getCompanyId()+"-"+shopExtraInfo.getShopInnerCode());
-            if(null == warehouse){
-                log.error(" find warehouse by code {} is null ",shopExtraInfo.getCompanyId()+"-"+shopExtraInfo.getShopInnerCode());
+
+            Response<List<Warehouse>> response = warehouseReadService.findWarehouseListByOutCode(Lists.newArrayList(shop.getOuterId()));
+            if(!response.isSuccess()){
+                log.error("findWarehouseListByOutCode :{} fail,error:{}",shop.getOuterId(),response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            List<Warehouse> warehouseList = response.getResult();
+            Warehouse warehouse = null;
+            for (Warehouse wh : warehouseList){
+                if (Objects.equals(Long.valueOf(wh.getCompanyId()),shop.getBusinessId())){
+                    warehouse = wh;
+                    break;
+                }
+            }
+            if (null == warehouse){
+                log.error(" find warehouse by code {} is null ",shopExtraInfo.getCompanyId()+ "-"+ shopExtraInfo.getShopInnerCode());
                 throw new JsonResponseException("find.warehouse.failed");
             }
             WarehouseShipment warehouseShipment = new WarehouseShipment();

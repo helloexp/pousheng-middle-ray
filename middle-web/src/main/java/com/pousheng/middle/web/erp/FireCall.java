@@ -434,6 +434,7 @@ public class FireCall {
 
         String skuCode = searchSkuTemplate.getSkuCode();
         Long total = 0L;
+        Long currentCompanyQuantity = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
@@ -459,6 +460,10 @@ public class FireCall {
                     }
 
                     total += warehouseStock;
+                    //当前公司库存
+                    if (Objects.equals(String.valueOf(companyId),hkSkuStockInfo.getCompany_id())){
+                        currentCompanyQuantity += warehouseStock;
+                    }
                 }
                 //店
             } else {
@@ -477,13 +482,19 @@ public class FireCall {
                         currentShopStock = 0L;
                     }
                     total += currentShopStock;
+                    //当前店铺库存
                     if (Objects.equals(shop.getId(), currentShop.getId())) {
                         itemNameAndStock.setCurrentShopQuantity(currentShopStock);
+                    }
+                    //当前公司库存
+                    if (Objects.equals(String.valueOf(companyId),hkSkuStockInfo.getCompany_id())){
+                        currentCompanyQuantity += currentShopStock;
                     }
                 }
             }
 
         }
+        itemNameAndStock.setCurrentCompanyQuantity(currentCompanyQuantity);
         itemNameAndStock.setStockQuantity(total);
         return itemNameAndStock;
     }

@@ -109,7 +109,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "erp.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncErpHandleResult(@NotNull(message = "handle.data.is.null") String data) {
-        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ", data);
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START param: data [{}] ", data);
         List<ErpHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ErpHandleShipmentResult.class));
         try{
             for(ErpHandleShipmentResult result :results){
@@ -126,7 +126,7 @@ public class OrderOpenApi {
             log.error("erp shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"sync.fail");
         }
-        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-END");
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-END param: data [{}]",data);
     }
 
 
@@ -149,7 +149,15 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate
     ) {
+        if(log.isDebugEnabled()){
+            log.debug("ERP-SHIPMENTS-API-START param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
+                    shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        }
         this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        if(log.isDebugEnabled()){
+            log.debug("ERP-SHIPMENTS-API-END param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
+                    shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        }
     }
 
 
@@ -162,7 +170,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START param: data [{}] ",data);
         List<HkHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
         try{
             for(HkHandleShipmentResult result :results){
@@ -179,7 +187,7 @@ public class OrderOpenApi {
             log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END param: data [{}] ",data);
     }
 
     private void handleResult(String shipmentId,Boolean handleResult,String erpShipmentId){
@@ -242,8 +250,7 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate
     ) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
-                        "shipmentSerialNo is:{} shipmentDate is:{}",
-                shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
+                "shipmentSerialNo is:{} shipmentDate is:{}",shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
 
         try {
 
@@ -318,7 +325,9 @@ public class OrderOpenApi {
             throw new OPServerException(200, "sync.fail");
         }
 
-        log.info("HK-SYNC-SHIPMENT-STATUS-END");
+        log.info("HK-SYNC-SHIPMENT-STATUS-END param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
+                "shipmentSerialNo is:{} shipmentDate is:{}",shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
+
     }
 
     /**
@@ -335,8 +344,15 @@ public class OrderOpenApi {
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
     ) {
+        if(log.isDebugEnabled()){
+            log.debug("ERP-REFUND-CONFIRM-RECEIVED-API-START param: refundOrderId [{}] erpRefundOrderId [{}] itemInfo [{}] receivedDate [{}]",
+                    refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+        }
         syncHkRefundStatus(refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
-
+        if(log.isDebugEnabled()){
+            log.debug("ERP-REFUND-CONFIRM-RECEIVED-API-END param: refundOrderId [{}] erpRefundOrderId [{}] itemInfo [{}] receivedDate [{}]",
+                    refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+        }
     }
     /**
      * 恒康将售后单售后结果通知给中台
@@ -425,8 +441,8 @@ public class OrderOpenApi {
             log.error("hk sync refund confirm to middle fail,cause:{}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"sync.fail");
         }
-        log.info("HK-SYNC-REFUND-STATUS-END");
-
+        log.info("HK-SYNC-REFUND-STATUS-END param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+                refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
     }
 
 
@@ -524,7 +540,7 @@ public class OrderOpenApi {
             throw new OPServerException(200, "sync.fail");
         }
 
-        log.info("HK-SYNC-POS-INFO-END");
+        log.info("HK-SYNC-POS-INFO-END param orderId is:{} orderType is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",orderId,orderType,posSerialNo,posType,posAmt,posCreatedAt);
     }
 
 

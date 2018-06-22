@@ -16,6 +16,7 @@ import com.pousheng.middle.web.warehouses.algorithm.TreeMarker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -62,6 +63,9 @@ public class WarehouseAddressRules {
     @OperationLogType("根据店铺组ID创建规则适用地址")
     public Long addAddresses(@PathVariable("groupId") @OperationLogParam Long shopGroupId,
                        @RequestBody ThinAddress[] addresses) {
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-ADDADDRESSES-START param: shopGroupId [{}] addresses [{}] ",shopGroupId,addresses);
+        }
         //需要过滤掉本次提交中冗余的地址,如果父节点全选了, 那么子节点就可以过滤掉了
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         //Set<Long> shopIds = findShopIdsByRuleId(ruleId);
@@ -70,6 +74,9 @@ public class WarehouseAddressRules {
             log.error("failed to add rule address for shop group(id={}) with addresses:{}, error code:{}",
                     shopGroupId, valid, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-ADDADDRESSES-END param: shopGroupId [{}] addresses [{}]  ,resp: [{}]",shopGroupId,addresses,r.getResult());
         }
         return r.getResult();
     }
@@ -82,7 +89,9 @@ public class WarehouseAddressRules {
      */
     @RequestMapping(value="/group/{groupId}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public AddressTree findAddresses(@PathVariable("groupId")Long shopGroupId){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-FINDADDRESSES-START param: shopGroupId [{}] ",shopGroupId);
+        }
         AddressTree addressTree = warehouseAddressCacher.buildTree(2);
         //同一个group下已选的地址不可编辑
         Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findNonDefaultAddressesByShopGroupId(shopGroupId);
@@ -95,7 +104,9 @@ public class WarehouseAddressRules {
             Long id = warehouseAddress.getAddressId();
             treeMarker.markSelected(addressTree, id, false);
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-FINDADDRESSES-END param: shopGroupId [{}] ,resp: [{}]",shopGroupId,JsonMapper.nonEmptyMapper().toJson(addressTree));
+        }
         return addressTree;
     }
 
@@ -167,7 +178,9 @@ public class WarehouseAddressRules {
      */
     @RequestMapping(value="/{ruleId}/address",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public AddressTree findAddressByRuleId(@PathVariable("ruleId") Long ruleId) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-FINDADDRESSBYRULEID-START param: ruleId [{}] ",ruleId);
+        }
         //同店铺其他规则选中的地址不可编辑
         Response<List<ThinAddress>> r = warehouseAddressRuleReadService.findOtherNonDefaultAddressesByRuleId(ruleId);
         if (!r.isSuccess()) {
@@ -193,6 +206,9 @@ public class WarehouseAddressRules {
             Long id = warehouseAddress.getAddressId();
             treeMarker.markSelected(addressTree, id, true);
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-FINDADDRESSBYRULEID-END param: ruleId [{}] ,resp: [{}]",ruleId,JsonMapper.nonEmptyMapper().toJson(addressTree));
+        }
         return addressTree;
     }
 
@@ -205,12 +221,18 @@ public class WarehouseAddressRules {
     @RequestMapping(value="/{ruleId}/address",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("根据仓库规则ID编辑规则关联发货地址")
     public Boolean updateAddressByRuleId(@PathVariable @OperationLogParam Long ruleId, @RequestBody ThinAddress[] addresses){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-UPDATEADDRESSBYRULEID-START param: ruleId [{}] addresses [{}]",ruleId,addresses);
+        }
         List<ThinAddress> valid = refineWarehouseAddress(addresses);
         Response<Boolean> r = warehouseAddressRuleWriteService.batchUpdate(ruleId, valid);
         if(!r.isSuccess()){
             log.error("failed to update warehouse rule(id={}) with addresses:{}, error code:{}",
                     ruleId, valid, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-RULE-UPDATEADDRESSBYRULEID-END param: ruleId [{}] addresses [{}]",ruleId,addresses);
         }
         return Boolean.TRUE;
     }

@@ -22,6 +22,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.center.job.order.api.OrderReceiver;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -101,6 +102,10 @@ public class OuterOrderReceiver {
     @ApiOperation("创建外部订单")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> createOuterShopOrder(@RequestBody OrderInfo orderInfo) {
+        String orderInfoStr = JsonMapper.nonEmptyMapper().toJson(orderInfo);
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-CREATE-START param: orderInfo [{}] ", orderInfoStr);
+        }
         //目前就mpos系统调用，所以
 
         ShopOrder mposShopOrder = orderInfo.getShopOrder();
@@ -130,14 +135,18 @@ public class OuterOrderReceiver {
 
         //处理单据
         orderReceiver.receiveOrder(openClientShop, Lists.newArrayList(openClientFullOrder));
-
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-CREATE-END param: orderInfo [{}] ", orderInfoStr);
+        }
         return Response.ok(Boolean.TRUE);
     }
 
 
     @RequestMapping(value = "/dispatch/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public DispatchOrderItemInfo createOuterShopOrder(@PathVariable(value = "id") Long orderId) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-START param: orderId [{}] ", orderId);
+        }
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(orderId);
         if(!shopOrderRes.isSuccess()){
             throw new JsonResponseException(shopOrderRes.getError());
@@ -165,6 +174,9 @@ public class OuterOrderReceiver {
             log.error("dispatch fail,error:{}",response.getError());
             throw new JsonResponseException(response.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-END param: orderId [{}] ,resp: [{}]", orderId,JsonMapper.nonEmptyMapper().toJson(response));
+        }
         return response.getResult();
 
     }
@@ -172,6 +184,9 @@ public class OuterOrderReceiver {
 
     @RequestMapping(value = "/dispatch/shipment/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public void createShipment(@PathVariable(value = "id") Long orderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-SHIPMENT-START param: orderId [{}]", orderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(orderId);
         //获取skuCode,数量的集合
@@ -183,10 +198,16 @@ public class OuterOrderReceiver {
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         shipmentWiteLogic.toDispatchOrder(shopOrder,null);
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-SHIPMENT-END param: orderId [{}]", orderId);
+        }
     }
 
     @RequestMapping(value = "/dispatch/shipment/sku/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public void createSkuShipment(@PathVariable(value = "id") Long skuOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-SHIPMENT-SKU-START param: skuOrderId [{}]", skuOrderId);
+        }
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(Lists.newArrayList(skuOrderId));
 
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(skuOrders.get(0).getOrderId());
@@ -199,6 +220,9 @@ public class OuterOrderReceiver {
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         shipmentWiteLogic.toDispatchOrder(shopOrder,skuCodeAndQuantities);
+        if(log.isDebugEnabled()){
+            log.debug("API-OUTER-ORDER-DISPATCH-SHIPMENT-SKU-END param: skuOrderId [{}]", skuOrderId);
+        }
     }
 
 

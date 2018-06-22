@@ -5,6 +5,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.auth.model.OperatorRole;
 import io.terminus.parana.auth.service.OperatorRoleReadService;
 import io.terminus.parana.auth.service.OperatorRoleWriteService;
@@ -41,8 +42,16 @@ public class OperatorRoleApis {
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
     public Long createRole(@RequestBody OperatorRole role) {
+        String roleStr = JsonMapper.nonEmptyMapper().toJson(role);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-CREATEROLE-START param: role [{}]",roleStr);
+        }
         role.setStatus(1);
-        return or500(operatorRoleWriteService.createRole(role));
+        Response<Long> resp = operatorRoleWriteService.createRole(role);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-CREATEROLE-END param: role [{}] ,resp: [{}]",roleStr,resp.getResult());
+        }
+        return or500(resp);
     }
 
     /**
@@ -54,21 +63,36 @@ public class OperatorRoleApis {
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT)
     public Boolean updateRole(@PathVariable Long id, @RequestBody OperatorRole role) {
+        String roleStr = JsonMapper.nonEmptyMapper().toJson(role);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UPDATEROLE-START param: id [{}] role [{}]",id,roleStr);
+        }
         OperatorRole existRole = RespHelper.orServEx(operatorRoleReadService.findById(id));
         if (existRole == null) {
             throw new JsonResponseException(500, "operator.role.not.exist");
         }
         role.setId(id);
         role.setStatus(null); // prevent update
-        return or500(operatorRoleWriteService.updateRole(role));
+        Response<Boolean> resp = operatorRoleWriteService.updateRole(role);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UPDATEROLE-END param: id [{}] role [{}] ,resp: [{}]",id,roleStr,resp.getResult());
+        }
+        return or500(resp);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE)
     public Boolean deleteRole(@PathVariable Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-DELETEROLE-START param: id [{}]",id);
+        }
         OperatorRole toUpdate = new OperatorRole();
         toUpdate.setId(id);
         toUpdate.setStatus(-1);
-        return or500(operatorRoleWriteService.updateRole(toUpdate));
+        Response<Boolean> resp= operatorRoleWriteService.updateRole(toUpdate);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-DELETEROLE-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        }
+        return or500(resp);
     }
 
     /**
@@ -78,21 +102,42 @@ public class OperatorRoleApis {
      */
     @RequestMapping(value = "/all", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<OperatorRole> findAllRoles() {
-        return RespHelper.or500(operatorRoleReadService.findByStatus(1));
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDALLROLES-START noparam: ");
+        }
+        Response<List<OperatorRole>> resp= operatorRoleReadService.findByStatus(1);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDALLROLES-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(resp.getResult()));
+        }
+        return RespHelper.or500(resp);
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OperatorRole> findById(@PathVariable Long id) {
-        return operatorRoleReadService.findById(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDBYID-START param: id [{}]",id);
+        }
+        Response<OperatorRole> resp= operatorRoleReadService.findById(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDBYID-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(resp.getResult()));
+        }
+        return resp;
     }
 
     @RequestMapping(value = "/find-for-edit", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OperatorRole> findForEdit(@RequestParam(required = false) Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDFOREDIT-START param: id [{}]",id);
+        }
         if (id == null) {
             OperatorRole role = new OperatorRole();
             return Response.ok(role);
         }
-        return operatorRoleReadService.findById(id);
+        Response<OperatorRole> resp = operatorRoleReadService.findById(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FINDFOREDIT-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(resp.getResult()));
+        }
+        return resp;
     }
 
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -100,6 +145,9 @@ public class OperatorRoleApis {
                                                      @RequestParam(required = false) Integer status,
                                                      @RequestParam(required = false) Integer pageNo,
                                                      @RequestParam(required = false) Integer pageSize) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-PAGINATION-START param: id [{}] status [{}] pageNo [{}] pageSize [{}]",id,status,pageNo,pageSize);
+        }
         if (id != null) {
             val idResp = operatorRoleReadService.findById(id);
             if (!idResp.isSuccess()) {
@@ -112,7 +160,11 @@ public class OperatorRoleApis {
             }
             return Response.ok(new Paging<>(1L, Lists.newArrayList(role)));
         }
-        return operatorRoleReadService.pagination(status, pageNo, pageSize);
+        Response<Paging<OperatorRole>> resp = operatorRoleReadService.pagination(status, pageNo, pageSize);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-PAGINATION-END param: id [{}] status [{}] pageNo [{}] pageSize [{}] ,resp: [{}]",id,status,pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(resp.getResult()));
+        }
+        return resp;
     }
 
 }

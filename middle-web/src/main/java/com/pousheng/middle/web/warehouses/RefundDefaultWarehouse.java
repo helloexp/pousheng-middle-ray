@@ -9,6 +9,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.ShopOrder;
@@ -51,6 +52,9 @@ public class RefundDefaultWarehouse {
      */
     @RequestMapping(value = "{id}/edit",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> editDefaultRefundWarehouse(@PathVariable("id") Long openShopId,@RequestParam Long warehouseId,String warehouseName,String outCode){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-EDIT-START param: openShopId [{}] warehouseId [{}] warehouseName [{}] outCode [{}]",openShopId,warehouseId,warehouseName,outCode);
+        }
         Response<OpenShop> openShopResponse = openShopReadService.findById(openShopId);
         if (!openShopResponse.isSuccess()){
             log.error("find open shop failed,open shop id is({}),caused by {}",openShopId,openShopResponse.getError());
@@ -66,6 +70,9 @@ public class RefundDefaultWarehouse {
         if (!updateRlt.isSuccess()){
             log.error("update openShop failed,openShopId is {},caused by {}",openShop.getId(),updateRlt.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-EDIT-END param: openShopId [{}] warehouseId [{}] warehouseName [{}] outCode [{}] ,resp: [{}]",openShopId,warehouseId,warehouseName,outCode,updateRlt.getResult());
+        }
         return updateRlt;
     }
 
@@ -78,6 +85,9 @@ public class RefundDefaultWarehouse {
     @RequestMapping(value = "/paging",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<MiddleOpenShop>> paging(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                            @RequestParam(required = false, value = "pageSize") Integer pageSize){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-PAGING-START param: pageNo [{}] pageSize [{}] ",pageNo,pageSize);
+        }
         Response<Paging<OpenShop>> pageRes= middleRefundWarehouseReadService.pagination(pageNo,pageSize,null);
         if (!pageRes.isSuccess()){
             return Response.fail("find.openShop.failed");
@@ -92,6 +102,9 @@ public class RefundDefaultWarehouse {
         Paging<MiddleOpenShop> paging =new Paging<>();
         paging.setTotal(pageRes.getResult().getTotal());
         paging.setData(middleOpenShops);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-PAGING-START param: pageNo [{}] pageSize [{}] ,resp: [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(paging));
+        }
         return Response.ok(paging);
     }
 
@@ -103,9 +116,15 @@ public class RefundDefaultWarehouse {
      */
     @RequestMapping(value = "{id}/single",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<MiddleOpenShop>  queryOpenShopById(@PathVariable("id") Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-QUERYOPENSHOPBYID-START param: id [{}]",id);
+        }
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(id);
         MiddleOpenShop middleOpenShop =new MiddleOpenShop();
         BeanUtils.copyProperties(openShop,middleOpenShop);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-QUERYOPENSHOPBYID-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(middleOpenShop));
+        }
         return Response.ok(middleOpenShop);
     }
 
@@ -117,11 +136,17 @@ public class RefundDefaultWarehouse {
      */
     @RequestMapping(value = "{id}/openshop",method =RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<MiddleOpenShop>  queryOpenShop(@PathVariable("id") String shopOrderCode){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-QUERYOPENSHOP-START param: shopOrderCode [{}]",shopOrderCode);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(shopOrderCode);
         Long shopId = shopOrder.getShopId();
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopId);
         MiddleOpenShop middleOpenShop =new MiddleOpenShop();
         BeanUtils.copyProperties(openShop,middleOpenShop);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-DEFAULT-WAREHOUSE-QUERYOPENSHOP-END param: shopOrderCode [{}] ,resp: [{}]",shopOrderCode,JsonMapper.nonEmptyMapper().toJson(middleOpenShop));
+        }
         return Response.ok(middleOpenShop);
     }
 

@@ -10,6 +10,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,10 @@ public class GiftActivityReader {
      */
     @RequestMapping(value = "/api/gift/activity/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<PoushengGiftActivityPagingInfo>> findBy(PoushengGiftActivityCriteria criteria){
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTIVITY-PAGING-START param: criteria [{}]",criteriaStr);
+        }
         Response<Paging<PoushengGiftActivity>> r =  poushengGiftActivityReadService.paging(criteria);
         if (!r.isSuccess()){
             log.error("find pousheng gift activity paging failed,criteria is {},caused by {}",criteria,r.getError());
@@ -62,6 +67,9 @@ public class GiftActivityReader {
         });
         pagingInfoPaging.setData(pagingInfos);
         pagingInfoPaging.setTotal(r.getResult().getTotal());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTIVITY-PAGING-END param: criteria [{}] ,resp: [{}]",criteriaStr,JsonMapper.nonEmptyMapper().toJson(pagingInfoPaging));
+        }
         return Response.ok(pagingInfoPaging);
     }
 
@@ -72,6 +80,9 @@ public class GiftActivityReader {
      */
     @RequestMapping(value ="/api/gift/activity/{id}/info",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<PoushengGiftActivityInfo> findById(@PathVariable("id") Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTIVITY-INFO-START param: id [{}]",id);
+        }
         Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
         if (!r.isSuccess()){
             log.error("find pousheng gift activity by id failed,id is {},caused by {}",id,r.getError());
@@ -86,6 +97,9 @@ public class GiftActivityReader {
         poushengGiftActivityInfo.setActivityItems(activityItems);
         poushengGiftActivityInfo.setGiftItems(giftItems);
         poushengGiftActivityInfo.setActivityShops(activityShops);
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTIVITY-INFO-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(poushengGiftActivityInfo));
+        }
         return Response.ok(poushengGiftActivityInfo);
     }
 
@@ -96,12 +110,18 @@ public class GiftActivityReader {
      */
     @RequestMapping(value ="/api/pousheng/activity/item/{id}/info",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ActivityItem>> PagingActivityItemByActivityId(@PathVariable("id") Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-POUSHENG-ACTIVITY-ITEM-START param: id [{}]",id);
+        }
         PoushengGiftActivityCriteria criteria = new PoushengGiftActivityCriteria();
         criteria.setId(id);
         Response<Paging<ActivityItem>> r = poushengGiftActivityReadLogic.pagingActivityItems(criteria);
         if (!r.isSuccess()){
             log.error("find pousheng activity item info failed,activity id is {},caused by {}",id,r.getError());
             throw new JsonResponseException("find.pousehng.activity.item.failed");
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-POUSHENG-ACTIVITY-ITEM-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(r));
         }
         return r;
     }

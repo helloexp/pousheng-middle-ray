@@ -9,6 +9,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
@@ -37,6 +38,10 @@ public class SettlementPos {
 
     @RequestMapping(value = "/api/settlement/pos/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<PoushengSettlementPos> findBy(PoushengSettlementPosCriteria criteria){
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-SETTLEMENT-POS-PAGING-START param: criteria [{}] ",criteriaStr);
+        }
         Response<Paging<PoushengSettlementPos>> r =  poushengSettlementPosReadService.paging(criteria);
         if (!r.isSuccess()){
             log.error("failed to paging settlement pos, criteria={}, cause:{}",criteria, r.getError());
@@ -55,6 +60,9 @@ public class SettlementPos {
             });
         }
         r.getResult().setData(poushengSettlementPosList);
+        if(log.isDebugEnabled()){
+            log.debug("API-SETTLEMENT-POS-PAGING-END param: criteria [{}] ,resp: [{}]",criteriaStr,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
+        }
         return r.getResult();
     }
 }

@@ -63,12 +63,17 @@ public class CreateShipments {
      */
     @RequestMapping(value = "/api/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<WaitShipItemInfo> waitHandleSku(@RequestParam Long id, @RequestParam(defaultValue = "1") Integer type) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-WAIT-HANDLE-SKU-START param: id [{}] type [{}]",id,type);
+        }
         if (Objects.equals(1, type)) {
             return adminOrderReader.orderWaitHandleSku(id);
         }
-
-        return refunds.refundWaitHandleSku(id);
+        List<WaitShipItemInfo> waitShipItemInfos = refunds.refundWaitHandleSku(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-WAIT-HANDLE-SKU-END param: id [{}] type [{}] ,resp: [{}]",id,type,JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));
+        }
+        return waitShipItemInfos;
 
     }
 
@@ -85,6 +90,9 @@ public class CreateShipments {
     public Response<List<ShipmentPreview>> shipPreview(@RequestParam Long id,
                                                  @RequestParam(value = "dataList") String dataList,
                                                  @RequestParam(defaultValue = "1") Integer type) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIP-PREVIEW-START param: id [{}] dataList [{}] type [{}]",id,dataList,type);
+        }
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ShipmentRequest.class));
         if(Arguments.isNull(requestDataList)){
             log.error("data json :{} invalid",dataList);
@@ -191,7 +199,9 @@ public class CreateShipments {
             shipmentPreview.setShipmentTotalPrice(shipmentTotalPrice);
             shipmentPreviews.add(shipmentPreview);
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIP-PREVIEW-END param: id [{}] dataList [{}] type [{}] ,resp: [{}]",id,dataList,type,JsonMapper.nonEmptyMapper().toJson(shipmentPreviews));
+        }
         return Response.ok(shipmentPreviews);
     }
 

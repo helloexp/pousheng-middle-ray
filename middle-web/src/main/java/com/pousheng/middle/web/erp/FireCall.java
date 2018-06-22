@@ -166,8 +166,8 @@ public class FireCall {
         this.warehouseCacher = warehouseCacher;
 
         DateTimeParser[] parsers = {
-                DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
-                DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
+            DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").getParser(),
+            DateTimeFormat.forPattern("yyyy-MM-dd").getParser()};
         dft = new DateTimeFormatterBuilder().append(null, parsers).toFormatter();
     }
 
@@ -189,8 +189,8 @@ public class FireCall {
                 return "fail";
             }
             List<PoushengMaterial> poushengMaterials = mapper.readValue(root.findPath("list").toString(),
-                    new TypeReference<List<PoushengMaterial>>() {
-                    });
+                new TypeReference<List<PoushengMaterial>>() {
+                });
 
             return String.valueOf(poushengMaterials.size());
             /*for (PoushengMaterial poushengMaterial : poushengMaterials) {
@@ -207,6 +207,9 @@ public class FireCall {
     @RequestMapping(value = "/brand", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeBrand(@RequestParam String start,
                                    @RequestParam(name = "end", required = false) String end) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-BRAND-START param: start [{}] end [{}]", start, end);
+        }
         Date from = dft.parseDateTime(start).toDate();
         Date to = new Date();
         if (StringUtils.hasText(end)) {
@@ -214,6 +217,9 @@ public class FireCall {
         }
         int cardCount = brandImporter.process(from, to);
         log.info("synchronized {} brands", cardCount);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-BRAND-END param: start [{}] end [{}] ,resp: [{}]", start, end, "ok");
+        }
         return "ok";
     }
 
@@ -221,7 +227,9 @@ public class FireCall {
     @RequestMapping(value = "/spu", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpu(@RequestParam String start,
                                  @RequestParam(name = "end", required = false) String end) {
-
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-START param: start [{}] end [{}]", start, end);
+        }
         Date from = dft.parseDateTime(start).toDate();
         Date to = new Date();
         if (StringUtils.hasText(end)) {
@@ -232,6 +240,9 @@ public class FireCall {
         //log.info("synchronized {} brands", cardCount);
         int spuCount = spuImporter.process(from, to);
         log.info("synchronized {} spus", spuCount);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-END param: start [{}] end [{}] ,resp: [{}]", start, end, "ok");
+        }
         return "ok";
     }
 
@@ -239,6 +250,9 @@ public class FireCall {
     @RequestMapping(value = "/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean synchronizeWarehouse(@RequestParam(name = "start", required = false, defaultValue = "") String start,
                                         @RequestParam(name = "end", required = false, defaultValue = "") String end) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-WAREHOUSE-START param: start [{}] end [{}]", start, end);
+        }
         Date from = DateTime.now().withTimeAtStartOfDay().toDate();
         if (StringUtils.hasText(start)) {
             from = dft.parseDateTime(start).toDate();
@@ -250,6 +264,9 @@ public class FireCall {
         log.info("begin to synchronize warehouse from {} to {}", from, to);
         int warehouseCount = warehouseImporter.process(from, to);
         log.info("synchronized {} warehouses", warehouseCount);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-WAREHOUSE-END param: start [{}] end [{}] ,resp: [{}]", start, end, true);
+        }
         return Boolean.TRUE;
 
     }
@@ -257,10 +274,16 @@ public class FireCall {
 
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpuStock(@RequestParam Long spuId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-STOCK-START param: spuId [{}] ", spuId);
+        }
         //向库存那边推送这个信息, 表示要关注这个商品对应的单据
         materialPusher.addSpus(Lists.newArrayList(spuId));
         //调用恒康抓紧给我返回库存信息
         materialPusher.pushItemForStock(spuId);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-STOCK-END param: spuId [{}] ,resp: [{}]", spuId, "ok");
+        }
         return "ok";
     }
 
@@ -274,7 +297,7 @@ public class FireCall {
                 Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, 1, pageNo, pageSize);
                 if (!res.isSuccess()) {
                     log.error("fail to find item mapping by shopId={} pageNo={},pageSize={},error:{}", shopId,
-                            pageNo, pageSize, res.getError());
+                        pageNo, pageSize, res.getError());
                     break;
                 }
 
@@ -297,7 +320,7 @@ public class FireCall {
             }
 
         } catch (Exception e) {
-            log.error("call synchronizeShopSpuStock fail,cause:{}",Throwables.getStackTraceAsString(e));
+            log.error("call synchronizeShopSpuStock fail,cause:{}", Throwables.getStackTraceAsString(e));
         }
         log.info("end synchronizeShopSpuStock shopId is {}", shopId);
         return "ok";
@@ -306,21 +329,39 @@ public class FireCall {
     @RequestMapping(value = "/add/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String syncMposWarehouse(@RequestParam String companyId,
                                     @RequestParam String stockId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-ADD-MPOS-WAREHOUSE-START param: companyId [{}] stockId [{}]", companyId, stockId);
+        }
         mposWarehousePusher.addWarehouses(companyId, stockId);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-ADD-MPOS-WAREHOUSE-END param: companyId [{}] stockId [{}] ,resp: [{}]", companyId, stockId, "ok");
+        }
         return "ok";
     }
 
     @RequestMapping(value = "/del/mpos/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String delMposWarehouse(@RequestParam String companyId,
                                    @RequestParam String stockId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-DEL-MPOS-WAREHOUSE-START param: companyId [{}] stockId [{}]", companyId, stockId);
+        }
         mposWarehousePusher.removeWarehouses(companyId, stockId);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-DEL-MPOS-WAREHOUSE-END param: companyId [{}] stockId [{}] ,resp: [{}]", companyId, stockId, "ok");
+        }
         return "ok";
     }
 
     @RequestMapping(value = "/spu/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpuByBarCode(@RequestParam String skuCode) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-BY-SKU-CODE-START param: skuCode [{}] ", skuCode);
+        }
         int spuCount = spuImporter.processPullMarterials(skuCode);
         log.info("synchronized {} spus", spuCount);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SPU-BY-SKU-CODE-END param: skuCode [{}] ,resp: [{}]", skuCode, "ok");
+        }
         return "ok";
     }
 
@@ -328,12 +369,19 @@ public class FireCall {
     public List<HkSkuStockInfo> queryStock(@RequestParam(required = false) String stockCodes,
                                            @RequestParam String skuCodes,
                                            @RequestParam(required = false, defaultValue = "0") Integer stockType) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-QUERY-STOCK-START param: stockCodes [{}] skuCodes [{}] stockType [{}]", stockCodes, skuCodes, stockType);
+        }
         List<String> stockCodesList = null;
         if (!Strings.isNullOrEmpty(stockCodes)) {
             stockCodesList = Splitters.COMMA.splitToList(stockCodes);
         }
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCodes);
-        return queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList, skuCodesList, stockType);
+        List<HkSkuStockInfo> stockinfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(stockCodesList, skuCodesList, stockType);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-QUERY-STOCK-END param: stockCodes [{}] skuCodes [{}] stockType [{}] ,resp: [{}]", stockCodes, skuCodes, stockType, JsonMapper.nonEmptyMapper().toJson(stockinfos));
+        }
+        return stockinfos;
     }
 
 
@@ -341,6 +389,9 @@ public class FireCall {
     public Long countStock(@RequestParam(required = false) String stockCodes,
                            @RequestParam String skuCodes,
                            @RequestParam(required = false, defaultValue = "0") Integer stockType) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-COUNT-STOCK-START param: stockCodes [{}] skuCodes [{}] stockType [{}]", stockCodes, skuCodes, stockType);
+        }
         Long total = 0L;
         List<String> stockCodesList = null;
         if (!Strings.isNullOrEmpty(stockCodes)) {
@@ -352,6 +403,9 @@ public class FireCall {
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
                 total += skuAndQuantityInfo.getQuantity();
             }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-COUNT-STOCK-END param: stockCodes [{}] skuCodes [{}] stockType [{}] ,resp: [{}]", stockCodes, skuCodes, stockType, total);
         }
         return total;
     }
@@ -366,8 +420,10 @@ public class FireCall {
      */
     @RequestMapping(value = "/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size,
-                                       @RequestParam Long companyId, @RequestParam String outerId) {
-
+                                       @RequestParam Long companyId,@RequestParam String outerId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-START param: materialId [{}] size [{}] companyId [{}] outerId [{}]", materialId, size,companyId,outerId);
+        }
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
         Map<String, String> params = Maps.newHashMap();
@@ -439,8 +495,8 @@ public class FireCall {
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
-            if(com.google.common.base.Objects.equal(2,Integer.valueOf(hkSkuStockInfo.getStock_type()))){
-                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+            if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
+                for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
                     //锁定库存
                     Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
                     if (lockStock < 0L) {
@@ -453,7 +509,7 @@ public class FireCall {
 
                     total += warehouseStock;
                     //当前公司库存
-                    if (Objects.equals(String.valueOf(companyId),hkSkuStockInfo.getCompany_id())){
+                    if (Objects.equals(String.valueOf(companyId), hkSkuStockInfo.getCompany_id())) {
                         currentCompanyQuantity += warehouseStock;
                     }
                 }
@@ -479,7 +535,7 @@ public class FireCall {
                         itemNameAndStock.setCurrentShopQuantity(currentShopStock);
                     }
                     //当前公司库存
-                    if (Objects.equals(String.valueOf(companyId),hkSkuStockInfo.getCompany_id())){
+                    if (Objects.equals(String.valueOf(companyId), hkSkuStockInfo.getCompany_id())) {
                         currentCompanyQuantity += currentShopStock;
                     }
                 }
@@ -488,6 +544,9 @@ public class FireCall {
         }
         itemNameAndStock.setCurrentCompanyQuantity(currentCompanyQuantity);
         itemNameAndStock.setStockQuantity(total);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-END param: materialId [{}] size [{}] ,resp: [{}]", materialId, size, JsonMapper.nonEmptyMapper().toJson(itemNameAndStock));
+        }
         return itemNameAndStock;
     }
 
@@ -532,6 +591,9 @@ public class FireCall {
      */
     @RequestMapping(value = "/sku/code/by/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeSpuByBarCode(@RequestParam Long openShopId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SKU-CODE-BY-SHOP-START param: openShopId [{}]", openShopId);
+        }
         int pageNo = 0;
         int pageSize = 40;
         while (true) {
@@ -549,6 +611,9 @@ public class FireCall {
             }
             pageNo++;
         }
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SKU-CODE-BY-SHOP-END param: openShopId [{}] ,resp: [{}]", openShopId, "ok");
+        }
         return "ok";
     }
 
@@ -561,7 +626,13 @@ public class FireCall {
      */
     @RequestMapping(value = "/sync/stock/by/sku/code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String synchronizeStockBySkuCode(@RequestParam String skuCode) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SYNC-STOCK-BY-SKU-CODE-START param: skuCode [{}]", skuCode);
+        }
         stockPusher.submit(Lists.newArrayList(skuCode));
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SYNC-STOCK-BY-SKU-CODE-END param: skuCode [{}] ,resp: [{}]", skuCode, "ok");
+        }
         return "ok";
     }
 
@@ -590,7 +661,13 @@ public class FireCall {
                                           @RequestParam(required = false, value = "type") Integer type,
                                           @RequestParam(required = false, value = "pageNo") Integer pageNo,
                                           @RequestParam(required = false, value = "pageSize") Integer pageSize) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SKU-EXTRA-RESTORE-START param: skuCode [{}] type [{}] pageNo [{}] pageSize [{}]", skuCode, type, pageNo, pageSize);
+        }
         boolean result = spuImporter.skuTemplateExtraRestore(skuCode, type, pageNo, pageSize);
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SKU-EXTRA-RESTORE-END param: skuCode [{}] type [{}] pageNo [{}] pageSize [{}] ,resp: [{}]", skuCode, type, pageNo, pageSize, result);
+        }
         if (result) {
             return "ok";
         } else {
@@ -606,13 +683,12 @@ public class FireCall {
     public void cancelShipments(@RequestParam String fileName) {
 
         String url = "/pousheng/file/" + fileName + ".csv";
+        log.info("START-HANDLE-SHIPMENT-API for:{}", url);
 
         File file1 = new File(url);
 
         List<String> codes = readShipmentCode(file1);
-
         log.info("START-HANDLE-SHIPMENT-API for:{}", url);
-
         for (String code : codes) {
             log.info("START-HANDLE-SHIPMENT-CODE:{}", code);
 
@@ -651,10 +727,10 @@ public class FireCall {
 
         String url = "/pousheng/file/" + fileName + ".csv";
 
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
         File file1 = new File(url);
 
         List<String> codes = readShipmentCode(file1);
-
         log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
 
         for (String code : codes) {
@@ -697,14 +773,13 @@ public class FireCall {
      */
     @RequestMapping(value = "/fix/skuTemplate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public void fixSkutemplate(@RequestParam String fileName) {
-
         String url = "/pousheng/file/" + fileName + ".csv";
+        log.info("START-HANDLE-SKUTEMPLATE-API for:{}", url);
         File file1 = new File(url);
 
         List<String> skuCodes = readShipmentCode(file1);
 
         log.info("START-HANDLE-SKUTEMPLATE-API for:{}", url);
-
         for (String skuCode : skuCodes) {
             log.info("START-HANDLE-SKUTEMPLATE-CODE:{}", skuCode);
             if ("\"sku_code\"".equals(skuCode)) {
@@ -727,15 +802,12 @@ public class FireCall {
 
         String url = "/pousheng/file/" + fileName + ".csv";
 
+        log.info("START-HANDLE-MAKE-FLAG-API for:{}", url);
         File file1 = new File(url);
 
         List<String> codes = readShipmentCode(file1);
-
         log.info("START-HANDLE-MAKE-FLAG-API for:{}", url);
-
         onImportMposFlag(codes);
-
-
         log.info("END-HANDLE-MAKE-FLAG-API for:{}", url);
 
     }

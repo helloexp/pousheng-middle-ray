@@ -18,6 +18,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
@@ -156,8 +157,9 @@ public class ItemOpenApi {
                 }
                 skuIsMposDtos.add(skuIsMposDto);
             }
-
-            log.info("HK-CHECK-MPOS-END param barcodes is:{} companyId is:{} shopOuterCode is:{} ", barCodes,companyId,shopOuterCode);
+            if(log.isDebugEnabled()){
+                log.debug("HK-CHECK-MPOS-END param barcodes is:{} companyId is:{} shopOuterCode is:{} ,res [{}]", barCodes,companyId,shopOuterCode,JsonMapper.nonEmptyMapper().toJson(skuIsMposDtos));
+            }
             return skuIsMposDtos;
         }catch (Exception e){
             log.error("find mpos sku codes failed,caused by {}", Throwables.getStackTraceAsString(e));

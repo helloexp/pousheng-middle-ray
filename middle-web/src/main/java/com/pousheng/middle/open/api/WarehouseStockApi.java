@@ -62,8 +62,9 @@ public class WarehouseStockApi {
 
     @OpenMethod(key = "hk.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
-        //log.info("HKSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
-        log.info("HKSTOCK -- begin to handle erp total:{}, ", total);
+        if(log.isDebugEnabled()){
+            log.debug("HK-STOCK-API-START param: total [{}] data [{}]", total,data);
+        }
         List<ErpStock> erpStocks;
         try {
            erpStocks = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(data, LIST_OF_ERP_STOCK);
@@ -92,6 +93,9 @@ public class WarehouseStockApi {
         /*BatchSyncStockEvent syncStockEvent = new BatchSyncStockEvent();
         syncStockEvent.setStockDtos(stockDtos);
         eventBus.post(syncStockEvent);*/
+        if(log.isDebugEnabled()){
+            log.debug("HK-STOCK-API-END param: total [{}] data [{}]", total,data);
+        }
 
     }
 
@@ -121,8 +125,13 @@ public class WarehouseStockApi {
 
     @OpenMethod(key = "erp.stock.api", paramNames = {"total", "data"}, httpMethods = RequestMethod.POST)
     public void onSyncErpStockChanged(@RequestParam("total")Integer total, @RequestParam("data")String data){
-        log.info("ERPSTOCK -- begin to handle erp total:{} ,stock:{} , ", total,data);
+        if(log.isDebugEnabled()){
+            log.debug("ERP-STOCK-API-START param: total [{}] data [{}]", total,data);
+        }
         this.onStockChanged(total,data);
+        if(log.isDebugEnabled()){
+            log.debug("ERP-STOCK-API-END param: total [{}] data [{}]", total,data);
+        }
 
     }
 

@@ -3,6 +3,7 @@ package com.pousheng.middle.web.job;
 import com.pousheng.middle.open.api.WarehouseStockApi;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -34,6 +35,9 @@ public class SkuStockTaskApi {
     @ApiOperation("获取当前库存全量同步时间设置")
     @RequestMapping(value = "/sync/full/time", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Map getStockSyncTaskFullTime() {
+        if(log.isDebugEnabled()){
+            log.debug("API-JOB-STOCK-SYNC-FULL-TIME-START noparam: ");
+        }
         Map map = new TreeMap();
         map.put("stockSyncTaskFullTimeStart",warehouseStockApi.getStockSyncTaskFullTimeStart());
         map.put("stockSyncTaskFsullTimeEnd",warehouseStockApi.getStockSyncTaskFullTimeEnd());
@@ -41,6 +45,9 @@ public class SkuStockTaskApi {
         map.put("stockSyncMiddleFullTimeEnd",skuStockTaskTimeIndexer.getStockSyncMiddleFullTimeEnd());
         map.put("stockSyncThirdFullTimeStart",skuStockThirdTaskTimeIndexer.getStockSyncThirdFullTimeStart());
         map.put("stockSyncThirdFullTimeEnd",skuStockThirdTaskTimeIndexer.getStockSyncThirdFullTimeEnd());
+        if(log.isDebugEnabled()){
+            log.debug("API-JOB-STOCK-SYNC-FULL-TIME-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(map));
+        }
         return map;
     }
 

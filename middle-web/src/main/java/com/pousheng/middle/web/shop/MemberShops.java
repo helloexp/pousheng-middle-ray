@@ -63,7 +63,9 @@ public class MemberShops {
     @GetMapping("/api/ec/member/shop-query")
     public List<PsShop> checkShopExists(@RequestParam String code,
                                         @RequestParam(required = false,defaultValue = "1") Integer type) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-EC-MEMBER-SHOP-QUERY-START param: code [{}] type [{}] ",code,type);
+        }
         ParanaUser paranaUser = UserUtil.getCurrentUser();
 
         if (Strings.isNullOrEmpty(code)) {
@@ -106,6 +108,9 @@ public class MemberShops {
                 psShops.add(psShop);
             }
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-EC-MEMBER-SHOP-QUERY-END param: code [{}] type [{}] ,resp: [{}]",code,type,JsonMapper.nonEmptyMapper().toJson(psShops));
+        }
         return psShops;
     }
 
@@ -114,6 +119,9 @@ public class MemberShops {
     @ApiOperation("区部查询")
     @GetMapping("/api/member/search/zone")
     public List<Zone> searchZone() {
+        if(log.isDebugEnabled()){
+            log.debug("API-MEMBER-SEARCH-ZONE-START noparam: ");
+        }
         List<Zone> memberLevels = Lists.newArrayList();
         Map<String, String> criteria = Maps.newHashMap();
         int pageNo = 1;
@@ -131,6 +139,9 @@ public class MemberShops {
             }
             memberLevels.addAll(paging.getData());
             pageNo++;
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-MEMBER-SEARCH-ZONE-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(memberLevels));
         }
         return memberLevels;
     }

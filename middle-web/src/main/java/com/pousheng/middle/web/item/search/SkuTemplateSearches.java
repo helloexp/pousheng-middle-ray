@@ -18,6 +18,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.SpuAttribute;
@@ -68,6 +69,9 @@ public class SkuTemplateSearches {
     public Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> searchItemWithAggs(@RequestParam(required = false) Integer pageNo,
                                                                                           @RequestParam(required = false) Integer pageSize,
                                                                                           @RequestParam Map<String,String> params){
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SKU-TEMPLATE-SEARCH-START param: pageNo [{}] pageSize [{}] params [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(params));
+        }
         String templateName = "search.mustache";
         if(params.containsKey("q")){
             String q = params.get("q");
@@ -82,13 +86,18 @@ public class SkuTemplateSearches {
             //封装信息
             assembleSkuInfo(response.getResult().getEntities().getData());
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SKU-TEMPLATE-SEARCH-START param: pageNo [{}] pageSize [{}] params [{}] ,resp: [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(params),JsonMapper.nonEmptyMapper().toJson(response));
+        }
         return response;
     }
 
 
     @RequestMapping(value = "/api/middle/sku/template/scroll/search", produces = MediaType.APPLICATION_JSON_VALUE)
     public Long searchItemWithScroll(@RequestParam Map<String,String> params){
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SKU-TEMPLATE-SCROLL-SEARCH-START param: params [{}]",JsonMapper.nonEmptyMapper().toJson(params));
+        }
         String templateName = "search.mustache";
         if(params.containsKey("q")){
             String q = params.get("q");
@@ -111,7 +120,9 @@ public class SkuTemplateSearches {
             }
             pageNo++;
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SKU-TEMPLATE-SCROLL-SEARCH-END param: params [{}] ,resp [{}]",JsonMapper.nonEmptyMapper().toJson(params),totalCount);
+        }
         return totalCount;
     }
 

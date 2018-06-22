@@ -97,7 +97,7 @@ public class yyEDIOpenApi {
         List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
         try {
-            log.info("YYEDI-SHIPMENT-INFO-start param=======>{}", shipInfo);
+            log.info("YYEDI-SHIPMENT-INFO-START param: shipInfo [{}]", shipInfo);
             results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YyEdiShipInfo.class));
             fields = Lists.newArrayList();
             int count = 0;
@@ -213,6 +213,8 @@ public class yyEDIOpenApi {
             String reason = JsonMapper.nonEmptyMapper().toJson(error);
             throw new OPServerException(200, reason);
         }
+        log.info("YYEDI-SHIPMENT-INFO-END param: shipInfo [{}]", shipInfo);
+
     }
 
     /**
@@ -312,6 +314,8 @@ public class yyEDIOpenApi {
             String reason = JsonMapper.nonEmptyMapper().toJson(error);
             throw new OPServerException(200, reason);
         }
+        log.info("YYEDI-SYNC-REFUND-STATUS-END param refundOrderId is:{} yyediRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+                refundOrderId, yyEDIRefundOrderId, itemInfo, receivedDate);
     }
 
 

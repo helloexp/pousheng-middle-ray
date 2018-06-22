@@ -108,6 +108,9 @@ public class AdminOrderWriter {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @OperationLogType("同步订单到电商")
     public void syncOrderInfoToEcp(@PathVariable(value = "id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SYNCORDERINFOTOECP-START param: shopOrderId [{}] ",shopOrderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue()) && !Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())
                 && !Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())) {
@@ -130,6 +133,9 @@ public class AdminOrderWriter {
                 throw new JsonResponseException(syncRes.getError());
             }
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-SYNCORDERINFOTOECP-END param: shopOrderId [{}] ",shopOrderId);
+        }
 
     }
 
@@ -142,8 +148,10 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
     @OperationLogType("取消子订单")
     public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
-        log.info("try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
+        log.info("start try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
         orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
+        log.info("end try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
+
     }
 
     /**
@@ -154,11 +162,13 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/rollback/shop/order", method = RequestMethod.PUT)
     @OperationLogType("整单撤销")
     public void rollbackShopOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
-        log.info("try to roll back shop order shopOrderId is {}", shopOrderId);
+        log.info("start try to roll back shop order shopOrderId is {}", shopOrderId);
         Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
         if (!response.isSuccess()) {
             throw new JsonResponseException("rollback.shop.order.failed");
         }
+        log.info("end try to roll back shop order shopOrderId is {}", shopOrderId);
+
     }
 
     /**
@@ -169,6 +179,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/cancel/order", method = RequestMethod.PUT)
     @OperationLogType("人工取消订单")
     public void cancelShopOrder(@PathVariable("id") @PermissionCheckParam @OperationLogParam Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CANCELSHOPORDER-START param: shopOrderId [{}]",shopOrderId);
+        }
         //判断是整单取消还是子单取消
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取是否存在失败的sku记录
@@ -190,9 +203,10 @@ public class AdminOrderWriter {
             if (!response.isSuccess()) {
                 throw new JsonResponseException("cancel.shop.order.failed");
             }
-
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-CANCELSHOPORDER-END param: shopOrderId [{}]",shopOrderId);
+        }
     }
 
     /**
@@ -205,6 +219,7 @@ public class AdminOrderWriter {
     public void autoCancelShopOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
         log.info("try to auto cancel shop order shopOrderId is {},skuCode is {}", shopOrderId);
         orderWriteLogic.autoCancelShopOrder(shopOrderId);
+        log.info("end to auto cancel shop order shopOrderId is {},skuCode is {}", shopOrderId);
     }
 
 
@@ -216,8 +231,14 @@ public class AdminOrderWriter {
     @RequestMapping(value = "api/order/{id}/confirm", method = RequestMethod.PUT)
     @OperationLogType("电商确认收货")
     public void confirmOrders(@PathVariable("id") @PermissionCheckParam Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CONFIRMORDERS-START param: shopOrderId [{}]",shopOrderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.CONFIRM.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-CONFIRMORDERS-END param: shopOrderId [{}]",shopOrderId);
+        }
     }
 
     /**
@@ -229,6 +250,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/sku/order/{id}/update/sku/code", method = RequestMethod.PUT)
     @OperationLogType("修改货品条码")
     public void updateSkuOrderCodeAndSkuId(@PathVariable("id") @OperationLogParam Long id, @RequestParam("skuCode") String skuCode) {
+        if(log.isDebugEnabled()){
+            log.debug("API-UPDATESKUORDERCODEANDSKUID-START param: id [{}] skuCode [{}]",id,skuCode);
+        }
         //判断该订单是否生成过发货单
         Boolean result = orderReadLogic.isShipmentCreated(id);
         if (!result) {
@@ -256,6 +280,9 @@ public class AdminOrderWriter {
             throw new JsonResponseException(response.getError());
         }
         //todo 一旦存在修改skuCode
+        if(log.isDebugEnabled()){
+            log.debug("API-UPDATESKUORDERCODEANDSKUID-END param: id [{}] skuCode [{}]",id,skuCode);
+        }
     }
 
     /**
@@ -267,7 +294,13 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/{id}/add/customer/service/note", method = RequestMethod.PUT)
     @OperationLogType("添加客服备注")
     public void addCustomerServiceNote(@PathVariable("id") @OperationLogParam Long id, @RequestParam("customerSerivceNote") String customerSerivceNote) {
+        if(log.isDebugEnabled()){
+            log.debug("API-ADDCUSTOMERSERVICENOTE-START param: id [{}] customerSerivceNote [{}]",id,customerSerivceNote);
+        }
         orderWriteLogic.addCustomerServiceNote(id, customerSerivceNote);
+        if(log.isDebugEnabled()){
+            log.debug("API-ADDCUSTOMERSERVICENOTE-END param: id [{}] customerSerivceNote [{}]",id,customerSerivceNote);
+        }
     }
 
     /**
@@ -281,6 +314,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/{id}/edit/receiver/info", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("修改订单收货信息")
     public void editReceiverInfos(@PathVariable("id") @OperationLogParam Long id, @RequestParam("data") String data, @RequestParam(value = "buyerNote", required = false) String buyerNote) {
+        if(log.isDebugEnabled()){
+            log.debug("API-EDITRECEIVERINFOS-START param: id [{}] data [{}] buyerNote [{}]",id,data,buyerNote);
+        }
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result) {
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
@@ -300,6 +336,9 @@ public class AdminOrderWriter {
         // ModifyMobileEvent event = new ModifyMobileEvent();`
         // event.setShopOrderId(id);
         // eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-EDITRECEIVERINFOS-END param: id [{}] data [{}] buyerNote [{}]",id,data,buyerNote);
+        }
     }
 
     /**
@@ -312,6 +351,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/{id}/edit/invoice", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("修改发票信息")
     public void editInvoiceInfos(@PathVariable("id") @OperationLogParam Long id, @RequestParam("data") String data, @RequestParam(value = "title", required = false) String title) {
+        if(log.isDebugEnabled()){
+            log.debug("API-EDITINVOICEINFOS-START param: id [{}] data [{}] title [{}]",id,data,title);
+        }
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
         if (!result) {
             throw new JsonResponseException("shipment.exist.can.not.edit.sku.code");
@@ -325,6 +367,9 @@ public class AdminOrderWriter {
         if (!response.isSuccess()) {
             log.error("failed to edit invoiceMap:{}", data);
             throw new JsonResponseException(response.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-EDITINVOICEINFOS-END param: id [{}] data [{}] title [{}]",id,data,title);
         }
     }
 
@@ -353,11 +398,17 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/{id}/auto/handle", method = RequestMethod.PUT)
     @OperationLogType("单个订单自动处理")
     public synchronized Response<Boolean> autoHandleSingleShopOrder(@PathVariable("id") @OperationLogParam Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-AUTOHANDLESINGLESHOPORDER-START param: shopOrderId [{}] ",shopOrderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
         if (!response.isSuccess()) {
             log.error("auto handle shop order failed, order id is {}", shopOrderId);
             throw new JsonResponseException("生成发货单失败，原因:" + response.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-AUTOHANDLESINGLESHOPORDER-END param: shopOrderId [{}] ",shopOrderId);
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -371,6 +422,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/batch/auto/handle", method = RequestMethod.PUT)
     @OperationLogType("批量订单自动处理")
     public synchronized Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") List<Long> ids) {
+        if(log.isDebugEnabled()){
+            log.debug("API-AUTOBATCHHANDLESHOPORDER-START param: ids [{}] ",ids);
+        }
         if (Objects.isNull(ids) || ids.isEmpty()) {
             throw new JsonResponseException("shop.order.ids.can.not.be.null");
         }
@@ -389,6 +443,9 @@ public class AdminOrderWriter {
         if (!failedShopOrderIds.isEmpty()) {
             throw new JsonResponseException("订单号:" + successShopOrderIds + "生成发货单成功， 订单号：" + failedShopOrderIds + "生成发货单失败，具体原因见订单详情");
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-AUTOBATCHHANDLESHOPORDER-END param: ids [{}] ",ids);
+        }
         return Response.ok(Boolean.TRUE);
     }
 
@@ -401,6 +458,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/shop/{id}/customer/service/cancel", method = RequestMethod.PUT)
     @OperationLogType("中台客服取消店铺订单")
     public Response<Boolean> customerServiceCancelShopOrder(@PathVariable("id") @OperationLogParam Long id, @RequestParam String shopOrderCancelReason) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-START param: id [{}] shopOrderCancelReason [{}]",id,shopOrderCancelReason);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
         if (!Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("error.status.can.not.cancel");
@@ -425,6 +485,9 @@ public class AdminOrderWriter {
             log.error("shop order cancel failed,skuOrderId is {},caused by {}", id, r.getError());
             throw new JsonResponseException("cancel.shop.order.failed");
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-END param: id [{}] shopOrderCancelReason [{}]",id,shopOrderCancelReason);
+        }
         return Response.ok(Boolean.TRUE);
 
 
@@ -439,6 +502,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/sku/{id}/customer/service/cancel", method = RequestMethod.PUT)
     @OperationLogType("中台客服取消子订单")
     public Response<Boolean> customerServiceCancelSkuOrder(@PathVariable("id") @OperationLogParam Long id, @RequestParam String skuOrderCancelReason) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-START param: id [{}] skuOrderCancelReason [{}]",id,skuOrderCancelReason);
+        }
         SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
         if (!Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("error.status.can.not.cancel");
@@ -455,6 +521,9 @@ public class AdminOrderWriter {
             log.error("sku order cancel failed,skuOrderId is {},caused by{}", id, r.getError());
             throw new JsonResponseException("cancel.sku.order.failed");
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-END param: id [{}] skuOrderCancelReason [{}]",id,skuOrderCancelReason);
+        }
         return r;
     }
 
@@ -467,6 +536,9 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/order/choose/hk/express/code", method = RequestMethod.PUT)
     @OperationLogType("选择快递商")
     public Response<Boolean> chooseExpress(@RequestParam String hkExpressCode, @RequestParam String expressName, @RequestParam @OperationLogParam Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CHOOSEEXPRESS-START param: hkExpressCode [{}] expressName [{}] shopOrderId [{}]",hkExpressCode,expressName,shopOrderId);
+        }
         //只有订单处于待处理状态且没有有效的发货单时才可以选择快递
         if (!orderReadLogic.isShipmentCreatedForShopOrder(shopOrderId)) {
             throw new JsonResponseException("shipment.exist.can.not.edit.express.code");
@@ -480,6 +552,9 @@ public class AdminOrderWriter {
             log.error("update shopOrder：{} extra map to:{} fail,error:{}", shopOrder.getId(), extraMap, rltRes.getError());
             throw new JsonResponseException("add.shop.express.code.fail");
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-CHOOSEEXPRESS-END param: hkExpressCode [{}] expressName [{}] shopOrderId [{}]",hkExpressCode,expressName,shopOrderId);
+        }
         return Response.ok(Boolean.TRUE);
     }
 
@@ -491,13 +566,20 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/{id}/refunds/info", method = RequestMethod.GET)
     public Response<List<Refund>> findRefundsByOrderId(@PathVariable("id") Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-FINDREFUNDSBYORDERID-START param: id [{}] ",id);
+        }
         Response<List<Refund>> r = refundReadService.findByOrderIdAndOrderLevel(id, OrderLevel.SHOP);
+        if(log.isDebugEnabled()){
+            log.debug("API-FINDREFUNDSBYORDERID-END param: id [{}] ",id);
+        }
         if (r.getResult().isEmpty()) {
             return r;
         } else {
             List<Refund> refunds = r.getResult().stream().filter(refund -> !Objects.equals(refund.getRefundType(), MiddleRefundType.ON_SALES_REFUND.value())).collect(Collectors.toList());
             return Response.ok(refunds);
         }
+
     }
 
     /**
@@ -510,9 +592,16 @@ public class AdminOrderWriter {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @OperationLogType("创建订单")
     public Response<Boolean> createMiddleOrder(@RequestBody OpenFullOrderInfo openFullOrderInfo) {
+        if(log.isDebugEnabled()){
+            log.debug("API-CREATEMIDDLEORDER-START param: openFullOrderInfo [{}] ",openFullOrderInfo);
+        }
         try {
             openFullOrderInfo.getOrder().setStatus(1);
-            return openClientOrderLogic.createOrder(openFullOrderInfo);
+            Response<Boolean> response = openClientOrderLogic.createOrder(openFullOrderInfo);
+            if(log.isDebugEnabled()){
+                log.debug("API-CREATEMIDDLEORDER-END param: openFullOrderInfo [{}] ,resp: [{}]",openFullOrderInfo,response);
+            }
+            return response;
         } catch (Exception e) {
             log.error("create middle orderr failed,caused by {}", e.getMessage());
             return Response.fail(e.getMessage());

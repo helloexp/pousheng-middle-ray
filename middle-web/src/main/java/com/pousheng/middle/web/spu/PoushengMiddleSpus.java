@@ -13,6 +13,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -51,6 +52,10 @@ public class PoushengMiddleSpus {
                               @RequestParam(required = false) Integer type,
                               @RequestParam(required = false) Integer pageNo,
                               @RequestParam(required = false) Integer pageSize){
+        if(log.isDebugEnabled()){
+            log.debug("API-POUSHENG-SPUS-PAGING-START param: name [{}] brandId [{}] id [{}] specification [{}] materialCode [{}] type [{}] pageNo [{}] pageSize [{}]",
+                    name,brandId,id,specification,materialCode,type,pageNo,pageSize);
+        }
         Map<String, Object> params = Maps.newHashMap();
         if(StringUtils.hasText(name)){
             params.put("name", name.trim());
@@ -87,6 +92,10 @@ public class PoushengMiddleSpus {
             if(!r.isSuccess()){
                 log.error("failed to find spus by {}, error code:{}", params, r.getError());
                 throw new JsonResponseException(r.getError());
+            }
+            if(log.isDebugEnabled()){
+                log.debug("API-POUSHENG-SPUS-PAGING-START param: name [{}] brandId [{}] id [{}] specification [{}] materialCode [{}] type [{}] pageNo [{}] pageSize [{}] ,resp: [{}]",
+                        name,brandId,id,specification,materialCode,type,pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
             }
             return r.getResult();
         } catch (Exception e) {

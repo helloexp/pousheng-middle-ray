@@ -65,9 +65,7 @@ public class JdYundingPushOrderApi {
         OpenClientShop openClientShop = OpenClientShop.from(openShopResponse.getResult());
         //订单处理
         orderReceiver.receiveOrder(openClientShop, openClientFullOrderList);
-
-        log.info("JD-YUNDING-SYNC-ORDER-END");
-
+        log.info("JD-YUNDING-SYNC-ORDER-END param: shopId is {}, openClientFullOrders is:{} ", shopId, openClientFullOrders);
     }
 
     /**
@@ -124,7 +122,7 @@ public class JdYundingPushOrderApi {
             }
         }
 
-        log.info("JD-YUNDING-SYNC-UPDATE-ORDER-AMOUNT-END");
+        log.info("JD-YUNDING-SYNC-UPDATE-ORDER-AMOUNT-END param: shopId is {}, openClientFullOrders is:{} ", shopId, openClientFullOrders);
     }
 }
 

@@ -74,8 +74,11 @@ public class QiMenApi {
 
     @PostMapping(value = "/wms")
     public String gatewayOfWms(HttpServletRequest request) {
+        String method = request.getParameter("method");
         String body = retrievePayload(request);
-        log.info("wms receive request,method={},body:{}", request.getParameter("method"), body);
+        if(log.isDebugEnabled()){
+            log.debug("WMS-START param: method [{}] body [{}]",method , body);
+        }
         DeliveryOrderCreateRequest deliveryOrderCreateRequest = XmlUtils.toPojo(body, DeliveryOrderCreateRequest.class);
 
         try {
@@ -123,7 +126,9 @@ public class QiMenApi {
         //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
         //eventBus.post(event);
         this.createShipmentResultTask(shopOrder.getId());
-
+        if(log.isDebugEnabled()){
+            log.debug("WMS-END param: method [{}] body [{}] resp: [{}]",method , body,XmlUtils.toXml(QimenResponse.ok()));
+        }
         return XmlUtils.toXml(QimenResponse.ok());
     }
 
@@ -155,6 +160,9 @@ public class QiMenApi {
      */
     @GetMapping(value = "/sync-order-receiver")
     public String syncOrderReceiver(@RequestParam("orderId") Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("SYNC-ORDER-RECEIVER-START param: shopOrderId [{}]",shopOrderId);
+        }
         Response<ShopOrder> findR = shopOrderReadService.findById(shopOrderId);
         if (!findR.isSuccess()) {
             log.error("fail to find shop order by id={},cause:{}",
@@ -176,7 +184,9 @@ public class QiMenApi {
                     shopOrder.getOutId(), shopOrder.getShopId(), Throwables.getStackTraceAsString(e));
             return "fail";
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("SYNC-ORDER-RECEIVER-END param: shopOrderId [{}] resp: [{}]",shopOrderId,"ok");
+        }
         return "ok";
     }
 

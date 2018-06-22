@@ -47,7 +47,9 @@ public class SyncParanaBrands {
 
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> synBrand(@PathVariable(name = "id") Long brandId){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-ID-SYNC-START param: brandId [{}] ",brandId);
+        }
         Response<Brand> brandRes = brandReadService.findById(brandId);
         if(!brandRes.isSuccess()){
             log.error("find brand by id:{} fail,error:{}",brandId,brandRes.getError());
@@ -58,7 +60,11 @@ public class SyncParanaBrands {
         Brand brand = brandRes.getResult();
         BeanMapper.copy(brand,openClientBrand);
         openClientBrands.add(openClientBrand);
-        return syncParanaBrandService.syncBrands(openClientBrands);
+        Response<Boolean> resp= syncParanaBrandService.syncBrands(openClientBrands);
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-ID-SYNC-END param: brandId [{}] ,resp: [{}]",brandId,resp);
+        }
+        return resp;
     }
 
     /**
@@ -67,7 +73,9 @@ public class SyncParanaBrands {
      */
     @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynBrand(@PathVariable(name = "ids") String brandIds){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-BATCH-SYNC-IDS-START param: brandIds [{}] ",brandIds);
+        }
         if(Strings.isNullOrEmpty(brandIds)){
             log.error("batch sync brand fail,because ids is null");
             throw new JsonResponseException("param.is.invalid");
@@ -81,6 +89,9 @@ public class SyncParanaBrands {
         event.setTaskId(taskId);
         event.setBrandIds(ids);
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-BATCH-SYNC-IDS-END param: brandIds [{}] ,resp: [{}]",brandIds,taskId);
+        }
         return taskId;
 
     }
@@ -91,13 +102,18 @@ public class SyncParanaBrands {
      */
     @RequestMapping(value = "/dump-sync", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-DUMP-SYNC-START noparam: ");
+        }
         SyncTask task = new SyncTask();
         task.setStatus(1);
         String taskId = syncParanaTaskRedisHandler.saveTask(task);
         DumpSyncParanaBrandEvent event = new DumpSyncParanaBrandEvent();
         event.setTaskId(taskId);
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-BRAND-DUMP-SYNC-END noparam: ,resp: [{}]",taskId);
+        }
         return taskId;
 
     }

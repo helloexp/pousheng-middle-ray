@@ -10,6 +10,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleWriteService;
@@ -68,6 +69,10 @@ public class WarehouseCompanyRules {
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建")
     public Long create(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+        String warehouseCompanyRuleStr = JsonMapper.nonEmptyMapper().toJson(warehouseCompanyRule);
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-CREATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
+        }
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
         Warehouse warehouse = warehouseCacher.findById(warehouseId);
         if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
@@ -80,12 +85,19 @@ public class WarehouseCompanyRules {
             log.error("failed to create {}, error code:{}", warehouseCompanyRule, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-CREATE-END param: warehouseCompanyRule [{}] ,resp: [{}]",warehouseCompanyRuleStr,r.getResult());
+        }
         return r.getResult();
     }
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
     public Boolean update(@RequestBody WarehouseCompanyRule warehouseCompanyRule){
+        String warehouseCompanyRuleStr = JsonMapper.nonEmptyMapper().toJson(warehouseCompanyRule);
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-UPDATE-START param: warehouseCompanyRule [{}]",warehouseCompanyRuleStr);
+        }
         Long warehouseId = warehouseCompanyRule.getWarehouseId();
         Warehouse warehouse = warehouseCacher.findById(warehouseId);
         if(!Objects.equal(warehouse.getCompanyCode(), warehouseCompanyRule.getCompanyCode())){
@@ -98,25 +110,40 @@ public class WarehouseCompanyRules {
             log.error("failed to update {}, error code:{}", warehouseCompanyRule, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-UPDATE-END param: warehouseCompanyRule [{}] ,resp: [{}]",warehouseCompanyRuleStr,r.getResult());
+        }
         return r.getResult();
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean delete(@PathVariable Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-DELETE-START param: id [{}]",id);
+        }
         Response<Boolean> r = warehouseCompanyRuleWriteService.deleteById(id);
         if(!r.isSuccess()){
             log.error("failed to delete WarehouseCompanyRule(id={}), error code:{}", id, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-DELETE-END param: id [{}] ,resp: [{}]",id,r.getResult());
         }
         return r.getResult();
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public WarehouseCompanyRule findById(@PathVariable Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-FINDBYID-START param: id [{}]",id);
+        }
         Response<WarehouseCompanyRule> r = warehouseCompanyRuleReadService.findById(id);
         if(!r.isSuccess()){
             log.error("failed to find WarehouseCompanyRule(id={}), error code:{}", id, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-FINDBYID-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
         }
         return r.getResult();
     }
@@ -125,6 +152,9 @@ public class WarehouseCompanyRules {
     public Paging<CompanyRuleDto> pagination(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                              @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                              @RequestParam(required = false, value="companyCode")String companyCode){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-PAGINATION-START param: pageNo [{}] pageSize [{}] companyCode [{}]",pageNo,pageSize,companyCode);
+        }
         Map<String, Object> params = Maps.newHashMapWithExpectedSize(3);
         if(StringUtils.hasText(companyCode)){
             params.put("companyCode", companyCode);
@@ -148,6 +178,9 @@ public class WarehouseCompanyRules {
             crds.add(crd);
         }
         result.setData(crds);
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-PAGINATION-END param: pageNo [{}] pageSize [{}] companyCode [{}] ,resp: [{}]",pageNo,pageSize,companyCode,JsonMapper.nonEmptyMapper().toJson(result));
+        }
         return result;
     }
 
@@ -158,11 +191,17 @@ public class WarehouseCompanyRules {
      */
     @RequestMapping(value = "/company-candidate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Company> companyCandidate(){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-COMPANYCANDIDATE-START noparam: ");
+        }
         Map<String, Integer> params = ImmutableMap.of("pageNo",1, "pageSize", Integer.MAX_VALUE);
         HttpRequest r = HttpRequest.get(memberHost+"/api/member/pousheng/company/list", params, true)
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8);
         if (r.ok()) {
+            if(log.isDebugEnabled()){
+               log.debug("API-WAREHOUSE-COMPANY-RULE-COMPANYCANDIDATE-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(r.body()));
+            }
             return todoCompanies(r.body());
 
         } else {
@@ -178,6 +217,9 @@ public class WarehouseCompanyRules {
     @RequestMapping(value = "/erpShops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ErpShop> erpShops(@RequestParam("companyCode")String companyCode,
                                   @RequestParam(value = "prefix", required = false) String namePrefix){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-ERPSHOPS-START param: companyCode [{}] namePrefix [{}]",companyCode,namePrefix);
+        }
         Map<String, Object> params = Maps.newHashMap();
         params.put("pageNo", 1);
         params.put("pageSize", 10);
@@ -240,10 +282,16 @@ public class WarehouseCompanyRules {
 
     @RequestMapping(value = "/by/warehouse-code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public WarehouseCompanyRule findByWarehouseCode(@RequestParam String warehouseCode){
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-FINDBYWAREHOUSECODE-START param: warehouseCode [{}] ",warehouseCode);
+        }
         Response<WarehouseCompanyRule> r = shipmentReadLogic.findCompanyRuleByWarehouseCode(warehouseCode);
         if(!r.isSuccess()){
             log.error("failed to find WarehouseCompanyRule by warehouseCode={}, error code:{}", warehouseCode, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-WAREHOUSE-COMPANY-RULE-FINDBYWAREHOUSECODE-END param: warehouseCode [{}] ,resp: [{}]",warehouseCode,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
         }
         return r.getResult();
     }

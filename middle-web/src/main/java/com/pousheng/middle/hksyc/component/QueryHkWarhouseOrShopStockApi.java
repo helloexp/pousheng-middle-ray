@@ -236,20 +236,22 @@ public class QueryHkWarhouseOrShopStockApi {
             Long businessId = warehouseId;
             String businessName = warehouse.getName();
             Integer type = warehouse.getType();
+            HkSkuStockInfo info = new HkSkuStockInfo();
             if(Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),type)){
                 //获取shop
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(company_id));
                 businessId = shop.getId();
                 businessName = shop.getName();
+                info.setStock_type("1");
+            }else {
+                info.setStock_type("2");
             }
-            HkSkuStockInfo info = new HkSkuStockInfo();
             info.setBusinessId(businessId);
             info.setBusinessName(businessName);
             info.setCompany_id(company_id);
             info.setStock_id(stock_id);
             info.setStock_code(outCode);
             info.setStock_name(warehouse.getName());
-            info.setStock_type(String.valueOf(type));
             List<HkSkuStockInfo.SkuAndQuantityInfo> material_list = Lists.newArrayList();
             info.setMaterial_list(material_list);
 

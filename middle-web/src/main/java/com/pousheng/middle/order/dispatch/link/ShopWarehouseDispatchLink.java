@@ -22,6 +22,7 @@ import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
@@ -80,6 +81,14 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         List<WarehouseWithPriority> shopWarehouseWithPriorities = warehouses4Address.getShopWarehouses();
+
+        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
+        if (oneCompany) {
+            shopWarehouseWithPriorities = shopWarehouseWithPriorities.stream().filter(shop -> warehouseCacher.findById(shop.getWarehouseId()).getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        } else {
+            shopWarehouseWithPriorities = shopWarehouseWithPriorities.stream().filter(shop -> !warehouseCacher.findById(shop.getWarehouseId()).getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        }
+
         //判断上个规则传过来的仓信息中是否有店仓，无则进入下个规则
         if(CollectionUtils.isEmpty(shopWarehouseWithPriorities)){
             log.warn("not shopWarehouseWithPriorities so skip");
@@ -104,13 +113,6 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
 
         //过滤掉已删除或已冻结或已拒绝过的门店
         List<Shop> validShops = shops.stream().filter(shop -> com.google.common.base.Objects.equal(shop.getStatus(),1)&&!rejectShopIds.contains(shop.getId())).collect(Collectors.toList());
-
-        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
-        if (oneCompany) {
-            validShops = validShops.stream().filter(shop -> shop.getBusinessId().toString().equals(companyCode)).collect(Collectors.toList());
-        } else {
-            validShops = validShops.stream().filter(shop -> !shop.getBusinessId().toString().equals(companyCode)).collect(Collectors.toList());
-        }
 
         if(CollectionUtils.isEmpty(validShops)){
             log.warn("not validShops so skip");

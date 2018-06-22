@@ -113,21 +113,14 @@ public class WarehouseSkuStockLogic {
                 r.put(skuCode, availStock.intValue());
             } else {
                 //判断是否为mpos仓，则是用实时恒康库存，并减掉中台安全库存
-                Integer safeStock = 0;
                 if( Objects.equals(warehouse.getIsMpos(),1)){
-                    if( CollectionUtils.isEmpty(extra) ||! extra.containsKey("safeStock")){
-                        log.error("not find safe stock for warehouse:(id:{})",warehouse.getId());
-                    } else {
-                        //安全库存
-                        safeStock = Integer.valueOf(extra.get("safeStock"));
-                    }
                     if( CollectionUtils.isEmpty(hkSkuStockInfos)){
                         log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
                         continue;
                     }
                     //可用库存
                     Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
-                    r.put(skuCode, hkAvailStock - safeStock);
+                    r.put(skuCode, hkAvailStock);
                 } else {
                     //非mpos大仓，则直接取中台库存
                     if (Arguments.isNull(stock)){

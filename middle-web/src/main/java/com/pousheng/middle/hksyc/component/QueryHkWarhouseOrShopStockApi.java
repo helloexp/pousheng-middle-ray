@@ -280,7 +280,7 @@ public class QueryHkWarhouseOrShopStockApi {
             Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
                     .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
 
-            for (String c : codes){
+            for (String c : skuCodes){
                 WarehouseSkuStock stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
                 if (null != stock && null != temp){

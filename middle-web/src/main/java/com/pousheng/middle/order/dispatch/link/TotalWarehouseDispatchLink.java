@@ -12,6 +12,7 @@ import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.WarehouseAddressComponent;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
@@ -52,6 +53,8 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
     @Autowired
     private DispatchComponent dispatchComponent;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     private static final Ordering<WarehouseWithPriority> byPriority = Ordering.natural().onResultOf(new Function<WarehouseWithPriority, Integer>() {
         @Override
@@ -76,6 +79,12 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         List<WarehouseWithPriority> totalWarehouseWithPriorities = warehouses4Address.getTotalWarehouses();
 
+        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
+        if (oneCompany) {
+            totalWarehouseWithPriorities = totalWarehouseWithPriorities.stream().filter(warehouse -> warehouseCacher.findById(warehouse.getWarehouseId()).getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        } else {
+            totalWarehouseWithPriorities = totalWarehouseWithPriorities.stream().filter(warehouse -> !warehouseCacher.findById(warehouse.getWarehouseId()).getCompanyId().equals(companyCode)).collect(Collectors.toList());
+        }
         //判断上个规则传过来的仓信息中是否有总仓，无则进入下个规则
         if(CollectionUtils.isEmpty(totalWarehouseWithPriorities)){
             return Boolean.TRUE;
@@ -97,13 +106,6 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         });
 
         List<Warehouse> warehouses = warehouseAddressComponent.findWarehouseByIds(warehouseIds);
-
-        //如果要求同公司则过滤掉其他公司的仓库，反之过滤掉同公司的
-        if (oneCompany) {
-            warehouses = warehouses.stream().filter(warehouse -> warehouse.getCompanyId().equals(companyCode)).collect(Collectors.toList());
-        } else {
-            warehouses = warehouses.stream().filter(warehouse -> !warehouse.getCompanyId().equals(companyCode)).collect(Collectors.toList());
-        }
 
         //过滤掉非mpos仓
         /*List<Warehouse> mposWarehouses = warehouses.stream().filter(warehouse -> Objects.equal(warehouse.getIsMpos(),1)).filter(warehouse -> java.util.Objects.equals(warehouse.getType(),0)).collect(Collectors.toList());

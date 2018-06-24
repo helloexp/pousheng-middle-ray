@@ -10,9 +10,6 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
-import com.google.common.collect.Maps;
-import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -30,7 +27,6 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.msg.common.StringUtil;
-import io.terminus.parana.order.enums.ShipmentWay;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +35,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 

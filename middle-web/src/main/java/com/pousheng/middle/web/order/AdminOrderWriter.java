@@ -31,7 +31,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.open.component.OpenClientOrderLogic;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;

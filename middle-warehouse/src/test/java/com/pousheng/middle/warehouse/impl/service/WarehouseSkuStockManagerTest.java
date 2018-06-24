@@ -12,23 +12,19 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.AbstractTest;
-import com.pousheng.middle.warehouse.BaseServiceTest;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseSkuStockDao;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.*;
 
 /**

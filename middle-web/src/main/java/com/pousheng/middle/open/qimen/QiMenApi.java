@@ -7,7 +7,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
-import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -19,7 +18,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.OpenClientException;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -34,7 +32,6 @@ import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.List;
 import java.util.Map;
 
 /**

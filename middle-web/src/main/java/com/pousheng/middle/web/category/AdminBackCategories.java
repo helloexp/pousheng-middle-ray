@@ -6,7 +6,6 @@ package com.pousheng.middle.web.category;
 
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.cache.CategoryAttributeCacher;
 import io.terminus.parana.category.dto.GroupedCategoryAttribute;
 import io.terminus.parana.category.model.BackCategory;

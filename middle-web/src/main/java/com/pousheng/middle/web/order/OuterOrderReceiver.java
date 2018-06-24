@@ -30,7 +30,6 @@ import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.parana.component.ParanaOrderConverter;
 import io.terminus.open.client.parana.dto.OrderInfo;
 import io.terminus.parana.order.dto.OrderCriteria;
-import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;

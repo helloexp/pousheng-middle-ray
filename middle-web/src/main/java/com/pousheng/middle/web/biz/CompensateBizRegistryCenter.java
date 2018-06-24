@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.biz;
 
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import org.springframework.stereotype.Component;
 

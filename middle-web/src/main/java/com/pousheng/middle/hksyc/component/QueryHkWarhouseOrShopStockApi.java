@@ -208,25 +208,25 @@ public class QueryHkWarhouseOrShopStockApi {
      * Date: 2018/6/20 下午5:48
      */
     public List<HkSkuStockInfo> doQueryStockInfo(List<Long> warehouseIds, List<String> skuCodes){
-        if(CollectionUtils.isEmpty(warehouseIds) || CollectionUtils.isEmpty(skuCodes)){
+        if (CollectionUtils.isEmpty(warehouseIds) || CollectionUtils.isEmpty(skuCodes)){
             log.error("warehouseIds or skuCodes is null");
-           return Collections.EMPTY_LIST;
+            return Lists.newArrayList();
         }
         //TODO 单测
         List<HkSkuStockInfo> hkSkuStockInfos = Lists.newArrayListWithExpectedSize(warehouseIds.size());
         for (final Long warehouseId : warehouseIds){
             Warehouse warehouse = warehouseCacher.findById(warehouseId);
-            if(null == warehouse){
+            if (null == warehouse){
                 log.warn("find warehouse by id {} is null",warehouseId);
                 continue;
             }
             Map<String,String> extra = warehouse.getExtra();
-            if(MapUtils.isEmpty(extra)){
+            if (MapUtils.isEmpty(extra)){
                 log.warn("find warehouse by id {} extra  is null",warehouseId);
                 continue;
             }
             String outCode = extra.get("outCode");
-            if(StringUtils.isEmpty(outCode)){
+            if (StringUtils.isEmpty(outCode)){
                 log.warn("find warehouse by id {} outCode  is null",warehouseId);
                 continue;
             }
@@ -237,13 +237,13 @@ public class QueryHkWarhouseOrShopStockApi {
             String businessName = warehouse.getName();
             Integer type = warehouse.getType();
             HkSkuStockInfo info = new HkSkuStockInfo();
-            if(Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),type)){
+            if (Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),type)){
                 //获取shop
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(company_id));
                 businessId = shop.getId();
                 businessName = shop.getName();
                 info.setStock_type("1");
-            }else {
+            } else {
                 info.setStock_type("2");
             }
             info.setBusinessId(businessId);
@@ -257,12 +257,12 @@ public class QueryHkWarhouseOrShopStockApi {
 
             //获取库存
             Response<List<WarehouseSkuStock>> resp = warehouseSkuReadService.findSkuStocks(warehouseId,skuCodes);
-            if(!resp.isSuccess() ||  CollectionUtils.isEmpty(resp.getResult())){
+            if (!resp.isSuccess() ||  CollectionUtils.isEmpty(resp.getResult())){
                 log.error("find warehouse {} sku [{}] stock fail {}",warehouseId,skuCodes.toString(),resp.getError());
                 continue;
             }
             List<WarehouseSkuStock> warehouseSkuStocks = resp.getResult();
-            Map<String,WarehouseSkuStock> skuStockMap =warehouseSkuStocks.stream().filter(Objects::nonNull).collect(Collectors.toMap(WarehouseSkuStock::getSkuCode,a->a));
+            Map<String,WarehouseSkuStock> skuStockMap = warehouseSkuStocks.stream().filter(Objects::nonNull).collect(Collectors.toMap(WarehouseSkuStock::getSkuCode,a->a));
             List<String> stockSkuCodes = skuStockMap.keySet().stream().collect(Collectors.toList());
 
             //获取
@@ -280,12 +280,19 @@ public class QueryHkWarhouseOrShopStockApi {
             Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
                     .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
 
-            skuCodes.stream().forEach(c->{
+            for (String c : codes){
                 WarehouseSkuStock stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
-                if(null !=stock && null != temp){
+                if (null != stock && null != temp){
+                    //如果是店仓则商品必须打标为mpos商品才可以参与发货
+                    if (Objects.equals(warehouse.getType(),WarehouseType.SHOP_WAREHOUSE.value())){
+                        if (!Objects.equals(temp.getType(),2)){
+                            continue;
+                        }
+                    }
+
                     Map<String,String> tempExtra = temp.getExtra();
-                    if(MapUtils.isNotEmpty(tempExtra)){
+                    if (MapUtils.isNotEmpty(tempExtra)){
                         String materialId = tempExtra.get("materialId");
                         HkSkuStockInfo.SkuAndQuantityInfo skuquantity = new HkSkuStockInfo.SkuAndQuantityInfo();
                         skuquantity.setBarcode(c);
@@ -293,11 +300,12 @@ public class QueryHkWarhouseOrShopStockApi {
                         skuquantity.setMaterial_name(temp.getName());
                         skuquantity.setQuantity(Integer.valueOf(String.valueOf(stock.getAvailStock())));
                         material_list.add(skuquantity);
-                    }else {
+                    } else {
                         log.warn("warehouse {} sku {} SkuTemplate {} extra is null ",warehouseId,c,temp.getId());
                     }
                 }
-            });
+            }
+
             hkSkuStockInfos.add(info);
 
         }

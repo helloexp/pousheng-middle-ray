@@ -1,6 +1,5 @@
 package com.pousheng.middle.warehouse.impl.service;
 
-import com.google.common.base.Objects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -17,6 +16,7 @@ import com.pousheng.middle.warehouse.model.*;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -225,8 +225,14 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
                     WarehouseWithPriority wwp = new WarehouseWithPriority();
                     wwp.setPriority(warehouseRuleItem.getPriority());
                     wwp.setWarehouseId(warehouseId);
-                    wwps.add(wwp);
-                    if(Objects.equal(warehouse.getType(), WarehouseType.TOTAL_WAREHOUSE.value())){
+                    //店仓不参与非全渠道派单
+                    if (Arguments.notNull(warehouse)
+                            && com.google.common.base.Objects.equal(warehouse.getType(), WarehouseType.TOTAL_WAREHOUSE.value())){
+                        wwps.add(wwp);
+                    } else {
+                        log.warn("current warehouse(id:{}) is shop warehouse so skip to dispatch",warehouse.getId());
+                    }
+                    if(com.google.common.base.Objects.equal(warehouse.getType(), WarehouseType.TOTAL_WAREHOUSE.value())){
                         totalPs.add(wwp);
                     }else {
                         shopPs.add(wwp);

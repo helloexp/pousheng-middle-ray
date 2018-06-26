@@ -105,12 +105,11 @@ public class WarehouseSkuStockLogic {
                 Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
                 //安全库存
                 Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
-                Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
-                Long availStock = hkAvailStock - localStock - safeStock;
-                if( availStock <= 0L){
-                    availStock = 0L;
+                Integer availStock = hkAvailStock - safeStock;
+                if( availStock <= 0){
+                    availStock = 0;
                 }
-                r.put(skuCode, availStock.intValue());
+                r.put(skuCode, availStock);
             } else {
                 //判断是否为mpos仓，则是用实时恒康库存，并减掉中台安全库存
                 if( Objects.equals(warehouse.getIsMpos(),1)){

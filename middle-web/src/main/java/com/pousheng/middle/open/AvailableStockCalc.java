@@ -71,42 +71,17 @@ public class AvailableStockCalc {
         Long quantity = 0L;
         for (Long warehouseId : rWarehouseIds.getResult()) {
 
-            //判断仓类型,如果是店仓
-            Warehouse warehouse = warehouseCacher.findById(warehouseId);
-
-            Long lockedStock = 0L;
-            //店仓则计算门店占用库存
-            if(Objects.equals(WarehouseType.from(warehouse.getType()),WarehouseType.SHOP_WAREHOUSE)){
-
-                String outCode = "";
-                Map<String, String> warehouseExtra = warehouse.getExtra();
-                if (Objects.nonNull(warehouseExtra)) {
-                    outCode = warehouseExtra.get("outCode") != null ? warehouseExtra.get("outCode") : "";
-                }
-                String companyCode =  warehouse.getCompanyCode();
-                try{
-                    Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(companyCode));
-                    lockedStock = dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
-                    if(lockedStock<0){
-                        lockedStock = 0L;
-                    }
-                }catch (Exception e){
-                    log.error("find shop sku stock failed,warehouse id is {},caused by {}",warehouseId,e.getMessage());
-
-                }
-            }
-
             Response<WarehouseSkuStock> r =  warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-            if(!r.isSuccess()){
+            if (!r.isSuccess()){
                 log.error("failed to find available stock for sku(code={}) in warehouse(id={}), error code:{}",
                         skuCode, warehouseId, r.getError());
-            }else{
+            } else{
                 if (Objects.nonNull(r.getResult())){
                     //quantity= quantity + (r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock()) - lockedStock;
                     //逐个仓库减去线上店铺的安全库存
-                    long availStock = r.getResult().getAvailStock()==null?0L:r.getResult().getAvailStock();
-                    if( availStock-lockedStock > safeStock ){
-                        quantity = quantity +  availStock - lockedStock - safeStock;
+                    long availStock = r.getResult().getAvailStock() == null ? 0L : r.getResult().getAvailStock();
+                    if( availStock > safeStock ){
+                        quantity = quantity +  availStock - safeStock;
                     }
                 }
             }

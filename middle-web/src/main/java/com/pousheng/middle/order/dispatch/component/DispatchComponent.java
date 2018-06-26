@@ -138,23 +138,6 @@ public class DispatchComponent {
     }
 
 
-
-    public Long getMposSkuShopLockStock(Long warehouseId,String skuCode){
-
-        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(warehouseId,skuCode);
-        if(!response.isSuccess()){
-            log.error("find mposSkuStock by shop id :{} and sku code:{} failed,  error:{}", warehouseId,skuCode, response.getError());
-            return 0L;
-        }
-
-        Optional<MposSkuStock> stockOptional = response.getResult();
-        if(stockOptional.isPresent()){
-            return stockOptional.get().getLockedStock();
-        }
-
-        return 0L;
-    }
-
     /**
      * 完善 仓库商品库存信息
      * @param skuStockInfos 商品数量信息
@@ -207,13 +190,8 @@ public class DispatchComponent {
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
                 //可用库存
                 Integer availStock = skuAndQuantityInfo.getQuantity();
-                //mpos占用库存
-                Integer lockStock = Integer.valueOf(this.getMposSkuShopLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
-                if( lockStock < 0){
-                    lockStock = 0;
-                }
-                //这里先不考虑 availStock-lockStock-safeStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock-safeStock);
+                //这里先不考虑 availStock-safeStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock- safeStock);
             }
         }
     }

@@ -240,6 +240,9 @@ public class QueryHkWarhouseOrShopStockApi {
             if (Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),type)){
                 //获取shop
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outCode,Long.valueOf(company_id));
+                if(!com.google.common.base.Objects.equal(shop.getStatus(),1)){
+                    continue;
+                }
                 businessId = shop.getId();
                 businessName = shop.getName();
                 info.setStock_type("1");

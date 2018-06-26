@@ -101,10 +101,11 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie->{
             Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
-            shops.add(shop);
-            shopWarehouseWithPrioritie.setShopId(shop.getId());
-            shopWarehouseIds.add(warehouse.getId());
-
+            if(com.google.common.base.Objects.equal(shop.getStatus(),1L)){
+                shops.add(shop);
+                shopWarehouseWithPrioritie.setShopId(shop.getId());
+                shopWarehouseIds.add(warehouse.getId());
+            }
         });
 
         //拒绝过的门店

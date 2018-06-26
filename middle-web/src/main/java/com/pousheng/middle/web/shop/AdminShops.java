@@ -658,6 +658,8 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
         try {
             //同步恒康mpos门店范围
             mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
@@ -679,6 +681,8 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
         try {
             //同步恒康mpos门店范围
             mposWarehousePusher.addWarehouses(exist.getBusinessId().toString(),exist.getOuterId());

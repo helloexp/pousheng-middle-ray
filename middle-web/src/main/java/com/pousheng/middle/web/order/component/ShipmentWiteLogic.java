@@ -556,30 +556,21 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
-        log.info("auto create shipment,step eight");
-        if (!createResp.isSuccess()) {
-            log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
-                    shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
-            //解锁库存
-            mposSkuStockLogic.unLockStock(shipment);
-            throw new JsonResponseException(createResp.getError());
-        }
-
+        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
         //生成发货单之后需要将发货单id添加到子单中
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
                 Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + createResp.getResult());
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + shipmentId);
                 Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
                 if (!response.isSuccess()) {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                 }
             } catch (Exception e) {
-                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), createResp.getResult(),Throwables.getStackTraceAsString(e));
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId);
             }
         }
-        return createResp.getResult();
+        return shipmentId;
     }
 
     /**
@@ -646,29 +637,21 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
-        log.info("auto create shipment,step eight");
-        if (!createResp.isSuccess()) {
-            log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
-                    shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
-            //解锁库存
-            mposSkuStockLogic.unLockStock(shipment);
-            throw new JsonResponseException(createResp.getError());
-        }
+        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
         //生成发货单之后需要将发货单id添加到子单中
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
                 Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + createResp.getResult());
+                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + shipmentId);
                 Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
                 if (!response.isSuccess()) {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                 }
             } catch (Exception e) {
-                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), createResp.getResult(), Throwables.getStackTraceAsString(e));
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, e.getMessage());
             }
         }
-        return createResp.getResult();
+        return shipmentId;
     }
 
     /**

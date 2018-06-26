@@ -76,19 +76,6 @@ public class ItemOpenApi {
                 throw new OPServerException(200,"company.id.non-numeric");
             }
 
-            Response<Optional<Shop>> response = psShopReadService.findByOuterIdAndBusinessId(shopOuterCode,Long.valueOf(companyId));
-            if(!response.isSuccess()){
-                log.error("find shop by outer id:{} business id:{} fail,error:{}",shopOuterCode,companyId,response.getError());
-                throw new OPServerException(200,response.getError());
-            }
-            Optional<Shop> shopOptional = response.getResult();
-            if(!shopOptional.isPresent()){
-                log.error("not find shop by outer id:{} business id:{}",shopOuterCode,companyId);
-                throw new OPServerException(200,"shop.not.exist");
-            }
-
-
-
             //2、查询店铺是否存在
             Shop currentShop;
             try {
@@ -115,7 +102,7 @@ public class ItemOpenApi {
             List<Long> warehouseIds = warehouseIdsRes.getResult();
 
             if(CollectionUtils.isEmpty(warehouseIds)){
-                log.error("not find warehouse rule item by shop id:{} fail");
+                log.error("not find warehouse rule item by shop id:{} fail",openShopId);
                 throw new OPServerException(200,"not.find.warehouse.rule.item");
 
             }
@@ -170,11 +157,11 @@ public class ItemOpenApi {
                 skuIsMposDtos.add(skuIsMposDto);
             }
 
-            log.info("HK-CHECK-MPOS-END");
+            log.info("HK-CHECK-MPOS-END param barcodes is:{} companyId is:{} shopOuterCode is:{} ", barCodes,companyId,shopOuterCode);
             return skuIsMposDtos;
         }catch (Exception e){
-            log.error("find mpos sku codes failed,caused by {}", e.getCause());
-            throw new OPServerException(200, e.getMessage());
+            log.error("find mpos sku codes failed,caused by {}", Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200, "check.sku.is.mpos.fail");
         }
     }
 

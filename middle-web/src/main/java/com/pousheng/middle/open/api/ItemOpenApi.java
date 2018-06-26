@@ -182,19 +182,12 @@ public class ItemOpenApi {
             }
         }
 
-        //门店
-        Table<Long, String, Integer> shopSkuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> shopSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodesList);
-        dispatchComponent.completeShopTab(shopSkuStockInfos,shopSkuCodeQuantityTable);
+        Table<Long, String, Integer> skuCodeQuantityTable = HashBasedTable.create();
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodesList);
+        dispatchComponent.completeTab(skuStockInfos,skuCodeQuantityTable);
 
-        makeStockByStock(stockBySkuCode,skuCodesList,shopSkuCodeQuantityTable);
+        makeStockByStock(stockBySkuCode,skuCodesList,skuCodeQuantityTable);
 
-        //仓
-        Table<Long, String, Integer> warehouseSkuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> warehouseSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodesList);
-        dispatchComponent.completeWarehouseTab(warehouseSkuStockInfos,warehouseSkuCodeQuantityTable);
-
-        makeStockByStock(stockBySkuCode,skuCodesList,warehouseSkuCodeQuantityTable);
 
         Map<String,Long> skuAndStockMap = Maps.newHashMapWithExpectedSize(stockBySkuCode.size());
 

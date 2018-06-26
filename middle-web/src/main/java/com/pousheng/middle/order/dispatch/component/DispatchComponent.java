@@ -154,18 +154,7 @@ public class DispatchComponent {
             }
             //安全库存
             Integer safeStock = Integer.valueOf(extra.get("safeStock"));*/
-            Integer safeStock = 0;//新版仓库暂时不取安全库存
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                //可用库存
-                Integer availStock = skuAndQuantityInfo.getQuantity();
-                //锁定库存
-                Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
-                if( lockStock < 0){
-                    lockStock = 0;
-                }
-                //这里先不考虑 availStock-lockStock - safeStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock -safeStock);
-            }
+            completeTotalWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
         }
     }
 
@@ -178,23 +167,66 @@ public class DispatchComponent {
     public void completeShopTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-            Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
+            completeShopWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
+        }
+    }
 
-            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            if(Arguments.isNull(shopExtraInfo)){
-                log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
-                throw new ServiceException("shop.extra.info.invalid");
-            }
-            //安全库存
-            Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())?0:shopExtraInfo.getSafeStock();
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                //可用库存
-                Integer availStock = skuAndQuantityInfo.getQuantity();
-                //这里先不考虑 availStock-safeStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock- safeStock);
+
+    /**
+     * 完善商品库存信息
+     * @param skuStockInfos 商品数量信息
+     * @param skuCodeQuantityTable tab
+     */
+    public void completeTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
+
+        for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+
+            //仓库类别(0 = 不限; 1 = 店仓; 2 = 总仓)
+            if (Objects.equals(hkSkuStockInfo.getStock_type(),"1")){
+                completeShopWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
+            } else {
+                completeTotalWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
             }
         }
     }
+
+    private void completeShopWarehouseTab(HkSkuStockInfo hkSkuStockInfo , Table<Long, String, Integer> skuCodeQuantityTable){
+
+        Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
+
+        ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+        if (Arguments.isNull(shopExtraInfo)){
+            log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+            throw new ServiceException("shop.extra.info.invalid");
+        }
+        //安全库存
+        Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
+        for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+            //可用库存
+            Integer availStock = skuAndQuantityInfo.getQuantity();
+            //这里先不考虑 availStock-safeStock 负数情况
+            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock- safeStock);
+        }
+
+    }
+
+    private void completeTotalWarehouseTab( HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable){
+
+            Integer safeStock = 0;//新版仓库暂时不取安全库存
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
+                //可用库存
+                Integer availStock = skuAndQuantityInfo.getQuantity();
+                //锁定库存
+                Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
+                if( lockStock < 0){
+                    lockStock = 0;
+                }
+                //这里先不考虑 availStock-lockStock - safeStock 负数情况
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock -safeStock);
+            }
+    }
+
+
 
 
 

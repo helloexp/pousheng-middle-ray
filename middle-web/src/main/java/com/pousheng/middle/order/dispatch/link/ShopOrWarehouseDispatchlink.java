@@ -10,9 +10,11 @@ import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Splitters;
@@ -54,6 +56,8 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
     private WarehouseCacher warehouseCacher;
     @Autowired
     private ShopCacher shopCacher;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -181,6 +185,13 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
         List<WarehouseWithPriority> shopWarehouseWithPriorities = warehouses4Address.getShopWarehouses();
 
+        //封装店铺id
+        shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie ->{
+            Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
+            shopWarehouseWithPrioritie.setShopId(shop.getId());
+
+        });
         Map<Long, WarehouseWithPriority>  shopIdMap = shopWarehouseWithPriorities.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(WarehouseWithPriority::getShopId, it -> it));
 

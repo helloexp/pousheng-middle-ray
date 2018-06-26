@@ -414,10 +414,12 @@ public class FireCall {
      */
     @RequestMapping(value = "/count/stock/for/mpos", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ItemNameAndStock countStock(@RequestParam String materialId, @RequestParam String size,
-                                       @RequestParam Long companyId,@RequestParam String outerId) {
+                                       @RequestParam Long companyId, @RequestParam String outerId) {
+
         if (log.isDebugEnabled()) {
             log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-START param: materialId [{}] size [{}] companyId [{}] outerId [{}]", materialId, size,companyId,outerId);
         }
+
         //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
         String templateName = "search.mustache";
         Map<String, String> params = Maps.newHashMap();

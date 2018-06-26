@@ -124,20 +124,6 @@ public class DispatchComponent {
     }
 
 
-
-    public Long getMposSkuWarehouseLockStock(Long warehouseId,String skuCode){
-
-        Response<WarehouseSkuStock> rStock = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-        if (!rStock.isSuccess()) {
-            log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
-                    skuCode, warehouseId, rStock.getError());
-            throw new ServiceException(rStock.getError());
-        }
-
-        return rStock.getResult().getLockedStock();
-    }
-
-
     /**
      * 完善 仓库商品库存信息
      * @param skuStockInfos 商品数量信息
@@ -216,13 +202,8 @@ public class DispatchComponent {
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
                 //可用库存
                 Integer availStock = skuAndQuantityInfo.getQuantity();
-                //锁定库存
-                Integer lockStock = Integer.valueOf(this.getMposSkuWarehouseLockStock(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode()).toString());
-                if( lockStock < 0){
-                    lockStock = 0;
-                }
                 //这里先不考虑 availStock-lockStock - safeStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock-lockStock -safeStock);
+                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock - safeStock);
             }
     }
 

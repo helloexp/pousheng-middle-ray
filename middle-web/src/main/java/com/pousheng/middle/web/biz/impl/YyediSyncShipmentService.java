@@ -10,6 +10,7 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -96,7 +97,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 this.oneBiz(a);
 
             } catch (Exception e) {
-                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shiopmentId, e.getMessage());
+                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shiopmentId, Throwables.getStackTraceAsString(e));
             }
 
         });

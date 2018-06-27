@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Function;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.pousheng.middle.order.dto.ActivityItem;
@@ -65,7 +66,7 @@ public class PsGiftActivityStrategy {
                 //更新参与人数的数量
                 poushengGiftActivityWriteLogic.updatePoushengGiftActivityParticipants(activity.getId());
             }catch (Exception e){
-                log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(),e.getMessage());
+                log.error("update poushengGiftActivity participants failed,activity id is {},caused by {}",activity.getId(), Throwables.getStackTraceAsString(e));
                 return null;
             }
         }

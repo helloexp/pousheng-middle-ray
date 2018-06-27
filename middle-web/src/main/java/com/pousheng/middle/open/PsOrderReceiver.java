@@ -494,7 +494,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
             return response.getResult();
         } catch (Exception e) {
-            log.error("create invoice failed,caused by {}", e.getMessage());
+            log.error("create invoice failed,caused by {}", Throwables.getStackTraceAsString(e));
         }
         return null;
     }

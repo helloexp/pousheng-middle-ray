@@ -153,7 +153,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     //表明售后单的信息已经全部完善
                     extraMap.put(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG, "0");
                 } catch (ServiceException e) {
-                    log.error("find warehouse info failed,caused by {}", e.getMessage());
+                    log.error("find warehouse info failed,caused by {}", Throwables.getStackTraceAsString(e));
                 }
             }
             RefundItem refundItem = new RefundItem();

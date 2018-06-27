@@ -5,6 +5,7 @@ import com.pousheng.middle.hksyc.component.SycYunJuShipmentOrderApi;
 import com.pousheng.middle.hksyc.dto.LogisticsInfo;
 import com.pousheng.middle.hksyc.dto.YJRespone;
 import com.pousheng.middle.hksyc.dto.YJSyncShipmentRequest;
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
@@ -120,8 +121,8 @@ public class SyncOrderToEcpLogic {
                     return Response.fail(response.getError());
                 }
             }
-        } catch (Exception e) {
-            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());
+        }catch (Exception e) {
+            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
             return Response.fail("sync.ecp.failed");
@@ -205,9 +206,9 @@ public class SyncOrderToEcpLogic {
                         count++;
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     }
-                } catch (Exception e) {
-                    log.error("sync shipment to taobao failed,shipmentId is {},caused by {}", shipment.getId(), e.getMessage());
-                    shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
+                }catch (Exception e){
+                    log.error("sync shipment to taobao failed,shipmentId is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
+                    shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment,MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     throw new ServiceException(e.getMessage());
                 }
             }
@@ -222,8 +223,8 @@ public class SyncOrderToEcpLogic {
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
                 return Response.fail("sync.ecp.fail");
             }
-        } catch (Exception e) {
-            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());
+        }catch (Exception e) {
+            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
         }

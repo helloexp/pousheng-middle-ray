@@ -153,7 +153,9 @@ public class ShipmentWiteLogic {
 
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
-
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateStatus,shipment {},orderOperation {}",shipment,orderOperation);
+        }
         Flow flow = flowPicker.pickShipments();
         if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
             log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipment.getStatus(), orderOperation.getText());
@@ -166,7 +168,10 @@ public class ShipmentWiteLogic {
             log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
             return Response.fail(updateRes.getError());
         }
-        return Response.ok();
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateStatus,shipment {},orderOperation {},result {}",shipment,orderOperation,Boolean.TRUE);
+        }
+        return Response.ok(Boolean.TRUE);
 
     }
 
@@ -176,7 +181,9 @@ public class ShipmentWiteLogic {
      * @return
      */
     public Response<Boolean> updateStatusLocking(Shipment shipment, OrderOperation orderOperation) {
-
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateStatusLocking,shipment {},orderOperation {}",shipment,orderOperation);
+        }
         Flow flow = flowPicker.pickShipments();
         if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
             log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipment.getStatus(), orderOperation.getText());
@@ -189,17 +196,26 @@ public class ShipmentWiteLogic {
             log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(), targetStatus, shipment.getStatus(), updateRes.getError());
             return Response.fail(updateRes.getError());
         }
-        return Response.ok();
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateStatusLocking,shipment {},orderOperation {},result {}",shipment,orderOperation,Boolean.TRUE);
+        }
+        return Response.ok(Boolean.TRUE);
 
     }
 
 
     //更新发货单
     public void update(Shipment shipment) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic update,shipment {}",shipment);
+        }
         Response<Boolean> updateRes = shipmentWriteService.update(shipment);
         if (!updateRes.isSuccess()) {
             log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
+        }
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic update,shipment {},result {}",shipment,Boolean.TRUE);
         }
     }
 
@@ -403,6 +419,9 @@ public class ShipmentWiteLogic {
      * @param skuOrders 子单信息
      */
     private boolean autoCreateShipmentLogic(ShopOrder shopOrder, List<SkuOrder> skuOrders) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic autoCreateShipmentLogic,shopOrder {},skuOrders",shopOrder,skuOrders);
+        }
         //获取skuCode,数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());
         skuOrders.forEach(skuOrder -> {
@@ -457,7 +476,7 @@ public class ShipmentWiteLogic {
             try {
                 orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
             } catch (ServiceException e) {
-                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, e.getMessage());
+                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, Throwables.getStackTraceAsString(e));
             }
             //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
             Map<String, String> extraMap = shopOrder.getExtra();
@@ -501,6 +520,9 @@ public class ShipmentWiteLogic {
      * @param warehouseShipment 发货仓库信息
      */
     private Long createShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, WarehouseShipment warehouseShipment) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic createShipment,shopOrder {},skuOrders {},warehouseShipment {}",shopOrder,skuOrders,warehouseShipment);
+        }
         //获取该仓库中可发货的skuCode和数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantitiesChooser = warehouseShipment.getSkuCodeAndQuantities();
         //获取仓库的id
@@ -570,6 +592,9 @@ public class ShipmentWiteLogic {
                 log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId);
             }
         }
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic createShipment,shopOrder {},skuOrders {},warehouseShipment {},result (shipmentId = {})",shopOrder,skuOrders,warehouseShipment,shipmentId);
+        }
         return shipmentId;
     }
 
@@ -581,6 +606,9 @@ public class ShipmentWiteLogic {
      * @param shopShipment 发货店铺信息
      */
     private Long createShopShipment(ShopOrder shopOrder, List<SkuOrder> skuOrders, ShopShipment shopShipment) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic createShopShipment,shopOrder {},skuOrders {},shopShipment {}",shopOrder,skuOrders,shopShipment);
+        }
         //获取该仓库中可发货的skuCode和数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantitiesChooser = shopShipment.getSkuCodeAndQuantities();
         //获取发货店铺的id
@@ -648,8 +676,11 @@ public class ShipmentWiteLogic {
                     log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                 }
             } catch (Exception e) {
-                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, e.getMessage());
+                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, Throwables.getStackTraceAsString(e));
             }
+        }
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic createShipment,shopOrder {},skuOrders {},shopShipment {},result (shipmentId = {})",shopOrder,skuOrders,shopShipment,shipmentId);
         }
         return shipmentId;
     }
@@ -662,6 +693,9 @@ public class ShipmentWiteLogic {
      * @return 不可以自动创建发货单(false), 可以自动创建发货单(true)
      */
     private boolean commValidateOfOrder(ShopOrder shopOrder, List<SkuOrder> skuOrders) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic commValidateOfOrder,shopOrder {},skuOrders {}",shopOrder,skuOrders);
+        }
         int orderWaitHandleType = 0;
         //3.判断订单有无备注
         if (StringUtils.isNotEmpty(shopOrder.getBuyerNote())) {
@@ -682,6 +716,9 @@ public class ShipmentWiteLogic {
         if (orderWaitHandleType > 0) {
             //添加备注
             this.updateShipmentNote(shopOrder, orderWaitHandleType);
+        }
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic commValidateOfOrder,shopOrder {},skuOrders {},orderWaitHandleType {}",shopOrder,skuOrders,orderWaitHandleType);
         }
         return count <= 0;
     }
@@ -1112,6 +1149,9 @@ public class ShipmentWiteLogic {
      * @return
      */
     public Response<Boolean> updateShipmentSyncTaobaoStatus(Shipment shipment, OrderOperation orderOperation) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateShipmentSyncTaobaoStatus,shipment {},orderOperation {}",shipment,orderOperation);
+        }
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Flow flow = flowPicker.pickSyncTaobao();
         //判断当前状态是否可以操作
@@ -1130,7 +1170,10 @@ public class ShipmentWiteLogic {
             log.error("update shipment:{} fail,error:{}", shipment, updateRes.getError());
             return Response.fail(updateRes.getError());
         }
-        return Response.ok();
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic updateShipmentSyncTaobaoStatus,shipment {},orderOperation {},result {}",shipment,orderOperation,updateRes);
+        }
+        return Response.ok(Boolean.TRUE);
     }
 
     /**
@@ -1456,6 +1499,9 @@ public class ShipmentWiteLogic {
      * @return
      */
     public Response<Boolean> rollbackShipment(Shipment shipment) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic rollbackShipment,shipment {}",shipment);
+        }
 
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         //判断该发货单是否可以撤销，已取消的或者已经发货的发货单是不能撤销的
@@ -1479,6 +1525,9 @@ public class ShipmentWiteLogic {
             } else {
                 middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
             }
+            if (log.isDebugEnabled()){
+                log.debug("ShipmentWiteLogic rollbackShipment,shipment {},result {}",shipment,cancelShipmentResponse);
+            }
             return cancelShipmentResponse;
         }
         //换货
@@ -1491,6 +1540,9 @@ public class ShipmentWiteLogic {
             Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment, 1);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
+            }
+            if (log.isDebugEnabled()){
+                log.debug("ShipmentWiteLogic rollbackShipment,shipment {},result {}",shipment,cancelShipmentResponse);
             }
             //换货发货单发货之前可以取消发货单，将已经处理的发货单数量恢复成初始状态，如果所有的发货单的alreadyHandleNumber已经是0，则将售后待状态变更为退货完成待创建发货单,取消发货单失败则订单状态不作变更
             if (count == 0) {
@@ -1512,11 +1564,17 @@ public class ShipmentWiteLogic {
                 count++;
             }
             //丢件补发类型的发货单在发货之前可以取消发货单，将已经处理的发货单的数量恢复成初始状态，如果所有的发货单的alreadyHandleNumber已经是0，则将售后单状态恢复成待创建发货单，取消发货单失败订单状态不作变更
+            if (log.isDebugEnabled()){
+                log.debug("ShipmentWiteLogic rollbackShipment,shipment {},result {}",shipment,cancelShipmentResponse);
+            }
             if (count == 0) {
                 this.rollbackLostRefund(shipment, orderShipment, refund);
             } else {
                 return cancelShipmentResponse;
             }
+        }
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic rollbackShipment,shipment {},result {}",shipment,Boolean.TRUE);
         }
         return Response.ok(Boolean.TRUE);
     }
@@ -1529,6 +1587,9 @@ public class ShipmentWiteLogic {
      * @param refund
      */
     private void rollbackChangeRefund(Shipment shipment, OrderShipment orderShipment, Refund refund) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic rollbackChangeRefund,shipment {},orderShipment {},refund {}",shipment,orderShipment,refund);
+        }
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
@@ -1557,6 +1618,9 @@ public class ShipmentWiteLogic {
      * @param refund        售后单
      */
     private void rollbackLostRefund(Shipment shipment, OrderShipment orderShipment, Refund refund) {
+        if (log.isDebugEnabled()){
+            log.debug("ShipmentWiteLogic rollbackLostRefund,shipment {},orderShipment {},refund {}",shipment,orderShipment,refund);
+        }
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
         shipmentItems.forEach(shipmentItem -> {
@@ -1678,7 +1742,7 @@ public class ShipmentWiteLogic {
                             PoushengSettlementPos poushengSettlementPos = sR.getResult();
                             shipmentAmount.setPosNo(poushengSettlementPos.getPosSerialNo());
                         } catch (Exception e) {
-                            log.error("find.pos.failed,caused by {}", e.getMessage());
+                            log.error("find.pos.failed,caused by {}", Throwables.getStackTraceAsString(e));
                         }
                         Response<Long> r = shipmentAmountWriteService.create(shipmentAmount);
                         if (!r.isSuccess()) {
@@ -1686,7 +1750,7 @@ public class ShipmentWiteLogic {
                         }
 
                     } catch (Exception e) {
-                        log.error("create shipment amount failed,shipment id is {},barCode is {},caused by {}", shipment.getId(), item.getBarcode(), e.getMessage());
+                        log.error("create shipment amount failed,shipment id is {},barCode is {},caused by {}", shipment.getId(), item.getBarcode(), Throwables.getStackTraceAsString(e));
                     }
                 }
             }

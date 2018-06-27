@@ -100,7 +100,7 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
             }
             return Response.ok();
         } catch (Exception e) {
-            log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}", id, skuId, skuCode, e.getCause());
+            log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}", id, skuId, skuCode, Throwables.getStackTraceAsString(e));
             return Response.fail("update.sku.order.failed");
         }
     }

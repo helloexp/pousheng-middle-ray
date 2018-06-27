@@ -192,10 +192,10 @@ public class Refunds {
                 }
             }
         }catch (JsonResponseException e1){
-            log.error("complete handle refund(id:{}) fail,error:{}",refundId, e1.getMessage());
+            log.error("Refunds completeHandle failed,error by {}", e1.getMessage());
             throw new JsonResponseException(e1.getMessage());
         }catch (Exception e){
-            log.error("complete handle refund(id:{}) fail,cause:{}",refundId, Throwables.getStackTraceAsString(e));
+            log.error("Refunds completeHandle failed,casused by {}", Throwables.getStackTraceAsString(e));
             throw new JsonResponseException("complete.refund.failed");
         }
         if(log.isDebugEnabled()){

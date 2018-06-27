@@ -243,7 +243,7 @@ public class AdminShops {
                 }
 
             }catch (JsonResponseException e){
-                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),e.getMessage());
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),Throwables.getStackTraceAsString(e));
             }
 
             shopPag.setShopExtraInfo(shopExtraInfo);

@@ -188,7 +188,7 @@ public class SyncRefundLogic {
                     log.error(syncErrorMsg);
                 }
             } catch (Exception e) {
-                log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+                log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
                 //更新同步状态
                 updateRefundSyncResult(refund,skxRefundSyncSkxResult,Boolean.FALSE);
                 syncErrorMsg = "同步YYEDI失败";
@@ -261,7 +261,7 @@ public class SyncRefundLogic {
             }
         } catch (Exception e) {
             e.printStackTrace();
-            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
             //更新同步状态
             updateRefundSyncFial(refund);
             return Response.fail("sync.hk.refund.fail");
@@ -393,7 +393,7 @@ public class SyncRefundLogic {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                 return Response.fail(updateSyncStatusRes.getError());
             }
-            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+            log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("sync.hk.refund.fail");
         }
     }
@@ -481,7 +481,7 @@ public class SyncRefundLogic {
                     log.error(syncErrorMsg);
                 }
             } catch (Exception e) {
-                log.error("sync yyedi refund fail failed,refundId is({}) cause by({})", refund.getId(), e.getMessage());
+                log.error("sync yyedi refund fail failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
                 //更新同步状态
                 skxRefundCancelSyncYyediResult = Boolean.FALSE;
                 updateRefundCancelSyncResult(refund, skxRefundCancelSyncSkxResult, Boolean.FALSE);

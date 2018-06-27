@@ -134,7 +134,7 @@ public class UcUserOperationLogic {
             return Response.ok(JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(result,UcUserInfo.class));
 
         }catch (ServiceException e){
-            log.error("create uc user name:{} fail,error:{}",name, e.getMessage());
+            log.error("create uc user name:{} fail,error:{}",name, Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
 
         }catch (Exception e){
@@ -163,7 +163,7 @@ public class UcUserOperationLogic {
             return Response.ok(JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(result,UcUserInfo.class));
 
         }catch (ServiceException e){
-            log.error("update uc user name:{} fail,error:{}",name, e.getMessage());
+            log.error("update uc user name:{} fail,error:{}",name, Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
 
         }catch (Exception e){
@@ -184,7 +184,7 @@ public class UcUserOperationLogic {
            // checkResult(result);
             return Response.ok(JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(result,JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,UcUserInfo.class)));
         }catch (ServiceException e){
-            log.error("query user center user by name:{} fail,error:{}",userName,e.getMessage());
+            log.error("query user center user by name:{} fail,error:{}",userName,Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }catch (Exception e){
             log.error("query user center user by name:{} fail,cause:{}",userName,Throwables.getStackTraceAsString(e));

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.warehouse;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -61,7 +62,7 @@ public class OpenClientPushItemEventListener {
             }
 
         }catch (Exception e){
-            log.error("push item failed,caused by {}",e.getCause());
+            log.error("push item failed,caused by {}", Throwables.getStackTraceAsString(e));
         }
     }
 

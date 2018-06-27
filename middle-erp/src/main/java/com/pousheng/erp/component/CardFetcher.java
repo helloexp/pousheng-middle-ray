@@ -51,7 +51,7 @@ public class CardFetcher {
                     Throwables.getStackTraceAsString(e));
             throw new ServiceException("card.request.fail", e);
         } catch (ServiceException e){
-            throw new ServiceException("card.request.fail", e.getCause());
+            throw new ServiceException("card.request.fail", e);
         }
     }
 }

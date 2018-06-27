@@ -196,7 +196,7 @@ public class Shipments {
                 shipmentPagingInfo.setOperations(flow.availableOperations(shipment.getStatus()));
                 shipmentPagingInfo.setShipmentExtra(shipmentReadLogic.getShipmentExtra(shipment));
             } catch (JsonResponseException e) {
-                log.error("complete paging info fail,error:{}", e.getMessage());
+                log.error("complete paging info fail,error:{}", Throwables.getStackTraceAsString(e));
             } catch (Exception e) {
                 log.error("complete paging info fail,cause:{}", Throwables.getStackTraceAsString(e));
             }
@@ -391,7 +391,7 @@ public class Shipments {
                 return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }
         } catch (JsonResponseException e) {
-            log.error("check  shipment(id:{}) is exist fail,error:{}", shipmentCode, e.getMessage());
+            log.error("check  shipment(id:{}) is exist fail,error:{}", shipmentCode, Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
         if(log.isDebugEnabled()){
@@ -539,13 +539,13 @@ public class Shipments {
                         log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                     }
                 } catch (Exception e) {
-                    log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, e.getMessage());
+                    log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, Throwables.getStackTraceAsString(e));
                 }
             }
             try {
                 orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
             } catch (ServiceException e) {
-                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, e.getMessage());
+                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, Throwables.getStackTraceAsString(e));
             }
             //销售发货单需要判断预售商品是否已经支付完尾款
             Map<String, String> shopOrderExtra = shopOrder.getExtra();
@@ -1696,7 +1696,7 @@ public class Shipments {
             }
         } catch (Exception e) {
             result = false;
-            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}", shipmentId, e.getMessage());
+            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
         }
         return result;
     }

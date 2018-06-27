@@ -84,7 +84,7 @@ public class DispatchOrderEngine {
             return Response.fail("dispatch.order.fail");
 
         }catch (ServiceException e){
-            log.error("dispatch order:{} fail,error:{}",shopOrder.getId(), e.getMessage());
+            log.error("dispatch order:{} fail,error:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }catch (Exception e){
             log.error("dispatch order:{} fail,cause:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));

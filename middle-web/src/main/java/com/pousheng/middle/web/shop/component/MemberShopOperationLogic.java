@@ -375,7 +375,7 @@ public class MemberShopOperationLogic {
             }
             return address;
         }catch (ServiceException e){
-            log.error("check is matching warehouse address by code:{} name:{} fail,error:{}",code,name, e.getMessage());
+            log.error("check is matching warehouse address by code:{} name:{} fail,error:{}",code,name, Throwables.getStackTraceAsString(e));
             return null;
         }catch (Exception e){
             log.error("check is matching warehouse address by code:{} name:{} fail,cause:{}",code,name, Throwables.getStackTraceAsString(e));
@@ -395,7 +395,7 @@ public class MemberShopOperationLogic {
             }
             return addressOptional.get();
         }catch (ServiceException e){
-            log.error("check is matching warehouse address by pid:{} name:{} fail,error:{}",pid,name, e.getMessage());
+            log.error("check is matching warehouse address by pid:{} name:{} fail,error:{}",pid,name, Throwables.getStackTraceAsString(e));
             return null;
         }catch (Exception e){
             log.error("check is matching warehouse address by pid:{} name:{} fail,cause:{}",pid,name, Throwables.getStackTraceAsString(e));

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -79,8 +80,10 @@ public class EcpOrderLogic {
             }
             //同步订单信息到电商平台
             this.syncEcpShipmentInfos(shopOrder.getId());
-        } catch (Exception e) {
-            log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), e.getMessage());
+        } catch (ServiceException e) {
+            log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
+        }catch (Exception e) {
+            log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
         }
 
     }

@@ -3,6 +3,7 @@ package com.pousheng.middle.web.shop;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -128,7 +129,7 @@ public class PsOpenClientShops {
 
                 }
             }catch (JsonResponseException e){
-                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0),e.getMessage());
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0), Throwables.getStackTraceAsString(e));
             }
         }
         if(log.isDebugEnabled()){

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -602,7 +603,7 @@ public class AdminOrderWriter {
             }
             return response;
         } catch (Exception e) {
-            log.error("create middle orderr failed,caused by {}", e.getMessage());
+            log.error("create middle orderr failed,caused by {}", Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
     }
@@ -627,11 +628,14 @@ public class AdminOrderWriter {
             //解析文件
             List<MiddleOrderInfo> orderInfos = HandlerFileUtil.getInstance().handlerExcelOrder(file.getInputStream());
 
+            if (log.isDebugEnabled()){
+                log.debug("OrderWriteLogic importMiddleOrder,orderInfos {}",orderInfos);
+            }
             List<OpenFullOrderInfo> openFullOrderInfos = orderWriteLogic.groupByMiddleOrderInfo(orderInfos);
 
             return openClientOrderLogic.batchCreateOrder(openFullOrderInfos);
         } catch (Exception e) {
-            log.error("create middle orderr failed,caused by {}", e.getMessage());
+            log.error("create middle orderr failed,caused by {}", Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
     }

@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.job;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -132,7 +133,7 @@ public class RefundJob {
                     }
                 }
             } catch (Exception e) {
-                log.error("on sale refund failed,cause by {}",e.getMessage());
+                log.error("on sale refund failed,cause by {}", Throwables.getStackTraceAsString(e));
             }
 
         }

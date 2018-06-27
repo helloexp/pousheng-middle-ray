@@ -172,7 +172,7 @@ public class yyEDIOpenApi {
                     // param.put(TradeConstants.SHIPMENT_ID, shipment.getId());
                     // autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
                 } catch (Exception e) {
-                    log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), e.getMessage());
+                    log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), Throwables.getStackTraceAsString(e));
                     YyEdiResponseDetail field = new YyEdiResponseDetail();
                     field.setShipmentId(yyEdiShipInfo.getShipmentId());
                     field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
@@ -201,7 +201,7 @@ public class yyEDIOpenApi {
                 throw new ServiceException("shipment.receive.shipinfo.failed");
             }
         } catch (JsonResponseException | ServiceException e) {
-            log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
+            log.error("yyedi shipment handle result to pousheng fail,error:{}", Throwables.getStackTraceAsString(e));
             error.setFields(fields);
             String reason = JsonMapper.nonEmptyMapper().toJson(error);
             throw new OPServerException(200, reason);
@@ -295,7 +295,7 @@ public class yyEDIOpenApi {
             // //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             // refundWriteLogic.getThirdRefundResult(refund);
         } catch (JsonResponseException | ServiceException e) {
-            log.error("yyedi shipment handle result to pousheng fail,error:{}", e.getMessage());
+            log.error("yyedi shipment handle result to pousheng fail,error:{}", Throwables.getStackTraceAsString(e));
             if (Objects.nonNull(error) && Objects.nonNull(error.getErrorCode())) {
                 String reason = JsonMapper.nonEmptyMapper().toJson(error);
                 throw new OPServerException(200, reason);

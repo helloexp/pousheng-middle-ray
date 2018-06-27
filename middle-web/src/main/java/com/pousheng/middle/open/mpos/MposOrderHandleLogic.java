@@ -74,7 +74,7 @@ public class MposOrderHandleLogic {
                     this.deal(shipment,mposShipmentExtra.getStatus().toString(),shipExtra);
                 }
             }catch (Exception e){
-                log.error("handle shipment status fail,cause:{}",e.getMessage());
+                log.error("handle shipment status fail,cause:{}",Throwables.getStackTraceAsString(e));
             }
         }
     }

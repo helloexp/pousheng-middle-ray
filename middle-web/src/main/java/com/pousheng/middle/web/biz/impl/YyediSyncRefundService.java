@@ -3,6 +3,7 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -81,7 +82,7 @@ public class YyediSyncRefundService implements CompensateBizService {
                 this.refundBiz(a);
 
             } catch (Exception e) {
-                log.error("YyediSyncRefundService. forEach refunds ({}) is error: {}", refundCode, e.getMessage());
+                log.error("YyediSyncRefundService. forEach refunds ({}) is error: {}", refundCode, Throwables.getStackTraceAsString(e));
             }
 
         });

@@ -78,8 +78,8 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
             ruleSummary.setAddresses(addresses);
             return Response.ok(ruleSummary);
         }catch (ServiceException e){
-            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, e.getMessage());
-            return Response.fail(e.getMessage());
+            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail(Throwables.getStackTraceAsString(e));
         }catch(Exception e) {
             log.error("failed to find rule addresses information for ruleId({}), cause:{}",
                     ruleId, Throwables.getStackTraceAsString(e));
@@ -116,8 +116,8 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
 
             return Response.ok(addresses);
         } catch (ServiceException e){
-            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, e.getMessage());
-            return Response.fail(e.getMessage());
+            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail(Throwables.getStackTraceAsString(e));
         }catch(Exception e) {
             log.error("failed to find rule addresses information for ruleId({}), cause:{}",
                     ruleId, Throwables.getStackTraceAsString(e));

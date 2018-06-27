@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -62,7 +63,7 @@ public class ThirdRefundResultService implements CompensateBizService {
         try {
             updateRefundStatusForTaobao(event);
         }catch (Exception e){
-            throw new BizException("update third channel refund status,caused by {}",e.getCause());
+            throw new BizException("update third channel refund status,caused by {}", e);
         }
     }
 

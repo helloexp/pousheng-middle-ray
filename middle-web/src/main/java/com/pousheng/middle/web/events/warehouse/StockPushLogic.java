@@ -6,6 +6,7 @@ package com.pousheng.middle.web.events.warehouse;
  * pousheng-middle
  */
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import io.terminus.common.model.Response;
@@ -45,7 +46,7 @@ public class StockPushLogic {
                 log.error("create stockPushLog failed, caused by {}", response.getError());
             }
         } catch (Exception e) {
-            log.error("create stockPushLog failed,caused by {}", e.getMessage());
+            log.error("create stockPushLog failed,caused by {}", Throwables.getStackTraceAsString(e));
         }
 
     }
@@ -56,7 +57,7 @@ public class StockPushLogic {
         try {
             return middleStockPushLogWriteService.creates(stockPushLogs);
         } catch (Exception e) {
-            log.error("create stockPushLog failed,caused by {}", e.getMessage());
+            log.error("create stockPushLog failed,caused by {}", Throwables.getStackTraceAsString(e));
             return Response.ok(Boolean.FALSE);
         }
 

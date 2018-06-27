@@ -120,7 +120,7 @@ public class OrderOpenApi {
             }
 
         }catch (JsonResponseException | ServiceException e) {
-            log.error("erp shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+            log.error("erp shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,e.getMessage());
         }catch (Exception e){
             log.error("erp shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
@@ -181,9 +181,9 @@ public class OrderOpenApi {
             }
 
         }catch (JsonResponseException | ServiceException e) {
-            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
-            throw new OPServerException(200, e.getMessage());
-        } catch (Exception e) {
+            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
+        }catch (Exception e){
             log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
@@ -195,7 +195,7 @@ public class OrderOpenApi {
         try{
             shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
         }catch (Exception e){
-            log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+            log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,Throwables.getStackTraceAsString(e));
             return;
         }
         //冗余恒康发货单号
@@ -259,7 +259,7 @@ public class OrderOpenApi {
             try{
                 shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
             }catch (Exception e){
-                log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+                log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,Throwables.getStackTraceAsString(e));
                 return;
             }
             //判断状态及获取接下来的状态
@@ -318,8 +318,8 @@ public class OrderOpenApi {
             }
 
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
-            throw new OPServerException(200, e.getMessage());
+            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync shipment(id:{}) fail,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
@@ -428,14 +428,14 @@ public class OrderOpenApi {
             } catch (Exception e) {
                 Map<String, Object> param1 = Maps.newHashMap();
                 param1.put("refundId", refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
             }
 
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
 
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync refund confirm to middle fail,error:{}", e.getMessage());
+            log.error("hk sync refund confirm to middle fail,error:{}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync refund confirm to middle fail,cause:{}", Throwables.getStackTraceAsString(e));
@@ -475,8 +475,8 @@ public class OrderOpenApi {
                 try{
                     orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(orderId);
 
-                } catch (Exception e) {
-                    log.error("find order shipment failed,shipment id is {} ,caused by {}", orderId, e.getMessage());
+                }catch (Exception e){
+                    log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,Throwables.getStackTraceAsString(e));
                     return;
                 }
                 if (Objects.equals(orderShipment.getType(),1)){
@@ -502,7 +502,7 @@ public class OrderOpenApi {
                 try{
                     refund = refundReadLogic.findRefundByRefundCode(orderId);
                 }catch (Exception e){
-                    log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
+                    log.error("find refund failed,refund id is {} ,caused by {}",orderId,Throwables.getStackTraceAsString(e));
                     return;
                 }
                 pos.setOrderId(refund.getRefundCode());
@@ -533,8 +533,8 @@ public class OrderOpenApi {
                 throw new ServiceException(r.getError());
             }
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, e.getMessage());
-            throw new OPServerException(200, e.getMessage());
+            log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync posInfo(id:{}) fail,orderType is ({})cause:{}", orderId, orderType, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");

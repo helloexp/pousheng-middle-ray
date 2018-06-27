@@ -641,7 +641,7 @@ public class ShipmentReadLogic {
                 return false;
             }
         }catch (Exception e){
-            log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),e.getMessage());
+            log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),Throwables.getStackTraceAsString(e));
             return true;
         }
     }

@@ -124,6 +124,9 @@ public class ReceiverInfoCompleter {
         if(Arguments.isNull(pid)){
             return null;
         }
+        if(Arguments.isNull(name)){
+            return null;
+        }
         Optional<WarehouseAddress> wo1 = warehouseAddressCacher.findByPidAndName(pid,name);
         if(wo1.isPresent()){
             return wo1.get().getId();

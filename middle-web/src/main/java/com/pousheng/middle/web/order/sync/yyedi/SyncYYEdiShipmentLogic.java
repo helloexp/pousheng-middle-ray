@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.yyedi;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
@@ -11,6 +12,7 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.HkPayType;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -20,6 +22,7 @@ import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.constants.OrderInfoConstants;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
 import com.pousheng.middle.yyedisyc.component.SycYYEdiShipmentOrderApi;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
@@ -86,7 +89,6 @@ public class SyncYYEdiShipmentLogic {
     private PsShopReadService psShopReadService;
     @Autowired
     private OpenShopReadService openShopReadService;
-
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -281,7 +283,13 @@ public class SyncYYEdiShipmentLogic {
             shipmentInfo.setSourceBillNo(stringBuffer.toString());
         }
         //网店交易单号
+        // 对于云聚类型的订单特殊处理：
+        // 云聚类型订单中接收的第三方平台订单的ID传的是outId,存储在订单信息的extra_json中
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
+        if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
+            shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
+            log.info("sync yun ju out id {} to yyedi", shipmentInfo.getShopBillNo());
+        }
         //恒康店铺码--传外码
         shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
         //恒康店铺名称

@@ -15,6 +15,7 @@ import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.utils.ParanaUserMaker;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.auth.model.Operator;

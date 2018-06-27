@@ -3,12 +3,20 @@ package com.pousheng.middle.web.events.trade.listener;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.hksyc.component.SycYunjuRefundOrderApi;
+import com.pousheng.middle.hksyc.dto.ExchangeDetail;
+import com.pousheng.middle.hksyc.dto.YJExchangeReturnRequest;
+import com.pousheng.middle.hksyc.dto.YJRespone;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.AfterSaleServiceRegistryCenter;
 import io.terminus.open.client.common.Pagination;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
@@ -17,11 +25,16 @@ import io.terminus.open.client.order.service.OpenClientAfterSaleService;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.service.RefundWriteService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -42,10 +55,14 @@ public class TaobaoConfirmRefundListener {
     @Autowired
     private RefundReadLogic refundReadLogic;
 
+
+    @Autowired
+    private SycYunjuRefundOrderApi refundOrderApi;
     @PostConstruct
     public void init() {
         eventBus.register(this);
     }
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     @Subscribe
     @AllowConcurrentEvents
@@ -92,5 +109,49 @@ public class TaobaoConfirmRefundListener {
                 }
             }
         }
+        //云聚渠道
+        if (Objects.equals(event.getChannel(),MiddleChannel.YJ.getValue())) {
+
+            Refund refund = refundReadLogic.findRefundById(event.getRefundId());
+            YJExchangeReturnRequest request = new YJExchangeReturnRequest();
+
+            Map<String, String> extraMap = refund.getExtra();
+            request.setExchange_id(refundReadLogic.getOutafterSaleIdTaobao(refund.getOutId())); //退货单号
+            ArrayList<ExchangeDetail> exchangeDetails = Lists.newArrayList();
+
+            List<RefundItem> refundItems = mapper.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO), mapper.createCollectionType(List.class, RefundItem.class));
+            List<YYEdiRefundConfirmItem> confirmItems = mapper.fromJson(extraMap.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO), mapper.createCollectionType(List.class, YYEdiRefundConfirmItem.class));
+            confirmItems.forEach(confirmItem -> {
+                ExchangeDetail detail = new ExchangeDetail();
+                RefundItem refundItem = getRefundItem(confirmItem.getItemCode(), refundItems);
+                detail.setBar_code(confirmItem.getItemCode());
+                detail.setLine_number(refundItem.getSkuOrderId());
+                detail.setOk_num(StringUtils.isEmpty(confirmItem.getQuantity())?0:Integer.valueOf(confirmItem.getQuantity()));   //退货入库的正品数量(无数量传0)
+                detail.setError_num(0); //    退货入库的残品数量(无数量传0)
+                exchangeDetails.add(detail);
+            });
+            request.setExchange_detail(exchangeDetails);
+            YJRespone yjRespone = refundOrderApi.doSyncRefundOrder(request);
+                if(!Objects.isNull(yjRespone)&&0==yjRespone.getError()){
+                    Response<Boolean> updateR = refundWriteService.updateStatus(event.getRefundId(), MiddleRefundStatus.REFUND.getValue());
+                    if (!updateR.isSuccess()) {
+                        log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",
+                                event.getRefundId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
+                    }
+                }else{
+                    log.error("refundOrderApi.doSyncRefundOrder return failed  ");
+                }
+        }
+    }
+
+    private RefundItem getRefundItem(String itemCode,List<RefundItem> refundItems){
+
+        for (RefundItem refundItem : refundItems) {
+            if (itemCode.equals(refundItem.getSkuCode())){
+
+                return refundItem;
+            }
+        }
+        return null;
     }
 }

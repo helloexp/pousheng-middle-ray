@@ -63,6 +63,8 @@ import java.util.*;
 
 import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 
+import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
+
 /**
  * Author:cp
  * Created on 6/30/16.

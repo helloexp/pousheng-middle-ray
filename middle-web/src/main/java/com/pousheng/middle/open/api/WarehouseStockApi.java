@@ -24,7 +24,6 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -127,6 +126,7 @@ public class WarehouseStockApi {
 
     }
 
+
     /**
      * @Description 是否在全量写入TASK的时间段内
      * @Date        2018/5/29
@@ -142,5 +142,7 @@ public class WarehouseStockApi {
         }
         return false;
     }
+
+
 
 }

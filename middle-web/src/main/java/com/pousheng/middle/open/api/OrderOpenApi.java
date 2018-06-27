@@ -1,18 +1,17 @@
 package com.pousheng.middle.open.api;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.open.api.dto.ErpHandleShipmentResult;
-import com.pousheng.middle.open.api.dto.HkHandleShipmentResult;
+import com.pousheng.middle.open.api.dto.*;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.HkConfirmReturnItemInfo;
-import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.order.component.*;
@@ -25,30 +24,32 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenClientAfterSale;
+import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentWriteService;
+import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+
+import static com.pousheng.middle.order.enums.MiddleRefundType.AFTER_SALES_RETURN;
 
 /**
  * 订单open api
@@ -83,6 +84,13 @@ public class OrderOpenApi {
     private SyncMposOrderLogic syncMposOrderLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
+    @RpcConsumer
+    private ShopOrderReadService shopOrderReadService;
+
+    @Autowired
+    private OrderShipmentReadService orderShipmentReadService;
     @Autowired
     private SyncRefundPosLogic syncRefundPosLogic;
     @Autowired
@@ -166,10 +174,10 @@ public class OrderOpenApi {
 
         }catch (JsonResponseException | ServiceException e) {
             log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
-            throw new OPServerException(200,e.getMessage());
-        }catch (Exception e){
+            throw new OPServerException(200, e.getMessage());
+        } catch (Exception e) {
             log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"sync.fail");
+            throw new OPServerException(200, "sync.fail");
         }
         log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
     }
@@ -232,9 +240,9 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.corp.code.empty") String shipmentCorpCode,
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate
-                                     ) {
+    ) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
-                "shipmentSerialNo is:{} shipmentDate is:{}",
+                        "shipmentSerialNo is:{} shipmentDate is:{}",
                 shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
 
         try {
@@ -304,10 +312,10 @@ public class OrderOpenApi {
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
-            throw new OPServerException(200,e.getMessage());
+            throw new OPServerException(200, e.getMessage());
         } catch (Exception e) {
             log.error("hk sync shipment(id:{}) fail,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"sync.fail");
+            throw new OPServerException(200, "sync.fail");
         }
 
         log.info("HK-SYNC-SHIPMENT-STATUS-END");
@@ -332,6 +340,7 @@ public class OrderOpenApi {
     }
     /**
      * 恒康将售后单售后结果通知给中台
+     *
      * @param refundOrderId
      * @param hkRefundOrderId
      * @param itemInfo
@@ -343,11 +352,11 @@ public class OrderOpenApi {
                                    @NotEmpty(message = "hk.refund.order.id.is.null") String hkRefundOrderId,
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
-                                   ) {
+    ) {
         log.info("HK-SYNC-REFUND-STATUS-START param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
                 refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
         try {
-            if (refundOrderId==null){
+            if (refundOrderId == null) {
                 return;
             }
             Refund refund = refundReadLogic.findRefundByRefundCode(refundOrderId);
@@ -358,7 +367,6 @@ public class OrderOpenApi {
                 log.error("hk refund id:{} not equal middle refund(id:{} ) out id:{}", hkRefundOrderId, refund.getId(), hkRefundId);
                 throw new ServiceException("hk.refund.id.not.matching");
             }*/
-
 
 
             DateTime dt = DateTime.parse(receivedDate, DFT);
@@ -424,11 +432,12 @@ public class OrderOpenApi {
 
     /**
      * 恒康同步pos信息到中台
-     * @param orderId  订单id
-     * @param orderType 订单类型1.销售发货单,2.售后订单
-     * @param posSerialNo pos单号
-     * @param posType pos单类型
-     * @param posAmt pos金额
+     *
+     * @param orderId      订单id
+     * @param orderType    订单类型1.销售发货单,2.售后订单
+     * @param posSerialNo  pos单号
+     * @param posType      pos单类型
+     * @param posAmt       pos金额
      * @param posCreatedAt pos单创建时间
      */
     @OpenMethod(key = "hk.pos.api", paramNames = {"orderId", "orderType", "posSerialNo","posType",
@@ -445,13 +454,13 @@ public class OrderOpenApi {
 
             DateTime dPos = DateTime.parse(posCreatedAt, DFT);
             PoushengSettlementPos pos = new PoushengSettlementPos();
-            if (Objects.equals(orderType,"1")){ //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
+            if (Objects.equals(orderType, "1")) { //pos单类型是1有两种订单类型，第一种是正常的销售发货,一种是换货生成的发货单
                 OrderShipment orderShipment = null;
                 try{
                     orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(orderId);
 
-                }catch (Exception e){
-                    log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,e.getMessage());
+                } catch (Exception e) {
+                    log.error("find order shipment failed,shipment id is {} ,caused by {}", orderId, e.getMessage());
                     return;
                 }
                 if (Objects.equals(orderShipment.getType(),1)){
@@ -462,7 +471,7 @@ public class OrderOpenApi {
                     pos.setShipType(2);
                     pos.setPosDoneAt(new Date());
                 }
-                String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt)*100).setScale(0, RoundingMode.HALF_DOWN));
+                String amt = String.valueOf(new BigDecimal(Double.valueOf(posAmt) * 100).setScale(0, RoundingMode.HALF_DOWN));
                 pos.setPosAmt(Long.valueOf(amt));
                 pos.setShipmentId(orderId);
                 pos.setPosType(Integer.valueOf(posType));
@@ -472,7 +481,7 @@ public class OrderOpenApi {
                 pos.setPosCreatedAt(dPos.toDate());
 
 
-            }else if (Objects.equals(orderType,"2")){
+            } else if (Objects.equals(orderType, "2")) {
                 Refund refund = null;
                 try{
                     refund = refundReadLogic.findRefundByRefundCode(orderId);
@@ -490,34 +499,168 @@ public class OrderOpenApi {
                 pos.setShopName(refund.getShopName());
                 pos.setPosCreatedAt(dPos.toDate());
                 pos.setPosDoneAt(new Date());
-            }else{
+            } else {
                 throw new ServiceException("invalid.order.type");
             }
             Response<PoushengSettlementPos> rP = poushengSettlementPosReadService.findByPosSerialNo(posSerialNo);
-            if (!rP.isSuccess()){
-                log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}",posSerialNo,rP.getError());
+            if (!rP.isSuccess()) {
+                log.error("find pousheng settlement pos failed, posSerialNo is {},caused by {}", posSerialNo, rP.getError());
                 return;
             }
-            if(!Objects.isNull(rP.getResult())){
-                log.error("duplicate posSerialNo is {},caused by {}",posSerialNo,rP.getError());
+            if (!Objects.isNull(rP.getResult())) {
+                log.error("duplicate posSerialNo is {},caused by {}", posSerialNo, rP.getError());
                 return;
             }
             Response<Long> r = poushengSettlementPosWriteService.create(pos);
-            if (!r.isSuccess()){
-                log.error("create poushengSettlementPos failed, poushengSettlementPos:{},caused by ",pos,r.getError());
+            if (!r.isSuccess()) {
+                log.error("create poushengSettlementPos failed, poushengSettlementPos:{},caused by ", pos, r.getError());
                 throw new ServiceException(r.getError());
             }
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, e.getMessage());
-            throw new OPServerException(200,e.getMessage());
+            throw new OPServerException(200, e.getMessage());
         } catch (Exception e) {
-            log.error("hk sync posInfo(id:{}) fail,orderType is ({})cause:{}", orderId,orderType, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"sync.fail");
+            log.error("hk sync posInfo(id:{}) fail,orderType is ({})cause:{}", orderId, orderType, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200, "sync.fail");
         }
 
         log.info("HK-SYNC-POS-INFO-END");
     }
 
+
+    /**
+     * 取消订单
+     *
+     * @param data 处理结果
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "out.order.cancel.api", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void syncOrderCancel(@NotNull(message = "cancel.data.is.null") String data) {
+        log.info("SYNC-OUT-ORDER-CANCEL-START DATA is:{} ", data);
+        CancelOutOrderInfo cancelOutOrderInfo = JSON_MAPPER.fromJson(data, CancelOutOrderInfo.class);
+
+        String outId = cancelOutOrderInfo.getOutOrderId();
+        String outFrom = cancelOutOrderInfo.getChannel();
+        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outId, outFrom);
+        if (!findShopOrder.isSuccess()) {
+            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
+                    outId, outFrom, findShopOrder.getError());
+            throw new OPServerException(200, findShopOrder.getError());
+        }
+        Optional<ShopOrder> shopOrderOptional = findShopOrder.getResult();
+        if (!shopOrderOptional.isPresent()) {
+            log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
+            throw new OPServerException(200, "order.not.found");
+        }
+        orderWriteLogic.autoCancelShopOrder(shopOrderOptional.get().getId());
+
+
+        log.info("cancelOutOrderInfo:", cancelOutOrderInfo);
+    }
+
+
+    /**
+     * 同步售后单
+     *
+     * @param data 售后单信息
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "out.order.refund.api", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void createRefundOrder(@NotNull(message = "refund.data.is.null") String data) {
+        log.info("SYNC-OUT-ORDER-REFUND-START DATA is:{} ", data);
+
+        log.info("out.order.refund.api req={}",data);
+        OutOrderApplyRefund applyRefund = JSON_MAPPER.fromJson(data, OutOrderApplyRefund.class);
+        if (Objects.isNull(applyRefund)) {
+            throw new OPServerException(200, "parameter deserialize failed");
+        }
+        OutRefundOrder refundOrder = applyRefund.getRefund();
+        if (Objects.isNull(refundOrder)) {
+            throw new OPServerException(200, "parameter rufund can't be empty");
+        }
+        if (CollectionUtils.isEmpty(applyRefund.getItems())){
+            throw new OPServerException(200, "items can't be empty");
+        }
+        String outId = refundOrder.getOutOrderId();
+        String outFrom = refundOrder.getChannel();
+        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outId, outFrom);
+        if (!findShopOrder.isSuccess()||!findShopOrder.getResult().isPresent()) {
+            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
+                    outId, outFrom, findShopOrder.getError());
+            throw new OPServerException(200, findShopOrder.getError());
+        }
+        ShopOrder shopOrder = findShopOrder.getResult().get();
+
+        SubmitRefundInfo refundInfo = new SubmitRefundInfo();
+
+        Response<List<OrderShipment>> response = orderShipmentReadService.findByOrderIdAndOrderLevel(shopOrder.getId(), OrderLevel.SHOP);
+        if (!response.isSuccess()||CollectionUtils.isEmpty(response.getResult())) {
+            log.error("fail to find OrderShipmentv  by orderId={},OrderLevel={} when sync receiver info,cause:{}",
+                    shopOrder.getId(), OrderLevel.SHOP, response.getError());
+            throw new OPServerException(200, findShopOrder.getError());
+        }
+        refundInfo.setOrderId(shopOrder.getId());
+        OrderShipment shipment = response.getResult().get(0);
+        refundInfo.setOutAfterSaleOrderId(refundOrder.getOutAfterSaleOrderId()); //售后单id
+        refundInfo.setShipmentId(shipment.getShipmentId());
+        refundInfo.setRefundType(refundOrder.getType()); //退售后 类型
+        refundInfo.setFee(refundOrder.getFee()); //金额
+        ArrayList<EditSubmitRefundItem> refundItems = Lists.newArrayList();
+        applyRefund.getItems().forEach(x->{
+            EditSubmitRefundItem refundItem = new EditSubmitRefundItem();
+            refundItem.setRefundSkuCode(x.getSkuCode());
+            refundItem.setRefundQuantity(x.getQuantity());
+            refundItem.setFee(x.getFee());
+            refundItem.setItemName(x.getItemName()); //商品名称
+            refundItem.setSkuAfterSaleId(x.getSkuAfterSaleId());//外部售后子单存放
+            refundItems.add(refundItem);
+        });
+        refundInfo.setEditSubmitRefundItems(refundItems);//退 商品item
+        refundInfo.setBuyerNote(refundOrder.getBuyerNote()); //买家备注
+        // 自动推送
+        refundInfo.setOperationType(2); //操作类型 //这里不需要同步给yyedi,需要客服审核手动触发推送给yyedi
+        refundInfo.setReturnStockid(refundOrder.getReturnStockid()); //退货仓id 文案有点问题存到warehousId
+        // 快递单号
+        refundInfo.setShipmentSerialNo(refundOrder.getExpressCode());
+        refundWriteLogic.createYunJURefund(refundInfo);
+
+        log.info("cancelOutOrderInfo:", applyRefund);
+    }
+
+    /**
+     * 取消售后单
+     *
+     * @param data 售后单信息
+     * @return 是否同步成功
+     */
+    @OpenMethod(key = "out.refund.cancel.api", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public void cancelRefundOrder(@NotNull(message = "cancel.refund.data.is.null") String data) {
+        log.info("SYNC-OUT-REFUND-CANCEL-START DATA is:{} ", data);
+
+        CancelOutRefundInfo cancelOutRefundInfo = JSON_MAPPER.fromJson(data, CancelOutRefundInfo.class);
+        String outerRefundId = cancelOutRefundInfo.getOutAfterSaleOrderId();
+        Refund refund;
+        try {
+            refund = refundReadLogic.findRefundByOutId(outerRefundId);
+            refund.setRefundType(MiddleRefundType.AFTER_SALES_RETURN.value());//退货退款
+        }catch (JsonResponseException e){
+            log.error("find refund by out id:{} fail,error:{}",outerRefundId,e.getMessage());
+            throw new OPServerException(200,e.getMessage());
+        }
+
+        DateTime dt = DateTime.parse(cancelOutRefundInfo.getApplyAt(), DFT);
+        OpenClientAfterSale afterSale = new OpenClientAfterSale();
+        afterSale.setStatus(OpenClientAfterSaleStatus.RETURN_CLOSED);
+        afterSale.setReason(cancelOutRefundInfo.getBuyerNote());
+        afterSale.setApplyAt(dt.toDate());
+
+        Response<Boolean> response = refundWriteLogic.cancelRefund(refund,afterSale);
+        if(!response.isSuccess()){
+            log.error("cancel refund(id:{}) fail,error:{}",refund.getId(),response.getError());
+            throw new OPServerException(200,response.getError());
+        }
+
+    }
 
 
     //获取同步成功事件

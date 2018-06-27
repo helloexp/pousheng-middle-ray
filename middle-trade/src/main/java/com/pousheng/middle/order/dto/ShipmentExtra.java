@@ -93,4 +93,7 @@ public class ShipmentExtra implements Serializable{
 
     //重量
     private double weight;
+
+    //同步渠道(包含云聚)的状态
+    private Integer syncChannelStatus;
 }

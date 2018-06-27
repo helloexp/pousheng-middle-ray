@@ -17,8 +17,11 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +29,10 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+import static com.pousheng.middle.constants.Constants.IS_CARE_STOCK;
 
 /**
  * mpos商品库存操作
@@ -58,6 +65,8 @@ public class MposSkuStockLogic {
     private DispatchComponent dispatchComponent;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
 
     /**
@@ -76,6 +85,10 @@ public class MposSkuStockLogic {
      * @param dispatchOrderItemInfo 商品信息
      */
     public Response<Boolean> lockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
+
+        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+            return Response.ok();
+        }
 
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
@@ -170,6 +183,10 @@ public class MposSkuStockLogic {
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
 
 
+        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+            return Response.ok();
+        }
+
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
         //解锁锁mpos门店库存
@@ -211,6 +228,10 @@ public class MposSkuStockLogic {
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
 
 
+        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+            return Response.ok();
+        }
+
         //门店发货
         List<ShopShipment> shopShipments = dispatchOrderItemInfo.getShopShipments();
         //锁定mpos门店库存
@@ -240,5 +261,38 @@ public class MposSkuStockLogic {
         log.info("end decrease stock");
 
         return Response.ok();
+    }
+
+    /**
+     * 当前店铺下的订单是否关心库存
+     * @param openShopId 店铺id
+     * @return true 关心 false 不关心
+     */
+    private Boolean isCareStock(Long openShopId){
+
+        OpenShop openShop =  openShopCacher.findById(openShopId);
+        Map<String,String> extra = openShop.getExtra();
+        if(CollectionUtils.isEmpty(extra)){
+            return Boolean.TRUE;
+        }
+
+        if(!extra.containsKey(IS_CARE_STOCK)){
+            return Boolean.TRUE;
+        }
+
+        String isCareStock = extra.get(IS_CARE_STOCK);
+
+        if(Strings.isNullOrEmpty(isCareStock)){
+            return Boolean.TRUE;
+        }
+
+        if(Objects.equals("1",isCareStock)){
+            return Boolean.TRUE;
+        }
+
+        return Boolean.FALSE;
+
+
+
     }
 }

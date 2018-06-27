@@ -48,6 +48,8 @@ public class EditSubmitRefundInfo implements Serializable {
      */
     private List<ShipmentItem> lostItems;
 
+    //退货仓id
+    private String returnStockid;
     /**
      *关联订单类型
      */

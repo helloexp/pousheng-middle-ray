@@ -350,6 +350,8 @@ public class OrderReadLogic {
                 return expressCode.getSuningCode();
             case OFFICIAL:
                 return expressCode.getPoushengCode();
+            case YJ:
+                return expressCode.getOfficalCode();
             default:
                 log.error("find express code failed");
                 throw new JsonResponseException("find.expressCode.failed");
@@ -438,8 +440,8 @@ public class OrderReadLogic {
             log.error("shopOrder(id:{}) extra field is null", shopOrder.getId());
             throw new JsonResponseException("shopOrder.extra.is.null");
         }
-        if (!extraMap.containsKey(TradeConstants.ORDER_PAYMENT_INFO)) {
-            log.info("shopOrder(id:{}) extra not contain key:{}", shopOrder.getId(), TradeConstants.ORDER_PAYMENT_INFO);
+        if(!extraMap.containsKey(TradeConstants.ORDER_PAYMENT_INFO)||"{}".equals(extraMap.get(TradeConstants.ORDER_PAYMENT_INFO))){
+            log.info("shopOrder(id:{}) extra not contain key:{}",shopOrder.getId(),TradeConstants.ORDER_PAYMENT_INFO);
             return null;
         }
 

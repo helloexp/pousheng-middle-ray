@@ -48,6 +48,7 @@ public class MiddleRefundReadServiceImpl implements MiddleRefundReadService {
             //把订单id,订单类型转为退款单id列表
             transformOrderIdAndOrderType(criteria);
             if (StringUtils.isNotEmpty(criteria.getOrderCode()) && CollectionUtils.isEmpty(criteria.getIds())) {
+
                 return Response.ok(Paging.empty());
             }
 

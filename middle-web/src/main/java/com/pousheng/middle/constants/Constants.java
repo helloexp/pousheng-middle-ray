@@ -35,6 +35,10 @@ public class Constants {
      */
     public static final String MANAGE_SHOP_IDS = "manageShopIds";
 
+    /**
+     * 某店铺下的订单是否关心库存 1关心 0 不关心
+     */
+    public static final String IS_CARE_STOCK = "isCareStock";
 
     /**
      * 用户管理区部ID列表

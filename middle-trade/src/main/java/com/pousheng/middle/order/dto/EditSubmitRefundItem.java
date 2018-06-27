@@ -2,6 +2,8 @@ package com.pousheng.middle.order.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2017/12/13
@@ -18,4 +20,11 @@ public class EditSubmitRefundItem implements java.io.Serializable {
 
     //退款金额
     private Long fee;
+    //子售后单id
+    private String skuAfterSaleId;
+
+    //商品名称
+    private String itemName;
+
+
 }

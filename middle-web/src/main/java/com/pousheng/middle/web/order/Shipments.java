@@ -461,7 +461,6 @@ public class Shipments {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
             }
-
             //创建发货单
             Long shipmentId = null;
             try {
@@ -1606,7 +1605,7 @@ public class Shipments {
         } catch (Exception e) {
             log.error("failed to batch update, cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("shipment.update.fail");
-        }
+            }
 
     }
 

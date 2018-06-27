@@ -578,6 +578,7 @@ public class ShipmentReadLogic {
             warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }
+        dispatchOrderItemInfo.setOpenShopId(shipment.getShopId());
         return dispatchOrderItemInfo;
     }
 

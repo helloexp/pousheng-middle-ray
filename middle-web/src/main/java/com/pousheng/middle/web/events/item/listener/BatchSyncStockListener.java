@@ -71,11 +71,4 @@ public class BatchSyncStockListener {
 
     }
 
-
-
-
-
-
-
-
 }

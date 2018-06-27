@@ -79,13 +79,12 @@ public class EcpOrderLogic {
             }
             //同步订单信息到电商平台
             this.syncEcpShipmentInfos(shopOrder.getId());
-        } catch (ServiceException e) {
-            log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), e.getMessage());
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), e.getMessage());
         }
 
     }
+
 
     private void syncEcpShipmentInfos(Long shopOrderId){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
@@ -98,7 +97,13 @@ public class EcpOrderLogic {
         //最后一个发货单发货完成之后需要将订单同步到电商
         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
-            syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())){
+                //同步到云聚
+                syncOrderToEcpLogic.syncToYunJu(shopOrder);
+
+            }else{
+                syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+            }
         }else{
             syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
         }

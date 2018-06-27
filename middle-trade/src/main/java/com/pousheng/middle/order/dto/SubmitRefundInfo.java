@@ -28,5 +28,8 @@ public class SubmitRefundInfo extends EditSubmitRefundInfo {
     private MiddleChangeReceiveInfo middleChangeReceiveInfo;
 
 
+    //售后单id
+    private String outAfterSaleOrderId;
+
 
 }

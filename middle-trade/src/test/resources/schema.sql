@@ -411,8 +411,6 @@ CREATE TABLE `pousheng_zone_contracts` (
 create index `idx_pousheng_zone_contracts_zone_name` on pousheng_zone_contracts(zone_name);
 create index `idx_pousheng_zone_contracts_zone_id` on pousheng_zone_contracts(zone_id);
 
-
-
 drop table if exists `pousheng_compensate_biz`;
 CREATE TABLE `pousheng_compensate_biz` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

@@ -543,7 +543,7 @@ public class SyncShipmentLogic {
                 return HkOnlineType.FENQILE;
             default:
                 log.error("shopOrder (id:{}) invalid", shopOrder.getId());
-                throw new ServiceException("shoporder.channel.invalid");
+                return HkOnlineType.OTHERS;
         }
     }
 

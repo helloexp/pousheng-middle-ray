@@ -251,8 +251,8 @@ public class SyncMposShipmentLogic{
             return res;
         }catch (Exception e){
             log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
-            res.setResult(Throwables.getStackTraceAsString(e));
-            res.setError(Throwables.getStackTraceAsString(e));
+            res.setResult(e.getMessage());
+            res.setError(e.getMessage());
             res.setSuccess(false);
             return res;
         }
@@ -267,8 +267,8 @@ public class SyncMposShipmentLogic{
             return res;
         }catch (Exception e){
             log.error("revoke mpos shipment failed,shipment id is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
-            res.setResult(Throwables.getStackTraceAsString(e));
-            res.setError(Throwables.getStackTraceAsString(e));
+            res.setResult(e.getMessage());
+            res.setError(e.getMessage());
             res.setSuccess(false);
             return res;
         }

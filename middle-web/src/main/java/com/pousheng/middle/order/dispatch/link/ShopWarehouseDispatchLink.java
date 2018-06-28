@@ -96,41 +96,27 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         List<Shop> shops = Lists.newArrayListWithCapacity(shopWarehouseWithPriorities.size());
-        List<Long> shopWarehouseIds =Lists.newArrayListWithCapacity(shopWarehouseWithPriorities.size());
+        List<Long> shopWarehouseIds = Lists.newArrayListWithCapacity(shopWarehouseWithPriorities.size());
+        //拒绝过的门店
+        List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
+        context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
+
         //封装店铺id
-        shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie->{
+        shopWarehouseWithPriorities.forEach(shopWarehouseWithPrioritie ->{
             Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
-            if(com.google.common.base.Objects.equal(shop.getStatus(),1L)){
+            //判断店铺状态及过滤是否拒过单
+            if (com.google.common.base.Objects.equal(shop.getStatus(),1L) &&! rejectShopIds.contains(shop.getId())){
                 shops.add(shop);
                 shopWarehouseWithPrioritie.setShopId(shop.getId());
                 shopWarehouseIds.add(warehouse.getId());
             }
         });
 
-        //拒绝过的门店
-        List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
-        context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
-
-        //过滤掉已删除或已冻结或已拒绝过的门店
-        List<Shop> validShops = shops.stream().filter(shop -> com.google.common.base.Objects.equal(shop.getStatus(),1)&&!rejectShopIds.contains(shop.getId())).collect(Collectors.toList());
-
-        if(CollectionUtils.isEmpty(validShops)){
+        if (CollectionUtils.isEmpty(shops)){
             log.warn("not validShops so skip");
             return Boolean.TRUE;
         }
-        //查询仓代码
-        List<String> stockCodes = Lists.transform(validShops, new Function<Shop, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable Shop input) {
-                if(Strings.isNullOrEmpty(input.getOuterId())){
-                    log.error("shop(id:{}) outer id invalid",input.getId());
-                    throw new ServiceException("shop.outer.id.invalid");
-                }
-                return input.getOuterId();
-            }
-        });
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 

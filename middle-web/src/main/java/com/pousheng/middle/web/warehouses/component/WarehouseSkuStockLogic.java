@@ -97,8 +97,8 @@ public class WarehouseSkuStockLogic {
                     throw new ServiceException("shop.safe.stock.invalid");
                 }
 
-                if( CollectionUtils.isEmpty(hkSkuStockInfos)){
-                    log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
+                if (CollectionUtils.isEmpty(hkSkuStockInfos) || CollectionUtils.isEmpty(hkSkuStockInfos.get(0).getMaterial_list())) {
+                    log.error("not query stock from hk where stock code:{} sku code:{}", outerId, skuCode);
                     continue;
                 }
                 //可用库存

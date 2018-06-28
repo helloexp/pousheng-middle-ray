@@ -106,7 +106,7 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
             Warehouse warehouse = warehouseCacher.findById(shopWarehouseWithPrioritie.getWarehouseId());
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(warehouse.getCompanyId()));
             //判断店铺状态及过滤是否拒过单
-            if (com.google.common.base.Objects.equal(shop.getStatus(),1L) &&! rejectShopIds.contains(shop.getId())){
+            if (com.google.common.base.Objects.equal(shop.getStatus(),1) &&! rejectShopIds.contains(shop.getId())){
                 shops.add(shop);
                 shopWarehouseWithPrioritie.setShopId(shop.getId());
                 shopWarehouseIds.add(warehouse.getId());

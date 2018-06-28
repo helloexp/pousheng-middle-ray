@@ -80,7 +80,11 @@ public class ItemOpenApi {
             //2、查询店铺是否存在
             Shop currentShop;
             try {
-                 currentShop = middleShopCacher.findByOuterIdAndBusinessId(shopOuterCode,Long.valueOf(companyId));
+                currentShop = middleShopCacher.findByOuterIdAndBusinessId(shopOuterCode,Long.valueOf(companyId));
+                if (!com.google.common.base.Objects.equal(currentShop.getStatus(), 1)) {
+                    log.info("shop({0}).status.abnormal", currentShop.getId());
+                    throw new OPServerException(200,"shop.status.abnormal");
+                }
             }catch (ServiceException e){
                 log.error("not find shop by outer id:{} business id:{}",shopOuterCode,companyId);
                 throw new OPServerException(200,e.getMessage());

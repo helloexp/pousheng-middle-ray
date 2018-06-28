@@ -10,6 +10,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.model.ShopOrder;
@@ -40,6 +41,8 @@ public class RefundDefaultWarehouse {
     private OrderReadLogic orderReadLogic;
     @RpcConsumer
     private MiddleRefundWarehouseWriteService middleRefundWarehouseWriteServie;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
 
     /**
@@ -69,6 +72,8 @@ public class RefundDefaultWarehouse {
         Response<Boolean> updateRlt = middleRefundWarehouseWriteServie.update(openShop);
         if (!updateRlt.isSuccess()){
             log.error("update openShop failed,openShopId is {},caused by {}",openShop.getId(),updateRlt.getError());
+        } else {
+            openShopCacher.refreshById(openShopId);
         }
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-DEFAULT-WAREHOUSE-EDIT-END param: openShopId [{}] warehouseId [{}] warehouseName [{}] outCode [{}] ,resp: [{}]",openShopId,warehouseId,warehouseName,outCode,updateRlt.getResult());

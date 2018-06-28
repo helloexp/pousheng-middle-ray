@@ -88,6 +88,9 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
         for (OrderShipment orderShipment : orderShipmentsFilter) {
             Long shipmentId = orderShipment.getShipmentId();
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            //添加确认收货时间
+            shipment.setConfirmAt(new Date());
+            shipmentWiteLogic.update(shipment);
             //通知恒康已经发货
             Response<Boolean> response = syncErpShipmentLogic.syncShipmentDone(shipment, 2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()) {

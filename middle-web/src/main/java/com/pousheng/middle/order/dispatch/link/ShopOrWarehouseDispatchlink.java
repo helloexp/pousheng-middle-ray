@@ -75,12 +75,9 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
             warehouseSkuCodeQuantityTable = HashBasedTable.create();
             context.put(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE, (Serializable) warehouseSkuCodeQuantityTable);
         }
-        //根据不同的优先级类型走不同的处理逻辑
-        if(isDistanceType(warehouses4Address)){
-            handleDispatchWithPriority(dispatchOrderItemInfo,skuCodeAndQuantities,warehouseSkuCodeQuantityTable,current,context);
-        }else {
-            handleWithPriority(warehouses4Address,dispatchOrderItemInfo,skuCodeAndQuantities,warehouseSkuCodeQuantityTable,current,context);
-        }
+        //根据距离优先级类型走不同的处理逻辑
+        handleDispatchWithPriority(dispatchOrderItemInfo,skuCodeAndQuantities,warehouseSkuCodeQuantityTable,current,context);
+
         if (oneCompany&&dispatchOrderItemInfo.getSkuCodeAndQuantities().size()>0) {
             dispatchOrderItemInfo.setShopShipments(Lists.newArrayList());
             dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList());

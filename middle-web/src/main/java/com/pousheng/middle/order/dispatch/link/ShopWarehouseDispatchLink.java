@@ -150,19 +150,10 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         //优先级类型
         WarehouseRuleItemPriorityType priorityType = WarehouseRuleItemPriorityType.from(warehouses4Address.getWarehouseRule().getItemPriorityType());
 
-        ShopShipment shopShipment = null;
-        switch (priorityType){
-            case DISTANCE:
-                String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
-                String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
-                //如果有多个要选择最近的
-                shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
-                break;
-            case PRIORITY:
-                //如果有多个要选择优先级最高的
-                shopShipment = warehouseAddressComponent.priorityShop(byPriority.sortedCopy(shopWarehouseWithPriorities),shopShipments);
-                break;
-        }
+        String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
+
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
 
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 

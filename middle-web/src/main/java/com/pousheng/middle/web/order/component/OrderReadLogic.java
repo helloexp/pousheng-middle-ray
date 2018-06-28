@@ -75,6 +75,7 @@ public class OrderReadLogic {
     private OpenShopCacher openShopCacher;
 
     static final Integer BATCH_SIZE = 100;     // 批处理数量
+    static final String MPOS = "mpos"; //默认发货仓规则
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -479,9 +480,10 @@ public class OrderReadLogic {
      * @return 是否参与全渠道
      */
     public Boolean isAllChannelOpenShop(Long openShopId) {
-
         OpenShop openShop = findOpenShopByShopId(openShopId);
-
+        if(openShop.getShopName().startsWith(MPOS)){
+            return true;
+        }
         Map<String, String> extraMap = openShop.getExtra();
         if (CollectionUtils.isEmpty(extraMap)) {
             log.error("open shop (id:{}) extra map is empty", openShop.getId());

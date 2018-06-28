@@ -84,7 +84,13 @@ public class WarehouseRuleItems {
         }
 
         ruleDto.setWarehouseRule(ruleRes.getResult());
-
+        Response<List<WarehouseShopGroup>> rwsrs = warehouseShopGroupReadService.findByGroupId(ruleRes.getResult().getShopGroupId());
+        if (!rwsrs.isSuccess()) {
+            log.error("failed to find warehouseShopGroups by shopGroupId={}, error code:{}", ruleRes.getResult().getShopGroupId(), rwsrs.getError());
+            throw new JsonResponseException(rwsrs.getError());
+        }
+        Boolean isAllChannel= orderReadLogic.isAllChannelOpenShop(rwsrs.getResult().get(0).getShopId());
+        ruleDto.setIsALlChannel(isAllChannel);
         Response<List<WarehouseRuleItem>> r = warehouseRuleItemReadService.findByRuleId(ruleId);
         if (!r.isSuccess()) {
             log.error("failed to find warehouse rule items for rule(id={}), error code:{}", ruleId, r.getError());

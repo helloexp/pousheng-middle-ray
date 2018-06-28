@@ -143,20 +143,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.FALSE;
         }
 
-
-        //优先级类型
-        WarehouseRuleItemPriorityType priorityType = WarehouseRuleItemPriorityType.from(warehouses4Address.getWarehouseRule().getItemPriorityType());
-
-        WarehouseShipment warehouseShipment = null;
-        switch (priorityType){
-            case DISTANCE:
-                //如果有多个要选择最近的
-                warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
-                break;
-            case PRIORITY:
-                //如果有多个要选择优先级最高的
-                warehouseShipment = warehouseAddressComponent.priorityWarehouse(byPriority.sortedCopy(totalWarehouseWithPriorities),warehouseShipments);
-        }
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
 
         if(Arguments.isNull(warehouseShipment)){
             log.error("dispatch shop order(id:{}) fail,because query level fail",shopOrder.getId());

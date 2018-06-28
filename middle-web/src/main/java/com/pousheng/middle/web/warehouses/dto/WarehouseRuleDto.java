@@ -17,4 +17,6 @@ public class WarehouseRuleDto implements Serializable {
     WarehouseRule warehouseRule;
 
     List<WarehouseRuleItemDto> warehouseRuleItemDtos;
+
+    Boolean isALlChannel;
 }

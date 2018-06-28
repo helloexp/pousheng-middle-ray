@@ -137,7 +137,7 @@ public class SyncErpShipmentLogic {
                         return Response.fail(updateStatus.getError());
                     }
                 }else{
-                    log.error("shipment(id:{}) notify hk failed,cause:{}",r.getError());
+                    log.error("shipment(id:{}) notify hk failed,error:{}",shipment.getId(),r.getError());
                   /*  Map<String,Object> param = Maps.newHashMap();
                     param.put("shipmentId",shipment.getId());
                     autoCompensateLogic.createAutoCompensationTask(param,TradeConstants.FAIL_SYNC_SHIPMENT_CONFIRM_TO_HK,r.getError());*/

@@ -22,7 +22,7 @@ import java.net.InetAddress;
  * Author: xiao
  * Date: 2018/05/29
  */
-//@Configuration
+@Configuration
 public class SkuStockPushTempJobConfig {
 
     @Bean

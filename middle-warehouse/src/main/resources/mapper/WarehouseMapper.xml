@@ -8,6 +8,7 @@
     <resultMap id="WarehouseMap" type="Warehouse">
         <id column="id" property="id"/>
         <result column="code" property="code"/>
+        <result column="out_code" property="outCode"/>
         <result column="name" property="name"/>
         <result column="type" property="type"/>
         <result column="status" property="status"/>
@@ -33,11 +34,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        code, name, `type`, `status`, address, company_id,company_name, owner_id, is_default,is_mpos, extra_json, tags_json, created_at, updated_at
+        code, out_code, name, `type`, `status`, address, company_id,company_name, owner_id, is_default,is_mpos, extra_json, tags_json, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{code}, #{name},#{type}, #{status}, #{address}, #{companyId}, #{companyName}, #{ownerId}, #{isDefault}, #{isMpos}, #{extraJson},#{tagsJson},now(), now()
+        #{code}, #{outCode}, #{name},#{type}, #{status}, #{address}, #{companyId}, #{companyName}, #{ownerId}, #{isDefault}, #{isMpos}, #{extraJson},#{tagsJson},now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -45,6 +46,8 @@
         <if test="codePrefix != null">and `code` like concat(#{codePrefix},'-%')</if>
 
         <if test="code != null">and `code` = #{code}</if>
+
+        <if test="outCode != null">and `out_code` = #{outCode}</if>
 
         <if test="name != null">and `name` LIKE CONCAT(#{name}, '%')</if>
 
@@ -116,6 +119,7 @@
         <include refid="tb"/>
         <set>
             <if test="code != null">code = #{code},</if>
+            <if test="outCode != null">out_code = #{outCode},</if>
             <if test="status != null">`status` = #{status},</if>
             <if test="type!=null">`type`=#{type},</if>
             <if test="name != null">name = #{name},</if>
@@ -178,6 +182,15 @@
         <include refid="cols_all"/>
         from
         <include refid="tb"/>
-        WHERE `extra_json` like concat('%',#{outCode}, '%')
+        WHERE out_code = #{outCode}
+    </select>
+
+
+    <select id="findByOutCodeAndCompanyId"  resultMap="WarehouseMap">
+        select
+        <include refid="cols_all"/>
+        from
+        <include refid="tb"/>
+        WHERE out_code = #{outCode} and company_id = #{companyId}
     </select>
 </mapper>

@@ -1,12 +1,14 @@
 package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.StockDto;
@@ -18,6 +20,7 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Joiners;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
@@ -71,6 +74,8 @@ public class MposSkuStockLogic {
     private ShopCacher shopCacher;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
 
     /**
@@ -273,22 +278,9 @@ public class MposSkuStockLogic {
         if (!CollectionUtils.isEmpty(shopShipments)) {
             for (ShopShipment s : shopShipments) {
                 Shop shop = shopCacher.findShopById(s.getShopId());
-                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                Response<List<Warehouse>> response = warehouseReadService.findWarehouseListByOutCode(Lists.newArrayList(shop.getOuterId()));
-                if (!response.isSuccess()) {
-                    log.error("findWarehouseListByOutCode :{} fail,error:{}", shop.getOuterId(), response.getError());
-                    throw new JsonResponseException(response.getError());
-                }
-                List<Warehouse> warehouseList = response.getResult();
-                Warehouse warehouse = null;
-                for (Warehouse wh : warehouseList) {
-                    if (Objects.equals(Long.valueOf(wh.getCompanyId()), shop.getBusinessId())) {
-                        warehouse = wh;
-                        break;
-                    }
-                }
+                Warehouse warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
                 if (null == warehouse) {
-                    log.error(" find warehouse by code {} is null ", shopExtraInfo.getCompanyId() + "-" + shopExtraInfo.getShopInnerCode());
+                    log.error(" find warehouse by code {} is null ",shop.getOuterId() + "-_" + shop.getBusinessId());
                     throw new JsonResponseException("find.warehouse.failed");
                 }
                 WarehouseShipment warehouseShipment = new WarehouseShipment();

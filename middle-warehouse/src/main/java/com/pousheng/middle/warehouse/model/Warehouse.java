@@ -39,13 +39,21 @@ public class Warehouse implements Serializable {
 
     @Setter
     private Long id;
-    
+
     /**
      * 仓库编码
      */
     @Setter
     private String code;
-    
+
+
+    /**
+     * 仓库外码
+     */
+    @Setter
+    private String outCode;
+
+
     /**
      * 仓库名称
      */
@@ -63,7 +71,7 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private String companyName;
-    
+
     /**
      * 负责人id
      */
@@ -87,7 +95,7 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private String address;
-    
+
     /**
      * 是否默认发货仓
      */
@@ -99,7 +107,7 @@ public class Warehouse implements Serializable {
      */
     @Setter
     private Integer isMpos;
-    
+
     /**
      * 附加信息
      */

@@ -80,4 +80,13 @@ public interface WarehouseReadService {
      * @return 仓库列表
      */
     Response<List<Warehouse>> findWarehouseListByOutCode(List<String> outCodeList);
+
+
+    /**
+     * 根据公司id和仓库外码查询仓库
+     * @param outCode 仓库外码
+     * @param companyId 公司id
+     * @return
+     */
+    Response<Optional<Warehouse>> findByOutCodeAndCompanyId(String outCode,String companyId);
 }

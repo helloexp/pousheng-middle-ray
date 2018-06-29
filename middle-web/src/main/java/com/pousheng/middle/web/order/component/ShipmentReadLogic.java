@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -25,6 +26,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -67,6 +69,8 @@ public class ShipmentReadLogic {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private WarehouseReadService warehouseReadService;
+    @Autowired
+    private ShopCacher shopCacher;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -585,29 +589,10 @@ public class ShipmentReadLogic {
             // dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
             //店发改成仓发
             Long shopId = shipmentExtra.getWarehouseId();
-            Response<Shop> resp = shopReadService.findById(shopId);
-            if(!resp.isSuccess() || null == resp.getResult() ){
-                log.error(" find shop by id {} is error :{} ",shopId,resp.getError());
-                throw new JsonResponseException("find.shop.failed");
-            }
-            Shop shop = resp.getResult();
-            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-
-            Response<List<Warehouse>> response = warehouseReadService.findWarehouseListByOutCode(Lists.newArrayList(shop.getOuterId()));
-            if(!response.isSuccess()){
-                log.error("findWarehouseListByOutCode :{} fail,error:{}",shop.getOuterId(),response.getError());
-                throw new JsonResponseException(response.getError());
-            }
-            List<Warehouse> warehouseList = response.getResult();
-            Warehouse warehouse = null;
-            for (Warehouse wh : warehouseList){
-                if (Objects.equals(Long.valueOf(wh.getCompanyId()),shop.getBusinessId())){
-                    warehouse = wh;
-                    break;
-                }
-            }
-            if (null == warehouse){
-                log.error(" find warehouse by code {} is null ",shopExtraInfo.getCompanyId()+ "-"+ shopExtraInfo.getShopInnerCode());
+            Shop shop = shopCacher.findShopById(shopId);
+            Warehouse warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
+            if (null == warehouse) {
+                log.error(" find warehouse by code {} is null ",shop.getOuterId() + "-_" + shop.getBusinessId());
                 throw new JsonResponseException("find.warehouse.failed");
             }
             WarehouseShipment warehouseShipment = new WarehouseShipment();

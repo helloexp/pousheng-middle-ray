@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -167,8 +168,10 @@ public class Refunds {
                 }
             }
         }catch (JsonResponseException e1){
+            log.error("complete handle refund(id:{}) fail,error:{}",refundId, e1.getMessage());
             throw new JsonResponseException(e1.getMessage());
         }catch (Exception e){
+            log.error("complete handle refund(id:{}) fail,cause:{}",refundId, Throwables.getStackTraceAsString(e));
             throw new JsonResponseException("complete.refund.failed");
         }
     }

@@ -52,6 +52,8 @@ public class AvailableStockCalc {
     @Autowired
     private DispatchComponent dispatchComponent;
 
+    private static final String WAREHOUSE_STATUS_ENABLED = "1";
+
     /**
      * 计算某个sku在指定店铺中的可用库存
      *
@@ -70,6 +72,16 @@ public class AvailableStockCalc {
         //累加店铺发货仓库中的可用库存
         Long quantity = 0L;
         for (Long warehouseId : rWarehouseIds.getResult()) {
+
+            //如果仓库非可用状态则不累加此仓库可用库存
+            Warehouse warehouse = warehouseCacher.findById(warehouseId);
+            if(warehouse == null){
+                log.warn("failed to find warehouse(id={}) from warehouseCacher", warehouseId);
+                continue;
+            }
+            if(!WAREHOUSE_STATUS_ENABLED.equals(warehouse.getStatus())){
+                continue;
+            }
 
             Response<WarehouseSkuStock> r =  warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
             if (!r.isSuccess()){

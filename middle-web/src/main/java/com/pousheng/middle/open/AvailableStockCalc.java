@@ -75,11 +75,11 @@ public class AvailableStockCalc {
 
             //如果仓库非可用状态则不累加此仓库可用库存
             Warehouse warehouse = warehouseCacher.findById(warehouseId);
-            if(warehouse == null){
-                log.warn("failed to find warehouse(id={}) from warehouseCacher", warehouseId);
+            if (warehouse == null){
+                log.warn("failed to find warehouse(id={}) from warehouse cacher", warehouseId);
                 continue;
             }
-            if(!WAREHOUSE_STATUS_ENABLED.equals(warehouse.getStatus())){
+            if (!Objects.equals(Integer.valueOf(WAREHOUSE_STATUS_ENABLED),warehouse.getStatus())){
                 continue;
             }
 

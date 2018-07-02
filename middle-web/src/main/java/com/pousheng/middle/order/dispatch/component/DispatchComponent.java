@@ -19,14 +19,9 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
-import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
-import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -54,8 +49,6 @@ public class DispatchComponent {
 
     @Autowired
     private GDMapSearchService gdMapSearchService;
-    @RpcConsumer
-    private MposSkuStockReadService mposSkuStockReadService;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired

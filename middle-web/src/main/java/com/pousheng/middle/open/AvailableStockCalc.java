@@ -3,20 +3,20 @@ package com.pousheng.middle.open;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.*;
+import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseShopStockRuleWriteService;
+import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -40,9 +40,6 @@ public class AvailableStockCalc {
 
     @RpcConsumer
     private WarehouseRuleReadService warehouseRuleReadService;
-
-    @RpcConsumer
-    private MposSkuStockReadService mposSkuStockReadService;
 
     @Autowired
     private WarehouseCacher warehouseCacher;

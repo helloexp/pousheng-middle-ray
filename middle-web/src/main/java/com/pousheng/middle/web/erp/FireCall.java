@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,10 +24,7 @@ import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.model.MposSkuStock;
 import com.pousheng.middle.warehouse.model.Warehouse;
-import com.pousheng.middle.warehouse.model.WarehouseSkuStock;
-import com.pousheng.middle.warehouse.service.MposSkuStockReadService;
 import com.pousheng.middle.warehouse.service.WarehouseRuleReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
@@ -107,8 +103,6 @@ public class FireCall {
 
     private final WarehouseSkuReadService warehouseSkuReadService;
 
-    private final MposSkuStockReadService mposSkuStockReadService;
-
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
@@ -145,7 +139,7 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, MposSkuStockReadService mposSkuStockReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
+                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi, WarehouseSkuReadService warehouseSkuReadService, SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
         this.warehouseImporter = warehouseImporter;
@@ -154,7 +148,6 @@ public class FireCall {
         this.mposWarehousePusher = mposWarehousePusher;
         this.queryHkWarhouseOrShopStockApi = queryHkWarhouseOrShopStockApi;
         this.warehouseSkuReadService = warehouseSkuReadService;
-        this.mposSkuStockReadService = mposSkuStockReadService;
         this.skuTemplateSearchReadService = skuTemplateSearchReadService;
         this.shopCacher = shopCacher;
         this.warehouseCacher = warehouseCacher;
@@ -493,14 +486,9 @@ public class FireCall {
             //仓
             if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
                 for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
-                    //锁定库存
-                    Long lockStock = findWarehouseSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
-                    if (lockStock < 0L) {
-                        lockStock = 0L;
-                    }
-                    Long warehouseStock = skuAndQuantityInfo.getQuantity() - lockStock;
-                    if (warehouseStock < 0L) {
-                        warehouseStock = 0L;
+                    Integer warehouseStock = skuAndQuantityInfo.getQuantity();
+                    if (warehouseStock < 0) {
+                        warehouseStock = 0;
                     }
 
                     total += warehouseStock;
@@ -512,23 +500,18 @@ public class FireCall {
                 //店
             } else {
                 for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
-                    //锁定库存
-                    Long lockStock = findMposSkuStockLockQuantity(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode());
-                    if (lockStock < 0L) {
-                        lockStock = 0L;
-                    }
                     Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
                     ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                     //安全库存
                     Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock()) ? 0 : shopExtraInfo.getSafeStock();
-                    Long currentShopStock = skuAndQuantityInfo.getQuantity() - lockStock - safeStock;
-                    if (currentShopStock < 0L) {
-                        currentShopStock = 0L;
+                    Integer currentShopStock = skuAndQuantityInfo.getQuantity() - safeStock;
+                    if (currentShopStock < 0) {
+                        currentShopStock = 0;
                     }
                     total += currentShopStock;
                     //当前店铺库存
                     if (Objects.equals(shop.getId(), currentShop.getId())) {
-                        itemNameAndStock.setCurrentShopQuantity(currentShopStock);
+                        itemNameAndStock.setCurrentShopQuantity(Long.valueOf(currentShopStock));
                     }
                     //当前公司库存
                     if (Objects.equals(String.valueOf(companyId), hkSkuStockInfo.getCompany_id())) {
@@ -546,37 +529,6 @@ public class FireCall {
         return itemNameAndStock;
     }
 
-
-    private Long findWarehouseSkuStockLockQuantity(Long warehouseId, String skuCode) {
-        Response<WarehouseSkuStock> response = warehouseSkuReadService.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
-        if (!response.isSuccess()) {
-            log.error("find warehouse sku stock by warehouse id:{} sku code:{} fail,error:{}", warehouseId, skuCode, response.getError());
-            return 0L;
-        }
-        Long lockQuantity = response.getResult().getLockedStock();
-        if (Arguments.isNull(lockQuantity)) {
-            return 0L;
-        }
-        return lockQuantity;
-    }
-
-    private Long findMposSkuStockLockQuantity(Long shopId, String skuCode) {
-        Response<Optional<MposSkuStock>> response = mposSkuStockReadService.findByShopIdAndSkuCode(shopId, skuCode);
-        if (!response.isSuccess()) {
-            log.error("find mpos sku sotck by shop id:{} sku code:{} fail,error:{}", shopId, skuCode, response.getError());
-            return 0L;
-        }
-        Optional<MposSkuStock> stockOptional = response.getResult();
-        if (!stockOptional.isPresent()) {
-            return 0L;
-        }
-        Long lockQuantity = stockOptional.get().getLockedStock();
-        if (Arguments.isNull(lockQuantity)) {
-            return 0L;
-        }
-        return lockQuantity;
-
-    }
 
 
     /**

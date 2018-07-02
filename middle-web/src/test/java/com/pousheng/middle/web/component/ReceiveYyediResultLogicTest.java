@@ -19,7 +19,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
 
 /**
  * 〈〉

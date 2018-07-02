@@ -5,10 +5,12 @@ import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.function.Function;
@@ -63,6 +65,24 @@ public class WarehouseCacher {
                     log.error("warehouse(code={}) not found", code);
                     throw new ServiceException("warehouse not found");
                 }
+            }
+        });
+    }
+
+
+    public Warehouse findByShopInfo(String shopInfo) {
+        return byCode.computeIfAbsent(shopInfo, shopInfo1 -> {
+            List<String> infos = Splitters.UNDERSCORE.splitToList(shopInfo1);
+            Response<Optional<Warehouse>> r = warehouseReadService.findByOutCodeAndCompanyId(infos.get(0), infos.get(1));
+            if (!r.isSuccess()) {
+                log.error("failed to find warehouse(info={}), error code:{}", shopInfo1, r.getError());
+                throw new ServiceException(r.getError());
+            }
+            Optional<Warehouse> result = r.getResult();
+            if (result.isPresent()) {
+                return result.get();
+            } else {
+                return null;
             }
         });
     }

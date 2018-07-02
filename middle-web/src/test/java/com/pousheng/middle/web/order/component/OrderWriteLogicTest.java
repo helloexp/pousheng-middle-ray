@@ -1,39 +1,28 @@
 package com.pousheng.middle.web.order.component;
 
 import com.pousheng.middle.AbstractRestApiTest;
-import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
-import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
-import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
-import com.pousheng.middle.web.order.Shipments;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.Flow;
-import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 
-import static org.junit.Assert.*;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.when;

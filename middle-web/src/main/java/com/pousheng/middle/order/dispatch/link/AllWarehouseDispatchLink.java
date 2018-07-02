@@ -143,7 +143,7 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
 
     //过滤掉省内和电商在售仓
     private List<HkSkuStockInfo> filterAlreadyQueryWarehouseSkuCodeQuantityTable(List<HkSkuStockInfo> hkSkuStockInfos,Table<Long, String, Integer> warehouseSkuCodeQuantityTable){
-       Set<Long> alreadyQueryWarehouseIds =  warehouseSkuCodeQuantityTable.rowKeySet();
+        Set<Long> alreadyQueryWarehouseIds =  warehouseSkuCodeQuantityTable.rowKeySet();
         return hkSkuStockInfos.stream().filter(hkSkuStockInfo -> !alreadyQueryWarehouseIds.contains(hkSkuStockInfo.getBusinessId())).collect(Collectors.toList());
 
     }

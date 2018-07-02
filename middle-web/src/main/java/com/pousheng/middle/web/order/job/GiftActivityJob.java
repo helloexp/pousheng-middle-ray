@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.job;
 
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityEvent;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.PoushengGiftQuantityRule;
@@ -51,7 +52,7 @@ public class GiftActivityJob {
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
                 }catch (Exception e){
-                    log.error("update PoushengGiftActivity failed,id is {},caused by {}",activity.getId(),e.getMessage());
+                    log.error("update PoushengGiftActivity failed,id is {},caused by {}",activity.getId(), Throwables.getStackTraceAsString(e));
                 }
             }
         }
@@ -73,7 +74,7 @@ public class GiftActivityJob {
                 try{
                     poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(activity.getId(), PoushengGiftActivityEvent.HANDLE.toOrderOperation());
                 }catch (Exception e){
-                    log.error("update PoushengGiftActivity failed,id is {},caused by {}",activity.getId(),e.getMessage());
+                    log.error("update PoushengGiftActivity failed,id is {},caused by {}",activity.getId(),Throwables.getStackTraceAsString(e));
                 }
             }
         }

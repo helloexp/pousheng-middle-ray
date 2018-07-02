@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -10,21 +11,28 @@ import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
+import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +63,14 @@ public class ShipmentReadLogic {
     private ShipmentReadService shipmentReadService;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
+    @Autowired
+    private ShopReadService shopReadService;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+    @Autowired
+    private WarehouseReadService warehouseReadService;
+    @Autowired
+    private ShopCacher shopCacher;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -566,11 +582,24 @@ public class ShipmentReadLogic {
         DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
         List<SkuCodeAndQuantity> skuCodeAndQuantities = this.findShipmentSkuDetail(shipment);
         if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
-            ShopShipment shopShipment = new ShopShipment();
-            shopShipment.setShopId(shipmentExtra.getWarehouseId());
-            shopShipment.setShopName(shipmentExtra.getWarehouseName());
-            shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
+            // ShopShipment shopShipment = new ShopShipment();
+            // shopShipment.setShopId(shipmentExtra.getWarehouseId());
+            // shopShipment.setShopName(shipmentExtra.getWarehouseName());
+            // shopShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            // dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
+            //店发改成仓发
+            Long shopId = shipmentExtra.getWarehouseId();
+            Shop shop = shopCacher.findShopById(shopId);
+            Warehouse warehouse = warehouseCacher.findByShopInfo(Joiner.on("_").join(Lists.newArrayList(shop.getOuterId(),shop.getBusinessId())));
+            if (null == warehouse) {
+                log.error(" find warehouse by code {} is null ",shop.getOuterId() + "-_" + shop.getBusinessId());
+                throw new JsonResponseException("find.warehouse.failed");
+            }
+            WarehouseShipment warehouseShipment = new WarehouseShipment();
+            warehouseShipment.setWarehouseId(warehouse.getId());
+            warehouseShipment.setWarehouseName(warehouse.getName());
+            warehouseShipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
         }else{
             WarehouseShipment warehouseShipment = new WarehouseShipment();
             warehouseShipment.setWarehouseId(shipmentExtra.getWarehouseId());
@@ -597,7 +626,7 @@ public class ShipmentReadLogic {
                 return false;
             }
         }catch (Exception e){
-            log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),e.getMessage());
+            log.error("find shipment faild,order id is {},cauesd by {}",shopOrder.getId(),Throwables.getStackTraceAsString(e));
             return true;
         }
     }

@@ -12,6 +12,7 @@ import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -51,7 +52,9 @@ public class AddressGpss {
     @ApiOperation("获取某一个区内的门店")
     @RequestMapping(value = "/api/middle/region/{id}/shops", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Shop> findShopByRegionId(@PathVariable("id") Long regionId) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-REGION-ID-SHOPS-START param: regionId [{}]",regionId);
+        }
         Response<List<AddressGps>> gpsRes = addressGpsReadService.findByRegionIdAndBusinessType(regionId, AddressBusinessType.SHOP);
         if(!gpsRes.isSuccess()){
             throw new JsonResponseException(gpsRes.getError());
@@ -68,7 +71,11 @@ public class AddressGpss {
         if(!shopsRes.isSuccess()){
             throw new JsonResponseException(shopsRes.getError());
         }
-        return shopsRes.getResult().stream().filter(shop -> Objects.equals(shop.getStatus(),1)).collect(Collectors.toList());
+        List<Shop> shops = shopsRes.getResult().stream().filter(shop -> Objects.equals(shop.getStatus(),1)).collect(Collectors.toList());
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-REGION-ID-SHOPS-END param: regionId [{}] ,resp: [{}]",regionId,JsonMapper.nonEmptyMapper().toJson(shops));
+        }
+        return shops;
 
     }
 
@@ -80,16 +87,23 @@ public class AddressGpss {
     @ApiOperation("获取门店地址信息")
     @RequestMapping(value = "/api/middle/shop/{id}/address", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<AddressGps> findGpsByShopId(@PathVariable("id") Long shopId) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SHOP-ID-ADDRESS-START param: shopId [{}]",shopId);
+        }
         Response<Optional<AddressGps>> response = addressGpsReadService.findByBusinessIdAndType(shopId, AddressBusinessType.SHOP);
         if(!response.isSuccess()){
             log.error("find address gps by business id:{} type:{} fail,error:{}",shopId,AddressBusinessType.SHOP,response.getError());
         }
 
         if(response.getResult().isPresent()){
+            if(log.isDebugEnabled()){
+                log.debug("API-MIDDLE-SHOP-ID-ADDRESS-END param: shopId [{}] ,resp: [{}]",shopId,JsonMapper.nonEmptyMapper().toJson(response.getResult().get()));
+            }
             return Response.ok(response.getResult().get());
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-MIDDLE-SHOP-ID-ADDRESS-END param: shopId [{}] ,resp: [{}]",shopId,"address.gps.not.found");
+        }
         return Response.fail("address.gps.not.found");
     }
 

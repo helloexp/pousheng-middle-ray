@@ -23,6 +23,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.dto.OrderDetail;
@@ -82,6 +83,10 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Paging<ShopOrderPagingInfo>> findBy(MiddleOrderCriteria middleOrderCriteria) {
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(middleOrderCriteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-PAGING-START param: middleOrderCriteria [{}] ",criteriaStr);
+        }
         if(middleOrderCriteria.getOutCreatedEndAt()!=null){
             middleOrderCriteria.setOutCreatedEndAt(new DateTime(middleOrderCriteria.getOutCreatedEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
@@ -118,7 +123,9 @@ public class AdminOrderReader {
         //撤销时必须保证订单没有发货
         pagingInfoPaging.setData(pagingInfos);
         pagingInfoPaging.setTotal(pagingRes.getResult().getTotal());
-
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-PAGING-END param: middleOrderCriteria [{}] ,resp: [{}]",criteriaStr,JsonMapper.nonEmptyMapper().toJson(pagingInfoPaging));
+        }
         return Response.ok(pagingInfoPaging);
 
     }
@@ -132,8 +139,14 @@ public class AdminOrderReader {
     @RequestMapping(value = "/api/order/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<OrderDetail> detail(@PathVariable("id") @PermissionCheckParam Long id,
                                         HttpServletRequest request) {
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-DETAIL-START param: id [{}] ",id);
+        }
         Response<OrderDetail> response=  orderReadLogic.orderDetail(id);
         sendLogForTaobao(response,request);
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-DETAIL-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(response));
+        }
         return response;
     }
 
@@ -145,6 +158,9 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{id}/wait/handle/sku", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<WaitShipItemInfo> orderWaitHandleSku(@PathVariable("id") @PermissionCheckParam Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-ORDERWAITHANDLESKU-START param: id [{}] ",id);
+        }
         List<SkuOrder> skuOrders =  orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id, MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         List<WaitShipItemInfo> waitShipItemInfos = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders){
@@ -169,6 +185,9 @@ public class AdminOrderReader {
             waitShipItemInfo.setWaitHandleNumber(Integer.valueOf(orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.WAIT_HANDLE_NUMBER,skuOrder)));
             waitShipItemInfos.add(waitShipItemInfo);
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-ORDERWAITHANDLESKU-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));
+        }
         return waitShipItemInfos;
     }
 
@@ -180,7 +199,9 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{id}/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean checkExist(@PathVariable("id") @PermissionCheckParam Long id) {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-CHECKEXIST-START param: id [{}] ",id);
+        }
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findById(id);
         if(!shopOrderRes.isSuccess()){
             log.error("find shop order by id:{} fail,error:{}",id,shopOrderRes.getError());
@@ -189,7 +210,9 @@ public class AdminOrderReader {
             }
             throw new JsonResponseException(shopOrderRes.getError());
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-CHECKEXIST-END param: id [{}] ",id);
+        }
         return Boolean.TRUE;
 
     }
@@ -201,8 +224,9 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{code}/for/after/sale", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ShopOrderWithReceiveInfo> afterSaleOrderInfo(@PathVariable("code") @PermissionCheckParam String code) {
-
-
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-AFTERSALEORDERINFO-START param: code [{}] ",code);
+        }
         Response<ShopOrder> shopOrderRes = shopOrderReadService.findByOrderCode(code);
         if(!shopOrderRes.isSuccess()){
             log.error("find shop order by code:{} fail,error:{}",code,shopOrderRes.getError());
@@ -224,7 +248,9 @@ public class AdminOrderReader {
         ShopOrderWithReceiveInfo withReceiveInfo = new ShopOrderWithReceiveInfo();
         withReceiveInfo.setShopOrder(shopOrder);
         withReceiveInfo.setReceiverInfo(receiverInfos.get(0));
-
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-AFTERSALEORDERINFO-END param: code [{}] ,resp: [{}]",code,JsonMapper.nonEmptyMapper().toJson(withReceiveInfo));
+        }
         return Response.ok(withReceiveInfo);
     }
 
@@ -235,7 +261,13 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{id}/is/shipment/created",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean isShipmentCreated(@PathVariable("id") Long id){
+        if(log.isDebugEnabled()){
+           log.debug("API-ORDER-ISSHIPMENTCREATED-START param: id [{}] ",id);
+        }
         Boolean result = orderReadLogic.isShipmentCreatedForShopOrder(id);
+        if(log.isDebugEnabled()){
+           log.debug("API-ORDER-ISSHIPMENTCREATED-END param: id [{}] ,resp: [{}]",id,result);
+        }
         return result;
     }
 
@@ -246,6 +278,9 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/{id}/is/handle/legal",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean isLegalHandleShopOrder(@PathVariable("id") Long id){
+        if(log.isDebugEnabled()){
+           log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-START param: id [{}] ",id);
+        }
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(id,
                 MiddleOrderStatus.WAIT_HANDLE.getValue(),MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue());
         int count = 0;
@@ -253,6 +288,9 @@ public class AdminOrderReader {
             if (StringUtils.isEmpty(skuOrder.getSkuCode())){
                 count++;
             }
+        }
+        if(log.isDebugEnabled()){
+           log.debug("API-ORDER-ISLEGALHANDLESHOPORDER-END param: id [{}] ,resp: [{}]",id,count);
         }
         return count <= 0;
 
@@ -266,9 +304,15 @@ public class AdminOrderReader {
      */
     @RequestMapping(value = "/api/order/shipment/{id}/list",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<Long>> findShipmentIdsByShopOrderId(@PathVariable("id")Long shopOrderId){
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-START param: shopOrderId [{}] ",shopOrderId);
+        }
         List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrderId);
         List<Long> shipmentIds = orderShipments.stream().filter(Objects::nonNull).
                 filter(it->!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())).map(OrderShipment::getShipmentId).collect(Collectors.toList());;
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-FINDSHIPMENTIDSBYSHOPORDERID-END param: shopOrderId [{}] ,resp: [{}]",shopOrderId,shipmentIds);
+        }
         return  Response.ok(shipmentIds);
     }
 

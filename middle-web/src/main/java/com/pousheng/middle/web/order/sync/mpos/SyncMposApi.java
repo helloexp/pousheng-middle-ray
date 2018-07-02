@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
-import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;

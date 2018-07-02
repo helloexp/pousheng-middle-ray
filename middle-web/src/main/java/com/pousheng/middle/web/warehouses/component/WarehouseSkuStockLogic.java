@@ -78,7 +78,7 @@ public class WarehouseSkuStockLogic {
             //查询恒康库存
             String outerId = extra.get("outCode");
             String companyId = warehouse.getCompanyId();
-            List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(outerId),Lists.newArrayList(skuCode),0);
+            List<HkSkuStockInfo> hkSkuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId),Lists.newArrayList(skuCode));
 
             if( Objects.equals(warehouseId,skxWarehouseId)){
 
@@ -97,37 +97,29 @@ public class WarehouseSkuStockLogic {
                     throw new ServiceException("shop.safe.stock.invalid");
                 }
 
-                if( CollectionUtils.isEmpty(hkSkuStockInfos)){
-                    log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
+                if (CollectionUtils.isEmpty(hkSkuStockInfos) || CollectionUtils.isEmpty(hkSkuStockInfos.get(0).getMaterial_list())) {
+                    log.error("not query stock from hk where stock code:{} sku code:{}", outerId, skuCode);
                     continue;
                 }
                 //可用库存
                 Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
                 //安全库存
                 Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
-                Long localStock =  dispatchComponent.getMposSkuShopLockStock(shop.getId(),skuCode);
-                Long availStock = hkAvailStock - localStock - safeStock;
-                if( availStock <= 0L){
-                    availStock = 0L;
+                Integer availStock = hkAvailStock - safeStock;
+                if( availStock <= 0){
+                    availStock = 0;
                 }
-                r.put(skuCode, availStock.intValue());
+                r.put(skuCode, availStock);
             } else {
                 //判断是否为mpos仓，则是用实时恒康库存，并减掉中台安全库存
-                Integer safeStock = 0;
                 if( Objects.equals(warehouse.getIsMpos(),1)){
-                    if( CollectionUtils.isEmpty(extra) ||! extra.containsKey("safeStock")){
-                        log.error("not find safe stock for warehouse:(id:{})",warehouse.getId());
-                    } else {
-                        //安全库存
-                        safeStock = Integer.valueOf(extra.get("safeStock"));
-                    }
                     if( CollectionUtils.isEmpty(hkSkuStockInfos)){
                         log.error("not query stock from hk where stock code:{} sku code:{}",outerId,skuCode);
                         continue;
                     }
                     //可用库存
                     Integer hkAvailStock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
-                    r.put(skuCode, hkAvailStock - safeStock);
+                    r.put(skuCode, hkAvailStock);
                 } else {
                     //非mpos大仓，则直接取中台库存
                     if (Arguments.isNull(stock)){

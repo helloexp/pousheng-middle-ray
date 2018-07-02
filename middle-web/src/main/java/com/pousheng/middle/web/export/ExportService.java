@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.export;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.web.utils.export.AzureOSSBlobClient;
@@ -99,7 +100,7 @@ public class ExportService {
             eventBus.post(new AzureOSSUploadEvent(exportContext, userId));
 
         } catch (Exception e) {
-            throw new JsonResponseException(e.getMessage());
+            throw new JsonResponseException(Throwables.getStackTraceAsString(e));
         }
     }
 

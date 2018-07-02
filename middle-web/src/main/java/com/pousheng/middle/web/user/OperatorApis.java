@@ -70,6 +70,10 @@ public class OperatorApis {
      */
     @RequestMapping(value = "", method = RequestMethod.POST)
     public Long createOperator(@RequestBody OperatorPost operator) {
+        String operatorStr = JsonMapper.nonEmptyMapper().toJson(operator);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-CREATEOPERATOR-START param: operator [{}]",operatorStr);
+        }
         String un = Params.trimToNull(operator.getUsername());
         if (un == null) {
             log.warn("create operator failed, no username specified");
@@ -127,14 +131,20 @@ public class OperatorApis {
         // 创建operator
         Long userId = userCreateResp.getResult();
         toCreateOperator.setUserId(userId);
-
-        return RespHelper.or500(operatorWriteService.create(toCreateOperator));
+        Response<Long> resp = operatorWriteService.create(toCreateOperator);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-CREATEOPERATOR-END param: operator [{}] ,resp: [{}]",operatorStr,resp.getResult());
+        }
+        return RespHelper.or500(resp);
     }
 
 
     @RequestMapping(value = "/{userId}", method = RequestMethod.PUT)
     public Boolean updateOperator(@PathVariable Long userId, @RequestBody OperatorPost operator) {
-
+        String operatorStr = JsonMapper.nonEmptyMapper().toJson(operator);
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UPDATEOPERATOR-START param: userId [{}] operator: [{}]",userId,operatorStr);
+        }
         Response<MiddleUser> userRes = userReadService.findById(userId);
         if (!userRes.isSuccess()) {
             log.error("find user(id:{}) fail,error:{}", userId, userRes.getError());
@@ -191,6 +201,9 @@ public class OperatorApis {
             log.warn("operator update failed, error={}", opUpdateResp.getError());
             throw new JsonResponseException(opUpdateResp.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UPDATEOPERATOR-END param: userId [{}] operator: [{}]",userId,operatorStr);
+        }
         return Boolean.TRUE;
     }
 
@@ -220,6 +233,9 @@ public class OperatorApis {
 
     @RequestMapping(value = "/{userId}/frozen", method = RequestMethod.PUT)
     public Boolean frozenOperator(@PathVariable Long userId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FROZENOPERATOR-START param: userId [{}] ",userId);
+        }
         Response<Operator> opResp = operatorReadService.findByUserId(userId);
         if (!opResp.isSuccess()) {
             log.warn("operator find failed, userId={}, error={}", userId, opResp.getError());
@@ -238,11 +254,17 @@ public class OperatorApis {
             log.warn("frozen operator failed, userId={}, error={}", userId, updateResp.getError());
             throw new JsonResponseException(updateResp.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-FROZENOPERATOR-END param: userId [{}] ",userId);
+        }
         return Boolean.TRUE;
     }
 
     @RequestMapping(value = "/{userId}/unfrozen", method = RequestMethod.PUT)
     public Boolean unfrozenOperator(@PathVariable Long userId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UNFROZENOPERATOR-START param: userId [{}] ",userId);
+        }
         Response<Operator> opResp = operatorReadService.findByUserId(userId);
         if (!opResp.isSuccess()) {
             log.warn("operator find failed, userId={}, error={}", userId, opResp.getError());
@@ -260,6 +282,9 @@ public class OperatorApis {
         if (!updateResp.isSuccess()) {
             log.warn("frozen operator failed, userId={}, error={}", userId, updateResp.getError());
             throw new JsonResponseException(updateResp.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-OPERATOR-UNFROZENOPERATOR-END param: userId [{}] ",userId);
         }
         return Boolean.TRUE;
     }

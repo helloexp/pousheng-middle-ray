@@ -10,8 +10,8 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.open.api.dto.YyEdiResponseDetail;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -27,7 +27,6 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
-import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.Shipment;
@@ -98,7 +97,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 this.oneBiz(a);
 
             } catch (Exception e) {
-                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shiopmentId, e.getMessage());
+                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shiopmentId, Throwables.getStackTraceAsString(e));
             }
 
         });

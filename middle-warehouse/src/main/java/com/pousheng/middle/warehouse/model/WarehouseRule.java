@@ -1,5 +1,7 @@
 package com.pousheng.middle.warehouse.model;
 
+import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
+import io.terminus.common.utils.Arguments;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -31,6 +33,11 @@ public class WarehouseRule implements Serializable {
     private Long shopGroupId;
 
     /**
+     * 仓库派单优先级类型
+     */
+    private Integer itemPriorityType;
+
+    /**
      * 创建时间
      */
     private Date createdAt;
@@ -39,4 +46,13 @@ public class WarehouseRule implements Serializable {
      * 修改时间
      */
     private Date updatedAt;
+
+    public Integer getItemPriorityType(){
+        //如果没维护就默认按照优先级
+        if(Arguments.isNull(itemPriorityType)){
+            return WarehouseRuleItemPriorityType.DISTANCE.value();
+        }
+        return itemPriorityType;
+    }
+
 }

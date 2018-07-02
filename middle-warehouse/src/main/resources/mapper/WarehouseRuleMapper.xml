@@ -9,6 +9,7 @@
         <id column="id" property="id"/>
         <result column="name" property="name"/>
         <result column="shop_group_id" property="shopGroupId"/>
+        <result column="item_priority_type" property="itemPriorityType"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -22,11 +23,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        name, shop_group_id, created_at, updated_at
+        name, shop_group_id,item_priority_type, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{name}, #{shopGroupId}, now(), now()
+        #{name}, #{shopGroupId},#{itemPriorityType}, now(), now()
     </sql>
 
 
@@ -64,7 +65,8 @@
         <include refid="tb"/>
         <set>
             <if test="name != null">name = #{name},</if>
-            
+            <if test="itemPriorityType != null">item_priority_type = #{itemPriorityType},</if>
+
             updated_at=now()
         </set>
         WHERE id = #{id}

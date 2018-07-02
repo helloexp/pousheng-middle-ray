@@ -83,6 +83,11 @@ public class RefundExtra implements Serializable{
     //skx退货单同步YYedi是否成功
     private Boolean skxRefundSyncYyediResult;
 
+    //skx退货单取消同步skx是否成功
+    private Boolean skxRefundCancelSyncSkxResult;
+    //skx退货单取消同步YYedi是否成功
+    private Boolean skxRefundCancelSyncYyediResult;
+
     //退货来源 0退入宝胜仓 1 退入SKX仓
     private Integer islock =0;
 

@@ -16,5 +16,10 @@ public class DispatchWithPriority implements Serializable{
 
     private String warehouseOrShopId;
 
-    private Double priority;
+    private Double distance;
+
+    /**
+     * 优先级
+     */
+    private Integer priority;
 }

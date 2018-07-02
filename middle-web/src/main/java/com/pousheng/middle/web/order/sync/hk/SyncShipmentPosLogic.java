@@ -144,12 +144,18 @@ public class SyncShipmentPosLogic {
 
             HkShimentDoneInfo doneInfo = new HkShimentDoneInfo();
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if(Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())||Arguments.isNull(shipment.getConfirmAt())){
+            if(Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())){
                 log.error("shipment(id:{}) sync hk confirm fail,param invalid",shipment.getId());
                 return Response.fail("shipment.confirm.param.invalid");
             }
+
             doneInfo.setNetbillno(shipment.getShipmentCode());
-            doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
+            //如果确认收货时间是空的，直接传当前时间
+            if (Arguments.isNull(shipment.getConfirmAt())){
+                doneInfo.setReceiptdate(formatter.print(System.currentTimeMillis()));
+            }else{
+                doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
+            }
 
             requestData.setBizContent(Lists.newArrayList(doneInfo));
 

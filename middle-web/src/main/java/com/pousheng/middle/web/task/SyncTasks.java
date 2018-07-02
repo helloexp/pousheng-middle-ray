@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.task;
 
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -27,7 +28,14 @@ public class SyncTasks implements Serializable{
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public SyncTask pagingUser(@PathVariable("id") String taskId){
-        return importTaskRedisHandler.getTask(taskId);
+        if(log.isDebugEnabled()){
+            log.debug("API-SYNC-TASK-START param: taskId [{}]",taskId);
+        }
+        SyncTask syncTask= importTaskRedisHandler.getTask(taskId);
+        if(log.isDebugEnabled()){
+            log.debug("API-SYNC-TASK-END param: taskId [{}] ,resp: [{}]",taskId,JsonMapper.nonEmptyMapper().toJson(syncTask));
+        }
+        return syncTask;
     }
 
 }

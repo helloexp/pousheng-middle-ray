@@ -15,6 +15,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.auth.api.Role;
 import io.terminus.parana.auth.api.RoleContent;
 import io.terminus.parana.auth.api.UserRoleLoader;
@@ -70,8 +71,15 @@ public class Users {
      */
     @RequestMapping(value = "/{userId}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<ParanaUser> findUserById(@PathVariable Long userId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-USER-FINDUSERBYID-START param: userId [{}]",userId);
+        }
         MiddleUser middleUser = findMiddleUserByOutId(userId);
-        return Response.ok(buildParanaUser(middleUser));
+        ParanaUser user = buildParanaUser(middleUser);
+        if(log.isDebugEnabled()){
+            log.debug("API-USER-FINDUSERBYID-END param: userId [{}] ,resp: [{}]",userId,JsonMapper.nonEmptyMapper().toJson(user));
+        }
+        return Response.ok(user);
     }
 
 

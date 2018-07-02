@@ -4,14 +4,21 @@
 
 package com.pousheng.middle.order.dispatch.component;
 
+import com.google.common.base.Splitter;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.link.DispatchOrderLink;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Scope;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.Collections;
@@ -44,7 +51,7 @@ public class DispatchLinkInvocation {
         for (int i = 0; i<getDispatchOrderLinks().size(); i++) {
             this.interceptorIndex = i;
             DispatchOrderLink interceptor = getDispatchOrderLinks().get(i);
-            if (!interceptor.dispatch(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context)) {
+            if (!interceptor.dispatch(dispatchOrderItemInfo, shopOrder, receiverInfo, skuCodeAndQuantities, context)) {
                 return true;
             }
         }

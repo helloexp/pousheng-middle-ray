@@ -1,7 +1,6 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
 import com.github.kevinsawicki.http.HttpRequest;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.open.client.parana.component.ParanaClient;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;

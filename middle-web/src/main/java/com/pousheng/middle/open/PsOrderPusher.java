@@ -1,5 +1,6 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.model.OpenPushOrderTask;
 import com.pousheng.middle.order.service.OpenPushOrderTaskWriteService;
@@ -73,7 +74,7 @@ public class PsOrderPusher extends DefaultOrderPusher {
             }
 
         }catch (Exception e){
-            log.error("sync order to out failed,openShopId is {},orders are {},caused by {}",openClientShop.getOpenShopId(),openFullOrderInfos,e.getMessage());
+            log.error("sync order to out failed,openShopId is {},orders are {},caused by {}",openClientShop.getOpenShopId(),openFullOrderInfos, Throwables.getStackTraceAsString(e));
             //补偿任务
             createPushTask(openClientShop, openFullOrderInfos);
         }

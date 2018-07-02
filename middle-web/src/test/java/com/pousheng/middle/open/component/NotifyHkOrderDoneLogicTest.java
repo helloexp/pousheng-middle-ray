@@ -12,14 +12,10 @@ package com.pousheng.middle.open.component;
 
 import com.pousheng.middle.AbstractRestApiTest;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
-import com.pousheng.middle.web.component.ReceiveYyediResultLogicTest;
-import com.pousheng.middle.web.order.component.ReceiveYyediResultLogic;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
-
-import static org.mockito.Matchers.anyList;
 
 /**
  * @author xiehong

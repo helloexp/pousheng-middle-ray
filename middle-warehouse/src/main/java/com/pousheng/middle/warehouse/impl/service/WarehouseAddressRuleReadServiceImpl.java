@@ -2,21 +2,21 @@ package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.RuleSummary;
 import com.pousheng.middle.warehouse.dto.ThinAddress;
 import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
 import com.pousheng.middle.warehouse.dto.Warehouses4Address;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseAddressRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseShopGroupDao;
-import com.pousheng.middle.warehouse.model.WarehouseAddressRule;
-import com.pousheng.middle.warehouse.model.WarehouseRule;
-import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
-import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
+import com.pousheng.middle.warehouse.model.*;
 import com.pousheng.middle.warehouse.service.WarehouseAddressRuleReadService;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,15 +42,18 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
 
     private final WarehouseShopGroupDao shopGroupDao;
 
+    private final WarehouseCacher warehouseCacher;
+
     @Autowired
     public WarehouseAddressRuleReadServiceImpl(WarehouseAddressRuleDao warehouseAddressRuleDao,
                                                WarehouseRuleDao warehouseRuleDao,
                                                WarehouseRuleItemDao warehouseRuleItemDao,
-                                               WarehouseShopGroupDao shopGroupDao) {
+                                               WarehouseShopGroupDao shopGroupDao, WarehouseCacher warehouseCacher) {
         this.warehouseAddressRuleDao = warehouseAddressRuleDao;
         this.warehouseRuleDao = warehouseRuleDao;
         this.warehouseRuleItemDao = warehouseRuleItemDao;
         this.shopGroupDao = shopGroupDao;
+        this.warehouseCacher = warehouseCacher;
     }
 
 
@@ -75,8 +78,8 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
             ruleSummary.setAddresses(addresses);
             return Response.ok(ruleSummary);
         }catch (ServiceException e){
-            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, e.getMessage());
-            return Response.fail(e.getMessage());
+            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail(Throwables.getStackTraceAsString(e));
         }catch(Exception e) {
             log.error("failed to find rule addresses information for ruleId({}), cause:{}",
                     ruleId, Throwables.getStackTraceAsString(e));
@@ -113,8 +116,8 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
 
             return Response.ok(addresses);
         } catch (ServiceException e){
-            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, e.getMessage());
-            return Response.fail(e.getMessage());
+            log.error("failed to find rule address information for rule(id={}), error code:{}", ruleId, Throwables.getStackTraceAsString(e));
+            return Response.fail(Throwables.getStackTraceAsString(e));
         }catch(Exception e) {
             log.error("failed to find rule addresses information for ruleId({}), cause:{}",
                     ruleId, Throwables.getStackTraceAsString(e));
@@ -204,16 +207,40 @@ public class WarehouseAddressRuleReadServiceImpl implements WarehouseAddressRule
                 if(CollectionUtils.isEmpty(wris)){
                     continue;
                 }
+
+                WarehouseRule warehouseRule = warehouseRuleDao.findById(rule.getRuleId());
+
                 Warehouses4Address warehouses4Address = new Warehouses4Address();
                 warehouses4Address.setAddressId(addressId);
+                warehouses4Address.setWarehouseRule(warehouseRule);
                 List<WarehouseWithPriority> wwps = Lists.newArrayListWithCapacity(wris.size());
+                //店仓
+                List<WarehouseWithPriority> shopPs = Lists.newArrayListWithCapacity(wris.size());
+                //大仓
+                List<WarehouseWithPriority> totalPs = Lists.newArrayListWithCapacity(wris.size());
+
                 for (WarehouseRuleItem warehouseRuleItem : wris) {
+                    Long warehouseId = warehouseRuleItem.getWarehouseId();
+                    Warehouse warehouse = warehouseCacher.findById(warehouseId);
                     WarehouseWithPriority wwp = new WarehouseWithPriority();
                     wwp.setPriority(warehouseRuleItem.getPriority());
-                    wwp.setWarehouseId(warehouseRuleItem.getWarehouseId());
-                    wwps.add(wwp);
+                    wwp.setWarehouseId(warehouseId);
+                    //店仓不参与非全渠道派单
+                    if (Arguments.notNull(warehouse)
+                            && com.google.common.base.Objects.equal(warehouse.getType(), WarehouseType.TOTAL_WAREHOUSE.value())){
+                        wwps.add(wwp);
+                    } else {
+                        log.warn("current warehouse(id:{}) is shop warehouse so skip to dispatch",warehouse.getId());
+                    }
+                    if(com.google.common.base.Objects.equal(warehouse.getType(), WarehouseType.TOTAL_WAREHOUSE.value())){
+                        totalPs.add(wwp);
+                    }else {
+                        shopPs.add(wwp);
+                    }
                 }
                 warehouses4Address.setWarehouses(wwps);
+                warehouses4Address.setTotalWarehouses(totalPs);
+                warehouses4Address.setShopWarehouses(shopPs);
                 candidates.add(warehouses4Address);
             }
         }

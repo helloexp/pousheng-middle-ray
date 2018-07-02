@@ -28,11 +28,11 @@ public class CompensateBizResetJob {
     @RequestMapping(value = "/async/job/reset", method = RequestMethod.GET)
     @Scheduled(cron = "0 */5 * * * ?")
     public void reset() {
+        log.info("start to reset long time handling task....");
         if (!hostLeader.isLeader()) {
             log.info("current leader is {}, skip", hostLeader.currentLeaderId());
             return;
         }
-        log.info("start to reset long time handling task....");
         Response<Boolean> response = autoCompensationWriteService.resetStatus();
         if (!response.isSuccess()) {
             log.error("reset long time handling task failed,cause:{}", response.getError());

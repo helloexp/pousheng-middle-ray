@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.events.trade.listener;
 
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -80,7 +81,7 @@ public class StepOrderNotifyHkListener {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                 }
             } catch (Exception e) {
-                log.error("sync shipment(id:{}) to hk fail,error:{}", orderShipment.getShipmentId(), e.getMessage());
+                log.error("sync shipment(id:{}) to hk fail,error:{}", orderShipment.getShipmentId(), Throwables.getStackTraceAsString(e));
             }
         }
 

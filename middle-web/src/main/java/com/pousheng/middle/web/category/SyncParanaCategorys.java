@@ -40,7 +40,9 @@ public class SyncParanaCategorys {
 
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> synCategory(@PathVariable(name = "id") Long categoryId){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-CATEGORY-ID-SYNC-START param: categoryId [{}] ",categoryId);
+        }
         Response<BackCategory> categoryRes = backCategoryReadService.findById(categoryId);
         if(!categoryRes.isSuccess()){
             log.error("find category by id:{} fail,error:{}",categoryId,categoryRes.getError());
@@ -49,7 +51,11 @@ public class SyncParanaCategorys {
         OpenClientBackCategory openClientBackCategory = new OpenClientBackCategory();
         BackCategory backCategory = categoryRes.getResult();
         BeanMapper.copy(backCategory,openClientBackCategory);
-        return syncParanaCategoryService.syncBackCategory(openClientBackCategory);
+        Response<Boolean> resp = syncParanaCategoryService.syncBackCategory(openClientBackCategory);
+        if(log.isDebugEnabled()){
+            log.debug("API-CATEGORY-ID-SYNC-END param: categoryId [{}] ,resp: [{}]",categoryId,resp);
+        }
+        return resp;
     }
 
 
@@ -59,13 +65,18 @@ public class SyncParanaCategorys {
      */
     @RequestMapping(value = "/batch-sync", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-CATEGORY-BATCH-SYNC-START noparam: ");
+        }
         SyncTask task = new SyncTask();
         task.setStatus(1);
         String taskId = syncParanaTaskRedisHandler.saveTask(task);
         BatchSyncParanaCategoryEvent event = new BatchSyncParanaCategoryEvent();
         event.setTaskId(taskId);
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-CATEGORY-BATCH-SYNC-END noparam: ,resp: [{}]",taskId);
+        }
         return taskId;
 
     }

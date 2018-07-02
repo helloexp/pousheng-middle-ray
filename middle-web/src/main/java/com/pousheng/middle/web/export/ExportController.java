@@ -12,6 +12,7 @@ import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -48,6 +49,10 @@ public class ExportController {
      */
     @GetMapping("order/export")
     public void orderExport(MiddleOrderCriteria middleOrderCriteria) {
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(middleOrderCriteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-EXPORT-START param: middleOrderCriteria [{}] ]",criteriaStr);
+        }
         //获取当前用户负责的商铺id
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (middleOrderCriteria.getShopId() == null) {
@@ -60,6 +65,9 @@ public class ExportController {
         event.setCriteria(middleOrderCriteria);
         event.setUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-EXPORT-END param: middleOrderCriteria [{}] ]",criteriaStr);
+        }
     }
 
     /**
@@ -69,6 +77,10 @@ public class ExportController {
      */
     @GetMapping("refund/export")
     public void refundExport(MiddleRefundCriteria criteria) {
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-EXPORT-START param: criteria [{}] ]",criteriaStr);
+        }
         //获取当前用户负责的商铺id
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (criteria.getShopId() == null) {
@@ -81,6 +93,9 @@ public class ExportController {
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-EXPORT-END param: criteria [{}] ]",criteriaStr);
+        }
     }
 
 
@@ -89,6 +104,10 @@ public class ExportController {
      */
     @GetMapping("shipment/export")
     public void shipmentExport(OrderShipmentCriteria criteria) {
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-EXPORT-START param: criteria [{}] ]",criteriaStr);
+        }
         if (criteria.getEndAt() != null) {
             criteria.setEndAt(new DateTime(criteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
@@ -104,6 +123,9 @@ public class ExportController {
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-EXPORT-END param: criteria [{}] ]",criteriaStr);
+        }
     }
 
     /**
@@ -112,6 +134,10 @@ public class ExportController {
      */
     @GetMapping( value = "settlement/pos/export")
     public void exportSettlementPos(PoushengSettlementPosCriteria criteria){
+        String criteriaStr = JsonMapper.nonEmptyMapper().toJson(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-SETTLEMENT-POS-EXPORT-START param: criteria [{}] ]",criteriaStr);
+        }
         List<Long> shopIds =  permissionUtil.getCurrentUserCanOperateShopIDs();
         if (criteria.getShopId()!=null&&!shopIds.contains(criteria.getShopId())){
             throw new JsonResponseException("permission.check.shop.id.empty");
@@ -124,6 +150,9 @@ public class ExportController {
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SETTLEMENT-POS-EXPORT-END param: criteria [{}] ]",criteriaStr);
+        }
     }
 
     /**
@@ -132,9 +161,13 @@ public class ExportController {
      */
     @GetMapping("export/files")
     public Response<Paging<FileRecord>> exportFiles() {
-
+        if(log.isDebugEnabled()){
+            log.debug("API-EXPORT-FILES-START noparam: ");
+        }
         List<FileRecord> files = exportService.getExportFiles();
-
+        if(log.isDebugEnabled()){
+            log.debug("API-EXPORT-FILES-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(files));
+        }
         return Response.ok(new Paging<FileRecord>((long) files.size(), files));
     }
 

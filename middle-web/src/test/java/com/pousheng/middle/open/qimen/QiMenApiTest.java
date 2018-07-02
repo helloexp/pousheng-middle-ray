@@ -17,8 +17,6 @@ import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.test.util.ReflectionTestUtils;
 
-import static org.junit.Assert.*;
-
 public class QiMenApiTest extends AbstractRestApiTest {
 
     private QiMenApi qiMenApi;

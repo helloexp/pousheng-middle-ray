@@ -15,4 +15,6 @@ public class SkuIsMposDto implements Serializable{
     private String barcode;
 
     private Boolean isMpos;
+
+    private Long stock;
 }

@@ -2,8 +2,6 @@ package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.zookeeper.leader.HostLeader;
@@ -15,9 +13,6 @@ import org.springframework.util.StringUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -208,6 +203,15 @@ public abstract class AbstractAsyncJob {
             try {
                 while (true) {
                     int groupSize = getPopSize();
+                    log.info("[consumer current thread pool remain size : {}]", groupSize);
+                    if (groupSize == 0) {
+                        try {
+                            Thread.sleep(10000);
+                        } catch (InterruptedException e) {
+                            log.error("thread sleep failed");
+                            Thread.currentThread().interrupt();
+                        }
+                    }
                     for (int i = 0; i < groupSize; i++) {
                         String idStr = jedisTemplate.execute(jedis -> {
                             return jedis.rpop(getQueueKey());

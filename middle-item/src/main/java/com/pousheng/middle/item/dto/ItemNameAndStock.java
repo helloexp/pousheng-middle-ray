@@ -15,5 +15,14 @@ public class ItemNameAndStock implements Serializable{
 
     private String name;
 
-    private Long stockQuantity;
+    //总库存
+    private Long stockQuantity = 0L;
+
+    //当前店铺库存
+    private Long currentShopQuantity = 0L;
+
+    //当前公司库存
+    private Long currentCompanyQuantity = 0L;
+
+
 }

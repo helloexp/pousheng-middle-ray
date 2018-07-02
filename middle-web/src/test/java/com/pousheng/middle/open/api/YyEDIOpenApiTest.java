@@ -22,14 +22,11 @@ import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import org.junit.Test;
-import org.mockito.internal.matchers.Any;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyList;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
 
 /**

@@ -180,4 +180,23 @@ public class WarehouseReadServiceImpl implements WarehouseReadService {
             return Response.fail("warehouse.find.fail");
         }
     }
+
+
+    /**
+     * 根据公司id和仓库外码查询仓库
+     * @param outCode 仓库外码
+     * @param companyId 公司id
+     * @return
+     */
+    @Override
+    public Response<Optional<Warehouse>> findByOutCodeAndCompanyId(String outCode,String companyId){
+        try {
+            Warehouse w = warehouseDao.findByOutCodeAndCompanyId(outCode, companyId);
+            return Response.ok(Optional.fromNullable(w));
+        } catch (Exception e) {
+            log.error("failed to find warehouse by outCode:{}, companyId:{}, cause:{}",
+                    outCode, companyId, Throwables.getStackTraceAsString(e));
+            return Response.fail("warehouse.find.fail");
+        }
+    }
 }

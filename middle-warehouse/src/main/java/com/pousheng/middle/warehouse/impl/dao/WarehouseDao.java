@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import io.terminus.common.model.Paging;
@@ -67,5 +68,15 @@ public class WarehouseDao extends MyBatisDao<Warehouse> {
      */
     public List<Warehouse> findByOutCode(String outCode) {
         return getSqlSession().selectList(sqlId("findByOutCode"), outCode);
+    }
+
+    /**
+     * 根据外码和公司id查询
+     * @param outCode 外码
+     * @param companyId 公司id
+     * @return
+     */
+    public Warehouse findByOutCodeAndCompanyId(String outCode,String companyId) {
+        return getSqlSession().selectOne(sqlId("findByOutCodeAndCompanyId"), ImmutableMap.of("outCode",outCode, "companyId",companyId));
     }
 }

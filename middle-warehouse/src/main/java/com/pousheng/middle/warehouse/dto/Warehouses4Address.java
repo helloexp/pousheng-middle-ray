@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.dto;
 
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -15,13 +16,29 @@ import java.util.List;
 public class Warehouses4Address implements Serializable{
 
     /**
+     * 规则id
+     */
+    private WarehouseRule warehouseRule;
+
+    /**
      * 地址id
      */
     private Long addressId;
 
     /**
-     * 仓库列表
+     * 全部仓库列表
      */
     private List<WarehouseWithPriority> warehouses;
+
+
+    /**
+     * 总仓列表
+     */
+    private List<WarehouseWithPriority> totalWarehouses;
+
+    /**
+     * 店仓列表
+     */
+    private List<WarehouseWithPriority> shopWarehouses;
 
 }

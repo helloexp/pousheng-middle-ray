@@ -17,6 +17,9 @@ import com.pousheng.middle.order.service.ZoneContractReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
 import com.pousheng.middle.shop.service.PsShopReadService;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.model.Warehouse;
+import com.pousheng.middle.warehouse.service.WarehouseWriteService;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
@@ -117,6 +120,10 @@ public class AdminShops {
     private ZoneContractReadService zoneContractReadService;
     @Value("${pousheng.order.email.remind.group}")
     private String[] mposEmailGroup;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+    @Autowired
+    private WarehouseWriteService warehouseWriteService;
 
 
     @ApiOperation("根据门店id查询门店信息")
@@ -139,6 +146,21 @@ public class AdminShops {
         Shop shop = rShop.getResult();
         return memberShopOperationLogic.getAddressGps(shopId,String.valueOf(shop.getBusinessId()),shop.getOuterId());
     }
+
+    @ApiOperation("根据门店id调用会员中心查询门店地址信息并修复到中台")
+    @RequestMapping(value = "/address/{id}/fix", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String fixShopAddress(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+
+        Shop shop = rShop.getResult();
+        UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(), shop.getBusinessId(), shop.getOuterId());
+        eventBus.post(updateShopEvent);
+        return "success";
+    }
+
 
 
 
@@ -243,7 +265,7 @@ public class AdminShops {
                 }
 
             }catch (JsonResponseException e){
-                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),e.getMessage());
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",shop.getOuterId(),1,shopExtraInfo.getCompanyId(),Throwables.getStackTraceAsString(e));
             }
 
             shopPag.setShopExtraInfo(shopExtraInfo);
@@ -658,6 +680,16 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.frozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
+        String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
+        Warehouse warehouse = warehouseCacher.findByShopInfo(shopInfo);
+        if (warehouse != null) {
+            warehouse.setStatus(-2);
+            RespHelper.or500(warehouseWriteService.update(warehouse));
+            warehouseCacher.refreshById(warehouse.getId());
+        }
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
+
         try {
             //同步恒康mpos门店范围
             mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
@@ -679,6 +711,15 @@ public class AdminShops {
         Shop exist = rExist.getResult();
         RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
+        String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
+        Warehouse warehouse = warehouseCacher.findByShopInfo(shopInfo);
+        if (warehouse != null) {
+            warehouse.setStatus(1);
+            RespHelper.or500(warehouseWriteService.update(warehouse));
+            warehouseCacher.refreshById(warehouse.getId());
+        }
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
         try {
             //同步恒康mpos门店范围
             mposWarehousePusher.addWarehouses(exist.getBusinessId().toString(),exist.getOuterId());

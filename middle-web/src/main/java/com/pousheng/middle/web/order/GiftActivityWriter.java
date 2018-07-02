@@ -14,6 +14,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateUtils;
 import org.assertj.core.util.Lists;
@@ -54,7 +55,15 @@ public class GiftActivityWriter {
     @RequestMapping(value = "/api/gift/actvity/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建活动规则")
     public Response<Long> createGiftActivity(@RequestBody EditSubmitGiftActivityInfo editSubmitGiftActivityInfo) {
-        return Response.ok(poushengGiftActivityWriteLogic.createGiftActivity(editSubmitGiftActivityInfo));
+        String editSubmitGiftActivityInfoStr = JsonMapper.nonEmptyMapper().toJson(editSubmitGiftActivityInfo);
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-CREATE-START param: editSubmitGiftActivityInfo [{}] ",editSubmitGiftActivityInfoStr);
+        }
+        long id = poushengGiftActivityWriteLogic.createGiftActivity(editSubmitGiftActivityInfo);
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-CREATE-END param: editSubmitGiftActivityInfo [{}] ,resp: [{}]",editSubmitGiftActivityInfoStr,id);
+        }
+        return Response.ok(id);
     }
 
     /**
@@ -120,6 +129,9 @@ public class GiftActivityWriter {
     @RequestMapping(value = "/api/gift/actvity/{id}/publish", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("发布活动")
     public Response<Boolean> publishGiftActivity(@PathVariable("id")@OperationLogParam Long id){
+        if(log.isDebugEnabled()){
+           log.debug("API-GIFT-ACTVITY-PUBLISH-START param: id [{}] ",id);
+        }
         Response<PoushengGiftActivity> r = poushengGiftActivityReadService.findById(id);
         if (!r.isSuccess()||Objects.isNull(r.getResult())){
             log.error("find pousheng gift activity faile,id is {},caused by {}",id,r.getError());
@@ -131,12 +143,19 @@ public class GiftActivityWriter {
         if (current>=endTime){
             throw new JsonResponseException("gift.activity.time.out");
         }
-        return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.PUBLISH.toOrderOperation());
+        Response<Boolean> resp= poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.PUBLISH.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-PUBLISH-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        }
+        return resp;
     }
 
     //编辑活动详情，或者新增活动详情
     @RequestMapping(value = "/api/gift/activity/edit-or-create", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public PoushengGiftActivityInfo edit(@RequestParam(required = false)  Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-EDIT-OR-CREATE-START param: id [{}] ",id);
+        }
         if (Arguments.isNull(id)) {
             PoushengGiftActivityInfo newInfo = new PoushengGiftActivityInfo();
             newInfo.setIsCreate(true);
@@ -158,6 +177,9 @@ public class GiftActivityWriter {
         poushengGiftActivityInfo.setGiftItems(giftItems);
         poushengGiftActivityInfo.setActivityShops(activityShops);
         poushengGiftActivityInfo.setIsCreate(false);
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-EDIT-OR-CREATE-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(poushengGiftActivityInfo));
+        }
         return poushengGiftActivityInfo;
     }
     /**
@@ -166,7 +188,14 @@ public class GiftActivityWriter {
     @RequestMapping(value = "/api/gift/actvity/{id}/over", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("使赠品活动失效")
     public Response<Boolean> overGiftActivity(@PathVariable("id") @OperationLogParam Long id){
-        return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.OVER.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-OVER-START param: id [{}] ",id);
+        }
+        Response<Boolean> resp = poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.OVER.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-OVER-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        }
+        return resp;
     }
 
     /**
@@ -175,6 +204,13 @@ public class GiftActivityWriter {
     @RequestMapping(value = "/api/gift/actvity/{id}/delete", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("删除赠品活动")
     public Response<Boolean> deleteGiftActivity(@PathVariable("id")@OperationLogParam Long id){
-        return poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.DELETE.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-DELETE-START param: id [{}] ",id);
+        }
+        Response<Boolean> resp = poushengGiftActivityWriteLogic.updatePoushengGiftActivityStatus(id, PoushengGiftActivityEvent.DELETE.toOrderOperation());
+        if(log.isDebugEnabled()){
+            log.debug("API-GIFT-ACTVITY-DELETE-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        }
+        return resp;
     }
 }

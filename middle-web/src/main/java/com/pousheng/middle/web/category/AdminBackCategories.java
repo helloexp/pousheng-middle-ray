@@ -42,18 +42,30 @@ public class AdminBackCategories {
 
     @RequestMapping(value = "/children", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<BackCategory>> findChildrenByPid(@RequestParam(value = "pid", defaultValue = "0") Long pid) {
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-CHILDREN-START param: pid [{}]",pid);
+        }
         Response<List<BackCategory>> r = backCategoryReadService.findChildrenByPid(pid);
         if (!r.isSuccess()) {
             log.warn("failed to find children of back category(id={}), error code:{}", pid, r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-CHILDREN-END param: pid [{}] ,resp: [{}]",pid,r);
         }
         return r;
     }
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<BackCategory> create(@RequestBody BackCategory backCategory) {
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-CREATE-START param: backCategory [{}]",backCategory);
+        }
         Response<BackCategory> r = backCategoryWriteService.create(backCategory);
         if (!r.isSuccess()) {
             log.warn("failed to create {}, error code:{}", backCategory, r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-CREATE-END param: backCategory [{}] ,resp: [{}]",backCategory,r);
         }
         return r;
     }
@@ -61,24 +73,43 @@ public class AdminBackCategories {
     @RequestMapping(value = "/{id}/name", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> update(@PathVariable("id") long id,
                               @RequestParam("name") String name) {
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-NAME-START param: id [{}] name [{}]",id,name);
+        }
         Response<Boolean> r = backCategoryWriteService.updateName(id, name);
         if (!r.isSuccess()) {
             log.warn("failed to update back category(id={}) name to {} ,error code:{}", id, name, r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-NAME-END param: id [{}] name [{}] ,resp: [{}]",id,name,r);
         }
         return r;
     }
 
     @RequestMapping(value = "/{id}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> disable(@PathVariable("id") Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-START param: id [{}]",id);
+        }
         Response<Boolean> r = backCategoryWriteService.disable(id);
         if (!r.isSuccess()) {
             log.warn("failed to editable back category(id={}) ,error code:{}", id, r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-END param: id [{}] ,resp: [{}]",id,r);
         }
         return r;
     }
 
     @RequestMapping(value = "/{id}/grouped-attribute", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<GroupedCategoryAttribute> findGroupedAttributeByCategoryId(@PathVariable Long id) {
-        return categoryAttributeCacher.findGroupedAttributeByCategoryId(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-GROUPED-ATTRIBUTE-START param: id [{}]",id);
+        }
+        List<GroupedCategoryAttribute> categoryAttributes = categoryAttributeCacher.findGroupedAttributeByCategoryId(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-BACKCATEGORIES-ID-GROUPED-ATTRIBUTE-END param: id [{}] ,resp: [{}]",id,categoryAttributes);
+        }
+        return categoryAttributes;
     }
 }

@@ -16,7 +16,6 @@ import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
-import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
@@ -65,9 +64,7 @@ public class JdYundingPushOrderApi {
         OpenClientShop openClientShop = OpenClientShop.from(openShopResponse.getResult());
         //订单处理
         orderReceiver.receiveOrder(openClientShop, openClientFullOrderList);
-
-        log.info("JD-YUNDING-SYNC-ORDER-END");
-
+        log.info("JD-YUNDING-SYNC-ORDER-END param: shopId is {}, openClientFullOrders is:{} ", shopId, openClientFullOrders);
     }
 
     /**
@@ -124,7 +121,7 @@ public class JdYundingPushOrderApi {
             }
         }
 
-        log.info("JD-YUNDING-SYNC-UPDATE-ORDER-AMOUNT-END");
+        log.info("JD-YUNDING-SYNC-UPDATE-ORDER-AMOUNT-END param: shopId is {}, openClientFullOrders is:{} ", shopId, openClientFullOrders);
     }
 }
 

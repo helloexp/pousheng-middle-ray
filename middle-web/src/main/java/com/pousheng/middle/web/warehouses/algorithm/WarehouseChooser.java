@@ -53,7 +53,7 @@ public class WarehouseChooser {
     @RpcConsumer
     private WarehouseAddressCacher warehouseAddressCacher;
 
-    @RpcConsumer
+    @Autowired
     private WarehouseCacher warehouseCacher;
 
     @Autowired
@@ -154,7 +154,13 @@ public class WarehouseChooser {
             //当前可发货数量
             int affordCount = 0;
             Long candidateWarehouseId = -1L;
-            for (Long warehouseId : widskucode2stock.rowKeySet()) {
+
+            for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
+                Long warehouseId = warehouseWithPriority.getWarehouseId();
+                if (!widskucode2stock.containsRow(warehouseId)){
+                    continue;
+                }
+
                 //本仓库当前可以发货的数量
                 int count = 0;
                 for (String skuCode : current.elementSet()) {
@@ -167,7 +173,10 @@ public class WarehouseChooser {
                     affordCount = count; //更新当前仓库的可发货数量
                     candidateWarehouseId = warehouseId;
                 }
+
+
             }
+
             if (candidateWarehouseId < 0) {
                 for (String skuCode : current.elementSet()) {
                     log.warn("insufficient sku(skuCode={}) stock: ", skuCode);

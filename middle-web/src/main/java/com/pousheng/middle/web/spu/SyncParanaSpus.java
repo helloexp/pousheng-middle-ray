@@ -46,13 +46,19 @@ public class SyncParanaSpus {
 
     @RequestMapping(value = "/{id}/sync", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> syncSpu(@PathVariable(name = "id") Long spuId){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-SYNC-START param: spuId [{}]",spuId);
+        }
         Response<FullSpu> fullSpuRes = spuReadService.findFullInfoBySpuId(spuId);
         if(!fullSpuRes.isSuccess()){
             log.error("find full spu by spu id:{} fail,error:{}",spuId,fullSpuRes.getError());
             throw new JsonResponseException(fullSpuRes.getError());
         }
-        return syncParanaSpuService.syncSpus(mapper.toJson(fullSpuRes.getResult()));
+        Response<Boolean> resp = syncParanaSpuService.syncSpus(mapper.toJson(fullSpuRes.getResult()));
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-SYNC-END param: spuId [{}] ,resp: [{}]",spuId,resp.getResult());
+        }
+        return resp;
     }
 
     /**
@@ -61,7 +67,9 @@ public class SyncParanaSpus {
      */
     @RequestMapping(value = "/batch-sync/{ids}", method = RequestMethod.POST, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynSpu(@PathVariable(name = "ids") String spuIds){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-BATCHSYNSPU-START param: spuIds [{}]",spuIds);
+        }
         if(Strings.isNullOrEmpty(spuIds)){
             log.error("batch sync spu fail,because ids is null");
             throw new JsonResponseException("param.is.invalid");
@@ -75,8 +83,10 @@ public class SyncParanaSpus {
         event.setTaskId(taskId);
         event.setSpuIds(ids);
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-BATCHSYNSPU-END param: spuIds [{}] ,resp: [{}]",spuIds,taskId);
+        }
         return taskId;
-
     }
 
     /**
@@ -85,13 +95,18 @@ public class SyncParanaSpus {
      */
     @RequestMapping(value = "/dump-sync", method = RequestMethod.GET, produces = MediaType.TEXT_PLAIN_VALUE)
     public String batchSynCategory(){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-DUMP-SYNC-START noparam: ");
+        }
         SyncTask task = new SyncTask();
         task.setStatus(1);
         String taskId = syncParanaTaskRedisHandler.saveTask(task);
         DumpSyncParanaSpuEvent event = new DumpSyncParanaSpuEvent();
         event.setTaskId(taskId);
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SPU-DUMP-SYNC-END noparam: ,resp: [{}]",taskId);
+        }
         return taskId;
 
     }

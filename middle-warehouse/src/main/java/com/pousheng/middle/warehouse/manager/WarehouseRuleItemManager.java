@@ -1,6 +1,9 @@
 package com.pousheng.middle.warehouse.manager;
 
+import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
+import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleDao;
 import com.pousheng.middle.warehouse.impl.dao.WarehouseRuleItemDao;
+import com.pousheng.middle.warehouse.model.WarehouseRule;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,10 +19,12 @@ import java.util.List;
 public class WarehouseRuleItemManager {
 
     private final WarehouseRuleItemDao warehouseRuleItemDao;
+    private final WarehouseRuleDao warehouseRuleDao;
 
     @Autowired
-    public WarehouseRuleItemManager(WarehouseRuleItemDao warehouseRuleItemDao) {
+    public WarehouseRuleItemManager(WarehouseRuleItemDao warehouseRuleItemDao, WarehouseRuleDao warehouseRuleDao) {
         this.warehouseRuleItemDao = warehouseRuleItemDao;
+        this.warehouseRuleDao = warehouseRuleDao;
     }
 
     /**
@@ -29,8 +34,12 @@ public class WarehouseRuleItemManager {
      * @param warehouseRuleItems  新仓库列表
      */
     @Transactional
-    public void batchCreate(Long ruleId, List<WarehouseRuleItem> warehouseRuleItems){
+    public void batchCreate(Long ruleId, WarehouseRuleItemPriorityType priorityType, List<WarehouseRuleItem> warehouseRuleItems){
         warehouseRuleItemDao.deleteByRuleId(ruleId);
+        WarehouseRule warehouseRule = new WarehouseRule();
+        warehouseRule.setId(ruleId);
+        warehouseRule.setItemPriorityType(priorityType.value());
+        warehouseRuleDao.update(warehouseRule);
         for (WarehouseRuleItem ruleItem : warehouseRuleItems) {
             warehouseRuleItemDao.create(ruleItem);
         }

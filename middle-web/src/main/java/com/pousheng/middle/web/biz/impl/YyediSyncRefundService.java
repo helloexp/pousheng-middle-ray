@@ -3,6 +3,7 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -18,7 +19,6 @@ import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
@@ -82,7 +82,7 @@ public class YyediSyncRefundService implements CompensateBizService {
                 this.refundBiz(a);
 
             } catch (Exception e) {
-                log.error("YyediSyncRefundService. forEach refunds ({}) is error: {}", refundCode, e.getMessage());
+                log.error("YyediSyncRefundService. forEach refunds ({}) is error: {}", refundCode, Throwables.getStackTraceAsString(e));
             }
 
         });

@@ -109,7 +109,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "erp.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncErpHandleResult(@NotNull(message = "handle.data.is.null") String data) {
-        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ", data);
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-START param: data [{}] ", data);
         List<ErpHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,ErpHandleShipmentResult.class));
         try{
             for(ErpHandleShipmentResult result :results){
@@ -120,13 +120,13 @@ public class OrderOpenApi {
             }
 
         }catch (JsonResponseException | ServiceException e) {
-            log.error("erp shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
+            log.error("erp shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,e.getMessage());
         }catch (Exception e){
             log.error("erp shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"sync.fail");
         }
-        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-END");
+        log.info("ERP-SYNC-SHIPMENT-HANDLE-RESULT-END param: data [{}]",data);
     }
 
 
@@ -149,7 +149,15 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.serial.is.empty") String shipmentSerialNo,
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate
     ) {
+        if(log.isDebugEnabled()){
+            log.debug("ERP-SHIPMENTS-API-START param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
+                    shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        }
         this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        if(log.isDebugEnabled()){
+            log.debug("ERP-SHIPMENTS-API-END param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
+                    shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        }
     }
 
 
@@ -162,7 +170,7 @@ public class OrderOpenApi {
      */
     @OpenMethod(key = "hk.shipment.handle.result", paramNames = {"data"}, httpMethods = RequestMethod.POST)
     public void syncHkHandleResult(@NotNull(message = "handle.data.is.null") String data) {
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START results is:{} ",data);
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-START param: data [{}] ",data);
         List<HkHandleShipmentResult> results  = JsonMapper.nonEmptyMapper().fromJson(data, JsonMapper.nonEmptyMapper().createCollectionType(List.class,HkHandleShipmentResult.class));
         try{
             for(HkHandleShipmentResult result :results){
@@ -173,13 +181,13 @@ public class OrderOpenApi {
             }
 
         }catch (JsonResponseException | ServiceException e) {
-            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), e.getMessage());
-            throw new OPServerException(200, e.getMessage());
-        } catch (Exception e) {
+            log.error("hk shipment handle result, shipment(id:{}) to pousheng fail,error:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
+        }catch (Exception e){
             log.error("hk shipment handle result ,shipment(id:{}) fail,cause:{}", results.get(0).getEcShipmentId(), Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
-        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END");
+        log.info("HK-SYNC-SHIPMENT-HANDLE-RESULT-END param: data [{}] ",data);
     }
 
     private void handleResult(String shipmentId,Boolean handleResult,String erpShipmentId){
@@ -187,7 +195,7 @@ public class OrderOpenApi {
         try{
             shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
         }catch (Exception e){
-            log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+            log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,Throwables.getStackTraceAsString(e));
             return;
         }
         //冗余恒康发货单号
@@ -242,8 +250,7 @@ public class OrderOpenApi {
                                      @NotEmpty(message = "shipment.date.empty") String shipmentDate
     ) {
         log.info("HK-SYNC-SHIPMENT-STATUS-START param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
-                        "shipmentSerialNo is:{} shipmentDate is:{}",
-                shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
+                "shipmentSerialNo is:{} shipmentDate is:{}",shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
 
         try {
 
@@ -252,7 +259,7 @@ public class OrderOpenApi {
             try{
                 shipment  = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
             }catch (Exception e){
-                log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,e.getMessage());
+                log.error("find shipment failed,shipment id is {} ,caused by {}",shipmentId,Throwables.getStackTraceAsString(e));
                 return;
             }
             //判断状态及获取接下来的状态
@@ -311,14 +318,16 @@ public class OrderOpenApi {
             }
 
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, e.getMessage());
-            throw new OPServerException(200, e.getMessage());
+            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync shipment(id:{}) fail,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
 
-        log.info("HK-SYNC-SHIPMENT-STATUS-END");
+        log.info("HK-SYNC-SHIPMENT-STATUS-END param shipmentId is:{} hkShipmentId is:{} shipmentCorpCode is:{} " +
+                "shipmentSerialNo is:{} shipmentDate is:{}",shipmentId, hkShipmentId, shipmentCorpCode, shipmentSerialNo, shipmentDate);
+
     }
 
     /**
@@ -335,8 +344,15 @@ public class OrderOpenApi {
                                    @NotEmpty(message = "item.info.empty") String itemInfo,
                                    @NotEmpty(message = "received.date.empty") String receivedDate
     ) {
+        if(log.isDebugEnabled()){
+            log.debug("ERP-REFUND-CONFIRM-RECEIVED-API-START param: refundOrderId [{}] erpRefundOrderId [{}] itemInfo [{}] receivedDate [{}]",
+                    refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+        }
         syncHkRefundStatus(refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
-
+        if(log.isDebugEnabled()){
+            log.debug("ERP-REFUND-CONFIRM-RECEIVED-API-END param: refundOrderId [{}] erpRefundOrderId [{}] itemInfo [{}] receivedDate [{}]",
+                    refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
+        }
     }
     /**
      * 恒康将售后单售后结果通知给中台
@@ -412,21 +428,21 @@ public class OrderOpenApi {
             } catch (Exception e) {
                 Map<String, Object> param1 = Maps.newHashMap();
                 param1.put("refundId", refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
             }
 
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
 
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync refund confirm to middle fail,error:{}", e.getMessage());
+            log.error("hk sync refund confirm to middle fail,error:{}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync refund confirm to middle fail,cause:{}", Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"sync.fail");
         }
-        log.info("HK-SYNC-REFUND-STATUS-END");
-
+        log.info("HK-SYNC-REFUND-STATUS-END param refundOrderId is:{} hkRefundOrderId is:{} itemInfo is:{} receivedDate is:{} ",
+                refundOrderId, hkRefundOrderId, itemInfo, receivedDate);
     }
 
 
@@ -459,8 +475,8 @@ public class OrderOpenApi {
                 try{
                     orderShipment = shipmentReadLogic.findOrderShipmentByShipmentCode(orderId);
 
-                } catch (Exception e) {
-                    log.error("find order shipment failed,shipment id is {} ,caused by {}", orderId, e.getMessage());
+                }catch (Exception e){
+                    log.error("find order shipment failed,shipment id is {} ,caused by {}",orderId,Throwables.getStackTraceAsString(e));
                     return;
                 }
                 if (Objects.equals(orderShipment.getType(),1)){
@@ -486,7 +502,7 @@ public class OrderOpenApi {
                 try{
                     refund = refundReadLogic.findRefundByRefundCode(orderId);
                 }catch (Exception e){
-                    log.error("find refund failed,refund id is {} ,caused by {}",orderId,e.getMessage());
+                    log.error("find refund failed,refund id is {} ,caused by {}",orderId,Throwables.getStackTraceAsString(e));
                     return;
                 }
                 pos.setOrderId(refund.getRefundCode());
@@ -517,14 +533,14 @@ public class OrderOpenApi {
                 throw new ServiceException(r.getError());
             }
         } catch (JsonResponseException | ServiceException e) {
-            log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, e.getMessage());
-            throw new OPServerException(200, e.getMessage());
+            log.error("hk sync posInfo(id:{}) to pousheng fail,error:{}", orderId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
         } catch (Exception e) {
             log.error("hk sync posInfo(id:{}) fail,orderType is ({})cause:{}", orderId, orderType, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "sync.fail");
         }
 
-        log.info("HK-SYNC-POS-INFO-END");
+        log.info("HK-SYNC-POS-INFO-END param orderId is:{} orderType is:{}  posSerialNo is:{} posType is:{} posAmt is:{} posCreatedAt is:{}",orderId,orderType,posSerialNo,posType,posAmt,posCreatedAt);
     }
 
 

@@ -15,12 +15,15 @@ import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.order.service.MiddleShipmentWriteService;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
+import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.warehouse.model.Warehouse;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuReadService;
 import com.pousheng.middle.warehouse.service.WarehouseSkuWriteService;
-import com.pousheng.middle.web.events.trade.RefundShipmentEvent;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
@@ -53,13 +56,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -157,6 +165,10 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/shipment/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<ShipmentPagingInfo> findBy(OrderShipmentCriteria shipmentCriteria) {
+        String shipmentCriteriaStr =JsonMapper.nonEmptyMapper().toJson(shipmentCriteria);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-PAGING-START param: shipmentCriteria [{}]",shipmentCriteriaStr);
+        }
         if (shipmentCriteria.getEndAt() != null) {
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
@@ -184,12 +196,15 @@ public class Shipments {
                 shipmentPagingInfo.setOperations(flow.availableOperations(shipment.getStatus()));
                 shipmentPagingInfo.setShipmentExtra(shipmentReadLogic.getShipmentExtra(shipment));
             } catch (JsonResponseException e) {
-                log.error("complete paging info fail,error:{}", e.getMessage());
+                log.error("complete paging info fail,error:{}", Throwables.getStackTraceAsString(e));
             } catch (Exception e) {
                 log.error("complete paging info fail,cause:{}", Throwables.getStackTraceAsString(e));
             }
 
         });
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-PAGING-END param: shipmentCriteria [{}] ,resp: [{}]",shipmentCriteriaStr,JsonMapper.nonEmptyMapper().toJson(response));
+        }
         return response.getResult();
     }
 
@@ -197,8 +212,14 @@ public class Shipments {
     //发货单详情
     @RequestMapping(value = "/api/shipment/{id}/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ShipmentDetail findDetail(@PathVariable(value = "id") Long shipmentId) {
-
-        return shipmentReadLogic.orderDetail(shipmentId);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-DETAIL-START param: shipmentId [{}]",shipmentId);
+        }
+        ShipmentDetail detail = shipmentReadLogic.orderDetail(shipmentId);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-DETAIL-END param: shipmentId [{}] ,resp: [{}]",shipmentId,JsonMapper.nonEmptyMapper().toJson(detail));
+        }
+        return detail;
     }
 
 
@@ -210,15 +231,22 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/order/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Shipment> shipments(@PathVariable("id") Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-SHIPMENTS-START param: shopOrderId [{}]",shopOrderId);
+        }
         Response<List<Shipment>> response = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId, OrderLevel.SHOP);
         if (!response.isSuccess()) {
             log.error("find shipment by shopOrderId ({}) failed,caused by ({})", shopOrderId, response.getError());
             throw new JsonResponseException("find.shipment.failed");
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-SHIPMENTS-END param: shopOrderId [{}] ,resp: [{}]",shopOrderId,JsonMapper.nonEmptyMapper().toJson(response.getResult()));
+        }
         return response.getResult();
     }
 
     /**
+     * 订单下的发货单
      *
      * @param orderCode 店铺订单code
      * @return 发货单
@@ -242,7 +270,15 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/refund/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<OrderShipment> changeShipments(@PathVariable("id") Long afterSaleOrderId) {
-        return shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-SHIPMENTS-START param: afterSaleOrderId [{}]",afterSaleOrderId);
+        }
+        List<OrderShipment> shipments= shipmentReadLogic.findByAfterOrderIdAndType(afterSaleOrderId);
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-SHIPMENTS-END param: afterSaleOrderId [{}] ,resp: [{}]",afterSaleOrderId,JsonMapper.nonEmptyMapper().toJson(shipments));
+        }
+
+        return shipments;
     }
 
 
@@ -254,6 +290,9 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/after/sale/{id}/shipments", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Shipment> afterSaleShipments(@PathVariable("id") Long afterSaleOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-AFTER-SALE-SHIPMENTS-START param: afterSaleOrderId [{}]",afterSaleOrderId);
+        }
         OrderShipmentCriteria orderShipmentCriteria = new OrderShipmentCriteria();
         orderShipmentCriteria.setAfterSaleOrderId(afterSaleOrderId);
         Response<Paging<ShipmentPagingInfo>> pagingResponse = orderShipmentReadService.findBy(orderShipmentCriteria);
@@ -268,6 +307,9 @@ public class Shipments {
                 continue;
             }
             shipments.add(shipment);
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-AFTER-SALE-SHIPMENTS-END param: afterSaleOrderId [{}] ,resp: [{}]",afterSaleOrderId,JsonMapper.nonEmptyMapper().toJson(shipments));
         }
         return shipments;
     }
@@ -322,6 +364,9 @@ public class Shipments {
     @RequestMapping(value = "/api/shipment/{id}/check/exist", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> checkExist(@PathVariable("id") String shipmentCode, @RequestParam String orderCode, @RequestParam Integer type) {
 
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-CHECK-EXIST-START param: shipmentCode [{}] orderCode [{}] type [{}]",shipmentCode,orderCode,type);
+        }
         try {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
@@ -346,10 +391,12 @@ public class Shipments {
                 return Response.fail("shipment.current.status.not.allow.apply.after.sale");
             }
         } catch (JsonResponseException e) {
-            log.error("check  shipment(id:{}) is exist fail,error:{}", shipmentCode, e.getMessage());
+            log.error("check  shipment(id:{}) is exist fail,error:{}", shipmentCode, Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-CHECK-EXIST-END param: shipmentCode [{}] orderCode [{}] type [{}]",shipmentCode,orderCode,type);
+        }
         return Response.ok(Boolean.TRUE);
 
     }
@@ -361,8 +408,14 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{id}/auto/create/shipment", method = RequestMethod.PUT)
     public void autoCreateSaleShipment(@PathVariable("id") Long shopOrderId) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-AUTO-CREATE-START param: shopOrderId [{}]",shopOrderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         shipmentWiteLogic.doAutoCreateShipment(shopOrder);
+        if(log.isDebugEnabled()){
+            log.debug("API-SHIPMENT-AUTO-CREATE-END param: shopOrderId [{}]",shopOrderId);
+        }
     }
 
     /**
@@ -379,10 +432,13 @@ public class Shipments {
     @OperationLogType("生成销售发货单")
     public List<Long> createSalesShipment(@PathVariable("id") @OperationLogParam Long shopOrderId,
                                           @RequestParam(value = "dataList") String dataList) {
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-SHIP-START param: shopOrderId [{}] dataList [{}]",shopOrderId,dataList);
+        }
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
         List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
-        //判断是否是全渠道和mpos店铺订单，如果不是全渠道订单不能选择店仓
-        this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
+        //判断是否是全渠道到订单，如果不是全渠道订单不能选择店仓
+        //this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
         //创建订单不能选择店仓
         this.validateIsCreateOrderImportOrder(warehouseIds,shopOrderId);
         List<Long> shipmentIds = Lists.newArrayList();
@@ -394,12 +450,12 @@ public class Shipments {
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
-            String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
+            /*String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
             if (StringUtils.isEmpty(erpType) || Objects.equals(erpType, "hk")) {
                 if (!orderReadLogic.validateCompanyCode(warehouseId, shopOrder.getShopId())) {
                     throw new JsonResponseException("warehouse.must.be.in.one.company");
                 }
-            }
+            }*/
             //判断是否可以生成发货单
             for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
                 SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId, OrderLevel.SKU);
@@ -468,15 +524,6 @@ public class Shipments {
             } catch (Exception e) {
                 log.error("failed to gen shipment shopOrderId : {} :", shopOrderId, Throwables.getStackTraceAsString(e));
             }
-            if(null==shipmentId){
-                Response<Boolean> response =   mposSkuStockLogic.unLockStock(shipment);
-                log.info("shopOrderId : {}  mposSkuStockLogic.unLockStock is {}",shopOrderId,response.getResult());
-                if(!response.isSuccess()){
-                    log.warn("shopOrderId : {}  mposSkuStockLogic.unLockStock is fail : {}",shopOrderId,response.getError());
-                }
-                continue;
-            }
-
             shipmentIds.add(shipmentId);
             Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
             if (!shipmentRes.isSuccess()) {
@@ -492,13 +539,13 @@ public class Shipments {
                         log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
                     }
                 } catch (Exception e) {
-                    log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, e.getMessage());
+                    log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, Throwables.getStackTraceAsString(e));
                 }
             }
             try {
                 orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
             } catch (ServiceException e) {
-                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, e.getMessage());
+                log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, Throwables.getStackTraceAsString(e));
             }
             //销售发货单需要判断预售商品是否已经支付完尾款
             Map<String, String> shopOrderExtra = shopOrder.getExtra();
@@ -521,6 +568,9 @@ public class Shipments {
                     log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
                 }
             }
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-SHIP-END param: shopOrderId [{}] dataList [{}] resp: [{}]",shopOrderId,dataList,shipmentIds);
         }
             return shipmentIds;
 
@@ -545,9 +595,9 @@ public class Shipments {
                                           @RequestParam(value = "dataList") String dataList, @RequestParam(required = false, defaultValue = "2") Integer shipType) {
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));
-        List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
+        //List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
         //判断是否是全渠道订单的售后单，如果不是全渠道订单的售后单，不能选择店仓
-        this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
+        //this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
             try {
@@ -1646,7 +1696,7 @@ public class Shipments {
             }
         } catch (Exception e) {
             result = false;
-            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}", shipmentId, e.getMessage());
+            log.error("Shipments.refundShipment shipmentId:{},failed,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
         }
         return result;
     }

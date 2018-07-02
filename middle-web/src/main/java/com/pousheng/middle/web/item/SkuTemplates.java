@@ -92,6 +92,9 @@ public class SkuTemplates {
 
     @RequestMapping(value = "/api/sku-template/batch/update", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> batchUpdate(@RequestParam String ids) {
+       if(log.isDebugEnabled()){
+          log.debug("API-SKU-TEMPLATE-BATCH-UPDATE-START param: ids [{}] ",ids);
+       }
        List<Long> idss =  Splitters.splitToLong(ids,Splitters.COMMA);
 
         Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(idss);
@@ -123,7 +126,11 @@ public class SkuTemplates {
             }
             updates.add(toUpdate);
         }
-        return psSkuTemplateWriteService.updateBatch(updates);
+        Response<Boolean>  resp = psSkuTemplateWriteService.updateBatch(updates);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-UPDATE-END param: ids [{}] ,resp: [{}]",ids,resp.getResult());
+        }
+        return resp;
     }
 
 
@@ -131,14 +138,28 @@ public class SkuTemplates {
     @ApiOperation("根据id查询商品信息")
     @RequestMapping(value = "/api/sku-template/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<SkuTemplate> findShopByUserId(@PathVariable("id") Long id) {
-        return skuTemplateReadService.findById(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSHOPBYUSERID-START param: id [{}] ",id);
+        }
+        Response<SkuTemplate> resp = skuTemplateReadService.findById(id);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSHOPBYUSERID-END param: id [{}] ,resp: [{}]",id,resp.getResult());
+        }
+        return resp;
     }
 
     @ApiOperation("根据id集合查询商品集合")
     @RequestMapping(value = "api/sku-templates",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<List<SkuTemplate>> findSkuByIds(@RequestParam String skuIds){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSKUBYIDS-START param: skuIds [{}] ",skuIds);
+        }
         List<Long> ids  = Splitters.splitToLong(skuIds,Splitters.COMMA);
-        return skuTemplateReadService.findByIds(ids);
+        Response<List<SkuTemplate>> resp= skuTemplateReadService.findByIds(ids);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSKUBYIDS-END param: skuIds [{}] ,resp: [{}]",skuIds,JsonMapper.nonEmptyMapper().toJson(resp.getResult()));
+        }
+        return resp;
     }
 
     /**
@@ -149,6 +170,9 @@ public class SkuTemplates {
     @ApiOperation("根据货品条码查询")
     @RequestMapping(value="/api/sku-templates-spu",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<SkuTemplate> findSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode,@RequestParam(required = false,name ="skuCodes")List<String> skuCodes) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSKUTEMPLATES-START param: skuCode [{}] skuCodes [{}]",skuCode,skuCodes);
+        }
         List<String> originSkuCodes = Lists.newArrayList();
         if (!StringUtils.isEmpty(skuCode)){
             originSkuCodes.add(skuCode);
@@ -183,6 +207,9 @@ public class SkuTemplates {
 
         List<SkuTemplate> skuTemplatesList = spuSkuTemplatesRes.getResult();
         skuTemplatesList.forEach(skuTemplate1 -> skuTemplate1.setName(spuRes.getResult().getName()));
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-FINDSKUTEMPLATES-END param: skuCode [{}] skuCodes [{}] ,resp: [{}]",skuCode,skuCodes,JsonMapper.nonEmptyMapper().toJson(spuSkuTemplatesRes.getResult()));
+        }
         return spuSkuTemplatesRes.getResult();
     }
 
@@ -195,7 +222,10 @@ public class SkuTemplates {
                                           @RequestParam(value = "pageNo", required = false) Integer pageNo,
                                           @RequestParam(value = "pageSize", required = false) Integer pageSize,
                                           @RequestParam(value = "statuses", required = false) List<Integer> statuses){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}]",
+                    ids,skuCode,name,spuId,type,pageNo,pageSize,statuses);
+        }
         Map<String, Object> params = Maps.newHashMap();
         if (Objects.nonNull(ids)){
             params.put("ids",ids);
@@ -222,6 +252,10 @@ public class SkuTemplates {
         if(!r.isSuccess()){
             log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}] ,resp: [{}]",
+                    ids,skuCode,name,spuId,type,pageNo,pageSize,statuses,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
         }
         return r.getResult();
 
@@ -260,6 +294,7 @@ public class SkuTemplates {
 
         //同步电商
         pushMposItemComponent.push(exist);
+        log.info("end  mpos flag id:{} by user id:{}",id,UserUtil.getUserId());
 
     }
 
@@ -288,6 +323,7 @@ public class SkuTemplates {
 
         //同步电商
         pushMposItemComponent.del(Lists.newArrayList(exist));
+        log.info("end cancel mpos flag id:{} by user id:{}",id,UserUtil.getUserId());
     }
 
 
@@ -321,6 +357,7 @@ public class SkuTemplates {
 
         //同步电商
         pushMposItemComponent.updatePrice(Lists.newArrayList(exist),toUpdate.getPrice());
+        log.info("end batch  set discount:{} skuTemplateId:{} by user id:{}",discount,id,UserUtil.getUserId());
     }
 
     @ApiOperation("对mpos货品批量设置折扣")
@@ -331,6 +368,8 @@ public class SkuTemplates {
         for (Long id : ids){
             setDiscount(id,discount);
         }
+        log.info("end batch  set discount:{} skuTemplateIds data:{} by user id:{}",discount,skuTemplateIds,UserUtil.getUserId());
+
     }
 
     @RequestMapping(value = "/api/sku-template/batch/make/falge", method = RequestMethod.PUT)
@@ -339,6 +378,7 @@ public class SkuTemplates {
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         Response<List<SkuTemplate>> response = skuTemplateReadService.findByIds(ids);
         pushMposItemComponent.batchMakeFlag(response.getResult(),PsSpuType.MPOS.value());
+        log.info("end batch  mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
 
     }
 
@@ -352,21 +392,26 @@ public class SkuTemplates {
         for (Long id : ids){
             makeMposFlag(id);
         }
+        log.info("end batch  mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
     }
 
     @ApiOperation("批量取消货品mops打标")
     @RequestMapping(value = "/api/sku-template/batch/cancel/flag", method = RequestMethod.PUT)
-    public void batchCancelMposFlag(@RequestParam @OperationLogParam String skuTemplateIds) {
+    public void batchCancelMposFlag(@RequestParam String skuTemplateIds) {
         log.info("start batch cancel mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         for (Long id : ids){
             cancelMposFlag(id);
         }
+        log.info("end batch cancel mpos flag data:{} by user id:{}",skuTemplateIds,UserUtil.getUserId());
     }
 
     @ApiOperation("上传货品图片（单个和批量）")
     @RequestMapping(value = "/api/sku-template/image/upload", method = RequestMethod.PUT)
     public void uploadImage(@RequestParam String skuTemplateIds,@RequestParam String imageUrl) {
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-IMAGE-UPLOAD-START param: skuTemplateIds [{}] imageUrl [{}]",skuTemplateIds,imageUrl);
+        }
         List<Long> ids  = Splitters.splitToLong(skuTemplateIds,Splitters.COMMA);
         if(Strings.isNullOrEmpty(imageUrl)){
             throw new JsonResponseException("image.url.invalid");
@@ -386,13 +431,16 @@ public class SkuTemplates {
 
         //同步电商
         pushMposItemComponent.updateImage(skuTemplateRes.getResult(),imageUrl);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-IMAGE-UPLOAD-END param: skuTemplateIds [{}] imageUrl [{}]",skuTemplateIds,imageUrl);
+        }
 
     }
 
     @ApiOperation("异步对货品批量mpos打标")
     @RequestMapping(value = "/api/sku-template/batch/async/make/flag",method = RequestMethod.PUT)
     public void asyncMakeMposFlag(@RequestParam Map<String,String> params){
-        log.info("asyncMakeMposFlag params:{} by user id:{}",params.toString(),UserUtil.getUserId());
+        log.info("start asyncMakeMposFlag params:{} by user id:{}",params.toString(),UserUtil.getUserId());
         Map<String,String> fliter = MapFilter.filterNullOrEmpty(params);
         if(CollectionUtils.isEmpty(fliter)){
             log.error("make flag param:{} invalid",params.toString());
@@ -403,12 +451,16 @@ public class SkuTemplates {
         event.setType(PsSpuType.MPOS.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
+        log.info("end asyncMakeMposFlag params:{} by user id:{}",params.toString(),UserUtil.getUserId());
     }
 
 
     @ApiOperation("导入文件-商品打标")
     @RequestMapping(value = "/api/sku-template/batch/import/file/mpos/flag",method = RequestMethod.POST)
     public void asyncImportMposFlageFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-IMPORT-FILE-MPOS-FLAG-START param: ");
+        }
         if(multipartFile == null){
             log.error("the upload file is null");
             throw new JsonResponseException("the upload file is null");
@@ -422,6 +474,9 @@ public class SkuTemplates {
         event.setFile(multipartFile);
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-IMPORT-FILE-MPOS-FLAG-END param: ");
+        }
     }
 
     @ApiOperation("异步批量取消货品mpos打标")
@@ -433,11 +488,15 @@ public class SkuTemplates {
         event.setType(PsSpuType.POUSHENG.value());
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
+        log.info("end async cancel mpos flag,params:{}",params);
     }
 
     @ApiOperation("导入文件")
     @RequestMapping(value = "/api/sku-template/batch/import/file",method = RequestMethod.POST)
     public void asyncImportFile(@RequestParam(value="upload_excel") MultipartFile multipartFile){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-IMPORT-FILE-START param: ");
+        }
         if(multipartFile == null){
             log.error("the upload file is null");
             throw new JsonResponseException("the upload file is null");
@@ -451,15 +510,25 @@ public class SkuTemplates {
         event.setFile(multipartFile);
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-IMPORT-FILE-END param: ");
+        }
     }
 
     @ApiOperation("导出文件")
     @RequestMapping(value = "/api/sku-template/batch/export/file",method = RequestMethod.PUT)
     public void asyncExportFile(@RequestParam Map<String,String> params){
+        String paramStr = JsonMapper.nonEmptyMapper().toJson(params);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-EXPORT-FILE-START param: params [{}]",paramStr);
+        }
         BatchAsyncExportMposDiscountEvent event = new BatchAsyncExportMposDiscountEvent();
         event.setParams(params);
         event.setCurrentUserId(UserUtil.getUserId());
         eventBus.post(event);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-BATCH-EXPORT-FILE-END param: params [{}]",paramStr);
+        }
     }
 
 
@@ -467,9 +536,9 @@ public class SkuTemplates {
     //修复中台打标mpos总单同步缺少商品
     @RequestMapping(value = "api/fix/mpos/shop/item",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> fixMposItems(@RequestParam(required = false) String skuIds){
-
-
-        log.info("START FIX MPOS ITEM..........");
+        if(log.isDebugEnabled()){
+            log.debug("API-FIX-MPOS-SHOP-ITEM-START param: skuIds [{}]",skuIds);
+        }
         int pageNo = 1;
         Map<String, Object> params = Maps.newHashMap();
         if(!Strings.isNullOrEmpty(skuIds)){
@@ -485,7 +554,9 @@ public class SkuTemplates {
             next = batchHandle(pageNo, 3000,params);
         }
 
-        log.info("END FIX MPOS ITEM..........");
+        if(log.isDebugEnabled()){
+            log.debug("API-FIX-MPOS-SHOP-ITEM-END param: skuIds [{}]",skuIds);
+        }
 
         return Response.ok(Boolean.TRUE);
 
@@ -662,6 +733,9 @@ public class SkuTemplates {
     @ApiOperation("根据有效货品条码查询")
     @RequestMapping(value="/api/valid/sku-templates",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public SkuTemplate findValidSkuTemplates(@RequestParam(name = "skuCode",required = false) String skuCode) {
+        if(log.isDebugEnabled()){
+            log.debug("API-VALID-SKU-TEMPLATES-START param: skuCode [{}]",skuCode);
+        }
         Response<List<SkuTemplate>> skuTemplateRes = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(skuCode));
         if(!skuTemplateRes.isSuccess()){
             log.error("find sku template by sku code:{} fail,error:{}",skuCode,skuTemplateRes.getError());
@@ -672,6 +746,9 @@ public class SkuTemplates {
         if(!skuTemplateOptional.isPresent()){
             log.error("not find sku template by sku code:{}",skuCode);
             throw new JsonResponseException("sku.template.not.exist");
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-VALID-SKU-TEMPLATES-END param: skuCode [{}] ,resp: [{}]",skuCode,skuTemplateOptional.get());
         }
         return skuTemplateOptional.get();
     }

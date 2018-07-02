@@ -86,6 +86,19 @@ public class WarehouseAddressCacher {
         if(Objects.equal("上海市",name)){
             name = "上海";
         }
+        if(Objects.equal("天津市",name)){
+            name = "天津";
+        }
+        if(Objects.equal("重庆市",name)){
+            name = "重庆";
+        }
+        if(Objects.equal("綦江县",name)){
+            name = "綦江区";
+        }
+        if(Objects.equal("双城区",name)){
+            name = "双城市";
+        }
+
         String pidAndName = Joiners.COLON.join(pid,name);
         if(!byPidAndName.containsKey(pidAndName)){
             log.warn("address(pid={} , name:{}) not found", pid,name);

@@ -21,7 +21,6 @@ import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
-import com.pousheng.middle.web.events.trade.NotifyHkOrderDoneEvent;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
@@ -495,7 +494,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
             return response.getResult();
         } catch (Exception e) {
-            log.error("create invoice failed,caused by {}", e.getMessage());
+            log.error("create invoice failed,caused by {}", Throwables.getStackTraceAsString(e));
         }
         return null;
     }

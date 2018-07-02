@@ -129,6 +129,7 @@ public class WarehouseImporter {
         Warehouse w = new Warehouse();
         w.setName(pw.getStock_name());
         w.setCode(pw.getCompany_id()+'-'+pw.getStock_id());
+        w.setOutCode(pw.getStock_code());
         w.setAddress(pw.getStock_address());
         w.setType(pw.getStock_type());
         w.setCompanyId(pw.getCompany_id());

@@ -310,7 +310,7 @@ public class StockPusher {
                                 paranaSkuStocks, shopId, r.getError());
                     }
                 } catch (Exception e) {
-                    log.error("sync offical stock failed,caused by {}", e.getMessage());
+                    log.error("sync offical stock failed,caused by {}", Throwables.getStackTraceAsString(e));
                 }
             }
 

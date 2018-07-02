@@ -142,7 +142,7 @@ public class SyncErpReturnLogic {
                 return Response.ok(Boolean.TRUE);
             }else{
                 updateRefundSyncFial(refund);
-                return Response.fail("sync.pos.failed");
+                return Response.fail("sync.refund.pos.failed");
             }
         }catch (Exception e){
             log.error("sync pos failed,caused by {}", Throwables.getStackTraceAsString(e));
@@ -170,7 +170,11 @@ public class SyncErpReturnLogic {
         //售后换货，退货的同步走配置渠道
         switch (erpSyncType){
             case "hk":
-                return syncRefundLogic.syncRefundCancelToHk(refund);
+                if(Objects.equals(openShop.getId(),skxOpenShopId)){
+                    return syncRefundLogic.syncRefundCancelToSkxAndYYedi(refund);
+                }else {
+                    return syncRefundLogic.syncRefundCancelToHk(refund);
+                }
             case "yyEdi":
                 if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
                     return Response.ok(Boolean.TRUE);

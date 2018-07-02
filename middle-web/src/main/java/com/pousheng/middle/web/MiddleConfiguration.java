@@ -19,9 +19,6 @@ import com.pousheng.middle.order.dispatch.link.*;
 import com.pousheng.middle.schedule.jobs.BatchConfig;
 import com.pousheng.middle.schedule.jobs.BatchJobProperties;
 import com.pousheng.middle.schedule.jobs.TaskConfig;
-import com.pousheng.middle.web.biz.CompensateBizRegistryCenter;
-import com.pousheng.middle.web.biz.CompensateBizService;
-import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import com.pousheng.middle.web.job.SkuStockTaskTimeIndexer;
@@ -45,9 +42,7 @@ import io.terminus.parana.rule.RuleExecutorRegistry;
 import io.terminus.parana.user.ext.DefaultUserTypeBean;
 import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.web.MultipartAutoConfiguration;
@@ -202,8 +197,9 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return poushengPipelineConfigurer;
     }
 
-    @Bean
-    public DispatchOrderChain dispatchOrderChain(AppointWarehouseDispatchLink appointWarehouseDispatchLink,AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
+
+    /*@Bean
+    public DispatchOrderChain dispatchOrderChain(AppointShopDispatchLink appointShopDispatchLink, AllShopDispatchlink allShopDispatchlink,
                                                  AllWarehouseDispatchLink allWarehouseDispatchLink, OnlineSaleWarehouseDispatchLink onlineSaleWarehouseDispatchLink,
                                                  ProvinceInnerShopDispatchlink provinceInnerShopDispatchlink,ProvinceInnerWarehouseDispatchLink provinceInnerWarehouseDispatchLink,
                                                  ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
@@ -216,6 +212,22 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         dispatchOrderLinks.add(allWarehouseDispatchLink);
         dispatchOrderLinks.add(provinceInnerShopDispatchlink);
         dispatchOrderLinks.add(allShopDispatchlink);
+        dispatchOrderLinks.add(allShopDispatchlink);
+        dispatchOrderLinks.add(shopOrWarehouseDispatchlink);
+        dispatchOrderChain.setDispatchOrderLinks(dispatchOrderLinks);
+        return dispatchOrderChain;
+    }*/
+
+
+    @Bean
+    public DispatchOrderChain dispatchOrderChain(AppointWarehouseDispatchLink appointWarehouseDispatchLink,AppointShopDispatchLink appointShopDispatchLink, ShopWarehouseDispatchLink shopWarehouseDispatchLink,
+                                                 TotalWarehouseDispatchLink totalWarehouseDispatchLink,ShopOrWarehouseDispatchlink shopOrWarehouseDispatchlink){
+        DispatchOrderChain dispatchOrderChain = new DispatchOrderChain();
+        List<DispatchOrderLink> dispatchOrderLinks = Lists.newArrayList();
+        dispatchOrderLinks.add(appointWarehouseDispatchLink);
+        dispatchOrderLinks.add(appointShopDispatchLink);
+        dispatchOrderLinks.add(totalWarehouseDispatchLink);
+        dispatchOrderLinks.add(shopWarehouseDispatchLink);
         dispatchOrderLinks.add(shopOrWarehouseDispatchlink);
         dispatchOrderChain.setDispatchOrderLinks(dispatchOrderLinks);
         return dispatchOrderChain;

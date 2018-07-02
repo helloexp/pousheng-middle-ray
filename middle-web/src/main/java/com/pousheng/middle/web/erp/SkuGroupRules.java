@@ -6,6 +6,7 @@ import com.pousheng.erp.service.SkuGroupRuleService;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -30,6 +31,10 @@ public class SkuGroupRules {
 
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long create(@RequestBody SkuGroupRule skuGroupRule){
+        String ruleStr = JsonMapper.nonEmptyMapper().toJson(skuGroupRule);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-CREATE-START param: skuGroupRule [{}]",ruleStr);
+        }
         if(StringUtils.isEmpty(skuGroupRule.getCardId())){
             log.error("skuGroupRule cardId cannot be null");
             throw new JsonResponseException("cardId.is.null");
@@ -39,6 +44,9 @@ public class SkuGroupRules {
             if(!r.isSuccess()){
                 log.error("failed to create {}, error code:{} ", skuGroupRule, r.getError());
                 throw new JsonResponseException(r.getError());
+            }
+            if(log.isDebugEnabled()){
+                log.debug("API-SKURULE-CREATE-END param: skuGroupRule [{}] ,resp: [{}]",ruleStr,r.getResult());
             }
             return r.getResult();
         } catch (Exception e) {
@@ -50,6 +58,10 @@ public class SkuGroupRules {
 
     @RequestMapping(method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean update(@RequestBody SkuGroupRule skuGroupRule){
+        String ruleStr = JsonMapper.nonEmptyMapper().toJson(skuGroupRule);
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-UPDATE-START param: skuGroupRule [{}]",ruleStr);
+        }
         if(skuGroupRule.getId() == null){
             log.error("skuGroupRule id can not be null when update");
             throw new JsonResponseException("id.is.null");
@@ -59,16 +71,24 @@ public class SkuGroupRules {
             log.error("failed to update {}, error code:{}", skuGroupRule, r.getError());
             throw new JsonResponseException(r.getError());
         }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-UPDATE-END param: skuGroupRule [{}] ,resp: [{}]",ruleStr,true);
+        }
         return Boolean.TRUE;
     }
 
     @RequestMapping(value = "/{id}",method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean delete(@PathVariable Long id){
-
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-ID-START param: id [{}]",id);
+        }
         Response<Boolean> r = skuGroupRuleService.delete(id);
         if(!r.isSuccess()){
             log.error("failed to delete skuGroupRule(id={}), error code:{}", id, r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-ID-END param: id [{}] ,resp: [{}] ",id,true);
         }
         return Boolean.TRUE;
     }
@@ -77,20 +97,32 @@ public class SkuGroupRules {
     @RequestMapping(method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<SkuGroupRule> findBy(@RequestParam(required = false) Integer pageNo,
                                        @RequestParam(required = false) Integer pageSize){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-FINDBY-START param: pageNo [{}] pageSize [{}]",pageNo,pageSize);
+        }
         Response<Paging<SkuGroupRule>> r = skuGroupRuleService.findBy(pageNo, pageSize);
         if(!r.isSuccess()){
             log.error("failed to paging skuGroup rules, error code:{}", r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-FINDBY-END param: pageNo [{}] pageSize [{}] ,resp: [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
         }
         return r.getResult();
     }
 
     @RequestMapping(value = "/{id}",method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public SkuGroupRule findById(@PathVariable Long id){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-FINDBYID-START param: id [{}]",id);
+        }
         Response<SkuGroupRule> r = skuGroupRuleService.findById(id);
         if(!r.isSuccess()){
             log.error("failed to find skuGroupRule(id={}), error code:{}",id,  r.getError());
             throw new JsonResponseException(r.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKURULE-FINDBYID-END param: id [{}] ,resp: [{}]",id,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
         }
         return r.getResult();
     }

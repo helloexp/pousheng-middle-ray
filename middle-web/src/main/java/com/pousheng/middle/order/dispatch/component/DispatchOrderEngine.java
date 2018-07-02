@@ -1,20 +1,25 @@
 package com.pousheng.middle.order.dispatch.component;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.List;
@@ -33,6 +38,11 @@ public class DispatchOrderEngine {
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
 
+    @Autowired
+    private OpenShopCacher openShopCacher;
+
+    private static String COMPANY_CODE = "companyCode";
+
 
     public Response<DispatchOrderItemInfo> toDispatchOrder(ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities){
 
@@ -47,11 +57,21 @@ public class DispatchOrderEngine {
         dispatchOrderItemInfo.setShopShipments(shopShipments);
         dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
         Map<String, Serializable> context = Maps.newHashMap();
+        context.put(DispatchContants.ONE_COMPANY,Boolean.TRUE);
+        OpenShop shop = openShopCacher.findById(shopOrder.getShopId());
+        String companyCode = shop.getExtra().get(COMPANY_CODE);
+        if (StringUtils.isEmpty(companyCode)) {
+            companyCode = Splitter.on("-").splitToList(shop.getAppKey()).get(0);
+        }
+        context.put(DispatchContants.COMPANY_ID,companyCode);
         try {
-            boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder,receiverInfo,skuCodeAndQuantities, context);
-
+            boolean success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder, receiverInfo, skuCodeAndQuantities, context);
+            if (!success) {
+                context.put(DispatchContants.ONE_COMPANY,Boolean.FALSE);
+                success = dispatchLinkInvocation.applyDispatchs(dispatchOrderItemInfo, shopOrder, receiverInfo, skuCodeAndQuantities, context);
+            }
             if(success){
-                log.info("dispatchOrderItemInfo:{}" ,dispatchOrderItemInfo);
+                log.info("dispatch shop order id:{} success,dispatchOrderItemInfo:{}" ,shopOrder.getId(),dispatchOrderItemInfo);
                 //锁定库存及更新电商在售库存（当mpos仓和电商仓交集时）
                 Response<Boolean> lockRes = mposSkuStockLogic.lockStock(dispatchOrderItemInfo);
                 if(!lockRes.isSuccess()){
@@ -64,7 +84,7 @@ public class DispatchOrderEngine {
             return Response.fail("dispatch.order.fail");
 
         }catch (ServiceException e){
-            log.error("dispatch order:{} fail,error:{}",shopOrder.getId(), e.getMessage());
+            log.error("dispatch order:{} fail,error:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }catch (Exception e){
             log.error("dispatch order:{} fail,cause:{}",shopOrder.getId(), Throwables.getStackTraceAsString(e));

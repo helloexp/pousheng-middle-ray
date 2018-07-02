@@ -8,23 +8,17 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.AbstractRestApiTest;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.fsm.MiddleFlowBook;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.impl.YyediSyncRefundService;
-import com.pousheng.middle.web.biz.impl.YyediSyncShipmentService;
-import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.component.AutoCompensateLogic;
+import com.pousheng.middle.web.order.component.RefundWriteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
-import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.service.ShipmentWriteService;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
@@ -32,9 +26,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 import java.util.Map;
 
-import static org.mockito.Matchers.*;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 /**

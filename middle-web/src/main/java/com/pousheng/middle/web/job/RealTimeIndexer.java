@@ -73,7 +73,7 @@ public class RealTimeIndexer {
                         Thread.sleep(100000);
                     }
                 } catch (Exception e) {
-                    log.warn("fail to process, cause:{}", e.getMessage());
+                    log.warn("fail to process, cause:{}", Throwables.getStackTraceAsString(e));
                 }
             }
         }

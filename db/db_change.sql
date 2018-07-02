@@ -343,3 +343,14 @@ ALTER TABLE `pousheng_sku_stock_tasks` add `type` VARCHAR(4)
  DEFAULT 'INCR'
  COMMENT '同步类型，FULL:全量；INCR:增量'
  AFTER `status`;
+
+
+
+
+-- 添加仓库派单优先级类型
+alter table `pousheng_warehouse_rules` add `item_priority_type` tinyint(4)  NULL COMMENT '仓库优先级类型 1距离 2排序' after `shop_group_id`;
+
+
+-- 仓库增加out字段
+ALTER TABLE pousheng_warehouses ADD COLUMN `out_code` varchar(64) NULL COMMENT '外部编码' AFTER `code`;
+update pousheng_warehouses  set  out_code= JSON_UNQUOTE(json_extract(extra_json,'$.outCode[0]'))​​;

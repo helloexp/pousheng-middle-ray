@@ -37,8 +37,14 @@ public class OrderWrites {
     @OperationLogModule(OperationLogModule.Module.ORDER)
     @OperationLogType("取消订单")
     public void cancelOrder(@PathVariable(value = "id") @PermissionCheckParam Long shopOrderId){
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-CANCEL-START param: shopOrderId [{}] ",shopOrderId);
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         orderWriteLogic.updateOrder(shopOrder, OrderLevel.SHOP,MiddleOrderEvent.CANCEL);
+        if(log.isDebugEnabled()){
+            log.debug("API-ORDER-CANCEL-END param: shopOrderId [{}] ",shopOrderId);
+        }
     }
 
 }

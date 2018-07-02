@@ -905,7 +905,7 @@ public class RefundWriteLogic {
             if (skuCodes.contains(editSubmitRefundItem.getRefundSkuCode())) {
                 //判断金额是否小于0
                 if (editSubmitRefundItem.getRefundQuantity()<0){
-                    log.error("refund applyQuantity:{}【 invalid",editSubmitRefundItem.getRefundQuantity());
+                    log.error("refund applyQuantity:{} invalid",editSubmitRefundItem.getRefundQuantity());
                     throw new JsonResponseException("refund.apply.quantity.invalid");
                 }
                 //判断申请售后的商品数量和已经退货的商品数量之和是否大于发货单中商品的数量

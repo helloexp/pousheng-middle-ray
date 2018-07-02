@@ -3,6 +3,7 @@ package com.pousheng.middle.web.shop;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -15,6 +16,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
@@ -61,8 +63,14 @@ public class PsOpenClientShops {
      */
     @RequestMapping(value = "/shop/all/group", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public List<ShopChannelGroup> searchAllShopsGroup() {
-
-       return shopChannelGroupCacher.listAllShopChannelGroupCache();
+        if(log.isDebugEnabled()){
+            log.debug("API-SHOP-ALL-GROUP-START noparam: ");
+        }
+        List<ShopChannelGroup> groups = shopChannelGroupCacher.listAllShopChannelGroupCache();
+        if(log.isDebugEnabled()){
+            log.debug("API-SHOP-ALL-GROUP-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(groups));
+        }
+       return groups;
 
     }
 
@@ -72,6 +80,9 @@ public class PsOpenClientShops {
 
     @RequestMapping(value = "/fix/zone", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String fixZone() {
+        if(log.isDebugEnabled()){
+            log.debug("FIX-ZONE-START noparam: ");
+        }
         Response<List<OpenShop>> findR = openShopReadService.findByChannel("official");
         if (!findR.isSuccess()) {
             log.error("fail to search all open shop by cause:{}", findR.getError());
@@ -118,8 +129,11 @@ public class PsOpenClientShops {
 
                 }
             }catch (JsonResponseException e){
-                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0),e.getMessage());
+                log.error("find shop by code:{}, type:{},companyId:{} fail,error:{}",keys.get(1),1,keys.get(0), Throwables.getStackTraceAsString(e));
             }
+        }
+        if(log.isDebugEnabled()){
+            log.debug("FIX-ZONE-END noparam: ");
         }
         return "success";
     }
@@ -127,6 +141,9 @@ public class PsOpenClientShops {
 
     @RequestMapping(value = "/fix/syn/type", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public String fixSyncType() {
+        if(log.isDebugEnabled()){
+            log.debug("FIX-SYNC-TYPE-START noparam: ");
+        }
         Response<List<OpenShop>> findR = openShopReadService.findByChannel("official");
         if (!findR.isSuccess()) {
             log.error("fail to search all open shop by cause:{}", findR.getError());
@@ -157,6 +174,9 @@ public class PsOpenClientShops {
                 log.error("FIX-ZONE-OPEN-SHOP open shop id:{} fail,error:{}",openShop.getId(),response.getError());
             }
 
+        }
+        if(log.isDebugEnabled()){
+            log.debug("FIX-SYNC-TYPE-END noparam: ");
         }
         return "success";
     }

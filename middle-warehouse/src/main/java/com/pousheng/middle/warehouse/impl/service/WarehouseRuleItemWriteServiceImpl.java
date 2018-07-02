@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.warehouse.enums.WarehouseRuleItemPriorityType;
 import com.pousheng.middle.warehouse.manager.WarehouseRuleItemManager;
 import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.service.WarehouseRuleItemWriteService;
@@ -35,7 +36,7 @@ public class WarehouseRuleItemWriteServiceImpl implements WarehouseRuleItemWrite
      * @return 是否创建成功
      */
     @Override
-    public Response<Boolean> batchCreate(Long ruleId, List<WarehouseRuleItem> warehouseRuleItems) {
+    public Response<Boolean> batchCreate(Long ruleId, WarehouseRuleItemPriorityType priorityType, List<WarehouseRuleItem> warehouseRuleItems) {
         try {
             int priority = 1;
             for (WarehouseRuleItem ruleItem : warehouseRuleItems) {
@@ -43,7 +44,7 @@ public class WarehouseRuleItemWriteServiceImpl implements WarehouseRuleItemWrite
                 ruleItem.setPriority(priority);
                 priority++;
             }
-            warehouseRuleItemManager.batchCreate(ruleId, warehouseRuleItems);
+            warehouseRuleItemManager.batchCreate(ruleId, priorityType,warehouseRuleItems);
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
             log.error("failed to batch create wareRuleItems for ruleId({}), cause:{}",

@@ -720,6 +720,7 @@ public class FireCall {
 
         int i =0;
         for (String itemIdStr : itemIdStrs) {
+            i++;
             itemIds.add(Long.valueOf(itemIdStr));
             //每1000条更新下mysql和search
             if (i % 1000 == 0) {

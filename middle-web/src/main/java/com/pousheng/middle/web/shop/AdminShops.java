@@ -147,6 +147,21 @@ public class AdminShops {
         return memberShopOperationLogic.getAddressGps(shopId,String.valueOf(shop.getBusinessId()),shop.getOuterId());
     }
 
+    @ApiOperation("根据门店id调用会员中心查询门店地址信息并修复到中台")
+    @RequestMapping(value = "/address/{id}/fix", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String fixShopAddress(@PathVariable("id") Long shopId) {
+        Response<Shop> rShop = shopReadService.findById(shopId);
+        if (!rShop.isSuccess()) {
+            throw new JsonResponseException(rShop.getError());
+        }
+
+        Shop shop = rShop.getResult();
+        UpdateShopEvent updateShopEvent = new UpdateShopEvent(shop.getId(), shop.getBusinessId(), shop.getOuterId());
+        eventBus.post(updateShopEvent);
+        return "success";
+    }
+
+
 
 
     @ApiOperation("根据用户id查询门店信息")

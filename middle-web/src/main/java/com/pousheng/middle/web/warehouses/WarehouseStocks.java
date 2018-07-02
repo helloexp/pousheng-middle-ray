@@ -2,8 +2,10 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.component.MaterialPusher;
 import com.pousheng.erp.model.SpuMaterial;
 import com.pousheng.erp.service.SpuMaterialReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -19,6 +21,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
+import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +64,10 @@ public class WarehouseStocks {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private WarehouseSkuStockLogic warehouseSkuStockLogic;
+    @Autowired
+    private MaterialPusher materialPusher;
+    @RpcConsumer
+    private MappingReadService mappingReadService;
 
     /**
      * sku库存概览, 不分仓
@@ -236,6 +243,46 @@ public class WarehouseStocks {
         detail.setTotal(total);
         detail.setDetails(details);
         return detail;
+    }
+
+
+    @RequestMapping(value = "/shop/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public String synchronizeShopSpuStock(@RequestParam(name = "shopId") Long shopId, @RequestParam(name = "limit", required = false, defaultValue = "1000") Integer limit) {
+        try {
+            log.info("begin to synchronizeShopSpuStock shopId is {}", shopId);
+            int pageNo = 1;
+            int pageSize = (null == limit || limit > 1000) ? 1000 : limit;
+            while (true) {
+                Response<Paging<Long>> res = mappingReadService.findItemIdByShopId(shopId, 1, pageNo, pageSize);
+                if (!res.isSuccess()) {
+                    log.error("fail to find item mapping by shopId={} pageNo={},pageSize={},error:{}", shopId,
+                            pageNo, pageSize, res.getError());
+                    break;
+                }
+
+                Paging<Long> page = res.getResult();
+                if (null == page) {
+                    break;
+                }
+                List<Long> itemIds = page.getData();
+                if (CollectionUtils.isEmpty(itemIds)) {
+                    break;
+                }
+                log.info("start to push hk item shopId [{}] pageNo [{}] find itemIds []", shopId, pageNo, itemIds.toString());
+                try {
+                    //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+                    materialPusher.addSpus(itemIds);
+                } catch (Exception e) {
+                    log.error("synchronizeShopSpuStock has an error:{}", Throwables.getStackTraceAsString(e));
+                }
+                pageNo++;
+            }
+
+        } catch (Exception e) {
+            log.error("call synchronizeShopSpuStock fail,cause:{}", Throwables.getStackTraceAsString(e));
+        }
+        log.info("end synchronizeShopSpuStock shopId is {}", shopId);
+        return "ok";
     }
 
 

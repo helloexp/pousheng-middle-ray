@@ -700,6 +700,55 @@ public class FireCall {
         return pushMposItemComponent.syncParanaMposItem(exist);
     }
 
+
+
+    /**
+     * 同步mpos映射关系到恒康
+     */
+    @RequestMapping(value = "/sync/item/mapping", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoSyncMposMapping(@RequestParam String fileName){
+
+        String url = "/pousheng/file/"+ fileName + ".csv";
+
+        File file1 = new File(url);
+
+        List<String> itemIdStrs =  readShipmentCode(file1);
+
+        log.info("START-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
+
+        List<Long> itemIds = Lists.newArrayList();
+
+        int i =0;
+        for (String itemIdStr : itemIdStrs) {
+            itemIds.add(Long.valueOf(itemIdStr));
+            //每1000条更新下mysql和search
+            if (i % 1000 == 0) {
+                log.info("start to push hk itemIds [{}]", itemIds.toString());
+                try {
+                    //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+                    materialPusher.addSpus(itemIds);
+                } catch (Exception e) {
+                    log.error("synchronizeShopSpuStock has an error:{}", Throwables.getStackTraceAsString(e));
+                }
+                itemIds.clear();
+            }
+
+        }
+
+        //非1000条的更新下
+        if (!CollectionUtils.isEmpty(itemIds)){
+            try {
+                //向库存那边推送这个信息, 表示要关注这个商品对应的单据
+                materialPusher.addSpus(itemIds);
+            } catch (Exception e) {
+                log.error("synchronizeShopSpuStock has an error:{}", Throwables.getStackTraceAsString(e));
+            }
+        }
+
+        log.info("END-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
+
+    }
+
 }
 
 

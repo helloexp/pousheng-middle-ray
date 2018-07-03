@@ -59,9 +59,4 @@ public class DefaultMiddleLogService implements ApplogService {
 
     }
 
-    @Override
-    public void returnKeyAndLog(MemberAppLogKey memberAppLogKey, MemberApplicationLog memberApplicationLog) {
-
-    }
-
 }

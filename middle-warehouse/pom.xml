@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>2.4.0.RELEASE</version>
+        <version>2.5.0.BUILD-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -50,26 +50,6 @@
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-mapping</artifactId>
             <version>${open-client.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.47</version>
-        </dependency>
-        <dependency>
-            <groupId>io.terminus.common</groupId>
-            <artifactId>terminus-spring-boot-starter-rocketmq</artifactId>
-            <version>0.0.3-SNAPSHOT</version>
-        </dependency>
-        <dependency>
-            <groupId>io.terminus</groupId>
-            <artifactId>applog-boot-starter</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.pousheng</groupId>
-            <artifactId>middle-trade</artifactId>
-            <version>2.4.0.RELEASE</version>
-            <scope>compile</scope>
         </dependency>
     </dependencies>
 

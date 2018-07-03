@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>2.4.0.RELEASE</version>
+        <version>2.5.0.BUILD-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -236,25 +236,6 @@
             <groupId>commons-fileupload</groupId>
             <artifactId>commons-fileupload</artifactId>
             <version>1.3.2</version>
-        </dependency>
-
-        <!-- swagger -->
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger2</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.springfox</groupId>
-            <artifactId>springfox-swagger-ui</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>io.terminus</groupId>
-            <artifactId>applog-boot-starter</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>io.terminus</groupId>
-            <artifactId>applog-boot-starter</artifactId>
         </dependency>
 
         <dependency>

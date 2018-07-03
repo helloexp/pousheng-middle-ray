@@ -6,7 +6,7 @@
 
     <groupId>com.pousheng</groupId>
     <artifactId>pousheng-middle</artifactId>
-    <version>2.4.0.RELEASE</version>
+    <version>2.5.0.BUILD-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <modules>
@@ -30,8 +30,7 @@
         <azure-storage.version>5.4.0</azure-storage.version>
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
         <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
-        <springfox-swagger.version>2.6.1</springfox-swagger.version>
-        <log.version>1.2.2.SUPPORT-MIDDLE-SNAPSHOT</log.version>
+
     </properties>
 
     <dependencies>
@@ -143,25 +142,6 @@
                 <version>${azure-storage.version}</version>
             </dependency>
 
-            <!-- swagger begin-->
-            <dependency>
-                <groupId>io.springfox</groupId>
-                <artifactId>springfox-swagger2</artifactId>
-                <version>${springfox-swagger.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>io.springfox</groupId>
-                <artifactId>springfox-swagger-ui</artifactId>
-                <version>${springfox-swagger.version}</version>
-            </dependency>
-            <!-- swagger end-->
-
-            <!-- 日志框架 -->
-            <dependency>
-                <groupId>io.terminus</groupId>
-                <artifactId>applog-boot-starter</artifactId>
-                <version>${log.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 

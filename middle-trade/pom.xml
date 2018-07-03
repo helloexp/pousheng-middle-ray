@@ -5,7 +5,7 @@
     <parent>
         <artifactId>pousheng-middle</artifactId>
         <groupId>com.pousheng</groupId>
-        <version>2.4.0.RELEASE</version>
+        <version>2.5.0.BUILD-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -52,10 +52,6 @@
             <groupId>com.opencsv</groupId>
             <artifactId>opencsv</artifactId>
             <version>RELEASE</version>
-        </dependency>
-        <dependency>
-            <groupId>io.terminus</groupId>
-            <artifactId>applog-boot-starter</artifactId>
         </dependency>
     </dependencies>
 

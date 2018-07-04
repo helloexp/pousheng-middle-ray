@@ -23,6 +23,7 @@ import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
 import java.util.List;
@@ -80,6 +81,10 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
             log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",
                     addressIds, shopOrder.getShopId(), r.getError());
             throw new ServiceException(r.getError());
+        }
+        if (CollectionUtils.isEmpty(r.getResult())){
+            log.error("no warehouse rule set for shop(id={})", shopOrder.getShopId());
+            throw new ServiceException("warehouse.rule.not.found");
         }
 
         context.put(DispatchContants.WAREHOUSE_FOR_ADDRESS, r.getResult().get(0));

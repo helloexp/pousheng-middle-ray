@@ -1816,6 +1816,8 @@ public class ShipmentWiteLogic {
                 return OrderWaitHandleType.SHOP_STOCK_LOCK_FAIL.value();
             case "warehouse.rule.not.found":
                 return OrderWaitHandleType.WAREHOUSE_RULE_NOT_FOUND.value();
+            case "shop.not.mapping.open.shop":
+                return OrderWaitHandleType.WAREHOUSE_RULE_NOT_FOUND.value();
             default:
                 return OrderWaitHandleType.UNKNOWN_ERROR.value();
         }

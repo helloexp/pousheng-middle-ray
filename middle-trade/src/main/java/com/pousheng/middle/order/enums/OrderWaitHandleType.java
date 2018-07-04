@@ -21,8 +21,9 @@ public enum OrderWaitHandleType {
     FIND_ADDRESS_GPS_FAIL(10, "门店或仓库地址信息查询失败"),
     WAREHOUSE_STOCK_LOCK_FAIL(11, "mpos仓库商品库存锁定失败"),
     SHOP_STOCK_LOCK_FAIL(12, "mpos门店商品库存锁定失败"),
-    WAREHOUSE_RULE_NOT_FOUND(13, "仓库规则不存在"),
-    UNKNOWN_ERROR(14, "未知错误");
+    WAREHOUSE_RULE_NOT_FOUND(13, "来源店铺没有配置对应的默认发货仓规则"),
+    UNKNOWN_ERROR(14, "未知错误"),
+    SHOP_MAPPING_MISS(15, "门店对应的店铺映射关系缺失");
 
     private final int value;
     private final String desc;

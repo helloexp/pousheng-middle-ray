@@ -27,6 +27,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import io.terminus.common.model.Response;
 import io.terminus.msg.common.StringUtil;
+import io.terminus.parana.order.enums.ShipmentStatus;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
@@ -91,8 +92,9 @@ public class NotifyHkOrderDoneService implements CompensateBizService {
             //添加确认收货时间
             shipment.setConfirmAt(new Date());
             shipmentWiteLogic.update(shipment);
+            Shipment newShipment = shipmentReadLogic.findShipmentById(shipmentId);
             //通知恒康已经发货
-            Response<Boolean> response = syncErpShipmentLogic.syncShipmentDone(shipment, 2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
+            Response<Boolean> response = syncErpShipmentLogic.syncShipmentDone(newShipment, 2, MiddleOrderEvent.AUTO_HK_CONFIRME_FAILED.toOrderOperation());
             if (!response.isSuccess()) {
                 log.error("notify hk order confirm failed,shipment id is ({}),caused by {}", shipment.getId(), response.getError());
             }

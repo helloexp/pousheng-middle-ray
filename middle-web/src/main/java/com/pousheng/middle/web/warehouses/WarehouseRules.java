@@ -66,7 +66,7 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @LogMe(description = "创建", ignore = true)
+    @LogMe(description = "创建了发货仓规则", ignore = true)
     public Long create(@RequestBody @LogMeContext ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
         List<ThinShop> thinShops = Lists.newArrayList(shops);
@@ -96,7 +96,7 @@ public class WarehouseRules {
      * @return rule id 新生成的规则id
      */
     @RequestMapping(value="/{ruleId}",method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    @LogMe(description = "编辑",ignore = true)
+    @LogMe(description = "修改了发货仓规则",ignore = true)
     public Boolean update(@PathVariable @LogMeContext Long ruleId, @RequestBody @LogMeContext ThinShop[] shops) {
         //判断所选店铺是否属于同一账套
         /*List<ThinShop> thinShops = Lists.newArrayList(shops);
@@ -142,7 +142,7 @@ public class WarehouseRules {
      * @return 是否删除成功
      */
     @ApiOperation("删除单条规则")
-    @LogMe(description = "删除单条规则", deleting = "warehouseRulesClient#findRuleById")
+    @LogMe(description = "删除单条发货仓规则", deleting = "warehouseRulesClient#findRuleById")
     @RequestMapping(value = "/{ruleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean delete(@PathVariable @LogMeId Long ruleId) {
         Response<Boolean> r = warehouseRulesClient.deleteById(ruleId);

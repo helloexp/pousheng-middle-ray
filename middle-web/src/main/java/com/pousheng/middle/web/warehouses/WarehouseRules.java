@@ -142,7 +142,7 @@ public class WarehouseRules {
      * @return 是否删除成功
      */
     @ApiOperation("删除单条规则")
-    @LogMe(description = "删除单条规则", deleting = "warehouseRuleDao#findById")
+    @LogMe(description = "删除单条规则", deleting = "warehouseRulesClient#findRuleById")
     @RequestMapping(value = "/{ruleId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean delete(@PathVariable @LogMeId Long ruleId) {
         Response<Boolean> r = warehouseRulesClient.deleteById(ruleId);
@@ -163,7 +163,7 @@ public class WarehouseRules {
      * @return 是否删除成功
      */
     @ApiOperation("删除店铺组,同时删除对应的发货规则记录")
-    @LogMe(description = "删除店铺组", deleting = "warehouseRuleDao#findById")
+    @LogMe(description = "删除店铺组", deleting = "warehouseRulesClient#findShopListByGroup")
     @RequestMapping(value = "/group/{groupId}", method = RequestMethod.DELETE, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean deleteShopGroup(@PathVariable @LogMeId Long groupId){
         Response<Boolean> r = warehouseRulesClient.deleteShopGroup(groupId);

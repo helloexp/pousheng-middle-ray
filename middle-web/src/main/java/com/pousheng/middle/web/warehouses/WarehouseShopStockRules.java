@@ -51,7 +51,7 @@ public class WarehouseShopStockRules {
      * @return 新创建的规则id
      */
     @ApiOperation("创建店铺库存发货规则")
-    @LogMe(description = "创建店铺库存发货规则", compareTo = "warehouseShopStockRuleDao#findById")
+    @LogMe(description = "创建店铺库存发货规则", compareTo = "warehousePushRuleClient#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long create(@RequestBody @LogMeContext WarehouseShopStockRule warehouseShopStockRule){
         authCheck(warehouseShopStockRule.getShopId());

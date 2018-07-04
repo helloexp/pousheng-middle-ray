@@ -13,6 +13,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -64,6 +65,7 @@ public class WarehouseShopSkuStockRules {
      * @return 新创建的规则id
      */
     @ApiOperation("创建商品库存推送规则")
+    @LogMe(description = "创建商品库存推送规则", compareTo = "warehouseShopSkuRuleClient#findById")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建")
     public Long create(@RequestBody WarehouseShopSkuStockRule warehouseShopSkuStockRule){
@@ -166,6 +168,7 @@ public class WarehouseShopSkuStockRules {
      * @return 是否成功
      */
     @ApiOperation("更新商品推送规则")
+    @LogMe(description = "更新商品推送规则", ignore = true)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
     public Boolean update(@PathVariable Long id, @RequestBody WarehouseShopSkuStockRule warehouseShopSkuStockRule){

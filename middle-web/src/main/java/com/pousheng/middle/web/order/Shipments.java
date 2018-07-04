@@ -1868,4 +1868,34 @@ public class Shipments {
 
             }
     }
+
+    /**
+     * 同步恒康确认收货失败批量补偿脚本
+     */
+    @RequestMapping(value = "api/shipment/recover/confirm/hk",method = RequestMethod.GET)
+    public void recoverShipmentConfirmAt(){
+        int pageNo = 1;
+        int pageSize = 40;
+        while(true){
+            Response<Paging<Shipment>> response = shipmentReadService.pagingByStatus(pageNo,pageSize,MiddleShipmentsStatus.CONFIRMED_FAIL.getValue());
+            if (!response.isSuccess()){
+                log.error("pagingByStatus failed");
+                pageNo++;
+                continue;
+            }
+            Paging<Shipment> shipmentPaging = response.getResult();
+            List<Shipment> shipments = shipmentPaging.getData();
+            if (shipments.isEmpty()){
+                log.error("all recoverShipmentConfirmAt,pageNo {}",pageNo);
+                break;
+            }
+            for (Shipment shipment:shipments){
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentDone(shipment, 2, MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync  shipment(id:{}) done to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                }
+            }
+            pageNo++;
+        }
+    }
 }

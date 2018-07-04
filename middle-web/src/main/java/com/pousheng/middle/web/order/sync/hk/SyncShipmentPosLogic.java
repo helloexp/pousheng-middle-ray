@@ -34,6 +34,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -152,7 +153,7 @@ public class SyncShipmentPosLogic {
             doneInfo.setNetbillno(shipment.getShipmentCode());
             //如果确认收货时间是空的，直接传当前时间
             if (Arguments.isNull(shipment.getConfirmAt())){
-                doneInfo.setReceiptdate(formatter.print(System.currentTimeMillis()));
+                doneInfo.setReceiptdate(formatter.print(shipment.getUpdatedAt().getTime()));
             }else{
                 doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
             }

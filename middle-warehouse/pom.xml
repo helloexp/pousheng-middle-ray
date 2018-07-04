@@ -62,12 +62,6 @@
             <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
-        <dependency>
-            <groupId>io.terminus</groupId>
-            <artifactId>applog-boot-starter</artifactId>
-        </dependency>
-
-
     </dependencies>
 
 

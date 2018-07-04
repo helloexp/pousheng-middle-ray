@@ -143,13 +143,6 @@
             </dependency>
 
             <!-- swagger end-->
-            <!-- 日志框架 -->
-            <dependency>
-                <groupId>io.terminus</groupId>
-                <artifactId>applog-boot-starter</artifactId>
-                <version>${log.version}</version>
-            </dependency>
-
 
         </dependencies>
     </dependencyManagement>

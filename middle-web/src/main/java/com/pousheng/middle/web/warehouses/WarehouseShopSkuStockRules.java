@@ -2,6 +2,7 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.warehouse.companent.WarehouseShopSkuRuleClient;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
@@ -116,42 +117,43 @@ public class WarehouseShopSkuStockRules {
 
         Map<String,WarehouseShopSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(shopId, skuCode);
 
-        List<WarehouseShopSkuStockRule> rules = Lists.transform(mappingRes.getResult().getData(), new Function<ItemMapping, WarehouseShopSkuStockRule>() {
-            @Override
-            public WarehouseShopSkuStockRule apply(ItemMapping itemMapping) {
-                if (StringUtils.isBlank(itemMapping.getSkuCode())) {
-                    return null;
-                }
-                WarehouseShopSkuStockRule stockRule = null;
-                WarehouseShopSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
-                if (null == item) {
-                    stockRule = new WarehouseShopSkuStockRule();
-                } else {
-                    stockRule = item;
-                }
-
-                stockRule.setSkuCode(itemMapping.getSkuCode());
-
-                // 获取name
-                if (StringUtils.isBlank(itemMapping.getItemName())) {
-                    // 从parana_spus表中获取
-                    Response<Spu> spuResponse = spuReadService.findById(itemMapping.getItemId());
-                    if (spuResponse.isSuccess() && null != spuResponse.getResult()) {
-                        stockRule.setSkuName(spuResponse.getResult().getName());
-                    }
-                } else {
-                    stockRule.setSkuName(itemMapping.getItemName());
-                }
-
-                stockRule.setShopId(shopId);
-
-                return stockRule;
+        Map<String, WarehouseShopSkuStockRule> rules = Maps.newHashMap();
+        for (ItemMapping itemMapping : mappingRes.getResult().getData()) {
+            if (StringUtils.isBlank(itemMapping.getSkuCode())) {
+                continue;
             }
-        });
+            if (rules.containsKey(itemMapping.getSkuCode())) {
+                continue;
+            }
+            WarehouseShopSkuStockRule stockRule = null;
+            WarehouseShopSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
+            if (null == item) {
+                stockRule = new WarehouseShopSkuStockRule();
+            } else {
+                stockRule = item;
+            }
+
+            stockRule.setSkuCode(itemMapping.getSkuCode());
+
+            // 获取name
+            if (StringUtils.isBlank(itemMapping.getItemName())) {
+                // 从parana_spus表中获取
+                Response<Spu> spuResponse = spuReadService.findById(itemMapping.getItemId());
+                if (spuResponse.isSuccess() && null != spuResponse.getResult()) {
+                    stockRule.setSkuName(spuResponse.getResult().getName());
+                }
+            } else {
+                stockRule.setSkuName(itemMapping.getItemName());
+            }
+
+            stockRule.setShopId(shopId);
+
+            rules.put(itemMapping.getSkuCode(), stockRule);
+        }
 
         Paging<WarehouseShopSkuStockRule> ret = new Paging<WarehouseShopSkuStockRule>();
         ret.setTotal(mappingRes.getResult().getTotal());
-        ret.setData(rules.stream().filter(Objects::nonNull).collect(Collectors.toList()));
+        ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         return ret;
     }

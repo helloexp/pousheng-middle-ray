@@ -535,6 +535,12 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.SHIP.toOrderOperation(),
                     MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue());
 
+
+            //待发货 -->门店拒单 --> 已退货待创建发货
+            addTransition(MiddleRefundStatus.WAIT_SHIP.getValue(),
+                    MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),
+                    MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
+
             //待确认收货 -->运营确认收货 --> 已完成
             addTransition(MiddleRefundStatus.WAIT_CONFIRM_RECEIVE.getValue(),
                     MiddleOrderEvent.CONFIRM.toOrderOperation(),

@@ -16,6 +16,9 @@ import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.enums.ShipmentType;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -53,6 +56,11 @@ public class MposOrderHandleLogic {
 
     @Autowired
     private ShipmentWriteManger shipmentWriteManger;
+
+    @Autowired
+    private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -146,6 +154,19 @@ public class MposOrderHandleLogic {
             shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
             //回滚发货单
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
+
+            //如果是换货发货门店拒单则需要更新对应售后单的状态
+            if (Objects.equals(shipment1.getType(), ShipmentType.EXCHANGE_SHIP.value())){
+
+                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment1.getId());
+                Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+
+                Response<Boolean> updateRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.MPOS_REJECT.toOrderOperation());
+                if (!updateRes.isSuccess()){
+                    log.error("mpos reject so to update refund(id:{})  fail,error:{}",refund.getId(),updateRes.getError());
+                }
+                return;
+            }
             shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment1);
         }
         if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {

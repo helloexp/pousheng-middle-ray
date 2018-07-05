@@ -140,11 +140,10 @@ public class MposOrderHandleLogic {
         if(Objects.nonNull(update)) {
             shipmentWiteLogic.update(update);
         }
-        //如果据单，将据单原因更新到发货单扩展字段里
-        if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)) {
-            shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
-        }
+
         if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)){
+            //如果拒单，将据单原因更新到发货单扩展字段里
+            shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
             //回滚发货单
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
             shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment1);

@@ -121,7 +121,7 @@ public class MposShipmentLogic {
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder, skuCodeAndQuantities);
         }
-        log.info("end to update order status,when mops shipped");
+        log.info("end to update order status,when mops shipped shipment id:{}",event.getShipmentId());
     }
 
     /**

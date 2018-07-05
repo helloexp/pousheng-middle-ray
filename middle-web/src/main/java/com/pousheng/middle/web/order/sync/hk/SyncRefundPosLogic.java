@@ -163,7 +163,8 @@ public class SyncRefundPosLogic {
                 }
             }
         }else{
-            ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getShipmentCode(),extra.get("outCode"));
+            //ordersizes = makeHkShipmentPosItem(refund,shipmentDetail.getShipment().getShipmentCode(),extra.get("outCode"));
+            ordersizes =makeHkShipmentPosItemWarehouse(refund,shipmentDetail.getShipment().getShipmentCode());
         }
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);

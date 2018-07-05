@@ -151,13 +151,10 @@ public class MposOrderHandleLogic {
         if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)){
             //如果拒单，将据单原因更新到发货单扩展字段里
             shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
-            //回滚发货单
-            Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
 
             //如果是换货发货门店拒单则需要更新对应售后单的状态并释放占用库存
-            if (Objects.equals(shipment1.getType(), ShipmentType.EXCHANGE_SHIP.value())){
-
-                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment1.getId());
+            if (Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())){
+                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
                 Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
 
                 Response<Boolean> updateRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.MPOS_REJECT.toOrderOperation());
@@ -167,7 +164,7 @@ public class MposOrderHandleLogic {
 
                 Map<String, Integer> skuCodeAndQuantity = Maps.newHashMap();
 
-                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment1);
+                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
                 for (ShipmentItem shipmentItem : shipmentItems){
                     skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
                 }
@@ -177,7 +174,8 @@ public class MposOrderHandleLogic {
 
                 return;
             }
-            shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment1);
+            //回滚发货单
+            shipmentWriteManger.rollbackSkuOrderWaitHandleNumber(shipment);
         }
         if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));

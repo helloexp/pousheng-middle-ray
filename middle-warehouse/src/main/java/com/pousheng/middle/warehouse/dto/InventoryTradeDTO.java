@@ -23,14 +23,14 @@ public class InventoryTradeDTO implements Serializable {
     private Long shopId;
 
     /**
-     * 订单ID
+     * 发货单ID
      */
-    private String orderId;
+    private String bizSrcId;
 
     /**
-     * 子订单ID，如果没有，则使用订单ID
+     * 子单ID，如果没有，则使用发货单ID
      */
-    private List<String> subOrderId;
+    private List<String> subBizSrcId;
 
     /**
      * 特殊情况下的内容区分不同交易请求的标识，到库存中心后会进行二次处理

@@ -87,7 +87,7 @@ public class MposSkuStockLogic {
         }
 
         //锁定电商库存
-        Response<Boolean> response = warehouseSkuStockManager.lockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,0), warehouseShipments);
+        Response<Boolean> response = warehouseSkuStockManager.lockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
         if(!response.isSuccess()){
             log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,response.getError());
             return response;
@@ -116,7 +116,7 @@ public class MposSkuStockLogic {
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Response.ok();
         }
-        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,1), warehouseShipments);
+        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
 
         return Response.ok();
 
@@ -139,7 +139,7 @@ public class MposSkuStockLogic {
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Response.ok();
         }
-        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,1), warehouseShipments);
+        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
 
         return Response.ok();
 
@@ -165,7 +165,7 @@ public class MposSkuStockLogic {
             return Response.ok();
         }
 
-        warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo,0) ,warehouseShipments);
+        warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo) ,warehouseShipments);
 
         log.info("end decrease stock");
 

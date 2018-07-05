@@ -50,7 +50,7 @@ public class DecreaseLockStockLogic {
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
         warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> decreaseStockRlt =  warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(shipmentReadLogic.getDispatchOrderItem(shipment),0),warehouseShipmentList);
+        Response<Boolean> decreaseStockRlt =  warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(shipmentReadLogic.getDispatchOrderItem(shipment)),warehouseShipmentList);
         if (!decreaseStockRlt.isSuccess()){
             log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
         }

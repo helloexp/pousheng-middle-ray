@@ -74,7 +74,7 @@ public class WarehouseSkuStockManagerTest extends AbstractTest {
         shipment.setSkuCodeAndQuantities(skuCodeAndQuantities);
 
         InventoryTradeDTO inventoryTradeDTO = InventoryTradeDTO.builder()
-                .orderId("11").subOrderId(Lists.newArrayList("11"))
+                .bizSrcId("11").subBizSrcId(Lists.newArrayList("11"))
                 .shopId(7L)
                 .build();
 

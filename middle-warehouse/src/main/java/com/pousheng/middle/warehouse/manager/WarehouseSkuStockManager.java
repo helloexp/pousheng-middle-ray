@@ -112,8 +112,8 @@ public class WarehouseSkuStockManager {
             currTrade.setWarehouseId(warehouseId);
             currTrade.setQuantity(quantity);
             currTrade.setSkuCode(skuCode);
-            currTrade.setOrderId(inventoryTradeDTO.getOrderId());
-            currTrade.setSubOrderId(Lists.newArrayList(inventoryTradeDTO.getSubOrderId()));
+            currTrade.setBizSrcId(inventoryTradeDTO.getBizSrcId());
+            currTrade.setSubBizSrcId(Lists.newArrayList(inventoryTradeDTO.getSubBizSrcId()));
             currTrade.setShopId(inventoryTradeDTO.getShopId());
             currTrade.setUniqueCode(inventoryTradeDTO.getUniqueCode());
 

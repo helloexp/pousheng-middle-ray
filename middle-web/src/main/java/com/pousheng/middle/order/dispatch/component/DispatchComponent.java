@@ -20,9 +20,6 @@ import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.utils.DistanceUtil;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -30,8 +27,6 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.cache.ShopCacher;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
@@ -97,30 +92,13 @@ public class DispatchComponent {
      * @param dispatchOrderItemInfo
      * @return
      */
-    public InventoryTradeDTO genInventoryTradeDTO (DispatchOrderItemInfo dispatchOrderItemInfo, Integer retryMinusDelta) {
-        if (null == retryMinusDelta) {
-            retryMinusDelta = 0;
-        }
+    public InventoryTradeDTO genInventoryTradeDTO (DispatchOrderItemInfo dispatchOrderItemInfo) {
         InventoryTradeDTO inventoryTradeDTO = new InventoryTradeDTO();
-//        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getOrderId()));
         // 发货单id
-        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getShipmentId()));
+        inventoryTradeDTO.setBizSrcId(String.valueOf(dispatchOrderItemInfo.getShipmentId()));
         inventoryTradeDTO.setShopId(dispatchOrderItemInfo.getOpenShopId());
-
-        // TODO 如果已经取消过，则放入uniqueCode一个内容，这个内容取自取消信息，用来告诉产品那边这是一次新的交易
-        if (null != dispatchOrderItemInfo.getOrderId()) {
-            Response<List<OrderShipment>> orderShipList = orderShipmentReadService.findByOrderIdAndOrderLevel(dispatchOrderItemInfo.getOrderId(), OrderLevel.SHOP);
-            if (orderShipList.isSuccess() && !ObjectUtils.isEmpty(orderShipList.getResult())) {
-                List<OrderShipment> cancelShipment = orderShipList.getResult().stream().filter(orderShipment -> MiddleShipmentsStatus.CANCELED.getValue() == orderShipment.getStatus()).collect(Collectors.toList());
-
-                if (!ObjectUtils.isEmpty(cancelShipment) && (cancelShipment.size()-retryMinusDelta) > 0) {
-                    inventoryTradeDTO.setUniqueCode("CURR_TRY:"+(cancelShipment.size()-retryMinusDelta));
-                }
-            }
-        }
-
-        // 子订单直接使用订单ID
-        inventoryTradeDTO.setSubOrderId(Lists.newArrayList(inventoryTradeDTO.getOrderId()));
+        // 子单也使用发货单ID
+        inventoryTradeDTO.setSubBizSrcId(Lists.newArrayList(inventoryTradeDTO.getBizSrcId()));
         return inventoryTradeDTO;
     }
 

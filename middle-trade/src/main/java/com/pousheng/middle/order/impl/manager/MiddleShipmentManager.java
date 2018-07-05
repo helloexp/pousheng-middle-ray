@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.impl.manager;
 
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.model.OrderShipment;
@@ -18,6 +19,7 @@ public class MiddleShipmentManager {
     private final ShipmentDao shipmentDao;
 
     private final OrderShipmentDao orderShipmentDao;
+
 
     @Autowired
     public MiddleShipmentManager(ShipmentDao shipmentDao, OrderShipmentDao orderShipmentDao) {
@@ -48,5 +50,8 @@ public class MiddleShipmentManager {
 
         return shipmentId;
     }
+
+
+
 
 }

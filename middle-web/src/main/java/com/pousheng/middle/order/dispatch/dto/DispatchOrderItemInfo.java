@@ -52,4 +52,10 @@ public class DispatchOrderItemInfo implements Serializable{
     private List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
 
 
+    /**
+     * 发货单ID
+     */
+    private Long shipmentId;
+
+
 }

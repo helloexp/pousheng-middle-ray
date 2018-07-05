@@ -92,12 +92,12 @@ public class WarehouseChooser {
                     skuCodeAndQuantities, needSingle);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 // 先锁定库存, 锁定成功后再返回结果
-                Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, warehouseShipments));
+               /* Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, warehouseShipments));
                 if(!rDecrease.isSuccess()){
                     log.error("failed to decreaseStocks for addressId:{}, error code:{}," +
                             "auto dispatch stock failed", addressId, rDecrease.getError());
                     return Collections.emptyList();
-                }
+                }*/
 
                 return warehouseShipments;
             }

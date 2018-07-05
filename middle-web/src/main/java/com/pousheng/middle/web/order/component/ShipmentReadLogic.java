@@ -609,7 +609,7 @@ public class ShipmentReadLogic {
         dispatchOrderItemInfo.setOpenShopId(shipment.getShopId());
 
         // TODO 获取订单信息
-        if (null != shipment.getId()) {
+        /*if (null != shipment.getId()) {
             dispatchOrderItemInfo.setOrderId(findOrderShipmentByShipmentId(shipment.getId()).getOrderId());
         } else {
             if (null != shipment.getExtra() && shipment.getExtra().containsKey(TradeConstants.SHOP_ORDER_ID)) {
@@ -618,7 +618,8 @@ public class ShipmentReadLogic {
                 log.error("shipment fail because no order id found :{}", shipment);
                 throw new JsonResponseException("order.id.not.found");
             }
-        }
+        }*/
+        dispatchOrderItemInfo.setShipmentId(shipment.getId());
         dispatchOrderItemInfo.setSubOrderIds(Lists.transform(skuCodeAndQuantities, input -> input.getSkuOrderId()));
         return dispatchOrderItemInfo;
     }

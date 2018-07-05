@@ -102,7 +102,9 @@ public class DispatchComponent {
             retryMinusDelta = 0;
         }
         InventoryTradeDTO inventoryTradeDTO = new InventoryTradeDTO();
-        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getOrderId()));
+//        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getOrderId()));
+        // 发货单id
+        inventoryTradeDTO.setOrderId(String.valueOf(dispatchOrderItemInfo.getShipmentId()));
         inventoryTradeDTO.setShopId(dispatchOrderItemInfo.getOpenShopId());
 
         // TODO 如果已经取消过，则放入uniqueCode一个内容，这个内容取自取消信息，用来告诉产品那边这是一次新的交易

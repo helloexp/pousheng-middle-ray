@@ -511,12 +511,12 @@ public class Shipments {
             shipment.setExtra(extraMap);
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
-            //锁定库存
+           /* //锁定库存
             Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
             if (!lockStockRlt.isSuccess()) {
                 log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
                 throw new JsonResponseException("lock.stock.error");
-            }
+            }*/
             //创建发货单
             Long shipmentId = null;
             try {
@@ -665,20 +665,14 @@ public class Shipments {
                 shipment.setExtra(extraMap);
                 shipment.setShopId(refund.getShopId());
                 shipment.setShopName(refund.getShopName());
-                //锁定库存
-                Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
-                if (!lockStockRlt.isSuccess()) {
-                    log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
-                    throw new JsonResponseException("lock.stock.error");
-                }
+//                //锁定库存
+//                Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
+//                if (!lockStockRlt.isSuccess()) {
+//                    log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
+//                    throw new JsonResponseException("lock.stock.error");
+//                }
                 //换货的发货关联的订单id 为换货单id
-                Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, orderRefund, refundId);
-                if (!createResp.isSuccess()) {
-                    log.error("fail to create shipment:{} for refund(id={}),and level={},cause:{}",
-                            shipment, refundId, OrderLevel.SHOP.getValue(), createResp.getError());
-                    throw new JsonResponseException(createResp.getError());
-                }
-                Long shipmentId = createResp.getResult();
+                Long shipmentId = shipmentWriteManger.createForAfterSale(shipment, orderRefund, refundId);
 
                 //由于eventsbus监听事件RefundShipmentEvent执行存在问题，暂时改为同步执行
                 //eventBus.post(new RefundShipmentEvent(shipmentId));

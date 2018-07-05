@@ -76,11 +76,11 @@ public class DispatchOrderEngine {
             if(success){
                 log.info("dispatch shop order id:{} success,dispatchOrderItemInfo:{}" ,shopOrder.getId(),dispatchOrderItemInfo);
                 //锁定库存及更新电商在售库存（当mpos仓和电商仓交集时）
-                Response<Boolean> lockRes = mposSkuStockLogic.lockStock(dispatchOrderItemInfo);
+                /*Response<Boolean> lockRes = mposSkuStockLogic.lockStock(dispatchOrderItemInfo);
                 if(!lockRes.isSuccess()){
                     log.error("local stock dispatchOrderItemInfo:{} fail,error:{}",dispatchOrderItemInfo,lockRes.getError());
                     return Response.fail(lockRes.getError());
-                }
+                }*/
                 return Response.ok(dispatchOrderItemInfo);
             }
             log.error("order id:{} not matching any dispatch link",shopOrder.getId());

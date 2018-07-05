@@ -453,13 +453,13 @@ public class ShipmentWiteLogic {
                 log.error("shopOrder [{}] failed to gen shipment order error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             }
             if (null == shipmentId) {
-                //解锁库存
+               /* //解锁库存
                 Response<Boolean> res = mposSkuStockLogic.unLockStock(
                         warehouseChooser.genDispatchOrderInfo(shopOrder, skuCodeAndQuantities, Lists.newArrayList(warehouseShipment))
                 );
                 if (!res.isSuccess()) {
                     log.warn("shopOrderId : {}  mposSkuStockLogic.unLockStock is fail : {}", shopOrder.getId(), res.getError());
-                }
+                }*/
                 continue;
             }
 

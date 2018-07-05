@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -47,9 +48,6 @@ public class MposOrderHandleLogic {
     private ShipmentWiteLogic shipmentWiteLogic;
 
     @Autowired
-    private ExpressCodeReadService expressCodeReadService;
-
-    @Autowired
     private MposShipmentLogic mposShipmentLogic;
 
     @Autowired
@@ -59,6 +57,9 @@ public class MposOrderHandleLogic {
     private RefundWriteLogic refundWriteLogic;
     @Autowired
     private RefundReadLogic refundReadLogic;
+
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -153,7 +154,7 @@ public class MposOrderHandleLogic {
             //回滚发货单
             Shipment shipment1 = shipmentReadLogic.findShipmentById(shipment.getId());
 
-            //如果是换货发货门店拒单则需要更新对应售后单的状态
+            //如果是换货发货门店拒单则需要更新对应售后单的状态并释放占用库存
             if (Objects.equals(shipment1.getType(), ShipmentType.EXCHANGE_SHIP.value())){
 
                 OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment1.getId());
@@ -170,8 +171,9 @@ public class MposOrderHandleLogic {
                 for (ShipmentItem shipmentItem : shipmentItems){
                     skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
                 }
-
                 refundWriteLogic.updateSkuHandleNumber(refund.getId(),skuCodeAndQuantity);
+                //解锁库存
+                mposSkuStockLogic.unLockStock(shipment);
 
                 return;
             }

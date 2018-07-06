@@ -213,19 +213,16 @@ public class StockPusher {
                         ), shopId);
                         long end1 = System.currentTimeMillis();
                         log.info("get available inventory cost: {}", (end1-start1));
-                        if (!getRes.isSuccess() || ObjectUtils.isEmpty(getRes.getResult())) {
+                        if (!getRes.isSuccess()) {
+                            log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
+                            continue;
+                        }
+                        if (ObjectUtils.isEmpty(getRes.getResult())) {
                             stock = 0L;
                         } else {
                             stock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getTotalQuantity).sum();
                         }
                         log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
-
-                        /*if (shopStockRule.getSafeStock() >= stock) {
-                            log.warn("shop(id={}) has reached safe stock({}) for sku(code={}), current stock is:{}",
-                                    shopId, shopStockRule.getSafeStock(), skuCode, stock);
-                            Long lastPushStock = shopStockRule.getLastPushStock();
-                            stock = 0L;
-                        }*/
 
                         //如果库存数量小于0则推送0
                         if (stock < 0L){
@@ -234,8 +231,14 @@ public class StockPusher {
                             stock = 0L;
                         }
 
+                        if (null != shopStockRule.getSafeStock()) {
+                            stock = Math.max(0, stock - shopStockRule.getSafeStock());
+                        }
+
                         //按照设定的比例确定推送数量
-                        stock = stock * shopStockRule.getRatio() / 100 + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock());
+                        stock = Math.max(0,
+                                stock * shopStockRule.getRatio() / 100 + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
+                        );
 
                         //判断店铺是否是官网的
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);

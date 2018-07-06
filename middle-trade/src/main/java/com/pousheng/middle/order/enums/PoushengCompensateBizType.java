@@ -37,8 +37,14 @@ public enum PoushengCompensateBizType {
      * 第三方渠道订单生成发货单
      */
     THIRD_ORDER_CREATE_SHIP,
+
     /**
      * 通知mpos确认收货
      */
-    SYNC_MPOS_CONFIRM_DONE;
+    SYNC_MPOS_CONFIRM_DONE,
+
+    /**
+     * 库存中心超时异常
+     */
+    STOCK_API_TIME_OUT;
 }

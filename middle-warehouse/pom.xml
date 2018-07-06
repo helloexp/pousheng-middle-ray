@@ -65,6 +65,12 @@
             <groupId>io.terminus</groupId>
             <artifactId>applog-boot-starter</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.pousheng</groupId>
+            <artifactId>middle-trade</artifactId>
+            <version>2.3.1.RELEASE</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 

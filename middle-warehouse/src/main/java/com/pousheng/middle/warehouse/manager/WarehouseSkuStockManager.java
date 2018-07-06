@@ -1,17 +1,23 @@
 package com.pousheng.middle.warehouse.manager;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -24,9 +30,14 @@ public class WarehouseSkuStockManager {
 
     private final InventoryClient inventoryClient;
 
+    private final PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
     @Autowired
-    public WarehouseSkuStockManager(InventoryClient inventoryClient) {
+    public WarehouseSkuStockManager(InventoryClient inventoryClient, PoushengCompensateBizWriteService poushengCompensateBizWriteService) {
         this.inventoryClient = inventoryClient;
+        this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
     }
 
     /**
@@ -45,6 +56,10 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.lock(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to occupy inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
+                if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
+                    // 超时的错误进入biz表给后面轮询
+                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                }
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -68,6 +83,10 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.decrease(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipments, tradeRet.getError());
+                // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
+                    // 超时的错误进入biz表给后面轮询
+                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                // }
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -95,6 +114,10 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.unLock(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to unLock inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, lockedShipments, tradeRet.getError());
+                // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
+                    // 超时的错误进入biz表给后面轮询
+                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                // }
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -124,4 +147,16 @@ public class WarehouseSkuStockManager {
         return tradeList;
     }
 
+
+    /**
+     * 对于超时这类异常进行后续补偿措施，biz业务轮询
+     * @param shipmentId 发货单id
+     */
+    private void createShipmentResultTask(Long shipmentId){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.STOCK_API_TIME_OUT.toString());
+        biz.setContext(mapper.toJson(shipmentId));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
+    }
 }

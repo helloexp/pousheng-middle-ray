@@ -2,11 +2,17 @@ package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Shipment;
@@ -16,12 +22,11 @@ import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 生成发货单的操作：防止出现并发的情况
@@ -41,18 +46,17 @@ public class ShipmentWriteManger {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private MiddleShipmentWriteService middleShipmentWriteService;
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
-    @Transactional(rollbackFor = Exception.class, isolation = Isolation.SERIALIZABLE)
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+    @Transactional
     public Long createShipmentByConcurrent(Shipment shipment, ShopOrder shopOrder){
         log.info("begin to create shipment,shopOrderId is {}",shopOrder.getId());
         //1.生成发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
         if (!createResp.isSuccess()) {
-           /* Response<Boolean> response = mposSkuStockLogic.unLockStock(shipment);
-            log.info("shopOrderId : {}  unLockStock is {}", shopOrder.getId(), response.getResult());
-            if (!response.isSuccess()) {
-                log.warn("shopOrderId : {}  unLockStock is fail : {}", shopOrder.getId(), response.getError());
-            }*/
             log.error("fail to create shipment:{} for order(id={}),and level={},cause:{}",
                     shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
             throw new ServiceException(createResp.getError());
@@ -64,7 +68,8 @@ public class ShipmentWriteManger {
         // 锁库存
         Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment);
         if(!rDecrease.isSuccess()){
-            log.error("failed to decreaseStocks error code:{},auto dispatch stock failed", rDecrease.getError());
+            log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
+            throw new ServiceException(rDecrease.getError());
         }
         return createResp.getResult();
     }
@@ -96,7 +101,7 @@ public class ShipmentWriteManger {
     }
 
 
-    @Transactional(rollbackFor = Exception.class, isolation = Isolation.SERIALIZABLE)
+    @Transactional
     public Long createForAfterSale(Shipment shipment, OrderRefund orderRefund, Long afterSaleOrderIdr) {
         Response<Long> createResp = middleShipmentWriteService.createForAfterSale(shipment, orderRefund, afterSaleOrderIdr);
         if (!createResp.isSuccess()) {
@@ -110,9 +115,10 @@ public class ShipmentWriteManger {
         // 锁库存
         Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment);
         if(!rDecrease.isSuccess()) {
-            log.error("failed to decreaseStocks error code:{},auto dispatch stock failed", rDecrease.getError());
+            log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
+            throw new ServiceException(rDecrease.getError());
         }
-
         return createResp.getResult();
     }
+
 }

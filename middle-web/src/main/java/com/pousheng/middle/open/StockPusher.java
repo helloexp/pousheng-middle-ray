@@ -219,8 +219,8 @@ public class StockPusher {
                         Long channelStock = 0L;
                         Long shareStock = 0L;
                         if (!ObjectUtils.isEmpty(getRes.getResult())) {
-                            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelQuantity).sum();
-                            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryLeftQuantity).sum();
+                            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
+                            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
                         }
                         log.info("search sku stock by skuCode is {},shopId is {},channelStock is {},shareStock is {}",
                                 skuCode, shopId, channelStock, shareStock);

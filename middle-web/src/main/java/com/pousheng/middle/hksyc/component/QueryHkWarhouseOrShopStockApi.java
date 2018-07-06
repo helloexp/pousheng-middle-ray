@@ -303,7 +303,7 @@ public class QueryHkWarhouseOrShopStockApi {
                         skuquantity.setBarcode(c);
                         skuquantity.setMaterial_id(materialId);
                         skuquantity.setMaterial_name(temp.getName());
-                        skuquantity.setQuantity(Integer.valueOf(String.valueOf(stock.getTotalQuantity())));
+                        skuquantity.setQuantity(Integer.valueOf(String.valueOf(stock.getTotalAvailQuantity())));
                         material_list.add(skuquantity);
                     } else {
                         log.warn("warehouse {} sku {} SkuTemplate {} extra is null ",warehouseId,c,temp.getId());

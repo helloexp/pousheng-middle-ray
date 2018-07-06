@@ -111,7 +111,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
             //过滤掉非mpos的
             if(mposOnlineSaleWarehouseIds.contains(warehouseSkuStock.getWarehouseId())){
                 //可用库存
-                Integer availStock = warehouseSkuStock.getTotalQuantity();
+                Integer availStock = warehouseSkuStock.getTotalAvailQuantity();
                 log.info("[ONLINE-STOCK]-warehouse(id:{}) sku code:{} availStock:{}",warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock);
                 warehouseSkuCodeQuantityTable.put(warehouseSkuStock.getWarehouseId(),warehouseSkuStock.getSkuCode(),availStock);
             }

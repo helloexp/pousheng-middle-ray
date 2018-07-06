@@ -209,7 +209,7 @@ public class DispatchComponent {
 
         for (AvailableInventoryDTO hkSkuStockInfo : skuStockInfos){
             //这里先不考虑 availStock-lockStock - safeStock 负数情况
-            skuCodeQuantityTable.put(hkSkuStockInfo.getWarehouseId(),hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalQuantity());
+            skuCodeQuantityTable.put(hkSkuStockInfo.getWarehouseId(),hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalAvailQuantity());
         }
     }
 
@@ -286,7 +286,7 @@ public class DispatchComponent {
         for (AvailableInventoryDTO hkSkuStockInfo : skuStockInfos){
             Optional<Shop> shopOptional = getShopByWarehouse(hkSkuStockInfo.getWarehouseId());
             if (shopOptional.isPresent()) {
-                skuCodeQuantityTable.put(shopOptional.get().getId(), hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalQuantity());
+                skuCodeQuantityTable.put(shopOptional.get().getId(), hkSkuStockInfo.getSkuCode(),hkSkuStockInfo.getTotalAvailQuantity());
             }
         }
     }

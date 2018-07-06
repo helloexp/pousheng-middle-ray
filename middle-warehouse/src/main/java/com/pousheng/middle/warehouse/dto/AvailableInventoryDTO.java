@@ -27,16 +27,21 @@ public class AvailableInventoryDTO implements Serializable{
     /**
      * 可用库存总数量
      */
-    private Integer totalQuantity;
+    private Integer totalAvailQuantity;
 
     /**
-     * 渠道库存可用数量
+     * 渠道库存自身的可用数量，减掉了占用等
      */
-    private Integer channelQuantity;
+    private Integer channelAvailQuantity;
+
+    /**
+     * 渠道库存当前真实库存，对应DB中的RealQuantity
+     */
+    private Integer channelRealQuantity;
 
     /**
      * 未分配渠道库存可用数量
      */
-    private Integer inventoryLeftQuantity;
+    private Integer inventoryUnAllocQuantity;
 
 }

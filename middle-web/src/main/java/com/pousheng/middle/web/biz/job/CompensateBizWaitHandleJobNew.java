@@ -147,7 +147,9 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         if (CollectionUtils.isEmpty(ids)) {
             return;
         }
-        log.info("pop ids:{} from queue", ids);
+        if (log.isDebugEnabled()) {
+            log.debug("pop ids:{} from queue", ids);
+        }
         executorService.submit(new CompensateBizWaitHandleTask(ids));
     }
 
@@ -175,7 +177,9 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
 
         @Override
         public void run() {
-            log.info("The task(ids:{}) is being handle", ids);
+            if (log.isDebugEnabled()) {
+                log.debug("The task(ids:{}) is being handle", ids);
+            }
             Response<List<PoushengCompensateBiz>> response = poushengCompensateBizReadService.findByIdsAndStatus(ids, PoushengCompensateBizStatus.PROCESSING.name());
             if (!response.isSuccess()) {
                 log.error("fail to find compensate biz by ids:{},cause:{}", ids, response.getError());
@@ -185,6 +189,9 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
             List<Long> successIds = Lists.newArrayList();
             poushengCompensateBizs.forEach(poushengCompensateBiz -> {
                 try {
+                    if (log.isDebugEnabled()) {
+                        log.debug("biz task id:{} process", poushengCompensateBiz.getId());
+                    }
                     compensateBizProcessor.doProcess(poushengCompensateBiz);
                     successIds.add(poushengCompensateBiz.getId());
                 } catch (BizException e0) {
@@ -197,8 +204,12 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
                     poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(), e1.getMessage(), (poushengCompensateBiz.getCnt() + 1));
                 }
             });
-            poushengCompensateBizWriteService.batchUpdateStatus(successIds, PoushengCompensateBizStatus.SUCCESS.name());
-            log.info("The task(ids:{}) has been handled", ids);
+            if (!CollectionUtils.isEmpty(successIds)) {
+                poushengCompensateBizWriteService.batchUpdateStatus(successIds, PoushengCompensateBizStatus.SUCCESS.name());
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("The task(ids:{}) has been handled, successIds: {}", ids, successIds);
+            }
         }
     }
 }

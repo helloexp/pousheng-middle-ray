@@ -47,7 +47,14 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
     @Override
     public Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status) {
         try {
-            return Response.ok(poushengCompensateBizDao.findByIdsAndStatus(ids, status));
+            if (log.isDebugEnabled()) {
+                log.debug("find biz task by ids:{}, status: {}", ids, status);
+            }
+            List<PoushengCompensateBiz> result = poushengCompensateBizDao.findByIdsAndStatus(ids, status);
+            if (log.isDebugEnabled()) {
+                log.debug("find biz task by ids:{}, status: {}, res: {}", ids, status, result);
+            }
+            return Response.ok(result);
         } catch (Exception e) {
             log.error("find poushengCompensateBiz by ids :{} failed,  cause:{}", ids, Throwables.getStackTraceAsString(e));
             return Response.fail("poushengCompensateBiz.find.fail");

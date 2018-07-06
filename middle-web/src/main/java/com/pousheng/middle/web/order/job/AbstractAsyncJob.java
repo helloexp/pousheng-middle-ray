@@ -73,9 +73,11 @@ public abstract class AbstractAsyncJob {
             return;
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("start to producer {} task.........", getKeySuffix());
+        log.info("[START TO PRODUCER {} TASK]", getKeySuffix());
         Map<String, List<Long>> map = getPushIds();
-        log.info("producer:{} get {} group task", getKeySuffix(), map.size());
+        if (log.isDebugEnabled()) {
+            log.debug("producer:{} get {} group task", getKeySuffix(), map.size());
+        }
         map.forEach((key, ids) -> {
             if (!CollectionUtils.isEmpty(ids)) {
                 jedisTemplate.execute(jedis -> {
@@ -85,7 +87,9 @@ public abstract class AbstractAsyncJob {
             }
         });
         stopwatch.stop();
-        log.info("end to producer {} task.........,and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
+        if (log.isDebugEnabled()) {
+            log.debug("[END TO PRODUCER {} TASK],and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
+        }
     }
 
     /**
@@ -203,7 +207,9 @@ public abstract class AbstractAsyncJob {
             try {
                 while (true) {
                     int groupSize = getPopSize();
-                    log.info("[consumer current thread pool remain size : {}]", groupSize);
+                    if (log.isDebugEnabled()) {
+                        log.debug("[CONSUMER CURRENT THREAD POOL REMAIN SIZE : {}]", groupSize);
+                    }
                     if (groupSize == 0) {
                         try {
                             Thread.sleep(10000);

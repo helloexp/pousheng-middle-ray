@@ -80,7 +80,23 @@ public class WarehouseShopRuleClient {
                     null, null, Maps.newHashMap(), WarehouseShopStockRule.class, false);
 
         } catch (Exception e) {
-            log.error("find shop rule by id fail, cause:{}", Throwables.getStackTraceAsString(e));
+            log.error("find shop rule by id fail, id: {}, cause:{}", id, Throwables.getStackTraceAsString(e));
+        }
+
+        return null;
+    }
+
+    /**
+     * 根据shopId获取规则信息
+     * @return
+     */
+    public WarehouseShopStockRule findByShopId (Long shopId) {
+        try {
+            return (WarehouseShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/findByShopId/"+shopId,
+                    null, null, Maps.newHashMap(), WarehouseShopStockRule.class, false);
+
+        } catch (Exception e) {
+            log.error("find shop rule by shopId fail, shopId: {}, cause:{}", shopId, Throwables.getStackTraceAsString(e));
         }
 
         return null;

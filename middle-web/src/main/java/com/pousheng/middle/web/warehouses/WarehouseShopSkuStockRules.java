@@ -4,8 +4,10 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopSkuRuleClient;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
+import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
@@ -57,6 +59,8 @@ public class WarehouseShopSkuStockRules {
     private UserManageShopReader userManageShopReader;
     @Autowired
     private SpuReadService spuReadService;
+    @Autowired
+    private WarehouseShopRuleClient warehouseShopRuleClient;
 
     /**
      * 创建商品库存推送规则
@@ -222,6 +226,12 @@ public class WarehouseShopSkuStockRules {
     @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogIgnore
     public Boolean push(@RequestParam("shopId")Long shopId, @RequestParam("skuCode")String skuCode){
+        // 验证店铺级规则是否启用
+        WarehouseShopStockRule shopRule = warehouseShopRuleClient.findByShopId(shopId);
+        if (null == shopRule || shopRule.getStatus() != 1) {
+            throw new JsonResponseException("warehouse.shop.rule.invalid");
+        }
+
         eventBus.post(new PushEvent(shopId, skuCode));
         return Boolean.TRUE;
     }

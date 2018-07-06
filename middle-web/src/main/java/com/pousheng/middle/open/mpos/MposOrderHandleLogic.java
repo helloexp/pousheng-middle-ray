@@ -154,24 +154,7 @@ public class MposOrderHandleLogic {
 
             //如果是换货发货门店拒单则需要更新对应售后单的状态并释放占用库存
             if (Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())){
-                OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
-                Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
-
-                Response<Boolean> updateRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.MPOS_REJECT.toOrderOperation());
-                if (!updateRes.isSuccess()){
-                    log.error("mpos reject so to update refund(id:{})  fail,error:{}",refund.getId(),updateRes.getError());
-                }
-
-                Map<String, Integer> skuCodeAndQuantity = Maps.newHashMap();
-
-                List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-                for (ShipmentItem shipmentItem : shipmentItems){
-                    skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
-                }
-                refundWriteLogic.updateSkuHandleNumber(refund.getId(),skuCodeAndQuantity);
-                //解锁库存
-                mposSkuStockLogic.unLockStock(shipment);
-
+                handleExchangeShipReject(shipment);
                 return;
             }
             //回滚发货单
@@ -181,6 +164,29 @@ public class MposOrderHandleLogic {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
         }
         log.info("sync shipment(id:{}) success",shipment.getId());
+    }
+
+
+    public void handleExchangeShipReject(Shipment shipment){
+        //如果是换货发货门店拒单则需要更新对应售后单的状态并释放占用库存
+        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
+        Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+
+        Response<Boolean> updateRes = refundWriteLogic.updateStatus(refund,MiddleOrderEvent.MPOS_REJECT.toOrderOperation());
+        if (!updateRes.isSuccess()){
+            log.error("mpos reject so to update refund(id:{})  fail,error:{}",refund.getId(),updateRes.getError());
+        }
+
+        Map<String, Integer> skuCodeAndQuantity = Maps.newHashMap();
+
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        for (ShipmentItem shipmentItem : shipmentItems){
+            skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
+        }
+        refundWriteLogic.updateSkuHandleNumber(refund.getId(),skuCodeAndQuantity);
+        //解锁库存
+        mposSkuStockLogic.unLockStock(shipment);
+
     }
 
     /**

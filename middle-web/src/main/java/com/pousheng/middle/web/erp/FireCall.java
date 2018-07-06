@@ -21,6 +21,7 @@ import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -44,6 +45,7 @@ import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderBase;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
@@ -136,6 +138,8 @@ public class FireCall {
     private PushMposItemComponent pushMposItemComponent;
     @Autowired
     private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private MposOrderHandleLogic mposOrderHandleLogic;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -738,6 +742,43 @@ public class FireCall {
         }
 
         log.info("END-HANDLE-SKUTEMPLATE-API for:{}", url);
+
+    }
+
+
+    /**
+     * 修复门店拒单后为更新售后单的数据
+     */
+    @RequestMapping(value = "/fix/shipment/reject/error", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixShipmentRejectError(@RequestParam String fileName) {
+        String url = "/pousheng/file/" + fileName + ".csv";
+        log.info("START-HANDLE-SHIPMENT-REJECT-API for:{}", url);
+        File file1 = new File(url);
+
+        List<String> shipmentCodes = readShipmentCode(file1);
+
+        log.info("START-HANDLE-SHIPMENT-REJECT-API for:{}", url);
+        for (String shipmentCode : shipmentCodes) {
+            log.info("START-HANDLE-SHIPMENT-REJECT-CODE:{}", shipmentCode);
+
+
+            Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(shipmentCode);
+            if (!shipmentRes.isSuccess()) {
+                log.error("find shipment by code :{} fail,error:{}", shipmentCode, shipmentRes.getError());
+                continue;
+            }
+
+            Shipment shipment = shipmentRes.getResult();
+            if (Objects.equals(shipment.getStatus(),-7) && Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())){
+                mposOrderHandleLogic.handleExchangeShipReject(shipment);
+            } else {
+                log.info("ERROR-END-HANDLE-SHIPMENT-REJECT-CODE:{} status invalid", shipmentCode);
+            }
+
+            log.info("END-HANDLE-SHIPMENT-REJECT-CODE:{}", shipmentCode);
+        }
+
+        log.info("END-HANDLE-SHIPMENT-REJECT-API for:{}", url);
 
     }
 

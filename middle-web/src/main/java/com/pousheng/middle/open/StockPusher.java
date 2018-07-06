@@ -206,7 +206,6 @@ public class StockPusher {
                             continue;
                         }
 
-                        Long stock = 0L;
                         long start1 = System.currentTimeMillis();
                         Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
                                 Lists.transform(rWarehouseIds.getResult(), input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
@@ -217,28 +216,42 @@ public class StockPusher {
                             log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
                             continue;
                         }
-                        if (ObjectUtils.isEmpty(getRes.getResult())) {
-                            stock = 0L;
-                        } else {
-                            stock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getTotalQuantity).sum();
+                        Long channelStock = 0L;
+                        Long shareStock = 0L;
+                        if (!ObjectUtils.isEmpty(getRes.getResult())) {
+                            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelQuantity).sum();
+                            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryLeftQuantity).sum();
                         }
-                        log.info("search sku stock by skuCode is {},shopId is {},stock is {}", skuCode, shopId, stock);
+                        log.info("search sku stock by skuCode is {},shopId is {},channelStock is {},shareStock is {}",
+                                skuCode, shopId, channelStock, shareStock);
 
                         //如果库存数量小于0则推送0
-                        if (stock < 0L){
-                            log.warn("shop(id={}) stock is less than 0 for sku(code={}), current stock is:{}",
-                                    shopId, skuCode, stock);
-                            stock = 0L;
+                        if (channelStock < 0L){
+                            log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                                    shopId, skuCode, channelStock, shareStock);
+
+                            channelStock = 0L;
+                        }
+                        if (shareStock < 0L){
+                            log.warn("shop(id={}) shareStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                                    shopId, skuCode, channelStock, shareStock);
+
+                            shareStock = 0L;
                         }
 
                         if (null != shopStockRule.getSafeStock()) {
-                            stock = Math.max(0, stock - shopStockRule.getSafeStock());
+                            shareStock = Math.max(0, shareStock - shopStockRule.getSafeStock());
                         }
 
                         //按照设定的比例确定推送数量
-                        stock = Math.max(0,
-                                stock * shopStockRule.getRatio() / 100 + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
+                        Long stock = Math.max(0,
+                                channelStock
+                                        + shareStock * shopStockRule.getRatio() / 100
+                                        + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
                         );
+
+                        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                                skuCode, shopId, stock);
 
                         //判断店铺是否是官网的
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);

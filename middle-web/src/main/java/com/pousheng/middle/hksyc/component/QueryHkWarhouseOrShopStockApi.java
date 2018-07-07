@@ -1,5 +1,6 @@
 package com.pousheng.middle.hksyc.component;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Function;
 import com.google.common.base.Splitter;
@@ -31,6 +32,7 @@ import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
@@ -237,6 +239,10 @@ public class QueryHkWarhouseOrShopStockApi {
 
             List<AvailableInventoryDTO> availableInv = availableInvRes.getResult().stream()
                     .filter(dto -> warehouseId.equals(dto.getWarehouseId())).collect(Collectors.toList());
+            if (ObjectUtils.isEmpty(availableInv)) {
+                log.warn("no inventory available for warehouse: {}",warehouseId);
+                continue;
+            }
 
             List<String> codes= Splitter.on("-").omitEmptyStrings().trimResults().splitToList(warehouse.getWarehouseCode());
             String company_id = codes.get(0);
@@ -314,6 +320,9 @@ public class QueryHkWarhouseOrShopStockApi {
             hkSkuStockInfos.add(info);
 
         }
+
+        log.info("query inventory available quantity for dispatch, result: {}", JSON.toJSONString(hkSkuStockInfos));
+
         return hkSkuStockInfos;
     }
 

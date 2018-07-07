@@ -58,6 +58,7 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -693,26 +694,23 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
-        RespHelper.or500(adminShopWriteService.frozen(shopId));
+        //同步电商
+        syncParanaFrozenShop(exist.getOuterId(),exist.getBusinessId());
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
-        String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
+
+        String shopInfo = Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
         WarehouseDTO warehouse = warehouseCacher.findByShopInfo(shopInfo);
         if (warehouse != null) {
             RespHelper.or500(warehouseClient.updateStatus(warehouse.getId(), -2));
             warehouseCacher.refreshById(warehouse.getId());
         }
+
+        RespHelper.or500(adminShopWriteService.frozen(shopId));
+
         shopCacher.refreshShopById(shopId);
         middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
-
-        try {
-            //同步恒康mpos门店范围
-            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
-        }catch (Exception e){
-            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
-        }
-        //同步电商
-        syncParanaFrozenShop(exist.getOuterId(),exist.getBusinessId());
     }
+
 
     @ApiOperation("解冻门店")
     @RequestMapping(value = "/{shopId}/unfrozen", method = RequestMethod.PUT)
@@ -723,24 +721,19 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
-        RespHelper.or500(adminShopWriteService.unfrozen(shopId));
+        //同步电商
+        syncParanaUnFrozenShop(exist.getOuterId(),exist.getBusinessId());
         RespHelper.or500(paranaUserOperationLogic.updateUserStatus(1,exist.getUserId()));
-        String shopInfo =Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
+        String shopInfo = Joiner.on("_").join(Lists.newArrayList(exist.getOuterId(),exist.getBusinessId()));
         WarehouseDTO warehouse = warehouseCacher.findByShopInfo(shopInfo);
         if (warehouse != null) {
             RespHelper.or500(warehouseClient.updateStatus(warehouse.getId(), 1));
             warehouseCacher.refreshById(warehouse.getId());
         }
+        RespHelper.or500(adminShopWriteService.unfrozen(shopId));
         shopCacher.refreshShopById(shopId);
         middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
-        try {
-            //同步恒康mpos门店范围
-            mposWarehousePusher.addWarehouses(exist.getBusinessId().toString(),exist.getOuterId());
-        }catch (Exception e){
-            log.error("sync hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
-        }
-        //同步电商
-        syncParanaUnFrozenShop(exist.getOuterId(),exist.getBusinessId());
+
 
     }
 
@@ -753,19 +746,14 @@ public class AdminShops {
             throw new JsonResponseException(rExist.getError());
         }
         Shop exist = rExist.getResult();
-        RespHelper.or500(adminShopWriteService.close(shopId));
-        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
-        try {
-            //同步恒康mpos门店范围
-            mposWarehousePusher.removeWarehouses(exist.getBusinessId().toString(), exist.getOuterId());
-        }catch (Exception e){
-            log.error("sync cancel hk shop(id:{}) range fail,cause:{}",exist.getId(), Throwables.getStackTraceAsString(e));
-        }
         //同步电商
         syncParanaCloseShop(exist.getOuterId(),exist.getBusinessId());
-
+        RespHelper.or500(paranaUserOperationLogic.updateUserStatus(-2,exist.getUserId()));
         // TODO 取消对应仓库标签， 现在先用outCode，后面改造，方法已提供，直接换
         warehouseClient.markMposOrNotWithOutCode(exist.getOuterId(), String.valueOf(exist.getBusinessId()), false);
+        RespHelper.or500(adminShopWriteService.close(shopId));
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(),exist.getBusinessId());
     }
 
     @ApiOperation("设置邮箱和手机号")

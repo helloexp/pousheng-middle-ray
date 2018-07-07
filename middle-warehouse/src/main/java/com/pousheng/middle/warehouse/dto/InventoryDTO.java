@@ -84,6 +84,10 @@ public class InventoryDTO implements Serializable {
         return getRealQuantity()-getOccupyQuantity()-getSafeQuantity();
     }
 
+    public Long getAvailStockExcludeSafe() {
+        return getRealQuantity()-getOccupyQuantity();
+    }
+
     public Long getRealQuantity() {
         return null==realQuantity?0:realQuantity;
     }

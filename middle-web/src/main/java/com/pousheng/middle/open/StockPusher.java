@@ -189,7 +189,7 @@ public class StockPusher {
 
                         Response<WarehouseShopStockRule> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
                         if (!rShopStockRule.isSuccess()) {
-                            log.error("failed to find shop stock push rule for shop(id={}), error code:{}",
+                            log.warn("failed to find shop stock push rule for shop(id={}), error code:{}",
                                     shopId, rShopStockRule.getError());
                             continue;
                         }

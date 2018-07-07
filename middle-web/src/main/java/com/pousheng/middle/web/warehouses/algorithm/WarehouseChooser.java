@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -88,7 +89,7 @@ public class WarehouseChooser {
         List<Warehouses4Address> warehouses4Addresses = r.getResult();
         for (Warehouses4Address warehouses4Address : warehouses4Addresses) {
             List<WarehouseWithPriority> warehouseWithPriorities = warehouses4Address.getWarehouses();
-            List<WarehouseShipment> warehouseShipments = chooseWarehouse(byPriority.sortedCopy(warehouseWithPriorities),
+            List<WarehouseShipment> warehouseShipments = chooseWarehouse(shopOrder, byPriority.sortedCopy(warehouseWithPriorities),
                     skuCodeAndQuantities, needSingle);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 // 先锁定库存, 锁定成功后再返回结果
@@ -117,14 +118,14 @@ public class WarehouseChooser {
     }
 
 
-    private List<WarehouseShipment> chooseWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
+    private List<WarehouseShipment> chooseWarehouse(ShopOrder shopOrder, List<WarehouseWithPriority> warehouseWithPriorities,
                                                     List<SkuCodeAndQuantity> skuCodeAndQuantities,
                                                     Boolean needSingle) {
         Table<Long, String, Integer> widskucode2stock = HashBasedTable.create();
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         for (WarehouseWithPriority warehouseWithPriority : warehouseWithPriorities) {
             Long warehouseId = warehouseWithPriority.getWarehouseId();
-            List<WarehouseShipment> warehouseShipments = trySingleWarehouseByPriority(skuCodeAndQuantities, widskucode2stock, warehouseId);
+            List<WarehouseShipment> warehouseShipments = trySingleWarehouseByPriority(shopOrder, skuCodeAndQuantities, widskucode2stock, warehouseId);
             if (!CollectionUtils.isEmpty(warehouseShipments)) {
                 return warehouseShipments;
             }
@@ -206,19 +207,25 @@ public class WarehouseChooser {
     }
 
 
-    private List<WarehouseShipment> trySingleWarehouseByPriority(List<SkuCodeAndQuantity> skuCodeAndQuantities,
+    private List<WarehouseShipment> trySingleWarehouseByPriority(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantities,
                                                                  Table<Long, String, Integer> widskucode2stock,
                                                                  Long warehouseId) {
         boolean enough = true;
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             String skuCode = skuCodeAndQuantity.getSkuCode();
-            Response<InventoryDTO> rStock = inventoryClient.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
+            Response<List<AvailableInventoryDTO>> rStock = inventoryClient.getAvailableInventory(Lists.newArrayList(
+                    AvailableInventoryRequest.builder().warehouseId(warehouseId).skuCode(skuCode).build()
+            ), shopOrder.getShopId());
             if (!rStock.isSuccess()) {
                 log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
                         skuCode, warehouseId, rStock.getError());
                 throw new ServiceException(rStock.getError());
             }
-            int stock = rStock.getResult().getAvailStock().intValue();
+            int stock = 0;
+            if (!ObjectUtils.isEmpty(rStock.getResult())) {
+                stock = rStock.getResult().get(0).getTotalAvailQuantity();
+            }
+
             widskucode2stock.put(warehouseId, skuCode, stock);
             if (stock < skuCodeAndQuantity.getQuantity()) {
                 enough = false;

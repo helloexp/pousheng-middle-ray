@@ -41,7 +41,6 @@ public class WarehouseSkuStockLogic {
     /**
      * 根据仓库id和商品条码查询对应的库存
      */
-    // TODO 这个skxWarehouseId 处理的是否适合，是否需要带上店铺ID查询，这样可以查询出来指定库存
     public Response<Map<String,Integer>> findByWarehouseIdAndSkuCodes(Long warehouseId, List<String> skuCodes, Long shopId){
 
         WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
@@ -69,7 +68,7 @@ public class WarehouseSkuStockLogic {
                     log.error("not find stock by warehouse id:{} sku code:{}",warehouseId,skuCode);
                     continue;
                 }
-                r.put(skuCode, stock.getAvailStock().intValue());
+                r.put(skuCode, stock.getAvailStockExcludeSafe().intValue());
 
                 return Response.ok(r);
             }

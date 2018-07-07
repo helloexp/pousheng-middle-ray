@@ -111,28 +111,6 @@ public class ItemOpenApi {
                 throw new OPServerException(200,"not.find.warehouse.rule.item");
 
             }
-            List<Warehouse> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
-            for (Long warehouseId : warehouseIds){
-                try {
-                    warehouseList.add(warehouseCacher.findById(warehouseId));
-                }catch (Exception e){
-                    log.error("find warehouse by id:{} fail,cause:{}",warehouseId, Throwables.getStackTraceAsString(e));
-                }
-            }
-
-
-
-            Map<String, Warehouse> stockCodeWarehosueMap = Maps.newHashMap();
-            for (Warehouse warehouse : warehouseList){
-                Map<String, String>  extra = warehouse.getExtra();
-                if(CollectionUtils.isEmpty(extra)||!extra.containsKey("outCode")){
-                    log.error("warehouse(id:{}) out code invalid",warehouse.getId());
-                    throw new OPServerException(200,"warehouse.out.code.invalid");
-                }
-                String outCode =  extra.get("outCode");
-                stockCodeWarehosueMap.put(outCode,warehouse);
-            }
-
 
             List<String> barcodeList = Splitters.COMMA.splitToList(barCodes);
 
@@ -149,7 +127,7 @@ public class ItemOpenApi {
                 throw new OPServerException(200,"some.barcode.middle.not.exist");
             }
 
-            Map<String,Long> skuAndStockMap = queryStock(stockCodeWarehosueMap,barcodeList);
+            Map<String,Long> skuAndStockMap = queryStock(warehouseIds,barcodeList);
 
             List<SkuIsMposDto> skuIsMposDtos = Lists.newArrayListWithCapacity(barcodeList.size());
             for (SkuTemplate skuTemplate : skuTemplates){
@@ -172,24 +150,12 @@ public class ItemOpenApi {
     }
 
 
-    private Map<String,Long> queryStock(Map<String, Warehouse> stockCodeWarehosueMap,List<String> skuCodesList){
+    private Map<String,Long> queryStock(List<Long> warehouseIds,List<String> skuCodesList){
 
         Multimap<String, Integer> stockBySkuCode = HashMultimap.create();
 
-        List<Long> shopWarehouseIds = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
-        List<Long> warehouseIds = Lists.newArrayListWithCapacity(stockCodeWarehosueMap.size());
-
-        for (String outCode: stockCodeWarehosueMap.keySet()){
-            Warehouse warehouse = stockCodeWarehosueMap.get(outCode);
-            if(Objects.equals(warehouse.getType(),0)){
-                shopWarehouseIds.add(warehouse.getId());
-            }else {
-                warehouseIds.add(warehouse.getId());
-            }
-        }
-
         Table<Long, String, Integer> skuCodeQuantityTable = HashBasedTable.create();
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(shopWarehouseIds,skuCodesList);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds,skuCodesList);
         dispatchComponent.completeTab(skuStockInfos,skuCodeQuantityTable);
 
         makeStockByStock(stockBySkuCode,skuCodesList,skuCodeQuantityTable);

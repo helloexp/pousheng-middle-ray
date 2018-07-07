@@ -92,7 +92,7 @@ public class InventoryClient {
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());
             }
-
+            log.info("get available inventory shopId:{}  requestJson:{}  result:{}", shopId, JSON.toJSONString(requests), JSON.toJSONString(availableInvList));
             return Response.ok(availableInvList);
         } catch (Exception e) {
             log.error("get available inventory fail, cause:{}", Throwables.getStackTraceAsString(e));

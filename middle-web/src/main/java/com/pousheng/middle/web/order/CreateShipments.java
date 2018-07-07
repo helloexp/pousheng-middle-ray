@@ -10,6 +10,7 @@ import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import io.terminus.common.exception.JsonResponseException;
@@ -17,8 +18,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +51,8 @@ public class CreateShipments {
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
+    private RefundReadLogic refundReadLogic;
+    @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
 
 
@@ -74,6 +76,36 @@ public class CreateShipments {
             log.debug("API-WAIT-HANDLE-SKU-END param: id [{}] type [{}] ,resp: [{}]",id,type,JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));
         }
         return waitShipItemInfos;
+
+    }
+
+    /**
+     *
+     *
+     * @param id   单据id
+     * @param type 1 销售发货  2 换货发货
+     * @return 商品信息
+     */
+    @RequestMapping(value = "/api/wait/handle/shop/id", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Long> findShopId(@RequestParam Long id, @RequestParam(defaultValue = "1") Integer type) {
+        if (log.isDebugEnabled()){
+            log.debug("API-WAIT-HANDLE-SHOP-START param: id [{}] type [{}]",id,type);
+        }
+        if (Objects.equals(1, type)) {
+            OrderBase orderBase = orderReadLogic.findOrder(id, OrderLevel.SHOP);
+            if (Arguments.isNull(orderBase)){
+                log.error("not find order by id:{}",id);
+                return Response.fail("order.not.exist");
+            }
+            return Response.ok(orderBase.getShopId());
+        }
+
+        Refund refund = refundReadLogic.findRefundById(id);
+        if (Arguments.isNull(refund)){
+            log.error("not find refund by id:{}",id);
+            return Response.fail("refund.not.exist");
+        }
+        return Response.ok(refund.getShopId());
 
     }
 

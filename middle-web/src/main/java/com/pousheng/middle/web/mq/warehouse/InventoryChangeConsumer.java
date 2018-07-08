@@ -8,6 +8,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import io.terminus.common.model.Response;
+import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +40,8 @@ public class InventoryChangeConsumer {
      * @param skuCodeJson
      * @return
      */
-    @MQSubscribe(topic = "poushengInventoryTopic", consumerGroup = "inventoryChangeGroup")
+    @MQSubscribe(topic = "poushengInventoryTopic", consumerGroup = "inventoryChangeGroup",
+            consumeMode = ConsumeMode.CONCURRENTLY)
     public Response<Boolean> handleInventoryChange(String skuCodeJson) {
         if (ObjectUtils.isEmpty(skuCodeJson)) {
             log.error("fail to handle inventory change, because the skuCode is empty");
@@ -47,7 +49,7 @@ public class InventoryChangeConsumer {
         }
 
         try {
-            log.info("inventory changed: start to consume mq message");
+            log.info("inventory changed: start to consume mq message, msgId:{}");
 
             List<String> skuCodes = Lists.newArrayList();
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);

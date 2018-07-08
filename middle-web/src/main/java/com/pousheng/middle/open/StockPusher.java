@@ -196,6 +196,7 @@ public class StockPusher {
                         //和安全库存进行比较, 确定推送库存数量
                         WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
                         if (shopStockRule.getStatus() < 0) { //非启用状态
+                            log.warn("there is no valid stock push rule for shop(id={}), so skip to continue", shopId);
                             continue;
                         }
 

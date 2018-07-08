@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.erp;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -423,29 +424,18 @@ public class FireCall {
         List<Long> warehouseIds = warehouseIdsRes.getResult();
 
         if (CollectionUtils.isEmpty(warehouseIds)) {
+            log.info("there is no warehouse to dispatch for openShopId: {} which get from shop:{}", openShopId, JSON.toJSONString(currentShop));
+
             itemNameAndStock.setCurrentShopQuantity(0L);
             itemNameAndStock.setStockQuantity(0L);
             return itemNameAndStock;
-
         }
-        List<WarehouseDTO> warehouseList = Lists.newArrayListWithCapacity(warehouseIds.size());
-        for (Long warehouseId : warehouseIds) {
-            warehouseList.add(warehouseCacher.findById(warehouseId));
-        }
-
-        List<String> stockCodes = Lists.transform(warehouseList, new Function<WarehouseDTO, String>() {
-            @Nullable
-            @Override
-            public String apply(@Nullable WarehouseDTO warehouse) {
-                return warehouse.getOutCode();
-            }
-        });
 
         String skuCode = searchSkuTemplate.getSkuCode();
         Long total = 0L;
         Long currentCompanyQuantity = 0L;
         List<String> skuCodesList = Splitters.COMMA.splitToList(skuCode);
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList, currentShop.getId());
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(warehouseIds, skuCodesList, openShopId);
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos) {
             //仓
             if (com.google.common.base.Objects.equal(2, Integer.valueOf(hkSkuStockInfo.getStock_type()))) {
@@ -467,8 +457,9 @@ public class FireCall {
                     Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
                     ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                     //安全库存
-                    Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock()) ? 0 : shopExtraInfo.getSafeStock();
-                    Integer currentShopStock = skuAndQuantityInfo.getQuantity() - safeStock;
+//                    Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock()) ? 0 : shopExtraInfo.getSafeStock();
+//                    Integer currentShopStock = skuAndQuantityInfo.getQuantity() - safeStock;
+                    Integer currentShopStock = skuAndQuantityInfo.getQuantity();
                     if (currentShopStock < 0) {
                         currentShopStock = 0;
                     }

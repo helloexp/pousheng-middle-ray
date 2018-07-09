@@ -10,7 +10,6 @@ import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
-import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.model.Response;

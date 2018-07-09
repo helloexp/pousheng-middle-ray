@@ -34,4 +34,13 @@ public interface SkuTemplateDumpService {
      * @return 是否dump成功
      */
     Response<Boolean> batchDump(List<SkuTemplate> skuTemplates, Integer type);
+
+
+    /**
+     * 批量分组打标
+     * @param skuTemplates skuTemplates集合
+     * @return 是否dump成功
+     */
+    Response<Boolean> batchGroupDump(List<SkuTemplate> skuTemplates);
+
 }

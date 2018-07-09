@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:test;MODE=MySQL
+    schema: classpath:schema.sql
+mybatis:
+  mapperLocations:  classpath*:mapper/*Mapper.xml
+  type-aliases-package: >
+    io.terminus.parana.(brand|category|component|delivery|item|shop|spu).model,
+    com.pousheng.middle.(group|task).model
+    io.terminus.open.client.common.(mappings|shop).model
+    io.terminus.open.client.item.model
+  scan-type: resource
+logging:
+  level:
+    root: INFO

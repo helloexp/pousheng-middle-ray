@@ -24,6 +24,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>com.pousheng</groupId>
+            <artifactId>middle-erp</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-mapping</artifactId>
             <version>${open-client.version}</version>
@@ -32,7 +37,21 @@
             <groupId>io.terminus.search</groupId>
             <artifactId>search-api</artifactId>
         </dependency>
-    </dependencies>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
 
+        <!-- swagger -->
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.springfox</groupId>
+            <artifactId>springfox-swagger-ui</artifactId>
+        </dependency>
+    </dependencies>
 
 </project>

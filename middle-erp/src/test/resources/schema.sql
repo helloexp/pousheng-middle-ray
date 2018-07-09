@@ -22,6 +22,7 @@ CREATE TABLE `pousheng_spu_materials` (
   `spu_id` bigint(20) NOT NULL COMMENT 'spu id',
   `material_id` varchar(32) NOT NULL COMMENT '货品id',
   `material_code` varchar(32) NOT NULL COMMENT '货品编码',
+  `sale_date` datetime DEFAULT NULL COMMENT '上市时间',
   `created_at` datetime DEFAULT NULL COMMENT '创建时间',
   PRIMARY KEY (`id`),
   KEY `idx_psm_spu_id` (spu_id),

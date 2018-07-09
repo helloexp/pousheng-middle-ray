@@ -8,6 +8,7 @@ import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -99,6 +100,8 @@ public class StockPusher {
 
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
+    @Autowired
+    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
     @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
@@ -169,6 +172,9 @@ public class StockPusher {
                 for (Long shopId : shopIds) {
                     log.info("start to push sku to shop: {}", shopId);
                     try {
+                        //根据商品分组规则判断该店铺是否运行售卖此SKU
+                        boolean isOnSale = queryHkWarhouseOrShopStockApi.isVendible(skuCode,shopId);
+
                         if (Objects.equals(shopId,mposOpenShopId)){
                             continue;
                         }
@@ -238,12 +244,20 @@ public class StockPusher {
                             shareStock = shareStock - shopStockRule.getSafeStock();
                         }
 
+
+
+
                         //按照设定的比例确定推送数量
                         Long stock = Math.max(0,
                                 channelStock
                                         + shareStock * shopStockRule.getRatio() / 100
                                         + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
                         );
+
+                        //根据商品分组规则，如果不售卖则推送0
+                        if(!isOnSale){
+                            stock = 0L;
+                        }
 
                         log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
                                 skuCode, shopId, stock);

@@ -4,7 +4,6 @@ import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -27,22 +26,25 @@ import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
+import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderBase;
@@ -54,6 +56,7 @@ import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.joda.time.format.DateTimeFormat;
@@ -64,12 +67,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -100,17 +99,19 @@ public class FireCall {
     private final QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
     @RpcConsumer
+    @Setter
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
     @Autowired
     private WarehouseRulesClient warehouseRulesClient;
-
     private final ShopCacher shopCacher;
     private final WarehouseCacher warehouseCacher;
 
     private final DateTimeFormatter dft;
     @RpcConsumer
+    @Setter
     private MappingReadService mappingReadService;
     @Autowired
+    @Setter
     private StockPusher stockPusher;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
@@ -130,9 +131,13 @@ public class FireCall {
     @Autowired
     private PushMposItemComponent pushMposItemComponent;
     @Autowired
+    @Setter
     private MiddleShopCacher middleShopCacher;
     @Autowired
     private MposOrderHandleLogic mposOrderHandleLogic;
+    @Autowired
+    @Setter
+    private GroupRuleCacherProxy GroupRuleCacherProxy;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -339,9 +344,11 @@ public class FireCall {
             log.debug("API-MIDDLE-TASK-QUERY-STOCK-END param: stockCodes [{}] skuCodes [{}] stockType [{}] ,resp: [{}]", stockCodes, skuCodes, stockType, JsonMapper.nonEmptyMapper().toJson(stockinfos));
         }
         return stockinfos;
+
     }
 
 
+    @ApiOperation("计算库存")
     @RequestMapping(value = "/count/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long countStock(@RequestParam(required = false) String stockCodes,
                            @RequestParam String skuCodes,
@@ -369,6 +376,63 @@ public class FireCall {
 
 
     /**
+     * 根据货号和尺码查询商品信息
+     *
+     * @param materialId 货号
+     * @param companyId  公司编号
+     * @param companyId  外码
+     * @param attr       指定属性
+     * @return 商品信息
+     */
+    @ApiOperation("根据货号查询")
+    @GetMapping(value = "/search/for/mpos", produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<SearchSkuTemplate> searchSize(@RequestParam String materialId,
+                                                @RequestParam(required = false) String attr,
+                                                @RequestParam Long companyId, @RequestParam String outerId) {
+        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
+        ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
+        Long openShopId = currentShopExtraInfo.getOpenShopId();
+        if (Arguments.isNull(openShopId)) {
+            log.error("shop(id:{}) not mapping open shop", currentShop.getId());
+            throw new JsonResponseException("shop.not.mapping.open.shop");
+        }
+        List<Long> groupIds = GroupRuleCacherProxy.findByShopId(openShopId);
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return new Paging<>(0L, Lists.newArrayList());
+        }
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("spuCode", materialId);
+        params.put("groupIds", Joiners.COMMA.join(GroupRuleCacherProxy.findByShopId(openShopId)));
+        if (!StringUtils.isEmpty(attr)) {
+            params.put("attrs", attr);
+        }
+        Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response = skuTemplateSearchReadService.searchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by materialId:{} and size:{} fail,error:{}", materialId, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        List<SearchSkuTemplate> list = response.getResult().getEntities().getData();
+        if (!CollectionUtils.isEmpty(list)) {
+            for (SearchSkuTemplate e : list) {
+                List<SkuAttribute> attrs = Lists.newArrayList();
+                for (String info : e.getAttributes()) {
+                    SkuAttribute skuAttr = new SkuAttribute();
+                    List<String> kv = Splitters.COLON.splitToList(info);
+                    if (kv.size() > 1) {
+                        skuAttr.setAttrKey(kv.get(0));
+                        skuAttr.setAttrVal(kv.get(1));
+                        attrs.add(skuAttr);
+                    }
+                }
+                e.setAttrs(attrs);
+            }
+        }
+        return response.getResult().getEntities();
+    }
+
+
+    /**
      * 根据货号和尺码查询
      *
      * @param materialId 货号
@@ -383,9 +447,23 @@ public class FireCall {
             log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-START param: materialId [{}] size [{}] companyId [{}] outerId [{}]", materialId, size,companyId,outerId);
         }
 
-        //1、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
-        String templateName = "search.mustache";
-        Map<String, String> params = Maps.newHashMap();
+        //1、查询店铺是否存在
+        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId,companyId);
+        ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
+        Long openShopId = currentShopExtraInfo.getOpenShopId();
+        if(Arguments.isNull(openShopId)){
+            log.error("shop(id:{}) not mapping open shop",currentShop.getId());
+            throw new JsonResponseException("shop.not.mapping.open.shop");
+        }
+
+        //2、根据货号和尺码查询 spuCode=20171214001&attrs=年份:2017
+        String templateName = "ps_search.mustache";
+        List<Long> groupIds = GroupRuleCacherProxy.findByShopId(openShopId);
+        if (CollectionUtils.isEmpty(groupIds)) {
+            log.error("middle not find group ids by openShopId:{}", openShopId);
+            return new ItemNameAndStock();
+        }
+        Map<String,String> params = Maps.newHashMap();
         params.put("type", String.valueOf(PsSpuType.MPOS.value()));
         params.put("spuCode", materialId);
         params.put("attrs", "尺码:" + size);
@@ -394,25 +472,14 @@ public class FireCall {
             log.error("query sku template by materialId:{} and size:{} fail,error:{}", materialId, size, response.getError());
             throw new JsonResponseException(response.getError());
         }
-
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
-        if (CollectionUtils.isEmpty(searchSkuTemplates)) {
-            log.error("middle not find sku template by materialId:{} and size:{} ", materialId, size);
+        if(CollectionUtils.isEmpty(searchSkuTemplates)){
+            log.error("middle not find sku template by materialId:{} and size:{} and shopIds:{}", materialId, size, groupIds);
             return new ItemNameAndStock();
         }
         SearchSkuTemplate searchSkuTemplate = searchSkuTemplates.get(0);
         ItemNameAndStock itemNameAndStock = new ItemNameAndStock();
         itemNameAndStock.setName(searchSkuTemplate.getName());
-
-
-        //2、查询店铺是否存在
-        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
-        ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
-        Long openShopId = currentShopExtraInfo.getOpenShopId();
-        if (Arguments.isNull(openShopId)) {
-            log.error("shop(id:{}) not mapping open shop", currentShop.getId());
-            throw new JsonResponseException("shop.not.mapping.open.shop");
-        }
 
         //3、查询门店的发货仓范围
         Response<List<Long>> warehouseIdsRes = warehouseRulesClient.findWarehouseIdsByShopId(openShopId);
@@ -577,7 +644,6 @@ public class FireCall {
             return "not ok";
         }
     }
-
 
     /**
      * 取消发货单
@@ -873,5 +939,4 @@ public class FireCall {
         log.info("END-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
 
     }
-
 }

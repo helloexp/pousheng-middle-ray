@@ -13,15 +13,19 @@ import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.model.ZoneContract;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.ZoneContractReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.*;
+import com.pousheng.middle.shop.enums.ShopOpeningStatus;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
+import com.pousheng.middle.web.shop.component.ShopBusinessLogic;
+import com.pousheng.middle.web.shop.dto.OrderExpireInfo;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.shop.event.listener.CreateOpenShopRelationListener;
@@ -33,6 +37,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -43,6 +48,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
@@ -53,6 +59,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.shop.service.ShopWriteService;
 import io.terminus.parana.user.ext.UserTypeBean;
 import lombok.Data;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,6 +73,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
+import java.time.*;
 
 /**
  * Author:cp
@@ -78,24 +86,28 @@ import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
 public class AdminShops {
 
     @RpcConsumer
+    @Setter
     private ShopReadService shopReadService;
 
     @RpcConsumer
+    @Setter
     private PsShopReadService psShopReadService;
 
     @RpcConsumer
+    @Setter
     private ShopWriteService shopWriteService;
 
     @RpcConsumer
     private AdminShopWriteService adminShopWriteService;
-    @Autowired
+    @Autowired(required = false)
     private SyncParanaShopService syncParanaShopService;
 
-    @Autowired
+    @Autowired(required = false)
     private UcUserOperationLogic ucUserOperationLogic;
     @Autowired
     private EventBus eventBus;
     @Autowired
+    @Setter
     private ShopCacher shopCacher;
     @Autowired
     private ParanaUserOperationLogic paranaUserOperationLogic;
@@ -108,6 +120,7 @@ public class AdminShops {
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
     @Autowired
+    @Setter
     private MiddleShopCacher middleShopCacher;
     @Autowired
     private UserTypeBean userTypeBean;
@@ -123,6 +136,13 @@ public class AdminShops {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private WarehouseClient warehouseClient;
+    @Autowired
+    @Setter
+    private ShopBusinessLogic shopBusinessLogic;
+    @Autowired
+    @Setter
+    private OrderShipmentReadService orderShipmentReadService;
+
 
     @ApiOperation("根据门店id查询门店信息")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -346,7 +366,7 @@ public class AdminShops {
         }
         Response<Optional<Shop>> shopRes = psShopReadService.findByOuterIdAndBusinessId(outerId,companyId);
         if(!shopRes.isSuccess()){
-           log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopRes.getError());
+            log.error("find shop by outer id:{} and business id:{} fail,error:{}",outerId,companyId,shopRes.getError());
             throw new JsonResponseException(shopRes.getError());
         }else {
             Optional<Shop> shopOptional = shopRes.getResult();
@@ -394,7 +414,7 @@ public class AdminShops {
         toCreate.setBusinessId(shop.getBusinessId());
         toCreate.setImageUrl(shop.getImageUrl());
         toCreate.setType(MoreObjects.firstNonNull(shop.getType(),1));
-        toCreate.setStatus(1);
+        toCreate.setStatus(ShopOpeningStatus.OPENING.value());
 
         toCreate.setUserId(userId);
         toCreate.setOuterId(shop.getOuterId());
@@ -777,8 +797,9 @@ public class AdminShops {
             throw new JsonResponseException(response.getError());
         }
         log.info("shop(name:{}) set email:{} success!",exist.getName(),email);
-        if(!Objects.equal(exist.getPhone(),phone))
-            syncParanaShopPhone(exist.getOuterId(),exist.getBusinessId(),phone);
+        if (!Objects.equal(exist.getPhone(), phone)) {
+            syncParanaShopPhone(exist.getOuterId(), exist.getBusinessId(), phone);
+        }
     }
 
 
@@ -789,7 +810,7 @@ public class AdminShops {
 
     @RequestMapping(value = "/{outerId}/cache/{businessId}/clear", method = RequestMethod.GET)
     public void testClearCache(@PathVariable String outerId,@PathVariable Long businessId ) {
-         middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(outerId,businessId);
     }
 
 
@@ -829,8 +850,351 @@ public class AdminShops {
         }
         return emails;
     }
+    /**
+     * @Description 查询门店营业信息
+     * @Date 2018/5/9
+     * @param shopId
+     * @return com.pousheng.middle.shop.dto.ShopPaging
+     */
+    @ApiOperation("查询门店营业信息(门店类型、门店接单时间、门店接单量等)")
+    @RequestMapping(value = "/{shopId}/get/shop/business/info", method = RequestMethod.GET)
+    public ShopBusinessInfo getShopBusinessInfo(@PathVariable Long shopId){
+
+        ShopBusinessInfo shopBusinessInfo = new ShopBusinessInfo();
+        try {
+
+            Response<Shop> rExist = shopReadService.findById(shopId);
+            if (!rExist.isSuccess()) {
+                log.error("find shop by id:{} fail,error:{}", shopId, rExist.getError());
+                throw new JsonResponseException(rExist.getError());
+            }
+            Shop shop = rExist.getResult();
+            ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+
+            shopBusinessInfo.setId(shop.getId());
+            shopBusinessInfo.setType(shop.getType());
+            shopBusinessInfo.setOutId(shop.getOuterId());
+            shopBusinessInfo.setBusinessId(shop.getBusinessId());
+            shopBusinessInfo.setShopBusinessTime(existShopExtraInfo.getShopBusinessTime());
+
+            return shopBusinessInfo;
+        } catch (Exception e){
+            throw new JsonResponseException(e.getMessage());
+        }
+    }
+
+    /**
+     * @Description 查询MPOS门店营业信息
+     * @Date 2018/5/9
+     * @param outerId
+     * @param businessId
+     * @return com.pousheng.middle.shop.dto.ShopPaging
+     */
+    @ApiOperation("查询MPOS门店营业信息")
+    @RequestMapping(value = "/get/mpos/shop/business/info/by/outerid/and/businessid", method = RequestMethod.GET)
+    public ShopBusinessInfo getShopBusinessInfoByOuterIdAndBusinessId(@RequestParam String outerId, @RequestParam Long businessId){
+        try {
+            ShopBusinessInfo shopBusinessInfo = new ShopBusinessInfo();
+            val rExist = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
+            if (!rExist.isSuccess()) {
+                log.error("find shop by outerId({}) and businessId({}) fail,error:{}", outerId, businessId, rExist.getError());
+                throw new JsonResponseException(rExist.getError());
+            }
+            Shop shop = rExist.getResult().get();
+            ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            shopBusinessInfo.setId(shop.getId());
+            shopBusinessInfo.setType(shop.getType());
+            shopBusinessInfo.setOutId(shop.getOuterId());
+            shopBusinessInfo.setBusinessId(shop.getBusinessId());
+            shopBusinessInfo.setShopBusinessTime(existShopExtraInfo.getShopBusinessTime());
+            return shopBusinessInfo;
+        } catch (Exception e){
+            throw new JsonResponseException(e.getMessage());
+        }
+    }
+
+    /**
+     * @Description 查询门店订单到期时间
+     * @Date 2018/5/11
+     * @param outerId
+     * @param businessId
+     * @param orderDateTime 订单下单日期
+     * @return com.pousheng.middle.web.shop.dto.OrderExpireInfo
+     */
+    @ApiOperation("查询门店订单到期时间")
+    @RequestMapping(value = "/get/mpos/shop/expire/time/by/orderdatetime", method = RequestMethod.GET)
+    public OrderExpireInfo getShopOrderExpireTime(@RequestParam String outerId, @RequestParam Long businessId,@RequestParam LocalDateTime orderDateTime){
+        try{
+
+            OrderExpireInfo orderExpireInfo = new OrderExpireInfo();
+
+            //查询通过outerId,businessId获取门店信息
+            val rExist = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
+            if (!rExist.isSuccess()) {
+                log.error("find shop by outerId({}) and businessId({}) fail,error:{}", outerId, businessId, rExist.getError());
+                throw new JsonResponseException(rExist.getError());
+            }
+            Shop shop = rExist.getResult().get();
+            ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            ShopBusinessTime shopBusinessTime = existShopExtraInfo.getShopBusinessTime();
+
+            //订单超时时间和订单发送邮件超时时间
+            int orderTimeoutSeting = shopBusinessTime.getOrderTimeout();
+            int orderEmailTimeoutSeting = shopBusinessTime.getOrderEmailTimeout();
+
+            //门店营业时间map
+            Map<DayOfWeek,String[]> weekTimeMap =  shopBusinessLogic.getWeekMap(shopBusinessTime);
+            LocalTime orderTime = orderDateTime.toLocalTime();
+            LocalDate orderDate = orderDateTime.toLocalDate();
+
+            //校验门店是否可以处理此订单，避免shopBusinessLogic回归调用死循环
+            if(!shopBusinessLogic.validShopOrderCapacity(weekTimeMap)){
+                throw new InvalidException(500, "shop.order.capacity.valid.illegal");
+            }
+
+            //赋值订单过期时间，订单邮件过期时间
+            LocalDateTime orderEexcpireDateTime = shopBusinessLogic.getExcpireDateTime(weekTimeMap,orderTime,orderDate,orderTimeoutSeting);
+            LocalDateTime emailExcpireDateTime = shopBusinessLogic.getExcpireDateTime(weekTimeMap,orderTime,orderDate,orderEmailTimeoutSeting);
+            orderExpireInfo.setOrderExpireTime(orderEexcpireDateTime);
+            orderExpireInfo.setEmailExpireTime(emailExcpireDateTime);
+
+            return orderExpireInfo;
+
+        } catch (Exception e) {
+            log.error("get Expire time of order fail, outerId({}), businessId({}) and orderDateTime({}),error:{}",
+                    outerId, businessId,orderDateTime,e.getMessage());
+            throw new JsonResponseException(e.getMessage());
+        }
+    }
 
 
+    /**
+     * @Description 更新门店营业信息
+     * @Date 2018/5/9
+     * @param shopId
+     * @param type 门店类型
+     * @param shopBusiness 营业时间
+     * @return io.terminus.common.model.Response<java.lang.Boolean>
+     */
+    @ApiOperation("更新门店营业信息(门店类型、门店接单时间、门店接单量等)")
+    @RequestMapping(value = "/{shopId}/update/shop/business/info", method = RequestMethod.PUT)
+    public Response<Boolean> updateShopBusinessInfo(@PathVariable Long shopId,
+                                                    @RequestBody ShopBusinessInfo shopBusinessInfo) {
+
+        //请求参数校验 营业时间校验
+        List valideResultList = new ArrayList();
+        Integer type = shopBusinessInfo.getType();
+        ShopBusinessTime shopBusinessTime = shopBusinessInfo.getShopBusinessTime();
+        if (shopBusinessTime != null) {
+            Integer openingStatus = shopBusinessTime.getOpeningStatus();
+            if (openingStatus != null && openingStatus.equals(ShopOpeningStatus.OPENING.value())) {
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusMon(),
+                        shopBusinessTime.getOpeningStartTimeMon(),
+                        shopBusinessTime.getOpeningEndTimeMon()
+                )) {
+                    valideResultList.add("Mon");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusTue(),
+                        shopBusinessTime.getOpeningStartTimeTue(),
+                        shopBusinessTime.getOpeningEndTimeTue()
+                )) {
+                    valideResultList.add("Tue");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusWed(),
+                        shopBusinessTime.getOpeningStartTimeWed(),
+                        shopBusinessTime.getOpeningEndTimeWed()
+                )) {
+                    valideResultList.add("Wed");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusThu(),
+                        shopBusinessTime.getOpeningStartTimeThu(),
+                        shopBusinessTime.getOpeningEndTimeThu()
+                )) {
+                    valideResultList.add("Thu");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusFri(),
+                        shopBusinessTime.getOpeningStartTimeFri(),
+                        shopBusinessTime.getOpeningEndTimeFri()
+                )) {
+                    valideResultList.add("Fri");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusSat(),
+                        shopBusinessTime.getOpeningStartTimeSat(),
+                        shopBusinessTime.getOpeningEndTimeSat()
+                )) {
+                    valideResultList.add("Sat");
+                }
+                if (!shopBusinessLogic.valideBusinessTime(shopBusinessTime.getOpeningStatusSun(),
+                        shopBusinessTime.getOpeningStartTimeSun(),
+                        shopBusinessTime.getOpeningEndTimeSun()
+                )) {
+                    valideResultList.add("Sun");
+                }
+            }
+
+            if (!valideResultList.isEmpty()) {
+                log.error("valid shop(id:{}) business time error fail,week:{}", shopId, valideResultList.toString());
+                throw new InvalidException(500, "(outCode={0})shop.business.time.valid.illegal",
+                        valideResultList.toString());
+            }
+        }
+        //店铺是否存在
+        Response<Shop> rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}", shopId, rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+
+        Shop toUpdate = rExist.getResult();
+        //类型赋值
+        toUpdate.setType(type);
+
+        //扩展字段赋值
+        if (shopBusinessTime != null) {
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(toUpdate.getExtra());
+            if (Arguments.isNull(shopExtraInfo)) {
+                log.error("not find shop(id:{}) extra info by shop extra info json:{} ",
+                        toUpdate.getId(), toUpdate.getExtra());
+                throw new ServiceException("shop.extra.info.invalid");
+            }
+            shopExtraInfo.setShopBusinessTime(shopBusinessTime);
+            toUpdate.setExtra(ShopExtraInfo.putExtraInfo(toUpdate.getExtra(), shopExtraInfo));
+        }
+
+        Response<Boolean> resp = shopWriteService.update(toUpdate);
+        if (!resp.isSuccess()) {
+            log.error("update shop(shopId={}) business info failed, error={}", shopId, resp.getError());
+            throw new JsonResponseException(500, resp.getError());
+        }
+        //刷新缓存
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(toUpdate.getOuterId(),toUpdate.getBusinessId());
+        return resp;
+
+    }
+
+    /**
+     * @Description 更新MPOS门店营业状态
+     * @Date 2018/5/10
+     * @param shopBusinessInfo 门店营业信息
+     * @return io.terminus.common.model.Response<java.lang.Boolean>
+     */
+    @ApiOperation("更新MPOS门店营业状态")
+    @RequestMapping(value = "/update/mpos/shop/business/info", method = RequestMethod.PUT)
+    public Response<Boolean> updateShopBusinessInfo(@RequestBody ShopBusinessInfo shopBusinessInfo) {
+        try {
+            Long shopId = null;
+            String outerId = shopBusinessInfo.getOutId();
+            Long businessId = shopBusinessInfo.getBusinessId();
+
+            val rExist = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
+            if (!rExist.isSuccess()) {
+                log.error("find shop by outerId({}) and businessId({}) fail,error:{}",
+                        outerId, businessId, rExist.getError());
+                throw new JsonResponseException(rExist.getError());
+            }
+            Shop toUpdate = rExist.getResult().get();
+            shopId = toUpdate.getId();
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(toUpdate.getExtra());
+            int openingStatus = shopBusinessInfo.getShopBusinessTime().getOpeningStatus();
+            shopExtraInfo.getShopBusinessTime().setOpeningStatus(openingStatus);
+            toUpdate.setExtra(ShopExtraInfo.putExtraInfo(toUpdate.getExtra(), shopExtraInfo));
+            Response<Boolean> resp = shopWriteService.update(toUpdate);
+            if (!resp.isSuccess()) {
+                log.error("update shop by outerId({}) and businessId({}) fail,error:{}",
+                        outerId, businessId, rExist.getError());
+                throw new JsonResponseException(500, resp.getError());
+            }
+            //刷新缓存
+            shopCacher.refreshShopById(shopId);
+            middleShopCacher.refreshByOuterIdAndBusinessId(toUpdate.getOuterId(),toUpdate.getBusinessId());
+            return resp;
+
+        } catch (Exception e){
+            throw new JsonResponseException(500, e.getMessage());
+        }
+    }
+
+
+    /**
+     * @Description 查询MPOS门店当前营业状
+     * @Date   2018/5/16
+     * @param  outerId
+     * @param  businessId
+     * @return boolean
+     */
+    @ApiOperation("查询MPOS门店当前营业状")
+    @RequestMapping(value = "/get/mpos/shop/current/opening/status", method = RequestMethod.GET)
+    public boolean getShopCurrentStatus(@RequestParam String outerId, @RequestParam Long businessId) {
+        try{
+
+            //查询通过outerId,businessId获取门店信息
+            val rExist = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
+            if (!rExist.isSuccess()) {
+                log.error("find shop by outerId({}) and businessId({}) fail,error:{}", outerId, businessId, rExist.getError());
+                throw new JsonResponseException(rExist.getError());
+            }
+            Shop shop = rExist.getResult().get();
+            ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            ShopBusinessTime shopBusinessTime = existShopExtraInfo.getShopBusinessTime();
+
+            //未设置营业相关字段则返回false
+            if (shopBusinessTime == null){
+                return false;
+            }
+
+            //如果营业状态为歇业返回 false
+            if (shopBusinessTime.getOpeningStatus() == null
+                    || !shopBusinessTime.getOpeningStatus().equals(ShopOpeningStatus.OPENING.value())){
+                return false;
+            }
+
+            LocalDate localDate = LocalDate.now();
+            DayOfWeek curDayOfWeek = localDate.getDayOfWeek();
+            Map<DayOfWeek,String[]> weekTimeMap =  shopBusinessLogic.getWeekMap(shopBusinessTime);
+            String[] strArr = weekTimeMap.get(curDayOfWeek);
+            //当日营业状态为不营业 false
+            if (strArr[0] == null || !strArr[0].equals(String.valueOf(ShopOpeningStatus.OPENING.value()))){
+                return false;
+            }
+
+            //校验开始时间和结束时间是否正确
+            if (!shopBusinessLogic.validTime(strArr[1]) || !shopBusinessLogic.validTime(strArr[2])){
+                return false;
+            }
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            if(Arguments.isNull(shopExtraInfo)){
+                log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
+                throw new ServiceException("shop.extra.info.invalid");
+            }
+            //校验是否到达最大接单量
+            if(!Arguments.isNull(shopBusinessTime.getOrderAcceptQtyMax())){
+                Response<Integer> countResp = orderShipmentReadService.countByShopId(shopExtraInfo.getOpenShopId());
+                if (!countResp.isSuccess()) {
+                    throw new JsonResponseException(countResp.getError());
+                }
+                if (shopBusinessTime.getOrderAcceptQtyMax() <= countResp.getResult()){
+                    return false;
+                }
+            }
+            //校验当前时间是否在开始时间和结束时间之间
+            String[] startTimeStr = strArr[1].split(":");
+            String[] endTimeStr = strArr[2].split(":");
+            LocalTime startTime = LocalTime.of(Integer.parseInt(startTimeStr[0]),Integer.parseInt(startTimeStr[1]));
+            LocalTime endTime = LocalTime.of(Integer.parseInt(endTimeStr[0]),Integer.parseInt(endTimeStr[1]));
+            LocalTime curTime = LocalTime.now();
+            if (curTime.compareTo(startTime) >= 0 && curTime.compareTo(endTime) <= 0){
+                return true;
+            }
+
+            return false;
+
+        } catch (Exception e) {
+            log.error("get Expire time of order fail, outerId({}), businessId({}),error:{}",
+                    outerId, businessId,e.getMessage());
+            throw new JsonResponseException(e.getMessage());
+        }
+    }
 
     private void checkShopNameIfDuplicated(Long currentShopId,String updatedShopName) {
         if (!StringUtils.hasText(updatedShopName)) {

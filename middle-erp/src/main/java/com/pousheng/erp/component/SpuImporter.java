@@ -12,6 +12,7 @@ import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.*;
 import com.pousheng.erp.rules.SkuGroupRuler;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.brand.model.Brand;
@@ -28,10 +29,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 /**
  * 导入宝胜商品等信息, 并在导入过程中构建类目
@@ -61,6 +60,8 @@ public class SpuImporter {
     private final SkuTemplateDao skuTemplateDao;
 
     private final SpuDao spuDao;
+
+    private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @Autowired
     private SkuTemplateReadService skuTemplateReadService;
@@ -147,6 +148,10 @@ public class SpuImporter {
                 spuMaterial.setSpuId(spuId);
                 spuMaterial.setMaterialId(materialId);
                 spuMaterial.setMaterialCode(materialCode);
+                if(!StringUtils.isEmpty(material.getSale_date())){
+                    SimpleDateFormat sdf=new SimpleDateFormat(DATE_PATTERN);
+                    spuMaterial.setSaleDate(sdf.parse(material.getSale_date()));
+                }
                 spuMaterialDao.create(spuMaterial);
             }else {
                 if(!Objects.equal(exist.getSpuId(),spuId)){

@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.utils.export;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.common.utils.batchhandle.ExportOrder;
+import com.pousheng.middle.common.utils.batchhandle.ExportTitle;
 import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;

@@ -10,6 +10,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 用于商品搜索的DTO
@@ -106,7 +107,6 @@ public class IndexedSkuTemplate implements Serializable {
     private List<Long> categoryIds;
 
 
-
     /**
      * 当前商品后台类目名称
      */
@@ -128,4 +128,28 @@ public class IndexedSkuTemplate implements Serializable {
     @Getter
     @Setter
     private Date updatedAt;
+
+
+    /**
+     * 所属分组
+     */
+    @Getter
+    @Setter
+    private Set<Long> groupIds;
+
+
+    /**
+     * 将其除外的分组
+     */
+    @Getter
+    @Setter
+    private Set<Long> excludeGroupIds;
+
+    /**
+     * 上市时间
+     */
+    @Getter
+    @Setter
+    private Date saleDate;
+
 }

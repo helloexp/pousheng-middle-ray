@@ -4,7 +4,11 @@
 
 package com.pousheng.middle.web.category;
 
+import com.pousheng.middle.category.dto.CategoryCriteria;
+import com.pousheng.middle.category.service.PsBackCategoriesReadService;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.cache.CategoryAttributeCacher;
 import io.terminus.parana.category.dto.GroupedCategoryAttribute;
@@ -14,6 +18,7 @@ import io.terminus.parana.category.service.BackCategoryWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +36,9 @@ public class AdminBackCategories {
 
     @RpcConsumer
     private BackCategoryReadService backCategoryReadService;
+
+    @RpcConsumer
+    private PsBackCategoriesReadService psBackCategoryReadService;
 
     @RpcConsumer
     private BackCategoryWriteService backCategoryWriteService;
@@ -111,5 +119,31 @@ public class AdminBackCategories {
             log.debug("API-BACKCATEGORIES-ID-GROUPED-ATTRIBUTE-END param: id [{}] ,resp: [{}]",id,categoryAttributes);
         }
         return categoryAttributes;
+    }
+
+
+    @ApiOperation("根据类目级别获取类目名称列表")
+    @GetMapping("/level")
+    public Response<Paging<BackCategory>> findByLevel(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                                      @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                                      @RequestParam(value = "level") Integer level,
+                                                      @RequestParam(required = false, value = "name") String name) {
+        CategoryCriteria criteria=new CategoryCriteria();
+        criteria.setLevel(level);
+        if (!StringUtils.isEmpty(name)) {
+            criteria.setName(name);
+        }
+        if (pageNo != null) {
+            criteria.setPageNo(pageNo);
+        }
+        if (pageSize != null) {
+            criteria.setPageSize(pageSize);
+        }
+
+        Response<Paging<BackCategory>> r = psBackCategoryReadService.findBy(criteria);
+        if (!r.isSuccess()) {
+            log.warn("failed to find  back category of level{} , error code:{}", level, r.getError());
+        }
+        return r;
     }
 }

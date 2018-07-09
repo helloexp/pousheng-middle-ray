@@ -99,6 +99,16 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
         return Response.ok(searchedItemWithAggs);
     }
 
+
+    @Override
+    public <T> Response<WithAggregations<T>> doSearchWithAggs(Integer pageNo, Integer pageSize,
+                                                                          String templateName, Map<String, String> params,
+                                                                          Class<T> clazz) {
+
+        WithAggregations<T> withAggs = doSearch(pageNo, pageSize, templateName, params, clazz);
+        return Response.ok(withAggs);
+    }
+
     @Override
     public <T> Response<? extends Pagination<T>> searchWithScroll(String scrollId,Integer pageNo, Integer pageSize,
                                                                           String templateName, Map<String, String> params,

@@ -23,6 +23,7 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.shop.AdminShops;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -62,6 +63,8 @@ public class DispatchComponent {
     private OrderShipmentReadService orderShipmentReadService;
     @Autowired
     private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private AdminShops adminShops;
 
 
     private static final Ordering<DistanceDto> bydiscount = Ordering.natural().onResultOf(new Function<DistanceDto, Double>() {
@@ -222,6 +225,10 @@ public class DispatchComponent {
     public void completeShopTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
+            // 检查店铺是否能接单  这里直接将不能接单的过滤掉 后面拆单就不需要再过滤
+            if (!adminShops.getShopCurrentStatus(hkSkuStockInfo.getStock_code(), Long.parseLong(hkSkuStockInfo.getCompany_id()))) {
+                continue;
+            }
             completeShopWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
         }
     }
@@ -235,7 +242,6 @@ public class DispatchComponent {
     public void completeTab(List<HkSkuStockInfo> skuStockInfos, Table<Long, String, Integer> skuCodeQuantityTable){
 
         for (HkSkuStockInfo hkSkuStockInfo : skuStockInfos){
-
             //仓库类别(0 = 不限; 1 = 店仓; 2 = 总仓)
             if (Objects.equals(hkSkuStockInfo.getStock_type(),"1")){
                 completeShopWarehouseTab(hkSkuStockInfo,skuCodeQuantityTable);
@@ -246,9 +252,7 @@ public class DispatchComponent {
     }
 
     private void completeShopWarehouseTab(HkSkuStockInfo hkSkuStockInfo , Table<Long, String, Integer> skuCodeQuantityTable){
-
         Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
-
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         if (Arguments.isNull(shopExtraInfo)){
             log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
@@ -265,15 +269,15 @@ public class DispatchComponent {
 
     }
 
-    private void completeTotalWarehouseTab( HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable){
-
-            Integer safeStock = 0;//新版仓库暂时不取安全库存
-            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
-                //可用库存
-                Integer availStock = skuAndQuantityInfo.getQuantity();
-                //这里先不考虑 availStock-lockStock - safeStock 负数情况
-                skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock - safeStock);
-            }
+    private void completeTotalWarehouseTab(HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable) {
+        //新版仓库暂时不取安全库存
+        Integer safeStock = 0;
+        for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
+            //可用库存
+            Integer availStock = skuAndQuantityInfo.getQuantity();
+            //这里先不考虑 availStock-lockStock - safeStock 负数情况
+            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode(), availStock - safeStock);
+        }
     }
 
     /**

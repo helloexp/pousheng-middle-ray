@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright (c) 2017 杭州端点网络科技有限公司
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="BackCategory">
+
+    <select id="pagingName" parameterType="map" resultMap="BackCategoryMap">
+        SELECT
+        distinct name
+        FROM
+        <include refid="tb"/>
+        where level =#{level}
+        <if test="name != null">and name LIKE CONCAT('%', #{name}, '%')</if>
+        LIMIT #{offset},#{limit}
+    </select>
+
+    <select id="countByName" parameterType="map" resultType="long">
+        select count(distinct name)
+        FROM
+        <include refid="tb"/>
+        where level =#{level}
+        <if test="name != null">and name LIKE CONCAT('%', #{name}, '%')</if>
+    </select>
+
+
+</mapper>

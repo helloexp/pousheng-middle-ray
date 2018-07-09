@@ -30,7 +30,7 @@ import java.util.Map;
 @Service
 @Slf4j
 @RpcProvider
-public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWriteService{
+public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWriteService {
 
     @Autowired
     private SpuDao spuDao;
@@ -56,30 +56,28 @@ public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWrite
 
         try {
             SkuTemplate exist = skuTemplateDao.findById(skuTemplateId);
-            if(Arguments.isNull(exist)){
-                log.error("not find sku template by id:{}",skuTemplateId);
+            if (Arguments.isNull(exist)) {
+                log.error("not find sku template by id:{}", skuTemplateId);
                 return Response.fail("sku.template.not.exist");
             }
-
             SpuAttribute spuAttribute = spuAttributeDao.findBySpuId(exist.getSpuId());
-
             Spu spu = spuDao.findById(exist.getSpuId());
+            //更新
+            if (indexedSkuTemplateGuarder.indexable(exist)) {
 
-            if (indexedSkuTemplateGuarder.indexable(exist)) {  //更新
-
-                Map<String,String> extra = exist.getExtra();
+                Map<String, String> extra = exist.getExtra();
                 //当没找到sku对应的货号时跳过
-                if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
-                    log.warn("sku template(id:{}) not find material id so skip create search index",exist.getId());
+                if (Arguments.isNull(extra) || !extra.containsKey("materialId")) {
+                    log.warn("sku template(id:{}) not find material id so skip create search index", exist.getId());
                     return Response.ok();
                 }
-                IndexedSkuTemplate indexedItem = indexedItemFactory.create(exist, spu,spuAttribute);
+                IndexedSkuTemplate indexedItem = indexedItemFactory.create(exist, spu, spuAttribute);
                 IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                 indexExecutor.submit(indexTask);
             }
 
-        }catch (Exception e){
-            log.error("create sku template(id:{}) search index fail,cause:{}",skuTemplateId, Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("create sku template(id:{}) search index fail,cause:{}", skuTemplateId, Throwables.getStackTraceAsString(e));
             return Response.fail("create.sku.template.search.index.fail");
         }
 
@@ -90,16 +88,14 @@ public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWrite
     public Response<Boolean> delete(Long skuTemplateId) {
         try {
             SkuTemplate exist = skuTemplateDao.findById(skuTemplateId);
-            if(Arguments.isNull(exist)){
-                log.error("not find sku template by id:{}",skuTemplateId);
+            if (Arguments.isNull(exist)) {
+                log.error("not find sku template by id:{}", skuTemplateId);
                 return Response.fail("sku.template.not.exist");
             }
-
             IndexTask indexTask = indexedItemIndexAction.deleteTask(exist.getId());
             indexExecutor.submit(indexTask);
-
-        }catch (Exception e){
-            log.error("delete sku template(id:{}) search index fail,cause:{}",skuTemplateId, Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("delete sku template(id:{}) search index fail,cause:{}", skuTemplateId, Throwables.getStackTraceAsString(e));
             return Response.fail("delete.sku.template.search.index.fail");
         }
 
@@ -111,17 +107,15 @@ public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWrite
 
         try {
             SkuTemplate exist = skuTemplateDao.findById(skuTemplateId);
-            if(Arguments.isNull(exist)){
-                log.error("not find sku template by id:{}",skuTemplateId);
+            if (Arguments.isNull(exist)) {
+                log.error("not find sku template by id:{}", skuTemplateId);
                 return Response.fail("sku.template.not.exist");
             }
-
             SpuAttribute spuAttribute = spuAttributeDao.findBySpuId(exist.getSpuId());
-
             Spu spu = spuDao.findById(exist.getSpuId());
-
-            if (indexedSkuTemplateGuarder.indexable(exist)) {  //更新
-                IndexedSkuTemplate indexedItem = indexedItemFactory.create(exist, spu,spuAttribute);
+            //更新
+            if (indexedSkuTemplateGuarder.indexable(exist)) {
+                IndexedSkuTemplate indexedItem = indexedItemFactory.create(exist, spu, spuAttribute);
                 IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                 indexExecutor.submit(indexTask);
             } else { //删除
@@ -129,8 +123,8 @@ public class SkuTemplateSearchWriteServiceImpl implements SkuTemplateSearchWrite
                 indexExecutor.submit(indexTask);
             }
 
-        }catch (Exception e){
-            log.error("update sku template(id:{}) search index fail,cause:{}",skuTemplateId, Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("update sku template(id:{}) search index fail,cause:{}", skuTemplateId, Throwables.getStackTraceAsString(e));
             return Response.fail("update.sku.template.search.index.fail");
         }
 

@@ -58,7 +58,7 @@ public class PsShopReadServiceImpl implements PsShopReadService{
     public Response<Optional<Shop>> findByOuterIdAndBusinessId(String outerId, Long businessId) {
         try {
             return Response.ok(Optional.fromNullable(shopExtDao.findByOuterIdAndBusinessId(outerId,businessId)));
-        }catch (Exception e){
+        } catch (Exception e){
             log.error("find shop by outer id:{} business id:{},cause:{}",outerId,businessId,Throwables.getStackTraceAsString(e));
             return Response.fail("shop.find.fail");
         }

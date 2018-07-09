@@ -62,6 +62,11 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.terminus</groupId>
+            <artifactId>applog-boot-starter</artifactId>
+        </dependency>
+
        <!-- <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>

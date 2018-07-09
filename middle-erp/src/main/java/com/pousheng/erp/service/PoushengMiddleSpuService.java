@@ -3,10 +3,12 @@ package com.pousheng.erp.service;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.pousheng.erp.dao.mysql.ErpSpuDao;
+import com.pousheng.erp.dto.MiddleSkuInfo;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.spu.impl.dao.SkuTemplateDao;
+import io.terminus.parana.spu.impl.dao.SpuDao;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +31,9 @@ public class PoushengMiddleSpuService {
 
     @Autowired
     private SkuTemplateDao skuTemplateDao;
+
+    @Autowired
+    private SpuDao spuDao;
 
     /**
      * 分页查询spu列表
@@ -60,6 +65,59 @@ public class PoushengMiddleSpuService {
         } catch (Exception e) {
             log.error("fail to find sku template by skuCode={},cause:{}",
                     skuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.template.find.fail");
+        }
+    }
+
+    /**
+     *
+     * @param skuCode sku码
+     * @return dto对象
+     */
+    public Response<MiddleSkuInfo> findBySku(String skuCode) {
+        try {
+            MiddleSkuInfo middleSkuInfo = new MiddleSkuInfo();
+            List<SkuTemplate> skuTemplates = skuTemplateDao.findBySkuCode(skuCode);
+            for (SkuTemplate skuTemplate : skuTemplates) {
+                if (skuTemplate.getStatus() == 1) {
+                    middleSkuInfo.setSkuTemplate(skuTemplate);
+                    break;
+                }
+            }
+            if (middleSkuInfo.getSkuTemplate() == null) {
+                log.error("fail to find sku info by skuCode={},cause:{}", skuCode);
+                return Response.fail("sku.template.find.fail");
+            }
+            Spu spu = spuDao.findById(middleSkuInfo.getSkuTemplate().getSpuId());
+            middleSkuInfo.setSpu(spu);
+            return Response.ok(middleSkuInfo);
+        } catch (Exception e) {
+            log.error("fail to find sku info by skuCode={},cause:{}",
+                    skuCode, Throwables.getStackTraceAsString(e));
+            return Response.fail("sku.template.find.fail");
+        }
+    }
+
+    /**
+     *
+     * @param templatesId templatesId主键
+     * @return dto对象
+     */
+    public Response<MiddleSkuInfo> findBySkuTemplatesId(Long templatesId) {
+        try {
+            MiddleSkuInfo middleSkuInfo = new MiddleSkuInfo();
+            SkuTemplate skuTemplate = skuTemplateDao.findById(templatesId);
+            if (skuTemplate == null) {
+                log.error("fail to find sku info by templatesId={},cause:{}", templatesId);
+                return Response.fail("sku.template.find.fail");
+            }
+            Spu spu = spuDao.findById(skuTemplate.getSpuId());
+            middleSkuInfo.setSkuTemplate(skuTemplate);
+            middleSkuInfo.setSpu(spu);
+            return Response.ok(middleSkuInfo);
+        } catch (Exception e) {
+            log.error("fail to find sku info by templatesId={},cause:{}",
+                    templatesId, Throwables.getStackTraceAsString(e));
             return Response.fail("sku.template.find.fail");
         }
     }

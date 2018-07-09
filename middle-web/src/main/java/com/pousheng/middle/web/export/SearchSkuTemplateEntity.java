@@ -1,8 +1,8 @@
 package com.pousheng.middle.web.export;
 
+import com.pousheng.middle.common.utils.batchhandle.ExportEditable;
+import com.pousheng.middle.common.utils.batchhandle.ExportTitle;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
-import com.pousheng.middle.web.utils.export.ExportEditable;
-import com.pousheng.middle.web.utils.export.ExportTitle;
 import io.terminus.parana.attribute.dto.OtherAttribute;
 import lombok.Data;
 import org.apache.commons.collections.CollectionUtils;

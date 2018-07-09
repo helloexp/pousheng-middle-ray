@@ -49,10 +49,13 @@ public class SpuMaterialDaoTest extends BaseDaoTest {
     @Test
     public void update() {
         spuMaterial.setSpuId(1L);
+        spuMaterial.setSaleDate(new Date());
         spuMaterialDao.update(spuMaterial);
+
 
         SpuMaterial  updated = spuMaterialDao.findById(spuMaterial.getId());
         assertEquals(updated.getSpuId(), Long.valueOf(1));
+        assertEquals(updated.getSaleDate(),spuMaterial.getSaleDate());
     }
 
     @Test
@@ -91,11 +94,18 @@ public class SpuMaterialDaoTest extends BaseDaoTest {
         assertEquals(spuMaterialPaging.getData().get(0).getId(), spuMaterial.getId());
     }
 
+    @Test
+    public void findSaleDate() {
+        Date date = spuMaterialDao.findSaleDate("anyss");
+        assertThat(date, is(spuMaterial.getSaleDate()));
+    }
+
     private SpuMaterial make() {
         SpuMaterial spuMaterial = new SpuMaterial();
         spuMaterial.setSpuId(3L);
         spuMaterial.setMaterialId("anyss");
         spuMaterial.setMaterialCode("233");
+        spuMaterial.setSaleDate(new Date());
         spuMaterial.setCreatedAt(new Date());
         return spuMaterial;
     }

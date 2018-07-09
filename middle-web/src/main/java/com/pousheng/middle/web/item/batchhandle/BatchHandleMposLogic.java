@@ -3,6 +3,7 @@ package com.pousheng.middle.web.item.batchhandle;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.common.utils.batchhandle.BatchHandleRecord;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
@@ -77,6 +78,7 @@ public class BatchHandleMposLogic {
             return Response.fail("fail to get mpos flag record");
         }
     }
+
 
     /**
      * 获取批量文件导入记录
@@ -153,8 +155,6 @@ public class BatchHandleMposLogic {
     }
 
 
-
-
     /**
      * 设置折扣
      * @param id        商品id
@@ -194,6 +194,41 @@ public class BatchHandleMposLogic {
 
     }
 
+    /**
+     * 获取导出文件记录
+     * @return
+     */
+    public Response<List<BatchHandleRecord>> getExportGroupFileRecord(Long groupId){
+        Long userId = UserUtil.getUserId();
+        try{
+            List<BatchHandleRecord> list = jedisTemplate.execute(jedis -> {
+                List<BatchHandleRecord> records = new ArrayList<>();
+                String keys="itemGroup:" + userId + ":" + groupId + ":export:";
+                jedis.keys(keys+"*").forEach(key -> {
+                    BatchHandleRecord record = new BatchHandleRecord();
+                    String[] attr = key.split("~");
+                    record.setCreateAt(new Date(Long.parseLong(attr[1])));
+                    String value = jedis.get(key);
+                    record.setName(attr[1]);
+                    String name = attr[0].substring((keys).length());
+                    record.setName(name);
+                    String[] val = value.split("~");
+                    if(val.length == 1) {
+                        record.setState(value);
+                    }else {
+                        record.setState(val[0]);
+                        record.setUrl(val[1]);
+                    }
+                    records.add(record);
+                });
+                return records.stream().sorted((r1, r2) -> r2.getCreateAt().compareTo(r1.getCreateAt())).collect(Collectors.toList());
+            });
+            return Response.ok(list);
+        }catch (Exception e){
+            log.error("fail to get item group export record,cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("fail to get item group export record");
+        }
+    }
 
 
     private static Integer calculatePrice(Integer discount, Integer originPrice){

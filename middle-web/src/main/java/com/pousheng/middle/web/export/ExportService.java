@@ -3,7 +3,7 @@ package com.pousheng.middle.web.export;
 import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.web.utils.export.AzureOSSBlobClient;
+import com.pousheng.middle.common.utils.component.AzureOSSBlobClient;
 import com.pousheng.middle.web.utils.export.ExportContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
 import com.pousheng.middle.web.utils.export.FileRecord;

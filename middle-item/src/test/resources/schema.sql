@@ -125,3 +125,72 @@ CREATE TABLE `parana_sku_templates` (
 ) COMMENT='SKU模板表';
 CREATE INDEX idx_skutmpls_spu_id ON `parana_sku_templates` (`spu_id`);
 CREATE INDEX idx_skutmpls_sku_code ON `parana_sku_templates` (`sku_code`);
+
+
+CREATE TABLE `pousheng_item_groups` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '分组名称',
+  `group_rule_json` varchar(2048) DEFAULT NULL COMMENT '分组规则',
+  `related_num` int(11) NOT NULL DEFAULT '0' COMMENT '关联的货品数量',
+  `auto` tinyint(4) NOT NULL DEFAULT '0' COMMENT '自动分组 0不自动，1自动',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) COMMENT='分组信息表';
+
+
+CREATE TABLE `pousheng_item_group_skus` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `group_id` int(11) NOT NULL COMMENT '分组Id',
+  `sku_id` int(11) NOT NULL COMMENT '商品skuId',
+  `type` tinyint(4) NOT NULL COMMENT '0表示排除商品 1表示组内商品',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_group_skus_gid` (`group_id`),
+  KEY `idx_item_group_skus_sid` (`sku_id`)
+) COMMENT='分组与商品映射关系表';
+
+
+CREATE TABLE `pousheng_item_rule_groups` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `group_id` int(11) NOT NULL COMMENT '分组id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+) COMMENT='商品规则与分组关系映射表';
+
+
+CREATE TABLE `pousheng_item_rule_shops` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `shop_id` int(11) NOT NULL COMMENT '店铺id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+) COMMENT='商品规则与店铺关系映射表';
+
+
+
+CREATE TABLE `pousheng_item_rules` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(12) DEFAULT NULL COMMENT '规则名称',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) COMMENT='商品规则表';
+
+
+CREATE TABLE `pousheng_schedule_task` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `type` int(11) NOT NULL COMMENT '任务类型',
+  `user_id` int(11) NOT NULL COMMENT '用户id',
+  `business_id` int(11) DEFAULT NULL COMMENT '业务id',
+  `status` int(11) NOT NULL COMMENT '当前状态',
+  `extra_json` varchar(4096) DEFAULT NULL COMMENT '定时任务的相关参数',
+  `result` varchar(1024) DEFAULT NULL COMMENT '执行结果',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) COMMENT='任务信息表';

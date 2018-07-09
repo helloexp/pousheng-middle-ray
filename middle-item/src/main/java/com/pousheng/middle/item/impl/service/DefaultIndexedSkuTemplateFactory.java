@@ -6,7 +6,12 @@ package com.pousheng.middle.item.impl.service;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.erp.cache.SpuMaterialCacher;
+import com.pousheng.erp.model.SpuMaterial;
+import com.pousheng.middle.group.impl.dao.ItemGroupSkuDao;
+import com.pousheng.middle.group.model.ItemGroupSku;
 import com.pousheng.middle.item.dto.IndexedSkuTemplate;
+import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.attribute.dto.GroupedOtherAttribute;
@@ -20,24 +25,31 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.model.SpuAttribute;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
- * Author:  songrenfei
+ * @Author:  songrenfei
  * Date: 2017-11-31
  */
 @Slf4j
 public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFactory {
 
-    protected final BackCategoryCacher backCategoryCacher;
+    private final BackCategoryCacher backCategoryCacher;
 
+    private final BrandCacher brandCacher;
 
-    protected final BrandCacher brandCacher;
+    @Autowired
+    private ItemGroupSkuDao itemGroupSkuDao;
 
+    @Autowired
+    private SpuMaterialCacher spuMaterialCacher;
 
+    private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
     @SuppressWarnings("unchecked")
     public DefaultIndexedSkuTemplateFactory(final BackCategoryCacher backCategoryCacher,
@@ -49,18 +61,25 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
     /**
      * 创建dump到搜索引擎的商品对象, 包含属性, 类目等信息
      */
+    @Override
     public IndexedSkuTemplate create(SkuTemplate skuTemplate, Spu spu, SpuAttribute spuAttribute, Object... others) {
 
-        Map<String,String> extra = skuTemplate.getExtra();
+        Map<String, String> extra = skuTemplate.getExtra();
         String materialId = extra.get("materialId");
         IndexedSkuTemplate indexedSkuTemplate = new IndexedSkuTemplate();
         indexedSkuTemplate.setId(skuTemplate.getId());
         indexedSkuTemplate.setName(skuTemplate.getName());
         indexedSkuTemplate.setMainImage(skuTemplate.getImage_());
         indexedSkuTemplate.setSpuId(spu.getId());
-        indexedSkuTemplate.setSpuCode(materialId);//货号
+        //如果存在上市时间
+        SpuMaterial spuMaterial=spuMaterialCacher.findByMaterialId(materialId);
+        if(spuMaterial!=null&&spuMaterial.getSaleDate()!=null){
+            indexedSkuTemplate.setSaleDate(spuMaterial.getSaleDate());
+        }
+        //货号
+        indexedSkuTemplate.setSpuCode(materialId);
         indexedSkuTemplate.setSkuCode(skuTemplate.getSkuCode());
-        Integer type = Arguments.isNull(skuTemplate.getType())?0:skuTemplate.getType();
+        Integer type = Arguments.isNull(skuTemplate.getType()) ? 0 : skuTemplate.getType();
         indexedSkuTemplate.setType(type);
         indexedSkuTemplate.setUpdatedAt(skuTemplate.getUpdatedAt());
         final Long brandId = spu.getBrandId();
@@ -72,17 +91,19 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
         final Long categoryId = spu.getCategoryId();
         BackCategory currentBackCategory = backCategoryCacher.findBackCategoryById(categoryId);
-        //List<BackCategory> backCategories = backCategoryCacher.findAncestorsOf(categoryId);
+        List<BackCategory> backCategories = backCategoryCacher.findAncestorsOf(categoryId);
         List<Long> backCategoryIds = Lists.newArrayListWithCapacity(1);
-        /*for (BackCategory backCategory : backCategories) {
+        for (BackCategory backCategory : backCategories) {
             backCategoryIds.add(backCategory.getId());
-        }*/
+        }
 
         backCategoryIds.add(categoryId);
 
         indexedSkuTemplate.setCategoryIds(backCategoryIds);
         indexedSkuTemplate.setCategoryName(currentBackCategory.getName());
-
+        List<ItemGroupSku> groups = itemGroupSkuDao.findBySkuId(skuTemplate.getId());
+        indexedSkuTemplate.setGroupIds(groups.stream().filter(e -> PsItemGroupSkuType.GROUP.value().equals(e.getType())).map(ItemGroupSku::getGroupId).collect(Collectors.toSet()));
+        indexedSkuTemplate.setExcludeGroupIds(groups.stream().filter(e -> PsItemGroupSkuType.EXCLUDE.value().equals(e.getType())).map(ItemGroupSku::getGroupId).collect(Collectors.toSet()));
 
         //非销售属性
         List<String> attributes = Lists.newArrayList();
@@ -91,20 +112,31 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
             for (GroupedOtherAttribute groupedOtherAttribute : otherAttributes) {
                 for (OtherAttribute attr : groupedOtherAttribute.getOtherAttributes()) {
                     if (isSearchableAttribute(categoryId, attr.getAttrKey())) {
-                        if(Objects.equal(attr.getAttrKey(),"年份")||Objects.equal(attr.getAttrKey(),"季节")){
+                        if (Objects.equal(attr.getAttrKey(), "年份") || Objects.equal(attr.getAttrKey(), "季节") || Objects.equal(attr.getAttrKey(), "性别")) {
                             attributes.add(attr.getAttrKey() + ":" + attr.getAttrVal());
                         }
                     }
                 }
             }
         }
-
+        //将对应的类目属性名称添加到attributes
+        for (BackCategory category : backCategories) {
+            if (Objects.equal(category.getLevel(), 1)) {
+                attributes.add("类别" + ":" + category.getName());
+            }
+            if (Objects.equal(category.getLevel(), 2)) {
+                attributes.add("系列" + ":" + category.getName());
+            }
+            if (Objects.equal(category.getLevel(), 3)) {
+                attributes.add("款型" + ":" + category.getName());
+            }
+        }
 
         //销售属性
         List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
         if (!CollectionUtils.isEmpty(skuAttributes)) {
             for (SkuAttribute skuAttribute : skuAttributes) {
-                if(Objects.equal(skuAttribute.getAttrKey(),"尺码")) {
+                if (Objects.equal(skuAttribute.getAttrKey(), "尺码")) {
                     attributes.add(skuAttribute.getAttrKey() + ":" + skuAttribute.getAttrVal());
                 }
             }

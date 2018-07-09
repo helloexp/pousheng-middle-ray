@@ -72,4 +72,12 @@ public interface OrderShipmentReadService {
      * @return 订单发货单关联关系
      */
     Response<Paging<OrderShipment>> paging(OrderShipmentCriteria criteria);
+
+
+    /**
+     * 统计今日指派给店铺的发货单数量
+     * @param shopId
+     * @return
+     */
+    Response<Integer>  countByShopId(Long shopId);
 }

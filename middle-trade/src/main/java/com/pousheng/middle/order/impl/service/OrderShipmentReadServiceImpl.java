@@ -143,4 +143,15 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             return Response.fail("shipment.find.fail");
         }
     }
+
+    @Override
+    public Response<Integer> countByShopId(Long shopId) {
+        try {
+            Integer count = orderShipmentDao.countTodayByShopId(shopId);
+            return Response.ok(count);
+        } catch (Exception e) {
+            log.error("failed to paging shipment, shopId={}, cause:{}",shopId, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.find.fail");
+        }
+    }
 }

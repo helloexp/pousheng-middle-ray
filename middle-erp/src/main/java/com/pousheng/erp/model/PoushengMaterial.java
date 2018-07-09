@@ -62,4 +62,6 @@ public class PoushengMaterial implements Serializable {
 
     private List<PoushengSize> size; //对应的sku信息列表
 
+    private String sale_date; //上市日期
+
 }

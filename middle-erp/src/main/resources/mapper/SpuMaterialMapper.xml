@@ -10,8 +10,9 @@
         <result column="spu_id" property="spuId"/>
         <result column="material_id" property="materialId"/>
         <result column="material_code" property="materialCode"/>
+        <result column="sale_date" property="saleDate"/>
         <result column="created_at" property="createdAt"/>
-        
+
     </resultMap>
 
     <sql id="tb">
@@ -23,23 +24,25 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        spu_id, material_id, material_code, created_at
+        spu_id, material_id, material_code, sale_date, created_at
     </sql>
 
     <sql id="vals">
-        #{spuId}, #{materialId}, #{materialCode}, now()
+        #{spuId}, #{materialId}, #{materialCode}, #{saleDate}, now()
     </sql>
 
     <sql id="queryCondition">
-        
+
         <if test="spuId != null">and `spu_id` = #{spuId}</if>
-        
+
         <if test="materialId != null">and `material_id` = #{materialId}</if>
-        
+
         <if test="materialCode != null">and `material_code` = #{materialCode}</if>
-        
+
+        <if test="saleDate != null">and `sale_date` = #{saleDate}</if>
+
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
+
         <if test="startAt != null">and created_at &gt; #{startAt}</if>
         <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
@@ -107,7 +110,9 @@
         <set>
             <if test="spuId != null">spu_id = #{spuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="saleDate != null">sale_date = #{saleDate},</if>
             <if test="materialCode != null">material_code = #{materialCode},</if>
+
         </set>
         WHERE id = #{id}
     </update>
@@ -132,6 +137,12 @@
         <where>
         <include refid="queryCondition"/>
         </where>
+    </select>
+
+    <select id="findSaleDate" parameterType="string" resultType="date">
+        select sale_date
+        FROM <include refid="tb"/>
+        WHERE `material_id` = #{materialId}
     </select>
 
 </mapper>

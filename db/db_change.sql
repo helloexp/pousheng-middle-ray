@@ -253,7 +253,6 @@ CREATE TABLE `refund_amount` (
   PRIMARY KEY (`id`)
 )  ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='售后单同步恒康数据表';
 
-<<<<<<< HEAD
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
 -- 添加未处理原因筛选
@@ -265,6 +264,7 @@ alter table parana_order_shipments add spu_codes varchar(512) default null comme
 -- 添加订单前缀
 -- 补偿任务添加重试次数
 ALTER TABLE `pousheng_auto_compensation` ADD time tinyint(4) COMMENT '重试次数' after status;
+
 --添加未处理原因筛选
 alter table parana_shop_orders add handle_status tinyint(1) after buyer_note;
 
@@ -282,6 +282,7 @@ alter table parana_refunds add rele_order_code varchar(25) after after_sale_id;
 alter table parana_order_refunds add refund_code varchar(25) after refund_id;
 alter table parana_order_refunds add order_code varchar(25) after order_id;
 
+DROP TABLE IF EXISTS `pousheng_item_group_skus`;
 
 -- 库存同步日志添加真实同步时间
 alter table pousheng_stock_push_logs add sync_at DATETIME after cause;
@@ -344,6 +345,84 @@ ALTER TABLE `pousheng_sku_stock_tasks` add `type` VARCHAR(4)
  COMMENT '同步类型，FULL:全量；INCR:增量'
  AFTER `status`;
 
+CREATE TABLE `pousheng_item_group_skus` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `group_id` int(11) NOT NULL COMMENT '分组Id',
+  `sku_id` int(11) NOT NULL COMMENT '商品skuId',
+  `type` tinyint(4) NOT NULL COMMENT '0表示排除商品 1表示组内商品',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_item_group_skus_gid` (`group_id`),
+  KEY `idx_item_group_skus_sid` (`sku_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='分组与商品映射关系表';
+
+DROP TABLE IF EXISTS `pousheng_item_groups`;
+
+CREATE TABLE `pousheng_item_groups` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '分组名称',
+  `group_rule_json` varchar(2048) DEFAULT NULL COMMENT '分组规则',
+  `related_num` int(11) NOT NULL DEFAULT '0' COMMENT '关联的货品数量',
+  `auto` tinyint(4) NOT NULL DEFAULT '0' COMMENT '自动分组 0不自动，1自动',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='分组信息表';
+
+
+DROP TABLE IF EXISTS `pousheng_item_rule_groups`;
+
+CREATE TABLE `pousheng_item_rule_groups` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `group_id` int(11) NOT NULL COMMENT '分组id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idex_item_rule_id` (`rule_id`),
+  KEY `idex_item_group_id` (`group_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='商品规则与分组关系映射表';
+
+
+DROP TABLE IF EXISTS `pousheng_item_rule_shops`;
+
+CREATE TABLE `pousheng_item_rule_shops` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `shop_id` int(11) NOT NULL COMMENT '店铺id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idex_item_rule_shop_id` (`shop_id`),
+  KEY `idex_item_rule_id` (`rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='商品规则与店铺关系映射表';
+
+DROP TABLE IF EXISTS `pousheng_item_rules`;
+
+CREATE TABLE `pousheng_item_rules` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `name` varchar(12) DEFAULT NULL COMMENT '规则名称',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='商品规则表';
+
+DROP TABLE IF EXISTS `pousheng_schedule_task`;
+
+CREATE TABLE `pousheng_schedule_task` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `type` int(11) NOT NULL COMMENT '任务类型',
+  `user_id` int(11) DEFAULT NULL COMMENT '用户id',
+  `business_id` int(11) DEFAULT NULL COMMENT '业务id',
+  `business_type` int(11) DEFAULT NULL COMMENT '业务类型',
+  `status` int(11) NOT NULL COMMENT '当前状态',
+  `extra_json` varchar(4096) DEFAULT NULL COMMENT '定时任务的相关参数',
+  `result` varchar(1024) DEFAULT NULL COMMENT '执行结果',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='任务信息表';
 
 
 

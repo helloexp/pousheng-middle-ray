@@ -15,22 +15,27 @@ public class SpuMaterial implements Serializable {
 
     private static final long serialVersionUID = 2831862307175992170L;
     private Long id;
-    
+
     /**
      * spu id
      */
     private Long spuId;
-    
+
     /**
      * 货品id
      */
     private String materialId;
-    
+
     /**
      * 货品编码
      */
     private String materialCode;
-    
+
+    /**
+     * 上市时间
+     */
+    private Date saleDate;
+
     /**
      * 创建时间
      */

@@ -5,16 +5,20 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.erp.dto.MiddleSkuInfo;
 import com.pousheng.erp.model.SpuMaterial;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.erp.service.SpuMaterialReadService;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
+import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.parana.spu.service.SpuReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +28,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +45,9 @@ public class PoushengMiddleSpus {
     private SpuReadService spuReadService;
     @Autowired
     private SpuMaterialReadService spuMaterialReadService;
+    @RpcConsumer
+    private SkuTemplateReadService skuTemplateReadService;
+
 
     @RequestMapping(value = "/api/pousheng-spus/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<Spu> findBy(@RequestParam(required = false) String name,
@@ -119,6 +125,39 @@ public class PoushengMiddleSpus {
         paging.setTotal(1L);
         paging.setData(spus);
         return paging;
+    }
+
+    @ApiOperation("根据skuCode查询mpos商品信息")
+    @RequestMapping(value = "/api/mpos/sku-code", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public MiddleSkuInfo findBySkuCode(@RequestParam String skuCode) {
+        Response<MiddleSkuInfo> response = poushengMiddleSpuService.findBySku(skuCode);
+        if (!response.isSuccess()) {
+            log.error("find spu fail,skuCode:{}",skuCode);
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
+    }
+
+    @ApiOperation("根据模版查询mpos商品信息")
+    @RequestMapping(value = "/api/mpos/sku-templateId", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public MiddleSkuInfo findBySkuCode(@RequestParam Long templateId) {
+        Response<MiddleSkuInfo> response = poushengMiddleSpuService.findBySkuTemplatesId(templateId);
+        if (!response.isSuccess()) {
+            log.error("find spu fail,templateId:{}",templateId);
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
+    }
+
+    @ApiOperation("根据模版list查询mpos商品集合信息")
+    @RequestMapping(value = "/api/mpos/spu-templateIdList", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<SkuTemplate> findBySkuTemplateCodes(@RequestParam List<String> skuTemplateCodes) {
+        Response<List<SkuTemplate>> skuTempRes = skuTemplateReadService.findBySkuCodes(skuTemplateCodes);
+        if (!skuTempRes.isSuccess()) {
+            log.error("find spu fail,skuTemplateCodes:{}",skuTemplateCodes.toArray());
+            throw new JsonResponseException(skuTempRes.getError());
+        }
+        return skuTempRes.getResult();
     }
 
 }

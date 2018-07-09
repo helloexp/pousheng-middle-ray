@@ -7,15 +7,16 @@ package com.pousheng.middle.web.item.search;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.common.utils.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.PsSpuAttributeReadService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
-import com.pousheng.middle.web.item.component.SkutemplateScrollSearcher;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
@@ -55,6 +56,8 @@ public class SkuTemplateSearches {
     @Autowired
     private SkutemplateScrollSearcher skutemplateScrollSearcher;
 
+    private static Long ES_MAX_NUM = 10000L;
+
     /**
      * 搜索商品, 并且包括属性导航, 面包屑等(主搜)
      *
@@ -66,19 +69,24 @@ public class SkuTemplateSearches {
      */
     @ApiOperation("搜索货品")
     @RequestMapping(value = "/api/middle/sku/template/search", produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> searchItemWithAggs(@RequestParam(required = false) Integer pageNo,
-                                                                                          @RequestParam(required = false) Integer pageSize,
+    public Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> searchItemWithAggs(@RequestParam(required = false, defaultValue = "1") Integer pageNo,
+                                                                                          @RequestParam(required = false, defaultValue = "20") Integer pageSize,
                                                                                           @RequestParam Map<String,String> params){
-        if(log.isDebugEnabled()){
-            log.debug("API-MIDDLE-SKU-TEMPLATE-SEARCH-START param: pageNo [{}] pageSize [{}] params [{}]",pageNo,pageSize,JsonMapper.nonEmptyMapper().toJson(params));
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-SKU-TEMPLATE-SEARCH-START param: pageNo [{}] pageSize [{}] params [{}]", pageNo, pageSize, JsonMapper.nonEmptyMapper().toJson(params));
         }
-        String templateName = "search.mustache";
-        if(params.containsKey("q")){
+        if (pageSize * pageNo > ES_MAX_NUM) {
+            SearchedItemWithAggs<SearchSkuTemplate> result = new SearchedItemWithAggs<>();
+            result.setEntities(new Paging<>(ES_MAX_NUM, Lists.newArrayList()));
+            return Response.ok(result);
+        }
+        String templateName = "ps_search.mustache";
+        if (params.containsKey("q")) {
             String q = params.get("q");
-            if(q.length()>10){
-                q=q.substring(0,10);
+            if (q.length() > 10) {
+                q = q.substring(0, 10);
             }
-            params.put("q",q.toLowerCase());
+            params.put("q", q.toLowerCase());
         }
         params.put("sort","0_0_0_2");
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response =skuTemplateSearchReadService.searchWithAggs(pageNo,pageSize, templateName, params, SearchSkuTemplate.class);
@@ -98,7 +106,7 @@ public class SkuTemplateSearches {
         if(log.isDebugEnabled()){
             log.debug("API-MIDDLE-SKU-TEMPLATE-SCROLL-SEARCH-START param: params [{}]",JsonMapper.nonEmptyMapper().toJson(params));
         }
-        String templateName = "search.mustache";
+        String templateName = "ps_search.mustache";
         if(params.containsKey("q")){
             String q = params.get("q");
             params.put("q",q.toLowerCase());

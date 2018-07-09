@@ -1,5 +1,8 @@
 package com.pousheng.middle.web.item.batchhandle;
 
+import com.pousheng.middle.common.utils.batchhandle.BatchHandleRecord;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -75,6 +78,22 @@ public class BatchHandleMposController {
         }
         if(log.isDebugEnabled()){
             log.debug("API-SKU-TEMPLATE-BATCH-HANDLE-MPOS-FLAG-RECORDS-END noparam: ,resp: [{}]",JsonMapper.nonEmptyMapper().toJson(response.getResult()));
+        }
+        return response.getResult();
+    }
+
+
+    /**
+     * 分组导出文件记录
+     * @return
+     */
+    @ApiOperation("查询分组导出文件记录")
+    @RequestMapping(value = "/api/sku-template/batch/export/group/records",method = RequestMethod.GET)
+    public List<BatchHandleRecord> exportGroupRecord(Long groupId){
+        Response<List<BatchHandleRecord>> response = batchHandleMposLogic.getExportGroupFileRecord(groupId);
+        if(!response.isSuccess()){
+            log.error("fail to find import record,cause:{}",response.getError());
+            throw new JsonResponseException(response.getError());
         }
         return response.getResult();
     }

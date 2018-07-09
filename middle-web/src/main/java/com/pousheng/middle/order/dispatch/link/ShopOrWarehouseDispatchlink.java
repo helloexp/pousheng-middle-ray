@@ -9,6 +9,8 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dispatch.dto.DispatchWithPriority;
 import com.pousheng.middle.order.enums.AddressBusinessType;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -61,6 +63,12 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...",shopOrder.getId());
+        //如果是京东货到付款订单，则不走拆单逻辑 直接返回
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
+                && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
+            dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            return false;
+        }
         Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果

@@ -16,12 +16,13 @@
         <module>middle-item</module>
         <module>middle-web</module>
         <module>middle-auth</module>
+        <module>middle-web-common</module>
     </modules>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>1.8</java.version>
-        <parana.version>4.9.3.MIDDLE-RELEASE</parana.version>
+        <parana.version>4.9.3.MIDDLE-SNAPSHOT</parana.version>
         <terminus-boot.version>1.5.1.RELEASE</terminus-boot.version>
         <open-client.version>1.2.3-SNAPSHOT</open-client.version>
         <guava.version>19.0</guava.version>
@@ -30,13 +31,18 @@
         <azure-storage.version>5.4.0</azure-storage.version>
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
         <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
-
+        <springfox-swagger.version>2.6.1</springfox-swagger.version>
+        <log.version>1.2.2.SUPPORT-MIDDLE-SNAPSHOT</log.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-redis</artifactId>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -140,6 +146,24 @@
                 <groupId>com.microsoft.azure</groupId>
                 <artifactId>azure-storage</artifactId>
                 <version>${azure-storage.version}</version>
+            </dependency>
+            <!-- swagger begin-->
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger2</artifactId>
+                <version>${springfox-swagger.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.springfox</groupId>
+                <artifactId>springfox-swagger-ui</artifactId>
+                <version>${springfox-swagger.version}</version>
+            </dependency>
+            <!-- swagger end-->
+            <!-- 日志框架 -->
+            <dependency>
+                <groupId>io.terminus</groupId>
+                <artifactId>applog-boot-starter</artifactId>
+                <version>${log.version}</version>
             </dependency>
 
         </dependencies>

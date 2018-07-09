@@ -97,6 +97,7 @@ import java.util.concurrent.TimeUnit;
 
 @ComponentScan(
         {"com.pousheng.middle.order",
+                "com.pousheng.middle.common.utils.component",
                 "com.pousheng.middle.warehouse",
                 "com.pousheng.middle.open",
                 "com.pousheng.middle.advices",

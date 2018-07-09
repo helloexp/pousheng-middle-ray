@@ -136,7 +136,7 @@ public class ErpSpuManager {
         }
 
         //判断对应的skuCode是否已经存在, 如果存在, 则更新, 否则为对应的spu生成skuTemplate
-        createOrUpdateSkuTemplates(spuId, spu.getName(), skus);
+        createOrUpdateSkuTemplates(spuId, spu.getName(), skus, material);
         return spuId;
     }
 
@@ -294,8 +294,8 @@ public class ErpSpuManager {
      * @param name  对应的货品名称
      * @param skus  sku列表
      */
-    private void createOrUpdateSkuTemplates(Long spuId, String name, List<PoushengSku> skus) {
-        
+    private void createOrUpdateSkuTemplates(Long spuId, String name, List<PoushengSku> skus, PoushengMaterial material) {
+
         //根据materialId及sizeId来确定对应的skuTemplate
         List<SkuTemplate> skuTemplates = skuTemplateDao.findBySpuId(spuId);
         Table<String, String, SkuTemplate> stts = HashBasedTable.create();
@@ -334,6 +334,7 @@ public class ErpSpuManager {
             extra.put("sizeId", poushengSku.getSizeId());
             extra.put("materialId", poushengSku.getMaterialId());
             extra.put("materialCode", poushengSku.getMaterialCode());
+            extra.put("saleDate", material.getSale_date());
             skuTemplate.setExtra(extra);
             //通过materialId及sizeId来确定sku是否已经存在对应的skuTemplate,如果存在, 则更新, 否则新建
             //逻辑删除原来相同skuCode的skuTemplate

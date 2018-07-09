@@ -7,6 +7,7 @@ package com.pousheng.middle.item.service;
 import io.terminus.common.model.Response;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.search.api.model.Pagination;
+import io.terminus.search.api.model.WithAggregations;
 
 import java.util.Map;
 
@@ -31,6 +32,20 @@ public interface SkuTemplateSearchReadService {
     <T> Response<? extends SearchedItemWithAggs<T>> searchWithAggs(Integer pageNo, Integer pageSize,
                                                                    String templateName, Map<String, String> params,
                                                                    Class<T> clazz);
+
+    /**
+     * 仅搜索商品, 不再聚合搜索结果
+     *
+     * @param pageNo       起始页码
+     * @param pageSize     每页记录条数
+     * @param templateName 对应的搜索模板名称
+     * @param params       搜索上下文
+     * @param clazz        搜索结果类型
+     * @return 搜索结果, 包括属性导航, 面包屑等
+     */
+    <T> Response<WithAggregations<T>> doSearchWithAggs(Integer pageNo, Integer pageSize,
+                                                              String templateName, Map<String, String> params,
+                                                              Class<T> clazz);
 
     /**
      * 深度分页搜索商品

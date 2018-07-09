@@ -58,6 +58,8 @@ public class ShopExtraInfo implements Serializable{
     //手机号
     private String phone;
 
+    //门店营业信息 
+    private ShopBusinessTime shopBusinessTime;
 
     public void setExpresssCompanyJson(String expressCompanyJson){
         this.expressCompanyJson = expressCompanyJson;

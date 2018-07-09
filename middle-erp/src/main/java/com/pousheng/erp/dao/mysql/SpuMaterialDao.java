@@ -4,6 +4,7 @@ import com.pousheng.erp.model.SpuMaterial;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -54,5 +55,15 @@ public class SpuMaterialDao extends MyBatisDao<SpuMaterial> {
      */
     public List<SpuMaterial> findBySpuIds(List<Long> spuIds){
         return getSqlSession().selectList(sqlId("findBySpuIds"), spuIds);
+    }
+
+    /**
+     * 根据materialId查询对应的上市日期
+     * @param materialId
+     * @return
+     */
+    public Date findSaleDate(String materialId) {
+        return getSqlSession().selectOne(sqlId("findSaleDate"), materialId);
+
     }
 }

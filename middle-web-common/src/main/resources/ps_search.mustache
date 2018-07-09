@@ -1,0 +1,99 @@
+{
+  "from":"{{from}}",
+  "size":"{{size}}",
+  "query": {
+     "bool": {
+        "must": {
+            {{#keyword}}
+            {{#multiField}}
+            "bool": {
+              "should": [
+                 {{#fields}}
+                 {"match": { "{{field}}": "{{value}}" }} {{^last}},{{/last}}
+                 {{/fields}}
+               ]
+            }
+            {{/multiField}}
+            {{^multiField}}
+                {{#fields}}
+                "match": { "{{field}}": "{{value}}" }
+                {{/fields}}
+            {{/multiField}}
+            {{/keyword}}
+            {{^keyword}}
+            "match_all":{}
+            {{/keyword}}
+        },
+        {{#hasMustNot}}
+            "must_not":[
+            {{#mustNotTerms}}
+                {"terms":
+                    {"{{field}}":
+                        [{{#values}}
+                            "{{value}}" {{^last}},{{/last}}
+                        {{/values}}
+                        ]
+                    }
+                }{{^last}},{{/last}}
+            {{/mustNotTerms}}
+            ],
+        {{/hasMustNot}}
+        "filter": {
+          "bool": {
+            "must": [
+              {{#term}}
+                  {"term": {"{{field}}":"{{value}}"}} {{^last}},{{/last}}
+              {{/term}}
+              {{#terms}}
+                  {"terms":
+                    {"{{field}}":
+                       [ {{#values}}
+                          "{{value}}" {{^last}},{{/last}}
+                         {{/values}}
+                        ]
+                    }
+                  }{{^last}},{{/last}}
+              {{/terms}}
+              {{#ranges}}
+                  {"range": {
+                      "{{field}}": {
+                         {{#low}}
+                             "gte": "{{low}}"
+                             {{#high}},{{/high}}
+                         {{/low}}
+                         {{#high}}
+                             "lte": "{{high}}"
+                         {{/high}}
+                      }
+                     }
+                  } {{^last}},{{/last}}
+              {{/ranges}}
+            ]
+          }
+        }
+     }
+  }
+  {{#hasSort}}
+  ,"sort": [
+     {{#sorts}}
+         {"{{field}}": {"order":"{{order}}"}} {{^last}},{{/last}}
+     {{/sorts}}
+  ]
+  {{/hasSort}}
+  {{#hasAggs}}
+  ,"aggs": {
+     {{#aggs}}
+        "{{id}}": {"terms": {"field": "{{field}}", "size": "{{size}}" }} {{^last}},{{/last}}
+     {{/aggs}}
+  }
+  {{/hasAggs}}
+  {{#hasHighlight}}
+  ,"highlight": {
+     "fields": {
+         {{#highlights}}
+           "{{field}}": {} {{^last}},{{/last}}
+         {{/highlights}}
+       }
+  }
+  {{/hasHighlight}}
+}

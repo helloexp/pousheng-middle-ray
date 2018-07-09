@@ -56,6 +56,15 @@ public class MaterialPusher {
         erpClient.postJson("common/erp/base/creatematerialmapper",
                 json);
     }
+
+    public void addMaterialIds(List<String> materialIds){
+        String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(materialIds));
+        log.info("add material to erp, data:{}", json);
+        erpClient.postJson("common/erp/base/creatematerialmapper",
+                json);
+    }
+
+
     /**
      * 通知恒康该商品要进行实施库存同步
      */
@@ -87,6 +96,15 @@ public class MaterialPusher {
         erpClient.postJson("common/erp/base/removematerialmapper",
                 json);
     }
+
+    public void removeMaterialIds(List<String> materialIds){
+        String json = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(new MaterialIds(materialIds));
+        log.info("remove material from erp, data:{}", json);
+        erpClient.postJson("common/erp/base/removematerialmapper",
+                json);
+    }
+
+
 
     @Data
     @AllArgsConstructor

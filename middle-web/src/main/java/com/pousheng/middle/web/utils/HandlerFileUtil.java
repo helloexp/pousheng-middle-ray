@@ -9,6 +9,7 @@ import com.opencsv.bean.StatefulBeanToCsv;
 import com.opencsv.bean.StatefulBeanToCsvBuilder;
 import com.opencsv.exceptions.CsvDataTypeMismatchException;
 import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
+import com.pousheng.middle.common.utils.batchhandle.ExcelUtil;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.web.utils.export.ExcelCovertCsvReader;
 import io.terminus.common.exception.JsonResponseException;
@@ -16,10 +17,12 @@ import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
+import org.springframework.util.CollectionUtils;
 
 import java.io.*;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.DecimalFormat;
 import java.util.Collections;
@@ -61,6 +64,25 @@ public class HandlerFileUtil<T> {
         }
 
 
+    }
+
+    public List<String[]> handle(String fileUrl) {
+
+        List<String[]> list;
+        try {
+            URL url = new URL(fileUrl);
+            InputStream insr = url.openConnection().getInputStream();
+            list = ExcelUtil.readerExcel(insr, "Sheet0", 5);
+            if (CollectionUtils.isEmpty(list)) {
+                log.error("import excel is empty so skip");
+                throw new JsonResponseException("excel.content.is.empty");
+            }
+            log.info("import excel size:{}", list.size());
+        } catch (Exception e) {
+            log.error("read import excel file fail,causeL:{}", Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("read.excel.fail");
+        }
+        return list;
     }
 
 

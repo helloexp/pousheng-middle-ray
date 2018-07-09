@@ -12,6 +12,7 @@ import lombok.Setter;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Set;
 
 /**
  * 商品搜索
@@ -152,12 +153,44 @@ public class SearchSkuTemplate implements Serializable {
     private List<SkuAttribute> attrs;
 
 
+    /**
+     * 所属分组
+     */
+    @Getter
+    @Setter
+    private Set<Long> groupIds;
 
 
+    /**
+     * 将其除外的分组
+     */
+    @Getter
+    @Setter
+    private Set<Long> excludeGroupIds;
 
 
+    /**
+     * 后台类目1-4级
+     */
+    @Getter
+    @Setter
+    private List<Long> categoryIds;
 
 
+    /**
+     * 所有商品属性,包括sku属性及非sku属性, 属性以key:value的String来存储, 搜索也需要以key:value的term 来搜索
+     */
+    @Getter
+    @Setter
+    private List<String> attributes;
+
+
+    /**
+     * 上市时间
+     */
+    @Getter
+    @Setter
+    private Date saleDate;
 
 
 }

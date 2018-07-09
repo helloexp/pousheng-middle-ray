@@ -148,6 +148,20 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         }
     }
 
+    @Override
+    public Response<Boolean> batchGroupDump(List<SkuTemplate> skuTemplates) {
+        try {
+            if(CollectionUtils.isEmpty(skuTemplates)){
+                return Response.ok();
+            }
+            toDump(skuTemplates,Boolean.TRUE,0);
+            return Response.ok();
+        }catch (Exception e){
+            log.error("batch dump sku template:{} fail,cause:{}",skuTemplates,Throwables.getStackTraceAsString(e));
+            return Response.fail("batch.dump.fail");
+        }
+    }
+
     private int doIndex(String since,Boolean isFullDump) {
         // 最大的商品id
         Long lastId = skuTemplateExtDao.maxId() + 1;
@@ -225,7 +239,8 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         }else {
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
-                    if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {  //更新
+                    //更新
+                    if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {
                         Map<String,String> extra = skuTemplate.getExtra();
                         //当没找到sku对应的货号时跳过
                         if(Arguments.isNull(extra)||!extra.containsKey("materialId")){

@@ -81,13 +81,13 @@ public class InventoryClient {
         if (ObjectUtils.isEmpty(requests)) {
             return Response.fail("inventory.available.fail.parameter");
         }
-        Map<String, Object> params = Maps.newHashMap();
-        params.put("shopId", shopId);
-        params.put("requestJson", JSON.toJSONString(requests));
+        if (null == shopId) {
+            shopId = -1L;
+        }
 
         try {
-            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postRetList("api/inventory/query/getAvailableInventory",
-                    params, AvailableInventoryDTO.class);
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailableInventory/"+shopId,
+                    JSON.toJSONString(requests), AvailableInventoryDTO.class);
 
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());
@@ -111,13 +111,14 @@ public class InventoryClient {
         if (ObjectUtils.isEmpty(requests)) {
             return Response.fail("inventory.available.fail.parameter");
         }
-        Map<String, Object> params = Maps.newHashMap();
-        params.put("shopId", shopId);
-        params.put("requestJson", JSON.toJSONString(requests));
+
+        if (null == shopId) {
+            shopId = -1L;
+        }
 
         try {
-            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postRetList("api/inventory/query/getAvailInvRetNoWarehouse",
-                    params, AvailableInventoryDTO.class);
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailInvRetNoWarehouse/"+shopId,
+                    JSON.toJSONString(requests), AvailableInventoryDTO.class);
 
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());

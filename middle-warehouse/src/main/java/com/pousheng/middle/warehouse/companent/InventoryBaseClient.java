@@ -109,37 +109,6 @@ public class InventoryBaseClient {
     }
 
     /**
-     * 发送post请求
-     * @param path
-     * @param params
-     * @param clazz
-     * @return
-     */
-    public Object postRetList(String path, Map<String, Object> params, Class clazz){
-        log.info("request to {} with params: {}", host + "/" + path, params);
-        HttpRequest r = null;
-        try {
-            r = HttpRequest.post(host+"/"+path, params, true)
-                    .acceptJson()
-                    .acceptCharset(HttpRequest.CHARSET_UTF8)
-                    .connectTimeout(HttpTime)
-                    .readTimeout(HttpTime);
-        } catch (HttpRequest.HttpRequestException e) {
-            // 捕获超时异常 库存中心响应超时
-            log.error("call stock api time out");
-            throw new ServiceException("inventory.response.timeout");
-        }
-        if(r.ok()){
-            log.info("request success!");
-            return handleNormalResponse(path, params, r.body(), clazz, true);
-        }else{
-            handleInvalidResponse(r.method(), r.code(), r.body(), path, JSON.toJSONString(params));
-            // 上面已经肯定抛出异常
-            return null;
-        }
-    }
-
-    /**
      * 发送put请求
      * @param path
      * @param params
@@ -200,6 +169,30 @@ public class InventoryBaseClient {
 
         if(r.ok()){
             return handleNormalResponse(path, null, r.body(), clazz, false);
+        }else{
+            handleInvalidResponse(r.method(), r.code(), r.body(), path, json);
+            // 上面已经肯定抛出异常
+            return null;
+        }
+    }
+
+    /**
+     * post数据
+     * @param path
+     * @param json
+     * @return
+     */
+    public Object postJsonRetList(String path, String json, Class clazz){
+        log.info("request to {} with params: {}", host + "/" + path, json);
+
+        HttpRequest r = HttpRequest.post(host+"/"+path)
+                .contentType("application/json")
+                .acceptJson()
+                .acceptCharset(HttpRequest.CHARSET_UTF8)
+                .send(json);
+
+        if(r.ok()){
+            return handleNormalResponse(path, null, r.body(), clazz, true);
         }else{
             handleInvalidResponse(r.method(), r.code(), r.body(), path, json);
             // 上面已经肯定抛出异常

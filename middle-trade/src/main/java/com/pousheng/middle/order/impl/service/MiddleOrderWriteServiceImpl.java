@@ -61,11 +61,11 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
             middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, operation);
             return Response.ok();
 
-        } catch (ServiceException e1) {
-            log.error("failed to update order.cause:{}", Throwables.getStackTraceAsString(e1));
-            return Response.fail(e1.getMessage());
+        } catch (ServiceException e) {
+            log.error("failed to update order(id:{}) operation:{} error:{}",shopOrder.getOrderCode(),operation.getText(), e.getMessage());
+            return Response.fail(e.getMessage());
         } catch (Exception e) {
-            log.error("failed to update order, cause:{}", Throwables.getStackTraceAsString(e));
+            log.error("failed to update order(id:{}) operation:{}, cause:{}", shopOrder.getOrderCode(),operation.getText(),Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }
     }

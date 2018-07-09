@@ -541,9 +541,18 @@ public class OrderWriteLogic {
         }
 
         if (count > 0) {
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            if (!response.isSuccess()){
+                log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}",shopOrder,failSkuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+                return Response.fail(response.getError());
+            }
         } else {
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
+            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
+            if (!response.isSuccess()){
+                log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}",shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
+                return Response.fail(response.getError());
+
+            }
         }
         if (count > 0) {
             return Response.fail(errorMsg);

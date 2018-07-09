@@ -51,7 +51,7 @@ public class MiddleOrderManager {
      * @param skuOrders 子单集合
      * @param orderOperation 传入的操作动作,用于下一步操作
      */
-
+    @Transactional
     public void updateOrderStatusAndSkuQuantities(ShopOrder shopOrder, List<SkuOrder> skuOrders, OrderOperation orderOperation) {
         Flow flow = this.pickOrder();
         //更新sku订单记录

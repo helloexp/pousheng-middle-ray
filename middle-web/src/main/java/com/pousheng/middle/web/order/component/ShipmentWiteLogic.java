@@ -286,9 +286,12 @@ public class ShipmentWiteLogic {
             //解锁库存
             mposSkuStockLogic.unLockStock(shipment);
             return Response.ok(Boolean.TRUE);
-        } catch (Exception e) {
-            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), Throwables.getStackTraceAsString(e));
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
             return Response.fail(e.getMessage());
+        } catch (Exception e) {
+            log.error("cancel shipment failed,shipment id is :{},cause{}", shipment.getId(), Throwables.getStackTraceAsString(e));
+            return Response.fail("cancel.shipment.fail");
         }
     }
 

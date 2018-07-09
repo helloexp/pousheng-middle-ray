@@ -86,8 +86,8 @@ public class InventoryClient {
         params.put("requestJson", JSON.toJSONString(requests));
 
         try {
-            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.get("api/inventory/query/getAvailableInventory",
-                    null, null, params, AvailableInventoryDTO.class, true);
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postRetList("api/inventory/query/getAvailableInventory",
+                    params, AvailableInventoryDTO.class);
 
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());
@@ -116,8 +116,8 @@ public class InventoryClient {
         params.put("requestJson", JSON.toJSONString(requests));
 
         try {
-            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.get("api/inventory/query/getAvailInvRetNoWarehouse",
-                    null, null, params, AvailableInventoryDTO.class, true);
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postRetList("api/inventory/query/getAvailInvRetNoWarehouse",
+                    params, AvailableInventoryDTO.class);
 
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());

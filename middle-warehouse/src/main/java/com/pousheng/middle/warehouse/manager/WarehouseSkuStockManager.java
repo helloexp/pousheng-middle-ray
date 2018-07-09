@@ -84,8 +84,8 @@ public class WarehouseSkuStockManager {
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipments, tradeRet.getError());
                 // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
-                    // 超时的错误进入biz表给后面轮询
-                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                    // 超时的错误进入biz表给后面轮询,扣减库存biz
+                    createDecreaseStockTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                 // }
                 return Response.fail(tradeRet.getError());
             }
@@ -115,7 +115,7 @@ public class WarehouseSkuStockManager {
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to unLock inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, lockedShipments, tradeRet.getError());
                 // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
-                    // 超时的错误进入biz表给后面轮询
+                    // 超时的错误进入biz表给后面轮询,释放库存biz
                     createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                 // }
                 return Response.fail(tradeRet.getError());
@@ -159,4 +159,19 @@ public class WarehouseSkuStockManager {
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         poushengCompensateBizWriteService.create(biz);
     }
+
+
+    /**
+     * 扣减失败补偿
+     * @param shipmentId
+     */
+    private void createDecreaseStockTask(Long shipmentId){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.STOCK_API_DECREASE_STOCK.toString());
+        biz.setContext(mapper.toJson(shipmentId));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        poushengCompensateBizWriteService.create(biz);
+    }
+
+
 }

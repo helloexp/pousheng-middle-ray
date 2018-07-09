@@ -46,5 +46,13 @@ public enum PoushengCompensateBizType {
     /**
      * 库存中心超时异常
      */
-    STOCK_API_TIME_OUT;
+    STOCK_API_TIME_OUT,
+
+
+    /**
+     * 扣减库存
+     */
+    STOCK_API_DECREASE_STOCK;
+
+
 }

@@ -4,6 +4,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.*;
+import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -17,6 +18,7 @@ import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import com.pousheng.middle.web.order.sync.mpos.SyncMposApi;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -48,8 +50,6 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.*;
-
-import static com.pousheng.middle.order.enums.MiddleRefundType.AFTER_SALES_RETURN;
 
 /**
  * 订单open api
@@ -97,6 +97,8 @@ public class OrderOpenApi {
     private SyncShipmentPosLogic syncShipmentPosLogic;
     @Autowired
     private ReceiveSkxResultLogic receiveSkxResultLogic;
+    @Autowired
+    private SyncMposApi syncMposApi;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -573,6 +575,37 @@ public class OrderOpenApi {
 
         String outId = cancelOutOrderInfo.getOutOrderId();
         String outFrom = cancelOutOrderInfo.getChannel();
+
+        Long orderId = findOrderIdByOutIdAndOutFrom(outId,outFrom);
+
+        try {
+
+            orderWriteLogic.autoCancelShopOrder(orderId);
+
+        } catch (JsonResponseException e){
+            log.error("cancel shop order id:{} fail",orderId);
+            throw new OPServerException(200, e.getMessage());
+        }
+
+        log.info("SYNC-OUT-ORDER-CANCEL-END DATA:", data);
+    }
+
+    private Long findOrderIdByOutIdAndOutFrom(String outId,String outFrom){
+
+
+        //恒康预收单的取消，需要特殊处理，要先去电商库存中查询电商的订单，然后再查询中台的订单（outId在电商库中有）
+        if (Objects.equals(outFrom,"hk")){
+            //查询电商
+            MposResponse resp = mapper.fromJson(syncMposApi.queryEcpOrderIdByOutIdForHk(outId),MposResponse.class);
+            if (!resp.isSuccess()) {
+                log.error("query mpos order by out id:{} fail,error:{}",outId,resp.getError());
+                throw new OPServerException(200,resp.getError());
+            }
+            //将outId替换为电商的订单id
+            outId = resp.getResult();
+            outFrom = "official";
+        }
+
         Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outId, outFrom);
         if (!findShopOrder.isSuccess()) {
             log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
@@ -584,18 +617,8 @@ public class OrderOpenApi {
             log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
             throw new OPServerException(200, "order.not.found");
         }
-        Long orderId = shopOrderOptional.get().getId();
-        try {
+        return shopOrderOptional.get().getId();
 
-            orderWriteLogic.autoCancelShopOrder(orderId);
-
-        } catch (JsonResponseException e){
-            log.error("cancel shop order id:{} fail",orderId);
-            throw new OPServerException(200, e.getMessage());
-        }
-
-
-        log.info("SYNC-OUT-ORDER-CANCEL-END DATA:", data);
     }
 
 

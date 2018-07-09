@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
+import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,6 +21,24 @@ public class SyncMposApi {
 
     @Value("${mpos.open.shop.id:180}")
     private Long shopId;
+
+
+
+    /**
+     * 同步发货单到mpos
+     * @param outId 参数
+     * @return
+     */
+    public String queryEcpOrderIdByOutIdForHk(String outId){
+        log.info("queryEcpOrderIdByOutIdForHk,param:{}",outId);
+        Map<String, Object> requestParams = Maps.newHashMap();
+        requestParams.put("outId",outId);
+        String responseBody = paranaClient.systemGet("mpos.order.ship.api",requestParams);
+        log.info("queryEcpOrderIdByOutIdForHk out id:{} response:{}",outId,responseBody);
+        return responseBody;
+    }
+
+
 
     /**
      * 同步发货单到mpos

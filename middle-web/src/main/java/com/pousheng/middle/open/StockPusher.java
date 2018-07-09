@@ -233,15 +233,9 @@ public class StockPusher {
 
                             channelStock = 0L;
                         }
-                        if (shareStock < 0L){
-                            log.warn("shop(id={}) shareStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
-                                    shopId, skuCode, channelStock, shareStock);
-
-                            shareStock = 0L;
-                        }
 
                         if (null != shopStockRule.getSafeStock()) {
-                            shareStock = Math.max(0, shareStock - shopStockRule.getSafeStock());
+                            shareStock = shareStock - shopStockRule.getSafeStock();
                         }
 
                         //按照设定的比例确定推送数量

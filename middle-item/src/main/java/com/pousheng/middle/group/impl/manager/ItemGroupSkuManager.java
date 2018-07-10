@@ -25,19 +25,15 @@ public class ItemGroupSkuManager {
     @Autowired
     ItemGroupSkuDao itemGroupSkuDao;
 
-    @Autowired
-    ItemGroupDao itemGroupDao;
-
     @Transactional
     public Response<Long> create(ItemGroupSku itemGroupSku) {
         try {
-            ItemGroupSku info = itemGroupSkuDao.findByGroupIdAndSkuId(itemGroupSku.getGroupId(), itemGroupSku.getSkuId());
+            ItemGroupSku info = itemGroupSkuDao.findByGroupIdAndSkuCode(itemGroupSku.getGroupId(), itemGroupSku.getSkuCode());
             if (info != null) {
                 return Response.fail("item.group.sku.is.exist");
             }
             Boolean resp = itemGroupSkuDao.create(itemGroupSku);
             if (resp) {
-                updateGroupInfo(itemGroupSku.getGroupId());
                 return Response.ok(itemGroupSku.getId());
             } else {
                 return Response.fail("item.group.sku.create.fail");
@@ -48,52 +44,43 @@ public class ItemGroupSkuManager {
         }
     }
 
-    public Response<Integer> batchCreate(List<Long> skuIds, Long groupId, Integer type) {
+    public Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type) {
         try {
-            List<ItemGroupSku> list = Lists.newArrayListWithCapacity(skuIds.size());
-            for (Long skuId : skuIds) {
-                list.add(new ItemGroupSku().groupId(groupId).skuId(skuId).type(type));
+            List<ItemGroupSku> list = Lists.newArrayListWithCapacity(skuCodes.size());
+            for (String skuCode : skuCodes) {
+                list.add(new ItemGroupSku().groupId(groupId).skuCode(skuCode).type(type));
             }
             Integer resp = itemGroupSkuDao.creates(list);
-            updateGroupInfo(groupId);
             return Response.ok(resp);
         } catch (Exception e) {
-            log.error("create itemGroupSku failed, skuIds:{}, groupId:{} type:{} cause:{}", skuIds, groupId, type, Throwables.getStackTraceAsString(e));
+            log.error("create itemGroupSku failed, skuCodes:{}, groupId:{} type:{} cause:{}", skuCodes, groupId, type, Throwables.getStackTraceAsString(e));
             return Response.fail("item.group.sku.create.fail");
         }
     }
 
 
-    public Response<Integer> batchDelete(List<Long> skuIds, Long groupId, Integer type) {
+    public Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type) {
         try {
-            Integer resp = itemGroupSkuDao.batchDelete(skuIds, groupId, type);
-            updateGroupInfo(groupId);
+            Integer resp = itemGroupSkuDao.batchDelete(skuCodes, groupId, type);
             return Response.ok(resp);
         } catch (Exception e) {
-            log.error("delete itemGroupSku failed, skuIds:{} groupId:{} type:{}, cause:{}", skuIds, groupId, type, Throwables.getStackTraceAsString(e));
+            log.error("delete itemGroupSku failed, skuCodes:{} groupId:{} type:{}, cause:{}", skuCodes, groupId, type, Throwables.getStackTraceAsString(e));
             return Response.fail("item.group.sku.delete.fail");
         }
     }
 
     @Transactional
-    public Response<Boolean> deleteByGroupIdAndSkuId(Long groupId, Long skuId) {
+    public Response<Boolean> deleteByGroupIdAndSkuId(Long groupId, String skuCode) {
         try {
-            Boolean resp = itemGroupSkuDao.deleteByGroupIdAndSkuId(groupId, skuId);
+            Boolean resp = itemGroupSkuDao.deleteByGroupIdAndSkuCode(groupId, skuCode);
             if (resp) {
-                updateGroupInfo(groupId);
                 return Response.ok(true);
             } else {
                 return Response.fail("item.group.sku.delete.fail");
             }
         } catch (Exception e) {
-            log.error("failed to delete item group sku groupId:{}  id:{} cause:{}", groupId, skuId, Throwables.getStackTraceAsString(e));
+            log.error("failed to delete item group sku groupId:{}  id:{} cause:{}", groupId, skuCode, Throwables.getStackTraceAsString(e));
             return Response.fail("item.group.sku.delete.fail");
         }
-    }
-
-    private void updateGroupInfo(Long groupId) {
-        Long count = itemGroupSkuDao.countGroupSku(groupId);
-        ItemGroup group = new ItemGroup().id(groupId).relatedNum(count);
-        itemGroupDao.update(group);
     }
 }

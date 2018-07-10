@@ -1,6 +1,9 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
@@ -9,17 +12,18 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -37,6 +41,8 @@ public class Warehouses {
     private MiddleStockPushLogWriteService middleStockPushLogWriteService;
     @Autowired
     private MessageSource messageSource;
+    @Autowired
+    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
 
     @RequestMapping(value = "/create/push/log",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_VALUE)
@@ -109,6 +115,34 @@ public class Warehouses {
 
 
         return r;
+    }
+
+
+
+    /**
+     * 在一个仓库中对应sku的库存
+     * 如果是店仓则要减掉中台已经占用的
+     *
+     * @param skuCodes sku codes, 以','分割
+     * @return sku在对应仓库中的可用库存情况
+     */
+    @RequestMapping(value = "/{warehouseId}/stocks", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Map<String, Integer> findStocksForSkus(@PathVariable("warehouseId") Long warehouseId,
+                                                  @RequestParam("skuCodes") String skuCodes,
+                                                  @RequestParam("shopId") Long shopId) {
+
+        List<String> skuCodeList = Lists.newArrayList(Splitters.COMMA.splitToList(skuCodes));
+        HashMap<String, Integer> map = new HashMap<>(4);
+        if (CollectionUtils.isEmpty(skuCodeList)) {
+            return map;
+        }
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), skuCodeList, shopId);
+        if (skuStockInfos.size() == 0 || skuStockInfos.get(0).getMaterial_list().size() == 0) {
+            return Collections.emptyMap();
+        }
+        HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo = skuStockInfos.get(0).getMaterial_list().get(0);
+        map.put(skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+        return map;
     }
 
 

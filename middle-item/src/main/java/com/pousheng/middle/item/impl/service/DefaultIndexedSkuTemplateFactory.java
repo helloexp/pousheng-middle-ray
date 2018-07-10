@@ -101,7 +101,7 @@ public class DefaultIndexedSkuTemplateFactory implements IndexedSkuTemplateFacto
 
         indexedSkuTemplate.setCategoryIds(backCategoryIds);
         indexedSkuTemplate.setCategoryName(currentBackCategory.getName());
-        List<ItemGroupSku> groups = itemGroupSkuDao.findBySkuId(skuTemplate.getId());
+        List<ItemGroupSku> groups = itemGroupSkuDao.findBySkuCode(skuTemplate.getSkuCode());
         indexedSkuTemplate.setGroupIds(groups.stream().filter(e -> PsItemGroupSkuType.GROUP.value().equals(e.getType())).map(ItemGroupSku::getGroupId).collect(Collectors.toSet()));
         indexedSkuTemplate.setExcludeGroupIds(groups.stream().filter(e -> PsItemGroupSkuType.EXCLUDE.value().equals(e.getType())).map(ItemGroupSku::getGroupId).collect(Collectors.toSet()));
 

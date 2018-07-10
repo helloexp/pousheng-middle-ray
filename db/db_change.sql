@@ -353,9 +353,12 @@ CREATE TABLE `pousheng_item_group_skus` (
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`),
+  UNIQUE KEY `idx_group_sku` (`group_id`,`sku_id`),
   KEY `idx_item_group_skus_gid` (`group_id`),
   KEY `idx_item_group_skus_sid` (`sku_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='分组与商品映射关系表';
+
+
 
 DROP TABLE IF EXISTS `pousheng_item_groups`;
 

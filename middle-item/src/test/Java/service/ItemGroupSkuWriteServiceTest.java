@@ -62,7 +62,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     }
 
     private ItemGroupSku mock() {
-        return new ItemGroupSku().id(1L).skuId(1L).type(1);
+        return new ItemGroupSku().id(1L).skuCode("1").type(1);
     }
 
 
@@ -118,7 +118,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
 
     @Test
     public void testCreateItemGroupSkuRepeat() {
-        when(itemGroupSkuDao.findByGroupIdAndSkuId(any(),any())).thenReturn(mock());
+        when(itemGroupSkuDao.findByGroupIdAndSkuCode(any(),any())).thenReturn(mock());
         Response<Long> response = itemGroupSkuWriteService.createItemGroupSku(mock());
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.is.exist"));
@@ -126,7 +126,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
 
     @Test
     public void testCreateItemGroupSkuSuccess() {
-        when(itemGroupSkuDao.findByGroupIdAndSkuId(any(),any())).thenReturn(null);
+        when(itemGroupSkuDao.findByGroupIdAndSkuCode(any(),any())).thenReturn(null);
         when(itemGroupSkuDao.create(any())).thenReturn(true);
         Response<Long> response = itemGroupSkuWriteService.createItemGroupSku(mock());
         assertThat(response.isSuccess(), is(Boolean.TRUE));
@@ -135,7 +135,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
 
     @Test
     public void testCreateItemGroupSkuUnknownEx() {
-        when(itemGroupSkuDao.findByGroupIdAndSkuId(any(),any())).thenReturn(null);
+        when(itemGroupSkuDao.findByGroupIdAndSkuCode(any(),any())).thenReturn(null);
         when(itemGroupSkuDao.create(any())).thenThrow(new NullPointerException());
         Response<Long> response = itemGroupSkuWriteService.createItemGroupSku(mock());
         assertThat(response.isSuccess(), is(Boolean.FALSE));
@@ -146,7 +146,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchCreateSuccess() {
         when(itemGroupSkuDao.creates(any())).thenReturn(1);
-        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList(1L), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(1));
     }
@@ -154,7 +154,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchCreateUnknownEx() {
         when(itemGroupSkuDao.creates(any())).thenThrow((new NullPointerException()));
-        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList(1L), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.create.fail"));
     }
@@ -162,7 +162,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchDeleteSuccess() {
         when(itemGroupSkuDao.batchDelete(any(), any(), any())).thenReturn(1);
-        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList(1L), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(1));
     }
@@ -170,24 +170,24 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchDeleteUnknownEx() {
         when(itemGroupSkuDao.batchDelete(any(), any(), any())).thenThrow((new NullPointerException()));
-        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList(1L), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.delete.fail"));
     }
 
 
     @Test
-    public void testDeleteByGroupIdAndSkuIdSuccess() {
-        when(itemGroupSkuDao.deleteByGroupIdAndSkuId(any(), any())).thenReturn(true);
-        Response<Boolean> response = itemGroupSkuWriteService.deleteByGroupIdAndSkuId(1L, 1L);
+    public void testDeleteByGroupIdAndSkuCodeSuccess() {
+        when(itemGroupSkuDao.deleteByGroupIdAndSkuCode(any(), any())).thenReturn(true);
+        Response<Boolean> response = itemGroupSkuWriteService.deleteByGroupIdAndSkuCode(1L, "1");
         assertThat(response.isSuccess(), is(Boolean.TRUE));
     }
 
 
     @Test
-    public void testDeleteByGroupIdAndSkuIdUnknownEx() {
-        when(itemGroupSkuDao.deleteByGroupIdAndSkuId(any(), any())).thenThrow((new NullPointerException()));
-        Response<Boolean> response = itemGroupSkuWriteService.deleteByGroupIdAndSkuId(1L, 1L);
+    public void testDeleteByGroupIdAndSkuCodeUnknownEx() {
+        when(itemGroupSkuDao.deleteByGroupIdAndSkuCode(any(), any())).thenThrow((new NullPointerException()));
+        Response<Boolean> response = itemGroupSkuWriteService.deleteByGroupIdAndSkuCode(1L, "1");
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.delete.fail"));
     }

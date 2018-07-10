@@ -18,7 +18,7 @@ public class ItemGroupSku {
 
     private Long groupId;
 
-    private Long skuId;
+    private String skuCode;
 
     private Date createdAt;
 
@@ -53,12 +53,12 @@ public class ItemGroupSku {
         return this;
     }
 
-    public Long getSkuId() {
-        return skuId;
+    public String getSkuCode() {
+        return skuCode;
     }
 
-    public ItemGroupSku skuId(Long skuId) {
-        this.skuId = skuId;
+    public ItemGroupSku skuCode(String skuCode) {
+        this.skuCode = skuCode;
         return this;
     }
 

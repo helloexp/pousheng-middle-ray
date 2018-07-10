@@ -61,7 +61,7 @@ public class ItemRuleManagerTest extends AbstractServiceTest {
     }
 
     private ItemGroupSku mock() {
-        return new ItemGroupSku().id(1L).skuId(1L).type(1);
+        return new ItemGroupSku().id(1L).skuCode("1").type(1);
     }
 
 

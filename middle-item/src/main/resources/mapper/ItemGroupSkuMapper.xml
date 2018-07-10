@@ -8,7 +8,7 @@
     <resultMap id="ItemGroupSkuMap" type="ItemGroupSku">
         <id column="id" property="id"/>
         <result column="group_id" property="groupId"/>
-        <result column="sku_id" property="skuId"/>
+        <result column="sku_code" property="skuCode"/>
         <result column="type" property="type"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -25,16 +25,16 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        group_id, sku_id, type, created_at, updated_at
+        group_id, sku_code, type, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{groupId}, #{skuId}, #{type}, now(), now()
+        #{groupId}, #{skuCode}, #{type}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         <if test="groupId != null">and `group_id` = #{groupId}</if>
-        <if test="skuId != null">and `sku_id` = #{skuId}</if>
+        <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
         <if test="type != null">and `type` = #{type}</if>
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
@@ -47,7 +47,7 @@
     </sql>
 
     <insert id="create" parameterType="ItemGroupSku" keyProperty="id" useGeneratedKeys="true">
-        INSERT INTO
+        INSERT IGNORE INTO
         <include refid="tb"/>
         (<include refid="cols_exclude_id"/>)
         VALUES
@@ -55,13 +55,13 @@
     </insert>
 
     <insert id="creates" parameterType="list">
-        INSERT INTO
+        INSERT IGNORE INTO
         <include refid="tb"/>
         (<include refid="cols_exclude_id"/>)
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.groupId}, #{i.skuId}, #{i.type}, now(), now()
+            #{i.groupId}, #{i.skuCode}, #{i.type}, now(), now()
             )
         </foreach>
     </insert>
@@ -71,8 +71,8 @@
         <include refid="tb"/>
         WHERE group_id = #{groupId}
         <if test="type != null">AND `type` = #{type}</if>
-        AND sku_id IN
-        <foreach collection="skuIds" open="(" separator="," close=")" item="item">
+        AND sku_code IN
+        <foreach collection="skuCodes" open="(" separator="," close=")" item="item">
             #{item}
         </foreach>
     </delete>
@@ -112,7 +112,7 @@
         <include refid="tb"/>
         <set>
             <if test="groupId != null">group_id = #{groupId},</if>
-            <if test="skuId != null">sku_id = #{skuId},</if>
+            <if test="skuCode != null">sku_code = #{skuCode},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}
@@ -144,30 +144,30 @@
         </where>
     </select>
 
-    <select id="findBySkuId" parameterType="long" resultMap="ItemGroupSkuMap">
+    <select id="findBySkuCode"  resultMap="ItemGroupSkuMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE sku_id = #{skuId}
+        WHERE sku_code = #{skuCode}
     </select>
 
 
-    <select id="findByGroupIdAndSkuId" parameterType="long" resultMap="ItemGroupSkuMap">
+    <select id="findByGroupIdAndSkuCode"   resultMap="ItemGroupSkuMap">
         SELECT
         <include refid="cols_all"/>
         FROM
         <include refid="tb"/>
-        WHERE sku_id = #{skuId}
+        WHERE sku_code = #{skuCode}
         AND group_id = #{groupId}
     </select>
 
 
-    <delete id="deleteByGroupIdAndSkuId" parameterType="map">
+    <delete id="deleteByGroupIdAndSkuCode" parameterType="map">
         DELETE FROM
         <include refid="tb"/>
         WHERE group_id = #{groupId}
-        AND sku_id = #{skuId}
+        AND sku_code = #{skuCode}
     </delete>
 
 

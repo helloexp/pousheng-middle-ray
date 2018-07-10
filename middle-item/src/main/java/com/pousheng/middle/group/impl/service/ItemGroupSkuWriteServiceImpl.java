@@ -66,18 +66,18 @@ public class ItemGroupSkuWriteServiceImpl implements ItemGroupSkuWriteService {
     }
 
     @Override
-    public Response<Integer> batchCreate(List<Long> skuIds, Long groupId, Integer type) {
-        return itemGroupSkuManager.batchCreate(skuIds, groupId, type);
+    public Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type) {
+        return itemGroupSkuManager.batchCreate(skuCodes, groupId, type);
     }
 
     @Override
-    public Response<Integer> batchDelete(List<Long> skuIds, Long groupId, Integer type) {
-        return itemGroupSkuManager.batchDelete(skuIds, groupId, type);
+    public Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type) {
+        return itemGroupSkuManager.batchDelete(skuCodes, groupId, type);
     }
 
     @Override
-    public Response<Boolean> deleteByGroupIdAndSkuId(Long groupId, Long skuId) {
-        return itemGroupSkuManager.deleteByGroupIdAndSkuId(groupId, skuId);
+    public Response<Boolean> deleteByGroupIdAndSkuCode(Long groupId, String skuCode) {
+        return itemGroupSkuManager.deleteByGroupIdAndSkuId(groupId, skuCode);
     }
 
 

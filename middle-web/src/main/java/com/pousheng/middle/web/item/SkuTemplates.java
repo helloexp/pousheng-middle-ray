@@ -19,6 +19,7 @@ import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.item.service.SkuTemplateSearchWriteService;
 import com.pousheng.middle.task.dto.ItemGroupTask;
 import com.pousheng.middle.task.model.ScheduleTask;
 import com.pousheng.middle.task.service.ScheduleTaskWriteService;
@@ -93,6 +94,8 @@ public class SkuTemplates {
     private ItemGroupSkuWriteService itemGroupSkuWriteService;
     @RpcConsumer
     private ScheduleTaskWriteService scheduleTaskWriteService;
+    @RpcConsumer
+    private SkuTemplateSearchWriteService skuTemplateSearchWriteService;
     @Autowired
     private MaterialPusher materialPusher;
 
@@ -810,14 +813,17 @@ public class SkuTemplates {
             log.error("find sku template by id:{} fail,error:{}", id, rExist.getError());
             throw new JsonResponseException(rExist.getError());
         }
-        Response<Boolean> resp = itemGroupSkuWriteService.deleteByGroupIdAndSkuId(groupId, id);
+        Response<Boolean> resp = itemGroupSkuWriteService.deleteByGroupIdAndSkuCode(groupId, rExist.getResult().getSkuCode());
         if (!resp.isSuccess()) {
             log.error("delete item group sku failed error={}", resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
-        noticeCancelHk(rExist.getResult(),groupId);
         //更新搜索
-        postUpdateSearchEvent(id);
+        Response<Boolean> updateRes = skuTemplateSearchWriteService.index(id);
+        if(!updateRes.isSuccess()){
+            log.error("update sku template(id:{}) to search index fail,error:{}",id,updateRes.getError());
+        }
+        noticeCancelHk(rExist.getResult(),groupId);
     }
 
 
@@ -831,17 +837,26 @@ public class SkuTemplates {
             log.error("find sku template by id:{} fail,error:{}", id, rExist.getError());
             throw new JsonResponseException(rExist.getError());
         }
-        ItemGroupSku itemGroupSku = new ItemGroupSku().groupId(groupId).skuId(id).type(type);
+        ItemGroupSku itemGroupSku = new ItemGroupSku().groupId(groupId).skuCode(rExist.getResult().getSkuCode()).type(type);
         Response<Long> resp = itemGroupSkuWriteService.createItemGroupSku(itemGroupSku);
         if (!resp.isSuccess()) {
             log.error("add item group sku failed error={}", resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
-        if(PsItemGroupSkuType.GROUP.value().equals(type)){
-            materialPusher.addSpus(Lists.newArrayList(rExist.getResult().getSpuId()));
-        }
         //更新搜索
-        postUpdateSearchEvent(id);
+        Response<Boolean> updateRes = skuTemplateSearchWriteService.index(id);
+        if(!updateRes.isSuccess()){
+            log.error("update sku template(id:{}) to search index fail,error:{}",id,updateRes.getError());
+        }
+        //通知恒康
+        if(PsItemGroupSkuType.GROUP.value().equals(type)) {
+            try {
+                materialPusher.addSpus(Lists.newArrayList(rExist.getResult().getSpuId()));
+            }catch (Exception e){
+                log.info("add material from erp ,spuIds {}", rExist.getResult().getSpuId());
+            }
+        }
+
     }
 
 
@@ -886,7 +901,11 @@ public class SkuTemplates {
         }
     }
 
-    //商品移除分组时通知恒康
+    /**
+     * 商品从分组中移除时通知恒康
+     * @param skuTemplate
+     * @param groupId
+     */
     private void noticeCancelHk(SkuTemplate skuTemplate,Long groupId){
         String templateName = "ps_search.mustache";
         Map<String, String> params = new HashMap<>();
@@ -897,7 +916,7 @@ public class SkuTemplates {
             throw new JsonResponseException(response.getError());
         }
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getData();
-        Set<String> materialIds = searchSkuTemplates.stream().filter(e -> e.getGroupIds().size()==1&&e.getGroupIds().contains(groupId)).map(SearchSkuTemplate::getSkuCode).collect(Collectors.toSet());
+        Set<String> materialIds = searchSkuTemplates.stream().filter(e -> e.getGroupIds() == null ||( e.getGroupIds().size() == 1 && e.getGroupIds().contains(groupId))).map(SearchSkuTemplate::getSkuCode).collect(Collectors.toSet());
         if(!CollectionUtils.isEmpty(materialIds)){
             materialPusher.removeMaterialIds(Lists.newArrayList(materialIds));
         }

@@ -16,20 +16,20 @@ import java.util.List;
 @Repository
 public class ItemGroupSkuDao extends MyBatisDao<ItemGroupSku> {
 
-    public Boolean deleteByGroupIdAndSkuId(Long groupId, Long skuId) {
-        return getSqlSession().delete(sqlId("deleteByGroupIdAndSkuId"), ImmutableMap.of("groupId", groupId, "skuId", skuId)) > 0;
+    public Boolean deleteByGroupIdAndSkuCode(Long groupId, String skuCode) {
+        return getSqlSession().delete(sqlId("deleteByGroupIdAndSkuCode"), ImmutableMap.of("groupId", groupId, "skuCode", skuCode)) > 0;
     }
 
-    public List<ItemGroupSku> findBySkuId(Long skuId) {
-        return getSqlSession().selectList(sqlId("findBySkuId"), skuId);
+    public List<ItemGroupSku> findBySkuCode(String skuCode) {
+        return getSqlSession().selectList(sqlId("findBySkuCode"), skuCode);
     }
 
-    public ItemGroupSku findByGroupIdAndSkuId(Long groupId, Long skuId) {
-        return getSqlSession().selectOne(sqlId("findByGroupIdAndSkuId"), ImmutableMap.of("groupId", groupId, "skuId", skuId));
+    public ItemGroupSku findByGroupIdAndSkuCode(Long groupId, String skuCode) {
+        return getSqlSession().selectOne(sqlId("findByGroupIdAndSkuCode"), ImmutableMap.of("groupId", groupId, "skuCode", skuCode));
     }
 
-    public Integer batchDelete(List<Long> skuIds, Long groupId, Integer type) {
-        return getSqlSession().delete(sqlId("batchDelete"), ImmutableMap.of("groupId", groupId, "skuIds", skuIds, "type", type));
+    public Integer batchDelete(List<String> skuCodes, Long groupId, Integer type) {
+        return getSqlSession().delete(sqlId("batchDelete"), ImmutableMap.of("groupId", groupId, "skuCodes", skuCodes, "type", type));
     }
 
     public Long countGroupSku(Long groupId) {

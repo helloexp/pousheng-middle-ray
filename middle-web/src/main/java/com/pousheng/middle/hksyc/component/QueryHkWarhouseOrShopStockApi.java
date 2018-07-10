@@ -200,9 +200,11 @@ public class QueryHkWarhouseOrShopStockApi {
 
     public Boolean isVendible(String skuCode, Long openShopId) {
         Set<Long> groupIds = Sets.newHashSet(GroupRuleCacherProxy.findByShopId(openShopId));
+
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
+
         String templateName = "ps_search.mustache";
         Map<String, String> params = Maps.newHashMap();
         params.put("skuCode", skuCode);
@@ -214,6 +216,33 @@ public class QueryHkWarhouseOrShopStockApi {
         }
         return response.getResult().getTotal() !=0;
 
+    }
+
+
+    public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds) {
+        List<Long> vendible = Lists.newArrayList();
+        for (Long warehouseId : warehouseIds) {
+            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+            if (null == warehouse) {
+                log.warn("find warehouse by id {} is null", warehouseId);
+                continue;
+            }
+            if (StringUtils.isEmpty(warehouse.getOutCode())) {
+                log.warn("find warehouse by id {} outCode  is null", warehouseId);
+                continue;
+            }
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
+            ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            Long openShopId = currentShopExtraInfo.getOpenShopId();
+            if (Arguments.isNull(openShopId)) {
+                log.error("shop(id:{}) not mapping open shop", shop.getId());
+                continue;
+            }
+            if (isVendible(skuCode, openShopId)) {
+                vendible.add(warehouseId);
+            }
+        }
+        return vendible;
     }
 
     /**
@@ -364,9 +393,8 @@ public class QueryHkWarhouseOrShopStockApi {
                         Long openShopId = currentShopExtraInfo.getOpenShopId();
                         if (Arguments.isNull(openShopId)) {
                             log.error("shop(id:{}) not mapping open shop", shop.getId());
-                            throw new JsonResponseException("shop.not.mapping.open.shop");
+                            continue;
                         }
-
                         if (!isVendible(temp.getSkuCode(),openShopId)){
                             continue;
                         }

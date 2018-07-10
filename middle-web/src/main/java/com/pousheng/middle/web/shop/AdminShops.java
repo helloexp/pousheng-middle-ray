@@ -143,6 +143,8 @@ public class AdminShops {
     @Setter
     private OrderShipmentReadService orderShipmentReadService;
 
+    private static String OPEN_SHOP_ID = "openShopId";
+
 
     @ApiOperation("根据门店id查询门店信息")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -357,6 +359,22 @@ public class AdminShops {
         }
 
         return Collections.singletonMap("id", id);
+    }
+
+    @ApiOperation("补偿门店信息")
+    @RequestMapping(value = "/create/open/shop", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean createOpenShop(Long id){
+        Response<Shop> resp=shopReadService.findById(id);
+        if(!resp.isSuccess()){
+            throw new JsonResponseException(resp.getError());
+        }
+        Shop shop =resp.getResult();
+        if (!StringUtils.isEmpty(shop.getExtra().get(OPEN_SHOP_ID))) {
+            throw new JsonResponseException("open.shop.is.exist");
+        }
+        CreateShopEvent addressEvent = new CreateShopEvent(id,shop.getBusinessId(),shop.getOuterId(),shop.getOuterId());
+        eventBus.post(addressEvent);
+        return true;
     }
 
     private Shop checkOuterId(String outerId,Long companyId){

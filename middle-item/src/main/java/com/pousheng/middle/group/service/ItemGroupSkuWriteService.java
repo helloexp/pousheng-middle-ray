@@ -42,27 +42,27 @@ public interface ItemGroupSkuWriteService {
 
     /**
      * 批量创建ItemGroupSku同时更新group
-     * @param skuIds
+     * @param skuCodes
      * @param groupId
      * @param type
      * @return
      */
-    Response<Integer> batchCreate(List<Long> skuIds, Long groupId, Integer type);
+    Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type);
 
     /**
      * 批量删除ItemGroupSku同时更新group
-     * @param skuIds
+     * @param skuCodes
      * @param groupId
      * @param type
      * @return
      */
-    Response<Integer> batchDelete(List<Long> skuIds, Long groupId, Integer type);
+    Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type);
 
     /**
      * 删除ItemGroupSku同时更新group
      * @param groupId
-     * @param skuId
+     * @param skuCode
      * @returna
      */
-    Response<Boolean> deleteByGroupIdAndSkuId(Long groupId, Long skuId);
+    Response<Boolean> deleteByGroupIdAndSkuCode(Long groupId, String skuCode);
 }

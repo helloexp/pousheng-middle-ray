@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.item.enums.ShopType;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
@@ -7,8 +8,10 @@ import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -18,7 +21,9 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +59,8 @@ public class CreateShipments {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
 
 
     /**
@@ -174,6 +181,14 @@ public class CreateShipments {
             }
 
             WarehouseDTO warehouse = warehouseRes.getResult();
+            //店仓要判断对应店铺的类型是否为接单店铺
+            if (warehouse.getWarehouseType().equals(WarehouseType.SHOP_WAREHOUSE.value())) {
+                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.parseLong(warehouse.getCompanyId()));
+                if (ShopType.ORDERS_SHOP.value() == shop.getType()) {
+                    log.info("shop({0}).type.abnormal", shop.getId());
+                    throw new JsonResponseException("shop.type.abnormal");
+                }
+            }
             shipmentPreview.setWarehouseId(warehouse.getId());
             shipmentPreview.setWarehouseName(warehouse.getWarehouseName());
             //判断所选仓库是否数据下单店铺的账套

@@ -35,7 +35,7 @@ public class GroupRuleCacherProxy {
     /**
      * 通过店铺获取所属分组
      */
-    @Cacheable(value = "groupRule", key = "'group#findByShopId:'.concat(#shopId.hashCode())")
+    @Cacheable(key = "'group#findByShopId:'.concat(#shopId.hashCode())")
     public List<Long> findByShopId(Long shopId) {
         Response<Long> ruleResp = itemRuleShopReadService.findRuleIdByShopId(shopId);
         if (!ruleResp.isSuccess()) {
@@ -57,7 +57,7 @@ public class GroupRuleCacherProxy {
     }
 
 
-    @CacheEvict(value = "groupRule", allEntries = true)
+    @CacheEvict(allEntries = true)
     public void refreshAll() {
 
         log.info("refresh cacher");

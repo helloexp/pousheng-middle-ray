@@ -142,7 +142,7 @@ CREATE TABLE `pousheng_item_groups` (
 CREATE TABLE `pousheng_item_group_skus` (
   `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
   `group_id` int(11) NOT NULL COMMENT '分组Id',
-  `sku_id` int(11) NOT NULL COMMENT '商品skuId',
+  `sku_code` varchar(40) NOT NULL COMMENT '商品skuCode',
   `type` tinyint(4) NOT NULL COMMENT '0表示排除商品 1表示组内商品',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,

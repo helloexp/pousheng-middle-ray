@@ -9,7 +9,9 @@ import com.pousheng.middle.group.service.ItemGroupReadService;
 import com.pousheng.middle.group.service.ItemGroupWriteService;
 import com.pousheng.middle.group.service.ItemRuleGroupReadService;
 import com.pousheng.middle.item.dto.ItemGroupAutoRule;
+import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsItemGroupSkuType;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.task.dto.ItemGroupTask;
 import com.pousheng.middle.task.model.ScheduleTask;
 import com.pousheng.middle.task.service.ScheduleTaskWriteService;
@@ -21,6 +23,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.search.api.model.WithAggregations;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -55,6 +58,9 @@ public class ItemGroups {
     @RpcConsumer
     @Setter
     private ScheduleTaskWriteService scheduleTaskWriteService;
+
+    @RpcConsumer
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
 
     @ApiOperation("查看商品分组信息")
@@ -92,6 +98,10 @@ public class ItemGroups {
             log.error("fail to find item group, pageNo:{},pageSize:{},cause:{}",
                     criteria.getPageNo(), criteria.getPageSize(), findResp.getError());
             throw new JsonResponseException(findResp.getError());
+        }
+        Paging<ItemGroup> paging = findResp.getResult();
+        for (ItemGroup group : paging.getData()) {
+            group.setRelatedNum(getGroupNum(group.getId()));
         }
         return findResp.getResult();
 
@@ -170,10 +180,10 @@ public class ItemGroups {
         if (!CollectionUtils.isEmpty(resp.getResult())) {
             throw new JsonResponseException("item.group.is.used");
         }
-        log.info("ready to delete item group(id:{})",id);
+        log.info("ready to delete item group(id:{})", id);
         List<ScheduleTask> list = Lists.newArrayList();
         //异步删除相应的组内商品
-        Map<String, String> params= Maps.newHashMap();
+        Map<String, String> params = Maps.newHashMap();
         params.put("groupId", id.toString());
         list.add(ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(id)
                 .type(PsItemGroupSkuType.GROUP.value()).mark(false).userId(UserUtil.getUserId())));
@@ -190,5 +200,18 @@ public class ItemGroups {
             throw new JsonResponseException(deleteResp.getError());
         }
         return deleteResp.getResult();
+    }
+
+
+    private Long getGroupNum(Long groupId) {
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("groupId", groupId.toString());
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 20, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by groupId:{} fail,error:{}", groupId, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult().getTotal();
     }
 }

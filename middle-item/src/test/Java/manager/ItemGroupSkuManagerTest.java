@@ -56,7 +56,7 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
     }
 
     private ItemGroupSku mock() {
-        return new ItemGroupSku().id(1L).skuId(1L).type(1);
+        return new ItemGroupSku().id(1L).skuCode("1").type(1);
     }
 
 
@@ -70,7 +70,7 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
 
     @Test
     public void testCreateRepeat() {
-        when(itemGroupSkuDao.findByGroupIdAndSkuId(any(), any())).thenReturn(mock());
+        when(itemGroupSkuDao.findByGroupIdAndSkuCode(any(), any())).thenReturn(mock());
         Response<Long> response = itemGroupSkuManager.create(mock());
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.is.exist"));
@@ -87,28 +87,27 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
 
     @Test
     public void testBatchCreateSuccess() {
-        List<Long> skuIds = Lists.newArrayList(1L, 2L, 3L);
-        when(itemGroupSkuDao.creates(any())).thenReturn(skuIds.size());
-        Response<Integer> response = itemGroupSkuManager.batchCreate(skuIds, 1L, 1);
+        List<String> skuCodes = Lists.newArrayList("1", "2", "3");
+        when(itemGroupSkuDao.creates(any())).thenReturn(skuCodes.size());
+        Response<Integer> response = itemGroupSkuManager.batchCreate(skuCodes, 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
-        assertThat(response.getResult(), is(skuIds.size()));
+        assertThat(response.getResult(), is(skuCodes.size()));
     }
 
 
     @Test
     public void testBatchDeleteSuccess() {
-        List<Long> skuIds = Lists.newArrayList(1L, 2L, 3L);
-        when(itemGroupSkuDao.batchDelete(any(),any(),any())).thenReturn(skuIds.size());
-        Response<Integer> response = itemGroupSkuManager.batchDelete(skuIds, 1L, 1);
+        List<String> skuCodes = Lists.newArrayList("1", "2", "3");
+        when(itemGroupSkuDao.batchDelete(any(),any(),any())).thenReturn(skuCodes.size());
+        Response<Integer> response = itemGroupSkuManager.batchDelete(skuCodes, 1L, 1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
-        assertThat(response.getResult(), is(skuIds.size()));
+        assertThat(response.getResult(), is(skuCodes.size()));
     }
 
     @Test
     public void testDelete(){
-        when(itemGroupSkuDao.deleteByGroupIdAndSkuId(any(),any())).thenReturn(true);
-        when(itemGroupDao.update(any())).thenReturn(true);
-        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, 1L);
+        when(itemGroupSkuDao.deleteByGroupIdAndSkuCode(any(),any())).thenReturn(true);
+        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, "1");
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(Boolean.TRUE));
     }
@@ -116,17 +115,16 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
 
     @Test
     public void testDeleteToUpdateUnknownEx(){
-        when(itemGroupSkuDao.deleteByGroupIdAndSkuId(any(),any())).thenReturn(true);
-        when(itemGroupDao.update(any())).thenThrow((new NullPointerException()));
-        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, 1L);
-        assertThat(response.isSuccess(), is(Boolean.FALSE));
+        when(itemGroupSkuDao.deleteByGroupIdAndSkuCode(any(),any())).thenReturn(true);
+        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, "1");
+        assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getError(), is("item.group.sku.delete.fail"));
     }
 
     @Test
     public void testDeleteUnknownEx(){
-        when(itemGroupSkuDao.deleteByGroupIdAndSkuId(any(),any())).thenThrow((new NullPointerException()));
-        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, 1L);
+        when(itemGroupSkuDao.deleteByGroupIdAndSkuCode(any(),any())).thenThrow((new NullPointerException()));
+        Response<Boolean> response = itemGroupSkuManager.deleteByGroupIdAndSkuId(1L, "1");
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.delete.fail"));
     }

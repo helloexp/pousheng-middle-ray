@@ -33,7 +33,7 @@ public class ItemGroupSkuDaoTest extends BaseDaoTest {
 
     private ItemGroupSku make() {
         ItemGroupSku itemGroupSku = new ItemGroupSku();
-        itemGroupSku.groupId(1L).type(1).skuId(2L);
+        itemGroupSku.groupId(1L).type(1).skuCode("2");
         return itemGroupSku;
     }
 
@@ -45,26 +45,26 @@ public class ItemGroupSkuDaoTest extends BaseDaoTest {
 
     @Test
     public void tesDeleteByGroupIdAndSkuId() {
-        itemGroupSkuDao.deleteByGroupIdAndSkuId(itemGroupSku.getGroupId(), itemGroupSku.getSkuId());
+        itemGroupSkuDao.deleteByGroupIdAndSkuCode(itemGroupSku.getGroupId(), itemGroupSku.getSkuCode());
         assertNull(itemGroupSkuDao.findById(itemGroupSku.getId()));
     }
 
     @Test
     public void testFindBySkuId() {
-        List<ItemGroupSku> list = itemGroupSkuDao.findBySkuId(itemGroupSku.getSkuId());
+        List<ItemGroupSku> list = itemGroupSkuDao.findBySkuCode(itemGroupSku.getSkuCode());
         assertThat(list.get(0), is(itemGroupSku));
     }
 
 
     @Test
     public void testFindByGroupIdAndSkuId() {
-        ItemGroupSku info = itemGroupSkuDao.findByGroupIdAndSkuId(itemGroupSku.getGroupId(), itemGroupSku.getSkuId());
+        ItemGroupSku info = itemGroupSkuDao.findByGroupIdAndSkuCode(itemGroupSku.getGroupId(), itemGroupSku.getSkuCode());
         assertThat(info, is(itemGroupSku));
     }
 
     @Test
     public void testBatchDelete() {
-        itemGroupSkuDao.batchDelete(Lists.newArrayList(2L), 1L, 1);
+        itemGroupSkuDao.batchDelete(Lists.newArrayList("12"), 1L, 1);
         assertNull(itemGroupSkuDao.findById(itemGroupSku.getId()));
     }
 

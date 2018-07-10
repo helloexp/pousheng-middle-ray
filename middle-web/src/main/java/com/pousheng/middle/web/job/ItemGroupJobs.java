@@ -77,9 +77,6 @@ public class ItemGroupJobs {
 
     private static final Integer BATCH_SIZE = 100;
 
-    @Autowired
-    private HostLeader hostLeader;
-
     /**
      * 每5分钟触发一次
      */
@@ -93,8 +90,9 @@ public class ItemGroupJobs {
                 log.error("JOB -- finish to auto item group sku error, cause :{} ", updateResp.getError());
                 throw new JsonResponseException(updateResp.getError());
             }
-
-            onBatchHandleGroup(scheduleTask);
+            if(updateResp.getResult()){
+                onBatchHandleGroup(scheduleTask);
+            }
             scheduleTask = findInitTask();
         }
         log.info("JOB -- finish to auto item group sku");
@@ -118,6 +116,7 @@ public class ItemGroupJobs {
             }
             int pageNo = 1;
             List<Long> skuTemplateIds = Lists.newArrayList();
+            List<String> skuCodes = Lists.newArrayList();
             Set<String> materialIds = Sets.newHashSet();
             Map<String, String> params = task.getParams();
             if (params == null) {
@@ -144,36 +143,40 @@ public class ItemGroupJobs {
                 pageNo++;
                 next = batchHandleGroup(pageNo, BATCH_SIZE, params, contextId, skuTemplateIds, materialIds);
                 log.info("async handle item group sku " + pageNo * 100);
-                if (pageNo % 10 == 0) {
+                if (pageNo % 50 == 0) {
                     Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(skuTemplateIds);
                     if (!listRes.isSuccess()) {
                         log.error("find sku template by ids:{} fail,error:{}", skuTemplateIds, listRes.getError());
                         continue;
                     }
+                    skuCodes.addAll(listRes.getResult().stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList()));
                     //批量添加或删除映射关
-                    batchMakeGroup(skuTemplateIds, mark, type, groupId);
+                    batchMakeGroup(skuCodes, mark, type, groupId);
                     skuTemplateDumpService.batchGroupDump(listRes.getResult());
                     //通知恒康关注商品库存
                     batchNoticeHk(materialIds, mark, type);
                     skuTemplateIds.clear();
+                    skuCodes.clear();
                     materialIds.clear();
                 }
             }
-            //非1000条的更新下
+            //非5000条的更新下
             if (!CollectionUtils.isEmpty(skuTemplateIds)) {
                 //批量更新es
                 Response<List<SkuTemplate>> listRes = skuTemplateReadService.findByIds(skuTemplateIds);
                 if (!listRes.isSuccess()) {
                     log.error("find sku template by ids:{} fail,error:{}", skuTemplateIds, listRes.getError());
                 }
+                skuCodes.addAll(listRes.getResult().stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList()));
                 //批量添加或删除映射关系
-                batchMakeGroup(skuTemplateIds, mark, type, groupId);
+                batchMakeGroup(skuCodes, mark, type, groupId);
                 skuTemplateDumpService.batchGroupDump(listRes.getResult());
                 batchNoticeHk(materialIds, mark, type);
 
             }
             scheduleTask.setStatus(TaskStatusEnum.FINISH.value());
             scheduleTaskWriteService.update(scheduleTask);
+
             log.info("async handle item group task end......");
         } catch (Exception e) {
             scheduleTask.setStatus(TaskStatusEnum.ERROR.value());
@@ -209,11 +212,11 @@ public class ItemGroupJobs {
         return current == size;
     }
 
-    private void batchMakeGroup(List<Long> skuTemplateIds, Boolean mark, Integer type, Long groupId) {
+    private void batchMakeGroup(List<String> skuCodes, Boolean mark, Integer type, Long groupId) {
         if (mark) {
-            itemGroupSkuWriteService.batchCreate(skuTemplateIds, groupId, type);
+            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
         } else {
-            itemGroupSkuWriteService.batchDelete(skuTemplateIds, groupId, type);
+            itemGroupSkuWriteService.batchDelete(skuCodes, groupId, type);
         }
     }
 

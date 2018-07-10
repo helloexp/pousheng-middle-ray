@@ -30,14 +30,12 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.search.api.model.WithAggregations;
-import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
@@ -81,9 +79,6 @@ public class ItemGroupImportJobs {
     private AzureOSSBlobClient azureOssBlobClient;
 
     @Autowired
-    private HostLeader hostLeader;
-
-    @Autowired
     private MaterialPusher materialPusher;
 
     private static final String DEFAULT_CLOUD_PATH = "export";
@@ -94,24 +89,22 @@ public class ItemGroupImportJobs {
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     public void synchronizeSpu() {
-        if (hostLeader.isLeader()) {
-            log.info("JOB -- start to import item group sku");
-            ScheduleTask scheduleTask = findInitTask();
-            while (scheduleTask != null) {
-                Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask,TaskStatusEnum.EXECUTING.value());
-                if (!updateResp.isSuccess()) {
-                    log.error("JOB -- finish to auto item group sku error, cause :{} ", updateResp.getError());
-                    throw new JsonResponseException(updateResp.getError());
-                }
-                if(updateResp.getResult()){
-                    onBatchHandleGroupImport(scheduleTask);
-                }
-                scheduleTask = findInitTask();
+        log.info("JOB -- start to import item group sku");
+        ScheduleTask scheduleTask = findInitTask();
+        while (scheduleTask != null) {
+            Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask, TaskStatusEnum.EXECUTING.value());
+            if (!updateResp.isSuccess()) {
+                log.error("JOB -- finish to auto item group sku error, cause :{} ", updateResp.getError());
+                throw new JsonResponseException(updateResp.getError());
             }
-            log.info("JOB -- finish to  import item group sku");
-        } else {
-            log.info("host is not leader, so skip job");
+            if (updateResp.getResult()) {
+                onBatchHandleGroupImport(scheduleTask);
+            }
+            scheduleTask = findInitTask();
         }
+
+        log.info("JOB -- finish to  import item group sku");
+
     }
 
     private ScheduleTask findInitTask() {
@@ -188,12 +181,12 @@ public class ItemGroupImportJobs {
                         //每1000条更新下mysql和search
                         if (i % 1000 == 0) {
                             //批量添加或删除映射关系
-                            List<Long> skuTemplateIds = skuTemplates.stream()
-                                    .map(SkuTemplate::getId).collect(Collectors.toList());
-                            itemGroupSkuWriteService.batchCreate(skuTemplateIds, groupId, type);
+                            List<String> skuCodes = skuTemplates.stream()
+                                    .map(SkuTemplate::getSkuCode).collect(Collectors.toList());
+                            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
                             //批量更新es
                             skuTemplateDumpService.batchGroupDump(skuTemplates);
-                            if(PsItemGroupSkuType.GROUP.value().equals(type)){
+                            if (PsItemGroupSkuType.GROUP.value().equals(type)) {
                                 batchNoticeHk(skuTemplates);
                             }
                             skuTemplates.clear();
@@ -208,11 +201,11 @@ public class ItemGroupImportJobs {
             //非1000条的更新下
             if (!CollectionUtils.isEmpty(skuTemplates)) {
                 //批量添加或删除映射关系
-                List<Long> skuTemplateIds = skuTemplates.stream().map(SkuTemplate::getId).collect(Collectors.toList());
-                itemGroupSkuWriteService.batchCreate(skuTemplateIds, groupId, type);
+                List<String> skuCodes = skuTemplates.stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList());
+                itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
                 //批量更新es
                 skuTemplateDumpService.batchGroupDump(skuTemplates);
-                if(PsItemGroupSkuType.GROUP.value().equals(type)){
+                if (PsItemGroupSkuType.GROUP.value().equals(type)) {
                     batchNoticeHk(skuTemplates);
                 }
             }
@@ -232,12 +225,12 @@ public class ItemGroupImportJobs {
     }
 
     private void batchNoticeHk(List<SkuTemplate> skuTemplates) {
-        Set<String> materialIds =Sets.newHashSet();
-        for(SkuTemplate sku:skuTemplates){
-            if(!StringUtils.isEmpty(sku.getExtra().get("materialId"))){
+        Set<String> materialIds = Sets.newHashSet();
+        for (SkuTemplate sku : skuTemplates) {
+            if (!StringUtils.isEmpty(sku.getExtra().get("materialId"))) {
                 materialIds.add(sku.getExtra().get("materialId"));
-            }else{
-                log.info("sku template without materialId ,skuCode:{}",sku.getSkuCode());
+            } else {
+                log.info("sku template without materialId ,skuCode:{}", sku.getSkuCode());
             }
         }
         try {

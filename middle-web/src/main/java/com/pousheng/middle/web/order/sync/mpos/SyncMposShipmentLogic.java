@@ -23,9 +23,11 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.Shipment;
@@ -108,8 +110,8 @@ public class SyncMposShipmentLogic{
         try{
             //判断该发货单是全渠道订单的店发发货单还是普通的mpos发货单
             MposResponse res = null;
-            //不是新的全渠道订单,走老的全渠道订单
-            if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())){
+            //不是新的全渠道订单,走老的全渠道订单且是销售发货
+            if (!orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipment.getType(), ShipmentType.SALES_SHIP.value())){
                 Map<String,Object> param = this.assembShipmentParam(shipment);
                 if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId())){
                     res = mapper.fromJson(syncMposApi.syncAllChannelShipmnetToMpos(param),MposResponse.class);
@@ -117,6 +119,7 @@ public class SyncMposShipmentLogic{
                     res = mapper.fromJson(syncMposApi.syncShipmentToMpos(param),MposResponse.class);
                 }
             }else{
+                //新全渠道和所有的换货发货统一走新全渠道发货（换货发货商品条码可能会边，如果用旧全渠道可能会报子订单不存在错误）
                 Map<String,Object> param = this.assembNewShipmentParam(shipment);
                 res = mapper.fromJson(syncMposApi.syncNewAllChannelShipmnetToMpos(param),MposResponse.class);
             }
@@ -301,9 +304,19 @@ public class SyncMposShipmentLogic{
         OpenShop openShop = openShopResponse.getResult();
 
         //下单店铺的恒康店铺外码
-        String orderShopCode = openShop.getExtra().get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
+        String orderShopCode;
         //下单店铺的恒康公司码
-        String orderBusinessId = openShop.getExtra().get(TradeConstants.HK_COMPANY_CODE);
+        String orderBusinessId;
+        //mpos门店则直接取app_key
+        if (orderReadLogic.isMposOpenShop(shipment.getShopId())){
+            List<String> businessIdAndOutCode = Splitters.UNDERSCORE.splitToList(openShop.getAppKey());
+            orderBusinessId = businessIdAndOutCode.get(0);
+            orderShopCode = businessIdAndOutCode.get(1);
+        } else {
+            orderShopCode = openShop.getExtra().get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
+            orderBusinessId = openShop.getExtra().get(TradeConstants.HK_COMPANY_CODE);
+        }
+
 
         Map<String,Object> param = Maps.newHashMap();
         //接单店铺公司码

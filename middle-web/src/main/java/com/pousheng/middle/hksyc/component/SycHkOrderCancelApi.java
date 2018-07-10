@@ -31,12 +31,10 @@ public class SycHkOrderCancelApi {
 
     /**
      * 取消订单
-     * @param shopCode 恒康店铺内码id
      * @param orderNo 发货单编号号或退货单编号，根据type
      * @param type 0:发货单  1:退货单
-     * @param operationType 0 取消,1删除
      */
-    public String doCancelOrder(String shopCode, String orderNo, Integer operationType,Integer type){
+    public String doCancelOrder(String orderNo,Integer type){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         Map<String, Object> params = Maps.newHashMap();

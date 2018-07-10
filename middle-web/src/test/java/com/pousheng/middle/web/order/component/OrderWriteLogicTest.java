@@ -112,7 +112,7 @@ public class OrderWriteLogicTest extends AbstractRestApiTest {
         when(orderReadLogic.findShopOrderById(anyLong())).thenReturn(shopOrder);
         when(orderReadLogic.findSkuOrderByShopOrderIdAndStatus(anyLong(), any())).thenReturn(skuOrders);
         when(shipmentReadService.findByOrderIdAndOrderLevel(any(), any())).thenReturn(shipmentsRes);
-        when(shipmentWiteLogic.cancelShipment(shipment, 1)).thenReturn(Response.ok(false));
+        when(shipmentWiteLogic.cancelShipment(shipment)).thenReturn(Response.ok(false));
         when(middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation())).thenReturn(null);
         when(middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation())).thenReturn(null);
         //when(orderReadLogic.getOrderExtraMapValueByKey(any(),any())).thenReturn(ecpStatus);

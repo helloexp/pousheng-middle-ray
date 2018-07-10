@@ -763,9 +763,9 @@ public class Shipments {
      */
     @RequestMapping(value = "api/shipment/{id}/cancel/sync/hk", method = RequestMethod.PUT)
     public void syncHkCancelShipment(@PathVariable(value = "id") Long shipmentId) {
-        log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipmentId, 0);
+        log.info("try to auto cancel shipment,shipment id is {}", shipmentId);
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, 0);
+        Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment);
         if (!syncRes.isSuccess()) {
             log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
@@ -1250,7 +1250,7 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/cancel/{id}/to/yyedi", method = RequestMethod.GET)
     public boolean cancelShipmentForEdi(@PathVariable("id") Long id) {
         Shipment shipment = shipmentReadLogic.findShipmentById(id);
-        Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment, 1);
+        Response<Boolean> r = syncErpShipmentLogic.syncShipmentCancel(shipment);
         return r.getResult();
     }
 

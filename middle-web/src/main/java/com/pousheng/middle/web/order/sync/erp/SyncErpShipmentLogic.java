@@ -83,10 +83,9 @@ public class SyncErpShipmentLogic {
      * 将已经同步到erp的发货单取消
      *
      * @param shipment      发货单
-     * @param operationType 0 取消 1 删除 2 收货状态更新
      * @return
      */
-    public Response<Boolean> syncShipmentCancel(Shipment shipment, Integer operationType) {
+    public Response<Boolean> syncShipmentCancel(Shipment shipment) {
         log.info("cancel shipment start,shipment is {}", shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
@@ -99,7 +98,7 @@ public class SyncErpShipmentLogic {
         String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE) == null ? "hk" : openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         switch (erpSyncType) {
             case "hk":
-                return syncShipmentLogic.syncShipmentCancelToHk(shipment, operationType);
+                return syncShipmentLogic.syncShipmentCancelToHk(shipment);
             case "yyEdi":
                 return syncYYEdiShipmentLogic.syncShipmentCancelToYYEdi(shipment);
             default:

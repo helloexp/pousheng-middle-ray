@@ -153,10 +153,9 @@ public class SyncShipmentLogic {
     /**
      * 同步发货单取消到恒康
      * @param shipment 发货单
-     * @param operationType 0 取消 1 删除 2 收货状态更新
      * @return 同步结果, 同步成功true, 同步失败false
      */
-    public Response<Boolean> syncShipmentCancelToHk(Shipment shipment,Integer operationType) {
+    public Response<Boolean> syncShipmentCancelToHk(Shipment shipment) {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
@@ -171,7 +170,7 @@ public class SyncShipmentLogic {
             shipment.setStatus(targetStatus);//塞入最新的状态
 
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getShipmentCode(),operationType,0);
+            String response = sycHkOrderCancelApi.doCancelOrder(shipment.getShipmentCode(),0);
             SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
@@ -205,14 +204,13 @@ public class SyncShipmentLogic {
     /**
      * 自动同步发货单收货信息到恒康
      * @param shipment 发货单
-     * @param operationType 0 取消 1 删除 2 收货状态更新
      * @param syncOrderOperation 同步失败的动作(手动和自动略有不同)
      * @return 同步结果, 同步成功true, 同步失败false
      */
-    public Response<Boolean> syncShipmentDoneToHk(Shipment shipment,Integer operationType,OrderOperation syncOrderOperation) {
+    public Response<Boolean> syncShipmentDoneToHk(Shipment shipment,OrderOperation syncOrderOperation) {
         try {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            String response = sycHkOrderCancelApi.doCancelOrder(shipmentExtra.getErpOrderShopCode(), shipment.getShipmentCode(),operationType,0);
+            String response = sycHkOrderCancelApi.doCancelOrder( shipment.getShipmentCode(),0);
             SycShipmentOrderResponse syncShipmentOrderResponse = JsonMapper.nonEmptyMapper().fromJson(response,SycShipmentOrderResponse.class);
             HkResponseHead head = syncShipmentOrderResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {

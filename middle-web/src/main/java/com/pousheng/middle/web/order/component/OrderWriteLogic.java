@@ -269,7 +269,7 @@ public class OrderWriteLogic {
         //取消发货单
         int count = 0;//判断是否存在取消失败的发货单
         for (Shipment shipment : shipments) {
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 0);
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
@@ -318,7 +318,7 @@ public class OrderWriteLogic {
         int count = 0;//判断是否存在取消失败的发货单
         String errorMsg = "";
         for (Shipment shipment : shipments) {
-            cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 0);
+            cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 errorMsg = cancelShipmentResponse.getError();
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
@@ -392,7 +392,7 @@ public class OrderWriteLogic {
 
         int count = 0;//计数器用来记录是否有发货单取消失败
         for (Shipment shipment : shipments) {
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 0);
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
@@ -464,7 +464,7 @@ public class OrderWriteLogic {
         int count = 0;//计数器用来记录是否有发货单取消失败
         String errorMsg = "";
         for (Shipment shipment : shipments) {
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 0);
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 errorMsg = cancelShipmentResponse.getError();
                 count++;
@@ -527,7 +527,7 @@ public class OrderWriteLogic {
         String errorMsg = "";
         List<SkuOrder> failSkuOrders = new ArrayList<SkuOrder>();
         for (Shipment shipment : shipments) {
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, 1);
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 errorMsg = cancelShipmentResponse.getError();
                 count++;

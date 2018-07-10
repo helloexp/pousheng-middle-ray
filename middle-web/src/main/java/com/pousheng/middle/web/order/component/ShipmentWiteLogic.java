@@ -228,12 +228,11 @@ public class ShipmentWiteLogic {
      * 取消/删除发货单逻辑(撤销订单的时候通知恒康删除发货单,电商取消订单的时候取消发货单)
      *
      * @param shipment 发货单
-     * @param type     0 取消 1 删除
      * @return 取消成功 返回返回true,取消失败返回false
      */
-    public Response<Boolean> cancelShipment(Shipment shipment, Integer type) {
+    public Response<Boolean> cancelShipment(Shipment shipment) {
         try {
-            log.info("try to auto cancel shipment,shipment id is {},operationType is {}", shipment.getId(), type);
+            log.info("try to auto cancel shipment,shipment id is {}", shipment.getId());
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
             if (!orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
@@ -246,7 +245,9 @@ public class ShipmentWiteLogic {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
             if (!Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, type);
+                log.info("cancel hk shipment,shipment id is {}", shipment.getId());
+
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment);
                 if (!syncRes.isSuccess()) {
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());
@@ -254,22 +255,20 @@ public class ShipmentWiteLogic {
             }
             //
             if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
-                //撤销
-                if (Objects.equals(type, 1)) {
-                    MposResponse res = null;
-                    if (orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())) {
-                        res = syncMposShipmentLogic.revokeNewMposShipment(shipment);
-                    } else {
-                        res = syncMposShipmentLogic.revokeMposShipment(shipment);
+                log.info("cancel all channel shipment,shipment id is {}", shipment.getId());
+                MposResponse res = null;
+                if (orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())) {
+                    res = syncMposShipmentLogic.revokeNewMposShipment(shipment);
+                } else {
+                    res = syncMposShipmentLogic.revokeMposShipment(shipment);
+                }
+                if (!res.isSuccess()) {
+                    //撤销失败
+                    Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
+                    if (!updateRes.isSuccess()) {
+                        log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
                     }
-                    if (!res.isSuccess()) {
-                        //撤销失败
-                        Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue());
-                        if (!updateRes.isSuccess()) {
-                            log.error("update shipment(id:{}) status to:{} fail,error:{}", shipment.getId(), updateRes.getError());
-                        }
-                        throw new JsonResponseException(res.getErrorMessage());
-                    }
+                    throw new JsonResponseException(res.getErrorMessage());
                 }
                 OrderOperation operation = MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
@@ -285,6 +284,8 @@ public class ShipmentWiteLogic {
             }
             //解锁库存
             mposSkuStockLogic.unLockStock(shipment);
+            log.info("try to auto cancel shipment,shipment id is {} success", shipment.getId());
+
             return Response.ok(Boolean.TRUE);
         } catch (JsonResponseException | ServiceException e) {
             log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
@@ -1512,7 +1513,7 @@ public class ShipmentWiteLogic {
             List<String> skuCodes = shipmentItems.stream().map(ShipmentItem::getSkuCode).collect(Collectors.toList());
             List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes, shopOrder.getId());
             int count = 0;//计数器用来记录是否有发货单取消失败的
-            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment, 1);
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
@@ -1534,7 +1535,7 @@ public class ShipmentWiteLogic {
                 return Response.fail("can.not.cancel.exchange.shipment");
             }
             int count = 0;//计数器用来记录是否有发货单取消失败的
-            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment, 1);
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
@@ -1556,7 +1557,7 @@ public class ShipmentWiteLogic {
                 return Response.fail("can.not.cancel.lost.shipment");
             }
             int count = 0;//计数器用来记录是否有发货单取消失败的
-            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment, 1);
+            Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }

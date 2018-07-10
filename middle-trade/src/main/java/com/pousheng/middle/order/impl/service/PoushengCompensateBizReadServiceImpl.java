@@ -10,6 +10,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 
@@ -53,6 +54,15 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
             List<PoushengCompensateBiz> result = poushengCompensateBizDao.findByIdsAndStatus(ids, status);
             if (log.isDebugEnabled()) {
                 log.debug("find biz task by ids:{}, status: {}, res: {}", ids, status, result);
+            }
+            // 查询状态PROCESSING的任务为空，检查任务状态
+            if (CollectionUtils.isEmpty(result)) {
+                Response<PoushengCompensateBiz> response = this.findById(ids.get(0));
+                if (response.isSuccess()) {
+                    if (log.isDebugEnabled()) {
+                        log.debug("find empty PROCESSING task, first task: {}", response.getResult());
+                    }
+                }
             }
             return Response.ok(result);
         } catch (Exception e) {

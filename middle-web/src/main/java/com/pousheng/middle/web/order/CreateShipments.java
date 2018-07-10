@@ -182,7 +182,7 @@ public class CreateShipments {
 
             WarehouseDTO warehouse = warehouseRes.getResult();
             //店仓要判断对应店铺的类型是否为接单店铺
-            if (warehouse.getWarehouseType().equals(WarehouseType.SHOP_WAREHOUSE.value())) {
+            if (warehouse.getWarehouseSubType().equals(WarehouseType.SHOP_WAREHOUSE.value())) {
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.parseLong(warehouse.getCompanyId()));
                 if (ShopType.ORDERS_SHOP.value() == shop.getType()) {
                     log.info("shop({0}).type.abnormal", shop.getId());

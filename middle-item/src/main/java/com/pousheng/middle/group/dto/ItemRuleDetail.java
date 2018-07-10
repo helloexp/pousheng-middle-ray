@@ -16,6 +16,8 @@ public class ItemRuleDetail {
 
     private String shopNames;
 
+    private String warehouseNames;
+
     private List<ItemGroup> groups;
 
     public Long getId() {

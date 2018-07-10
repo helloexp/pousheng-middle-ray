@@ -8,12 +8,12 @@
     <resultMap id="ItemGroupMap" type="ItemGroup">
         <id column="id" property="id"/>
         <result column="name" property="name"/>
+        <result column="type" property="type"/>
         <result column="group_rule_json" property="groupRuleJson"/>
         <result column="auto" property="auto"/>
         <result column="related_num" property="relatedNum"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-
     </resultMap>
 
     <sql id="tb">
@@ -26,15 +26,16 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        name, group_rule_json, auto, related_num, created_at, updated_at
+        name, type, group_rule_json, auto, related_num, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{name}, #{groupRuleJson}, #{auto}, #{relatedNum}, now(), now()
+        #{name},#{type}, #{groupRuleJson}, #{auto}, #{relatedNum}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         <if test="name != null">and `name` LIKE concat('%',#{name}, '%')</if>
+        <if test="type != null">and `type` = #{type}</if>
         <if test="groupRuleJson != null">and `group_rule_json` = #{groupRuleJson}</if>
         <if test="auto != null">and `auto` = #{auto}</if>
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
@@ -89,6 +90,7 @@
         <include refid="tb"/>
         <set>
             <if test="name != null">name = #{name},</if>
+            <if test="type != null">type = #{type},</if>
             <if test="relatedNum != null">`related_num` = #{relatedNum},</if>
             <if test="groupRuleJson != null">group_rule_json = #{groupRuleJson},</if>
             <if test="auto != null">auto = #{auto},</if>

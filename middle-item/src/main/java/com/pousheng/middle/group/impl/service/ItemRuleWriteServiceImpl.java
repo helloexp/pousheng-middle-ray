@@ -2,12 +2,8 @@ package com.pousheng.middle.group.impl.service;
 
 import com.google.common.base.Throwables;
 import com.pousheng.middle.group.impl.dao.ItemRuleDao;
-import com.pousheng.middle.group.impl.dao.ItemRuleGroupDao;
-import com.pousheng.middle.group.impl.dao.ItemRuleShopDao;
 import com.pousheng.middle.group.impl.manager.ItemRuleManager;
 import com.pousheng.middle.group.model.ItemRule;
-import com.pousheng.middle.group.model.ItemRuleGroup;
-import com.pousheng.middle.group.model.ItemRuleShop;
 import com.pousheng.middle.group.service.ItemRuleWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
@@ -69,8 +65,18 @@ public class ItemRuleWriteServiceImpl implements ItemRuleWriteService {
     }
 
     @Override
+    public Response<Long> createWithWarehouse(List<Long> warehouseIds) {
+        return itemRuleManager.createWithWarehouses(warehouseIds);
+    }
+
+    @Override
     public Response<Boolean> updateShops(Long ruleId, List<Long> shopIds) {
         return itemRuleManager.updateShops(ruleId, shopIds);
+    }
+
+    @Override
+    public Response<Boolean> updateWarehouses(Long ruleId, List<Long> warehouseIds) {
+        return itemRuleManager.updateWarehouses(ruleId, warehouseIds);
     }
 
     @Override

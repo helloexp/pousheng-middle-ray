@@ -146,9 +146,7 @@ CREATE TABLE `pousheng_item_group_skus` (
   `type` tinyint(4) NOT NULL COMMENT '0表示排除商品 1表示组内商品',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
-  PRIMARY KEY (`id`),
-  KEY `idx_item_group_skus_gid` (`group_id`),
-  KEY `idx_item_group_skus_sid` (`sku_id`)
+  PRIMARY KEY (`id`)
 ) COMMENT='分组与商品映射关系表';
 
 
@@ -158,7 +156,7 @@ CREATE TABLE `pousheng_item_rule_groups` (
   `group_id` int(11) NOT NULL COMMENT '分组id',
   `created_at` datetime NOT NULL COMMENT '创建时间',
   `updated_at` datetime NOT NULL COMMENT '更新时间',
-  PRIMARY KEY (`id`),
+  PRIMARY KEY (`id`)
 ) COMMENT='商品规则与分组关系映射表';
 
 
@@ -170,6 +168,16 @@ CREATE TABLE `pousheng_item_rule_shops` (
   `updated_at` datetime NOT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`),
 ) COMMENT='商品规则与店铺关系映射表';
+
+
+CREATE TABLE `pousheng_item_rule_warehouses` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `warehouse_id` int(11) NOT NULL COMMENT '仓库id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+) COMMENT='商品规则与仓库关系映射表';
 
 
 

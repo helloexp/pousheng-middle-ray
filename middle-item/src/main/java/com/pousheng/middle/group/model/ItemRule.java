@@ -21,12 +21,23 @@ public class ItemRule implements Serializable {
      */
     private String name;
 
+    private Integer type;
+
     private Date createdAt;
 
     private Date updatedAt;
 
     public Long getId() {
         return id;
+    }
+
+    public Integer getType() {
+        return type;
+    }
+
+    public ItemRule type(Integer type) {
+        this.type = type;
+        return this;
     }
 
     public ItemRule id(Long id) {

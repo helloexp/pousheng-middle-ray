@@ -45,12 +45,29 @@ public interface ItemRuleWriteService {
 
 
     /**
+     * 初始化规则的仓库信息
+     * @param warehouseIds 仓库ids
+     * @return
+     */
+    Response<Long> createWithWarehouse(List<Long> warehouseIds);
+
+
+    /**
      * 更新规则的店铺
      * @param ruleId 规则id
      * @param shopIds 店铺ids
      * @return
      */
     Response<Boolean> updateShops(Long ruleId, List<Long> shopIds);
+
+
+    /**
+     * 更新规则的店铺
+     * @param ruleId 规则id
+     * @param warehouseIds 仓库ids
+     * @return
+     */
+    Response<Boolean> updateWarehouses(Long ruleId, List<Long> warehouseIds);
 
 
     /**

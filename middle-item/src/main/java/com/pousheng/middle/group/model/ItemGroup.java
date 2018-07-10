@@ -13,6 +13,7 @@ import lombok.EqualsAndHashCode;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -23,9 +24,11 @@ import java.util.List;
  */
 @Data
 @EqualsAndHashCode(exclude = {"createdAt", "updatedAt"})
-public class ItemGroup {
+public class ItemGroup implements Serializable {
 
     private static final ObjectMapper OBJECT_MAPPER = JsonMapper.nonEmptyMapper().getMapper();
+    
+    private static final long serialVersionUID = 296905616156754526L;
 
     private Long id;
 
@@ -34,6 +37,8 @@ public class ItemGroup {
     private Boolean auto;
 
     private Long relatedNum;
+
+    private Integer type;
 
     @JsonIgnore
     private String groupRuleJson;

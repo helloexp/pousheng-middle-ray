@@ -6,8 +6,10 @@ spring:
 mybatis:
   mapperLocations:  classpath*:mapper/*Mapper.xml
   type-aliases-package: >
-    io.terminus.parana.(brand|category|component|delivery|item|shop|spu).model,
+    io.terminus.parana.(brand|category|component|delivery|item|shop|spu).model
     com.pousheng.middle.(group|task).model
+    io.terminus.applog.core.model
+    com.pousheng.erp.model
     io.terminus.open.client.common.(mappings|shop).model
     io.terminus.open.client.item.model
   scan-type: resource

@@ -2,12 +2,16 @@ package com.pousheng.middle.item.dto;
 
 import lombok.Data;
 
+import java.io.Serializable;
+
 /**
  * @author zhaoxw
  * @date 2018/5/3
  */
 @Data
-public class ItemGroupAutoRule {
+public class ItemGroupAutoRule implements Serializable {
+
+    private static final long serialVersionUID = 2758143067511654406L;
 
     String name;
 

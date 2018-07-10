@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsItemGroupType;
 import com.pousheng.middle.item.enums.ShopType;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
@@ -22,6 +23,7 @@ import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
+import com.pousheng.middle.web.item.cacher.ItemGroupCacherProxy;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -29,6 +31,8 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -70,10 +74,15 @@ public class QueryHkWarhouseOrShopStockApi {
     @Autowired
     private DispatchComponent dispatchComponent;
     @Autowired
-    private GroupRuleCacherProxy GroupRuleCacherProxy;
+    private GroupRuleCacherProxy groupRuleCacherProxy;
+    @Autowired
+    private ItemGroupCacherProxy itemGroupCacherProxy;
     @Autowired
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
+    private static String COMPANY_CODE = "companyCode";
 
     private static final TypeReference<List<HkSkuStockInfo>> LIST_OF_SKU_STOCK = new TypeReference<List<HkSkuStockInfo>>() {};
 
@@ -199,12 +208,11 @@ public class QueryHkWarhouseOrShopStockApi {
 
 
     public Boolean isVendible(String skuCode, Long openShopId) {
-        Set<Long> groupIds = Sets.newHashSet(GroupRuleCacherProxy.findByShopId(openShopId));
-
+        Set<Long> groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
+        log.info("query shop group ,shopId{}, groupIds", openShopId, groupIds);
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
-
         String templateName = "ps_search.mustache";
         Map<String, String> params = Maps.newHashMap();
         params.put("skuCode", skuCode);
@@ -228,27 +236,14 @@ public class QueryHkWarhouseOrShopStockApi {
                     log.warn("find warehouse by id {} is null", warehouseId);
                     continue;
                 }
-                //非店仓不去校验店铺商品分组标签
-                if (!Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(), warehouse.getWarehouseSubType())) {
-                    vendible.add(warehouseId);
-                    continue;
-                }
-
                 if (StringUtils.isEmpty(warehouse.getOutCode())) {
                     log.warn("find warehouse by id {} outCode  is null", warehouseId);
                     continue;
                 }
-                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
-                ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                Long openShopId = currentShopExtraInfo.getOpenShopId();
-                if (Arguments.isNull(openShopId)) {
-                    log.error("shop(id:{}) not mapping open shop", shop.getId());
-                    continue;
-                }
-                if (isVendible(skuCode, openShopId)) {
+                if (canDelivery(skuCode, warehouse, warehouse.getCompanyCode())) {
                     vendible.add(warehouseId);
                 }
-            }catch (Exception e){
+            } catch (Exception e) {
                 log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
                         warehouseId, Throwables.getStackTraceAsString(e));
                 continue;
@@ -256,6 +251,54 @@ public class QueryHkWarhouseOrShopStockApi {
         }
         return vendible;
     }
+
+
+    public Boolean canDelivery(String skuCode, WarehouseDTO warehouse, String companyCode) {
+        Set<Long> groupIds;
+        if (Objects.equals(warehouse.getWarehouseSubType(),WarehouseType.SHOP_WAREHOUSE.value())){
+            //获取shop
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.parseLong(warehouse.getCompanyId()));
+            ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            Long openShopId = currentShopExtraInfo.getOpenShopId();
+            if (Arguments.isNull(openShopId)) {
+                log.error("shop(id:{}) not mapping open shop", shop.getId());
+                return false;
+            }
+            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
+        }else{
+            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
+        }
+        if (CollectionUtils.isEmpty(groupIds)) {
+            return false;
+        }
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("skuCode", skuCode);
+        params.put("groupIds", Joiners.COMMA.join(groupIds));
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by materialId:{} and size:{} fail,error:{}", skuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getTotal() == 0) {
+            return false;
+        }
+        //如果已经是同公司就不需要再去判断了
+        if (warehouse.getCompanyId().equals(companyCode)) {
+            return true;
+        }
+        SearchSkuTemplate skuTemplate = response.getResult().getData().get(0);
+        //查询商品和店铺的并集，判断是否存在全国的，如果存在则返回true
+        Set<Long> result = Sets.union(skuTemplate.getGroupIds(), groupIds);
+        for (Long id : result) {
+            if (PsItemGroupType.ALL.value().equals(itemGroupCacherProxy.findById(id).getType())) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+
 
     /**
      * 用于库存推送 当传入多个skucode时，以map返回
@@ -265,7 +308,7 @@ public class QueryHkWarhouseOrShopStockApi {
      */
     public Map<Boolean,List<String>> isVendible(List<String> skuCodes, Long openShopId) {
         Map<Boolean, List<String>> map = new HashMap<>(4);
-        Set<Long> groupIds = Sets.newHashSet(GroupRuleCacherProxy.findByShopId(openShopId));
+        Set<Long> groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
         if (CollectionUtils.isEmpty(groupIds)) {
             map.put(Boolean.FALSE, skuCodes);
             return map;
@@ -325,7 +368,11 @@ public class QueryHkWarhouseOrShopStockApi {
             log.warn("not skuStockInfos so skip");
             return Lists.newArrayList();
         }
-
+        OpenShop openShop= openShopCacher.findById(shopId);
+        String companyCode = openShop.getExtra().get(COMPANY_CODE);
+        if (StringUtils.isEmpty(companyCode)) {
+            companyCode = Splitter.on("-").splitToList(openShop.getAppKey()).get(0);
+        }
         //TODO 单测
         List<HkSkuStockInfo> hkSkuStockInfos = Lists.newArrayListWithExpectedSize(warehouseIds.size());
         for (final Long warehouseId : warehouseIds){
@@ -397,21 +444,10 @@ public class QueryHkWarhouseOrShopStockApi {
                 AvailableInventoryDTO stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
                 if (null != stock && null != temp){
-                    //如果是店仓则商品必须打标为mpos商品才可以参与发货
-                    if (Objects.equals(warehouse.getWarehouseSubType(),WarehouseType.SHOP_WAREHOUSE.value())){
-                        //获取shop
-                        Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.valueOf(company_id));
-                        ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-                        Long openShopId = currentShopExtraInfo.getOpenShopId();
-                        if (Arguments.isNull(openShopId)) {
-                            log.error("shop(id:{}) not mapping open shop", shop.getId());
-                            continue;
-                        }
-                        if (!isVendible(temp.getSkuCode(),openShopId)){
-                            continue;
-                        }
+                    //无论是什么类型的仓库 都要去检查能否发货
+                    if (!canDelivery(temp.getSkuCode(), warehouse, companyCode)) {
+                        continue;
                     }
-
                     Map<String,String> tempExtra = temp.getExtra();
                     if (MapUtils.isNotEmpty(tempExtra)){
                         String materialId = tempExtra.get("materialId");

@@ -483,3 +483,19 @@ CREATE TABLE `pousheng_stock_record_log` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='库存查询日志';
+
+CREATE TABLE `pousheng_item_rule_warehouses` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL COMMENT '商品规则id',
+  `warehouse_id` int(11) NOT NULL COMMENT '店铺id',
+  `created_at` datetime NOT NULL COMMENT '创建时间',
+  `updated_at` datetime NOT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idex_item_rule_warehouse_id` (`warehouse_id`),
+  KEY `idex_item_rule_id` (`rule_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='商品规则与仓库关系映射表';
+
+alter table pousheng_item_groups add type  tinyint  not null default 0  comment '0全国销售,1同公司销售' after name;
+
+alter table pousheng_item_rules add type  tinyint  not null default 0  comment '0店铺分组,1仓库分组' after id;
+

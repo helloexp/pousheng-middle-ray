@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.group.model.ItemRuleGroup;
 import com.pousheng.middle.group.service.ItemRuleGroupReadService;
 import com.pousheng.middle.group.service.ItemRuleShopReadService;
+import com.pousheng.middle.group.service.ItemRuleWarehouseReadService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -31,6 +32,10 @@ public class GroupRuleCacherProxy {
     @RpcConsumer
     private ItemRuleShopReadService itemRuleShopReadService;
 
+    @RpcConsumer
+    private ItemRuleWarehouseReadService itemRuleWarehouseReadService;
+
+
 
     /**
      * 通过店铺获取所属分组
@@ -41,6 +46,28 @@ public class GroupRuleCacherProxy {
         if (!ruleResp.isSuccess()) {
             log.error("failed to find rule (shopId={}, error:{}",
                     shopId, ruleResp.getError());
+            throw new ServiceException("item.rule.find.fail");
+        }
+        if (ruleResp.getResult() == null) {
+            return Lists.newArrayList();
+        }
+        Response<List<ItemRuleGroup>> groupResp = itemRuleGroupReadService.findByRuleId(ruleResp.getResult());
+        if (!groupResp.isSuccess()) {
+            log.error("failed to find rule group (ruleId={}, error:{}",
+                    ruleResp.getResult(), ruleResp.getError());
+            throw new ServiceException("item.group.find.fail");
+        }
+        List<ItemRuleGroup> groups = groupResp.getResult();
+        return groups.stream().map(ItemRuleGroup::getGroupId).collect(Collectors.toList());
+    }
+
+
+    @Cacheable(key = "'group#findByWarehouseId:'.concat(#warehouseId.hashCode())")
+    public List<Long> findByWarehouseId(Long warehouseId) {
+        Response<Long> ruleResp = itemRuleWarehouseReadService.findRuleIdByWarehouseId(warehouseId);
+        if (!ruleResp.isSuccess()) {
+            log.error("failed to find rule (warehouseId={}, error:{}",
+                    warehouseId, ruleResp.getError());
             throw new ServiceException("item.rule.find.fail");
         }
         if (ruleResp.getResult() == null) {

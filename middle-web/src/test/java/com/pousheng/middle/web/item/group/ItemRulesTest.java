@@ -87,7 +87,6 @@ public class ItemRulesTest extends AbstractRestApiTest {
     private ItemRule rule = new ItemRule();
 
 
-
     @Override
     public void init() throws InvocationTargetException, IllegalAccessException {
         super.init();
@@ -105,22 +104,22 @@ public class ItemRulesTest extends AbstractRestApiTest {
         when(itemRuleWriteService.delete(any())).thenReturn(Response.ok(true));
         when(itemRuleShopReadService.findByRuleId(any())).thenReturn(Response.ok(Lists.newArrayList()));
         when(itemRuleGroupReadService.findByRuleId(any())).thenReturn(Response.ok(Lists.newArrayList()));
-        when(itemRuleShopReadService.checkShopIds(any(),any())).thenReturn(Response.ok(false));
+        when(itemRuleShopReadService.checkShopIds(any(), any())).thenReturn(Response.ok(false));
     }
 
 
     @Test
     public void testCreateSuccess() {
-        Long id = api.create(new Long[]{1L, 2L});
+        Long id = api.create(new Long[]{1L, 2L},1);
         assertThat(id, is(1L));
     }
 
     @Test
     public void testCreateFail() {
-        when(itemRuleShopReadService.checkShopIds(any(),any())).thenReturn(Response.ok(true));
+        when(itemRuleShopReadService.checkShopIds(any(), any())).thenReturn(Response.ok(true));
         thrown.expect(JsonResponseException.class);
         thrown.expectMessage("shop.belong.to.other.rule");
-        api.create(new Long[]{1L, 2L});
+        api.create(new Long[]{1L, 2L},1);
     }
 
     @Test
@@ -143,9 +142,9 @@ public class ItemRulesTest extends AbstractRestApiTest {
 
     @Test
     public void testPagingSuccess() {
-        when(itemRuleReadService.paging(any())).thenReturn(Response.ok(new Paging<>(1L,Lists.newArrayList(rule))));
-        Paging<ItemRuleDetail> result = api.findBy(null, null, null);
-        assertThat(result.getData().size(),is(1));
-        assertThat(result.getTotal(),is(1L));
+        when(itemRuleReadService.paging(any())).thenReturn(Response.ok(new Paging<>(1L, Lists.newArrayList(rule))));
+        Paging<ItemRuleDetail> result = api.findBy(null, null, null, 1);
+        assertThat(result.getData().size(), is(1));
+        assertThat(result.getTotal(), is(1L));
     }
 }

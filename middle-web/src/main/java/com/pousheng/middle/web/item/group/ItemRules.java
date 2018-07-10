@@ -2,13 +2,14 @@ package com.pousheng.middle.web.item.group;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.group.model.*;
+import com.pousheng.middle.item.enums.ItemRuleType;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.group.dto.ItemRuleCriteria;
 import com.pousheng.middle.group.dto.ItemRuleDetail;
-import com.pousheng.middle.group.model.ItemGroup;
-import com.pousheng.middle.group.model.ItemRule;
-import com.pousheng.middle.group.model.ItemRuleGroup;
-import com.pousheng.middle.group.model.ItemRuleShop;
 import com.pousheng.middle.group.service.*;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
@@ -54,6 +55,9 @@ public class ItemRules {
     private ItemRuleShopReadService itemRuleShopReadService;
     @RpcConsumer
     @Setter
+    private ItemRuleWarehouseReadService itemRuleWarehouseReadService;
+    @RpcConsumer
+    @Setter
     private ItemRuleGroupReadService itemRuleGroupReadService;
     @RpcConsumer
     @Setter
@@ -64,34 +68,46 @@ public class ItemRules {
     @Autowired
     @Setter
     private OpenShopCacher openShopCacher;
-
     @Autowired
     @Setter
-    private GroupRuleCacherProxy GroupRuleCacherProxy;
+    private GroupRuleCacherProxy groupRuleCacherProxy;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
 
     @ApiOperation("获取商品规则分页列表")
     @GetMapping("/paging")
     public Paging<ItemRuleDetail> findBy(@RequestParam(required = false, value = "pageNo") Integer pageNo,
                                          @RequestParam(required = false, value = "pageSize") Integer pageSize,
-                                         @RequestParam(required = false, value = "id") Long id) {
+                                         @RequestParam(required = false, value = "id") Long id,
+                                         Integer type) {
         ItemRuleCriteria criteria = new ItemRuleCriteria();
         criteria.setId(id);
         criteria.setPageNo(pageNo);
         criteria.setPageSize(pageSize);
+        criteria.setType(type);
         Response<Paging<ItemRule>> r = itemRuleReadService.paging(criteria);
         if (!r.isSuccess()) {
             log.error("failed to pagination rule group, error code:{}", r.getError());
             throw new JsonResponseException(r.getError());
         }
-        return transToDetail(r.getResult());
+        return transToDetail(r.getResult(),type);
     }
 
     @ApiOperation("创建商品规则")
-    @PostMapping
-    public Long create(@RequestBody Long[] shopIds) {
-        checkShopIds(null,shopIds);
-        Response<Long> createResp = itemRuleWriteService.createWithShop(Lists.newArrayList(shopIds));
+    @PostMapping("/{type}/create")
+    public Long create(@RequestBody Long[] ids,@PathVariable Integer type) {
+        if (ids.length == 0) {
+            throw new JsonResponseException("at.least.one.object");
+        }
+        Response<Long> createResp;
+        if (type.equals(ItemRuleType.SHOP.value())) {
+            checkShopIds(null, ids);
+            createResp = itemRuleWriteService.createWithShop(Lists.newArrayList(ids));
+        } else {
+            checkWarehouseIds(null, ids);
+            createResp = itemRuleWriteService.createWithWarehouse(Lists.newArrayList(ids));
+        }
         if (!createResp.isSuccess()) {
             log.error("fail to create item rule,cause:{}", createResp.getError());
             throw new JsonResponseException(createResp.getError());
@@ -110,7 +126,21 @@ public class ItemRules {
             throw new JsonResponseException(updateResp.getError());
         }
         shopChannelGroupCacher.refreshShopChannelGroupCache();
-        GroupRuleCacherProxy.refreshAll();
+        groupRuleCacherProxy.refreshAll();
+        return updateResp.getResult();
+    }
+
+    @ApiOperation("修改规则的仓库信息")
+    @PutMapping("/{ruleId}/warehouse")
+    public boolean updateWarehouse(@PathVariable Long ruleId, @RequestBody Long[] warehouseIds) {
+        checkWarehouseIds(ruleId,warehouseIds);
+        Response<Boolean> updateResp = itemRuleWriteService.updateWarehouses(ruleId, Lists.newArrayList(warehouseIds));
+        if (!updateResp.isSuccess()) {
+            log.error("fail to update item rule id:{} warehouseIds:{} ,cause:{}",
+                    ruleId, warehouseIds, updateResp.getError());
+            throw new JsonResponseException(updateResp.getError());
+        }
+        groupRuleCacherProxy.refreshAll();
         return updateResp.getResult();
     }
 
@@ -123,7 +153,7 @@ public class ItemRules {
                     ruleId, groupIds, updateResp.getError());
             throw new JsonResponseException(updateResp.getError());
         }
-        GroupRuleCacherProxy.refreshAll();
+        groupRuleCacherProxy.refreshAll();
         return updateResp.getResult();
     }
 
@@ -138,7 +168,7 @@ public class ItemRules {
             throw new JsonResponseException(deleteResp.getError());
         }
         shopChannelGroupCacher.refreshShopChannelGroupCache();
-        GroupRuleCacherProxy.refreshAll();
+        groupRuleCacherProxy.refreshAll();
         return deleteResp.getResult();
     }
 
@@ -156,6 +186,25 @@ public class ItemRules {
         return channelGroups;
     }
 
+
+    @ApiOperation("获取仓库列表")
+    @GetMapping(value = "/warehouses", produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<WarehouseDTO> markWarehouses(@RequestParam(value = "ruleId", required = false) Long ruleId) {
+        //获取仓库列表集合
+        Response<List<ItemRuleWarehouse>> resp = itemRuleWarehouseReadService.findByRuleId(ruleId);
+        if (!resp.isSuccess()) {
+            throw new JsonResponseException(resp.getError());
+        }
+        List<WarehouseDTO> list = Lists.newArrayList();
+        List<Long> warehouseIds = resp.getResult().stream().map(ItemRuleWarehouse::getWarehouseId).collect(Collectors.toList());
+        for (Long warehouseId : warehouseIds) {
+            list.add(warehouseCacher.findById(warehouseId));
+        }
+        return list;
+    }
+
+
+
     private void checkShopIds(Long ruleId,Long[] shopIds){
         Response<Boolean> checkResp = itemRuleShopReadService.checkShopIds(ruleId, Lists.newArrayList(shopIds));
         if (!checkResp.isSuccess()) {
@@ -165,6 +214,31 @@ public class ItemRules {
         if (checkResp.getResult()) {
             throw new JsonResponseException("shop.belong.to.other.rule");
         }
+    }
+
+    @ApiOperation("检查仓库能否添加")
+    @GetMapping("/check/warehouse")
+    public boolean checkWarehouseIds( @RequestParam(required = false, value = "ruleId") Long ruleId,
+                                   Long[] warehouseIds) {
+       for (Long warehouseId : warehouseIds) {
+            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+            if (null == warehouse){
+                log.warn("find warehouse by id {} is null",warehouseId);
+                throw new JsonResponseException("warehouse.is.not.exist");
+            }
+            if (java.util.Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),warehouse.getWarehouseSubType())){
+                throw new JsonResponseException("contain.shop.warehouse");
+            }
+        }
+        Response<Boolean> checkResp = itemRuleWarehouseReadService.checkWarehouseIds(ruleId, Lists.newArrayList(warehouseIds));
+        if (!checkResp.isSuccess()) {
+            log.error("fail to check item rule warehouse,cause:{}", checkResp.getError());
+            throw new JsonResponseException(checkResp.getError());
+        }
+        if (checkResp.getResult()) {
+            throw new JsonResponseException("warehouse.belong.to.other.rule");
+        }
+        return true;
     }
 
     private void disableRuleShops(List<ShopChannelGroup> channelGroups) {
@@ -235,24 +309,41 @@ public class ItemRules {
     }
 
 
-    private Paging<ItemRuleDetail> transToDetail(Paging<ItemRule> paging) {
+    private Paging<ItemRuleDetail> transToDetail(Paging<ItemRule> paging, Integer type) {
         Paging<ItemRuleDetail> detailPaging = new Paging<>();
         detailPaging.setTotal(paging.getTotal());
         detailPaging.setData(Lists.newArrayList());
         for (ItemRule itemRule : paging.getData()) {
             ItemRuleDetail detail = new ItemRuleDetail().id(itemRule.getId());
-            Response<List<ItemRuleShop>> itemRuleShopsResp = itemRuleShopReadService.findByRuleId(itemRule.getId());
-            if (!itemRuleShopsResp.isSuccess()) {
-                throw new JsonResponseException(itemRuleShopsResp.getError());
-            }
-            if (!CollectionUtils.isEmpty(itemRuleShopsResp.getResult())) {
-                List<String> shopNames = Lists.newArrayList();
-                for (ItemRuleShop itemRuleShop : itemRuleShopsResp.getResult()) {
-                    if (openShopCacher.findById(itemRuleShop.getShopId()) != null) {
-                        shopNames.add(openShopCacher.findById(itemRuleShop.getShopId()).getShopName());
-                    }
+            if(type.equals(ItemRuleType.SHOP.value())){
+                Response<List<ItemRuleShop>> itemRuleShopsResp = itemRuleShopReadService.findByRuleId(itemRule.getId());
+                if (!itemRuleShopsResp.isSuccess()) {
+                    throw new JsonResponseException(itemRuleShopsResp.getError());
                 }
-                detail.shopNames(Joiners.COMMA.join(shopNames));
+                if (!CollectionUtils.isEmpty(itemRuleShopsResp.getResult())) {
+                    List<String> shopNames = Lists.newArrayList();
+                    for (ItemRuleShop itemRuleShop : itemRuleShopsResp.getResult()) {
+                        if (openShopCacher.findById(itemRuleShop.getShopId()) != null) {
+                            shopNames.add(openShopCacher.findById(itemRuleShop.getShopId()).getShopName());
+                        }
+                    }
+                    detail.shopNames(Joiners.COMMA.join(shopNames));
+                }
+            }
+            if(type.equals(ItemRuleType.WAREHOUSE.value())){
+                Response<List<ItemRuleWarehouse>> itemRuleWarehouseResp = itemRuleWarehouseReadService.findByRuleId(itemRule.getId());
+                if (!itemRuleWarehouseResp.isSuccess()) {
+                    throw new JsonResponseException(itemRuleWarehouseResp.getError());
+                }
+                if (!CollectionUtils.isEmpty(itemRuleWarehouseResp.getResult())) {
+                    List<String> warehouseNames = Lists.newArrayList();
+                    for (ItemRuleWarehouse itemRuleWarehouse : itemRuleWarehouseResp.getResult()) {
+                        if (warehouseCacher.findById(itemRuleWarehouse.getWarehouseId()) != null) {
+                            warehouseNames.add(warehouseCacher.findById(itemRuleWarehouse.getWarehouseId()).getWarehouseName());
+                        }
+                    }
+                    detail.setWarehouseNames(Joiners.COMMA.join(warehouseNames));
+                }
             }
             Response<List<ItemRuleGroup>> itemRuleGroupsResp = itemRuleGroupReadService.findByRuleId(itemRule.getId());
             if (!itemRuleGroupsResp.isSuccess()) {

@@ -8,6 +8,7 @@
     <resultMap id="ItemRuleMap" type="ItemRule">
         <id column="id" property="id"/>
         <result column="name" property="name"/>
+        <result column="type" property="type"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
 
@@ -22,11 +23,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        name, created_at, updated_at
+        name, type, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{name}, now(), now()
+        #{name},#{type}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -34,6 +35,8 @@
         <if test="id != null">and `id` = #{id}</if>
 
         <if test="name != null">and `name` = #{name}</if>
+
+        <if test="type != null">and `type` = #{type}</if>
 
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
 

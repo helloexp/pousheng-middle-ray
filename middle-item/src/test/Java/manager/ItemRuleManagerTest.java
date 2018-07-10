@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.group.impl.dao.ItemRuleDao;
 import com.pousheng.middle.group.impl.dao.ItemRuleGroupDao;
 import com.pousheng.middle.group.impl.dao.ItemRuleShopDao;
+import com.pousheng.middle.group.impl.dao.ItemRuleWarehouseDao;
 import com.pousheng.middle.group.impl.manager.ItemRuleManager;
 import com.pousheng.middle.group.model.ItemGroupSku;
 import io.terminus.common.model.Response;
@@ -35,6 +36,8 @@ public class ItemRuleManagerTest extends AbstractServiceTest {
         private ItemRuleGroupDao itemRuleGroupDao;
         @MockBean
         private ItemRuleShopDao itemRuleShopDao;
+        @MockBean
+        private ItemRuleWarehouseDao itemRuleWarehouseDao;
 
 
     }
@@ -52,11 +55,14 @@ public class ItemRuleManagerTest extends AbstractServiceTest {
 
     private ItemRuleShopDao itemRuleShopDao;
 
+    private ItemRuleWarehouseDao itemRuleWarehouseDao;
+
     @Override
     protected void init() {
         itemRuleDao = get(ItemRuleDao.class);
         itemRuleGroupDao=get(ItemRuleGroupDao.class);
         itemRuleShopDao=get(ItemRuleShopDao.class);
+        itemRuleWarehouseDao=get(ItemRuleWarehouseDao.class);
         itemRuleManager = get(ItemRuleManager.class);
     }
 
@@ -71,6 +77,22 @@ public class ItemRuleManagerTest extends AbstractServiceTest {
         when(itemRuleShopDao.creates(any())).thenReturn(1);
         Response<Long> response = itemRuleManager.createWithShops(Lists.newArrayList());
         assertThat(response.isSuccess(), is(Boolean.TRUE));
+    }
+
+    @Test
+    public void testCreateWithWarehouseSuccess() {
+        when(itemRuleDao.create(any())).thenReturn(true);
+        when(itemRuleWarehouseDao.creates(any())).thenReturn(1);
+        Response<Long> response = itemRuleManager.createWithShops(Lists.newArrayList());
+        assertThat(response.isSuccess(), is(Boolean.TRUE));
+    }
+
+    @Test
+    public void testCreateWithWarehouseUnknownEx() {
+        when(itemRuleDao.create(any())).thenThrow(new NullPointerException());
+        Response<Long> response = itemRuleManager.createWithWarehouses(Lists.newArrayList());
+        assertThat(response.isSuccess(), is(Boolean.FALSE));
+        assertThat(response.getError(), is("item.rule.create.fail"));
     }
 
     @Test

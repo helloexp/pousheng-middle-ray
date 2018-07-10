@@ -12,4 +12,6 @@ import lombok.Data;
 public class ItemRuleCriteria extends PagingCriteria {
 
     private Long id;
+
+    private Integer type;
 }

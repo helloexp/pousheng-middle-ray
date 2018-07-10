@@ -15,6 +15,7 @@ import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.task.dto.ItemGroupTask;
 import com.pousheng.middle.task.model.ScheduleTask;
 import com.pousheng.middle.task.service.ScheduleTaskWriteService;
+import com.pousheng.middle.web.item.cacher.ItemGroupCacherProxy;
 import com.pousheng.middle.web.utils.task.ScheduleTaskUtil;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -27,6 +28,7 @@ import io.terminus.search.api.model.WithAggregations;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,6 +63,10 @@ public class ItemGroups {
 
     @RpcConsumer
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
+
+    @Autowired
+    private ItemGroupCacherProxy itemGroupCacherProxy;
+
 
 
     @ApiOperation("查看商品分组信息")
@@ -143,7 +149,7 @@ public class ItemGroups {
         if (itemGroup.getId() == null) {
             throw new JsonResponseException("item.group.id.not.exist");
         }
-        Response<Boolean> updateResp = itemGroupWriteService.update(itemGroup);
+        Response<Boolean> updateResp = itemGroupCacherProxy.update(itemGroup);
         if (!updateResp.isSuccess()) {
             log.error("fail to update item group:{},cause:{}",
                     itemGroup, updateResp.getError());

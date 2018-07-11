@@ -43,8 +43,8 @@ public class WarehouseRulesClient {
         }
 
         try {
-            return Response.ok((Long) inventoryBaseClient.post("api/inventory/rule",
-                    ImmutableMap.of("thinShops", JSON.toJSONString(shops)), Long.class));
+            return Response.ok((Long) inventoryBaseClient.postJson("api/inventory/rule",
+                    JSON.toJSONString(shops), Long.class));
 
         } catch (Exception e) {
             log.error("create warehouse rule fail, cause:{}", Throwables.getStackTraceAsString(e));
@@ -66,8 +66,8 @@ public class WarehouseRulesClient {
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.put("api/inventory/rule/"+ruleId,
-                    ImmutableMap.of("thinShops", JSON.toJSONString(shops)), Boolean.class));
+            return Response.ok((Boolean) inventoryBaseClient.putJson("api/inventory/rule/"+ruleId,
+                    JSON.toJSONString(shops), Boolean.class));
 
         } catch (Exception e) {
             log.error("update warehouse rule fail, cause:{}", Throwables.getStackTraceAsString(e));

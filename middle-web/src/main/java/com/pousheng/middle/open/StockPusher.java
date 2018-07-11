@@ -244,9 +244,6 @@ public class StockPusher {
                             shareStock = shareStock - shopStockRule.getSafeStock();
                         }
 
-
-
-
                         //按照设定的比例确定推送数量
                         Long stock = Math.max(0,
                                 channelStock
@@ -254,13 +251,15 @@ public class StockPusher {
                                         + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
                         );
 
-                        //根据商品分组规则，如果不售卖则推送0
-                        if(!isOnSale){
-                            stock = 0L;
-                        }
-
                         log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
                                 skuCode, shopId, stock);
+
+                        //根据商品分组规则，如果不售卖则推送0
+                        if(!isOnSale){
+                            log.info("this sku is not on sale in this shop, so set push stock to 0 (skuCode is {},shopId is {})", skuCode, shopId);
+
+                            stock = 0L;
+                        }
 
                         //判断店铺是否是官网的
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);

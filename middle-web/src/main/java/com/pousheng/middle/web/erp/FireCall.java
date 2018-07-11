@@ -379,9 +379,9 @@ public class FireCall {
      * 根据货号和尺码查询商品信息
      *
      * @param materialId 货号
-     * @param companyId  公司编号
-     * @param companyId  外码
      * @param attr       指定属性
+     * @param companyId  公司编号
+     * @outerId outerId  外码
      * @return 商品信息
      */
     @ApiOperation("根据货号查询")
@@ -389,6 +389,9 @@ public class FireCall {
     public Paging<SearchSkuTemplate> searchSize(@RequestParam String materialId,
                                                 @RequestParam(required = false) String attr,
                                                 @RequestParam Long companyId, @RequestParam String outerId) {
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-START param: materialId [{}] attr [{}] companyId [{}] outerId [{}]", materialId, attr,companyId,outerId);
+        }
         Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
         ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
         Long openShopId = currentShopExtraInfo.getOpenShopId();
@@ -428,7 +431,13 @@ public class FireCall {
                 e.setAttrs(attrs);
             }
         }
-        return response.getResult().getEntities();
+
+        Paging<SearchSkuTemplate> paging = response.getResult().getEntities();
+
+        if (log.isDebugEnabled()) {
+            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-END param: materialId [{}] attr [{}] companyId [{}] outerId [{}] result:{}", materialId, attr,companyId,outerId,paging.getData());
+        }
+        return paging;
     }
 
 

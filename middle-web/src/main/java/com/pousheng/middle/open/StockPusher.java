@@ -11,11 +11,18 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.shop.dto.ShopExtraInfo;
+import com.pousheng.middle.shop.enums.ShopOpeningStatus;
+import com.pousheng.middle.shop.enums.ShopType;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
@@ -30,6 +37,7 @@ import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -42,10 +50,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -93,6 +98,10 @@ public class StockPusher {
     private LoadingCache<String, Long> skuCodeCacher;
 
     private LoadingCache<Long, OpenShop> openShopCacher;
+    @Autowired
+    private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
     private ExecutorService executorService;
 
@@ -172,8 +181,8 @@ public class StockPusher {
                 for (Long shopId : shopIds) {
                     log.info("start to push sku to shop: {}", shopId);
                     try {
-                        //根据商品分组规则判断该店铺是否运行售卖此SKU
-                        boolean isOnSale = queryHkWarhouseOrShopStockApi.isVendible(skuCode,shopId);
+
+
 
                         if (Objects.equals(shopId,mposOpenShopId)){
                             continue;
@@ -213,53 +222,30 @@ public class StockPusher {
                             continue;
                         }
 
-                        long start1 = System.currentTimeMillis();
-                        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
-                                Lists.transform(rWarehouseIds.getResult(), input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
-                        ), shopId);
-                        long end1 = System.currentTimeMillis();
-                        log.info("get available inventory cost: {}", (end1-start1));
-                        if (!getRes.isSuccess()) {
-                            log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
-                            continue;
-                        }
-                        Long channelStock = 0L;
-                        Long shareStock = 0L;
-                        if (!ObjectUtils.isEmpty(getRes.getResult())) {
-                            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
-                            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
-                        }
-                        log.info("search sku stock by skuCode is {},shopId is {},channelStock is {},shareStock is {}",
-                                skuCode, shopId, channelStock, shareStock);
-
-                        //如果库存数量小于0则推送0
-                        if (channelStock < 0L){
-                            log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
-                                    shopId, skuCode, channelStock, shareStock);
-
-                            channelStock = 0L;
-                        }
-
-                        if (null != shopStockRule.getSafeStock()) {
-                            shareStock = shareStock - shopStockRule.getSafeStock();
-                        }
-
-                        //按照设定的比例确定推送数量
-                        Long stock = Math.max(0,
-                                channelStock
-                                        + shareStock * shopStockRule.getRatio() / 100
-                                        + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
-                        );
-
-                        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
-                                skuCode, shopId, stock);
-
+                        Long stock = 0L;
+                        //根据商品分组规则判断该店铺是否运行售卖此SKU
+                        boolean isOnSale = queryHkWarhouseOrShopStockApi.isVendible(skuCode,shopId);
                         //根据商品分组规则，如果不售卖则推送0
                         if(!isOnSale){
                             log.info("this sku is not on sale in this shop, so set push stock to 0 (skuCode is {},shopId is {})", skuCode, shopId);
-
                             stock = 0L;
+                        }else{
+                            //跟店铺类型、营业状态过滤可用店仓
+                            List<Long> warehouseIds = getAvailableForShopWarehouse(rWarehouseIds.getResult());
+                            //根据商品分组规则过滤可发货的仓库列表
+                            warehouseIds = queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode,warehouseIds);
+                            if(warehouseIds==null||warehouseIds.isEmpty()){
+                                stock = 0L;
+                            }else {
+                                stock = this.calculateStock(shopId, skuCode, warehouseIds, shopStockRule);
+                            }
                         }
+                        if(stock == null){
+                            continue;
+                        }
+
+                        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                                skuCode, shopId, stock);
 
                         //判断店铺是否是官网的
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);
@@ -366,4 +352,104 @@ public class StockPusher {
 
         });
     }
+
+    /**
+     * @Description 查询库存中心计算可用库存
+     * @Date        2018/7/11
+     * @param       shopId
+     * @param       skuCode
+     * @param       warehouseIds
+     * @param       shopStockRule
+     * @return
+     */
+    private Long calculateStock(Long shopId,String skuCode,List<Long> warehouseIds,WarehouseShopStockRule shopStockRule){
+        Long stock = 0L;
+
+        long start1 = System.currentTimeMillis();
+        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
+                Lists.transform(warehouseIds, input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
+        ), shopId);
+        long end1 = System.currentTimeMillis();
+        log.info("get available inventory cost: {}", (end1-start1));
+        if (!getRes.isSuccess()) {
+            log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
+            return null;
+        }
+        Long channelStock = 0L;
+        Long shareStock = 0L;
+        if (!ObjectUtils.isEmpty(getRes.getResult())) {
+            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
+            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
+        }
+        log.info("search sku stock by skuCode is {},shopId is {},channelStock is {},shareStock is {}",
+                skuCode, shopId, channelStock, shareStock);
+
+        //如果库存数量小于0则推送0
+        if (channelStock < 0L){
+            log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                    shopId, skuCode, channelStock, shareStock);
+
+            channelStock = 0L;
+        }
+
+        if (null != shopStockRule.getSafeStock()) {
+            shareStock = shareStock - shopStockRule.getSafeStock();
+        }
+
+        //按照设定的比例确定推送数量
+        stock = Math.max(0,
+                channelStock
+                        + shareStock * shopStockRule.getRatio() / 100
+                        + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
+        );
+        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                skuCode, shopId, stock);
+        return stock;
+    }
+
+    /**
+     * @Description 校验门店类型为下单门店或营业状态为歇业，如果则门店店仓不可用；默认返回是false
+     * @Date        2018/7/7
+     * @param       warehouseIds
+     * @return
+     */
+    private List<Long> getAvailableForShopWarehouse(List<Long> warehouseIds) {
+
+        List<Long> availableWarehouse = new ArrayList<>();
+        for (Long warehouseId : warehouseIds) {
+            try {
+                WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+                if (warehouse.getWarehouseSubType() == null) {
+                    continue;
+                }
+                //校验是否是店仓
+                if (!Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.SHOP_WAREHOUSE.value())) {
+                    continue;
+                }
+
+                //如果类型为下单门店或营业时间为歇业则不累加此仓库可用库存
+                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.parseLong(warehouse.getCompanyId()));
+                if (shop == null) {
+                    log.error("failed to find shop for outCode({}) and companyId({})",
+                            warehouse.getOutCode(), warehouse.getCompanyId());
+                    continue;
+                }
+                //如果是下单门店 返回true
+                if (Objects.equals(ShopType.ORDERS_SHOP.value(), shop.getType())) {
+                    continue;
+                }
+                //如果营业时间为歇业返回true
+                if (Objects.equals(ShopOpeningStatus.CLOSING.value(), (ShopExtraInfo.fromJson(shop.getExtra()).getShopBusinessTime().getOpeningStatus()))) {
+                    continue;
+                }
+                availableWarehouse.add(warehouseId);
+            } catch (Exception e) {
+                log.error("failed to find shop type for warehouse (id:{}),case:{}",
+                        warehouseId, Throwables.getStackTraceAsString(e));
+                continue;
+            }
+        }
+    return availableWarehouse;
+    }
+
 }

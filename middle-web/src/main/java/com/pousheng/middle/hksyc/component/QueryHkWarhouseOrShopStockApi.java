@@ -227,6 +227,11 @@ public class QueryHkWarhouseOrShopStockApi {
                 log.warn("find warehouse by id {} is null", warehouseId);
                 continue;
             }
+            //非店仓不去校验店铺商品分组标签
+            if(!Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),warehouse.getWarehouseSubType())){
+                continue;
+            }
+
             if (StringUtils.isEmpty(warehouse.getOutCode())) {
                 log.warn("find warehouse by id {} outCode  is null", warehouseId);
                 continue;

@@ -473,7 +473,6 @@ public class FireCall {
             return new ItemNameAndStock();
         }
         Map<String,String> params = Maps.newHashMap();
-        params.put("type", String.valueOf(PsSpuType.MPOS.value()));
         params.put("spuCode", materialId);
         params.put("attrs", "尺码:" + size);
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response = skuTemplateSearchReadService.searchWithAggs(1, 20, templateName, params, SearchSkuTemplate.class);

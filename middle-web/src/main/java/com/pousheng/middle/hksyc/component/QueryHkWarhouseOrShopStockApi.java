@@ -222,30 +222,36 @@ public class QueryHkWarhouseOrShopStockApi {
     public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds) {
         List<Long> vendible = Lists.newArrayList();
         for (Long warehouseId : warehouseIds) {
-            WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
-            if (null == warehouse) {
-                log.warn("find warehouse by id {} is null", warehouseId);
-                continue;
-            }
-            //非店仓不去校验店铺商品分组标签
-            if(!Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),warehouse.getWarehouseSubType())){
-                vendible.add(warehouseId);
-                continue;
-            }
+            try {
+                WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+                if (null == warehouse) {
+                    log.warn("find warehouse by id {} is null", warehouseId);
+                    continue;
+                }
+                //非店仓不去校验店铺商品分组标签
+                if (!Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(), warehouse.getWarehouseSubType())) {
+                    vendible.add(warehouseId);
+                    continue;
+                }
 
-            if (StringUtils.isEmpty(warehouse.getOutCode())) {
-                log.warn("find warehouse by id {} outCode  is null", warehouseId);
+                if (StringUtils.isEmpty(warehouse.getOutCode())) {
+                    log.warn("find warehouse by id {} outCode  is null", warehouseId);
+                    continue;
+                }
+                Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
+                ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                Long openShopId = currentShopExtraInfo.getOpenShopId();
+                if (Arguments.isNull(openShopId)) {
+                    log.error("shop(id:{}) not mapping open shop", shop.getId());
+                    continue;
+                }
+                if (isVendible(skuCode, openShopId)) {
+                    vendible.add(warehouseId);
+                }
+            }catch (Exception e){
+                log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
+                        warehouseId, Throwables.getStackTraceAsString(e));
                 continue;
-            }
-            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
-            ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            Long openShopId = currentShopExtraInfo.getOpenShopId();
-            if (Arguments.isNull(openShopId)) {
-                log.error("shop(id:{}) not mapping open shop", shop.getId());
-                continue;
-            }
-            if (isVendible(skuCode, openShopId)) {
-                vendible.add(warehouseId);
             }
         }
         return vendible;

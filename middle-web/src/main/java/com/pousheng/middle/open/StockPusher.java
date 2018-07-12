@@ -445,7 +445,7 @@ public class StockPusher {
                 }
                 availableWarehouse.add(warehouseId);
             } catch (Exception e) {
-                log.error("failed to find shop type for warehouse (id:{}),case:{}",
+                log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
                         warehouseId, Throwables.getStackTraceAsString(e));
                 continue;
             }

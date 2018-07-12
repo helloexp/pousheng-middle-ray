@@ -1310,4 +1310,75 @@ public class AdminShops {
         //店铺邮箱
         private String email;
     }
+
+    /**
+     * @Description 初始化门店营业信息
+     * @Date        2018/7/12
+     * @param
+     * @return
+     */
+    @ApiOperation("初始化门店营业信息")
+    @RequestMapping(value = "/shop/business/info/init", method = RequestMethod.POST)
+    public Response<Boolean> initBusinessInf(@RequestBody(required = false) List<Long> shopIds) {
+        try {
+            int pageNo =1;
+            int size = 10000;
+            List<Shop>  shopList = new ArrayList<>();
+
+            if(shopIds!=null&&!shopIds.isEmpty()){
+                shopList = shopReadService.findByIds(shopIds).getResult();
+            }else {
+                Response<Paging<Shop>> pagingRes = shopReadService.pagination(null, null, null, null, pageNo, size);
+                shopList = pagingRes.getResult().getData();
+            }
+            shopList.forEach(shop -> {
+                ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+                if (!Arguments.isNull(shopExtraInfo)) {
+                    ShopBusinessTime shopBusinessTime = shopExtraInfo.getShopBusinessTime();
+                    if (shopBusinessTime == null) {
+                        shopBusinessTime = new ShopBusinessTime();
+                        shopBusinessTime.setOpeningStatus(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusMon(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusTue(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusWed(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusThu(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusFri(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusSat(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStatusSun(ShopOpeningStatus.OPENING.value());
+                        shopBusinessTime.setOpeningStartTimeMon("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeMon("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeTue("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeTue("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeWed("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeWed("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeThu("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeThu("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeFri("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeFri("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeSat("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeSat("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeSun("09:00:00");
+                        shopBusinessTime.setOpeningEndTimeSun("22:00:00");
+                        shopBusinessTime.setOrderAcceptQtyMax(1000);
+                        shopBusinessTime.setOrderTimeout(90);
+                        shopBusinessTime.setOrderTimeout(120);
+                        shopExtraInfo.setShopBusinessTime(shopBusinessTime);
+                        shop.setExtra(ShopExtraInfo.putExtraInfo(shop.getExtra(), shopExtraInfo));
+                        Response<Boolean> resp = shopWriteService.update(shop);
+                        if (!resp.isSuccess()) {
+                            log.error("update shop(shopId={}) business info failed, error={}", shop.getId(), resp.getError());
+                            throw new JsonResponseException(500, resp.getError());
+                        }
+                        //刷新缓存
+                        shopCacher.refreshShopById(shop.getId());
+                        middleShopCacher.refreshByOuterIdAndBusinessId(shop.getOuterId(), shop.getBusinessId());
+                    }
+                }
+            });
+        } catch (Exception e) {
+            log.error("update shop(shopId={}) business info failed, error={}",Throwables.getStackTraceAsString(e));
+            return Response.fail(e.getMessage());
+        }
+        return Response.ok(true);
+    }
 }

@@ -424,6 +424,7 @@ public class StockPusher {
                 }
                 //校验是否是店仓
                 if (!Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.SHOP_WAREHOUSE.value())) {
+                    availableWarehouse.add(warehouseId);
                     continue;
                 }
 

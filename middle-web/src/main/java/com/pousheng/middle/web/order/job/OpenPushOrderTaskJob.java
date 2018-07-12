@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -85,4 +86,45 @@ public class OpenPushOrderTaskJob {
     public void test2(){
        this.doProcessFailedOpenPushOrderTask();
     }
+
+
+
+
+    /**
+     * 手动补偿任务
+     */
+    @RequestMapping(value = "api/hk/pos/task/{id}",method = RequestMethod.GET)
+    public void test3(@PathVariable("id") Long taskId){
+        log.info("START SCHEDULE ON OPEN PUSH ORDER TASK");
+        //获取待处理的失败任务
+        Response<OpenPushOrderTask> r =  openPushOrderTaskReadService.findById(taskId);
+        if (!r.isSuccess()){
+            log.error("find open push order task failed");
+            return;
+        }
+        OpenPushOrderTask openPushOrderTask = r.getResult();
+
+        try{
+
+            Map<String,String> extra = openPushOrderTask.getExtra();
+            String openClientShopJson = extra.get("openClientShop");
+            String orderInfos = extra.get("orderInfos");
+            List<OpenFullOrderInfo> openFullOrderInfos = JsonMapper.nonEmptyMapper().fromJson(orderInfos, JsonMapper.nonEmptyMapper().createCollectionType(List.class,OpenFullOrderInfo.class));
+            OpenClientShop openClientShop = JsonMapper.nonEmptyMapper().fromJson(openClientShopJson,OpenClientShop.class);
+            Response<Boolean> response =  orderServiceCenter.syncOrderToEcp(openClientShop.getOpenShopId(),openFullOrderInfos);
+            if (!response.isSuccess()) {
+                log.error("sync order to out failed,openShopId is {},orders are {},caused by {}", openClientShop.getOpenShopId(), openFullOrderInfos, r.getError());
+            } else {
+                openPushOrderTask.setStatus(1);
+                Response<Boolean> updateResponse = openPushOrderTaskWriteService.update(openPushOrderTask);
+                if (!updateResponse.isSuccess()){
+                    log.error("update open push order task failed,openPushOrderTaskId is {},caused by {}",openPushOrderTask.getId(),updateResponse.getError());
+                }
+            }
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+        log.info("END SCHEDULE ON OPEN PUSH ORDER TASK");
+    }
+
 }

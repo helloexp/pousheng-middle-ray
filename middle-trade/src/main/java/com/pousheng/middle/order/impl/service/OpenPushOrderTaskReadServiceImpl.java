@@ -30,4 +30,14 @@ public class OpenPushOrderTaskReadServiceImpl implements OpenPushOrderTaskReadSe
             return io.terminus.common.model.Response.fail("openPushOrderTask.find.fail");
         }
     }
+
+    @Override
+    public Response<OpenPushOrderTask> findById(Long id) {
+        try {
+            return io.terminus.common.model.Response.ok(openPushOrderTaskDao.findById(id));
+        } catch (Exception e) {
+            log.error("find openPushOrderTask by id :{} failed,  cause:{}", id, Throwables.getStackTraceAsString(e));
+            return io.terminus.common.model.Response.fail("openPushOrderTask.find.fail");
+        }
+    }
 }

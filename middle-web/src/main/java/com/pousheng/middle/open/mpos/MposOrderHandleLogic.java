@@ -75,6 +75,7 @@ public class MposOrderHandleLogic {
             try{
                 log.info("begin to handle order,mposShipmentExtra is {}",mposShipmentExtra);
                 Map<String,String> shipExtra = mposShipmentExtra.transToMap();
+                log.info("shipExtra param is {}", shipExtra);
                 Shipment shipment = shipmentReadLogic.findShipmentById(mposShipmentExtra.getOuterShipmentId());
                 if(shipment != null && idempotencyValidate(shipment.getStatus(),mposShipmentExtra.getStatus().toString())){
                     this.deal(shipment,mposShipmentExtra.getStatus().toString(),shipExtra);
@@ -130,6 +131,15 @@ public class MposOrderHandleLogic {
                     }
                 }
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                // 圆通回传的快递单号
+                if (Objects.nonNull(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
+                    extraMap.put(TradeConstants.YTO_CALL_BACK_MAIL_NO,extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
+                }
+                // 物流单号
+                if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
+                    extraMap.put(TradeConstants.EXPRESS_ORDER_ID,extra.get(TradeConstants.EXPRESS_ORDER_ID));
+                }
+                log.info("extraMap param is {}", extraMap);
                 update.setExtra(extraMap);
                 break;
             default:

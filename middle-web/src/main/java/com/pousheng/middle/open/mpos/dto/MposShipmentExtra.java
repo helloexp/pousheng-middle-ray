@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.mpos.dto;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.order.constant.TradeConstants;
 import lombok.Data;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -109,6 +110,11 @@ public class MposShipmentExtra {
      */
     private Date updatedAt;
 
+    /**
+     * extra_json 信息
+     */
+    private Map<String, String> extra;
+
 
     public Map<String,String> transToMap(){
         Map<String,String> map = Maps.newHashMap();
@@ -118,6 +124,14 @@ public class MposShipmentExtra {
         if(Objects.nonNull(shipmentDate))
             map.put("shipmentDate",DFT.print(shipmentDate.getTime()));
         map.put("mposRejectReason",reason);
+        // 圆通回传的快递单号
+        if (Objects.nonNull(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
+            map.put(TradeConstants.YTO_CALL_BACK_MAIL_NO,extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
+        }
+        // 物流单号
+        if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
+            map.put(TradeConstants.EXPRESS_ORDER_ID,extra.get(TradeConstants.EXPRESS_ORDER_ID));
+        }
         return map;
     }
 }

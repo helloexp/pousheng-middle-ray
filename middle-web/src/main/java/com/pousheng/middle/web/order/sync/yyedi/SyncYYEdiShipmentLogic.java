@@ -402,7 +402,7 @@ public class SyncYYEdiShipmentLogic {
         //查询店铺相关信息-获取下单店铺公司码
         Response<OpenShop> r = openShopReadService.findById(shipment.getShopId());
         Map<String,String> openShopExtra = r.getResult().getExtra();
-        String shopCompanyCode =openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
+        String shopCompanyCode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
         shipmentInfo.setShopCompanyCode(shopCompanyCode);
         //渠道
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
@@ -410,7 +410,12 @@ public class SyncYYEdiShipmentLogic {
         String isAssignShop = shopOrderExtra.get("isAssignShop");
         if (!Objects.isNull(isAssignShop)){
             shipmentInfo.setChannel("mpos");
-            String shopOutCode =openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
+            if( !openShopExtra.containsKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE) || !openShopExtra.containsKey(TradeConstants.HK_COMPANY_CODE)){
+                log.error("open shop(id:{}) extra info:{} invalid",r.getResult().getId(),openShopExtra);
+                throw new ServiceException("open.shop.extra.info.invalid");
+
+            }
+            String shopOutCode = openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE);
             String companyCode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
             Response<com.google.common.base.Optional<Shop>> shopOptionalResponse =  psShopReadService.findByOuterIdAndBusinessId(shopOutCode,Long.valueOf(companyCode));
             if (!shopOptionalResponse.isSuccess()){

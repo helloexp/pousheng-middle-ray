@@ -230,6 +230,7 @@ public class QueryHkWarhouseOrShopStockApi {
             //非店仓不去校验店铺商品分组标签
             if(!Objects.equals(WarehouseType.SHOP_WAREHOUSE.value(),warehouse.getWarehouseSubType())){
                 vendible.add(warehouseId);
+                continue;
             }
 
             if (StringUtils.isEmpty(warehouse.getOutCode())) {

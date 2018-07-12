@@ -36,7 +36,7 @@ public class MiddleShopCacher {
     @RpcConsumer
     private PsShopReadService shopReadService;
 
-    @Value("${cache.duration.in.minutes: 60}")
+    @Value("${cache.duration.in.minutes: 30}")
     private Integer duration;
 
     @PostConstruct

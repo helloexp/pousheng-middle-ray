@@ -185,11 +185,10 @@ msg:
   current:
     emailService: javaxEmailService
   javaxemail:
-    mailServerHost: smtp.163.com
-    fromAddress: yyecsys@163.com
-    userName: yyecsys
-    password: yyec1qaz2wsx
-
+    mailServerHost: mail.pousheng.com
+    fromAddress: mpos_order_notify@pousheng.com
+    userName: mpos_order_notify@pousheng.com
+    password: ps_1233
 
 msg.template.list:
   - key: email.order.confirm

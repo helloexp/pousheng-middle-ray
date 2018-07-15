@@ -425,3 +425,16 @@ CREATE TABLE `pousheng_compensate_biz` (
   PRIMARY KEY (`id`)
 )  COMMENT='业务处理表';
 
+drop table if exists `pousheng_stock_record_log`;
+CREATE TABLE `pousheng_stock_record_log` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shipment_id` bigint(20) COMMENT '发货单id',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
+  `shop_id` bigint(20) COMMENT '店铺id',
+  `sku_code` varchar(40) NOT NULL DEFAULT '' COMMENT '商品skuId',
+  `context` LONGTEXT  COMMENT '明细内容',
+  `type` VARCHAR(20)  COMMENT '日志类型',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='库存查询日志';

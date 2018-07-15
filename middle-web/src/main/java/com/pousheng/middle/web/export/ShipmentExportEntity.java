@@ -75,4 +75,7 @@ public class ShipmentExportEntity {
     @ExportTitle("发货方")
     private String warehouseName;
 
+    @ExportTitle("物流单号")
+    private String expressOrderId;
+
 }

@@ -41,7 +41,7 @@ public class SycYunjuRefundOrderApi {
 
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(returnRequest);
-        log.info("rpc yunju mgexchangereturn paramJson:{}",paramJson);
+        log.info("rpc yunju mgexchangereturn exchange_id:{} paramJson:{}",returnRequest.getExchange_id(),paramJson);
         String uri="/common-yjerp/yjerp/default/pushmgexchangereturn"; // FIXME: 2018/4/12
         String gateway =hkGateway+uri;
         String responseBody="";
@@ -55,10 +55,10 @@ public class SycYunjuRefundOrderApi {
                     .connectTimeout(10000).readTimeout(10000)
                     .body();
 
-            log.info("rpc yunju mgexchangereturn  responseBody={}",responseBody);
+            log.info("rpc yunju mgexchangereturn exchange_id:{} responseBody={}",returnRequest.getExchange_id(),responseBody);
         }catch ( Exception e){
 
-            log.error("rpc yunju mgexchangereturn exception happens,exception={}", Throwables.getStackTrace(e));
+            log.error("rpc yunju mgexchangereturn exchange_id:{} exception happens,exception={}",returnRequest.getExchange_id(), Throwables.getStackTrace(e));
             return null;
         }
 

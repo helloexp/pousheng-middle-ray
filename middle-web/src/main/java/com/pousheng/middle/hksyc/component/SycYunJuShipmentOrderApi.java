@@ -41,7 +41,7 @@ public class SycYunJuShipmentOrderApi {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(syncShipmentRequest);
-        log.info("paramJson:{}", paramJson);
+        log.info("doSyncShipmentOrder to yj out order id:{} paramJson:{}", syncShipmentRequest.getOrder_sn(),paramJson);
         String uri = "/common-yjerp/yjerp/default/pushmgorderout";
         String gateway = hkGateway + uri;
         String responseBody = null;
@@ -55,10 +55,10 @@ public class SycYunJuShipmentOrderApi {
                     .connectTimeout(1000000).readTimeout(1000000)
                     .body();
 
-            log.info("rpc yunju mgorderout  responseBody={}", responseBody);
+            log.info("rpc yunju mgorderout out order id:{}  responseBody={}",syncShipmentRequest.getOrder_sn(), responseBody);
 
         } catch (Exception e) {
-            log.error("rpc yunju mgorderout exception happens,exception={}", Throwables.getStackTrace(e));
+            log.error("rpc yunju mgorderout out order id:{} exception happens,exception={}",syncShipmentRequest.getOrder_sn(), Throwables.getStackTrace(e));
             return  null;
         }
         YJRespone response = JsonMapper.nonEmptyMapper().fromJson(responseBody, YJRespone.class);

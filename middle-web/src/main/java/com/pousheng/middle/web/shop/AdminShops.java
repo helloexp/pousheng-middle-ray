@@ -1335,7 +1335,7 @@ public class AdminShops {
                 ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
                 if (!Arguments.isNull(shopExtraInfo)) {
                     ShopBusinessTime shopBusinessTime = shopExtraInfo.getShopBusinessTime();
-                    if (shopBusinessTime == null) {
+                    //if (shopBusinessTime == null) {
                         shopBusinessTime = new ShopBusinessTime();
                         shopBusinessTime.setOpeningStatus(ShopOpeningStatus.OPENING.value());
                         shopBusinessTime.setOpeningStatusMon(ShopOpeningStatus.OPENING.value());
@@ -1345,20 +1345,20 @@ public class AdminShops {
                         shopBusinessTime.setOpeningStatusFri(ShopOpeningStatus.OPENING.value());
                         shopBusinessTime.setOpeningStatusSat(ShopOpeningStatus.OPENING.value());
                         shopBusinessTime.setOpeningStatusSun(ShopOpeningStatus.OPENING.value());
-                        shopBusinessTime.setOpeningStartTimeMon("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeMon("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeTue("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeTue("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeWed("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeWed("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeThu("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeThu("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeFri("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeFri("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeSat("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeSat("22:00:00");
-                        shopBusinessTime.setOpeningStartTimeSun("09:00:00");
-                        shopBusinessTime.setOpeningEndTimeSun("22:00:00");
+                        shopBusinessTime.setOpeningStartTimeMon("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeMon("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeTue("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeTue("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeWed("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeWed("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeThu("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeThu("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeFri("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeFri("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeSat("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeSat("23:59:59");
+                        shopBusinessTime.setOpeningStartTimeSun("00:00:00");
+                        shopBusinessTime.setOpeningEndTimeSun("23:59:59");
                         shopBusinessTime.setOrderAcceptQtyMax(1000);
                         shopBusinessTime.setOrderTimeout(90);
                         shopBusinessTime.setOrderTimeout(120);
@@ -1372,7 +1372,7 @@ public class AdminShops {
                         //刷新缓存
                         shopCacher.refreshShopById(shop.getId());
                         middleShopCacher.refreshByOuterIdAndBusinessId(shop.getOuterId(), shop.getBusinessId());
-                    }
+                   // }
                 }
             });
         } catch (Exception e) {

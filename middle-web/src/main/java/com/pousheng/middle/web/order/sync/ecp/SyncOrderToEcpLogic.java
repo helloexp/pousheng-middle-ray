@@ -330,7 +330,7 @@ public class SyncOrderToEcpLogic {
                             shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                         }
                 } catch (Exception e) {
-                    log.error("sync shipment to yunju failed,shipmentId is {},caused by {}", shipment.getId(), e.getMessage());
+                    log.error("sync shipment to yunju failed,shipmentId is {},caused by {}", shipment.getId(), Throwables.getStackTraceAsString());
                     shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     throw new ServiceException(e.getMessage());
                 }
@@ -346,7 +346,7 @@ public class SyncOrderToEcpLogic {
                 return Response.fail("sync.ecp.fail");
             }
         } catch (Exception e) {
-            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), e.getMessage());
+            log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
         }

@@ -258,25 +258,22 @@ public class DispatchComponent {
             log.error("not find shop(id:{}) extra info by shop extra info json:{} ",shop.getId(),shop.getExtra());
             throw new ServiceException("shop.extra.info.invalid");
         }
-        //安全库存
-        Integer safeStock = Arguments.isNull(shopExtraInfo.getSafeStock())? 0 : shopExtraInfo.getSafeStock();
         for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()){
             //可用库存
             Integer availStock = skuAndQuantityInfo.getQuantity();
             //这里先不考虑 availStock-safeStock 负数情况
-            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock- safeStock);
+            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(),skuAndQuantityInfo.getBarcode(),availStock);
         }
 
     }
 
     private void completeTotalWarehouseTab(HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable) {
         //新版仓库暂时不取安全库存
-        Integer safeStock = 0;
         for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
             //可用库存
             Integer availStock = skuAndQuantityInfo.getQuantity();
             //这里先不考虑 availStock-lockStock - safeStock 负数情况
-            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode(), availStock - safeStock);
+            skuCodeQuantityTable.put(hkSkuStockInfo.getBusinessId(), skuAndQuantityInfo.getBarcode(), availStock);
         }
     }
 

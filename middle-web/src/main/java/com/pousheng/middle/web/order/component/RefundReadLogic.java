@@ -262,11 +262,11 @@ public class RefundReadLogic {
     public RefundExtra findRefundExtra(Refund refund){
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
-            log.error("refund(id:{}) extra field is null",refund.getId());
+            log.warn("refund(id:{}) extra field is null",refund.getId());
             return new RefundExtra();
         }
         if(!extraMap.containsKey(TradeConstants.REFUND_EXTRA_INFO)){
-            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_EXTRA_INFO);
+            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.REFUND_EXTRA_INFO);
             return new RefundExtra();
         }
 
@@ -276,11 +276,11 @@ public class RefundReadLogic {
     public MiddleChangeReceiveInfo findMiddleChangeReceiveInfo(Refund refund){
         Map<String,String> extraMap = refund.getExtra();
         if(CollectionUtils.isEmpty(extraMap)){
-            log.error("refund(id:{}) extra field is null",refund.getId());
+            log.warn("refund(id:{}) extra field is null",refund.getId());
             return new MiddleChangeReceiveInfo();
         }
         if(!extraMap.containsKey(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO)){
-            log.error("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO);
+            log.warn("refund(id:{}) extra map not contain key:{}",refund.getId(),TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO);
             return new MiddleChangeReceiveInfo();
         }
         return mapper.fromJson(extraMap.get(TradeConstants.MIDDLE_CHANGE_RECEIVE_INFO),MiddleChangeReceiveInfo.class);

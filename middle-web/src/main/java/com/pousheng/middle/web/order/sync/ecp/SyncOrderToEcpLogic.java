@@ -330,7 +330,7 @@ public class SyncOrderToEcpLogic {
                             shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                         }
                 } catch (Exception e) {
-                    log.error("sync shipment to yunju failed,shipmentId is {},caused by {}", shipment.getId(), Throwables.getStackTraceAsString());
+                    log.error("sync shipment to yunju failed,shipmentId is {},caused by {}", shipment.getId(), Throwables.getStackTraceAsString(e));
                     shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     throw new ServiceException(e.getMessage());
                 }

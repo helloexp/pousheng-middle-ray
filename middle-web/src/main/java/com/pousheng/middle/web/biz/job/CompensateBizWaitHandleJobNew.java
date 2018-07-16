@@ -139,7 +139,12 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
 
     @Override
     protected void waitHandle(List<Long> ids) {
-        poushengCompensateBizWriteService.batchUpdateStatus(ids, PoushengCompensateBizStatus.PROCESSING.name());
+       Response<Boolean> response = poushengCompensateBizWriteService.batchUpdateStatus(ids, PoushengCompensateBizStatus.PROCESSING.name());
+       if (response.isSuccess()) {
+           if (log.isDebugEnabled()) {
+               log.debug("batch update ids: {} status: PROCESSING SUCCESS", ids);
+           }
+       }
     }
 
     @Override

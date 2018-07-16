@@ -125,11 +125,19 @@ public class AdminOrderWriter {
             ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //同步到电商平台
             String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
-            if (!syncRes.isSuccess()) {
-                log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
-                throw new JsonResponseException(syncRes.getError());
+            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())){
+                //同步到云聚
+                syncOrderToEcpLogic.syncToYunJu(shopOrder);
+
             }
+            else {
+                Response<Boolean> syncRes = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+                if (!syncRes.isSuccess()) {
+                    log.error("sync shopOrder(id:{}) to ecp fail,error:{}", shopOrderId, syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
+                }
+            }
+
         } else {
             Response<Boolean> syncRes = syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
             if (!syncRes.isSuccess()) {

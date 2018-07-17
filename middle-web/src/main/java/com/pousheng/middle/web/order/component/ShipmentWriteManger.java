@@ -1,18 +1,15 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
-import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
-import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.enums.StockRecordType;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Shipment;
@@ -26,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * 生成发货单的操作：防止出现并发的情况
@@ -47,9 +43,7 @@ public class ShipmentWriteManger {
     @Autowired
     private MiddleShipmentWriteService middleShipmentWriteService;
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-
-    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+    private EventBus eventBus;
 
     @Transactional
     public Long createShipmentByConcurrent(Shipment shipment, ShopOrder shopOrder){
@@ -71,6 +65,10 @@ public class ShipmentWriteManger {
             log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
             throw new ServiceException(rDecrease.getError());
         }
+
+        // 异步订阅 用于记录库存数量的日志
+        eventBus.post(new StockRecordEvent(createResp.getResult(), StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
+
         return createResp.getResult();
     }
 

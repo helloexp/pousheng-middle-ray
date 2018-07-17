@@ -2,6 +2,7 @@ package com.pousheng.middle.open.mpos;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
@@ -9,8 +10,10 @@ import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.StockRecordType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
+import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import com.pousheng.middle.web.order.component.*;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -59,6 +62,8 @@ public class MposOrderHandleLogic {
 
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private EventBus eventBus;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -130,15 +135,16 @@ public class MposOrderHandleLogic {
                         log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
                     }
                 }
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                 // 圆通回传的快递单号
                 if (Objects.nonNull(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
-                    extraMap.put(TradeConstants.YTO_CALL_BACK_MAIL_NO,extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
+                    shipmentExtra.setCallbackMailNo(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
                 }
                 // 物流单号
                 if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
-                    extraMap.put(TradeConstants.EXPRESS_ORDER_ID,extra.get(TradeConstants.EXPRESS_ORDER_ID));
+                    shipmentExtra.setExpressOrderId(extra.get(TradeConstants.EXPRESS_ORDER_ID));
                 }
+                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+
                 log.info("extraMap param is {}", extraMap);
                 update.setExtra(extraMap);
                 break;
@@ -158,6 +164,10 @@ public class MposOrderHandleLogic {
         }
 
         if (Objects.equals(orderEvent,MiddleOrderEvent.MPOS_REJECT)){
+
+            // 异步订阅 用于记录库存数量的日志
+            eventBus.post(new StockRecordEvent(shipment.getId(), StockRecordType.MPOS_REFUSE_ORDER.toString()));
+
             //如果拒单，将据单原因更新到发货单扩展字段里
             shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
 

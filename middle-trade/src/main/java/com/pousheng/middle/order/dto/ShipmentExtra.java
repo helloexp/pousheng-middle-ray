@@ -96,4 +96,10 @@ public class ShipmentExtra implements Serializable{
 
     //同步渠道(包含云聚)的状态
     private Integer syncChannelStatus;
+
+    // 圆通回传快递单号
+    private String callbackMailNo;
+
+    // 物流单号
+    private String expressOrderId;
 }

@@ -469,3 +469,17 @@ CREATE TABLE `mc_application_log_keys`(
   PRIMARY KEY (`id`)
 ) COMMENT = '增加会员应用日志模板key类型';
 CREATE UNIQUE INDEX idx_mc_ald_root_key_name on mc_application_log_keys(root_key_class_name,root_key_method_name);
+
+drop table if exists `pousheng_stock_record_log`;
+CREATE TABLE `pousheng_stock_record_log` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shipment_id` bigint(20) COMMENT '发货单id',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
+  `shop_id` bigint(20) COMMENT '店铺id',
+  `sku_code` varchar(40) NOT NULL DEFAULT '' COMMENT '商品skuId',
+  `context` LONGTEXT  COMMENT '明细内容',
+  `type` VARCHAR(20)  COMMENT '日志类型',
+  `created_at` datetime DEFAULT NULL COMMENT '创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+)  COMMENT='库存查询日志';

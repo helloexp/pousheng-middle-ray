@@ -9,7 +9,8 @@ spring:
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
   type-aliases-package: com.pousheng.middle.order.model,
-        io.terminus.parana.(order|cart|express|promotion|delivery|settle).model
+        io.terminus.parana.(order|cart|express|promotion|delivery|settle).model,
+        io.terminus.applog.core.model
 
 
 

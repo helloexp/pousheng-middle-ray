@@ -504,6 +504,7 @@ public class ExportTradeBillListener {
 
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                     entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
+                    entity.setExpressOrderId(shipmentExtra.getExpressOrderId());
                     if (!receiverResponse.getResult().isEmpty()) {
                         entity.setReciverName(receiverResponse.getResult().get(0).getReceiveUserName());
                         entity.setReciverAddress(this.getAddress(receiverResponse.getResult().get(0)));

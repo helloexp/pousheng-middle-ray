@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -35,6 +36,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
+import com.pousheng.middle.web.utils.mail.MailLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -138,6 +140,8 @@ public class ShipmentWiteLogic {
     private ShipmentWriteManger shipmentWriteManger;
     @Autowired
     private ZoneContractReadService zoneContractReadService;
+    @Autowired
+    private MailLogic mailLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -1419,8 +1423,7 @@ public class ShipmentWiteLogic {
                     }
                     Shop shop = shopResponse.getResult();
                     Map<String, Serializable> context = Maps.newHashMap();
-                    context.put("shopName", shop.getName());
-                    context.put("orderId", shopOrder.getOutId());
+
                     List<String> list = Lists.newArrayList();
                     //门店邮箱实时查询会员中心
                     String email = getShopEmail(shop);
@@ -1432,7 +1435,7 @@ public class ShipmentWiteLogic {
                     list.addAll(getZoneContractEmails(shipmentExtra));
                     if (list.size() > 0) {
                         log.info("send mpos email to : {}", JSON_MAPPER.toJson(list));
-                        msgService.send(JSON_MAPPER.toJson(list), "email.order.confirm", context, null);
+                        mailLogic.sendMail(String.join(",", list),shop.getName() + "店铺，你有一张订单待接单，订单号为:" + shopOrder.getOutId() + "，请立即处理");
                         log.info("send email to mpos success");
                     }
                 }

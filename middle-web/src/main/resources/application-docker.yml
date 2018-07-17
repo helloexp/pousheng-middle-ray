@@ -235,3 +235,10 @@ terminus:
   rocketmq:
     nameServerAddress: ${MQ_NAME_ADDR}
     producerGroup: ${MQ_PRODUCER_GROUP}
+
+# outlook邮箱,exchange服务器
+outlook.mail.server: mail.pousheng.com
+outlook.mail.username: mpos_order_notify@pousheng.com
+outlook.mail.password: ps_1233
+outlook.mail.title: 派单提醒
+outlook.mail.copy: mpos_order_notify@pousheng.com

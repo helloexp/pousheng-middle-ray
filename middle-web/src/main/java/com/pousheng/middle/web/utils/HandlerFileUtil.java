@@ -12,12 +12,14 @@ import com.opencsv.exceptions.CsvRequiredFieldEmptyException;
 import com.pousheng.middle.common.utils.batchhandle.ExcelUtil;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.web.utils.export.ExcelCovertCsvReader;
+import com.pousheng.middle.web.warehouses.dto.PoushengChannelImportDTO;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -90,6 +92,53 @@ public class HandlerFileUtil<T> {
      * 限制excel导入最大条数
      */
     private static final Integer MAX_SIZE = 2000;
+
+    public List<PoushengChannelImportDTO> handlerExcelChannelInventory(InputStream insr) throws IOException {
+        List<PoushengChannelImportDTO> channelDTOS = Lists.newArrayList();
+        long startTime = System.currentTimeMillis();
+        BufferedInputStream bufferedInputStream = new BufferedInputStream(insr);
+        try {
+            //存在serialVersionUID，需要去掉
+            Field[] fields = PoushengChannelImportDTO.class.getDeclaredFields();
+            List<String[]> list = ExcelCovertCsvReader
+                    .readerExcelAt(
+                            bufferedInputStream, fields.length - 1, 501);
+            for (Integer i = 1; i < list.size(); i++) {
+                //判断空行
+                if (checkDataEmpty(list.get(i))) {
+                    continue;
+                }
+                PoushengChannelImportDTO channelImportDTO = makeChannelImportDTO(list.get(i), fields);
+                if (Strings.isNullOrEmpty(channelImportDTO.getSkuCode())) {
+                    throw new ServiceException("第"+i+"行：条码不能为空");
+                }
+                if (Strings.isNullOrEmpty(channelImportDTO.getOpenShopName())) {
+                    throw new ServiceException("第"+i+"行：指定店铺名称不能为空");
+                }
+                if (Strings.isNullOrEmpty(channelImportDTO.getWarehouseCode())) {
+                    throw new ServiceException("第"+i+"行：仓库编号不能为空");
+                }
+                if (Strings.isNullOrEmpty(channelImportDTO.getWarehouseCode())) {
+                    throw new ServiceException("第"+i+"行：指定库存数量不能为空");
+                }
+                if (!isPositiveNumber(channelImportDTO.getChannelQuantity())) {
+                    throw new ServiceException("第"+i+"行：指定库存数量必须为正整数");
+                }
+
+                channelDTOS.add(channelImportDTO);
+            }
+            long endTime = System.currentTimeMillis();
+            log.info("analysis channel inventory import excel , date:{}", endTime - startTime);
+        } catch (ServiceException | NullPointerException e) {
+            throw new ServiceException(e.getMessage());
+        } catch (Exception e) {
+            log.error("analysis channel inventory import excel fail, cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("analysis.channel.inventory.import.excel.fail");
+        } finally {
+            bufferedInputStream.close();
+        }
+        return channelDTOS;
+    }
 
     public List<MiddleOrderInfo> handlerExcelOrder(InputStream insr) throws IOException {
         List<MiddleOrderInfo> orderInfos = Lists.newArrayList();
@@ -175,6 +224,22 @@ public class HandlerFileUtil<T> {
             return fee.intValue();
         } catch (Exception e) {
             throw new ServiceException("order.fee.not.legal");
+        }
+    }
+
+    public boolean isPositiveNumber(String input) {
+        if (ObjectUtils.isEmpty(input)) {
+            return false;
+        }
+
+        try {
+            int out = Integer.parseInt(input);
+            if (out <= 0) {
+                return false;
+            }
+            return true;
+        } catch (Exception e) {
+            return false;
         }
     }
 
@@ -282,6 +347,26 @@ public class HandlerFileUtil<T> {
         return null;
     }
 
+    /**
+     * 解析excel
+     */
+    private PoushengChannelImportDTO makeChannelImportDTO(String[] data, Field[] fields) {
+
+        try {
+            PoushengChannelImportDTO channelImportDTO = new PoushengChannelImportDTO();
+            for (Integer j = 1; j < fields.length; j++) {
+                //把excel数据导入到bean类
+                String name = fields[j].getName();
+                name = name.substring(0, 1).toUpperCase() + name.substring(1);
+                Method method = channelImportDTO.getClass().getMethod("set" + name, fields[j].getType());
+                method.invoke(channelImportDTO, data[j - 1] != "" ? data[j - 1] : null);
+            }
+            return channelImportDTO;
+        } catch (Exception e) {
+            log.error("analysis channel inventory import excel fail, cause:{}", Throwables.getStackTraceAsString(e));
+            throw new ServiceException("analysis.channel.inventory.import.excel.fail");
+        }
+    }
 
     /**
      * 解析excel

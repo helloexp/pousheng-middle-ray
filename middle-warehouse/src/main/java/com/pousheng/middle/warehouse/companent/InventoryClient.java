@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.companent;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -9,6 +10,8 @@ import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
+import com.pousheng.middle.warehouse.model.SkuInventory;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -195,6 +198,45 @@ public class InventoryClient {
             log.error("find all config shop id list fail, cause:{}", Throwables.getStackTraceAsString(e));
 
             return Response.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 库存分页
+     *
+     * @return
+     */
+    public Paging<SkuInventory> inventoryPaging (Integer pageNo, Integer pageSize, List<String> skuCodeList, String warehouseName) {
+        if (null == pageNo) {
+            pageNo = 1;
+        }
+        if (null == pageSize) {
+            pageSize = 20;
+        }
+        try {
+            Map<String, Object> params = Maps.newHashMap();
+            params.put("warehouseName", warehouseName);
+            params.put("skuCodeList", (null==skuCodeList?JSON.toJSONString(Lists.newArrayList()):JSON.toJSONString(skuCodeList)));
+
+            Paging<JSONObject> dataPage = (Paging<JSONObject>) inventoryBaseClient.get(
+                    "api/inventory/query/paging",
+                    pageNo, pageSize, params, Paging.class, false);
+
+            if (null != dataPage) {
+                List<SkuInventory> temp = Lists.newArrayList();
+                for (JSONObject jsonObject : dataPage.getData()) {
+                    temp.add(JSON.parseObject(JSON.toJSONString(jsonObject), SkuInventory.class));
+                }
+
+                return new Paging<SkuInventory>(dataPage.getTotal(), temp);
+            }
+
+            return Paging.empty();
+
+        } catch (Exception e) {
+            log.error("page inventory fail, cause:{}", Throwables.getStackTraceAsString(e));
+
+            return Paging.empty();
         }
     }
 

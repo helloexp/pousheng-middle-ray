@@ -78,7 +78,7 @@ public class StockRecordListener {
         // 仓库id
         Long warehouseId = shipment.getShipId();
         // 判断仓发还是店发 ship_way :1 店发 需要去获取店铺关联的仓库ID
-        if (Objects.equals(shipment.getShipWay(), ShipmentWay.SHOP.value())) {
+        if (Objects.equals(shipment.getShipWay(), 1)) {
             OpenShop openShop = openShopCacher.findById(shipment.getShipId());
             String appKey = openShop.getAppKey();
             String outCode = appKey.substring(4);

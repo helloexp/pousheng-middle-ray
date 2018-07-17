@@ -26,6 +26,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
+import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
@@ -521,6 +522,9 @@ public class Shipments {
             Long shipmentId = null;
             try {
                 shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment,shopOrder);
+
+                // 异步订阅 用于记录库存数量的日志
+                eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
             } catch (Exception e) {
                 log.error("failed to gen shipment shopOrderId : {} :", shopOrderId, Throwables.getStackTraceAsString(e));
             }

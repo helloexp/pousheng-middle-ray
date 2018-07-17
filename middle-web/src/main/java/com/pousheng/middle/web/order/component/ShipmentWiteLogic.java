@@ -31,6 +31,7 @@ import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -583,6 +584,10 @@ public class ShipmentWiteLogic {
         shipment.setExtra(extraMap);
         //创建发货单
         Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
+
+        // 异步订阅 用于记录库存数量的日志
+        eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
+
         //生成发货单之后需要将发货单id添加到子单中
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {
@@ -670,6 +675,10 @@ public class ShipmentWiteLogic {
         shipment.setExtra(extraMap);
         //创建发货单
         Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
+
+        // 异步订阅 用于记录库存数量的日志
+        eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
+
         //生成发货单之后需要将发货单id添加到子单中
         for (SkuOrder skuOrder : skuOrdersShipment) {
             try {

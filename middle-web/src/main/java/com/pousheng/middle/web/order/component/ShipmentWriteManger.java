@@ -66,9 +66,6 @@ public class ShipmentWriteManger {
             throw new ServiceException(rDecrease.getError());
         }
 
-        // 异步订阅 用于记录库存数量的日志
-        eventBus.post(new StockRecordEvent(createResp.getResult(), StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
-
         return createResp.getResult();
     }
 

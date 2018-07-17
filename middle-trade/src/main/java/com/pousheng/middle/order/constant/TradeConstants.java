@@ -258,4 +258,14 @@ public class TradeConstants {
     public static final int STATUS_ENABLE = 1;
     public static final int STATUS_DISABLE = -1;
 
+    public static final String SHIPMENT_EXPRESS_NODE_DETAILS = "shipmentExpressNodeDetail";
+    /**
+     * mpos需要额外记录到中台的字段
+     */
+    // 圆通回传快递单号
+    public static final String YTO_CALL_BACK_MAIL_NO = "callbackMailNo";
+
+    // 物流单号生成规则
+    public static final String EXPRESS_ORDER_ID = "expressOrderId";
+
 }

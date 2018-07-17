@@ -237,7 +237,7 @@ terminus:
     producerGroup: ${MQ_PRODUCER_GROUP}
 
 # outlook邮箱,exchange服务器
-outlook.mail.server: mail.pousheng.com
+outlook.mail.server: 10.0.0.101
 outlook.mail.username: mpos_order_notify@pousheng.com
 outlook.mail.password: ps_1233
 outlook.mail.title: 派单提醒

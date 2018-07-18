@@ -459,7 +459,7 @@ public class StockPusher {
                 continue;
             }
         }
-    return availableWarehouse;
+        return availableWarehouse;
     }
 
 }

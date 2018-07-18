@@ -254,6 +254,7 @@ public class QueryHkWarhouseOrShopStockApi {
 
 
     public Boolean canDelivery(String skuCode, WarehouseDTO warehouse, String companyCode) {
+        log.info("skuCode {} ,warehouse_company {} ,companyCode {}", skuCode, warehouse.getCompanyId(), companyCode);
         Set<Long> groupIds;
         if (Objects.equals(warehouse.getWarehouseSubType(),WarehouseType.SHOP_WAREHOUSE.value())){
             //获取shop
@@ -290,7 +291,10 @@ public class QueryHkWarhouseOrShopStockApi {
         }
         SearchSkuTemplate skuTemplate = response.getResult().getData().get(0);
         //查询商品和店铺的并集，判断是否存在全国的，如果存在则返回true
-        Set<Long> result = Sets.union(skuTemplate.getGroupIds(), groupIds);
+        Set<Long> result = Sets.newHashSet();
+        result.addAll(groupIds);
+        result.retainAll(skuTemplate.getGroupIds());
+        log.warn("find union  groupIds {}", result);
         for (Long id : result) {
             if (PsItemGroupType.ALL.value().equals(itemGroupCacherProxy.findById(id).getType())) {
                 return true;

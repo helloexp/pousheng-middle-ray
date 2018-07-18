@@ -195,7 +195,9 @@ public class ItemOpenApi {
         if (CollectionUtils.isEmpty(skuTemplate.getGroupIds()) || CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
-        Set<Long> result = Sets.union(skuTemplate.getGroupIds(), groupIds);
+        Set<Long> result = Sets.newHashSet();
+        result.addAll(groupIds);
+        result.retainAll(skuTemplate.getGroupIds());
         if (result.size() > 0) {
             return true;
         }

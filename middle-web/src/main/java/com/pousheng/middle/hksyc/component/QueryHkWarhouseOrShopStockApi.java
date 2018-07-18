@@ -227,7 +227,7 @@ public class QueryHkWarhouseOrShopStockApi {
     }
 
 
-    public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds) {
+    public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds, String companyCode) {
         List<Long> vendible = Lists.newArrayList();
         for (Long warehouseId : warehouseIds) {
             try {
@@ -240,7 +240,7 @@ public class QueryHkWarhouseOrShopStockApi {
                     log.warn("find warehouse by id {} outCode  is null", warehouseId);
                     continue;
                 }
-                if (canDelivery(skuCode, warehouse, warehouse.getCompanyCode())) {
+                if (canDelivery(skuCode, warehouse, companyCode)) {
                     vendible.add(warehouseId);
                 }
             } catch (Exception e) {
@@ -268,6 +268,7 @@ public class QueryHkWarhouseOrShopStockApi {
         }else{
             groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
         }
+        log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
@@ -456,6 +457,7 @@ public class QueryHkWarhouseOrShopStockApi {
                         skuquantity.setMaterial_id(materialId);
                         skuquantity.setMaterial_name(temp.getName());
                         skuquantity.setQuantity(Integer.valueOf(String.valueOf(stock.getTotalAvailQuantity())));
+                        skuquantity.setQuantityWithOutSafe(stock.getAvailableQuantityWithoutSafe());
                         material_list.add(skuquantity);
                     } else {
                         log.warn("warehouse {} sku {} SkuTemplate {} extra is null ",warehouseId,c,temp.getId());

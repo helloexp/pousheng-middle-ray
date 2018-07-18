@@ -69,5 +69,10 @@ public class HkSkuStockInfo implements Serializable{
          */
         private Integer quantity;
 
+        /**
+         *  忽视安全库存的数量
+         */
+        private Integer quantityWithOutSafe;
+
     }
 }

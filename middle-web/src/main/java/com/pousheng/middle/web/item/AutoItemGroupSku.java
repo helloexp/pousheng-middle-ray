@@ -62,6 +62,7 @@ public class AutoItemGroupSku {
     @Autowired
     private BrandReadService brandReadService;
 
+
     /**
      * 每天凌晨1点触发
      */

@@ -224,14 +224,16 @@ public class Refunds {
         }
         //判断是否存在没有完善的售后单
         int count=0;
+        List<String> failedRefundCodes = org.assertj.core.util.Lists.newArrayList();
         for (Refund refund:refunds){
             Map<String,String> refundExtraMap = refund.getExtra();
             if (!refundExtraMap.containsKey(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG)){
+                failedRefundCodes.add(refund.getRefundCode());
                 count++;
             }
         }
         if (count>0){
-            throw new JsonResponseException("uncomplete.refund.can.not.pass.check");
+            throw new JsonResponseException("存在售后单信息未完善,请完善之后再审核,未完善的售后单号:"+ failedRefundCodes);
         }
         refunds.forEach(refund -> {
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){

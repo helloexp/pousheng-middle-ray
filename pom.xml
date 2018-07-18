@@ -32,7 +32,7 @@
         <terminus-search.version>3.2.BUILD-SNAPSHOT</terminus-search.version>
         <terminus-msg.version>1.6.BUILD-SNAPSHOT</terminus-msg.version>
         <springfox-swagger.version>2.6.1</springfox-swagger.version>
-        <log.version>1.2.2.SUPPORT-MIDDLE-SNAPSHOT</log.version>
+        <log.version>1.2.3.SUPPORT-MIDDLE-SNAPSHOT</log.version>
     </properties>
 
     <dependencies>

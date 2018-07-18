@@ -38,6 +38,61 @@
             {{/mustNotTerms}}
             ],
         {{/hasMustNot}}
+        {{#hasShould}}
+            "should":[
+            {{#shouldTerms}}
+                {
+                  "bool": {
+                    "must": {
+                      "terms":{"{{field}}":
+                            [{{#values}}
+                                "{{value}}" {{^last}},{{/last}}
+                            {{/values}}
+                            ]
+                        }
+                    }
+                  }
+                }{{^last}},{{/last}}
+            {{/shouldTerms}}
+           {{#hasShouldNot}},{{/hasShouldNot}}
+           {{#shouldNotTerms}}
+               {
+                 "bool": {
+                   "must_not": {
+                     "terms":{"{{field}}":
+                           [{{#values}}
+                               "{{value}}" {{^last}},{{/last}}
+                           {{/values}}
+                           ]
+                       }
+                   }
+                 }
+               }{{^last}},{{/last}}
+           {{/shouldNotTerms}}
+           {{#hasShouldRange}},{{/hasShouldRange}}
+           {{#shouldRanges}}
+              {
+                "bool": {
+                  "must": {
+                     "range": {
+                         "{{field}}": {
+                            {{#low}}
+                                "gte": "{{low}}"
+                                {{#high}},{{/high}}
+                            {{/low}}
+                            {{#high}}
+                                "lte": "{{high}}"
+                            {{/high}}
+                         }
+                      }
+                  }
+                }
+              }{{^last}},{{/last}}
+           {{/shouldRanges}}
+
+            ],
+            "minimum_should_match": 1,
+        {{/hasShould}}
         "filter": {
           "bool": {
             "must": [

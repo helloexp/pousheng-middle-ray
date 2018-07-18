@@ -499,3 +499,4 @@ alter table pousheng_item_groups add type  tinyint  not null default 0  comment 
 
 alter table pousheng_item_rules add type  tinyint  not null default 0  comment '0店铺分组,1仓库分组' after id;
 
+alter table pousheng_item_group_skus add mark  tinyint  not null default 0  comment '0自动打标,1人工打标' after sku_code ;

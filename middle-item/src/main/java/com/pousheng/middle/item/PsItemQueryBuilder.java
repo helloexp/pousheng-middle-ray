@@ -6,12 +6,14 @@ package com.pousheng.middle.item;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.item.service.CriteriasWithShould;
 import io.terminus.common.model.PageInfo;
 import io.terminus.common.utils.Splitters;
 import io.terminus.parana.search.item.impl.DefaultItemQueryBuilder;
 import io.terminus.search.api.query.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.springframework.beans.BeanUtils;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -86,8 +88,8 @@ public class PsItemQueryBuilder extends DefaultItemQueryBuilder {
     }
 
     @Override
-    public Criterias makeCriterias(Integer pageNo, Integer size, Map<String, String> params) {
-        CriteriasBuilder criteriasBuilder = new CriteriasBuilder();
+    public CriteriasWithShould makeCriterias(Integer pageNo, Integer size, Map<String, String> params) {
+        PsCriteriasBuilder criteriasBuilder = new PsCriteriasBuilder();
         PageInfo pageInfo = new PageInfo(pageNo, size);
         criteriasBuilder.withPageInfo(pageInfo.getOffset(), pageInfo.getLimit());
         Keyword keyword = this.buildKeyword(params);
@@ -104,12 +106,20 @@ public class PsItemQueryBuilder extends DefaultItemQueryBuilder {
         List<Highlight> highlightList = this.buildHighlight(params);
         criteriasBuilder.withHighlights(highlightList);
         criteriasBuilder.withAggs(aggsList);
-
         List<Terms> mustNotTerms = this.buildMustNotTerm(params);
         criteriasBuilder.withMustNotTerms(mustNotTerms);
-        Criterias criterias = criteriasBuilder.build();
-
-        return criterias;
+        List<Terms> shouldNotTerms = this.buildShouldNotTerm(params);
+        criteriasBuilder.withShouldNotTerms(shouldNotTerms);
+        List<Terms> shouldTerms = this.buildShouldTerm(params);
+        criteriasBuilder.withShouldTerms(shouldTerms);
+        List<Range> shouldRanges = this.buildShouldRanges(params);
+        Criterias criteria = criteriasBuilder.build();
+        CriteriasWithShould criteriasWithShould = new CriteriasWithShould(criteriasBuilder);
+        BeanUtils.copyProperties(criteria, criteriasWithShould);
+        criteriasWithShould.shouldNotTerms(criteriasBuilder.getShouldNotTerms());
+        criteriasWithShould.shouldTerms(criteriasBuilder.getShouldTerms());
+        criteriasWithShould.shouldRanges(shouldRanges);
+        return criteriasBuilder.build(criteriasWithShould);
     }
 
     private List<Terms> buildMustNotTerm(Map<String, String> params) {
@@ -130,6 +140,43 @@ public class PsItemQueryBuilder extends DefaultItemQueryBuilder {
         analysisAttr(termList, attributes);
         //处理后台类目id列表 款型 系列 类别
         String bcids = params.get("mustNot_bcids");
+        if (StringUtils.hasText(bcids)) {
+            termList.add(new Terms("categoryIds", Splitters.UNDERSCORE.splitToList(bcids)));
+        }
+        return termList;
+    }
+
+    private List<Terms> buildShouldTerm(Map<String, String> params) {
+        List<Terms> termList = Lists.newArrayList();
+        String shouldNotBrandIds = params.get("should_bids");
+        if (Objects.nonNull(shouldNotBrandIds)) {
+            List<String> parts = Splitters.COMMA.splitToList(shouldNotBrandIds);
+            termList.add(new Terms("brandId", parts));
+        }
+        //处理属性 年份 季节
+        String attributes = params.get("should_attrs");
+        analysisAttr(termList, attributes);
+        //处理后台类目id列表 款型 系列 类别
+        String bcids = params.get("should_bcids");
+        if (StringUtils.hasText(bcids)) {
+            termList.add(new Terms("categoryIds", Splitters.UNDERSCORE.splitToList(bcids)));
+        }
+        return termList;
+    }
+
+
+    private List<Terms> buildShouldNotTerm(Map<String, String> params) {
+        List<Terms> termList = Lists.newArrayList();
+        String shouldNotBrandIds = params.get("shouldNot_bids");
+        if (Objects.nonNull(shouldNotBrandIds)) {
+            List<String> parts = Splitters.COMMA.splitToList(shouldNotBrandIds);
+            termList.add(new Terms("brandId", parts));
+        }
+        //处理属性 年份 季节
+        String attributes = params.get("shouldNot_attrs");
+        analysisAttr(termList, attributes);
+        //处理后台类目id列表 款型 系列 类别
+        String bcids = params.get("shouldNot_bcids");
         if (StringUtils.hasText(bcids)) {
             termList.add(new Terms("categoryIds", Splitters.UNDERSCORE.splitToList(bcids)));
         }
@@ -187,11 +234,30 @@ public class PsItemQueryBuilder extends DefaultItemQueryBuilder {
         List<Range> ranges = Lists.newArrayList();
         String after = params.get("after");
         String before = params.get("before");
+        DateTime today= new DateTime().dayOfWeek().roundFloorCopy();
         if (StringUtils.hasText(after) || StringUtils.hasText(before)) {
             Range dateRange = new Range("saleDate", StringUtils.isEmpty(before) ? null
-                    : new DateTime().minusDays(Integer.parseInt(before)).toDate().getTime(),
+                    : today.minusDays(Integer.parseInt(before)).toDate().getTime(),
                     StringUtils.isEmpty(after) ? null
-                            : new DateTime().minusDays(Integer.parseInt(after)).toDate().getTime());
+                            : today.minusDays(Integer.parseInt(after)).toDate().getTime());
+            ranges.add(dateRange);
+        }
+        return ranges;
+    }
+
+
+    public List<Range> buildShouldRanges(Map<String, String> params) {
+        List<Range> ranges = Lists.newArrayList();
+        String after = params.get("should_after");
+        String before = params.get("should_before");
+        DateTime today= new DateTime().dayOfWeek().roundFloorCopy();
+        if (StringUtils.hasText(before)) {
+            Range dateRange = new Range("saleDate", today.minusDays(Integer.parseInt(before) - 1).toDate().getTime(),
+                    null);
+            ranges.add(dateRange);
+        }
+        if (StringUtils.hasText(after)) {
+            Range dateRange = new Range("saleDate", null, today.minusDays(Integer.parseInt(after) + 1).toDate().getTime());
             ranges.add(dateRange);
         }
         return ranges;

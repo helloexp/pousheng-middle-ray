@@ -26,6 +26,8 @@ public class ItemGroupSku {
 
     private Integer type;
 
+    private Integer mark;
+
     public Integer getType() {
         return type;
     }
@@ -77,6 +79,15 @@ public class ItemGroupSku {
 
     public ItemGroupSku updatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
+        return this;
+    }
+
+    public Integer getMark() {
+        return mark;
+    }
+
+    public ItemGroupSku mark(Integer mark) {
+        this.mark = mark;
         return this;
     }
 }

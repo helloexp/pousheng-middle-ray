@@ -5,7 +5,9 @@
 package com.pousheng.middle.item.impl.service;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.item.PsItemQueryBuilder;
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
+import com.pousheng.middle.item.service.CriteriasWithShould;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Response;
@@ -13,7 +15,6 @@ import io.terminus.parana.cache.CategoryBindingCacher;
 import io.terminus.parana.cache.FrontCategoryCacher;
 import io.terminus.parana.category.dto.FrontCategoryTree;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
-import io.terminus.parana.search.item.impl.BaseItemQueryBuilder;
 import io.terminus.search.api.Searcher;
 import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
@@ -44,7 +45,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
     private final SearchSkuTemplateProperties searchSkuTemplateProperties;
 
-    private final BaseItemQueryBuilder itemQueryBuilder;
+    private final PsItemQueryBuilder itemQueryBuilder;
 
     private final Searcher searcher;
 
@@ -57,7 +58,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
 
     @Autowired
     public SkuTemplateSearchReadServiceImpl(SearchSkuTemplateProperties searchSkuTemplateProperties,
-                                            BaseItemQueryBuilder itemQueryBuilder,
+                                            PsItemQueryBuilder itemQueryBuilder,
                                             Searcher searcher,
                                             CategoryBindingCacher categoryBindingCacher,
                                             FrontCategoryCacher frontCategoryCacher,
@@ -155,7 +156,7 @@ public class SkuTemplateSearchReadServiceImpl implements SkuTemplateSearchReadSe
                                                  Class<T> clazz) {
 
         //构建搜索条件并进行搜索
-        Criterias criterias = itemQueryBuilder.makeCriterias(pageNo, pageSize, params);
+        CriteriasWithShould criterias = itemQueryBuilder.makeCriterias(pageNo, pageSize, params);
         return searcher.searchWithScroll(
                 searchSkuTemplateProperties.getIndexName(),
                 searchSkuTemplateProperties.getIndexType(),

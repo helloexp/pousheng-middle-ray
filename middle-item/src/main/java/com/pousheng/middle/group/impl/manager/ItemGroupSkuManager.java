@@ -44,11 +44,11 @@ public class ItemGroupSkuManager {
         }
     }
 
-    public Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type) {
+    public Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type, Integer mark) {
         try {
             List<ItemGroupSku> list = Lists.newArrayListWithCapacity(skuCodes.size());
             for (String skuCode : skuCodes) {
-                list.add(new ItemGroupSku().groupId(groupId).skuCode(skuCode).type(type));
+                list.add(new ItemGroupSku().groupId(groupId).skuCode(skuCode).type(type).mark(mark));
             }
             Integer resp = itemGroupSkuDao.creates(list);
             return Response.ok(resp);
@@ -59,9 +59,9 @@ public class ItemGroupSkuManager {
     }
 
 
-    public Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type) {
+    public Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type, Integer mark) {
         try {
-            Integer resp = itemGroupSkuDao.batchDelete(skuCodes, groupId, type);
+            Integer resp = itemGroupSkuDao.batchDelete(skuCodes, groupId, type, mark);
             return Response.ok(resp);
         } catch (Exception e) {
             log.error("delete itemGroupSku failed, skuCodes:{} groupId:{} type:{}, cause:{}", skuCodes, groupId, type, Throwables.getStackTraceAsString(e));

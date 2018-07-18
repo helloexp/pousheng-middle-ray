@@ -146,7 +146,7 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchCreateSuccess() {
         when(itemGroupSkuDao.creates(any())).thenReturn(1);
-        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(1));
     }
@@ -154,23 +154,23 @@ public class ItemGroupSkuWriteServiceTest extends AbstractServiceTest {
     @Test
     public void testBatchCreateUnknownEx() {
         when(itemGroupSkuDao.creates(any())).thenThrow((new NullPointerException()));
-        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1);
+        Response<Integer> response = itemGroupSkuWriteService.batchCreate(Lists.newArrayList("1"), 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.create.fail"));
     }
 
     @Test
     public void testBatchDeleteSuccess() {
-        when(itemGroupSkuDao.batchDelete(any(), any(), any())).thenReturn(1);
-        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1);
+        when(itemGroupSkuDao.batchDelete(any(), any(), any(), any())).thenReturn(1);
+        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(1));
     }
 
     @Test
     public void testBatchDeleteUnknownEx() {
-        when(itemGroupSkuDao.batchDelete(any(), any(), any())).thenThrow((new NullPointerException()));
-        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1);
+        when(itemGroupSkuDao.batchDelete(any(), any(), any(), any())).thenThrow((new NullPointerException()));
+        Response<Integer> response = itemGroupSkuWriteService.batchDelete(Lists.newArrayList("1"), 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.FALSE));
         assertThat(response.getError(), is("item.group.sku.delete.fail"));
     }

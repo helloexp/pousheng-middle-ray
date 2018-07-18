@@ -10,6 +10,7 @@
         <result column="group_id" property="groupId"/>
         <result column="sku_code" property="skuCode"/>
         <result column="type" property="type"/>
+        <result column="mark" property="mark"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
 
@@ -25,17 +26,18 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        group_id, sku_code, type, created_at, updated_at
+        group_id, sku_code, type, mark, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{groupId}, #{skuCode}, #{type}, now(), now()
+        #{groupId}, #{skuCode}, #{type}, #{mark}, now(), now()
     </sql>
 
     <sql id="queryCondition">
         <if test="groupId != null">and `group_id` = #{groupId}</if>
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
         <if test="type != null">and `type` = #{type}</if>
+        <if test="mark != null">and `mark` = #{mark}</if>
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
         <if test="startAt != null">and created_at &gt; #{startAt}</if>
@@ -47,7 +49,7 @@
     </sql>
 
     <insert id="create" parameterType="ItemGroupSku" keyProperty="id" useGeneratedKeys="true">
-        INSERT IGNORE INTO
+        INSERT INTO
         <include refid="tb"/>
         (<include refid="cols_exclude_id"/>)
         VALUES
@@ -61,7 +63,7 @@
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.groupId}, #{i.skuCode}, #{i.type}, now(), now()
+            #{i.groupId}, #{i.skuCode}, #{i.type}, #{i.mark}, now(), now()
             )
         </foreach>
     </insert>
@@ -75,6 +77,10 @@
         <foreach collection="skuCodes" open="(" separator="," close=")" item="item">
             #{item}
         </foreach>
+        <if test="mark ==0">
+        AND mark = #{mark}
+        </if>
+
     </delete>
 
 

@@ -8,6 +8,7 @@ import com.pousheng.middle.common.utils.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.group.service.ItemGroupReadService;
 import com.pousheng.middle.group.service.ItemGroupSkuWriteService;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsItemGroupSkuMark;
 import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
@@ -33,6 +34,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
@@ -125,6 +127,12 @@ public class ItemGroupJobs {
             Boolean mark = task.getMark();
             Integer type = task.getType();
             Long groupId = task.getGroupId();
+            Integer  markType;
+            if (task.getUserId() == 0) {
+                markType=PsItemGroupSkuMark.AUTO.value();
+            }else{
+                markType=PsItemGroupSkuMark.ARTIFICIAL.value();
+            }
             if (mark) {
                 params.put("mustNot_groupId", groupId.toString());
             } else {
@@ -151,7 +159,7 @@ public class ItemGroupJobs {
                     }
                     skuCodes.addAll(listRes.getResult().stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList()));
                     //批量添加或删除映射关
-                    batchMakeGroup(skuCodes, mark, type, groupId);
+                    batchMakeGroup(skuCodes, mark, type, groupId, markType);
                     skuTemplateDumpService.batchGroupDump(listRes.getResult());
                     //通知恒康关注商品库存
                     batchNoticeHk(materialIds, mark, type);
@@ -169,7 +177,7 @@ public class ItemGroupJobs {
                 }
                 skuCodes.addAll(listRes.getResult().stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList()));
                 //批量添加或删除映射关系
-                batchMakeGroup(skuCodes, mark, type, groupId);
+                batchMakeGroup(skuCodes, mark, type, groupId, markType);
                 skuTemplateDumpService.batchGroupDump(listRes.getResult());
                 batchNoticeHk(materialIds, mark, type);
 
@@ -212,11 +220,11 @@ public class ItemGroupJobs {
         return current == size;
     }
 
-    private void batchMakeGroup(List<String> skuCodes, Boolean mark, Integer type, Long groupId) {
+    private void batchMakeGroup(List<String> skuCodes, Boolean mark, Integer type, Long groupId, Integer markType) {
         if (mark) {
-            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
+            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, markType);
         } else {
-            itemGroupSkuWriteService.batchDelete(skuCodes, groupId, type);
+            itemGroupSkuWriteService.batchDelete(skuCodes, groupId, type, markType);
         }
     }
 

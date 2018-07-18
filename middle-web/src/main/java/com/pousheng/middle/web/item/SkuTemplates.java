@@ -15,6 +15,7 @@ import com.pousheng.middle.group.model.ItemGroupSku;
 import com.pousheng.middle.group.service.ItemGroupSkuWriteService;
 import com.pousheng.middle.item.constant.PsItemConstants;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsItemGroupSkuMark;
 import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.PsSkuTemplateWriteService;
@@ -837,7 +838,7 @@ public class SkuTemplates {
             log.error("find sku template by id:{} fail,error:{}", id, rExist.getError());
             throw new JsonResponseException(rExist.getError());
         }
-        ItemGroupSku itemGroupSku = new ItemGroupSku().groupId(groupId).skuCode(rExist.getResult().getSkuCode()).type(type);
+        ItemGroupSku itemGroupSku = new ItemGroupSku().groupId(groupId).skuCode(rExist.getResult().getSkuCode()).type(type).mark(PsItemGroupSkuMark.ARTIFICIAL.value());
         Response<Long> resp = itemGroupSkuWriteService.createItemGroupSku(itemGroupSku);
         if (!resp.isSuccess()) {
             log.error("add item group sku failed error={}", resp.getError());

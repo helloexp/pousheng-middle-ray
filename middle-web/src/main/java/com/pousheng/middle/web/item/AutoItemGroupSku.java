@@ -61,7 +61,6 @@ public class AutoItemGroupSku {
     @Autowired
     private BrandReadService  brandReadService;
 
-
     /**
      * 每天凌晨1点触发
      */
@@ -83,6 +82,15 @@ public class AutoItemGroupSku {
                 try {
                     ScheduleTask task = ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(group.getId())
                             .type(PsItemGroupSkuType.GROUP.value()).mark(true).userId(0L));
+                    scheduleTaskWriteService.create(task);
+                } catch (JsonResponseException e) {
+                    log.info("auto item group fail, group id:{} cause by {} ", group.getId(), e.getMessage());
+                }
+
+                Map<String, String> removeParams = constructRemoveParams(group.getGroupRule());
+                try {
+                    ScheduleTask task = ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(removeParams).groupId(group.getId())
+                            .type(PsItemGroupSkuType.GROUP.value()).mark(false).userId(0L));
                     scheduleTaskWriteService.create(task);
                 } catch (JsonResponseException e) {
                     log.info("auto item group fail, group id:{} cause by {} ", group.getId(), e.getMessage());
@@ -147,6 +155,64 @@ public class AutoItemGroupSku {
         }
         if (attrsVal.size() > 0) {
             params.put("attrs", Joiner.on("_").join(attrsVal));
+        }
+        return params;
+    }
+
+
+    private Map<String, String> constructRemoveParams(List<ItemGroupAutoRule> rules) {
+
+        Map<String, String> params = new HashMap<>(16);
+        List<String> attrs = Lists.newArrayList(AttributeEnum.YEAR.value(),
+                AttributeEnum.SEASON.value(),
+                AttributeEnum.SEX.value(),
+                AttributeEnum.CATEGORY.value(),
+                AttributeEnum.SERIES.value(),
+                AttributeEnum.STYLE.value());
+        List<String> attrsVal = Lists.newArrayList();
+        List<String> mustNotAttrsVal = Lists.newArrayList();
+        for (ItemGroupAutoRule rule : rules) {
+            if (StringUtils.isEmpty(rule.getValue())) {
+                continue;
+            }
+            if (attrs.contains(rule.getName())) {
+                List<String> ruleDetails = Splitters.COMMA.splitToList(rule.getValue());
+                ruleDetails = ruleDetails.stream().map(e ->
+                        e = AttributeEnum.from(rule.getName()) + ":" + e).collect(Collectors.toList());
+                if (AttributeRelationEnum.IN.value().equals(rule.getRelation())) {
+                    attrsVal.add(Joiners.COMMA.join(ruleDetails));
+                } else {
+                    mustNotAttrsVal.add(Joiners.COMMA.join(ruleDetails));
+                }
+            }
+            if (rule.getName().equals(AttributeEnum.DAYS.value())) {
+                List<String> dates = Splitter.on("-").splitToList(rule.getValue());
+                if (dates.size() > 1) {
+                    params.put("should_before", dates.get(0));
+                    params.put("should_after", dates.get(1));
+                } else {
+                    if (AttributeRelationEnum.AFTER.value().equals(rule.getRelation())) {
+                        params.put("should_before", dates.get(0));
+                    }
+                    if (AttributeRelationEnum.BEFORE.value().equals(rule.getRelation())) {
+                        params.put("should_after", dates.get(0));
+                    }
+                }
+            }
+            if (rule.getName().equals(AttributeEnum.BRAND.value())) {
+                String bids = contractBids(rule.getValue());
+                if (AttributeRelationEnum.IN.value().equals(rule.getRelation())) {
+                    params.put("shouldNot_bids", bids);
+                } else {
+                    params.put("should_bids", bids);
+                }
+            }
+        }
+        if (mustNotAttrsVal.size() > 0) {
+            params.put("should_attrs", Joiner.on("_").join(mustNotAttrsVal));
+        }
+        if (attrsVal.size() > 0) {
+            params.put("shouldNot_attrs", Joiner.on("_").join(attrsVal));
         }
         return params;
     }

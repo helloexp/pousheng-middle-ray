@@ -33,7 +33,7 @@ public class ItemGroupSkuDaoTest extends BaseDaoTest {
 
     private ItemGroupSku make() {
         ItemGroupSku itemGroupSku = new ItemGroupSku();
-        itemGroupSku.groupId(1L).type(1).skuCode("2");
+        itemGroupSku.groupId(1L).type(1).skuCode("2").mark(1);
         return itemGroupSku;
     }
 
@@ -64,8 +64,14 @@ public class ItemGroupSkuDaoTest extends BaseDaoTest {
 
     @Test
     public void testBatchDelete() {
-        itemGroupSkuDao.batchDelete(Lists.newArrayList("12"), 1L, 1);
+        itemGroupSkuDao.batchDelete(Lists.newArrayList("2"), 1L, 1,1);
         assertNull(itemGroupSkuDao.findById(itemGroupSku.getId()));
+    }
+
+    @Test
+    public void testBatchDeleteAuto() {
+        Integer count = itemGroupSkuDao.batchDelete(Lists.newArrayList("2"), 1L, 1, 0);
+        assertThat(count, is(0));
     }
 
     @Test

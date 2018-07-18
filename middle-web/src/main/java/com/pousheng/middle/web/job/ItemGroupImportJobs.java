@@ -12,6 +12,7 @@ import com.pousheng.middle.common.utils.component.AzureOSSBlobClient;
 import com.pousheng.middle.group.service.ItemGroupReadService;
 import com.pousheng.middle.group.service.ItemGroupSkuWriteService;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.enums.PsItemGroupSkuMark;
 import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
@@ -183,7 +184,7 @@ public class ItemGroupImportJobs {
                             //批量添加或删除映射关系
                             List<String> skuCodes = skuTemplates.stream()
                                     .map(SkuTemplate::getSkuCode).collect(Collectors.toList());
-                            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
+                            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, PsItemGroupSkuMark.ARTIFICIAL.value());
                             //批量更新es
                             skuTemplateDumpService.batchGroupDump(skuTemplates);
                             if (PsItemGroupSkuType.GROUP.value().equals(type)) {
@@ -202,7 +203,7 @@ public class ItemGroupImportJobs {
             if (!CollectionUtils.isEmpty(skuTemplates)) {
                 //批量添加或删除映射关系
                 List<String> skuCodes = skuTemplates.stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList());
-                itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type);
+                itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, PsItemGroupSkuMark.ARTIFICIAL.value());
                 //批量更新es
                 skuTemplateDumpService.batchGroupDump(skuTemplates);
                 if (PsItemGroupSkuType.GROUP.value().equals(type)) {

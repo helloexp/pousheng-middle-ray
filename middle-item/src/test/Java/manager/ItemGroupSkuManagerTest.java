@@ -89,7 +89,7 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
     public void testBatchCreateSuccess() {
         List<String> skuCodes = Lists.newArrayList("1", "2", "3");
         when(itemGroupSkuDao.creates(any())).thenReturn(skuCodes.size());
-        Response<Integer> response = itemGroupSkuManager.batchCreate(skuCodes, 1L, 1);
+        Response<Integer> response = itemGroupSkuManager.batchCreate(skuCodes, 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(skuCodes.size()));
     }
@@ -98,8 +98,8 @@ public class ItemGroupSkuManagerTest extends AbstractServiceTest {
     @Test
     public void testBatchDeleteSuccess() {
         List<String> skuCodes = Lists.newArrayList("1", "2", "3");
-        when(itemGroupSkuDao.batchDelete(any(),any(),any())).thenReturn(skuCodes.size());
-        Response<Integer> response = itemGroupSkuManager.batchDelete(skuCodes, 1L, 1);
+        when(itemGroupSkuDao.batchDelete(any(),any(),any(),any())).thenReturn(skuCodes.size());
+        Response<Integer> response = itemGroupSkuManager.batchDelete(skuCodes, 1L, 1,1);
         assertThat(response.isSuccess(), is(Boolean.TRUE));
         assertThat(response.getResult(), is(skuCodes.size()));
     }

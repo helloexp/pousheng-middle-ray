@@ -45,18 +45,20 @@ public interface ItemGroupSkuWriteService {
      * @param skuCodes
      * @param groupId
      * @param type
+     * @param mark
      * @return
      */
-    Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type);
+    Response<Integer> batchCreate(List<String> skuCodes, Long groupId, Integer type, Integer mark);
 
     /**
-     * 批量删除ItemGroupSku同时更新group
+     * 批量删除ItemGroupSku同时更新group 新增mark字段 当mark为0时仅删除自动打标 不为0时 删除全部
      * @param skuCodes
      * @param groupId
      * @param type
+     * @param mark  标记位（是否仅自动）
      * @return
      */
-    Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type);
+    Response<Integer> batchDelete(List<String> skuCodes, Long groupId, Integer type, Integer mark);
 
     /**
      * 删除ItemGroupSku同时更新group

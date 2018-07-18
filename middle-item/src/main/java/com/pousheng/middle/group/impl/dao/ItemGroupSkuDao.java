@@ -28,8 +28,8 @@ public class ItemGroupSkuDao extends MyBatisDao<ItemGroupSku> {
         return getSqlSession().selectOne(sqlId("findByGroupIdAndSkuCode"), ImmutableMap.of("groupId", groupId, "skuCode", skuCode));
     }
 
-    public Integer batchDelete(List<String> skuCodes, Long groupId, Integer type) {
-        return getSqlSession().delete(sqlId("batchDelete"), ImmutableMap.of("groupId", groupId, "skuCodes", skuCodes, "type", type));
+    public Integer batchDelete(List<String> skuCodes, Long groupId, Integer type, Integer mark) {
+        return getSqlSession().delete(sqlId("batchDelete"), ImmutableMap.of("groupId", groupId, "skuCodes", skuCodes, "type", type, "mark", mark));
     }
 
     public Long countGroupSku(Long groupId) {

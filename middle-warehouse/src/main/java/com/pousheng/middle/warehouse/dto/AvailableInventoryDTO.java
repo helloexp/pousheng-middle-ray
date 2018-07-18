@@ -40,8 +40,46 @@ public class AvailableInventoryDTO implements Serializable{
     private Integer channelRealQuantity;
 
     /**
-     * 未分配渠道库存可用数量
+     * 所有分配出去的库存数
+     */
+    private Integer allChannelQuantity;
+
+    /**
+     * 真是库存数 = real-occupy-safe
+     */
+    private Integer realAvailableQuantity;
+
+    /**
+     * 未分配渠道库存可用数量 = real-occupy-safe-allAlloc+alloc
      */
     private Integer inventoryUnAllocQuantity;
+
+    /**
+     * 最终安全库存-商品和仓库比对后的
+     */
+    private Integer safeQuantity;
+
+    /**
+     * 去掉安全库存的真实可用库存数，包含了渠道数据
+     *
+     * @return 真实可用库存(去掉安全库存计算项)-所有指定库存+指定当前店铺的库存
+     */
+    public Integer getAvailableQuantityWithoutSafe () {
+        return Math.min(Math.max(NonNull(realAvailableQuantity) + NonNull(safeQuantity), 0),
+                Math.max(0,
+                        NonNull(channelRealQuantity) +
+                                NonNull(realAvailableQuantity) + NonNull(safeQuantity)
+                                - NonNull(allChannelQuantity)
+                )
+        );
+    }
+
+    private Integer NonNull(Integer input) {
+        if (null == input) {
+            return 0;
+        }
+
+        return input;
+    }
 
 }

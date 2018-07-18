@@ -181,8 +181,11 @@ public class StockPusher {
                 for (Long shopId : shopIds) {
                     log.info("start to push sku to shop: {}", shopId);
                     try {
-
-
+                        OpenShop openShop = openShopCacher.getUnchecked(shopId);
+                        if(openShop == null){
+                            log.error("failed to find shop(id={})，so skip to continue",shopId);
+                            continue;
+                        }
 
                         if (Objects.equals(shopId,mposOpenShopId)){
                             continue;
@@ -233,7 +236,13 @@ public class StockPusher {
                             //跟店铺类型、营业状态过滤可用店仓
                             List<Long> warehouseIds = getAvailableForShopWarehouse(rWarehouseIds.getResult());
                             //根据商品分组规则过滤可发货的仓库列表
-                            warehouseIds = queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode,warehouseIds);
+                            String companyCode = openShop.getExtra().get("companyCode");
+                            if (companyCode == null || "".equals(companyCode)) {
+                                log.error("find open shop companyCode fail: shopId: {}, so skip to continue", shopId);
+                                continue;
+                            }
+                            warehouseIds = queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode);
+
                             if(warehouseIds==null||warehouseIds.isEmpty()){
                                 stock = 0L;
                             }else {
@@ -248,7 +257,7 @@ public class StockPusher {
                                 skuCode, shopId, stock);
 
                         //判断店铺是否是官网的
-                        OpenShop openShop = openShopCacher.getUnchecked(shopId);
+
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));

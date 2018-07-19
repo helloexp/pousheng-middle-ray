@@ -18,6 +18,7 @@ import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * 库存操作相关接口
@@ -116,9 +117,13 @@ public class InventoryClient {
         }
 
         try {
-            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailInvRetNoWarehouse/"+shopId,
-                    JSON.toJSONString(requests), AvailableInventoryDTO.class);
 
+            String reqNo =  UUID.randomUUID().toString().replace("-","");
+            log.info(" start to getAvailInvRetNoWarehouse (reqNo:{}) ",reqNo );
+            log.info(" start to getAvailInvRetNoWarehouse (param:{}) ",JSON.toJSONString(requests));
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailInvRetNoWarehouse/"+shopId+"/"+reqNo ,
+                    JSON.toJSONString(requests), AvailableInventoryDTO.class);
+            log.info(" end to getAvailInvRetNoWarehouse (reqNo:{}) ",reqNo );
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());
             }

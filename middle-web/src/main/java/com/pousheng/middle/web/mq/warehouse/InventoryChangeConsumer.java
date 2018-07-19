@@ -46,7 +46,7 @@ public class InventoryChangeConsumer {
      * @return
      */
     @MQSubscribe(topic = "poushengInventoryTopic", consumerGroup = "inventoryChangeGroup",
-            consumeMode = ConsumeMode.CONCURRENTLY)
+            consumeMode = ConsumeMode.ORDERLY)
     public Response<Boolean> handleInventoryChange(String skuCodeJson) {
         if (ObjectUtils.isEmpty(skuCodeJson)) {
             log.error("fail to handle inventory change, because the skuCode is empty");

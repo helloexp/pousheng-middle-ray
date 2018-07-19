@@ -137,11 +137,18 @@ public class Warehouses {
             return map;
         }
         List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), skuCodeList, shopId);
-        if (skuStockInfos.size() == 0 || skuStockInfos.get(0).getMaterial_list().size() == 0) {
+        if (skuStockInfos.size() == 0 ) {
             return Collections.emptyMap();
         }
-        HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo = skuStockInfos.get(0).getMaterial_list().get(0);
-        map.put(skuAndQuantityInfo.getBarcode(),skuAndQuantityInfo.getQuantity());
+        for (HkSkuStockInfo skuStockInfo : skuStockInfos) {
+            if (skuStockInfo.getMaterial_list().size() == 0) {
+                continue;
+            }
+            for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : skuStockInfo.getMaterial_list()) {
+                log.info("skuCode is {},quantity is{}", skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantity());
+                map.put(skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantity());
+            }
+        }
         return map;
     }
 

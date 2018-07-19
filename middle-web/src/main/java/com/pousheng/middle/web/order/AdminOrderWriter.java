@@ -448,29 +448,28 @@ public class AdminOrderWriter {
         List<Long> failedShopOrderIds = Lists.newArrayList();
         for (Long shopOrderId : ids) {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-            if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
-                log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
-                shipmentWiteLogic.toDispatchOrder(shopOrder);
-                log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
-            } else {
-                try {
+            try {
+                if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
+                    log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
+                    shipmentWiteLogic.toDispatchOrder(shopOrder);
+                    log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
+                } else {
                     Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
                     if (!response.isSuccess()) {
-                        log.error("auto handle shop order failed, order id is {},error:{}", shopOrderId,response.getError());
+                        log.error("auto handle shop order failed, order id is {},error:{}", shopOrderId, response.getError());
                         failedShopOrderIds.add(shopOrderId);
                         continue;
                     }
-                } catch (Exception e){
-                    log.error("auto handle order failed,shop order id is {},cause by {}",shopOrder.getOrderCode(),e.getMessage());
-                    failedShopOrderIds.add(shopOrderId);
-                    continue;
                 }
-
+            } catch (Exception e) {
+                log.error("auto handle order failed,shop order id is {},cause by {}", shopOrder.getOrderCode(), e.getMessage());
+                failedShopOrderIds.add(shopOrderId);
+                continue;
             }
             successShopOrderIds.add(shopOrderId);
         }
         if (!failedShopOrderIds.isEmpty()) {
-            throw new JsonResponseException("订单号:" + successShopOrderIds + "生成发货单成功， 订单号：" + failedShopOrderIds + "生成发货单失败，具体原因见订单详情");
+            throw new JsonResponseException("订单号:" + successShopOrderIds + "自动派单完毕， 订单号：" + failedShopOrderIds + "自动派单失败，具体原因见订单详情");
         }
         if(log.isDebugEnabled()){
             log.debug("API-AUTOBATCHHANDLESHOPORDER-END param: ids [{}] ",ids);

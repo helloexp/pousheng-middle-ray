@@ -149,6 +149,7 @@ public class Warehouses {
                 map.put(skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantity());
             }
         }
+
         return map;
     }
 

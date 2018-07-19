@@ -29,6 +29,8 @@ import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.web.events.trade.listener.AutoCreateShipmetsListener;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
+import com.pousheng.middle.web.mq.warehouse.InventoryChangeProducer;
+import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -138,6 +140,8 @@ public class FireCall {
     @Autowired
     @Setter
     private GroupRuleCacherProxy GroupRuleCacherProxy;
+    @Autowired
+    private InventoryChangeProducer inventoryChangeProducer;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -607,7 +611,8 @@ public class FireCall {
         if (log.isDebugEnabled()) {
             log.debug("API-MIDDLE-TASK-SYNC-STOCK-BY-SKU-CODE-START param: skuCode [{}]", skuCode);
         }
-        stockPusher.submit(Lists.newArrayList(skuCode));
+        //stockPusher.submit(Lists.newArrayList(skuCode));
+        inventoryChangeProducer.handleInventoryChange(InventoryChangeDTO.builder().skuCode(skuCode).warehouseId(null).build());
         if (log.isDebugEnabled()) {
             log.debug("API-MIDDLE-TASK-SYNC-STOCK-BY-SKU-CODE-END param: skuCode [{}] ,resp: [{}]", skuCode, "ok");
         }

@@ -235,6 +235,7 @@ terminus:
   rocketmq:
     nameServerAddress: ${MQ_NAME_ADDR}
     producerGroup: ${MQ_PRODUCER_GROUP}
+    poushengInventoryTopic: ${MQ_TOPIC_POUSHENG_INVENTORY}
 
 # outlook邮箱,exchange服务器
 outlook.mail.server: 10.0.0.101
@@ -242,3 +243,6 @@ outlook.mail.username: mpos_order_notify@pousheng.com
 outlook.mail.password: ps_1233
 outlook.mail.title: 派单提醒
 outlook.mail.copy: mpos_order_notify@pousheng.com
+
+#是否为库存推送第三方的消息消费节点
+inventory.push.topic.consume.enable: ${INV_PUSH_TOPIC_CONSUME_ENABLE}

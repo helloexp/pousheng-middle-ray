@@ -14,6 +14,9 @@ import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -25,6 +28,8 @@ import java.util.List;
  * @auther feisheng.ch
  * @time 2018/5/24
  */
+
+@ConditionalOnProperty(name = "inventory.push.topic.consume.enable", havingValue = "true", matchIfMissing = false)
 @Component
 @Slf4j
 @MQConsumer

@@ -302,6 +302,13 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
 
 
     /**
+     * ERP单号
+     */
+    @JsonProperty(value = "ERPBillNo")
+    private String ERPBillNo;
+
+
+    /**
      * 明细
      */
     private List<YYEdiShipmentItem> items;
@@ -725,6 +732,14 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     @JsonIgnore
     public void setShopCompanyCode(String shopCompanyCode) {
         ShopCompanyCode = shopCompanyCode;
+    }
+    @JsonIgnore
+    public String getERPBillNo() {
+        return ERPBillNo;
+    }
+    @JsonIgnore
+    public void setERPBillNo(String ERPBillNo) {
+        this.ERPBillNo = ERPBillNo;
     }
 
     public List<YYEdiShipmentItem> getItems() {

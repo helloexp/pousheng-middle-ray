@@ -287,7 +287,8 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
         if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
             shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
-            log.info("sync yun ju out id {} to yyedi", shipmentInfo.getShopBillNo());
+            shipmentInfo.setERPBillNo(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID));
+            log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopBillNo(), shipmentInfo.getERPBillNo());
         }
         //恒康店铺码--传外码
         shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
@@ -299,6 +300,10 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
         //快递方式
         shipmentInfo.setExpressType("Exress");
+        if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.SHIPMENT_TYPE_VALUE,shopOrder.getExtra().get(OrderInfoConstants.SHIPMENT_TYPE))) {
+            shipmentInfo.setExpressType("ZT");
+            log.info("sync yun ju express type {} to yyedi", shipmentInfo.getExpressType());
+        }
         //是否开发票
         shipmentInfo.setIsInvoice(0);
         //是否打印发票

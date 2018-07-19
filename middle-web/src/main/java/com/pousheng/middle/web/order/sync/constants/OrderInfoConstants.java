@@ -15,4 +15,8 @@ public class OrderInfoConstants {
     public final static String YJ_JIT = "jit";
 
     public final static String YJ_OUTID = "yunjuOutId";
+
+    public final static String SHIPMENT_TYPE = "shipmentType";
+
+    public final static String SHIPMENT_TYPE_VALUE = "3";
 }

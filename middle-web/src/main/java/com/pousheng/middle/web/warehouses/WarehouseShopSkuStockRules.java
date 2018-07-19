@@ -1,6 +1,5 @@
 package com.pousheng.middle.web.warehouses;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
@@ -50,8 +49,6 @@ import java.util.stream.Collectors;
 public class WarehouseShopSkuStockRules {
 
     @Autowired
-    private EventBus eventBus;
-    @Autowired
     private WarehouseShopSkuRuleClient warehouseShopSkuRuleClient;
     @RpcConsumer
     private MappingReadService mappingReadService;
@@ -61,6 +58,8 @@ public class WarehouseShopSkuStockRules {
     private SpuReadService spuReadService;
     @Autowired
     private WarehouseShopRuleClient warehouseShopRuleClient;
+    @Autowired
+    private ShopSkuStockPushHandler shopSkuStockPushHandler;
 
     /**
      * 创建商品库存推送规则
@@ -231,10 +230,9 @@ public class WarehouseShopSkuStockRules {
         if (null == shopRule || shopRule.getStatus() != 1) {
             throw new JsonResponseException("warehouse.shop.rule.invalid");
         }
-
-        eventBus.post(new PushEvent(shopId, skuCode));
+        //eventBus.post(new PushEvent(shopId, skuCode));
+        shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, skuCode));
         return Boolean.TRUE;
     }
-
 
 }

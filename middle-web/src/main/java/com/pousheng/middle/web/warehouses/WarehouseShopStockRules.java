@@ -42,7 +42,7 @@ public class WarehouseShopStockRules {
     private UserManageShopReader userManageShopReader;
 
     @Autowired
-    private EventBus eventBus;
+    private ShopSkuStockPushHandler shopSkuStockPushHandler;
 
     /**
      * 创建店铺库存发货规则
@@ -173,9 +173,8 @@ public class WarehouseShopStockRules {
     @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogIgnore
     public Boolean push(@RequestParam("shopId")Long shopId){
-        eventBus.post(new PushEvent(shopId, null));
+        //eventBus.post(new PushEvent(shopId, null));
+        shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, null));
         return Boolean.TRUE;
     }
-
-
 }

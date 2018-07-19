@@ -1,8 +1,7 @@
-package com.pousheng.middle.web.events.warehouse;
+package com.pousheng.middle.web.warehouses;
 
-import com.google.common.eventbus.EventBus;
-import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.mq.warehouse.InventoryChangeProducer;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -16,21 +15,17 @@ import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import java.util.List;
 
 /**
- * 推送一个店铺所有的sku库存
+ * 推送一个店铺所有的sku库存，该类由ShopSkuStockPushListener改写，由通过EventBus改为同步调用
  *
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
- * Date: 2017-07-21
+ * Date: 2018-07-18
  */
 @Slf4j
 @Component
-public class ShopSkuStockPushListener {
-
-    @Autowired
-    private EventBus eventBus;
+public class ShopSkuStockPushHandler {
 
     @RpcConsumer
     private MappingReadService mappingReadService;
@@ -38,21 +33,16 @@ public class ShopSkuStockPushListener {
     @Autowired
     private StockPusher stockPusher;
 
-    @PostConstruct
-    public void init() {
-        eventBus.register(this);
-    }
-
     @Autowired
     private InventoryChangeProducer inventoryChangeProducer;
 
-    @Subscribe
     public void onPushEvent(PushEvent event){
+
         if (null != event && StringUtils.isNotBlank(event.getSkuCode())) {
             log.info("begin to push stock for skuCode(skuCode={})", event.getSkuCode());
             //stockPusher.submit(Lists.newArrayList(event.getSkuCode()));
             String skuCode = event.getSkuCode();
-            inventoryChangeProducer.handleInventoryChange(InventoryChangeDTO.builder().skuCode(skuCode).warehouseId(null).build());
+            inventoryChangeProducer.handleInventoryChange(InventoryChangeDTO.builder().skuCode(skuCode).build());
             return;
         }
 

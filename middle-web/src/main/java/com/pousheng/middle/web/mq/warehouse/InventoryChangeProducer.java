@@ -3,18 +3,12 @@ package com.pousheng.middle.web.mq.warehouse;
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.open.StockPusher;
-import com.pousheng.middle.warehouse.companent.InventoryClient;
-import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import io.terminus.common.model.Response;
 import io.terminus.common.redis.utils.JedisTemplate;
-import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
-import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import io.terminus.common.rocketmq.core.TerminusMQProducer;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +27,9 @@ import java.util.List;
  */
 @Component
 @Slf4j
+@MQConsumer
 public class InventoryChangeProducer {
+
 
     @Autowired
     private TerminusMQProducer producer;
@@ -59,7 +55,7 @@ public class InventoryChangeProducer {
         try {
             log.info("inventory changed: start to send mq message out");
 
-            List<List<InventoryChangeDTO>> parts = Lists.partition(skuCodeList, 20);
+            List<List<InventoryChangeDTO>> parts = Lists.partition(skuCodeList, 100);
             for (List<InventoryChangeDTO> part : parts) {
                 SendResult sendResult = sendData(poushengInventoryTopic, JSON.toJSONString(part), INVENTORY_CHANGE_SEND_ERROR_KEY);
                 if (SendStatus.SEND_OK != sendResult.getSendStatus()) {

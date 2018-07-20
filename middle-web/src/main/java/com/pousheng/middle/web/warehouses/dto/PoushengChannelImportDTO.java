@@ -22,16 +22,16 @@ public class PoushengChannelImportDTO implements Serializable {
     private String skuCode;
 
     /**
-     * 仓库编号
+     * 仓库编号 - 账套-外码
      */
     @CsvBindByPosition(position = 1)
-    private String warehouseCode;
+    private String bizOutCode;
 
     /**
-     * 店铺名称
+     * 店铺编号 - 账套-外码
      */
     @CsvBindByPosition(position = 2)
-    private String openShopName;
+    private String shopOutCode;
 
     /**
      * 最初设置的指定给店铺的数量

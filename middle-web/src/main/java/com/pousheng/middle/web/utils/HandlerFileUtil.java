@@ -112,14 +112,11 @@ public class HandlerFileUtil<T> {
                 if (Strings.isNullOrEmpty(channelImportDTO.getSkuCode())) {
                     throw new ServiceException("第"+i+"行：条码不能为空");
                 }
-                if (Strings.isNullOrEmpty(channelImportDTO.getOpenShopName())) {
-                    throw new ServiceException("第"+i+"行：指定店铺名称不能为空");
+                if (Strings.isNullOrEmpty(channelImportDTO.getShopOutCode())) {
+                    throw new ServiceException("第"+i+"行：指定店铺标识不能为空");
                 }
-                if (Strings.isNullOrEmpty(channelImportDTO.getWarehouseCode())) {
-                    throw new ServiceException("第"+i+"行：仓库编号不能为空");
-                }
-                if (Strings.isNullOrEmpty(channelImportDTO.getWarehouseCode())) {
-                    throw new ServiceException("第"+i+"行：指定库存数量不能为空");
+                if (Strings.isNullOrEmpty(channelImportDTO.getBizOutCode())) {
+                    throw new ServiceException("第"+i+"行：仓库标识不能为空");
                 }
                 if (!isPositiveNumber(channelImportDTO.getChannelQuantity())) {
                     throw new ServiceException("第"+i+"行：指定库存数量必须为正整数");

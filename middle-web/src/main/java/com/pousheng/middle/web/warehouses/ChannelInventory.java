@@ -10,6 +10,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.model.PoushengChannelDTO;
+import com.pousheng.middle.web.shop.cache.MiddleOpenShopCacher;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
 import com.pousheng.middle.web.warehouses.dto.PoushengChannelImportDTO;
 import io.swagger.annotations.Api;
@@ -57,6 +58,8 @@ public class ChannelInventory {
     private OpenShopReadService openShopReadService;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private MiddleOpenShopCacher middleOpenShopCacher;
 
     /**
      * 导入指定库存
@@ -103,9 +106,14 @@ public class ChannelInventory {
             int i = 2;
             for (PoushengChannelImportDTO importDTO : channelImportDTOS) {
                 // 校验仓库是否存在
+                String[] bizOutCodes = importDTO.getBizOutCode().split("-");
+                if (bizOutCodes.length != 2) {
+                    throw new JsonResponseException("第"+i+"行，仓库标识格式不正确：账套-外码");
+                }
+
                 WarehouseDTO warehouseDTO = null;
                 try {
-                    warehouseDTO = warehouseCacher.findByCode(importDTO.getWarehouseCode());
+                    warehouseDTO = warehouseCacher.findByOutCodeAndBizId(bizOutCodes[1], bizOutCodes[0]);
                 } catch (Exception e) {
                     throw new JsonResponseException("第"+i+"行，仓库没有找到");
                 }
@@ -118,8 +126,12 @@ public class ChannelInventory {
                 // 校验库存是否充足 - 放到库存那边去校验
 
                 // 校验店铺是否存在
-                Response<OpenShop> openShopResponse = openShopReadService.findByShopName(importDTO.getOpenShopName());
-                if (!openShopResponse.isSuccess() || null == openShopResponse.getResult()) {
+                String[] shopOuts = importDTO.getShopOutCode().split("-");
+                if (shopOuts.length != 2) {
+                    throw new JsonResponseException("第"+i+"行，店铺标识格式不正确：账套-外码");
+                }
+                OpenShop openShop = middleOpenShopCacher.findByAppKey(importDTO.getShopOutCode());
+                if (null == openShop) {
                     throw new JsonResponseException("第"+i+"行，店铺没有找到");
                 }
 
@@ -127,8 +139,8 @@ public class ChannelInventory {
                 dto.setSkuCode(importDTO.getSkuCode());
                 dto.setWarehouseId(warehouseDTO.getId());
                 dto.setWarehouseName(warehouseDTO.getWarehouseName());
-                dto.setOpenShopId(openShopResponse.getResult().getId());
-                dto.setOpenShopName(openShopResponse.getResult().getShopName());
+                dto.setOpenShopId(openShop.getId());
+                dto.setOpenShopName(openShop.getShopName());
                 dto.setChannelQuantity(Long.parseLong(importDTO.getChannelQuantity()));
 
                 createData.add(dto);

@@ -2,6 +2,8 @@ package com.pousheng.middle.web.warehouses.algorithm;
 
 import com.google.common.base.Function;
 import com.google.common.collect.*;
+import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -46,6 +48,8 @@ public class WarehouseChooser {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private InventoryClient inventoryClient;
+    @Autowired
+    private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
     private static final Ordering<WarehouseWithPriority> byPriority = Ordering.natural().onResultOf(new Function<WarehouseWithPriority, Integer>() {
         @Override
@@ -213,19 +217,11 @@ public class WarehouseChooser {
         boolean enough = true;
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             String skuCode = skuCodeAndQuantity.getSkuCode();
-            Response<List<AvailableInventoryDTO>> rStock = inventoryClient.getAvailableInventory(Lists.newArrayList(
-                    AvailableInventoryRequest.builder().warehouseId(warehouseId).skuCode(skuCode).build()
-            ), shopOrder.getShopId());
-            if (!rStock.isSuccess()) {
-                log.error("failed to find sku(skuCode={}) in warehouse(id={}), error code:{}",
-                        skuCode, warehouseId, rStock.getError());
-                throw new ServiceException(rStock.getError());
-            }
+            List<HkSkuStockInfo> hkSkuStockInfos= queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), Lists.newArrayList(skuCode), shopOrder.getShopId());
             int stock = 0;
-            if (!ObjectUtils.isEmpty(rStock.getResult())) {
-                stock = rStock.getResult().get(0).getTotalAvailQuantity();
+            if (!ObjectUtils.isEmpty(hkSkuStockInfos.get(0).getMaterial_list())) {
+                stock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
             }
-
             widskucode2stock.put(warehouseId, skuCode, stock);
             if (stock < skuCodeAndQuantity.getQuantity()) {
                 enough = false;

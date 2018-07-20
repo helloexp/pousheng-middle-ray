@@ -116,11 +116,12 @@ public class InventoryClient {
             shopId = -1L;
         }
 
+        String reqNo =  UUID.randomUUID().toString().replace("-","");
         try {
 
-            String reqNo =  UUID.randomUUID().toString().replace("-","");
+
             log.info(" start to getAvailInvRetNoWarehouse (reqNo:{}) ",reqNo );
-            log.info(" start to getAvailInvRetNoWarehouse (param:{}) ",JSON.toJSONString(requests));
+            //log.info(" start to getAvailInvRetNoWarehouse (param:{}) ",JSON.toJSONString(requests));
             List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailInvRetNoWarehouse/"+shopId+"/"+reqNo ,
                     JSON.toJSONString(requests), AvailableInventoryDTO.class);
             log.info(" end to getAvailInvRetNoWarehouse (reqNo:{}) ",reqNo );
@@ -130,7 +131,7 @@ public class InventoryClient {
 
             return Response.ok(availableInvList);
         } catch (Exception e) {
-            log.error("get available inventory fail, cause:{}", Throwables.getStackTraceAsString(e));
+            log.error("get available inventory fail,reqNo:{} cause:{}", reqNo,Throwables.getStackTraceAsString(e));
 
             return Response.fail(e.getMessage());
         }

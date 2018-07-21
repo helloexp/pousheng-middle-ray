@@ -11,6 +11,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
@@ -25,6 +26,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheck;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
+import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.applog.annotation.LogMe;
 import io.terminus.applog.annotation.LogMeContext;
@@ -39,6 +41,7 @@ import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundReadService;
+import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -68,6 +71,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @OperationLogModule(OperationLogModule.Module.ORDER)
 @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
+@Api(description = "订单管理")
 public class AdminOrderWriter {
     @Autowired
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
@@ -96,6 +100,8 @@ public class AdminOrderWriter {
 
     @Autowired
     private OrderReadService orderReadService;
+    @Autowired
+    private ShopOrderReadService shopOrderReadService;
 
     @Value("${logging.path}")
     private String filePath;
@@ -435,6 +441,7 @@ public class AdminOrderWriter {
      * @param ids
      * @return
      */
+    @ApiOperation("订单批量处理")
     @RequestMapping(value = "/api/order/batch/auto/handle", method = RequestMethod.PUT)
     @LogMe(description = "批量订单自动处理",ignore = true)
     public Response<Boolean> autoBatchHandleShopOrder(@RequestParam(value = "ids") @LogMeContext List<Long> ids) {
@@ -468,6 +475,21 @@ public class AdminOrderWriter {
             }
             successShopOrderIds.add(shopOrderId);
         }
+
+        //订单派单结果校验，未处理成功的记录失败订单列表中
+        if(!successShopOrderIds.isEmpty()) {
+            Response<List<ShopOrder>> resp = shopOrderReadService.findByIds(successShopOrderIds);
+            if (resp.isSuccess()) {
+                log.error("find shop order failed, order ids is {},error:{}", successShopOrderIds.toString(), resp.getError());
+            } else {
+                resp.getResult().forEach(shopOrder -> {
+                    if (!Objects.equals(shopOrder.getHandleStatus(), OrderWaitHandleType.HANDLE_DONE.value())) {
+                        failedShopOrderIds.add(shopOrder.getId());
+                    }
+                });
+            }
+        }
+
         if (!failedShopOrderIds.isEmpty()) {
             throw new JsonResponseException("订单号:" + successShopOrderIds + "自动派单完毕， 订单号：" + failedShopOrderIds + "自动派单失败，具体原因见订单详情");
         }

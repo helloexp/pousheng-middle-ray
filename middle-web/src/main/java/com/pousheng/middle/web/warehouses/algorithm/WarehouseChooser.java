@@ -219,7 +219,7 @@ public class WarehouseChooser {
             String skuCode = skuCodeAndQuantity.getSkuCode();
             List<HkSkuStockInfo> hkSkuStockInfos= queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), Lists.newArrayList(skuCode), shopOrder.getShopId());
             int stock = 0;
-            if (!ObjectUtils.isEmpty(hkSkuStockInfos.get(0).getMaterial_list())) {
+            if (!ObjectUtils.isEmpty(hkSkuStockInfos) && !ObjectUtils.isEmpty(hkSkuStockInfos.get(0).getMaterial_list())) {
                 stock = hkSkuStockInfos.get(0).getMaterial_list().get(0).getQuantity();
             }
             widskucode2stock.put(warehouseId, skuCode, stock);

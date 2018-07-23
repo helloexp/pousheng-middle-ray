@@ -323,6 +323,8 @@ public class RefundReadLogic {
         List<Refund> refunds = rltRes.getResult().stream().filter(Objects::nonNull)
                 .filter(refund->!Objects.equals(refund.getId(),refundId))
                 .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value()))
+                .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.ON_SALES_REFUND.value()))
+                .filter(refund->!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value()))
                 .filter(refund -> !Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue()))
                 .filter(refund -> !Objects.equals(refund.getStatus(),MiddleRefundStatus.DELETED.getValue()))
                 .collect(Collectors.toList());

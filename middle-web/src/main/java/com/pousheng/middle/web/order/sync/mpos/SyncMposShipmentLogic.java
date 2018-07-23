@@ -13,6 +13,7 @@ import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -248,6 +249,12 @@ public class SyncMposShipmentLogic{
     public MposResponse revokeMposShipment(Shipment shipment){
         MposResponse res = new MposResponse();
         try {
+            if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue())){
+                log.warn("shipment(id:{}) status is:{} so skip sync parana cancel",shipment.getId(),shipment.getStatus());
+                res.setSuccess(Boolean.TRUE);
+                return res;
+            }
+
             Map<String,Object> param = Maps.newHashMap();
             param.put("outerShipmentId",shipment.getId());
             res = mapper.fromJson(syncMposApi.revokeMposShipment(param),MposResponse.class);
@@ -264,6 +271,12 @@ public class SyncMposShipmentLogic{
     public MposResponse revokeNewMposShipment(Shipment shipment){
         MposResponse res = new MposResponse();
         try {
+            if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue())){
+               log.warn("shipment(id:{}) status is:{} so skip sync parana cancel",shipment.getId(),shipment.getStatus());
+                res.setSuccess(Boolean.TRUE);
+                return res;
+            }
+
             Map<String,Object> param = Maps.newHashMap();
             param.put("outerShipmentId",shipment.getId());
             res = mapper.fromJson(syncMposApi.revokeNewMposShipment(param),MposResponse.class);

@@ -479,7 +479,7 @@ public class AdminOrderWriter {
         //订单派单结果校验，未处理成功的记录失败订单列表中
         if(!successShopOrderIds.isEmpty()) {
             Response<List<ShopOrder>> resp = shopOrderReadService.findByIds(successShopOrderIds);
-            if (resp.isSuccess()) {
+            if (!resp.isSuccess()) {
                 log.error("find shop order failed, order ids is {},error:{}", successShopOrderIds.toString(), resp.getError());
             } else {
                 resp.getResult().forEach(shopOrder -> {
@@ -489,9 +489,13 @@ public class AdminOrderWriter {
                 });
             }
         }
+        List<String> failedShopOrderCodes = Lists.newArrayList();
+        failedShopOrderIds.forEach(failedShopOrderId -> {
+            failedShopOrderCodes.add("SAL"+failedShopOrderId);
+        });
 
         if (!failedShopOrderIds.isEmpty()) {
-            throw new JsonResponseException("订单号:" + successShopOrderIds + "自动派单完毕， 订单号：" + failedShopOrderIds + "自动派单失败，具体原因见订单详情");
+            throw new JsonResponseException("订单自动派单完毕， 交易单号：" + failedShopOrderCodes + "自动派单失败，具体原因见订单详情");
         }
         if(log.isDebugEnabled()){
             log.debug("API-AUTOBATCHHANDLESHOPORDER-END param: ids [{}] ",ids);

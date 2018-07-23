@@ -87,18 +87,23 @@ public class InventoryBaseClient {
     public Object post(String path, Map<String, Object> params, Class clazz){
         log.info("request to {} with params: {}", host + "/" + path, params);
         HttpRequest r = null;
+        boolean postRet = false;
         try {
              r = HttpRequest.post(host+"/"+path, params, true)
                     .acceptJson()
                     .acceptCharset(HttpRequest.CHARSET_UTF8)
                     .connectTimeout(HttpTime)
                     .readTimeout(HttpTime);
+
+            postRet = r.ok();
+            
         } catch (HttpRequest.HttpRequestException e) {
             // 捕获超时异常 库存中心响应超时
             log.error("call stock api time out");
             throw new ServiceException("inventory.response.timeout");
         }
-        if(r.ok()){
+
+        if(postRet){
             log.info("request success!");
             return handleNormalResponse(path, params, r.body(), clazz, false);
         }else{

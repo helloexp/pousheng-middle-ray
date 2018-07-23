@@ -96,10 +96,10 @@ public class InventoryBaseClient {
                     .readTimeout(HttpTime);
 
             postRet = r.ok();
-            
+
         } catch (HttpRequest.HttpRequestException e) {
             // 捕获超时异常 库存中心响应超时
-            log.error("call stock api time out");
+            log.error("call stock api time out:{}", params);
             throw new ServiceException("inventory.response.timeout");
         }
 

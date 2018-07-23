@@ -441,6 +441,11 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation(),
                     MiddleShipmentsStatus.CANCELED.getValue());
 
+            //同步mpos受理失败->取消-> 已取消
+            addTransition(MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                    MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
+
             //待发货 --> 拒单 --> 已拒绝
             addTransition(MiddleShipmentsStatus.WAIT_SHIP.getValue(),
                     MiddleOrderEvent.MPOS_REJECT.toOrderOperation(),

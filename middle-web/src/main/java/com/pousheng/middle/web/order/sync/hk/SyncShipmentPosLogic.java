@@ -90,6 +90,9 @@ public class SyncShipmentPosLogic {
     public Response<Boolean> syncShipmentPosToHk(Shipment shipment) {
         try {
             //获取发货单详情
+            if (shipment.getShopName().startsWith("yj")) {
+                return Response.ok();
+            }
             ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
             ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
             String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay())?"2":shipmentExtra.getShipmentWay();

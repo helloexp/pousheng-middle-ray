@@ -62,8 +62,9 @@ public class SyncOrderToEcpLogic {
     @Autowired
     private SycYunJuShipmentOrderApi sycYunJuShipmentOrderApi;
 
-
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
+
+    private static String ERROR_10300009 = "errorCode:10300009";
 
     /**
      * 同步发货单到电商--只需要传送第一个发货的发货单
@@ -107,6 +108,9 @@ public class SyncOrderToEcpLogic {
                     //同步失败
                     OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
                     orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
+                    if (response.getError().contains(ERROR_10300009) && Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())) {
+                        response.setError("快递单号:" + shipmentSerialNo + "没有回传至JD青龙系统，需要联系物流商");
+                    }
                     return Response.fail(response.getError());
                 }
             }

@@ -75,7 +75,9 @@ public class SyncRefundPosLogic {
      */
     public Response<Boolean> syncRefundPosToHk(Refund refund) {
         try {
-
+            if (refund.getShopName().startsWith("yj")) {
+                return Response.ok();
+            }
 
             HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(refund);
             String url ="/common/erp/pos/addnetsalreturnstock";

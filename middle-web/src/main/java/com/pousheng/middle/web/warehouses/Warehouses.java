@@ -4,6 +4,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogReadSerive;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
@@ -43,6 +45,8 @@ public class Warehouses {
     private MessageSource messageSource;
     @Autowired
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
 
     @RequestMapping(value = "/create/push/log",method = RequestMethod.POST,produces = MediaType.APPLICATION_JSON_VALUE)
@@ -152,5 +156,10 @@ public class Warehouses {
         return map;
     }
 
+
+    @GetMapping(value = "/{id}")
+    public WarehouseDTO findById(@PathVariable("id") Long id) {
+        return warehouseCacher.findById(id);
+    }
 
 }

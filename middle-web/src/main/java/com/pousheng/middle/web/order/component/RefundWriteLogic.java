@@ -263,7 +263,7 @@ public class RefundWriteLogic {
             return Response.fail(updateRes.getError());
         }
 
-        return Response.ok();
+        return updateRes;
 
     }
 

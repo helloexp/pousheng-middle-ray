@@ -22,6 +22,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import com.pousheng.middle.web.utils.permission.PermissionCheckParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -735,6 +736,42 @@ public class Refunds {
             }
             return Response.ok(middleAfterSaleInfos);
         }
+
+
+    /**
+     * 售后单类型修改 售后仅退款-->拒收单
+     * 修改售后单类型需要去判断当前售后单类型（MiddleRefundType.AFTER_SALES_REFUND）是否为售后仅退款
+     * 并且需要判断当前售后单状态是否为待完善的状态（MiddleRefundStatus.WAIT_HANDLE）
+     * @param id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{id}/edit/refund/type", method = RequestMethod.PUT)
+    @ApiOperation(value = "修改售后单类型")
+    public Response<Boolean> updateRefundType (@PathVariable("id") Long id) {
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-UPDATEREFUNDTYPE-START param: id [{}]", id);
+        }
+        Refund refund = refundReadLogic.findRefundById(id);
+        if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.WAIT_HANDLE.getValue()) ||
+                !Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
+            log.error("current refund id {}, refund type {} can not edit", id, refund.getRefundType());
+            throw new JsonResponseException("refund.status.or.type.not.allow.current.operation");
+        }
+        refund.setRefundType(MiddleRefundType.REJECT_GOODS.value());
+        // 更新售后单
+        Response<Boolean> res = refundWriteLogic.update(refund);
+        if (!res.isSuccess()) {
+            log.error("update refund id ({}) fail,error:{}", id, res.getError());
+            return Response.fail(res.getError());
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-UPDATEREFUNDTYPE-END param: id [{}] ,resp: [{}]", id, res.getResult());
+        }
+        return res;
+    }
+
+
+
 
     //编辑售后单
 

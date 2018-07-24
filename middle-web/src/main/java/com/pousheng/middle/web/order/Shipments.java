@@ -19,6 +19,7 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
@@ -47,6 +48,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.order.dto.ExpressDetails;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -1658,6 +1660,14 @@ public class Shipments {
         Shop shop = shopCacher.findShopById(deliverShopId);
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         return shopExtraInfo != null ? shopExtraInfo.getOpenShopId(): null ;
+    }
+
+    //快递单详情
+    @ApiOperation("快递单详情")
+    @RequestMapping(value = "/api/shipmentExpress/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public ShipmentExpress findDetail(@RequestParam(required = true, value = "shipmentCode") String shipmentCode,@RequestParam(required = true, value = "shipmentExpressCode") String shipmentExpressCode) {
+        Response<ShipmentExpress> result = shipmentReadService.findShipmentExpress(shipmentCode,shipmentExpressCode);
+        return  result.getResult();
     }
 
 

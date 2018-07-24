@@ -112,6 +112,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Long regionId;
 
+    /**
+     * 快递单状态
+     */
+    private Integer expressStatus;
+
 
     /**
      * 如果Start的时间和End的时间一致, 则End+1day

@@ -95,6 +95,11 @@
             </exclusions>
         </dependency>
         <dependency>
+            <groupId>io.terminus.parana</groupId>
+            <artifactId>parana-trade-api</artifactId>
+            <version>${parana.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.terminus.open</groupId>
             <artifactId>open-client-fenqile</artifactId>
             <version>${open-client.version}</version>

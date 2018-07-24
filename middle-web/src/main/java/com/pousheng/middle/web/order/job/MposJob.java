@@ -1,12 +1,14 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.model.AutoCompensation;
 import com.pousheng.middle.order.service.AutoCompensationReadService;
 import com.pousheng.middle.order.service.AutoCompensationWriteService;
@@ -19,6 +21,9 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
+import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -37,6 +42,7 @@ import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -361,6 +367,22 @@ public class MposJob {
             }
         }
 
+    }
+
+    @ApiOperation("单笔推送已经发货的mpos单")
+    @RequestMapping(value = "api/single/push/{id}/shipment",method = RequestMethod.GET)
+    public void pushMposShipmentBySingleOrBatch(@PathVariable(value = "id") @OperationLogParam Long shipmentId){
+        Shipment shipment = null;
+        try {
+            shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            if (shipment != null){
+                ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                orderHandleLogic.synExpressInfoToEsp(shipment.getShipmentCode(),shipmentExtra.getShipmentCorpCode(),
+                        shipmentExtra.getShipmentSerialNo());
+            }
+        } catch (Exception e) {
+            log.error("failed to push shipment {}, cause:{}", shipment, Throwables.getStackTraceAsString(e));
+        }
     }
 
     @PreDestroy

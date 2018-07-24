@@ -3,6 +3,7 @@ package com.pousheng.middle.open.mpos;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.erp.component.ErpClient;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
@@ -27,7 +28,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -65,6 +68,7 @@ public class MposOrderHandleLogic {
     @Autowired
     private EventBus eventBus;
 
+    private ErpClient erpClient;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
 
@@ -93,7 +97,7 @@ public class MposOrderHandleLogic {
 
     /**
      * 处理发货单状态更新
-     * @param shipment      发货单
+     * @param shipment      发货单middle-web/src/main/java/com/pousheng/middle/open/api/ExpressInfoOpenApi.java
      * @param status        状态
      * @param extra         额外信息
      */
@@ -182,6 +186,10 @@ public class MposOrderHandleLogic {
         if (!Objects.equals(orderEvent,MiddleOrderEvent.MPOS_RECEIVE)) {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
         }
+        //如果发货将发货单信息同步到esp
+        if (!Objects.equals(orderEvent,MiddleOrderEvent.SHIP)) {
+            synExpressInfoToEsp(shipment.getShipmentCode(),shipmentExtra.getShipmentCorpCode(),shipmentExtra.getShipmentSerialNo());
+        }
         log.info("sync shipment(id:{}) success",shipment.getId());
     }
 
@@ -240,5 +248,45 @@ public class MposOrderHandleLogic {
                 return false;
         }
         return true;
+    }
+
+    /**
+     * 向esp同步mpos发货单信息
+     * @param shipmentCode
+     * @param shipmentCorpCode
+     * @param shipmentSerialNo
+     */
+    public void synExpressInfoToEsp(String shipmentCode, String shipmentCorpCode, String shipmentSerialNo) {
+        if (StringUtils.isEmpty(shipmentCode) || StringUtils.isEmpty(shipmentCorpCode)
+                || StringUtils.isEmpty(shipmentSerialNo)){
+            return;
+        }
+        switch (shipmentCorpCode){
+            case "shunfeng":
+                shipmentCorpCode = "SF";
+                break;
+            case "yuantong":
+                shipmentCorpCode = "YTO";
+                break;
+            default:
+                shipmentCorpCode = shipmentCorpCode;
+        }
+        //往esp推送信息
+        Map<String,Object> requestBody = Maps.newHashMap();
+        Map<String,Object> body = Maps.newHashMap();
+        Map<String,String> params = Maps.newHashMap();
+        params.put("BillNo",shipmentCode);
+        params.put("ExpressCode",shipmentCorpCode);
+        params.put("mailno",shipmentSerialNo);
+        params.put("SourceId","中台");
+        List<Map<String,String>> requestData = new ArrayList<>();
+        requestData.add(params);
+        body.put("requestData",requestData);
+        requestBody.put("body",body);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(requestBody);
+        log.info("synExpressInfoToEsp begin push shipments,shipmentCode:{},expressCode:{},mailno:{}",shipmentCode,shipmentCorpCode,shipmentSerialNo);
+        String response = erpClient.postJson("common/esp/default/pushexpress",
+                paramJson);
+        log.info("synExpressInfoToEsp end,the response:{}",response);
     }
 }

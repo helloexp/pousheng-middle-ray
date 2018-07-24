@@ -267,5 +267,4 @@ public class TradeConstants {
 
     // 物流单号生成规则
     public static final String EXPRESS_ORDER_ID = "expressOrderId";
-
 }

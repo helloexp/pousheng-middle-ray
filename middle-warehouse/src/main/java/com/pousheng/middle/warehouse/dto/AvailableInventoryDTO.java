@@ -60,18 +60,12 @@ public class AvailableInventoryDTO implements Serializable{
     private Integer safeQuantity;
 
     /**
-     * 去掉安全库存的真实可用库存数，包含了渠道数据
+     * 去掉安全库存的真实可用库存数，real-occupy-safe + safe
      *
-     * @return 真实可用库存(去掉安全库存计算项)-所有指定库存+指定当前店铺的库存
+     * @return 真实可用库存
      */
     public Integer getAvailableQuantityWithoutSafe () {
-        return Math.min(Math.max(NonNull(realAvailableQuantity) + NonNull(safeQuantity), 0),
-                Math.max(0,
-                        NonNull(channelRealQuantity) +
-                                NonNull(realAvailableQuantity) + NonNull(safeQuantity)
-                                - NonNull(allChannelQuantity)
-                )
-        );
+        return Math.max(NonNull(realAvailableQuantity) + NonNull(safeQuantity), 0);
     }
 
     private Integer NonNull(Integer input) {

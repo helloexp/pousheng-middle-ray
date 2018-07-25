@@ -583,7 +583,7 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
+        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
 
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
@@ -674,7 +674,7 @@ public class ShipmentWiteLogic {
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
         //创建发货单
-        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder);
+        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
 
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));

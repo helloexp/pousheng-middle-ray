@@ -61,11 +61,12 @@ public class MposSkuStockLogic {
     /**
      * 锁定库存
      * @param shipment 发货单信息
+     * @param withSafe 是否使用安全库存
      */
-    public Response<Boolean> lockStock(Shipment shipment){
+    public Response<Boolean> lockStock(Shipment shipment, Boolean withSafe){
 
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-        return this.lockStock(dispatchOrderItemInfo);
+        return this.lockStock(dispatchOrderItemInfo, withSafe);
 
     }
 
@@ -73,7 +74,7 @@ public class MposSkuStockLogic {
      * 锁定库存
      * @param dispatchOrderItemInfo 商品信息
      */
-    public Response<Boolean> lockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
+    public Response<Boolean> lockStock(DispatchOrderItemInfo dispatchOrderItemInfo, Boolean withSafe){
 
         if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
             return Response.ok();
@@ -85,9 +86,13 @@ public class MposSkuStockLogic {
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Response.ok();
         }
-
         //锁定电商库存
-        Response<Boolean> response = warehouseSkuStockManager.lockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
+        Response<Boolean> response;
+        if (withSafe) {
+            response = warehouseSkuStockManager.lockStockUserDispatch(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
+        } else {
+            response = warehouseSkuStockManager.lockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
+        }
         if(!response.isSuccess()){
             log.error("lock online warehouse sku stock:{} fail,error:{}",warehouseShipments,response.getError());
             return response;

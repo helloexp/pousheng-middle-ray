@@ -24,7 +24,6 @@ import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
-import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
@@ -48,7 +47,6 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
-import io.terminus.parana.order.dto.ExpressDetails;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -523,7 +521,7 @@ public class Shipments {
             //创建发货单
             Long shipmentId = null;
             try {
-                shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment,shopOrder);
+                shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.TRUE);
 
                 // 异步订阅 用于记录库存数量的日志
                 eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));

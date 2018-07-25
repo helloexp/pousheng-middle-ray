@@ -46,7 +46,7 @@ public class ShipmentWriteManger {
     private EventBus eventBus;
 
     @Transactional
-    public Long createShipmentByConcurrent(Shipment shipment, ShopOrder shopOrder){
+    public Long createShipmentByConcurrent(Shipment shipment, ShopOrder shopOrder, Boolean withSafe){
         log.info("begin to create shipment,shopOrderId is {}",shopOrder.getId());
         //1.生成发货单
         Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
@@ -60,7 +60,7 @@ public class ShipmentWriteManger {
         log.info("end to create shipment,shipmentId is {}", createResp.getResult());
 
         // 锁库存
-        Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment);
+        Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment, withSafe);
         if(!rDecrease.isSuccess()){
             log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
             throw new ServiceException(rDecrease.getError());
@@ -108,7 +108,7 @@ public class ShipmentWriteManger {
         log.info("end to create shipment,shipmentId is {}", createResp.getResult());
 
         // 锁库存
-        Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment);
+        Response<Boolean> rDecrease = mposSkuStockLogic.lockStock(shipment, Boolean.TRUE);
         if(!rDecrease.isSuccess()) {
             log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
             throw new ServiceException(rDecrease.getError());

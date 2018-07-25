@@ -149,8 +149,8 @@ public class Warehouses {
                 continue;
             }
             for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : skuStockInfo.getMaterial_list()) {
-                log.info("skuCode is {},quantity is{}", skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantity());
-                map.put(skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantity());
+                log.info("skuCode is {},quantity is{}", skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantityWithOutSafe());
+                map.put(skuAndQuantityInfo.getBarcode(), skuAndQuantityInfo.getQuantityWithOutSafe());
             }
         }
         return map;

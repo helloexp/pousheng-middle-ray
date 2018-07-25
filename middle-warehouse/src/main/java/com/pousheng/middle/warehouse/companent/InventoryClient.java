@@ -45,6 +45,14 @@ public class InventoryClient {
     }
 
     /**
+     * 手工派单走的锁定接口，请慎用（对应库存中心的占用操作）
+     * @return
+     */
+    public Response<Boolean> lockUserDispatch (List<InventoryTradeDTO> inventoryTradeDTOList) {
+        return trade(inventoryTradeDTOList, "api/inventory/trade/occupyUserDispatch");
+    }
+
+    /**
      * 解锁（对应库存中心的解除占用操作）
      * @return
      */

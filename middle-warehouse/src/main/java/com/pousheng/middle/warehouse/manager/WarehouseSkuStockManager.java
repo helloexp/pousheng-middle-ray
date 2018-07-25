@@ -68,6 +68,33 @@ public class WarehouseSkuStockManager {
     }
 
     /**
+     * 手工派单走的锁定接口，请慎用，锁定库存
+     *
+     * @param warehouses 待锁定的库存明细
+     */
+    public Response<Boolean> lockStockUserDispatch(InventoryTradeDTO inventoryTradeDTO, List<WarehouseShipment> warehouses) {
+        List<InventoryTradeDTO> tradeList = Lists.newArrayList();
+        for (WarehouseShipment warehouseShipment : warehouses) {
+            tradeList.addAll(genTradeContextList(warehouseShipment.getWarehouseId(),
+                    inventoryTradeDTO, warehouseShipment.getSkuCodeAndQuantities()));
+        }
+
+        if (!ObjectUtils.isEmpty(tradeList)) {
+            Response<Boolean> tradeRet = inventoryClient.lockUserDispatch(tradeList);
+            if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
+                log.error("fail to occupy inventory for user dispatch logic, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
+                if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
+                    // 超时的错误进入biz表给后面轮询
+                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                }
+                return Response.fail(tradeRet.getError());
+            }
+        }
+
+        return Response.ok(Boolean.TRUE);
+    }
+
+    /**
      * 先解锁之前的锁定的库存, 在扣减实际发货的库存
      *
      * @param actualShipments 实际发货的库存明细

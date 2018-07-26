@@ -37,5 +37,7 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     //子售后单id
     private String skuAfterSaleId;
 
+    //发货单上对应的平台分摊优惠
+    private Integer sharePlatformDiscount;
 
 }

@@ -267,4 +267,8 @@ public class TradeConstants {
 
     // 物流单号生成规则
     public static final String EXPRESS_ORDER_ID = "expressOrderId";
+    //平台出资折扣
+    public static final String PLATFORM_DISCOUNT_FOR_SHOP="platformDiscount";
+    //分摊到子订单上的平台出资折扣
+    public static final String PLATFORM_DISCOUNT_FOR_SKU ="skuPlatformDiscount";
 }

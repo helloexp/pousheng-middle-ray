@@ -30,4 +30,7 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
     private String skuOutId;
     //是否是赠品
     private Boolean isGift;
+
+    //分摊到发货单上面的平台优惠
+    private Integer sharePlatformDiscount;
 }

@@ -17,4 +17,5 @@ public class HkShipmentPosItem implements Serializable{
     private String matbarcode; //货号
     private Integer qty; //数量
     private String balaprice; //结算价
+    private String couponprice;//平台优惠
 }

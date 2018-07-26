@@ -1002,6 +1002,10 @@ public class ShipmentWiteLogic {
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuOutId(skuOrder.getOutId());
             shipmentItem.setSkuPrice(Math.round(skuOrder.getOriginFee() / shipmentItem.getQuantity()));
+            //目前是子单整单发货，所以不需要分摊平台优惠金额
+            Map<String,String> skuExtra = skuOrder.getExtra();
+            String skuPlatformDiscount = skuExtra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU);
+            shipmentItem.setSharePlatformDiscount(org.apache.commons.lang3.StringUtils.isNotEmpty(skuPlatformDiscount)?Integer.valueOf(skuPlatformDiscount):0);
             //积分
             String originIntegral = "";
             try {
@@ -1032,37 +1036,6 @@ public class ShipmentWiteLogic {
             shipmentItems.add(shipmentItem);
 
         }
-        //由cleanPrice计算出来的金额
-        Integer totalCleanPriceAndQuantity = 0;
-        //由cleanFee计算出来的金额
-        Integer totalCleanFee = 0;
-        for (ShipmentItem shipmentItem : shipmentItems) {
-            totalCleanPriceAndQuantity = shipmentItem.getCleanPrice() * shipmentItem.getQuantity() + totalCleanPriceAndQuantity;
-            totalCleanFee = shipmentItem.getCleanFee() + totalCleanFee;
-        }
-        //计算差额,以cleanFee计算出来的金额为准,插入到第一个里面，可能最终会有1分钱的误差
-        if ((totalCleanFee - totalCleanPriceAndQuantity) > 0) {
-            //这边属于cleanPrice计算少了
-            Integer cleanPrice = shipmentItems.get(0).getCleanPrice();
-            Integer quantity = shipmentItems.get(0).getQuantity();
-            Integer error = totalCleanFee - totalCleanPriceAndQuantity;
-            Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) + error);
-            Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee) / Long.valueOf(quantity));
-            shipmentItems.get(0).setCleanPrice(newCleanPrice);
-        } else if ((totalCleanFee - totalCleanPriceAndQuantity) < 0) {
-            for (ShipmentItem shipmentItem : shipmentItems) {
-                Integer error = totalCleanPriceAndQuantity - totalCleanFee;
-                Integer cleanPrice = shipmentItem.getCleanPrice();
-                Integer quantity = shipmentItems.get(0).getQuantity();
-                Integer cleanFee = Math.toIntExact(Long.valueOf(cleanPrice) * Long.valueOf(quantity) - error);
-                if (cleanFee > 0) {
-                    Integer newCleanPrice = Math.toIntExact(Long.valueOf(cleanFee) / Long.valueOf(quantity));
-                    shipmentItem.setCleanPrice(newCleanPrice);
-                    break;
-                }
-            }
-        }
-
         return shipmentItems;
     }
 

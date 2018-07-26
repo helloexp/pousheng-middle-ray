@@ -202,6 +202,8 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setQty(0);
             //仅退款传到恒康是一个冲账的金额
             hkShipmentPosItem.setBalaprice(new BigDecimal(refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setCouponprice(new BigDecimal(refundItem.getSharePlatformDiscount()==null?0:refundItem.getSharePlatformDiscount())
+                    .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //售后不涉及到优惠
             posItems.add(hkShipmentPosItem);
         }

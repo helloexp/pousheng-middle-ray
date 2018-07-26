@@ -36,9 +36,11 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.utils.PriceConverter;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
+import io.terminus.open.client.order.dto.OpenClientOrderItem;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.common.model.ParanaUser;
@@ -438,6 +440,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
 
         richSkusByShop.setInvoiceId(invoiceId);
+        //订单平台出资金额分摊到子订单上
+        this.calculatePlatformDiscountForSkus(richSkusByShop);
+
         return richOrder;
     }
 
@@ -571,4 +576,40 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
     }
 
+    /**
+     * 平台级别优惠分摊到子订单上面
+     * @param richSkusByShop 店铺订单
+     */
+    private void calculatePlatformDiscountForSkus(RichSkusByShop richSkusByShop){
+        Map<String,String> extra = richSkusByShop.getExtra();
+        String platformDiscount = extra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP);
+        if (!StringUtils.isEmpty(platformDiscount)){
+            Map<String,Long> skuIdAndShareDiscount = Maps.newHashMap();
+            List<RichSku> richSkus = richSkusByShop.getRichSkus();
+            Long fees = 0L;
+            for (RichSku richSku:richSkus){
+                fees += richSku.getFee();
+            }
+            Long alreadyShareDiscout = 0L;
+            for (int i = 0;i<richSkus.size()-1;i++){
+                Long itemShareDiscount =  (richSkus.get(i).getFee()*Long.valueOf(platformDiscount))/fees;
+                alreadyShareDiscout += itemShareDiscount;
+                skuIdAndShareDiscount.put(richSkus.get(i).getOuterSkuId(),itemShareDiscount);
+            }
+            //计算剩余没有分配的平台优惠
+            Long remainShareDiscount = Long.valueOf(platformDiscount)-alreadyShareDiscout;
+            for (RichSku richSku:richSkus){
+                Long shareDiscount = skuIdAndShareDiscount.get(richSku.getOuterSkuId());
+                Map<String, String> skuExtra = richSku.getExtra();
+                //子订单插入平台优惠金额
+                if (shareDiscount==null){
+                    skuExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(remainShareDiscount));
+                }else{
+                    skuExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(shareDiscount));
+                }
+                richSku.setExtra(skuExtra);
+            }
+        }
+
+    }
 }

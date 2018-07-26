@@ -268,7 +268,12 @@ public class SyncShipmentPosLogic {
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setMatbarcode(shipmentItem.getSkuCode());
             hkShipmentPosItem.setQty(shipmentItem.getQuantity());
-            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee())
+                    .divide(new BigDecimal(shipmentItem.getQuantity()),6,RoundingMode.HALF_DOWN)
+                    .divide(new BigDecimal(100),6,RoundingMode.HALF_DOWN).toString());
+            //平台分摊到发货单上面的优惠金额
+            hkShipmentPosItem.setCouponprice(new BigDecimal(shipmentItem.getSharePlatformDiscount()==null?0:shipmentItem.getSharePlatformDiscount())
+                    .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;

@@ -40,8 +40,6 @@ public class DecreaseLockStockLogic {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         //获取发货仓信息
         ShipmentExtra extra = shipmentReadLogic.getShipmentExtra(shipment);
-
-        List<WarehouseShipment> warehouseShipmentList = Lists.newArrayList();
         WarehouseShipment warehouseShipment = new WarehouseShipment();
         //组装sku订单数量信息
         List<SkuCodeAndQuantity> skuCodeAndQuantities =makeSkuCodeAndQuantities(shipmentItems);
@@ -49,8 +47,7 @@ public class DecreaseLockStockLogic {
         log.info("will decrease stock,skuCodeAndQuantities is {},warehouseId is {},warehouseName is{}",shipment.getId(),extra.getWarehouseId(),extra.getWarehouseName());
         warehouseShipment.setWarehouseId(extra.getWarehouseId());
         warehouseShipment.setWarehouseName(extra.getWarehouseName());
-        warehouseShipmentList.add(warehouseShipment);
-        Response<Boolean> decreaseStockRlt =  warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(shipmentReadLogic.getDispatchOrderItem(shipment)),warehouseShipmentList);
+        Response<Boolean> decreaseStockRlt = warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(shipmentReadLogic.getDispatchOrderItem(shipment)), warehouseShipment, shipmentItems);
         if (!decreaseStockRlt.isSuccess()){
             log.error("this shipment can not decrease stock,shipment id is :{},warehouse id is:{}",shipment.getId(),extra.getWarehouseId());
         }

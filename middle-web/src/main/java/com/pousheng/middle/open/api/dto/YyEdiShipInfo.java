@@ -2,6 +2,8 @@ package com.pousheng.middle.open.api.dto;
 
 import lombok.Data;
 
+import java.util.List;
+
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/1/2
@@ -34,4 +36,33 @@ public class YyEdiShipInfo {
      * 发货重量
      */
     private double weight;
+
+    /**
+     * 详细发货情况
+     */
+    private List<ItemInfo> itemInfos;
+
+    @Data
+    public static class ItemInfo {
+        public String skuCode;
+        public Integer quantity;
+
+        public String getSkuCode() {
+            return skuCode;
+        }
+
+        public ItemInfo skuCode(String skuCode) {
+            this.skuCode = skuCode;
+            return this;
+        }
+
+        public Integer getQuantity() {
+            return quantity;
+        }
+
+        public ItemInfo quantity(Integer quantity) {
+            this.quantity = quantity;
+            return this;
+        }
+    }
 }

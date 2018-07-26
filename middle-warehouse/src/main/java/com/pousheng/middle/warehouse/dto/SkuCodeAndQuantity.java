@@ -29,4 +29,32 @@ public class SkuCodeAndQuantity implements Serializable {
      * 购买数量
      */
     private Integer quantity;
+
+
+    public Long getSkuOrderId() {
+        return skuOrderId;
+    }
+
+    public SkuCodeAndQuantity skuOrderId(Long skuOrderId) {
+        this.skuOrderId = skuOrderId;
+        return this;
+    }
+
+    public String getSkuCode() {
+        return skuCode;
+    }
+
+    public SkuCodeAndQuantity skuCode(String skuCode) {
+        this.skuCode = skuCode;
+        return this;
+    }
+
+    public Integer getQuantity() {
+        return quantity;
+    }
+
+    public SkuCodeAndQuantity quantity(Integer quantity) {
+        this.quantity = quantity;
+        return this;
+    }
 }

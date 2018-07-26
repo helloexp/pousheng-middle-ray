@@ -14,4 +14,16 @@ public interface OrderShipmentWriteService {
      * @return
      */
     Response<Boolean> update(OrderShipment orderShipment);
+
+    /**
+     * 更新部分发货
+     * @param shipmentId
+     * @param partShip
+     * @return
+     */
+    Response<Boolean> updatePartShip(Long shipmentId, Boolean partShip);
+
+
+
+
 }

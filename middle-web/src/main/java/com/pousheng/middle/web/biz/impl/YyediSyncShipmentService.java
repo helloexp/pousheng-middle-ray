@@ -15,10 +15,12 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.service.OrderShipmentWriteService;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.*;
@@ -40,6 +42,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传发货信息业务处理〉
@@ -70,6 +73,10 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
+
+    @RpcConsumer
+    private OrderShipmentWriteService orderShipmentWriteService;
+
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
 
@@ -118,11 +125,30 @@ public class YyediSyncShipmentService implements CompensateBizService {
         Flow flow = flowPicker.pickShipments();
         OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
         Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+        //检查是否是部分发货
+        List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
+        Boolean partShip = Boolean.FALSE;
+        Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
+                .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));
+        for (ShipmentItem s : items) {
+            if (s.getQuantity() > itemMap.get(s.getSkuCode())) {
+                partShip = Boolean.TRUE;
+            }
+            s.setShipQuantity(itemMap.get(s.getSkuCode()));
+        }
+
         //更新状态
         Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipmentId, targetStatus);
         if (!updateStatusRes.isSuccess()) {
             log.error("update shipment(id:{}) status to :{} fail,error:{}", shipmentId, targetStatus, updateStatusRes.getError());
             return;
+        }
+        if (partShip) {
+            Response<Boolean> updatePartRes = orderShipmentWriteService.updatePartShip(shipmentId, partShip);
+            if (!updatePartRes.isSuccess()) {
+                log.error("update order shipment(shipmentId:{}) partShip to :{} fail,error:{}", shipmentId, partShip, updateStatusRes.getError());
+                return;
+            }
         }
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         //封装更新信息
@@ -142,6 +168,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
         shipmentExtra.setShipmentDate(dt.toDate());
         shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);
         //更新基本信息
         Response<Boolean> updateRes = shipmentWriteService.update(update);

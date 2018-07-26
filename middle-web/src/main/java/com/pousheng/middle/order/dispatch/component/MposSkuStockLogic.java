@@ -3,6 +3,7 @@ package com.pousheng.middle.order.dispatch.component;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
@@ -165,12 +166,13 @@ public class MposSkuStockLogic {
         //仓库发货
         List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
 
+        List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
         //没有说明不是仓发直接返回
         if(CollectionUtils.isEmpty(warehouseShipments)){
             return Response.ok();
         }
 
-        warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo) ,warehouseShipments);
+        warehouseSkuStockManager.decreaseStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments.get(0), items);
 
         log.info("end decrease stock");
 

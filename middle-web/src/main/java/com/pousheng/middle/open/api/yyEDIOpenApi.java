@@ -42,6 +42,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 订单派发中心回调中台接口
@@ -103,7 +104,26 @@ public class yyEDIOpenApi {
                 try {
                     DateTime dt = new DateTime();
                     String shipmentCode = yyEdiShipInfo.getShipmentId();
+                    Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
                     Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
+                    if (size == 0) {
+                        Map<String,String> extraMap = shipment.getExtra();
+                        extraMap.put("remark","物流整单缺货");
+                        shipment.setExtra(extraMap);
+                        Response<Boolean> response =  shipmentWriteService.update(shipment);
+                        if (!response.isSuccess()) {
+                            log.error("yyEDI.shipments.api update shipment fail ,caused by {}", response.getError());
+                            throw new ServiceException(response.getError());
+                        }
+                        YyEdiResponseDetail field = new YyEdiResponseDetail();
+                        field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                        field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                        field.setErrorCode("-100");
+                        field.setErrorMsg("物流整单缺货");
+                        fields.add(field);
+                        count++;
+                        continue;
+                    }
                     //判断状态及获取接下来的状态
                     Flow flow = flowPicker.pickShipments();
                     OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
@@ -133,44 +153,6 @@ public class yyEDIOpenApi {
                     }
                     //校验成功，直接转存至okShipInfos
                     okShipInfos.add(yyEdiShipInfo);
-
-                    // Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
-                    // //更新状态
-                    // Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentId(shipment.getId(), targetStatus);
-                    // if (!updateStatusRes.isSuccess()) {
-                    //     log.error("update shipment(id:{}) status to :{} fail,error:{}", shipment.getId(), targetStatus, updateStatusRes.getError());
-                    //     throw new OPServerException(200, updateStatusRes.getError());
-                    // }
-                    // ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-                    // //封装更新信息
-                    // Shipment update = new Shipment();
-                    // update.setId(shipment.getId());
-                    // Map<String, String> extraMap = shipment.getExtra();
-                    // shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
-                    // shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
-                    // if (Objects.isNull(yyEdiShipInfo.getWeight())) {
-                    //     shipmentExtra.setWeight(0L);
-                    // } else {
-                    //     shipmentExtra.setWeight(yyEdiShipInfo.getWeight());
-                    // }
-                    // //通过恒康代码查找快递名称
-                    // ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
-                    // shipmentExtra.setShipmentCorpName(expressCode.getName());
-                    // shipmentExtra.setShipmentDate(dt.toDate());
-                    // shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                    // extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                    // update.setExtra(extraMap);
-                    // //更新基本信息
-                    // Response<Boolean> updateRes = shipmentWriteService.update(update);
-                    // if (!updateRes.isSuccess()) {
-                    //     log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipment.getId(), extraMap, updateRes.getError());
-                    //     throw new OPServerException(200, updateRes.getError());
-                    // }
-                    //
-                    // //同步pos单到恒康
-                    // Map<String, Object> param = Maps.newHashMap();
-                    // param.put(TradeConstants.SHIPMENT_ID, shipment.getId());
-                    // autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.YYEDI_SHIP_NOTIFICATION, null);
                 } catch (Exception e) {
                     log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), Throwables.getStackTraceAsString(e));
                     YyEdiResponseDetail field = new YyEdiResponseDetail();

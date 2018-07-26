@@ -70,7 +70,7 @@ public class HKShipmentDoneLogic {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             Flow flow = flowPicker.pickOrder();
             log.info("HK SHIPMENT DONE LISTENER shopOrderStatus is {}", shopOrder.getStatus());
-                if (flow.operationAllowed(shopOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
+            if (flow.operationAllowed(shopOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
                 //更新子订单中的信息
                 List<Long> skuOrderIds = Lists.newArrayList();
                 Map<Long, Integer> skuInfos = shipment.getSkuInfos();

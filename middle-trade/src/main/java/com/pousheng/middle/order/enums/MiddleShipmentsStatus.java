@@ -27,7 +27,8 @@ public enum MiddleShipmentsStatus {
     SYNC_HK_CANCEL_FAIL(-4, "取消同步订单派发中心失败"),   //同步恒康（mpos）失败
     CANCELED(-5, "已取消"),  // 已取消取消
     CONFIRMED_FAIL(-6, "订单派发中心确认失败"), //恒康确认收货失败
-    REJECTED(-7, "已拒绝"); //mpos拒单
+    REJECTED(-7, "已拒绝"), //mpos拒单
+    PART_SHIPPED(10, "部分发货"); //部分发货，不会存储在数据库中，仅作为前端搜索用
 
 
 

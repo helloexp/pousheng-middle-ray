@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -32,6 +33,7 @@ import org.springframework.util.ObjectUtils;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static com.pousheng.middle.constants.Constants.IS_CARE_STOCK;
 
@@ -99,19 +101,44 @@ public class DecreaseStockService implements CompensateBizService {
                 return;
             }
 
+            WarehouseShipment actualShipment = actualShipments.get(0);
             InventoryTradeDTO inventoryTradeDTO = dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo);
 
             List<InventoryTradeDTO> tradeList = Lists.newArrayList();
-            for (WarehouseShipment actualShipment : actualShipments) {
-                tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
-                        inventoryTradeDTO, actualShipment.getSkuCodeAndQuantities()));
+            List<InventoryTradeDTO> releaseList = Lists.newArrayList();
+            List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
+            Map<String, Integer> itemMap = shipmentReadLogic.getShipmentItems(shipment).stream()
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
+            for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
+                if (itemMap.get(sq.getSkuCode()) == null) {
+                    continue;
+                }
+                if (itemMap.get(sq.getSkuCode()) < sq.getQuantity()) {
+                    unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
+                            .quantity(sq.getQuantity() - itemMap.get(sq.getSkuCode())));
+                }
+                sq.setQuantity(itemMap.get(sq.getSkuCode()));
             }
+            tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
+                    inventoryTradeDTO, actualShipment.getSkuCodeAndQuantities()));
 
+            //这里增加如果没发全的判断 没发全要做扣减加释放
             if (!ObjectUtils.isEmpty(tradeList)) {
                 Response<Boolean> tradeRet = inventoryClient.decrease(tradeList);
                 if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
-                    log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipments, tradeRet.getError());
+                    log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipment, tradeRet.getError());
                     throw new ServiceException(tradeRet.getError());
+
+                }
+            }
+            if (!ObjectUtils.isEmpty(unlockList)) {
+                releaseList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
+                        inventoryTradeDTO, unlockList));
+                Response<Boolean> releaseRet = inventoryClient.unLock(releaseList);
+                if (!releaseRet.isSuccess() || !releaseRet.getResult()) {
+                    log.error("fail to unlock inventory, trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipment, releaseRet.getError());
+                    throw new ServiceException(releaseRet.getError());
+
                 }
             }
 

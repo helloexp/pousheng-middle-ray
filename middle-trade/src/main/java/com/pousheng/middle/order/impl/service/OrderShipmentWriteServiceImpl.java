@@ -28,4 +28,14 @@ public class OrderShipmentWriteServiceImpl implements OrderShipmentWriteService 
             return Response.fail("update.order.shipment.fail");
         }
     }
+
+    @Override
+    public Response<Boolean> updatePartShip(Long shipmentId, Boolean partShip) {
+        try {
+            return Response.ok(orderShipmentDao.updatePartShipByShipmentId(shipmentId, partShip));
+        } catch (Exception e) {
+            log.error("update shipmentId:{} failed,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            return Response.fail("update.order.shipment.fail");
+        }
+    }
 }

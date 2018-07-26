@@ -169,6 +169,10 @@ public class Shipments {
         if(log.isDebugEnabled()){
             log.debug("API-SHIPMENT-PAGING-START param: shipmentCriteria [{}]",shipmentCriteriaStr);
         }
+        if (shipmentCriteria.getStatus() != null && MiddleShipmentsStatus.PART_SHIPPED.getValue() == shipmentCriteria.getStatus()) {
+            shipmentCriteria.setStatus(MiddleShipmentsStatus.SHIPPED.getValue());
+            shipmentCriteria.setPartShip(Boolean.TRUE);
+        }
         if (shipmentCriteria.getEndAt() != null) {
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
         }
@@ -199,6 +203,9 @@ public class Shipments {
                 log.error("complete paging info fail,error:{}", Throwables.getStackTraceAsString(e));
             } catch (Exception e) {
                 log.error("complete paging info fail,cause:{}", Throwables.getStackTraceAsString(e));
+            }
+            if(shipmentPagingInfo.getOrderShipment().getStatus().equals(MiddleShipmentsStatus.SHIPPED.getValue())&&shipmentPagingInfo.getOrderShipment().getPartShip()){
+                shipmentPagingInfo.getOrderShipment().setStatus(MiddleShipmentsStatus.PART_SHIPPED.getValue());
             }
 
         });

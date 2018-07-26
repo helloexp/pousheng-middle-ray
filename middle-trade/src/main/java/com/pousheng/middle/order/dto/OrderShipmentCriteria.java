@@ -117,6 +117,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Integer expressStatus;
 
+    /**
+     * 部分发货
+     */
+    private Boolean partShip;
+
 
     /**
      * 如果Start的时间和End的时间一致, 则End+1day

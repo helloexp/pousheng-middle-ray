@@ -274,6 +274,12 @@ public class SyncShipmentPosLogic {
             //平台分摊到发货单上面的优惠金额
             hkShipmentPosItem.setCouponprice(new BigDecimal(shipmentItem.getSharePlatformDiscount()==null?0:shipmentItem.getSharePlatformDiscount())
                     .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            if (shipmentItem.getShipQuantity() == null) {
+                hkShipmentPosItem.setQty(shipmentItem.getQuantity());
+            } else {
+                hkShipmentPosItem.setQty(shipmentItem.getShipQuantity());
+            }
+            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;
@@ -314,7 +320,18 @@ public class SyncShipmentPosLogic {
         posInfo.setBuyertel(""); //买家座机
         posInfo.setBuyerremark(shopOrder.getBuyerNote()); //买家留言
         posInfo.setConsigneename(receiverInfo.getReceiveUserName());//收货人姓名
-        posInfo.setPayamountbakup(new BigDecimal(shipmentExtra.getShipmentTotalPrice()==null?0:shipmentExtra.getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString()); //线上实付金额
+        //等待改造
+        List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
+        BigDecimal totalPrice = BigDecimal.ZERO;
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            if (shipmentItem.getShipQuantity() != null && !shipmentItem.getQuantity().equals(shipmentItem.getShipQuantity())) {
+                totalPrice = totalPrice.add(new BigDecimal(shipmentItem.getCleanFee())
+                        .multiply(new BigDecimal(shipmentItem.getShipQuantity())).divide(new BigDecimal(shipmentItem.getQuantity()), 2, RoundingMode.HALF_DOWN));
+            } else {
+                totalPrice = totalPrice.add(new BigDecimal(shipmentItem.getCleanFee()));
+            }
+        }
+        posInfo.setPayamountbakup(totalPrice.divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString()); //线上实付金额
         posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee()==null?0:shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());//邮费成本
         posInfo.setCodcharges("0");//货到付款服务费
         posInfo.setPreremark(""); //优惠信息

@@ -258,11 +258,22 @@ public class MemberShopOperationLogic {
 
         //2、调用高德地图查询地址坐标
         Optional<Location> locationOp = dispatchComponent.getLocation(addressDto.getAddress());
+        Location location;
         if(!locationOp.isPresent()){
             log.error("[ADDRESS-LOCATION]:not find shop(id:{}) location by address:{}",shopId,addressDto.getAddress());
-            return null;
+
+            String addressRegion = addressDto.getProvinceName() + addressDto.getCityName() + addressDto.getAreaName();
+            //如果根据详细地址查询不到则用粗粒度的地址
+            Optional<Location>  locationRegionOp = dispatchComponent.getLocation(addressRegion);
+            if(!locationRegionOp.isPresent()){
+                log.error("not find location by address:{} for shop id:{}",addressRegion,shopId);
+                throw new ServiceException("shop.address.info.invalid");
+            }
+            location = locationRegionOp.get();
+        } else {
+            location= locationOp.get();
         }
-        Location location = locationOp.get();
+
 
         //3、创建门店地址定位信息
         AddressGps addressGps = new AddressGps();

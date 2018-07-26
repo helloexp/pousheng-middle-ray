@@ -68,6 +68,7 @@ public class MposOrderHandleLogic {
     @Autowired
     private EventBus eventBus;
 
+    @Autowired
     private ErpClient erpClient;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");

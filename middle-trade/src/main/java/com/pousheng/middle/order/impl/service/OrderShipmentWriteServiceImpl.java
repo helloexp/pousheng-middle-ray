@@ -24,7 +24,7 @@ public class OrderShipmentWriteServiceImpl implements OrderShipmentWriteService 
         try{
             return Response.ok(orderShipmentDao.update(orderShipment));
         }catch (Exception e){
-            log.error("update ordershipment:{} failed,cause:{}",orderShipment, Throwables.getStackTraceAsString(e));
+            log.error("update order shipment:{} failed,cause:{}",orderShipment, Throwables.getStackTraceAsString(e));
             return Response.fail("update.order.shipment.fail");
         }
     }

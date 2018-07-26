@@ -535,7 +535,6 @@ public class OrderWriteLogic {
                 failSkuOrders.addAll(skuOrders.stream().filter(skuOrder -> shipment.getSkuInfos().containsKey(skuOrder.getId())).collect(Collectors.toList()));
             }
         }
-
         if (log.isDebugEnabled()){
             log.debug("OrderWriteLogic rollbackShopOrder,shopOrderId {},count {}",shopOrderId,count);
         }
@@ -546,10 +545,13 @@ public class OrderWriteLogic {
                 log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}",shopOrder,failSkuOrders,MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
                 return Response.fail(response.getError());
             }
-        } else {
+            //将处理失败的从skuOrders中移除 认为是处理成功的
+            skuOrders.removeAll(failSkuOrders);
+        }
+        if (skuOrders.size() > 0) {
             Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
-            if (!response.isSuccess()){
-                log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}",shopOrder,skuOrders,MiddleOrderEvent.REVOKE.toOrderOperation());
+            if (!response.isSuccess()) {
+                log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}", shopOrder, skuOrders, MiddleOrderEvent.REVOKE.toOrderOperation());
                 return Response.fail(response.getError());
 
             }

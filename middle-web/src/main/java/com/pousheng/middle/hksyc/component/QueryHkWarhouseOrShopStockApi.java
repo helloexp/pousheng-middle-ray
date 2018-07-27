@@ -22,8 +22,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
-import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
-import com.pousheng.middle.web.item.cacher.ItemGroupCacherProxy;
+import com.pousheng.middle.web.item.cacher.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -76,7 +75,13 @@ public class QueryHkWarhouseOrShopStockApi {
     @Autowired
     private GroupRuleCacherProxy groupRuleCacherProxy;
     @Autowired
+    private ShopGroupRuleCacher shopGroupRuleCacher;
+    @Autowired
+    private WarehouseGroupRuleCacher warehouseGroupRuleCacher;
+    @Autowired
     private ItemGroupCacherProxy itemGroupCacherProxy;
+    @Autowired
+    private ItemGroupCacher itemGroupCacher;
     @Autowired
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
     @Autowired
@@ -318,7 +323,7 @@ public class QueryHkWarhouseOrShopStockApi {
 
 
     public Boolean canDeliveryForStock(SearchSkuTemplate skuTemplate, WarehouseDTO warehouse, String companyCode) {
-        log.info("skuTemplate {} ,warehouse_company {} ,companyCode {}", skuTemplate, warehouse.getCompanyId(), companyCode);
+        //log.info("skuTemplate {} ,warehouse_company {} ,companyCode {}", skuTemplate, warehouse.getCompanyId(), companyCode);
         Set<Long> groupIds;
         if (Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.SHOP_WAREHOUSE.value())) {
             //获取shop
@@ -329,9 +334,9 @@ public class QueryHkWarhouseOrShopStockApi {
                 log.error("shop(id:{}) not mapping open shop", shop.getId());
                 return false;
             }
-            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
+            groupIds = Sets.newHashSet(shopGroupRuleCacher.findByShopId(openShopId));
         } else {
-            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
+            groupIds = Sets.newHashSet(warehouseGroupRuleCacher.findByWarehouseId(warehouse.getId()));
         }
         log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
         if (CollectionUtils.isEmpty(groupIds)) {
@@ -348,9 +353,9 @@ public class QueryHkWarhouseOrShopStockApi {
         if (warehouse.getCompanyId().equals(companyCode)) {
             return true;
         }
-        log.warn("find union  groupIds {}", result);
+        //log.warn("find union  groupIds {}", result);
         for (Long id : result) {
-            if (PsItemGroupType.ALL.value().equals(itemGroupCacherProxy.findById(id).getType())) {
+            if (PsItemGroupType.ALL.value().equals(itemGroupCacher.findById(id).getType())) {
                 return true;
             }
         }

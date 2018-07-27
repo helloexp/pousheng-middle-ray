@@ -229,6 +229,17 @@ public class QueryHkWarhouseOrShopStockApi {
 
     public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds, String companyCode) {
         List<Long> vendible = Lists.newArrayList();
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("skuCode", skuCode);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by materialId:{} and size:{} fail,error:{}", skuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getTotal() == 0) {
+            return vendible;
+        }
         for (Long warehouseId : warehouseIds) {
             try {
                 WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
@@ -240,7 +251,7 @@ public class QueryHkWarhouseOrShopStockApi {
                     log.warn("find warehouse by id {} outCode  is null", warehouseId);
                     continue;
                 }
-                if (canDelivery(skuCode, warehouse, companyCode)) {
+                if (canDeliveryForStock(response.getResult().getData().get(0), warehouse, companyCode)) {
                     vendible.add(warehouseId);
                 }
             } catch (Exception e) {
@@ -305,34 +316,48 @@ public class QueryHkWarhouseOrShopStockApi {
     }
 
 
-    /**
-     * 用于库存推送 当传入多个skucode时，以map返回
-     * @param skuCodes
-     * @param openShopId
-     * @return
-     */
-    public Map<Boolean,List<String>> isVendible(List<String> skuCodes, Long openShopId) {
-        Map<Boolean, List<String>> map = new HashMap<>(4);
-        Set<Long> groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
+
+    public Boolean canDeliveryForStock(SearchSkuTemplate skuTemplate, WarehouseDTO warehouse, String companyCode) {
+        log.info("skuTemplate {} ,warehouse_company {} ,companyCode {}", skuTemplate, warehouse.getCompanyId(), companyCode);
+        Set<Long> groupIds;
+        if (Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.SHOP_WAREHOUSE.value())) {
+            //获取shop
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.parseLong(warehouse.getCompanyId()));
+            ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
+            Long openShopId = currentShopExtraInfo.getOpenShopId();
+            if (Arguments.isNull(openShopId)) {
+                log.error("shop(id:{}) not mapping open shop", shop.getId());
+                return false;
+            }
+            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
+        } else {
+            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
+        }
+        log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
         if (CollectionUtils.isEmpty(groupIds)) {
-            map.put(Boolean.FALSE, skuCodes);
-            return map;
+            return false;
         }
-        String templateName = "ps_search.mustache";
-        Map<String, String> params = Maps.newHashMap();
-        params.put("skuCodes", Joiners.COMMA.join(skuCodes));
-        params.put("groupIds", Joiners.COMMA.join(groupIds));
-        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
-        if (!response.isSuccess()) {
-            log.error("query sku template by skuCodes:{} and size:{} fail,error:{}", skuCodes, response.getError());
-            throw new JsonResponseException(response.getError());
+        //查询商品和店铺的交集，查看是否存在，
+        Set<Long> result = Sets.newHashSet();
+        result.addAll(groupIds);
+        result.retainAll(skuTemplate.getGroupIds());
+        if (result.size() == 0) {
+            return false;
         }
-        List<String> vendible = response.getResult().getData().stream().map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList());
-        map.put(Boolean.TRUE, vendible);
-        skuCodes.removeAll(vendible);
-        map.put(Boolean.FALSE, skuCodes);
-        return map;
+        //如果已经是同公司就不需要再去判断了 如果存在且是全国的 则返回true
+        if (warehouse.getCompanyId().equals(companyCode)) {
+            return true;
+        }
+        log.warn("find union  groupIds {}", result);
+        for (Long id : result) {
+            if (PsItemGroupType.ALL.value().equals(itemGroupCacherProxy.findById(id).getType())) {
+                return true;
+            }
+        }
+        return false;
+
     }
+
 
 
     private List<HkSkuStockInfo> readStockFromJson(String json) {

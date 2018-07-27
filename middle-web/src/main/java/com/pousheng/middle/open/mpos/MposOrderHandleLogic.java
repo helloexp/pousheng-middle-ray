@@ -23,6 +23,7 @@ import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -188,7 +189,7 @@ public class MposOrderHandleLogic {
             mposShipmentLogic.onUpdateMposShipment(new MposShipmentUpdateEvent(shipment.getId(), orderEvent));
         }
         //如果发货将发货单信息同步到esp
-        if (!Objects.equals(orderEvent,MiddleOrderEvent.SHIP)) {
+        if (Objects.equals(orderEvent,MiddleOrderEvent.SHIP)) {
             synExpressInfoToEsp(shipment.getShipmentCode(),shipmentExtra.getShipmentCorpCode(),shipmentExtra.getShipmentSerialNo());
         }
         log.info("sync shipment(id:{}) success",shipment.getId());
@@ -260,6 +261,8 @@ public class MposOrderHandleLogic {
     public void synExpressInfoToEsp(String shipmentCode, String shipmentCorpCode, String shipmentSerialNo) {
         if (StringUtils.isEmpty(shipmentCode) || StringUtils.isEmpty(shipmentCorpCode)
                 || StringUtils.isEmpty(shipmentSerialNo)){
+            log.error("fail sync express info to esp shipmentCode:{}、 shipmentCorpCode:{}、 shipmentSerialNo:{} param invalid",
+                    shipmentCode,shipmentCorpCode,shipmentSerialNo);
             return;
         }
         switch (shipmentCorpCode){
@@ -270,7 +273,12 @@ public class MposOrderHandleLogic {
                 shipmentCorpCode = "YTO";
                 break;
             default:
-                shipmentCorpCode = shipmentCorpCode;
+                log.error("fail sync express info to esp shipmentCode:{}、 shipmentCorpCode:{}、 shipmentSerialNo:{} shipmentCorpCode invalid",
+                        shipmentCode,shipmentCorpCode,shipmentSerialNo);
+                shipmentCorpCode = "";
+        }
+        if (Strings.isNullOrEmpty(shipmentCorpCode)){
+            return;
         }
         //往esp推送信息
         Map<String,Object> requestBody = Maps.newHashMap();

@@ -26,6 +26,7 @@ import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
+import com.pousheng.middle.web.item.cacher.*;
 import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -102,6 +103,12 @@ public class StockPusher {
     private MiddleShopCacher middleShopCacher;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private ShopGroupRuleCacher shopGroupRuleCacher;
+    @Autowired
+    private WarehouseGroupRuleCacher warehouseGroupRuleCacher;
+    @Autowired
+    private ItemGroupCacher itemGroupCacher;
 
     private ExecutorService executorService;
 
@@ -162,6 +169,10 @@ public class StockPusher {
     public void submit(List<String> skuCodes) {
 
         log.info("start to push skus: {}", skuCodes);
+        //先清理本地缓存
+        //shopGroupRuleCacher.refreshAll();
+        //warehouseGroupRuleCacher.refreshAll();
+        //itemGroupCacher.refreshAll();
 
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
         //库存推送日志记录
@@ -176,6 +187,7 @@ public class StockPusher {
                             spuId, skuCode, r.getError());
                     continue;
                 }
+
                 //计算库存分配并将库存推送到每个外部店铺去
                 List<Long> shopIds = r.getResult();
                 for (Long shopId : shopIds) {

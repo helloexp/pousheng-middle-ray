@@ -751,6 +751,46 @@ public class FireCall {
 
 
     /**
+     * 创建发货单
+     */
+    @RequestMapping(value = "/create/shipment2", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void autoShipments2(@RequestParam String fileName) {
+
+        String url = "/pousheng/file/" + fileName + ".csv";
+
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
+        File file1 = new File(url);
+
+        List<String> ids = readShipmentCode(file1);
+        log.info("START-HANDLE-CREATE-SHIPMENT-API for:{}", url);
+
+        for (String idStr : ids) {
+            log.info("START-HANDLE-CREATE-SHIPMENT-ID:{}", idStr);
+
+            OrderBase orderBase = orderReadLogic.findOrder(Long.valueOf(idStr), OrderLevel.SHOP);
+            if (!Objects.equals(orderBase.getStatus(), 1)) {
+                log.error("orderBase id:{} status is :{} so skip create shipment by order id:{}", orderBase.getId(), orderBase.getStatus(), idStr);
+                continue;
+            }
+            //to create shipment
+            log.info("try to create shipment, order id is {} order id:{}", idStr, orderBase.getId());
+            OpenClientOrderSyncEvent event = new OpenClientOrderSyncEvent(orderBase.getId());
+            try {
+                autoCreateShipmetsListener.onShipment(event);
+            } catch (Exception e) {
+                log.info("fail to create shipment, shipment code is {} order id:{}", idStr, orderBase.getId());
+            }
+
+            log.info("END-HANDLE-CREATE-SHIPMENT-ORDER-ID:{}", idStr);
+        }
+
+        log.info("END-HANDLE-CREATE-SHIPMENT-API for:{}", url);
+
+    }
+
+
+
+    /**
      * 修复shutemplate中extra为空或者缺少货号的数据
      */
     @RequestMapping(value = "/fix/skuTemplate", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

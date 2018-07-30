@@ -272,6 +272,12 @@ public class MposOrderHandleLogic {
             case "yuantong":
                 shipmentCorpCode = "YTO";
                 break;
+            case "SF":
+                shipmentCorpCode = "SF";
+                break;
+            case "YTO":
+                shipmentCorpCode = "YTO";
+                break;
             default:
                 log.error("fail sync express info to esp shipmentCode:{}、 shipmentCorpCode:{}、 shipmentSerialNo:{} shipmentCorpCode invalid",
                         shipmentCode,shipmentCorpCode,shipmentSerialNo);

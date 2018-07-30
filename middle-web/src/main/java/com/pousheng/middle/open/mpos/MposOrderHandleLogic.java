@@ -302,6 +302,6 @@ public class MposOrderHandleLogic {
         log.info("synExpressInfoToEsp begin push shipments,shipmentCode:{},expressCode:{},mailno:{}",shipmentCode,shipmentCorpCode,shipmentSerialNo);
         String response = erpClient.postJson("common/esp/default/pushexpress",
                 paramJson);
-        log.info("synExpressInfoToEsp end,the response:{}",response);
+        log.info("synExpressInfoToEsp shipmentCode:{} end,the response:{}",shipmentCode,response);
     }
 }

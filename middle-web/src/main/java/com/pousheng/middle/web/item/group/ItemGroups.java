@@ -190,7 +190,6 @@ public class ItemGroups {
         List<ScheduleTask> list = Lists.newArrayList();
         //异步删除相应的组内商品
         Map<String, String> params = Maps.newHashMap();
-        params.put("groupId", id.toString());
         list.add(ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(id)
                 .type(PsItemGroupSkuType.GROUP.value()).mark(false).userId(UserUtil.getUserId())));
         list.add(ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(id)

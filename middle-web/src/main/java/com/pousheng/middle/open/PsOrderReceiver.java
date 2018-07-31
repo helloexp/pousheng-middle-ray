@@ -211,7 +211,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
-        /*switch (clientOrderStatus){
+        switch (clientOrderStatus){
             case PAID:
                 return OpenClientOrderStatus.PAID.getValue();
             case SHIPPED:
@@ -224,8 +224,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 return OpenClientOrderStatus.CONFIRMED.getValue();
             default:
                 return OpenClientOrderStatus.CANCEL.getValue();
-        }*/
-        return OpenClientOrderStatus.PAID.getValue();
+        }
     }
 
     @Override

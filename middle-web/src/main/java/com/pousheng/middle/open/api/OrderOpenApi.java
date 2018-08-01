@@ -95,6 +95,8 @@ public class OrderOpenApi {
     private SyncRefundPosLogic syncRefundPosLogic;
     @Autowired
     private SyncShipmentPosLogic syncShipmentPosLogic;
+    @Autowired
+    private ReceiveSkxResultLogic receiveSkxResultLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -153,7 +155,15 @@ public class OrderOpenApi {
             log.debug("ERP-SHIPMENTS-API-START param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
                     shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
         }
-        this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
+        SkxShipInfo skxShipInfo = new SkxShipInfo();
+        skxShipInfo.setShipmentId(shipmentId);
+        skxShipInfo.setErpShipmentId(erpShipmentId);
+        skxShipInfo.setShipmentCorpCode(shipmentCorpCode);
+        skxShipInfo.setShipmentSerialNo(shipmentSerialNo);
+        skxShipInfo.setShipmentDate(shipmentDate);
+        receiveSkxResultLogic.createShipmentResultTask(skxShipInfo);
+
+        //this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
         if(log.isDebugEnabled()){
             log.debug("ERP-SHIPMENTS-API-END param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
                     shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
@@ -554,23 +564,7 @@ public class OrderOpenApi {
     public void syncOrderCancel(@NotNull(message = "cancel.data.is.null") String data) {
         log.info("SYNC-OUT-ORDER-CANCEL-START DATA is:{} ", data);
         CancelOutOrderInfo cancelOutOrderInfo = JSON_MAPPER.fromJson(data, CancelOutOrderInfo.class);
-
-        String outId = cancelOutOrderInfo.getOutOrderId();
-        String outFrom = cancelOutOrderInfo.getChannel();
-        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outId, outFrom);
-        if (!findShopOrder.isSuccess()) {
-            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
-                    outId, outFrom, findShopOrder.getError());
-            throw new OPServerException(200, findShopOrder.getError());
-        }
-        Optional<ShopOrder> shopOrderOptional = findShopOrder.getResult();
-        if (!shopOrderOptional.isPresent()) {
-            log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
-            throw new OPServerException(200, "order.not.found");
-        }
-        orderWriteLogic.autoCancelShopOrder(shopOrderOptional.get().getId());
-
-
+        receiveSkxResultLogic.cancelShipmentResultTask(cancelOutOrderInfo);
         log.info("cancelOutOrderInfo:", cancelOutOrderInfo);
     }
 

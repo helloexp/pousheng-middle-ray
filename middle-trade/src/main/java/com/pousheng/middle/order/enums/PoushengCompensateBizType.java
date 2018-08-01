@@ -48,11 +48,20 @@ public enum PoushengCompensateBizType {
      */
     STOCK_API_TIME_OUT,
 
-
     /**
      * 扣减库存
      */
-    STOCK_API_DECREASE_STOCK;
+    STOCK_API_DECREASE_STOCK,
+
+    /**
+     * SKX同步发货单
+     */
+    SKX_SYNC_SHIPMENT_RESULT,
+
+    /**
+     * 取消外部订单同步到中台
+     */
+    OUTER_ORDER_CANCEL_RESULT;
 
 
 }

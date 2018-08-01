@@ -287,7 +287,7 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
         if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
             shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
-            shipmentInfo.setERPBillNo(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID));
+            shipmentInfo.setERPBillNo(shopOrder.getOutId());
             log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopBillNo(), shipmentInfo.getERPBillNo());
         }
         //恒康店铺码--传外码

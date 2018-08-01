@@ -8,6 +8,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.center.constant.ExtraKeyConstant;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.open.client.item.model.PushedItem;
@@ -48,15 +49,6 @@ public class OpenOrderConverter {
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
-
-    private final static String YJ_TYPE = "yunjuType";
-
-    private final static String YJ_BBC = "bbc";
-
-    private final static String YJ_JIT = "jit";
-
-    private final static String YJ_OUTID = "yunjuOutId";
-
 
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
@@ -106,13 +98,13 @@ public class OpenOrderConverter {
 
         // 云聚类型的订单 接收第三方订单号字段outId,存在extra_json中
         if (order.getChannel().contains("yunju")) {
-            extra.put(OpenOrderConverter.YJ_OUTID, order.getOutId());
-
+            extra.put(ExtraKeyConstant.YJ_OUTID, order.getOutId());
+            extra.put(ExtraKeyConstant.SHIPMENT_TYPE, order.getShipmentType() + "");
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
-                extra.put(OpenOrderConverter.YJ_TYPE, OpenOrderConverter.YJ_BBC);
+                extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);
             }
             if (Objects.equals(order.getType(), 2)) {
-                extra.put(OpenOrderConverter.YJ_TYPE, OpenOrderConverter.YJ_JIT);
+                extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_JIT);
             }
         }
         fullOrder.setExtra(extra);

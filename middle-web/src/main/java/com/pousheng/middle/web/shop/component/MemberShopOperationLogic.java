@@ -63,7 +63,7 @@ public class MemberShopOperationLogic {
         return resp.getResult();
     }
 
-    private List<MemberShop> findShops(String code) {
+    public List<MemberShop> findShops(String code) {
         Response<List<MemberShop>> resp = findSrvShopByCode(code);
         if (!resp.isSuccess()) {
             log.error("find shop failed, code = {}, cause: {}", code, resp.getError());

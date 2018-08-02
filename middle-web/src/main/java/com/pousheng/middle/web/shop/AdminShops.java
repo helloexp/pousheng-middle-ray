@@ -10,6 +10,7 @@ import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.constants.Constants;
+import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.AddressGps;
@@ -23,6 +24,7 @@ import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.web.order.sync.mpos.MiddleParanaClient;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.component.ShopBusinessLogic;
@@ -48,6 +50,7 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
+import io.terminus.open.client.parana.dto.ParanaCallResult;
 import io.terminus.open.client.parana.item.SyncParanaShopService;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.exception.InvalidException;
@@ -55,6 +58,7 @@ import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.AdminShopWriteService;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -143,6 +147,10 @@ public class AdminShops {
     @Autowired
     @Setter
     private OrderShipmentReadService orderShipmentReadService;
+    @Autowired
+    private MiddleParanaClient paranaClient;
+
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     private static String OPEN_SHOP_ID = "openShopId";
 
@@ -1149,6 +1157,38 @@ public class AdminShops {
         } catch (Exception e){
             throw new JsonResponseException(500, e.getMessage());
         }
+    }
+
+
+    @ApiOperation("修改必须接单门店")
+    @RequestMapping(value = "/{shopId}/no/reject", method = RequestMethod.PUT)
+    public void NoRejectSeller(@PathVariable Long shopId, Boolean canNotReject) {
+        val rExist = shopReadService.findById(shopId);
+        if (!rExist.isSuccess()) {
+            log.error("find shop by id:{} fail,error:{}", shopId, rExist.getError());
+            throw new JsonResponseException(rExist.getError());
+        }
+        Shop exist = rExist.getResult();
+        Map<String, Object> params = new HashMap<>(4);
+        params.put("canNotReject", canNotReject);
+        params.put("outerId", exist.getOuterId());
+        params.put("businessId", exist.getBusinessId());
+        String responseBody = paranaClient.systemPost("sync.shop.no.reject.api", params);
+        //同步电商
+        ParanaCallResult res = mapper.fromJson(responseBody, ParanaCallResult.class);
+        log.info("sync to parana ,res is {}", res);
+        if (!res.getSuccess()) {
+            throw new JsonResponseException(res.getErrorMessage());
+        }
+        Map<String, String> extra = exist.getExtra();
+        extra.put("canNotReject", canNotReject.toString());
+        exist.setExtra(extra);
+        Response<Boolean> result = shopWriteService.update(exist);
+        if (!result.isSuccess()) {
+            throw new JsonResponseException(result.getError());
+        }
+        shopCacher.refreshShopById(shopId);
+        middleShopCacher.refreshByOuterIdAndBusinessId(exist.getOuterId(), exist.getBusinessId());
     }
 
 

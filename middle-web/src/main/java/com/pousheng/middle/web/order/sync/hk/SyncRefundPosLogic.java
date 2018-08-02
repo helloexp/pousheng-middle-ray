@@ -224,6 +224,10 @@ public class SyncRefundPosLogic {
         for (RefundItem refundItem:refundItems){
             refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
         }
+        Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
+        for (RefundItem refundItem:refundItems){
+            skuCodeAndShareDiscountMap.put(refundItem.getSkuCode(),refundItem.getSharePlatformDiscount());
+        }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(refundYYEdiConfirmItems.size());
         for (YYEdiRefundConfirmItem refundConfirmItem : refundYYEdiConfirmItems){
             //如果退货数量是0则过滤掉
@@ -235,7 +239,10 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
             hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
-            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null
+                    ?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setCouponprice(new BigDecimal(skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())==null
+                    ?0:skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //售后不涉及到优惠
             posItems.add(hkShipmentPosItem);
         }
@@ -258,6 +265,10 @@ public class SyncRefundPosLogic {
         for (RefundItem refundItem:refundItems){
             refundItemAndPriceMap.put(refundItem.getSkuCode(),refundItem.getCleanPrice());
         }
+        Map<String,Integer> skuCodeAndShareDiscountMap = Maps.newHashMap();
+        for (RefundItem refundItem:refundItems){
+            skuCodeAndShareDiscountMap.put(refundItem.getSkuCode(),refundItem.getSharePlatformDiscount());
+        }
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(hkConfirmItemInfos.size());
         for (HkConfirmReturnItemInfo refundConfirmItem : hkConfirmItemInfos){
             //如果退货数量是0则过滤掉
@@ -269,8 +280,11 @@ public class SyncRefundPosLogic {
             hkShipmentPosItem.setSourcenetbillno(shipmentCode);
             hkShipmentPosItem.setMatbarcode(refundConfirmItem.getItemCode());
             hkShipmentPosItem.setQty(Integer.valueOf(refundConfirmItem.getQuantity()));
-            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(refundItemAndPriceMap.get(refundConfirmItem.getItemCode())==null
+                    ?0:refundItemAndPriceMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             //售后不涉及到优惠
+            hkShipmentPosItem.setCouponprice(new BigDecimal(skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())==null
+                    ?0:skuCodeAndShareDiscountMap.get(refundConfirmItem.getItemCode())).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;

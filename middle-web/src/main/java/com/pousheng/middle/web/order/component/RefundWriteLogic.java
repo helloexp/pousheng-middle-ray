@@ -923,6 +923,7 @@ public class RefundWriteLogic {
                 refundItem.setApplyQuantity(editSubmitRefundItem.getRefundQuantity());
                 //填入实际退款的单价金额
                 refundItem.setFee(Long.valueOf(shipmentItem.getCleanFee()));
+                refundItem.setSharePlatformDiscount(shipmentItem.getSharePlatformDiscount());
                 refundItems.add(refundItem);
             } else {
                 count++;

@@ -49,15 +49,21 @@ public class WarehouseSkuStockLogic {
             return Response.fail("warehouse.out.code.invalid");
         }
 
-        Response<List<InventoryDTO>> listRes = inventoryClient.findSkuStocks(warehouseId,skuCodes);
-        List<InventoryDTO> stocks = listRes.getResult();
-
-        Map<String, InventoryDTO> skuCodeMap = stocks.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(InventoryDTO::getSkuCode, it -> it));
-
         Map<String, Integer> r = Maps.newHashMapWithExpectedSize(skuCodes.size());
 
         if(Objects.equals(warehouseId,skxWarehouseId)) {
+            Response<List<InventoryDTO>> listRes = inventoryClient.findSkuStocks(warehouseId,skuCodes);
+            if (!listRes.isSuccess()) {
+                log.error("call inventory to find inventory list fail, warehouseId:{} sku code:{}, caused: {}",
+                        warehouseId,skuCodes, listRes.getError());
+
+                return Response.ok(r);
+            }
+            List<InventoryDTO> stocks = listRes.getResult();
+
+            Map<String, InventoryDTO> skuCodeMap = stocks.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(InventoryDTO::getSkuCode, it -> it));
+
             for (String skuCode : skuCodes) {
                 InventoryDTO stock = null;
                 if( skuCodeMap.containsKey(skuCode)){
@@ -69,9 +75,9 @@ public class WarehouseSkuStockLogic {
                     continue;
                 }
                 r.put(skuCode, stock.getAvailStockExcludeSafe().intValue());
-
-                return Response.ok(r);
             }
+
+            return Response.ok(r);
         }
 
         // 直接查询库存中心可用库存接口

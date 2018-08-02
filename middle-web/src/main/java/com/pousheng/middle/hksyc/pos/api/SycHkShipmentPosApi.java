@@ -1,6 +1,7 @@
 package com.pousheng.middle.hksyc.pos.api;
 
 import com.github.kevinsawicki.http.HttpRequest;
+import com.pousheng.middle.hksyc.pos.dto.HkSaleRefuseRequestData;
 import com.pousheng.middle.hksyc.pos.dto.HkShimentDoneRequestData;
 import com.pousheng.middle.hksyc.pos.dto.HkShipmentPosRequestData;
 import com.pousheng.middle.hksyc.utils.Numbers;
@@ -37,6 +38,12 @@ public class SycHkShipmentPosApi {
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
         log.info("paramJson:{}",paramJson);
 
+        return doRequest(paramJson,url);
+    }
+
+    public String doSyncSaleRefuse(HkSaleRefuseRequestData requestData,String url){
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
+        log.info("paramJson:{}",paramJson);
         return doRequest(paramJson,url);
     }
 

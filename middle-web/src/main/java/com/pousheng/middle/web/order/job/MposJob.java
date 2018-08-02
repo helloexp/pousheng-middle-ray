@@ -363,6 +363,20 @@ public class MposJob {
                             }
                         }
                     }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
+                            Response<Boolean> response = syncRefundPosLogic.syncSaleRefuseToHK(refund);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
                 });
             }
         }

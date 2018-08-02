@@ -95,8 +95,77 @@ public class SyncRefundPosLogic {
 
     }
 
+    /**
+     * 同步恒康拒收单信息
+     * @param refund 售后单信息
+     * @return
+     */
+    public Response<Boolean> syncSaleRefuseToHK(Refund refund){
+        try{
+            HkSaleRefuseRequestData requestData = makeHkSaleRefuseRequestData(refund);
+            String url ="/common/pserp/pos/donetsalrefuse";
+            String result = sycHkShipmentPosApi.doSyncSaleRefuse(requestData,url);
+            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
+            if(!Objects.equal(response.getCode(),"00000")){
+                log.error("sync refund(code:{}) sale refuse to hk fail,error:{}",refund.getRefundCode(),response.getMessage());
+                return Response.fail(response.getMessage());
+            }
+            return Response.ok();
+        }catch (Exception e){
+            log.error("sync  refund sale refuse failed,refund is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e))          ;
+            return Response.fail("sync.sale.refuse.fail");
+        }
+    }
 
+    /**
+     * 组装拒收单请求参数
+     * @param refund 售后单信息
+     * @return
+     */
+    private HkSaleRefuseRequestData makeHkSaleRefuseRequestData(Refund refund){
+        HkSaleRefuseRequestData requestData = new HkSaleRefuseRequestData();
+        requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
+        requestData.setSid("PS_ERP_POS_netsalrefuse");
+        //组装content参数
+        HkSaleRefuseContent bizContent  = this.makeHKSaleRefuseContent(refund);
+        requestData.setBizContent(bizContent);
+        return requestData;
+    }
+    private HkSaleRefuseContent makeHKSaleRefuseContent(Refund refund){
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        if(Arguments.isNull(refundExtra.getShipmentId())){
+            log.error("refund(id:{}) shipment id invalid");
+            throw new ServiceException("refund.shipment.id.invalid");
+        }
+        //获取发货单详情
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
 
+        HkSaleRefuseContent hkSaleRefuseContent = new HkSaleRefuseContent();
+        //端点唯一订单号使用带前缀的单号
+        hkSaleRefuseContent.setNetbillno(refund.getRefundCode());
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentDetail.getShipment().getShopId());
+        Map<String,String> openShopExtra = openShop.getExtra();
+        hkSaleRefuseContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));//线上店铺code
+        //退货仓
+        if(Arguments.isNull(refundExtra.getWarehouseId())){
+            log.error("refund(id:{}) refund warehouse not exist",refund.getId());
+            throw new ServiceException("refund.warehouse.invalid");
+        }
+        WarehouseDTO warehouse = warehouseCacher.findById(refundExtra.getWarehouseId());
+        if(StringUtils.isEmpty(warehouse.getOutCode())){
+            log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+            throw new ServiceException("warehouse.out.code.invalid");
+        }
+        //线上店铺所属公司id
+        hkSaleRefuseContent.setNetcompanyid(warehouse.getCompanyId());
+        //发货单id
+        hkSaleRefuseContent.setSourcebillno(shipmentDetail.getShipment().getShipmentCode());
+        //客服备注
+        hkSaleRefuseContent.setRemark(refund.getSellerNote());
+
+        return hkSaleRefuseContent;
+    }
     private HkShipmentPosRequestData makeHkShipmentPosRequestData(Refund refund){
 
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();

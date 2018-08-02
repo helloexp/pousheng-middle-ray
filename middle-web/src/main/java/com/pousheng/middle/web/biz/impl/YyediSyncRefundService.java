@@ -106,8 +106,14 @@ public class YyediSyncRefundService implements CompensateBizService {
         //店发发货单对应的拒收单不能同步恒康生成pos单
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-        if (Objects.equals(shipment.getShipWay(), 1) && Objects.equals(refund.getRefundType(), MiddleRefundType.REJECT_GOODS.value())) {
-            throw new JsonResponseException("shop.refunds.can.not.sync.yyedi");
+        //仓发拒收单直接同步订单恒康就好了
+        if (Objects.equals(shipment.getShipWay(), 2) && Objects.equals(refund.getRefundType(), MiddleRefundType.REJECT_GOODS.value())) {
+            Response<Boolean> r = syncRefundPosLogic.syncSaleRefuseToHK(refund);
+            if (!r.isSuccess()) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK, r.getError());
+            }
         }
         //同步pos单到恒康
         //判断pos单是否需要同步恒康,如果退货仓数量全是0

@@ -78,9 +78,6 @@ public class SyncErpReturnLogic {
         //店发发货单对应的拒收单不允许同步恒康，不允许同步订单派发中心
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment =  shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-        if (Objects.equals(shipment.getShipWay(),1)&&Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
-            throw new JsonResponseException("shop.refunds.can.not.sync.yyedi");
-        }
         OpenShop openShop = openShopResponse.getResult();
         Map<String, String> openShopExtra =  openShop.getExtra();
         String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE)==null?"hk":openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
@@ -99,6 +96,12 @@ public class SyncErpReturnLogic {
                 default:
                     return syncRefundLogic.syncRefundToHk(refund);
             }
+        }
+        //如果是店发的拒收单直接同步恒康不用管渠道
+        if (Objects.equals(shipment.getShipWay(),1)
+                && Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+            return this.syncSaleRefuse(refund);
+
         }
         //售后换货，退货的同步走配置渠道
         switch (erpSyncType){
@@ -151,6 +154,36 @@ public class SyncErpReturnLogic {
 
     }
 
+    private Response<Boolean> syncSaleRefuse(Refund refund){
+        try{
+            log.info("sync sale refuse start,refund  {}",refund);
+            OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
+            Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
+            if (!updateStatusRes.isSuccess()) {
+                log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), orderOperation.getText(), updateStatusRes.getError());
+                return Response.fail(updateStatusRes.getError());
+            }
+            Flow flow = flowPicker.pickAfterSales();
+            Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+            refund.setStatus(targetStatus);
+            Response<Boolean> r = syncRefundPosLogic.syncSaleRefuseToHK(refund);
+            if (r.isSuccess()){
+                OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
+                Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
+                if (!updateStatusRes.isSuccess()) {
+                    log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
+                    return Response.fail(updateSyncStatusRes.getError());
+                }
+                return Response.ok(Boolean.TRUE);
+            }else{
+                updateRefundSyncFial(refund);
+                return Response.fail("sync.sale.refuse.failed");
+            }
+        }catch (Exception e){
+            log.error("sync sale refuse failed,caused by {}", Throwables.getStackTraceAsString(e));
+            return Response.fail("sync.sale.refuse.failed");
+        }
+    }
 
     /**
      * 同步erp退货单取消
@@ -207,6 +240,8 @@ public class SyncErpReturnLogic {
                 return MiddleOrderEvent.SYNC_REFUND_SUCCESS.toOrderOperation();
             case AFTER_SALES_CHANGE:
                 return MiddleOrderEvent.SYNC_CHANGE_SUCCESS.toOrderOperation();
+            case REJECT_GOODS:
+                return MiddleOrderEvent.SYNC_SALE_REFUSE_SUCCESS.toOrderOperation();
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
                 throw new ServiceException("refund.type.invalid");

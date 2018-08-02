@@ -30,6 +30,7 @@ public enum MiddleRefundStatus {
     LOST_WAIT_SHIP(14,"丢件补发-待发货"),
     LOST_SHIPPED(15,"丢件补发-已经发货"),
     LOST_DONE(16,"丢件补发-客户确认收货"),
+    SALE_REFUSE_SUCCESS(17,"同步恒康拒收单成功"),
     SYNC_HK_FAIL(-1, "同步恒康失败"),                                  //同步恒康失败
     SYNC_HK_CANCEL_ING(-2, "同步恒康取消中"),                          //同步恒康取消中（此状态前端可不用关心，只是为了后端flow通顺）
     CANCELED(-3, "已取消"),                                           //已取消

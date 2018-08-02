@@ -492,6 +492,11 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.SYNC_HK_ING.getValue(),
                     MiddleOrderEvent.SYNC_REFUND_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue());
+            //============== 拒收 =====================
+            //同步中 -->同步恒康成功 --> 同步恒康成功
+            addTransition(MiddleRefundStatus.SYNC_HK_ING.getValue(),
+                    MiddleOrderEvent.SYNC_SALE_REFUSE_SUCCESS.toOrderOperation(),
+                    MiddleRefundStatus.SALE_REFUSE_SUCCESS.getValue());
 
             //同步退款成功-待退款 -->退款 --> 退款成功
             addTransition(MiddleRefundStatus.REFUND_SYNC_HK_SUCCESS.getValue(),

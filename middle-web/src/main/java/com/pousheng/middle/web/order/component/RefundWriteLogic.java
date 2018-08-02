@@ -335,9 +335,12 @@ public class RefundWriteLogic {
         if (!Objects.equals(submitRefundInfo.getRefundType(), MiddleRefundType.AFTER_SALES_CHANGE.value())) {
             this.calcRefundItemFees(refundItems, submitRefundInfo.getFee());
         }
-        for (EditSubmitRefundItem editSubmitRefundItem : submitRefundInfo.getEditSubmitRefundItems()) {
-            //更新发货单中已经售后的商品的数量
-            updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(), editSubmitRefundItem.getRefundQuantity(), shipmentItems);
+        //售后仅退款不更新售后数量
+        if (!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
+            for (EditSubmitRefundItem editSubmitRefundItem : submitRefundInfo.getEditSubmitRefundItems()) {
+                //更新发货单中已经售后的商品的数量
+                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(), editSubmitRefundItem.getRefundQuantity(), shipmentItems);
+            }
         }
 
         //组装售后单参数
@@ -463,7 +466,7 @@ public class RefundWriteLogic {
             //申请数量是否有效
             currentRefundItems = checkRefundQuantity(submitRefundInfo, shipmentItems);
             //更新发货商品中的已退货数量
-            updateShipmentItemRefundQuantityForEdit(shipmentItems, submitRefundInfo, existRefundItems);
+            updateShipmentItemRefundQuantityForEdit(shipmentItems, submitRefundInfo, existRefundItems,refund.getRefundType());
             //完善货品信息
             completeSkuAttributeInfo(currentRefundItems);
         }
@@ -491,7 +494,8 @@ public class RefundWriteLogic {
             }
         }
 
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())
+                ||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
         //更新退换货信息
@@ -543,7 +547,9 @@ public class RefundWriteLogic {
 //            this.calcRefundItemFees(refundItems,submitRefundInfo.getFee());
 //        }
         for (EditSubmitRefundItem editSubmitRefundItem:submitRefundInfo.getEditSubmitRefundItems()){
-            updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(),editSubmitRefundItem.getRefundQuantity(),shipmentItems);
+            if (!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(), editSubmitRefundItem.getRefundQuantity(), shipmentItems);
+            }
             refundFee += editSubmitRefundItem.getFee();
         }
         Refund refund = new Refund();
@@ -714,7 +720,7 @@ public class RefundWriteLogic {
      * @param editSubmitRefundInfo 编辑时前端传过来的参数
      * @param refundItems          之前已经选择的售后商品集合
      */
-    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems, EditSubmitRefundInfo editSubmitRefundInfo, List<RefundItem> refundItems) {
+    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems, EditSubmitRefundInfo editSubmitRefundInfo, List<RefundItem> refundItems,Integer refundType) {
         //前台传输进来的售后商品集合
         List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
         List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
@@ -737,17 +743,23 @@ public class RefundWriteLogic {
             //说明商品没有变化只是改变了数量
             for (EditSubmitRefundItem editSubmitRefundItem : editSubmitRefundItems) {
                 Integer quantity = editSubmitRefundItem.getRefundQuantity() - existSkuCodeAndQuantity.get(editSubmitRefundItem.getRefundSkuCode()); //只改变了数量
-                updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(), quantity, shipmentItems);
+                if (!Objects.equals(refundType,MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                    updateShipmentItemRefundQuantity(editSubmitRefundItem.getRefundSkuCode(), quantity, shipmentItems);
+                }
             }
         } else {
             //说明有商品变化
             List<String> editSkuCodeRemain = this.getDifferenceList(editSkuCodes, commSkuCodes); //获取传入的skuCode集合与当前的skuCode集合中不同的部分
             List<String> existSkuCodeRemain = this.getDifferenceList(existSkuCodes, commSkuCodes); //获取当前的skuCode集合与传入的skuCode集合中不同的部分
             for (String skuCode : editSkuCodeRemain) {
-                updateShipmentItemRefundQuantity(skuCode, editSkuCodeAndQuantity.get(skuCode), shipmentItems);
+                if (!Objects.equals(refundType,MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                    updateShipmentItemRefundQuantity(skuCode, editSkuCodeAndQuantity.get(skuCode), shipmentItems);
+                }
             }
             for (String skuCode : existSkuCodeRemain) {
-                updateShipmentItemRefundQuantity(skuCode, -(existSkuCodeAndQuantity.get(skuCode) == null ? 0 : existSkuCodeAndQuantity.get(skuCode)), shipmentItems);
+                if (!Objects.equals(refundType,MiddleRefundType.AFTER_SALES_REFUND.value())) {
+                    updateShipmentItemRefundQuantity(skuCode, -(existSkuCodeAndQuantity.get(skuCode) == null ? 0 : existSkuCodeAndQuantity.get(skuCode)), shipmentItems);
+                }
             }
         }
     }

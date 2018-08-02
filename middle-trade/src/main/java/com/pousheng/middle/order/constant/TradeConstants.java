@@ -211,6 +211,9 @@ public class TradeConstants {
 
     //订单派发中心同步发货状态
     public static final Integer YYEDI_SHIP_NOTIFICATION = 10;
+
+    //同步拒收单给恒康失败
+    public static final Integer FAIL_SYNC_SALE_REFUSE_TO_HK = 11;
     //货号
     public static final String HK_MATRIAL_CODE="materialCode";
 

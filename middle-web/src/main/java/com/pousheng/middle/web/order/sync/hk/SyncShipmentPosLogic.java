@@ -331,6 +331,7 @@ public class SyncShipmentPosLogic {
                 totalPrice = totalPrice.add(new BigDecimal(shipmentItem.getCleanFee()));
             }
         }
+        totalPrice = totalPrice.add(new BigDecimal(shipmentExtra.getShipmentShipFee() == null ? 0 : shipmentExtra.getShipmentShipFee()));
         posInfo.setPayamountbakup(totalPrice.divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString()); //线上实付金额
         posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee()==null?0:shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());//邮费成本
         posInfo.setCodcharges("0");//货到付款服务费

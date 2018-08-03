@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  */
 
 @Slf4j
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "false", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
 @RestController
 public class AutoItemGroupSku {
 
@@ -61,7 +61,6 @@ public class AutoItemGroupSku {
 
     @Autowired
     private BrandReadService brandReadService;
-
 
     /**
      * 每天凌晨1点触发

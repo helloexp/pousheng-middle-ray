@@ -128,13 +128,19 @@ public class YyediSyncShipmentService implements CompensateBizService {
         //检查是否是部分发货
         List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
         Boolean partShip = Boolean.FALSE;
-        Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
-                .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));
-        for (ShipmentItem s : items) {
-            if (s.getQuantity() > itemMap.get(s.getSkuCode())) {
-                partShip = Boolean.TRUE;
+        if (yyEdiShipInfo.getItemInfos() != null) {
+            Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
+                    .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));
+            for (ShipmentItem s : items) {
+                if (s.getQuantity() > itemMap.get(s.getSkuCode())) {
+                    partShip = Boolean.TRUE;
+                }
+                s.setShipQuantity(itemMap.get(s.getSkuCode()));
             }
-            s.setShipQuantity(itemMap.get(s.getSkuCode()));
+        }else{
+            for (ShipmentItem s : items) {
+                s.setShipQuantity(s.getQuantity());
+            }
         }
 
         //更新状态

@@ -104,25 +104,27 @@ public class yyEDIOpenApi {
                 try {
                     DateTime dt = new DateTime();
                     String shipmentCode = yyEdiShipInfo.getShipmentId();
-                    Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
                     Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
-                    if (size == 0) {
-                        Map<String,String> extraMap = shipment.getExtra();
-                        extraMap.put("remark","物流整单缺货");
-                        shipment.setExtra(extraMap);
-                        Response<Boolean> response =  shipmentWriteService.update(shipment);
-                        if (!response.isSuccess()) {
-                            log.error("yyEDI.shipments.api update shipment fail ,caused by {}", response.getError());
-                            throw new ServiceException(response.getError());
+                    if (yyEdiShipInfo.getItemInfos() != null) {
+                        Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
+                        if (size == 0) {
+                            Map<String,String> extraMap = shipment.getExtra();
+                            extraMap.put("remark","物流整单缺货");
+                            shipment.setExtra(extraMap);
+                            Response<Boolean> response =  shipmentWriteService.update(shipment);
+                            if (!response.isSuccess()) {
+                                log.error("yyEDI.shipments.api update shipment fail ,caused by {}", response.getError());
+                                throw new ServiceException(response.getError());
+                            }
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                            field.setErrorCode("-100");
+                            field.setErrorMsg("物流整单缺货");
+                            fields.add(field);
+                            count++;
+                            continue;
                         }
-                        YyEdiResponseDetail field = new YyEdiResponseDetail();
-                        field.setShipmentId(yyEdiShipInfo.getShipmentId());
-                        field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
-                        field.setErrorCode("-100");
-                        field.setErrorMsg("物流整单缺货");
-                        fields.add(field);
-                        count++;
-                        continue;
                     }
                     //判断状态及获取接下来的状态
                     Flow flow = flowPicker.pickShipments();

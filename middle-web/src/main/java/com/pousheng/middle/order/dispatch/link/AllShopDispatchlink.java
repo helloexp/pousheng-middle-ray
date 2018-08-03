@@ -13,6 +13,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
+import com.pousheng.middle.warehouse.dto.Warehouses4Address;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -60,6 +61,8 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         if(CollectionUtils.isEmpty(rejectShopIds)){
             rejectShopIds = Lists.newArrayList();
         }
+        Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
+
 
         List<String> skuCodes = dispatchComponent.getSkuCodes(skuCodeAndQuantities);
 
@@ -102,7 +105,7 @@ public class AllShopDispatchlink implements DispatchOrderLink{
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
         String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(warehouses4Address.getPriorityShopIds(),shopShipments,address,addressRegion);
         if(Arguments.isNull(shopShipment)){
             log.error("not find nearest shop by:{} fail,",shopShipments);
             throw new ServiceException("find.nearest.shop.fail");

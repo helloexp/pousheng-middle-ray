@@ -11,10 +11,7 @@ import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
-import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.dto.*;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
@@ -55,6 +52,8 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
         log.info("DISPATCH-ProvinceInnerWarehouseDispatchLink-3  order(id:{}) start...",shopOrder.getId());
+
+        Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
 
         //从上个规则传递过来。
         Table<Long, String, Integer> warehouseSkuCodeQuantityTable = (Table<Long, String, Integer>) context.get(DispatchContants.WAREHOUSE_SKUCODE_QUANTITY_TABLE);
@@ -122,7 +121,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
         //如果有多个要选择最近的
-        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(),warehouseShipments,address);
         dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
 
         return Boolean.FALSE;

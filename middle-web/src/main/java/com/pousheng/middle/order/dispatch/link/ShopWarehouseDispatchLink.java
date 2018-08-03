@@ -146,7 +146,7 @@ public class ShopWarehouseDispatchLink implements DispatchOrderLink{
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
         String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
 
-        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(warehouses4Address.getPriorityShopIds(),shopShipments,address,addressRegion);
 
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 

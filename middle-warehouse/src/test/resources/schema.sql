@@ -211,3 +211,29 @@ CREATE TABLE `pousheng_temp_sku_stock_updated` (
   PRIMARY KEY (`id`),
   KEY `idx_sku_code` (`sku_code`)
 ) COMMENT='sku库存同步任务临时表';
+
+CREATE TABLE `pousheng_warehouse_rule_prioritys` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `rule_id` int(11) NOT NULL,
+  `name` varchar(64) NOT NULL DEFAULT '' COMMENT '规则名称',
+  `start_at` datetime NOT NULL,
+  `end_at` datetime NOT NULL,
+  `status` tinyint(1) NOT NULL COMMENT '1启用 -1禁用',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `index_rule_id` (`rule_id`)
+) COMMENT='派单仓库优先级';
+
+CREATE TABLE `pousheng_warehouse_rule_priority_items` (
+  `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
+  `priority_id` int(11) NOT NULL COMMENT '所属优先级规则',
+  `warehouse_id` int(11) NOT NULL COMMENT '仓库id',
+  `priority` int(11) NOT NULL COMMENT '优先级',
+  `created_at` datetime NOT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `index_priority_id` (`priority_id`)
+) COMMENT='派单仓库优先级明细';
+
+

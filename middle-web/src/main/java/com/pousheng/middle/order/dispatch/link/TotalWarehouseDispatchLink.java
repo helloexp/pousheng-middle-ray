@@ -138,7 +138,7 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
             return Boolean.FALSE;
         }
 
-        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouseShipments,address);
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(),warehouseShipments,address);
 
         if(Arguments.isNull(warehouseShipment)){
             log.error("dispatch shop order(id:{}) fail,because query level fail",shopOrder.getId());

@@ -3,10 +3,14 @@ package com.pousheng.middle.web.item.cacher;
 import com.pousheng.middle.group.model.ItemGroup;
 import com.pousheng.middle.group.service.ItemGroupReadService;
 import com.pousheng.middle.group.service.ItemGroupWriteService;
+import com.pousheng.middle.web.mq.group.CacherName;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.rocketmq.core.TerminusMQProducer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -27,6 +31,11 @@ public class ItemGroupCacherProxy {
     @RpcConsumer
     private ItemGroupWriteService itemGroupWriteService;
 
+    @Autowired
+    private TerminusMQProducer producer;
+
+    @Value("${terminus.rocketmq.cacherClearTopic}")
+    private String cacherClearTopic;
 
     /**
      * 获取分组信息
@@ -45,6 +54,7 @@ public class ItemGroupCacherProxy {
 
     @CacheEvict(key = "'group#findById:'.concat(#group.getId().hashCode())")
     public Response<Boolean> update(ItemGroup group) {
+        producer.send(cacherClearTopic, CacherName.ITEM_GROUP.value());
         return itemGroupWriteService.update(group);
     }
 }

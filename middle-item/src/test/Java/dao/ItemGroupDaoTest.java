@@ -33,7 +33,7 @@ public class ItemGroupDaoTest extends BaseDaoTest {
 
     private ItemGroup make() {
         ItemGroup itemGroup = new ItemGroup();
-        itemGroup.name("测试").auto(true).relatedNum(0L);
+        itemGroup.name("测试").auto(true).relatedNum(0L).setType(1);
         return itemGroup;
     }
 
@@ -61,6 +61,7 @@ public class ItemGroupDaoTest extends BaseDaoTest {
         itemGroup = itemGroupDao.findById(itemGroup.getId());
         itemGroup.setRelatedNum(100L);
         itemGroup.setAuto(false);
+        itemGroup.setType(1);
         itemGroupDao.update(itemGroup);
         ItemGroup updated = itemGroupDao.findById(itemGroup.getId());
         assertThat(updated.getRelatedNum(), is(100L));

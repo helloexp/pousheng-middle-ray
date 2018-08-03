@@ -9,7 +9,15 @@ spring:
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
-  type-aliases-package: com.pousheng.middle.warehouse.model,io.terminus.open.client.common.(mappings|token|shop).model,io.terminus.open.client.item.model
+  type-aliases-package: com.pousheng.middle.warehouse.model,io.terminus.open.client.common.(mappings|token|shop).model,
+    io.terminus.open.client.item.model,
+    io.terminus.applog.core.model,
+    com.pousheng.middle.order.model,
+    io.terminus.parana.order.model,
+    io.terminus.parana.settle.model,
+    io.terminus.parana.cart.model,
+    io.terminus.parana.promotion.model,
+    io.terminus.parana.express.model
 
 gateway:
   erp:

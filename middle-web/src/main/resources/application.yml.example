@@ -154,7 +154,6 @@ terminus:
     nameServerAddress: localhost:9876
     producerGroup: testGroup
 
-
 # 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
 failed.order.warning.email.receives: longjun.tlj@alibaba-inc.com
 
@@ -172,3 +171,4 @@ jit.open.shop.id: 1008
 
 # 调用淘宝api统计地址
 open.client.statistics.center.gate.way: ${STATISTICS.CENTER.GATEWAY}
+terminus.rocketmq.cacherClearTopic: cacherClearTopic

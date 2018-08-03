@@ -250,6 +250,7 @@ terminus:
     nameServerAddress: ${MQ_NAME_ADDR}
     producerGroup: ${MQ_PRODUCER_GROUP}
     poushengInventoryTopic: ${MQ_TOPIC_POUSHENG_INVENTORY}
+    cacherClearTopic: cacherClearTopic
 
 # outlook邮箱,exchange服务器
 outlook.mail.server: 10.0.0.101

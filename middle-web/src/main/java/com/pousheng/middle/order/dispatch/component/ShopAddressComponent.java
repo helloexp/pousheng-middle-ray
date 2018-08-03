@@ -10,6 +10,7 @@ import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -18,6 +19,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -77,8 +79,16 @@ public class ShopAddressComponent {
      * @param addressRegion 用户收货地址到区
      * @return 距离最近的发货门店
      */
-    public ShopShipment nearestShop(List<ShopShipment> shopShipments, String address,String addressRegion){
-
+    public ShopShipment nearestShop(List<Long> priorityShopIds,List<ShopShipment> shopShipments, String address,String addressRegion){
+        if (!CollectionUtils.isEmpty(priorityShopIds)) {
+            for (Long id : priorityShopIds) {
+                for (ShopShipment shopShipment : shopShipments) {
+                    if (shopShipment.getShopId().equals(id)) {
+                        return shopShipment;
+                    }
+                }
+            }
+        }
         Location location = dispatchComponent.getLocation(address,addressRegion);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());

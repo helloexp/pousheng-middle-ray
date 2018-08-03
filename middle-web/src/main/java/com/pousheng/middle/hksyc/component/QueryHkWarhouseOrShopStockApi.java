@@ -234,15 +234,8 @@ public class QueryHkWarhouseOrShopStockApi {
 
     public List<Long> isVendibleWarehouse(String skuCode, List<Long> warehouseIds, String companyCode) {
         List<Long> vendible = Lists.newArrayList();
-        String templateName = "ps_search.mustache";
-        Map<String, String> params = Maps.newHashMap();
-        params.put("skuCode", skuCode);
-        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
-        if (!response.isSuccess()) {
-            log.error("query sku template by materialId:{} and size:{} fail,error:{}", skuCode, response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        if (response.getResult().getTotal() == 0) {
+        WithAggregations<SearchSkuTemplate> result = searchSkuTemplate(skuCode);
+        if (result.getTotal() == 0) {
             return vendible;
         }
         for (Long warehouseId : warehouseIds) {
@@ -256,7 +249,7 @@ public class QueryHkWarhouseOrShopStockApi {
                     log.warn("find warehouse by id {} outCode  is null", warehouseId);
                     continue;
                 }
-                if (canDeliveryForStock(response.getResult().getData().get(0), warehouse, companyCode)) {
+                if (canDeliveryForStock(result.getData().get(0), warehouse, companyCode, Boolean.FALSE)) {
                     vendible.add(warehouseId);
                 }
             } catch (Exception e) {
@@ -269,61 +262,10 @@ public class QueryHkWarhouseOrShopStockApi {
     }
 
 
-    public Boolean canDelivery(String skuCode, WarehouseDTO warehouse, String companyCode) {
-        log.info("skuCode {} ,warehouse_company {} ,companyCode {}", skuCode, warehouse.getCompanyId(), companyCode);
-        Set<Long> groupIds;
-        if (Objects.equals(warehouse.getWarehouseSubType(),WarehouseType.SHOP_WAREHOUSE.value())){
-            //获取shop
-            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(),Long.parseLong(warehouse.getCompanyId()));
-            ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
-            Long openShopId = currentShopExtraInfo.getOpenShopId();
-            if (Arguments.isNull(openShopId)) {
-                log.error("shop(id:{}) not mapping open shop", shop.getId());
-                return false;
-            }
-            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(openShopId));
-        }else{
-            groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
+    public Boolean canDeliveryForStock(SearchSkuTemplate skuTemplate, WarehouseDTO warehouse, String companyCode, Boolean logEnable) {
+        if (logEnable) {
+            log.info("skuTemplate {} ,warehouse_company {} ,companyCode {}", skuTemplate, warehouse.getCompanyId(), companyCode);
         }
-        //log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
-        if (CollectionUtils.isEmpty(groupIds)) {
-            return false;
-        }
-        String templateName = "ps_search.mustache";
-        Map<String, String> params = Maps.newHashMap();
-        params.put("skuCode", skuCode);
-        params.put("groupIds", Joiners.COMMA.join(groupIds));
-        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
-        if (!response.isSuccess()) {
-            log.error("query sku template by materialId:{} and size:{} fail,error:{}", skuCode, response.getError());
-            throw new JsonResponseException(response.getError());
-        }
-        if (response.getResult().getTotal() == 0) {
-            return false;
-        }
-        //如果已经是同公司就不需要再去判断了
-        if (warehouse.getCompanyId().equals(companyCode)) {
-            return true;
-        }
-        SearchSkuTemplate skuTemplate = response.getResult().getData().get(0);
-        //查询商品和店铺的并集，判断是否存在全国的，如果存在则返回true
-        Set<Long> result = Sets.newHashSet();
-        result.addAll(groupIds);
-        result.retainAll(skuTemplate.getGroupIds());
-        log.warn("find union  groupIds {}", result);
-        for (Long id : result) {
-            if (PsItemGroupType.ALL.value().equals(itemGroupCacherProxy.findById(id).getType())) {
-                return true;
-            }
-        }
-        return false;
-
-    }
-
-
-
-    public Boolean canDeliveryForStock(SearchSkuTemplate skuTemplate, WarehouseDTO warehouse, String companyCode) {
-        //log.info("skuTemplate {} ,warehouse_company {} ,companyCode {}", skuTemplate, warehouse.getCompanyId(), companyCode);
         Set<Long> groupIds;
         if (Objects.equals(warehouse.getWarehouseSubType(), WarehouseType.SHOP_WAREHOUSE.value())) {
             //获取shop
@@ -338,7 +280,9 @@ public class QueryHkWarhouseOrShopStockApi {
         } else {
             groupIds = Sets.newHashSet(warehouseGroupRuleCacher.findByWarehouseId(warehouse.getId()));
         }
-        //log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
+        if (logEnable) {
+            log.info("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
+        }
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
@@ -353,7 +297,9 @@ public class QueryHkWarhouseOrShopStockApi {
         if (warehouse.getCompanyId().equals(companyCode)) {
             return true;
         }
-        //log.warn("find union  groupIds {}", result);
+        if (logEnable) {
+            log.warn("find union  groupIds {}", result);
+        }
         for (Long id : result) {
             if (PsItemGroupType.ALL.value().equals(itemGroupCacher.findById(id).getType())) {
                 return true;
@@ -396,6 +342,23 @@ public class QueryHkWarhouseOrShopStockApi {
             log.error("warehouseIds or skuCodes is null");
             return Lists.newArrayList();
         }
+        //获取
+        Response<List<SkuTemplate>> listRes = skuTemplateReadService.findBySkuCodes(skuCodes);
+        if( !listRes.isSuccess()){
+            log.error("find sku template by sku codes:{} fail,error:{}",skuCodes,listRes.getError());
+            return Lists.newArrayList();
+        }
+        List<SkuTemplate> skuTemplates = listRes.getResult();
+        if (CollectionUtils.isEmpty(skuTemplates)){
+            log.error("not find sku template by sku codes:{} ",skuCodes);
+            return Lists.newArrayList();
+        }
+        Map<String, SearchSkuTemplate> searchSkuTemplateMap = new HashMap<>();
+        for (SkuTemplate sku : skuTemplates) {
+            searchSkuTemplateMap.put(sku.getSkuCode(), searchSkuTemplate(sku.getSkuCode()).getData().get(0));
+        }
+        Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
 
         Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventory(
                 dispatchComponent.getAvailInvReq(warehouseIds, skuCodes), shopId);
@@ -459,28 +422,12 @@ public class QueryHkWarhouseOrShopStockApi {
             //获取库存
             Map<String,AvailableInventoryDTO> skuStockMap = availableInv.stream().filter(Objects::nonNull).collect(Collectors.toMap(AvailableInventoryDTO::getSkuCode,a->a));
             List<String> stockSkuCodes = skuStockMap.keySet().stream().collect(Collectors.toList());
-
-            //获取
-            Response<List<SkuTemplate>> listRes = skuTemplateReadService.findBySkuCodes(stockSkuCodes);
-            if( !listRes.isSuccess()){
-                log.error("find sku template by sku codes:{} fail,error:{}",skuCodes,listRes.getError());
-                continue;
-            }
-            List<SkuTemplate> skuTemplates = listRes.getResult();
-
-            if (CollectionUtils.isEmpty(skuTemplates)){
-                log.error("not find sku template by sku codes:{} ",skuCodes);
-                continue;
-            }
-            Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
-                    .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
-
-            for (String c : skuCodes){
+            for (String c : stockSkuCodes){
                 AvailableInventoryDTO stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
                 if (null != stock && null != temp){
                     //无论是什么类型的仓库 都要去检查能否发货
-                    if (!canDelivery(temp.getSkuCode(), warehouse, companyCode)) {
+                    if (!canDeliveryForStock(searchSkuTemplateMap.get(c), warehouse, companyCode, Boolean.TRUE)) {
                         continue;
                     }
                     Map<String,String> tempExtra = temp.getExtra();
@@ -506,6 +453,22 @@ public class QueryHkWarhouseOrShopStockApi {
         log.info("query inventory available quantity for dispatch, result: {}", JSON.toJSONString(hkSkuStockInfos));
 
         return hkSkuStockInfos;
+    }
+
+
+    private WithAggregations<SearchSkuTemplate> searchSkuTemplate(String skuCode) {
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("skuCode", skuCode);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by skuCode:{} fail,error:{}", skuCode, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        if (response.getResult().getTotal() == 0) {
+            throw new JsonResponseException("sku.template.find.fail");
+        }
+        return response.getResult();
     }
 
 }

@@ -12,10 +12,7 @@ import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
-import com.pousheng.middle.warehouse.dto.ShopShipment;
-import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.dto.*;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -59,6 +56,8 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         //拒绝过的门店
         List<Long> rejectShopIds = dispatchComponent.findRejectedShop(shopOrder.getId());
         context.put(DispatchContants.REJECT_SHOP_IDS, (Serializable) rejectShopIds);
+        Warehouses4Address warehouses4Address = (Warehouses4Address)context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
+
 
         //省内的mpos门店,如果没有则进入下个规则
         //FIXME 由于省id不同且没有转换 需要改成根据省名称模糊匹配。此规则已弃用。如果重新弃用需要调整.commented by longjun.tlj
@@ -134,7 +133,7 @@ public class ProvinceInnerShopDispatchlink implements DispatchOrderLink{
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
         String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        ShopShipment shopShipment = shopAddressComponent.nearestShop(shopShipments,address,addressRegion);
+        ShopShipment shopShipment = shopAddressComponent.nearestShop(warehouses4Address.getPriorityShopIds(),shopShipments,address,addressRegion);
         dispatchOrderItemInfo.setShopShipments(Lists.newArrayList(shopShipment));
 
         return Boolean.FALSE;

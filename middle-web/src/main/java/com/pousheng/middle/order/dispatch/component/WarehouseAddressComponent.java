@@ -21,6 +21,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -122,8 +123,16 @@ public class WarehouseAddressComponent {
      * @param address 用户收货地址
      * @return 距离最近的发货仓
      */
-    public WarehouseShipment nearestWarehouse(List<WarehouseShipment> warehouseShipments, String address){
-
+    public WarehouseShipment nearestWarehouse(List<Long> priorityWarehouseIds, List<WarehouseShipment> warehouseShipments, String address){
+        if (!CollectionUtils.isEmpty(priorityWarehouseIds)) {
+            for (Long id : priorityWarehouseIds) {
+                for (WarehouseShipment warehouseShipment : warehouseShipments) {
+                    if (warehouseShipment.getWarehouseId().equals(id)) {
+                        return warehouseShipment;
+                    }
+                }
+            }
+        }
         //1、调用高德地图查询地址坐标
         Optional<Location> locationOp = dispatchComponent.getLocation(address);
         if(!locationOp.isPresent()){

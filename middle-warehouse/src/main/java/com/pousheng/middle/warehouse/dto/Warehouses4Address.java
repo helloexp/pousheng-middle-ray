@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.dto;
 
 import com.pousheng.middle.warehouse.model.WarehouseRule;
+import com.pousheng.middle.warehouse.model.WarehouseRulePriorityItem;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -40,5 +41,17 @@ public class Warehouses4Address implements Serializable{
      * 店仓列表
      */
     private List<WarehouseWithPriority> shopWarehouses;
+
+    /**
+     * 优先仓库列表
+     */
+    private List<Long>  priorityWarehouseIds;
+
+    /**
+     * 优先店铺列表
+     */
+    private List<Long>  priorityShopIds;
+
+
 
 }

@@ -1,4 +1,4 @@
--- 后台类目表: parana_back_categories
+  -- 后台类目表: parana_back_categories
 drop table if exists `parana_back_categories`;
 CREATE TABLE `parana_back_categories` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -133,6 +133,7 @@ CREATE TABLE `pousheng_item_groups` (
   `group_rule_json` varchar(2048) DEFAULT NULL COMMENT '分组规则',
   `related_num` int(11) NOT NULL DEFAULT '0' COMMENT '关联的货品数量',
   `auto` tinyint(4) NOT NULL DEFAULT '0' COMMENT '自动分组 0不自动，1自动',
+  `type` tinyint(4) NOT NULL DEFAULT '0' COMMENT '0全国销售,1同公司销售',
   `created_at` datetime NOT NULL,
   `updated_at` datetime NOT NULL,
   PRIMARY KEY (`id`)

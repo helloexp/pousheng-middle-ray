@@ -5,10 +5,14 @@ import com.pousheng.middle.group.model.ItemRuleGroup;
 import com.pousheng.middle.group.service.ItemRuleGroupReadService;
 import com.pousheng.middle.group.service.ItemRuleShopReadService;
 import com.pousheng.middle.group.service.ItemRuleWarehouseReadService;
+import com.pousheng.middle.web.mq.group.CacherName;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.rocketmq.core.TerminusMQProducer;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheConfig;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -34,6 +38,12 @@ public class GroupRuleCacherProxy {
 
     @RpcConsumer
     private ItemRuleWarehouseReadService itemRuleWarehouseReadService;
+
+    @Autowired
+    private TerminusMQProducer producer;
+
+    @Value("${terminus.rocketmq.cacherClearTopic}")
+    private String cacherClearTopic;
 
 
 
@@ -86,9 +96,7 @@ public class GroupRuleCacherProxy {
 
     @CacheEvict(allEntries = true)
     public void refreshAll() {
-
-        log.info("refresh cacher");
-
+        producer.send(cacherClearTopic, CacherName.GROUP_RULE.value());
     }
 
 

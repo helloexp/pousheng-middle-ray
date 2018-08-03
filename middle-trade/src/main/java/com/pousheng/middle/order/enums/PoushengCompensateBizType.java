@@ -104,6 +104,11 @@ public enum PoushengCompensateBizType {
     IMPORT_ITEM_SUPPLY_RULE,
 
     /**
+     * 批量导入派单仓库规则优先级
+     */
+    IMPORT_WAREHOUSE_RULE_PRIORITY_ITEM,
+
+    /**
      * skx挂起失败重试服务
      */
     SKX_SHIPMENT_FREEZE,

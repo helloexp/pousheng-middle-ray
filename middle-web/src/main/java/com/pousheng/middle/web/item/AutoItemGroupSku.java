@@ -44,7 +44,7 @@ import java.util.stream.Collectors;
  */
 
 @Slf4j
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "false", matchIfMissing = false)
 @RestController
 public class AutoItemGroupSku {
 

@@ -93,7 +93,8 @@ import java.util.concurrent.TimeUnit;
         BatchConfig.class,
         TaskConfig.class,
         MultipartAutoConfiguration.class,
-        BizBeanConfiguration.class})
+        BizBeanConfiguration.class,
+        MiddleCacheConfig.class})
 
 @ComponentScan(
         {"com.pousheng.middle.order",

@@ -25,16 +25,16 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
 @EnableCaching
 public class MiddleCacheConfig {
 
-  @Bean
+    @Bean
     @Primary
-    public CacheManager cacheManager(@Qualifier("middleCacheRedisTemplate") RedisTemplate redisTemplate) {
+    public CacheManager middleCacheManager(@Qualifier("middleCacheRedisTemplate") RedisTemplate redisTemplate) {
         RedisCacheManager cacheManager = new RedisCacheManager(redisTemplate);
         cacheManager.setDefaultExpiration(60 * 60);
         return cacheManager;
     }
 
     @Bean
-    public KeyGenerator memberCacheKeyGenerator() {
+    public KeyGenerator middleCacheKeyGenerator() {
         return (o, method, objects) -> {
             StringBuilder sb = new StringBuilder();
             sb.append(o.getClass().getName());

@@ -29,6 +29,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
  */
 
 @Slf4j
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "false", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
 @RestController
 public class AutoItemGroupSku {
 
@@ -59,7 +60,7 @@ public class AutoItemGroupSku {
     private ScheduleTaskWriteService scheduleTaskWriteService;
 
     @Autowired
-    private BrandReadService  brandReadService;
+    private BrandReadService brandReadService;
 
     /**
      * 每天凌晨1点触发
@@ -78,6 +79,45 @@ public class AutoItemGroupSku {
                 if (CollectionUtils.isEmpty(group.getGroupRule())) {
                     continue;
                 }
+                Map<String, String> params = constructParams(group.getGroupRule());
+                try {
+                    ScheduleTask task = ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(group.getId())
+                            .type(PsItemGroupSkuType.GROUP.value()).mark(true).userId(0L));
+                    scheduleTaskWriteService.create(task);
+                } catch (JsonResponseException e) {
+                    log.info("auto item group fail, group id:{} cause by {} ", group.getId(), e.getMessage());
+                }
+
+                Map<String, String> removeParams = constructRemoveParams(group.getGroupRule());
+                try {
+                    ScheduleTask task = ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(removeParams).groupId(group.getId())
+                            .type(PsItemGroupSkuType.GROUP.value()).mark(false).userId(0L));
+                    scheduleTaskWriteService.create(task);
+                } catch (JsonResponseException e) {
+                    log.info("auto item group fail, group id:{} cause by {} ", group.getId(), e.getMessage());
+                }
+            }
+            log.info("JOB -- finish to auto item group sku");
+        } else {
+            log.info("host is not leader, so skip job");
+        }
+    }
+
+
+    /**
+     * 手工触发 指定分组
+     * @param groupId
+     */
+    @RequestMapping("/api/item/group/{groupId}/handle")
+    public void synchronizeSpu(@PathVariable Long groupId) {
+        if (hostLeader.isLeader()) {
+            log.info("JOB -- begin to auto item group sku");
+            Response<ItemGroup> resp = itemGroupReadService.findById(groupId);
+            if (!resp.isSuccess()) {
+                throw new JsonResponseException(resp.getError());
+            }
+            ItemGroup group = resp.getResult();
+            if (group.getAuto() && !CollectionUtils.isEmpty(group.getGroupRule())) {
                 Map<String, String> params = constructParams(group.getGroupRule());
                 try {
                     ScheduleTask task = ScheduleTaskUtil.transItemGroupTask(new ItemGroupTask().params(params).groupId(group.getId())

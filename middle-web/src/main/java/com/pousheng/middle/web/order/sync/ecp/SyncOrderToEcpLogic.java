@@ -296,18 +296,12 @@ public class SyncOrderToEcpLogic {
                         }
                         // sku_order获取out_id
                         logisticsInfo.setBar_code(shipmentItem.getSkuCode());//sku条码
-
                         logisticsInfo.setLogistics_company_code(expressCompanyCode); //发货公司code
-
                         String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? "" : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
                         logisticsInfo.setLogistics_order(shipmentSerialNo);//发货的快递公司单号
-
                         logisticsInfo.setDelivery_name(shipmentExtra.getWarehouseName());//发货人 经讨论是可以是发货仓
-
-
                         logisticsInfo.setDelivery_time(DateFormatUtils.format(shipmentExtra.getShipmentDate(),"yyyy-MM-dd HH:mm:ss"));
-                        logisticsInfo.setAmount(shipmentItem.getQuantity()); //实际发货数量
-
+                        logisticsInfo.setAmount(shipmentItem.getShipQuantity()==null?shipmentItem.getQuantity():shipmentItem.getShipQuantity()); //实际发货数量
                         logisiticis.add(logisticsInfo);
                     }
                     if (itemFailed) {

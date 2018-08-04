@@ -34,6 +34,7 @@ import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -61,6 +62,7 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
+import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.joda.time.format.DateTimeFormatterBuilder;
@@ -91,6 +93,8 @@ public class FireCall {
     private final SpuImporter spuImporter;
 
     private final BrandImporter brandImporter;
+
+    private final WarehouseImporter warehouseImporter;
 
     private final MaterialPusher materialPusher;
 
@@ -145,10 +149,11 @@ public class FireCall {
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
-                    MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi,
+                    WarehouseImporter warehouseImporter, MaterialPusher materialPusher, ErpBrandCacher brandCacher, MposWarehousePusher mposWarehousePusher, QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi,
                     SkuTemplateSearchReadService skuTemplateSearchReadService, ShopCacher shopCacher, WarehouseCacher warehouseCacher) {
         this.spuImporter = spuImporter;
         this.brandImporter = brandImporter;
+        this.warehouseImporter = warehouseImporter;
         this.materialPusher = materialPusher;
         this.brandCacher = brandCacher;
         this.mposWarehousePusher = mposWarehousePusher;
@@ -236,6 +241,25 @@ public class FireCall {
         }
         return "ok";
     }
+
+    @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean synchronizeWarehouse(@RequestParam(name = "start",required = false,defaultValue = "") String start,
+                                        @RequestParam(name = "end", required = false,defaultValue = "") String end){
+        Date from= DateTime.now().withTimeAtStartOfDay().toDate();
+        if (StringUtils.hasText(start)){
+            from = dft.parseDateTime(start).toDate();
+        }
+        Date to = DateTime.now().withTimeAtStartOfDay().plusDays(1).minusSeconds(1).toDate();
+        if (StringUtils.hasText(end)) {
+            to = dft.parseDateTime(end).toDate();
+        }
+        log.info("begin to synchronize warehouse from {} to {}", from, to);
+        int warehouseCount = warehouseImporter.process(from, to);
+        log.info("synchronized {} warehouses", warehouseCount);
+        return Boolean.TRUE;
+
+    }
+
 
 
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)

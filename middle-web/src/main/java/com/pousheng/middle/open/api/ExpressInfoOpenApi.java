@@ -6,6 +6,8 @@ import com.pousheng.middle.open.api.dto.ExpressInfoResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
@@ -21,6 +23,7 @@ import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -81,12 +84,14 @@ public class ExpressInfoOpenApi {
                 // 获取结果
                 Response<Boolean> response = completionService.take().get();
                 if (!response.isSuccess()){
+                    log.error("fail to handle express info for data:{},error:{}",data,response.getError());
                     count ++;
                     failedShipmentCodes.add(response.getError().substring(UPDATE_EXPRESS_INFOS_STATUS.length()));
                 }
             }
             executorService.shutdown();
             if ( count >= 1){
+                log.error("end handle express info error count:{}",count);
                 error.setFailShipmentCodes(failedShipmentCodes);
                 error.setErrorCode(UPDATE_EXPRESS_INFOS_STATUS);
                 error.setErrorMsg("发货单快递详情更新失败");
@@ -97,7 +102,7 @@ public class ExpressInfoOpenApi {
 
 
         } catch (Exception e){
-            log.error("RECEIVE-ESP-PUSH-EXPRESSINFO error,cause:{}",Throwables.getStackTraceAsString(e));
+            log.error("RECEIVE-ESP-PUSH-EXPRESSINFO data:{} error,cause:{}",data,Throwables.getStackTraceAsString(e));
             String reason = JsonMapper.nonEmptyMapper().toJson(error);
             return OPResponse.fail(reason);
         }
@@ -131,26 +136,34 @@ public class ExpressInfoOpenApi {
                 //判断数据有否问题
                 if( StringUtils.isEmpty(pushExpressInfos.getShipmentCode()) || StringUtils.isEmpty(pushExpressInfos.getExpressStatus())
                        || StringUtils.isEmpty(pushExpressInfos.getExpressNo()) || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyCode())
-                        || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyName()) || pushExpressInfos.getExpressDetails() == null){
+                        || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyName()) || CollectionUtils.isEmpty(pushExpressInfos.getExpressDetails())){
+                    log.error("fail to handle express info for pushExpressInfo:{} some param invalid",pushExpressInfos);
                     return Response.fail("shipmentExpress.receive.fail"+ pushExpressInfos.getShipmentCode());
                 }
                 //更新发货订单表快递单状态查询一下是否存在如果不存在直接返回
                 Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(pushExpressInfos.getShipmentCode());
                 if (shipment == null){
+                    log.error("fail to handle express info for pushExpressInfo:{} not find shipment by code:{}",pushExpressInfos,pushExpressInfos.getShipmentCode());
                     return Response.fail("find.shipment.fail"+ pushExpressInfos.getShipmentCode());
                 }
-                shipmentWriteService.updateExpressStatusByShipmentCode(pushExpressInfos.getShipmentCode(),ShipmentExpressStatus.convert(pushExpressInfos.getExpressStatus()).value());
+                Response<Boolean> updateShipmentRes = shipmentWriteService.updateExpressStatusByShipmentCode(pushExpressInfos.getShipmentCode(),ShipmentExpressStatus.convert(pushExpressInfos.getExpressStatus()).value());
+                if (!updateShipmentRes.isSuccess()){
+                    log.error("fail to update shipment express to :{},error:{}",pushExpressInfos.getExpressStatus(),updateShipmentRes.getError());
+                    return Response.fail(UPDATE_EXPRESS_INFOS_STATUS+ pushExpressInfos.getShipmentCode());
+                }
                 Response<ShipmentExpress> shipmentExpressRes = shipmentReadService.findShipmentExpress(pushExpressInfos.getShipmentCode(), pushExpressInfos.getExpressNo());
                 Map<String, String> extraMap = Maps.newHashMap();
                 //转化一下expressDetail里的nodeAt格式
                 convertDateFormate(pushExpressInfos.getExpressDetails());
                 extraMap.put(TradeConstants.SHIPMENT_EXPRESS_NODE_DETAILS,JSON_MAPPER.toJson(pushExpressInfos.getExpressDetails()));
                 if (shipmentExpressRes.isSuccess() && shipmentExpressRes.getResult() != null){
+                    log.info("start to update express info for shipment code:{} by data:{}",pushExpressInfos.getShipmentCode(),pushExpressInfos);
                     ShipmentExpress shipmentExpress = shipmentExpressRes.getResult();
                     shipmentExpress.setExpressStatus(ShipmentExpressStatus.convert(pushExpressInfos.getExpressStatus()).value());
                     shipmentExpress.setExtra(extraMap);
                     result = shipmentWriteService.updateExpressInfo(shipmentExpress);
                 } else{
+                    log.info("start to create express info for shipment code:{} by data:{}",pushExpressInfos.getShipmentCode(),pushExpressInfos);
                     ShipmentExpress shipmentExpress = new ShipmentExpress();
                     shipmentExpress.setShipmentCode(pushExpressInfos.getShipmentCode());
                     shipmentExpress.setExpressNo(pushExpressInfos.getExpressNo());
@@ -163,10 +176,14 @@ public class ExpressInfoOpenApi {
                 if (result.isSuccess()){
                     return Response.ok(Boolean.TRUE);
                 } else {
+                    log.info("fail to create or update express info for shipment code:{} by data:{},error:{}",pushExpressInfos.getShipmentCode(),pushExpressInfos,result.getError());
                     return Response.fail(UPDATE_EXPRESS_INFOS_STATUS+ pushExpressInfos.getShipmentCode());
                 }
+            } catch (JsonResponseException | ServiceException e){
+                log.error("fail to handle express info  for:{},error:{}",pushExpressInfos,e.getMessage());
+                return Response.fail(UPDATE_EXPRESS_INFOS_STATUS+ pushExpressInfos.getShipmentCode());
             } catch (Exception e){
-                log.error("DealExpressInfoTask error,cause:{}",Throwables.getStackTraceAsString(e));
+                log.error("fail to handle express info  for:{},cause:{}",pushExpressInfos,Throwables.getStackTraceAsString(e));
                 return Response.fail(UPDATE_EXPRESS_INFOS_STATUS+ pushExpressInfos.getShipmentCode());
             }
 

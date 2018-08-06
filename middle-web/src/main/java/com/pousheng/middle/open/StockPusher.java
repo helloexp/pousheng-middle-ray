@@ -178,6 +178,7 @@ public class StockPusher {
         //itemGroupCacher.refreshAll();
 
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
+        Table<Long, String, Integer> shopSkuStockForCodoon = HashBasedTable.create();
         //库存推送日志记录
         final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
         for (String skuCode : skuCodes) {
@@ -272,11 +273,13 @@ public class StockPusher {
                                 skuCode, shopId, stock);
 
                         //判断店铺是否是官网的
-
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
-                        } else {
+                        }else if(Objects.equals(openShop.getChannel(), MiddleChannel.CODOON.getValue())) {
+                            log.info("start to push to codoon shop: {}, with quantity: {}", openShop, stock);
+                            shopSkuStockForCodoon.put(shopId, skuCode, Math.toIntExact(stock));
+                        }else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
                             log.info("parall update stock start");
@@ -298,6 +301,10 @@ public class StockPusher {
         log.info("send to parana by parall update stock start");
         sendToParana(shopSkuStock);
         log.info("send to parana by parall update stock return");
+        //咕咚批量推送
+        log.info("send to codoon by parall update stock start");
+        sendToParana(shopSkuStockForCodoon);
+        log.info("send to codoon by parall update stock return");
         //库存日志推送
         if (!thirdStockPushLogs.isEmpty()) {
             thirdStockPushLogs.forEach(item->{
@@ -311,7 +318,7 @@ public class StockPusher {
         }
 
         if(log.isDebugEnabled()){
-            log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},start time:{}",skuCodes,System.currentTimeMillis());
+            log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}",skuCodes,System.currentTimeMillis());
         }
     }
 
@@ -378,6 +385,7 @@ public class StockPusher {
 
         });
     }
+
 
     /**
      * @Description 查询库存中心计算可用库存

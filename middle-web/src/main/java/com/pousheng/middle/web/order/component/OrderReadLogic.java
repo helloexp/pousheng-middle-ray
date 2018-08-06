@@ -353,6 +353,8 @@ public class OrderReadLogic {
                 return expressCode.getPoushengCode();
             case YJ:
                 return expressCode.getOfficalCode();
+            case CODOON:
+                return expressCode.getCodoonCode();
             default:
                 log.error("find express code failed");
                 throw new JsonResponseException("find.expressCode.failed");

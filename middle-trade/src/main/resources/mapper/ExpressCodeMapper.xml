@@ -14,6 +14,7 @@
         <result column="suning_code" property="suningCode"/>
         <result column="fenqile_code" property="fenqileCode"/>
         <result column="mpos_code" property="mposCode"/>
+        <result column="codoon_code" property="codoonCode"/>
         <result column="hk_code" property="hkCode"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -28,11 +29,11 @@
 
     <sql id="cols_exclude_id">
         name, offical_code,pousheng_code,jd_code, taobao_code,suning_code,
-        fenqile_code,mpos_code,hk_code,created_at, updated_at
+        fenqile_code,mpos_code,codoon_code,hk_code,created_at, updated_at
     </sql>
     <sql id="vals">
          #{name}, #{officalCode},#{poushengCode}, #{jdCode},#{taobaoCode},
-        #{suningCode},#{fenqileCode},#{mposCode},#{hkCode}, now(), now()
+        #{suningCode},#{fenqileCode},#{mposCode},#{codoonCode},#{hkCode}, now(), now()
     </sql>
     <sql id="queryCondition">
 
@@ -53,6 +54,8 @@
         <if test="mposCode != null">and `mpos_code` = #{mposCode}</if>
 
         <if test="hkCode != null">and `hk_code` = #{hkCode}</if>
+
+        <if test="codoonCode != null">and `codoon_code` = #{codoonCode}</if>
     </sql>
     <sql id="order">
         order by id desc
@@ -98,6 +101,7 @@
             <if test="suningCode != null">suning_code = #{suningCode},</if>
             <if test="fenqileCode != null">fenqile_code = #{fenqileCode},</if>
             <if test="mposCode != null">mpos_code = #{mposCode},</if>
+            <if test="codoonCode != null">codoon_code = #{codoonCode},</if>
             <if test="hkCode != null">hk_code = #{hkCode},</if>
             updated_at=now()
         </set>

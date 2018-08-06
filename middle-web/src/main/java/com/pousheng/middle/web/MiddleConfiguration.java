@@ -23,6 +23,7 @@ import com.pousheng.middle.web.converters.PoushengJsonMessageConverter;
 import com.pousheng.middle.web.item.PoushengPipelineConfigurer;
 import io.terminus.open.client.center.OpenClientCenterAutoConfig;
 import io.terminus.open.client.parana.ParanaAutoConfiguration;
+import io.terminus.open.codoon.CodoonAutoConfiguration;
 import io.terminus.parana.ItemApiConfiguration;
 import io.terminus.parana.TradeApiConfig;
 import io.terminus.parana.TradeAutoConfig;
@@ -94,7 +95,8 @@ import java.util.concurrent.TimeUnit;
         TaskConfig.class,
         MultipartAutoConfiguration.class,
         BizBeanConfiguration.class,
-        MiddleCacheConfig.class})
+        MiddleCacheConfig.class,
+        CodoonAutoConfiguration.class})
 
 @ComponentScan(
         {"com.pousheng.middle.order",

@@ -39,16 +39,4 @@ public class ReceiveSkxResultLogic {
         return poushengCompensateBizWriteService.create(biz);
     }
 
-
-    /**
-     * 外部平台订单取消
-     * @return
-     */
-    public Response<Long> cancelShipmentResultTask(CancelOutOrderInfo cancelOutOrderInfo) {
-        PoushengCompensateBiz biz = new PoushengCompensateBiz();
-        biz.setBizType(PoushengCompensateBizType.OUTER_ORDER_CANCEL_RESULT.toString());
-        biz.setContext(mapper.toJson(cancelOutOrderInfo));
-        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
-    }
 }

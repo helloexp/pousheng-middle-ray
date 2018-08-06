@@ -564,7 +564,23 @@ public class OrderOpenApi {
     public void syncOrderCancel(@NotNull(message = "cancel.data.is.null") String data) {
         log.info("SYNC-OUT-ORDER-CANCEL-START DATA is:{} ", data);
         CancelOutOrderInfo cancelOutOrderInfo = JSON_MAPPER.fromJson(data, CancelOutOrderInfo.class);
-        receiveSkxResultLogic.cancelShipmentResultTask(cancelOutOrderInfo);
+
+        String outId = cancelOutOrderInfo.getOutOrderId();
+        String outFrom = cancelOutOrderInfo.getChannel();
+        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outId, outFrom);
+        if (!findShopOrder.isSuccess()) {
+            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
+                    outId, outFrom, findShopOrder.getError());
+            throw new OPServerException(200, findShopOrder.getError());
+        }
+        Optional<ShopOrder> shopOrderOptional = findShopOrder.getResult();
+        if (!shopOrderOptional.isPresent()) {
+            log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
+            throw new OPServerException(200, "order.not.found");
+        }
+        orderWriteLogic.autoCancelShopOrder(shopOrderOptional.get().getId());
+
+
         log.info("cancelOutOrderInfo:", cancelOutOrderInfo);
     }
 

@@ -58,10 +58,4 @@ public enum PoushengCompensateBizType {
      */
     SKX_SYNC_SHIPMENT_RESULT,
 
-    /**
-     * 取消外部订单同步到中台
-     */
-    OUTER_ORDER_CANCEL_RESULT;
-
-
 }

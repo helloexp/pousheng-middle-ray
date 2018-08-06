@@ -47,8 +47,4 @@ public class ReceiveSkxResultLogicTest extends AbstractRestApiTest {
         receiveSkxResultLogic.createShipmentResultTask(anyObject());
     }
 
-    @Test
-    public void cancelShipmentResultTask() {
-        receiveSkxResultLogic.cancelShipmentResultTask(anyObject());
-    }
 }

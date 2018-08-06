@@ -274,4 +274,10 @@ public class TradeConstants {
     public static final String PLATFORM_DISCOUNT_FOR_SHOP="platformDiscount";
     //分摊到子订单上的平台出资折扣
     public static final String PLATFORM_DISCOUNT_FOR_SKU ="skuPlatformDiscount";
+
+    // 拉取映射关系
+    public static final String  ITEM_MAPPING_STOCK = "itemMappingStock";
+    // 淘宝C店
+    public static final String  IS_TAOBAO_SHOP = "isTaobaoShop";
+
 }

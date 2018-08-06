@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.shop;
 
 import com.pousheng.middle.enums.OpenShopEnum;
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import io.swagger.annotations.Api;
@@ -19,6 +21,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * @Description: TODO
@@ -88,6 +92,8 @@ public class AdminOpenShops {
             throw new JsonResponseException(openShopResponse.getError());
         }
         openShop.setId(openShopId);
+        // 变更json信息,不覆盖旧数据
+        editExtraInfo(openShop, openShopResponse.getResult().getExtra());
         Response<Boolean> response = openShopWriteService.update(openShop);
         if (!response.isSuccess()) {
             log.error("update open shop failed, openShopId={}, error={}", openShopId, response.getError());
@@ -101,6 +107,8 @@ public class AdminOpenShops {
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Long createOpenShop(@RequestBody OpenShop openShop) {
         openShop.setStatus(OpenShopEnum.enable_open_shop_enum.getIndex());
+        // 渠道对应的json信息特殊处理下
+        addExtraInfo(openShop);
         Response<Long> response = openShopWriteService.create(openShop);
         if (!response.isSuccess()) {
             log.error("add open shop failed, error:{}",response.getError());
@@ -156,5 +164,63 @@ public class AdminOpenShops {
             throw new JsonResponseException(findShop.getError());
         }
         return findShop.getResult();
+    }
+
+
+    private void addExtraInfo (OpenShop openShop) {
+        Map<String, String> jsonMap = openShop.getExtra();
+        // 云聚类型订单
+        if(Objects.equals(MiddleChannel.YJ.getValue(), openShop.getChannel())) {
+            jsonMap.put("isCareStock","0");
+            jsonMap.put("isOrderInsertMiddle","true");
+        }
+        // 天猫渠道淘宝C店
+        if(Objects.equals(MiddleChannel.TAOBAO.getValue(), openShop.getChannel())) {
+            if (jsonMap.containsKey(TradeConstants.IS_TAOBAO_SHOP)) {
+                // 拉取映射关系
+                jsonMap.put(TradeConstants.IS_TAOBAO_SHOP, jsonMap.get(TradeConstants.IS_TAOBAO_SHOP));
+            }
+        }
+        openShop.setExtra(jsonMap);
+    }
+
+    /**
+     * 修改json信息
+     * @param openShop 前端传递修改后的信息
+     * @param map 修改前json信息
+     */
+    private void editExtraInfo (OpenShop openShop, Map<String, String> map) {
+        Map<String, String> jsonMap = openShop.getExtra();
+        if (jsonMap.containsKey(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE)) {
+            // hk绩效店铺外码
+            map.put(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE, jsonMap.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));
+        }
+        if (jsonMap.containsKey(TradeConstants.HK_PERFORMANCE_SHOP_CODE)) {
+            // hk绩效店铺代码
+            map.put(TradeConstants.HK_PERFORMANCE_SHOP_CODE, jsonMap.get(TradeConstants.HK_PERFORMANCE_SHOP_CODE));
+        }
+        if (jsonMap.containsKey(TradeConstants.HK_PERFORMANCE_SHOP_NAME)) {
+            // hk绩效店铺名称
+            map.put(TradeConstants.HK_PERFORMANCE_SHOP_NAME, jsonMap.get(TradeConstants.HK_PERFORMANCE_SHOP_NAME));
+        }
+        if (jsonMap.containsKey(TradeConstants.HK_COMPANY_CODE)) {
+            // 公司代码(账套)
+            map.put(TradeConstants.HK_COMPANY_CODE, jsonMap.get(TradeConstants.HK_COMPANY_CODE));
+        }
+        if (jsonMap.containsKey(TradeConstants.ERP_SYNC_TYPE)) {
+            // erp
+            map.put(TradeConstants.ERP_SYNC_TYPE, jsonMap.get(TradeConstants.ERP_SYNC_TYPE));
+        }
+        if (jsonMap.containsKey(TradeConstants.ITEM_MAPPING_STOCK)) {
+            // 拉取映射关系
+            map.put(TradeConstants.ITEM_MAPPING_STOCK, jsonMap.get(TradeConstants.ITEM_MAPPING_STOCK));
+        }
+        if(Objects.equals(MiddleChannel.TAOBAO.getValue(), openShop.getChannel())) {
+            if (jsonMap.containsKey(TradeConstants.IS_TAOBAO_SHOP)) {
+                // 拉取映射关系
+                map.put(TradeConstants.IS_TAOBAO_SHOP, jsonMap.get(TradeConstants.IS_TAOBAO_SHOP));
+            }
+        }
+        openShop.setExtra(map);
     }
 }

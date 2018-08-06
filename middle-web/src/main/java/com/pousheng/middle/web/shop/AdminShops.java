@@ -11,6 +11,7 @@ import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.constants.Constants;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.model.ZoneContract;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
@@ -25,6 +26,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.shop.component.ShopBusinessLogic;
+import com.pousheng.middle.web.shop.dto.Channel;
 import com.pousheng.middle.web.shop.dto.OrderExpireInfo;
 import com.pousheng.middle.web.shop.event.CreateShopEvent;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
@@ -65,7 +67,6 @@ import lombok.val;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
@@ -182,6 +183,15 @@ public class AdminShops {
     }
 
 
+    @ApiOperation("查询渠道列表信息")
+    @RequestMapping(value = "/channel", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public List<Channel> findChannels() {
+        List<Channel> list = Lists.newArrayList();
+        for (MiddleChannel channel : MiddleChannel.values()) {
+            list.add(new Channel().name(channel.getDesc()).code(channel.getValue()));
+        }
+        return list;
+    }
 
 
     @ApiOperation("根据用户id查询门店信息")

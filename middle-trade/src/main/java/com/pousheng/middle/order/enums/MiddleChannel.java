@@ -8,20 +8,25 @@ import com.google.common.base.Objects;
  * pousheng-middle
  */
 public enum MiddleChannel {
-    JD("jingdong"), //京东
-    TAOBAO("taobao"), //淘宝
-    SUNING("suning"),//苏宁
-    FENQILE("fenqile"),//分期乐
-    OFFICIAL("official"),//官网
-    SUNINGSALE("suning-sale"),//苏宁特卖
-    YJ("yunjubbc");//云聚
+    JD("jingdong", "京东"),
+    TAOBAO("taobao", "淘宝"),
+    SUNING("suning", "苏宁"),
+    FENQILE("fenqile", "分期乐"),
+    OFFICIAL("official", "官网"),
+    SUNINGSALE("suning-sale", "苏宁特卖"),
+    YJ("yunjubbc", "云聚");
 
     private final String value;
 
-    MiddleChannel(String value){
+    private final String desc;
+
+    MiddleChannel(String value, String desc) {
         this.value = value;
+        this.desc = desc;
     }
     public String getValue(){return value;}
+
+    public String getDesc(){return desc;}
 
     public static MiddleChannel from(String value){
         for (MiddleChannel middleChannel : MiddleChannel.values()) {

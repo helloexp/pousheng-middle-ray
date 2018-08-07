@@ -9,6 +9,7 @@ import com.pousheng.middle.open.api.dto.YyEdiResponseDetail;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -91,7 +92,7 @@ public class yyEDIOpenApi {
      */
     @OpenMethod(key = "yyEDI.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
     public void receiveYYEDIShipmentResult(String shipInfo) {
-        List<YyEdiShipInfo> results = null;
+        List<YyEdiShipInfo> results;
         List<YyEdiResponseDetail> fields = Lists.newArrayList();
         List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
@@ -102,14 +103,15 @@ public class yyEDIOpenApi {
             int count = 0;
             for (YyEdiShipInfo yyEdiShipInfo : results) {
                 try {
-                    DateTime dt = new DateTime();
                     String shipmentCode = yyEdiShipInfo.getShipmentId();
                     Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
                     if (yyEdiShipInfo.getItemInfos() != null) {
                         Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
                         if (size == 0) {
                             Map<String,String> extraMap = shipment.getExtra();
-                            extraMap.put("remark","物流整单缺货");
+                            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                            shipmentExtra.setRemark("物流整单缺货");
+                            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
                             shipment.setExtra(extraMap);
                             Response<Boolean> response =  shipmentWriteService.update(shipment);
                             if (!response.isSuccess()) {

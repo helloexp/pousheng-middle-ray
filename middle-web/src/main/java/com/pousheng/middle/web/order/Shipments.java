@@ -223,6 +223,15 @@ public class Shipments {
             log.debug("API-SHIPMENT-DETAIL-START param: shipmentId [{}]",shipmentId);
         }
         ShipmentDetail detail = shipmentReadLogic.orderDetail(shipmentId);
+        Integer status=detail.getShipment().getStatus();
+        if (!status.equals(MiddleShipmentsStatus.SHIPPED.getValue()) && !status.equals(MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
+                && !status.equals(MiddleShipmentsStatus.CONFIRMED_FAIL.getValue())) {
+            for (ShipmentItem item : detail.getShipmentItems()) {
+                if (item.getShipQuantity() == null) {
+                    item.setShipQuantity(0);
+                }
+            }
+        }
         if(log.isDebugEnabled()){
             log.debug("API-SHIPMENT-DETAIL-END param: shipmentId [{}] ,resp: [{}]",shipmentId,JsonMapper.nonEmptyMapper().toJson(detail));
         }

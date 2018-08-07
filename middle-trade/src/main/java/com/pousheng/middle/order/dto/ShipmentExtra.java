@@ -102,4 +102,7 @@ public class ShipmentExtra implements Serializable{
 
     // 物流单号
     private String expressOrderId;
+
+    //备注
+    private String remark;
 }

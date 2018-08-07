@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.shop;
 
+import com.pousheng.middle.enums.GateWayEnum;
 import com.pousheng.middle.enums.OpenShopEnum;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -162,6 +163,12 @@ public class AdminOpenShops {
         return memberShopList;
     }
 
+    @ApiOperation("默认渠道gateway")
+    @RequestMapping(value = "/shopCode/gateway/{channel}", method = RequestMethod.GET)
+    public String findShopGateWay(@PathVariable String channel) {
+        return GateWayEnum.get(channel).getGateway();
+    }
+
 
     private OpenShop checkOpenShopNameIfDuplicated(String channel, String updatedOpenShopName) {
         Response<OpenShop> findShop = openShopReadService.findByChannelAndName(channel, updatedOpenShopName);
@@ -227,6 +234,11 @@ public class AdminOpenShops {
                 // 拉取映射关系
                 map.put(TradeConstants.IS_TAOBAO_SHOP, jsonMap.get(TradeConstants.IS_TAOBAO_SHOP));
             }
+        }
+        // 云聚类型订单
+        if(Objects.equals(MiddleChannel.YJ.getValue(), openShop.getChannel())) {
+            jsonMap.put("isCareStock","0");
+            jsonMap.put("isOrderInsertMiddle","true");
         }
         openShop.setExtra(map);
     }

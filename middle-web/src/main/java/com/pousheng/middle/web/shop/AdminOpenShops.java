@@ -12,6 +12,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.common.shop.service.OpenShopWriteService;
@@ -41,6 +42,8 @@ public class AdminOpenShops {
     private OpenShopWriteService openShopWriteService;
     @Autowired
     private MemberShopOperationLogic memberShopOperationLogic;
+    @Autowired
+    private OpenShopCacher openShopCacher;
 
     /**
      *
@@ -99,6 +102,8 @@ public class AdminOpenShops {
             log.error("update open shop failed, openShopId={}, error={}", openShopId, response.getError());
             throw new JsonResponseException(500, response.getError());
         }
+        // 刷新缓存
+        openShopCacher.refreshById(openShopId);
         return response.getResult();
     }
 
@@ -133,6 +138,8 @@ public class AdminOpenShops {
             log.error("delete open shop failed, openShopId:{}, error:{}", openShopId, resp.getError());
             throw new JsonResponseException(500, resp.getError());
         }
+        // 刷新缓存
+        openShopCacher.refreshById(openShopId);
         return resp.getResult();
     }
 

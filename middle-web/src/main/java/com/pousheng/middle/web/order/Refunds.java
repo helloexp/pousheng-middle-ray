@@ -75,6 +75,8 @@ public class Refunds {
     private PermissionUtil permissionUtil;
     @Autowired
     private MiddleRefundWriteService middleRefundWriteService;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -758,6 +760,28 @@ public class Refunds {
             throw new JsonResponseException("refund.status.or.type.not.allow.current.operation");
         }
         refund.setRefundType(MiddleRefundType.REJECT_GOODS.value());
+
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+
+        List<RefundItem> refundItemList = refundReadLogic.findRefundChangeItems(refund);
+        //发货单是否有效
+        Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        //获取发货单中商品信息
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        refundItemList.stream().forEach(x->{
+            for (ShipmentItem shipmentItem : shipmentItems) {
+                if (Objects.equals(x.getSkuCode(), shipmentItem.getSkuCode())) {
+                    shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + x.getApplyQuantity());
+                }
+            }
+        });
+
+
+        //更新发货单商品中的已退货数量
+        Map<String, String> shipmentExtraMap = shipment.getExtra();
+        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+
         // 更新售后单
         Response<Boolean> res = refundWriteLogic.update(refund);
         if (!res.isSuccess()) {

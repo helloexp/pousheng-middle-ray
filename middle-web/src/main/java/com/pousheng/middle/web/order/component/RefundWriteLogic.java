@@ -1482,7 +1482,7 @@ public class RefundWriteLogic {
                             refundAmount.setHkOrderNo(hkRefundId);
                             //pos单号
                             try{
-                                Response<PoushengSettlementPos> sR = poushengSettlementPosReadService.findByRefundIdAndPosType(refund.getId(),2);
+                                Response<PoushengSettlementPos> sR = poushengSettlementPosReadService.findByRefundCodeAndPosType(refund.getRefundCode(),2);
                                 if(!sR.isSuccess()){
                                     log.error("find pos failed");
                                 }

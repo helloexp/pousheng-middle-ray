@@ -58,11 +58,11 @@ public class PoushengSettlementPosReadServiceImpl implements PoushengSettlementP
     }
 
     @Override
-    public Response<PoushengSettlementPos> findByRefundIdAndPosType(Long refundId, Integer posType) {
+    public Response<PoushengSettlementPos> findByRefundCodeAndPosType(String refundCode, Integer posType) {
         try {
-            return Response.ok(poushengSettlementPosDao.findByRefundIdAndPosType(refundId,posType));
+            return Response.ok(poushengSettlementPosDao.findByRefundCodeAndPosType(refundCode,posType));
         }catch (Exception e){
-            log.error("failed find settlement pos, refundId={}, cause:{}",refundId, Throwables.getStackTraceAsString(e));
+            log.error("failed find settlement pos, refundCode={}, cause:{}",refundCode, Throwables.getStackTraceAsString(e));
             return Response.fail("settlement.pos.find.fail");
         }
     }

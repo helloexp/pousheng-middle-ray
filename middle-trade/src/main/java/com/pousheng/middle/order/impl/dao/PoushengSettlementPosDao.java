@@ -19,7 +19,7 @@ public class PoushengSettlementPosDao extends MyBatisDao<PoushengSettlementPos>{
     public PoushengSettlementPos findByShipmentId(Long shipmentId){
         return getSqlSession().selectOne(sqlId("findByShipmentId"), shipmentId);
     }
-    public PoushengSettlementPos findByRefundIdAndPosType(Long orderId,Integer posType){
-        return getSqlSession().selectOne(sqlId("findByRefundIdAndPosType"), ImmutableMap.of("orderId", orderId, "posType", posType));
+    public PoushengSettlementPos findByRefundCodeAndPosType(String orderCode,Integer posType){
+        return getSqlSession().selectOne(sqlId("findByRefundCodeAndPosType"), ImmutableMap.of("orderId", orderCode, "posType", posType));
     }
 }

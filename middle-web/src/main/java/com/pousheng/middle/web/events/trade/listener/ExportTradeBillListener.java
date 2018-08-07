@@ -340,7 +340,12 @@ public class ExportTradeBillListener {
                 boolean dirtyData = false;
                 List<RefundItem> refundItems = null;
                 try {
-                    refundItems = refundReadLogic.findRefundItems(refundInfo.getRefund());
+
+                    if(Objects.equals(refundInfo.getRefund().getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+                        refundItems = refundReadLogic.findRefundLostItems(refundInfo.getRefund());
+                    }else {
+                        refundItems = refundReadLogic.findRefundItems(refundInfo.getRefund());
+                    }
                 } catch (JsonResponseException e) {
                     if (e.getMessage().equals("refund.exit.not.contain.item.info"))
                         dirtyData = true;
@@ -378,12 +383,9 @@ public class ExportTradeBillListener {
                     OpenClientPaymentInfo paymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
                     //查询关联的pos单
                     PoushengSettlementPos posSettleMent = null;
-                    if (refundExtra.getShipmentId() != null){
-                        String shipCode = refundExtra.getShipmentId().startsWith("SHP") == true? refundExtra.getShipmentId().substring(3): refundExtra.getShipmentId();
-                        Response<PoushengSettlementPos> posResponse = poushengSettlementPosReadService.findByShipmentId(Long.valueOf(Long.valueOf(shipCode)));
-                        if (posResponse.isSuccess()){
-                            posSettleMent = posResponse.getResult();
-                        }
+                    Response<PoushengSettlementPos> posResponse = poushengSettlementPosReadService.findByRefundCodeAndPosType(refundInfo.getRefund().getRefundCode(),2);
+                    if (posResponse.isSuccess()){
+                        posSettleMent = posResponse.getResult();
                     }
 
 
@@ -394,7 +396,7 @@ public class ExportTradeBillListener {
                         RefundExportEntity export = new RefundExportEntity();
                         export.setOrderCode(refundInfo.getOrderRefund().getOrderCode());
                         export.setRefundCode(refundInfo.getRefund().getRefundCode());
-                        export.setRefundSubCode(item.getSkuCode());
+                        //export.setRefundSubCode(item.getSkuCode());
                         export.setShopName(refundInfo.getRefund().getShopName());
                         export.setMemo(refundInfo.getRefund().getBuyerNote());
                         export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
@@ -402,7 +404,7 @@ public class ExportTradeBillListener {
 
                         export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                         export.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
-                        if (item.getCleanPrice() != null && item.getAlreadyHandleNumber() != null){
+                        if (item.getCleanPrice() != null && item.getApplyQuantity() != null){
                             export.setTotalPrice(new BigDecimal(item.getCleanPrice()).multiply(new BigDecimal(item.getApplyQuantity())).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                         } else {
                             export.setTotalPrice(null);
@@ -426,6 +428,7 @@ public class ExportTradeBillListener {
                         export.setApplyQuantity(item.getAlreadyHandleNumber());
                         if (null != refundExtra.getHkConfirmItemInfos()) {
                             refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+                                //实际数量
                                 export.setActualQuantity(hkinfo.getQuantity());
                             });
                         }
@@ -433,7 +436,7 @@ public class ExportTradeBillListener {
                         //申请数量
                         export.setApplyQuantity(item.getApplyQuantity());
                         //实际数量
-                        export.setActualQuantity(item.getApplyQuantity());
+                        //export.setActualQuantity(item.getApplyQuantity());
                         export.setOrderCode(refundInfo.getRefund().getReleOrderCode());
                         export.setShipCode(refundExtra.getShipmentId());
                         export.setOutCode(shopOrder.getOutId());
@@ -443,8 +446,9 @@ public class ExportTradeBillListener {
                         }
                         export.setPayOrderPayDate(paymentInfo.getPaidAt());
                         export.setAfterSaleCreateDate(refundInfo.getRefund().getCreatedAt());
-                        export.setAfterSaleRefundDate(refundInfo.getRefund().getRefundAt());
-
+                        export.setAfterSaleRefundDate(refundInfo.getRefund().getUpdatedAt());
+                        export.setAfterSaleExpressCompany(refundExtra.getShipmentCorpName());
+                        export.setAfterSaleExpressNo(refundExtra.getShipmentSerialNo());
 
                         refundExportData.add(export);
                     });

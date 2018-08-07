@@ -35,10 +35,10 @@ public interface PoushengSettlementPosReadService {
 
     /**
      * 根据售后单号以及pos单类型
-     * @param refundId 售后单号
+     * @param refundCode 售后单号
      * @param posType pos类型
      * @return
      */
-    Response<PoushengSettlementPos> findByRefundIdAndPosType(Long refundId,Integer posType);
+    Response<PoushengSettlementPos> findByRefundCodeAndPosType(String refundCode,Integer posType);
 
 }

@@ -27,8 +27,8 @@ public class RefundExportEntity {
     /**
      * 售后子单号
      */
-    @ExportTitle("售后单子单号")
-    private String refundSubCode;
+    //@ExportTitle("售后单子单号")
+    //private String refundSubCode;
 
     /**
      * 外部单号

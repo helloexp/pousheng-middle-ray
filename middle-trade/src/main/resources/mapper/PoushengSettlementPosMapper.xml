@@ -92,7 +92,7 @@
         FROM <include refid="tb" />
         WHERE shipment_id = #{shipmentId}
     </select>
-    <select id="findByRefundIdAndPosType" parameterType="map" resultMap="PoushengSettlementPosMap" >
+    <select id="findByRefundCodeAndPosType" parameterType="map" resultMap="PoushengSettlementPosMap" >
         SELECT <include refid="cols_all" />
         FROM <include refid="tb" />
         WHERE order_id = #{orderId} and pos_type = #{posType}

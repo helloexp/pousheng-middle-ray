@@ -281,6 +281,11 @@ public class OrderOpenApi {
                 throw new ServiceException("shipment.current.status.not.allow.ship");
             }
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+            List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
+            //店发默认全部发货
+            for (ShipmentItem s : items) {
+                s.setShipQuantity(s.getQuantity());
+            }
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
             if (!Objects.equals(hkShipmentId, shipmentExtra.getOutShipmentId())) {
@@ -299,6 +304,7 @@ public class OrderOpenApi {
             ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentCorpCode);
             shipmentExtra.setShipmentCorpName(expressCode.getName());
             shipmentExtra.setShipmentDate(dt.toDate());
+            extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
 

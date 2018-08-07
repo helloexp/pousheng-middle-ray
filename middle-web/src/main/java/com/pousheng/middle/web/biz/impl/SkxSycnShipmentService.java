@@ -5,6 +5,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.SkxShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -27,8 +28,11 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * @Description: skx同步发货信息到中台
@@ -102,6 +106,11 @@ public class SkxSycnShipmentService implements CompensateBizService {
             return;
         }
         Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+        List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
+        //斯凯奇默认全部发货
+        for (ShipmentItem s : items) {
+            s.setShipQuantity(s.getQuantity());
+        }
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
         if (!Objects.equals(skxShipInfo.getErpShipmentId(), shipmentExtra.getOutShipmentId())) {
@@ -120,6 +129,7 @@ public class SkxSycnShipmentService implements CompensateBizService {
         shipmentExtra.setShipmentCorpName(expressCode.getName());
         shipmentExtra.setShipmentDate(dt.toDate());
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+        extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);
 
         //更新状态

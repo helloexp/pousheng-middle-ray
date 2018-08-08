@@ -5,10 +5,14 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.yjerp.SyncYJErpReturnLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -26,7 +30,9 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
@@ -63,6 +69,10 @@ public class SyncErpReturnLogic {
     private Long skxOpenShopId;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private SyncYJErpReturnLogic syncYJErpReturnLogic;
+    @Autowired
+    private WarehouseClient warehouseClient;
 
     /**
      * 对于退货退款和换货的售后单需要同步到yyedi，对于仅退款的售后单需要直接同步到恒康
@@ -102,6 +112,12 @@ public class SyncErpReturnLogic {
                 && Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
             return this.syncSaleRefuse(refund);
 
+        }
+        // 共享仓云聚售后拒收类型单
+        if (Objects.equals(shipment.getShipWay(),2) && Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+            if (syncYJErp(shipment.getShipId())) {
+                return syncYJErpReturnLogic.syncRefundToYJErp(refund);
+            }
         }
         //售后换货，退货的同步走配置渠道
         switch (erpSyncType){
@@ -247,6 +263,19 @@ public class SyncErpReturnLogic {
                 throw new ServiceException("refund.type.invalid");
         }
 
+    }
+
+    private Boolean syncYJErp (Long warehouseId) {
+        Response<WarehouseDTO> rW  = warehouseClient.findById(warehouseId);
+        if (!rW.isSuccess()){
+            throw new ServiceException("find.warehouse.failed");
+        }
+        WarehouseDTO warehouse = rW.getResult();
+        Map<String, String> extra = warehouse.getExtra();
+        if (extra.containsKey(TradeConstants.IS_SHARED_STOCK) && Objects.equals(extra.get(TradeConstants.IS_SHARED_STOCK), "Y")) {
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
     }
 
 }

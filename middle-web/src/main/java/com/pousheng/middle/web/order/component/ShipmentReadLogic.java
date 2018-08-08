@@ -69,6 +69,8 @@ public class ShipmentReadLogic {
     private WarehouseClient warehouseClient;
     @Autowired
     private ShopCacher shopCacher;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -577,8 +579,10 @@ public class ShipmentReadLogic {
      * @return
      */
     public DispatchOrderItemInfo getDispatchOrderItem(Shipment shipment){
-        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
+        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
+        ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         DispatchOrderItemInfo dispatchOrderItemInfo = new DispatchOrderItemInfo();
+        dispatchOrderItemInfo.setOrderId(shipmentDetail.getShopOrder().getId());
         List<SkuCodeAndQuantity> skuCodeAndQuantities = this.findShipmentSkuDetail(shipment);
         if(Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
             // ShopShipment shopShipment = new ShopShipment();

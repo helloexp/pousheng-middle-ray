@@ -105,6 +105,9 @@ gateway:
   yyedi:
       host: ${YYEDI_HOST}
       accessKey: ${YYEDI_ACCESS_KEY}
+  yjerp:
+      host: ${YJERP_HOST}
+      accessKey: ${YJERP_ACCESS_KEY}
   inventory:
       host: ${POUSHENG_INVENTORY_HOST}
 

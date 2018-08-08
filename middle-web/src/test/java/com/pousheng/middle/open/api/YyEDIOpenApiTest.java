@@ -10,21 +10,26 @@
  */
 package com.pousheng.middle.open.api;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.AbstractRestApiTest;
+import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleFlowBook;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import org.junit.Test;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.when;
@@ -108,4 +113,49 @@ public class YyEDIOpenApiTest extends AbstractRestApiTest {
         yyEDIOpenApi.syncHkRefundStatus("123","12312",data,"20180531151212");
     }
 
+
+    @Test
+    public void convertToYyEdiShipInfo() {
+        String shipInfo = "[\n" +
+                "\t{\n" +
+                "\t\t\"shipmentId\": \"1223132\",\n" +
+                "\t\t\"yjShipmentId\": \"100\",\n" +
+                "\t\t\"shipmentCorpCode\": \"YTO\",\n" +
+                "\t\t\"shipmentSerialNo\": \"1245\",\n" +
+                "\t\t\"shipmentDate\": \"20160625224210\",\n" +
+                "\t\t\"weight\": \"74\",\n" +
+                "\t\t\"itemInfos\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"skuCode\": \"0001\",\n" +
+                "\t\t\t\t\"quantity\": \"2\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"skuCode\": \"0001\",\n" +
+                "\t\t\t\t\"quantity\": \"3\"\n" +
+                "\t\t\t}\n" +
+                "\t\t]\n" +
+                "\t},\n" +
+                "\t{\n" +
+                "\t\t\"shipmentId\": \"1223112\",\n" +
+                "\t\t\"yjShipmentId\": \"2\",\n" +
+                "\t\t\"shipmentCorpCode\": \"YTO\",\n" +
+                "\t\t\"shipmentSerialNo\": \"12425\",\n" +
+                "\t\t\"shipmentDate\": \"20160625224210\",\n" +
+                "\t\t\"weight\": \"74\",\n" +
+                "\t\t\"itemInfos\": [\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"skuCode\": \"0001\",\n" +
+                "\t\t\t\t\"quantity\": \"2\"\n" +
+                "\t\t\t},\n" +
+                "\t\t\t{\n" +
+                "\t\t\t\t\"skuCode\": \"0001\",\n" +
+                "\t\t\t\t\"quantity\": \"3\"\n" +
+                "\t\t\t}\n" +
+                "\t\t]\n" +
+                "\t}\n" +
+                "]";
+        List<YyEdiShipInfo> results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YyEdiShipInfo.class));
+        System.out.print(results);
+
+    }
 }

@@ -38,14 +38,38 @@ public class YyEdiShipInfo {
     private double weight;
 
     /**
+     * yjERP发货单号
+     */
+    private String yjShipmentId;
+
+    /**
      * 详细发货情况
      */
     private List<ItemInfo> itemInfos;
 
+
     @Data
     public static class ItemInfo {
-        public String skuCode;
-        public Integer quantity;
+
+        /**
+         * 商品编码
+         */
+        private String skuCode;
+
+        /**
+         * 实际发货数量
+         */
+        private Integer quantity;
+
+        /**
+         * 物流公司代码
+         */
+        private String shipmentCorpCode;
+
+        /**
+         * 物流单号
+         */
+        private String shipmentSerialNo;
 
         public String getSkuCode() {
             return skuCode;

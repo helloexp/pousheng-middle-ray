@@ -2,14 +2,19 @@ package com.pousheng.middle.web.order.sync.erp;
 
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
+import com.pousheng.middle.web.order.sync.yjerp.SyncYJErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
@@ -19,9 +24,13 @@ import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * 1.同步发货单信息到erp
@@ -49,6 +58,11 @@ public class SyncErpShipmentLogic {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncYJErpShipmentLogic syncYJErpShipmentLogic;
+    @Autowired
+    private WarehouseClient warehouseClient;
+
 
     /**
      * 根据配置渠道确定将发货单同步到hk还是订单派发中心
@@ -60,6 +74,12 @@ public class SyncErpShipmentLogic {
         log.info("sync shipment start,shipment is {}", shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+
+        // 云聚共享仓同步云聚erp
+        if (shipment.getShipWay() == 2 && syncYJErp(shipment.getShipId())) {
+            return syncYJErpShipmentLogic.syncShipmentToYJErp(shipment);
+        }
+
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
         if (!openShopResponse.isSuccess()) {
             log.error("find open shop by openShopId {} failed,caused by {}", shopOrder.getShopId(), openShopResponse.getError());
@@ -82,13 +102,17 @@ public class SyncErpShipmentLogic {
     /**
      * 将已经同步到erp的发货单取消
      *
-     * @param shipment      发货单
+     * @param shipment 发货单
      * @return
      */
     public Response<Boolean> syncShipmentCancel(Shipment shipment) {
         log.info("cancel shipment start,shipment is {}", shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        // 云聚共享仓同步云聚erp
+        if (shipment.getShipWay() == 2 && syncYJErp(shipment.getShipId())) {
+            return syncYJErpShipmentLogic.syncShipmentCancelToYJErp(shipment);
+        }
         Response<OpenShop> openShopResponse = openShopReadService.findById(shopOrder.getShopId());
         if (!openShopResponse.isSuccess()) {
             log.error("find open shop by openShopId {} failed,caused by {}", shopOrder.getShopId(), openShopResponse.getError());
@@ -139,6 +163,20 @@ public class SyncErpShipmentLogic {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
         }
+    }
+
+
+    private Boolean syncYJErp (Long warehouseId) {
+        Response<WarehouseDTO> rW  = warehouseClient.findById(warehouseId);
+        if (!rW.isSuccess()){
+            throw new ServiceException("find.warehouse.failed");
+        }
+        WarehouseDTO warehouse = rW.getResult();
+        Map<String, String> extra = warehouse.getExtra();
+        if (extra.containsKey(TradeConstants.IS_SHARED_STOCK) && Objects.equals(extra.get(TradeConstants.IS_SHARED_STOCK), "Y")) {
+            return Boolean.TRUE;
+        }
+        return Boolean.FALSE;
     }
 
 }

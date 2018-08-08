@@ -135,7 +135,7 @@ public class ExpressInfoOpenApi {
                 Response<Boolean> result = null;
                 //判断数据有否问题
                 if( StringUtils.isEmpty(pushExpressInfos.getShipmentCode()) || StringUtils.isEmpty(pushExpressInfos.getExpressStatus())
-                       || StringUtils.isEmpty(pushExpressInfos.getExpressNo()) || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyCode())
+                        || StringUtils.isEmpty(pushExpressInfos.getExpressNo()) || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyCode())
                         || StringUtils.isEmpty(pushExpressInfos.getExpressCompanyName()) || CollectionUtils.isEmpty(pushExpressInfos.getExpressDetails())){
                     log.error("fail to handle express info for pushExpressInfo:{} some param invalid",pushExpressInfos);
                     return Response.fail("shipmentExpress.receive.fail"+ pushExpressInfos.getShipmentCode());
@@ -191,7 +191,7 @@ public class ExpressInfoOpenApi {
 
         private void convertDateFormate(List<ExpressDetails> expressDetails) {
             for (ExpressDetails expressDetail:expressDetails
-                 ) {
+                    ) {
                 try {
                     Date tempDate = simpleDateFormat1.parse(expressDetail.getNodeAt());
                     expressDetail.setNodeAt(simpleDateFormat.format(tempDate));

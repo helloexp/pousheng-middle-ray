@@ -2,9 +2,7 @@ package com.pousheng.middle.yyedisyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelBody;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelRequest;
+import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -28,6 +26,12 @@ public class SycYYEdiOrderCancelApi {
 
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
+
+    @Value("${gateway.yjerp.host}")
+    private String yjGateway;
+
+    @Value("${gateway.yjerp.accessKey}")
+    private String yjaccessKey;
 
     /**
      *
@@ -55,6 +59,25 @@ public class SycYYEdiOrderCancelApi {
                 .body();
 
         log.info("end do cancel yyedi order paramJson:{},result:{}",paramJson,responseBody);
+        return responseBody;
+    }
+
+    public String doYJErpCancelOrder(List<YJErpCancelInfo> requestData){
+
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
+        log.info("sync cancel shipment to yj erp paramJson :{}",paramJson);
+        String gateway = yjGateway + "/common-yjerp/yjerp/default/pushmgordercancel";
+        String responseBody = HttpRequest.post(gateway)
+                .header("verifycode",yjaccessKey)
+                .header("serialNo",serialNo)
+                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .contentType("application/json")
+                .send(paramJson)
+                .connectTimeout(10000).readTimeout(10000)
+                .body();
+
+        log.info("sync cancel shipment to yj erp result:{}",responseBody);
         return responseBody;
     }
 }

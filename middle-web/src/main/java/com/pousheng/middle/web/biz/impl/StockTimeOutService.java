@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
@@ -13,6 +14,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -21,6 +23,7 @@ import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -56,6 +59,8 @@ public class StockTimeOutService implements CompensateBizService {
     private DispatchComponent dispatchComponent;
     @Autowired
     private InventoryClient inventoryClient;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -87,7 +92,7 @@ public class StockTimeOutService implements CompensateBizService {
 
 
             DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-            if(!careStock(dispatchOrderItemInfo.getOpenShopId())){
+            if(!careStock(dispatchOrderItemInfo.getOrderId())){
                 return;
             }
 
@@ -128,33 +133,19 @@ public class StockTimeOutService implements CompensateBizService {
 
     /**
      * 当前店铺下的订单是否关心库存
-     * @param openShopId 店铺id
+     * @param orderId 订单id
      * @return true 关心 false 不关心
      */
-    private Boolean careStock(Long openShopId) {
-
-        OpenShop openShop = openShopCacher.findById(openShopId);
-        Map<String, String> extra = openShop.getExtra();
-        if (CollectionUtils.isEmpty(extra)) {
-            return Boolean.TRUE;
+    private Boolean careStock(Long orderId) {
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
+        if (shopOrder.getShopName().startsWith("yj")) {
+            if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                    && Objects.equals("Y", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
         }
-
-        if (!extra.containsKey(IS_CARE_STOCK)) {
-            return Boolean.TRUE;
-        }
-
-        String isCareStock = extra.get(IS_CARE_STOCK);
-
-        if (Strings.isNullOrEmpty(isCareStock)) {
-            return Boolean.TRUE;
-        }
-
-        if (Objects.equals("1", isCareStock)) {
-            return Boolean.TRUE;
-        }
-
-        return Boolean.FALSE;
-
+        return Boolean.TRUE;
     }
 
     private List<InventoryTradeDTO> genTradeContextList (Long warehouseId, InventoryTradeDTO inventoryTradeDTO, List<SkuCodeAndQuantity> skuCodeAndQuantities) {

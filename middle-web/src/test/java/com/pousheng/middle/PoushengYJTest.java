@@ -10,7 +10,10 @@ import com.pousheng.middle.open.api.dto.*;
 import com.pousheng.middle.order.dto.SubmitRefundInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenFullOrder;
+import io.terminus.open.client.order.dto.OpenFullOrderAddress;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -100,6 +103,76 @@ public class PoushengYJTest {
         System.out.println(result);
     }
 
+    @Test
+    public void testSyncOrder(){
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey","pousheng");
+        params.put("pampasCall","push.out.open.order.api");
+        List<OpenFullOrderInfo> orderInfos = Lists.newArrayList();
+        OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
+
+        OpenFullOrder openFullOrder = new OpenFullOrder();
+        openFullOrder.setBuyerName("qiantan");
+        openFullOrder.setChannel("yunjubbc");
+        openFullOrder.setCompanyCode("300");
+        openFullOrder.setCreatedAt("20180101123302");
+        openFullOrder.setFee(399500L);
+        openFullOrder.setOriginFee(399500L);
+        openFullOrder.setShipFee(0L);
+        openFullOrder.setOutOrderId("396783963+121");
+        openFullOrder.setOriginShipFee(0L);
+        openFullOrder.setShipmentType(1);
+        openFullOrder.setPayType(1);
+        openFullOrder.setShopCode("13000997");
+        openFullOrder.setStatus(1);
+        openFullOrder.setStockId("300-300000325");
+
+        // 50个子订单
+        List<OpenFullOrderItem> items =  Lists.newArrayList();
+        for (int i = 0; i < 1; i++) {
+            OpenFullOrderItem item = new OpenFullOrderItem();
+            item.setOutSkuorderId("296783963+111_677778");
+            item.setSkuCode("4053984270750");
+            item.setItemType("01");
+            item.setItemName("测试商品");
+            item.setQuantity(3);
+            item.setOriginFee(79900L);
+            item.setDiscount(0L);
+            item.setCleanPrice(79900L);
+            item.setCleanFee(239700L);
+            items.add(item);
+        }
+
+        OpenFullOrderAddress address = new OpenFullOrderAddress();
+        address.setProvince("江苏省");
+        address.setCity("南京市");
+        address.setRegion("江宁区");
+        address.setDetail("胜利路89号");
+        address.setMobile("18021529596");
+        address.setPhone("02512345678");
+        address.setReceiveUserName("易秋涵");
+
+        openFullOrderInfo.setOrder(openFullOrder);
+        openFullOrderInfo.setItem(items);
+        openFullOrderInfo.setAddress(address);
+        orderInfos.add(openFullOrderInfo);
+        String data = JsonMapper.nonEmptyMapper().toJson(orderInfos);
+        log.info("order",data);
+        params.put("orderInfo",data);
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+                .putString(toVerify, Charsets.UTF_8)
+                .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+        params.put("sign",sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));
+
+        //post("http://127.0.0.1:8092/api/gateway",params);
+
+        post("http://middle-api-test.pousheng.com/api/gateway",params);
+//        post("http://middle-api-prepub.pousheng.com/api/gateway",params);
+    }
+
 
     @Test
     public void testCancelOrder() {
@@ -109,12 +182,12 @@ public class PoushengYJTest {
         params.put("pampasCall", "out.order.cancel.api");
 
         CancelOutOrderInfo cancelOutOrderInfo = new CancelOutOrderInfo();
-        cancelOutOrderInfo.setChannel("YJ");
+        cancelOutOrderInfo.setChannel("yunjubbc");
         cancelOutOrderInfo.setApplyAt(DFT2.print(new DateTime()));
         cancelOutOrderInfo.setBuyerNote("尺码小了，不合适");
         cancelOutOrderInfo.setSellerNote("同意买家申请");
-        cancelOutOrderInfo.setOutOrderId("2311001");
-        cancelOutOrderInfo.setOutSkuOrderId("23232");
+        cancelOutOrderInfo.setOutOrderId("296783063+121");
+        cancelOutOrderInfo.setOutSkuOrderId("");
 
         String data = mapper.toJson(cancelOutOrderInfo);
         log.info("data:{}", data);
@@ -127,9 +200,9 @@ public class PoushengYJTest {
 
         log.info(JsonMapper.nonDefaultMapper().toJson(params));
 
-        post("http://127.0.0.1:8092/api/gateway", params);
+//        post("http://127.0.0.1:8092/api/gateway", params);
 
-        //post("http://middle-api-test.pousheng.com/api/gateway",params);
+        post("http://middle-api-test.pousheng.com/api/gateway",params);
     }
 
 

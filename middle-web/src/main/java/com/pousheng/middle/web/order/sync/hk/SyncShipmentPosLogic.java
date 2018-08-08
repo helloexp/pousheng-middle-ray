@@ -7,6 +7,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -34,7 +35,6 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Date;
@@ -89,12 +88,16 @@ public class SyncShipmentPosLogic {
      * @return 同步成功true, 同步失败false
      */
     public Response<Boolean> syncShipmentPosToHk(Shipment shipment) {
+        ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
+        ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        // 云聚的单据根据order上的信息判读是否需要推hk
         try {
-            //获取发货单详情
-            if (shipment.getShopName().startsWith("yj")) {
-                return Response.ok();
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (!shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_SYNCHK)
+                        || Objects.equal("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    return Response.ok();
+                }
             }
-            ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
             ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
             String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay()) ? "2" : shipmentExtra.getShipmentWay();
             if (Strings.isNullOrEmpty(shipmentWay)) {

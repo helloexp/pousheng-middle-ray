@@ -4,11 +4,11 @@ import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableBiMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.open.client.center.constant.ExtraKeyConstant;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.open.client.item.model.PushedItem;
@@ -27,7 +27,6 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -100,6 +99,10 @@ public class OpenOrderConverter {
         if (order.getChannel().contains("yunju")) {
             extra.put(ExtraKeyConstant.YJ_OUTID, order.getOutId());
             extra.put(ExtraKeyConstant.SHIPMENT_TYPE, order.getShipmentType() + "");
+//             是否关心库存
+            extra.put(ExtraKeyConstant.IS_CARESTOCK, order.getIsCareStock());
+            // 是否传hk
+            extra.put(ExtraKeyConstant.IS_SYNCHK, order.getIsSyncHk());
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);
             }

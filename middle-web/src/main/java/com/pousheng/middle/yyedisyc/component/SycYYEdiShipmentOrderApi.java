@@ -2,9 +2,7 @@ package com.pousheng.middle.yyedisyc.component;
 
 import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfo;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiShipmentInfoBody;
-import com.pousheng.middle.yyedisyc.dto.trade.YYediShipmentInfoRequest;
+import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -29,6 +27,12 @@ public class SycYYEdiShipmentOrderApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
+    @Value("${gateway.yjerp.host}")
+    private String yjGateway;
+
+    @Value("${gateway.yjerp.accessKey}")
+    private String yjaccessKey;
+
     public String doSyncShipmentOrder( List<YYEdiShipmentInfo> requestData){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
@@ -38,7 +42,7 @@ public class SycYYEdiShipmentOrderApi {
         YYediShipmentInfoRequest request = new YYediShipmentInfoRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("yyedi.paramJson:{}",paramJson);
+        log.info("sync shipment to yyedi erp paramJson:{}",paramJson);
         String gateway =hkGateway + "/common/yyedi/default/pushorders";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -50,7 +54,26 @@ public class SycYYEdiShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync yyedi result:{}",responseBody);
+        log.info("sync shipment to yyedi erp result:{}",responseBody);
+        return responseBody;
+    }
+
+
+    public String doSyncYJErpShipmentOrder(List<YJErpShipmentInfo> requestData) {
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
+        log.info("sync shipment to yj erp paramJson:{}",paramJson);
+        String gateway =yjGateway + "/common-yjerp/yjerp/default/pushmgorderset";
+        String responseBody = HttpRequest.post(gateway)
+                .header("verifycode",yjaccessKey)
+                .header("serialNo",serialNo)
+                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .contentType("application/json")
+                .send(paramJson)
+                .connectTimeout(10000).readTimeout(10000)
+                .body();
+
+        log.info("sync shipment to yj erp result:{}",responseBody);
         return responseBody;
     }
 }

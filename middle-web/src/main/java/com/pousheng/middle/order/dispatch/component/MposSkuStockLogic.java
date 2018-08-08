@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dispatch.component;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -9,6 +10,7 @@ import com.pousheng.middle.warehouse.dto.ShopShipment;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -18,6 +20,7 @@ import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -60,7 +63,7 @@ public class MposSkuStockLogic {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
-    private OpenShopCacher openShopCacher;
+    private OrderReadLogic orderReadLogic;
 
     /**
      * 锁定库存
@@ -79,7 +82,7 @@ public class MposSkuStockLogic {
      */
     public Response<Boolean> lockStock(DispatchOrderItemInfo dispatchOrderItemInfo, Boolean withSafe){
 
-        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+        if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
             return Response.ok();
         }
 
@@ -113,7 +116,7 @@ public class MposSkuStockLogic {
 
 
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+        if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
             return Response.ok();
         }
 
@@ -187,31 +190,17 @@ public class MposSkuStockLogic {
      * @param openShopId 店铺id
      * @return true 关心 false 不关心
      */
-    private Boolean isCareStock(Long openShopId) {
+    private Boolean isCareStock(Long orderId) {
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
 
-        OpenShop openShop = openShopCacher.findById(openShopId);
-        Map<String, String> extra = openShop.getExtra();
-        if (CollectionUtils.isEmpty(extra)) {
-            return Boolean.TRUE;
+        if (shopOrder.getShopName().startsWith("yj")) {
+            if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                    && Objects.equals("Y", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                return Boolean.TRUE;
+            }
+            return Boolean.FALSE;
         }
-
-        if (!extra.containsKey(IS_CARE_STOCK)) {
-            return Boolean.TRUE;
-        }
-
-        String isCareStock = extra.get(IS_CARE_STOCK);
-
-        if (Strings.isNullOrEmpty(isCareStock)) {
-            return Boolean.TRUE;
-        }
-
-        if (Objects.equals("1", isCareStock)) {
-            return Boolean.TRUE;
-        }
-
-        return Boolean.FALSE;
-
-
+        return Boolean.TRUE;
     }
 
     private List<WarehouseShipment> transToWarehouseShipment(DispatchOrderItemInfo dispatchOrderItemInfo){

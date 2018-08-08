@@ -10,6 +10,7 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
@@ -174,7 +175,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
         shipmentExtra.setShipmentCorpName(expressCode.getName());
         shipmentExtra.setShipmentDate(dt.toDate());
-        shipmentExtra.setOutShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+        // TODO 兼容下yyEdi回传的yyEDIShipmentId 和 yjERP回传的yjShipmentId, 不同的派发中心只会传其对应的发货单号。
+        shipmentExtra.setOutShipmentId(MoreObjects.firstNonNull(yyEdiShipInfo.getYyEDIShipmentId(), yyEdiShipInfo.getYjShipmentId()));
+
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);

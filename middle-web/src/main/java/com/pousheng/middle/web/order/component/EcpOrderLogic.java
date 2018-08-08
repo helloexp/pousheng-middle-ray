@@ -21,12 +21,11 @@ import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import java.util.Map;
 import java.util.Objects;
 
 /**
- *发货单发货完成并且订单状态改变之后同步发货信息到电商
+ * 发货单发货完成并且订单状态改变之后同步发货信息到电商
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2017/12/29
  * pousheng-middle

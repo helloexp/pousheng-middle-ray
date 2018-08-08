@@ -7,6 +7,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
@@ -74,9 +75,14 @@ public class SyncRefundPosLogic {
      * @return 同步结果 result 为恒康的退货单编号
      */
     public Response<Boolean> syncRefundPosToHk(Refund refund) {
+        OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
         try {
-            if (refund.getShopName().startsWith("yj")) {
-                return Response.ok();
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (!shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_SYNCHK)
+                        || Objects.equal("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    return Response.ok();
+                }
             }
 
             HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(refund);

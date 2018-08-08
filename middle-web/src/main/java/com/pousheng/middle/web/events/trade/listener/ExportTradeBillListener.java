@@ -444,7 +444,9 @@ public class ExportTradeBillListener {
                         if (finalPosSettleMent != null){
                           export.setPosCode(finalPosSettleMent.getPosSerialNo());
                         }
-                        export.setPayOrderPayDate(paymentInfo.getPaidAt());
+                        if(!Objects.isNull(paymentInfo)) {
+                            export.setPayOrderPayDate(paymentInfo.getPaidAt());
+                        }
                         export.setAfterSaleCreateDate(refundInfo.getRefund().getCreatedAt());
                         export.setAfterSaleRefundDate(refundInfo.getRefund().getUpdatedAt());
                         export.setAfterSaleExpressCompany(refundExtra.getShipmentCorpName());

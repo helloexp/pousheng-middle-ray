@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -426,10 +427,12 @@ public class ExportTradeBillListener {
                             });
                         }
                         export.setApplyQuantity(item.getAlreadyHandleNumber());
-                        if (null != refundExtra.getHkConfirmItemInfos()) {
-                            refundExtra.getHkConfirmItemInfos().stream().filter(hkinfo -> hkinfo.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(hkinfo -> {
+
+                        List<YYEdiRefundConfirmItem> confirmItems = refundReadLogic.findRefundYYEdiConfirmItems(refundInfo.getRefund());
+                        if (!Objects.isNull(confirmItems)) {
+                            confirmItems.stream().filter(confirmItem -> confirmItem.getItemCode().equalsIgnoreCase(item.getSkuCode())).findAny().ifPresent(confirmItem ->{
                                 //实际数量
-                                export.setActualQuantity(hkinfo.getQuantity());
+                                export.setActualQuantity(Integer.parseInt(confirmItem.getQuantity()));
                             });
                         }
                         export.setWarehousingDate(refundExtra.getHkReturnDoneAt());

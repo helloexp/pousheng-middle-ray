@@ -29,6 +29,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -39,6 +40,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -163,8 +165,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
         update.setId(shipmentId);
         Map<String, String> extraMap = shipment.getExtra();
         //为了防止yyedi重复请求，清理备注
+        update.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
+        update.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
         shipmentExtra.setRemark(null);
-        shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
+        if (StringUtils.isEmpty(yyEdiShipInfo.getShipmentSerialNo())) {
+            shipmentExtra.setShipmentSerialNo(Splitters.COMMA.splitToList(yyEdiShipInfo.getShipmentSerialNo()).get(0));
+        }
         shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
         if (Objects.isNull(yyEdiShipInfo.getWeight())) {
             shipmentExtra.setWeight(0L);

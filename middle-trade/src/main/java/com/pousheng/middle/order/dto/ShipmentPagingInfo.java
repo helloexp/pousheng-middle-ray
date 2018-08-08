@@ -3,6 +3,7 @@ package com.pousheng.middle.order.dto;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -28,6 +29,10 @@ public class ShipmentPagingInfo implements Serializable{
      */
     private Shipment shipment;
 
+    /**
+     * 订单信息
+     */
+    private ShopOrder shopOrder;
 
     //extra信息
     private ShipmentExtra shipmentExtra;

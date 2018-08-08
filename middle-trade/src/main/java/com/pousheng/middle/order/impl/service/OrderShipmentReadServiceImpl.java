@@ -11,8 +11,10 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.impl.dao.OrderShipmentDao;
 import io.terminus.parana.order.impl.dao.ShipmentDao;
+import io.terminus.parana.order.impl.dao.ShopOrderDao;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -33,6 +35,8 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
     private OrderShipmentDao orderShipmentDao;
     @Autowired
     private ShipmentDao shipmentDao;
+    @Autowired
+    private ShopOrderDao shopOrderDao;
 
 
     @Override
@@ -122,6 +126,7 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             dto.setOrderShipment(orderShipment);
             try {
                 dto.setShipment(shipmentDao.findById(orderShipment.getShipmentId()));
+                dto.setShopOrder(shopOrderDao.findById(orderShipment.getOrderId()));
             }catch (Exception e){
                 log.error("find shipment by id:{} fail,cause:{}",orderShipment.getShipmentId(),Throwables.getStackTraceAsString(e));
                 continue;

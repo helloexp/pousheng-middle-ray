@@ -146,7 +146,8 @@ public class Shipments {
     private ShipmentWriteManger shipmentWriteManger;
     @Autowired
     private MiddleOrderWriteService middleOrderWriteService;
-
+    @Autowired
+    private ShopOrderReadService shopOrderReadService;
     @Autowired
     private ShopCacher shopCacher;
 
@@ -176,6 +177,33 @@ public class Shipments {
         }
         if (shipmentCriteria.getEndAt() != null) {
             shipmentCriteria.setEndAt(new DateTime(shipmentCriteria.getEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
+        if (shipmentCriteria.getOrderEndAt() != null) {
+            shipmentCriteria.setOrderEndAt(new DateTime(shipmentCriteria.getOrderEndAt().getTime()).plusDays(1).minusSeconds(1).toDate());
+        }
+        if (shipmentCriteria.getOutOrderId() != null) {
+            Response<List<ShopOrder>> response = shopOrderReadService.findByOutId(shipmentCriteria.getOutOrderId());
+            if (!response.isSuccess()) {
+                throw new JsonResponseException(response.getError());
+            }
+            List<ShopOrder> list = response.getResult();
+            if (list.isEmpty()) {
+                Paging<ShipmentPagingInfo> paging = new Paging<>();
+                return paging;
+            }
+            shipmentCriteria.setOrderIds(list.stream().map(ShopOrder::getId).collect(Collectors.toList()));
+        }
+        if (shipmentCriteria.getShipmentSerialNo() != null){
+            Response<List<Shipment>> response = shipmentReadService.findBySerialNo(shipmentCriteria.getShipmentSerialNo());
+            if (!response.isSuccess()) {
+                throw new JsonResponseException(response.getError());
+            }
+            List<Shipment> list = response.getResult();
+            if (list.isEmpty()) {
+                Paging<ShipmentPagingInfo> paging = new Paging<>();
+                return paging;
+            }
+            shipmentCriteria.setShipmentIds(list.stream().map(Shipment::getId).collect(Collectors.toList()));
         }
         List<Long> currentUserCanOperatShopIds = permissionUtil.getCurrentUserCanOperateShopIDs();
         if (shipmentCriteria.getShopId() == null) {

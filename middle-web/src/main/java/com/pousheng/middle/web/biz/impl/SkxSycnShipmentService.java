@@ -17,6 +17,7 @@ import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -28,6 +29,7 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -131,6 +133,10 @@ public class SkxSycnShipmentService implements CompensateBizService {
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);
+        if (StringUtils.isEmpty(skxShipInfo.getShipmentSerialNo())) {
+            shipmentExtra.setShipmentSerialNo(Splitters.COMMA.splitToList(skxShipInfo.getShipmentSerialNo()).get(0));
+        }
+        update.setShipmentCorpCode(skxShipInfo.getShipmentCorpCode());
 
         //更新状态
         Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), targetStatus);

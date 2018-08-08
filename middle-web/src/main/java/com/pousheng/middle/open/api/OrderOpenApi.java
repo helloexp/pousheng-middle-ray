@@ -309,6 +309,8 @@ public class OrderOpenApi {
             extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
             extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
             update.setExtra(extraMap);
+            update.setShipmentSerialNo(shipmentSerialNo);
+            update.setShipmentCorpCode(shipmentCorpCode);
 
             //更新状态
             Response<Boolean> updateStatusRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(),shipment.getStatus(), targetStatus);

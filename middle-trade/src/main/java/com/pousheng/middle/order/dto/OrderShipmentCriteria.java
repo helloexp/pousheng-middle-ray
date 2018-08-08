@@ -22,6 +22,12 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     private String shipmentId;
 
     /**
+     * 订单ids
+     */
+    private List<Long> shipmentIds;
+
+
+    /**
      * 发货单号
      */
     private String shipmentCode;
@@ -41,11 +47,35 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
      */
     private Date endAt;
 
+    /**
+     * 订单创建开始时间
+     */
+    private Date orderStartAt;
+
+    /**
+     * 订单创建结束时间
+     */
+    private Date orderEndAt;
+
+    /**
+     * 外部单号
+     */
+    private String outOrderId;
+
+    /**
+     * 快递单号
+     */
+    private String shipmentSerialNo;
 
     /**
      * 订单id
      */
     private Long orderId;
+
+    /**
+     * 订单id
+     */
+    private List<Long> orderIds;
 
     /**
      * 订单号新
@@ -130,6 +160,11 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
         if(startAt != null && endAt != null){
             if(startAt.equals(endAt)){
                 endAt=new DateTime(endAt.getTime()).plusDays(1).minusSeconds(1).toDate();
+            }
+        }
+        if(orderStartAt != null && orderEndAt != null){
+            if(orderStartAt.equals(orderEndAt)){
+                orderEndAt=new DateTime(orderEndAt.getTime()).plusDays(1).minusSeconds(1).toDate();
             }
         }
     }

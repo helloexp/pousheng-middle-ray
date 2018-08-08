@@ -494,8 +494,7 @@ public class RefundWriteLogic {
             }
         }
 
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())
-                ||Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_RETURN.value())){
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
             //换货的金额用商品净价*申请数量
             Long totalRefundAmount = 0L;
         //更新退换货信息

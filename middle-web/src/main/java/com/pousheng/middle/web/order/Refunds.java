@@ -763,7 +763,7 @@ public class Refunds {
 
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
 
-        List<RefundItem> refundItemList = refundReadLogic.findRefundChangeItems(refund);
+        List<RefundItem> refundItemList = refundReadLogic.findRefundItems(refund);
         //发货单是否有效
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         //获取发货单中商品信息

@@ -114,6 +114,7 @@ public class YyediSyncRefundService implements CompensateBizService {
                 param1.put("refundId", refund.getId());
                 autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK, r.getError());
             }
+            return;
         }
         //同步pos单到恒康
         //判断pos单是否需要同步恒康,如果退货仓数量全是0

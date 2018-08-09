@@ -144,23 +144,13 @@ public class SyncRefundPosLogic {
         HkSaleRefuseContent hkSaleRefuseContent = new HkSaleRefuseContent();
         //端点唯一订单号使用带前缀的单号
         hkSaleRefuseContent.setNetbillno(refund.getRefundCode());
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipmentDetail.getShipment().getShopId());
         Map<String,String> openShopExtra = openShop.getExtra();
-        hkSaleRefuseContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));//线上店铺code
-        //退货仓
-        if(Arguments.isNull(shipmentExtra.getWarehouseId())){
-            log.error("refund(id:{}) refund warehouse not exist",refund.getId());
-            throw new ServiceException("refund.warehouse.invalid");
-        }
-        WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
-        if(StringUtils.isEmpty(warehouse.getOutCode())){
-            log.error("warehouse(id:{}) out code invalid",warehouse.getId());
-            throw new ServiceException("warehouse.out.code.invalid");
-        }
+        //线上店铺code
+        hkSaleRefuseContent.setNetshopcode(openShopExtra.get(TradeConstants.HK_PERFORMANCE_SHOP_OUT_CODE));
         //线上店铺所属公司id
-        hkSaleRefuseContent.setNetcompanyid(warehouse.getCompanyId());
+        hkSaleRefuseContent.setNetcompanyid(openShopExtra.get(TradeConstants.HK_COMPANY_CODE));
         //发货单id
         hkSaleRefuseContent.setSourcebillno(shipmentDetail.getShipment().getShipmentCode());
         //客服备注

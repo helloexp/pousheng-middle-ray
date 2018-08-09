@@ -107,7 +107,7 @@ public class DecreaseStockService implements CompensateBizService {
             List<InventoryTradeDTO> tradeList = Lists.newArrayList();
             List<InventoryTradeDTO> releaseList = Lists.newArrayList();
             List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
-            Map<String, Integer> itemMap = shipmentReadLogic.getShipmentItems(shipment).stream()
+            Map<String, Integer> itemMap = shipmentReadLogic.getShipmentItems(shipment).stream().filter(e -> e.getShipQuantity() != null)
                     .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
             for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
                 if (itemMap.get(sq.getSkuCode()) == null) {

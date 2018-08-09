@@ -106,7 +106,7 @@ public class WarehouseSkuStockManager {
         List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         List<InventoryTradeDTO> releaseList = Lists.newArrayList();
         List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
-        Map<String, Integer> itemMap = items.stream()
+        Map<String, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
                 .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
         for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
             if (itemMap.get(sq.getSkuCode()) == null) {

@@ -136,6 +136,7 @@ public class MposOrderHandleLogic {
                         shipmentExtra.setShipmentCorpCode(expressCode.getHkCode());
                         DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
                         shipmentExtra.setShipmentDate(dt.toDate());
+                        update.setShipmentCorpCode(expressCode.getHkCode());
 
                     }catch (Exception e){
                         log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
@@ -144,13 +145,21 @@ public class MposOrderHandleLogic {
                 // 圆通回传的快递单号
                 if (Objects.nonNull(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
                     shipmentExtra.setCallbackMailNo(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
+                    update.setShipmentSerialNo(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
                 }
                 // 物流单号
                 if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
                     shipmentExtra.setExpressOrderId(extra.get(TradeConstants.EXPRESS_ORDER_ID));
+                    update.setShipmentSerialNo(extra.get(TradeConstants.EXPRESS_ORDER_ID));
+                }
+
+                List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
+                //店发默认全部发货
+                for (ShipmentItem s : items) {
+                    s.setShipQuantity(s.getQuantity());
                 }
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-
+                extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
                 log.info("extraMap param is {}", extraMap);
                 update.setExtra(extraMap);
                 break;

@@ -584,10 +584,18 @@ public class OrderOpenApi {
             log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
             throw new OPServerException(200, "order.not.found");
         }
-        orderWriteLogic.autoCancelShopOrder(shopOrderOptional.get().getId());
+        Long orderId = shopOrderOptional.get().getId();
+        try {
+
+            orderWriteLogic.autoCancelShopOrder(orderId);
+
+        } catch (JsonResponseException e){
+            log.error("cancel shop order id:{} fail",orderId);
+            throw new OPServerException(200, e.getMessage());
+        }
 
 
-        log.info("cancelOutOrderInfo:", cancelOutOrderInfo);
+        log.info("SYNC-OUT-ORDER-CANCEL-END DATA:", data);
     }
 
 

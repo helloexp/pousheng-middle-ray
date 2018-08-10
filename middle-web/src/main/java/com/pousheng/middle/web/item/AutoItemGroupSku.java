@@ -69,7 +69,7 @@ public class AutoItemGroupSku {
     @Scheduled(cron = "0 0 1 * * ?")
     public void synchronizeSpu() {
         if (hostLeader.isLeader()) {
-            log.info("JOB -- begin to auto item group sku");
+            log.info("START JOB AutoItemGroupSku.synchronizeSpu");
             Response<List<ItemGroup>> resp = itemGroupReadService.findAutoGroups();
             if (!resp.isSuccess()) {
                 throw new JsonResponseException(resp.getError());
@@ -97,7 +97,7 @@ public class AutoItemGroupSku {
                     log.info("auto item group fail, group id:{} cause by {} ", group.getId(), e.getMessage());
                 }
             }
-            log.info("JOB -- finish to auto item group sku");
+            log.info("END JOB AutoItemGroupSku.synchronizeSpu");
         } else {
             log.info("host is not leader, so skip job");
         }

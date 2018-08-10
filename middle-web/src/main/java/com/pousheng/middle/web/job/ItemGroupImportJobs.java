@@ -90,7 +90,7 @@ public class ItemGroupImportJobs {
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     public void synchronizeSpu() {
-        log.info("JOB -- start to import item group sku");
+        log.info("START JOB ItemGroupImportJobs.synchronizeSpu");
         ScheduleTask scheduleTask = findInitTask();
         while (scheduleTask != null) {
             Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask, TaskStatusEnum.EXECUTING.value());
@@ -104,8 +104,7 @@ public class ItemGroupImportJobs {
             scheduleTask = findInitTask();
         }
 
-        log.info("JOB -- finish to  import item group sku");
-
+        log.info("END JOB ItemGroupImportJobs.synchronizeSpu");
     }
 
     private ScheduleTask findInitTask() {

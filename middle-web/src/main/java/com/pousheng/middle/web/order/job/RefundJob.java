@@ -62,7 +62,7 @@ public class RefundJob {
             return;
         }
 
-        log.info("START SCHEDULE ON SALE REFUND");
+        log.info("START JOB RefundJob.doneRefund");
         Response<List<Refund>> response = refundReadService.findByTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
         if (!response.isSuccess()) {
             log.error("find  refund paging failed,caused by {}", response.getError());
@@ -137,7 +137,7 @@ public class RefundJob {
             }
 
         }
-        log.info("END SCHEDULE ON SALE REFUND");
+        log.info("END JOB RefundJob.doneRefund");
     }
 
 }

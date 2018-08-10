@@ -28,7 +28,7 @@ public class CompensateBizResetJob {
     @RequestMapping(value = "/async/job/reset", method = RequestMethod.GET)
     @Scheduled(cron = "0 */5 * * * ?")
     public void reset() {
-        log.info("start to reset long time handling task....");
+        log.info("START JOB CompensateBizResetJob.reset");
         if (!hostLeader.isLeader()) {
             log.info("current leader is {}, skip", hostLeader.currentLeaderId());
             return;
@@ -41,6 +41,6 @@ public class CompensateBizResetJob {
         if (!response1.isSuccess()) {
             log.error("reset long time handling task failed,cause:{}", response1.getError());
         }
-        log.info("end to reset long time handling task....");
+        log.info("END JOB CompensateBizResetJob.reset");
     }
 }

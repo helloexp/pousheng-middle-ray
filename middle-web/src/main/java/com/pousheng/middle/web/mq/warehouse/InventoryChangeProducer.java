@@ -142,7 +142,7 @@ public class InventoryChangeProducer {
      */
     @Scheduled(cron = "0 0/1 * * * *")
     public void reSend() {
-        log.info("start to check should resend inventory change mq error message");
+        log.info("START JOB InventoryChangeProducer.reSend");
         // 处理库存变动
         for (int i = 0; i < 50; i++) {
             String invChangeData = jedisTemplate.execute(jedis -> {
@@ -158,6 +158,7 @@ public class InventoryChangeProducer {
                 log.error("inventory change mq resend fail,cause: {}", JSON.toJSONString(sendResult));
             }
         }
+        log.info("END JOB InventoryChangeProducer.reSend");
     }
 
 }

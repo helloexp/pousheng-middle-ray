@@ -47,7 +47,7 @@ public class JobTriggers {
     @Scheduled(cron="0 0 1 * * ?")
     public void synchronizeSpu(){
         if(hostLeader.isLeader()) {
-            log.info("JOB -- begin to sync information");
+            log.info("START JOB JobTriggers.synchronizeSpu");
             Date from = DateTime.now().minusDays(1).withTimeAtStartOfDay().toDate();
             Date to = DateTime.now().withTimeAtStartOfDay().toDate();
             int cardCount = brandImporter.process(from, to);
@@ -58,7 +58,7 @@ public class JobTriggers {
             int warehouseCount =  warehouseImporter.process(from, to);
 
             log.info("synchronized {} warehouses", warehouseCount);
-            log.info("JOB -- finish to sync information");
+            log.info("END JOB JobTriggers.synchronizeSpu");
         }else{
             log.info("host is not leader, so skip job");
         }
@@ -70,12 +70,12 @@ public class JobTriggers {
     @Scheduled(cron="0 */20 * * * ?")
     public void synchronizeWarehouseGps(){
         if (hostLeader.isLeader()) {
-            log.info("JOB -- begin to sync warehouse address information");
+            log.info("START JOB JobTriggers.synchronizeWarehouseGps");
             Date from = DateTime.now().minusDays(1).withTimeAtStartOfDay().toDate();
             Date to = DateTime.now().withTimeAtStartOfDay().toDate();
             int warehouseCount =  warehouseImporter.process(from, to);
             log.info("synchronized {} warehouses", warehouseCount);
-            log.info("JOB -- finish to sync information");
+            log.info("END JOB JobTriggers.synchronizeWarehouseGps");
         } else{
             log.info("host is not leader, so skip job");
         }

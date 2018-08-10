@@ -43,7 +43,7 @@ public class GiftActivityJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
-        log.info("START SCHEDULE ON POUSNENG GIFT ACTIVITY");
+        log.info("START JOB GiftActivityJob.doGiftActvity");
         List<PoushengGiftActivity> waitStartActivities =  poushengGiftActivityReadLogic.findByStatus(PoushengGiftActivityStatus.WAIT_START.getValue());
         for (PoushengGiftActivity activity:waitStartActivities){
             long current = System.currentTimeMillis();//当前时间
@@ -78,6 +78,6 @@ public class GiftActivityJob {
                 }
             }
         }
-        log.info("END SCHEDULE ON POUSNENG GIFT ACTIVITY");
+        log.info("END JOB GiftActivityJob.doGiftActvity");
     }
 }

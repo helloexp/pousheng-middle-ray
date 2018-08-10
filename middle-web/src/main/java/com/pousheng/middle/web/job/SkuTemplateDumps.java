@@ -50,8 +50,8 @@ public class SkuTemplateDumps {
             log.info("current leader is:{}, skip ", hostLeader.currentLeaderId());
             return;
         }
-        log.info("sku template delta dump fired");
+        log.info("START JOB SkuTemplateDumps.deltaDump");
         skuTemplateDumpService.deltaDump(15);
-        log.info("sku template delta dump end");
+        log.info("START JOB SkuTemplateDumps.deltaDump");
     }
 }

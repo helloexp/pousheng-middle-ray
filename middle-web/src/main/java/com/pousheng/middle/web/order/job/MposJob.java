@@ -141,7 +141,9 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+        log.info("START JOB MposJob.syncMposShipment");
         this.syncMposShipmentDetail(syncAllOrderDurationInMinute);
+        log.info("END JOB MposJob.syncMposShipment");
     }
 
     private void syncMposShipmentDetail(Integer beforeInMinute) {
@@ -164,7 +166,6 @@ public class MposJob {
             pageNo++;
         }
         stopwatch.stop();
-        log.info("end to sync mpos shipment,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
     /**
@@ -176,7 +177,9 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+        log.info("START JOB MposJob.autoCompensateMposFailTask");
         this.autoCompensateMposFailedTaskDetail();
+        log.info("END JOB MposJob.autoCompensateMposFailTask");
     }
 
     private void autoCompensateMposFailedTaskDetail() {
@@ -229,14 +232,14 @@ public class MposJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
-        log.info("sync mpos shop address fired");
+        log.info("START JOB MposJob.fullDump");
         int pageNo = 1;
         boolean next = batchSyncShopAddress(pageNo, 500);
         while (next) {
             pageNo++;
             next = batchSyncShopAddress(pageNo, 500);
         }
-        log.info("sync mpos shop address end");
+        log.info("END JOB MposJob.fullDump");
     }
 
     @SuppressWarnings("unchecked")

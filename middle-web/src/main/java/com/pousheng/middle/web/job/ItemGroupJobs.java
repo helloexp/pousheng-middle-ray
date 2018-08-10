@@ -84,7 +84,7 @@ public class ItemGroupJobs {
      */
     @Scheduled(cron = "0 0/5 * * * ?")
     public void synchronizeSpu() {
-        log.info("JOB -- start to auto item group sku");
+        log.info("START JOB ItemGroupJobs.synchronizeSpu");
         ScheduleTask scheduleTask = findInitTask();
         while (scheduleTask != null) {
             Response<Boolean> updateResp = scheduleTaskWriteService.updateStatus(scheduleTask,TaskStatusEnum.EXECUTING.value());
@@ -97,7 +97,7 @@ public class ItemGroupJobs {
             }
             scheduleTask = findInitTask();
         }
-        log.info("JOB -- finish to auto item group sku");
+        log.info("END JOB ItemGroupJobs.synchronizeSpu");
     }
 
     private ScheduleTask findInitTask() {

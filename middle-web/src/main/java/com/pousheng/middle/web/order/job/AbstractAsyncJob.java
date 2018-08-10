@@ -73,7 +73,7 @@ public abstract class AbstractAsyncJob {
             return;
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("[START TO PRODUCER {} TASK]", getKeySuffix());
+        log.info("START JOB AbstractAsyncJob.producer {}", getKeySuffix());
         Map<String, List<Long>> map = getPushIds();
         if (log.isDebugEnabled()) {
             log.debug("producer:{} get {} group task", getKeySuffix(), map.size());
@@ -87,9 +87,7 @@ public abstract class AbstractAsyncJob {
             }
         });
         stopwatch.stop();
-        if (log.isDebugEnabled()) {
-            log.debug("[END TO PRODUCER {} TASK],and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
-        }
+        log.debug("END JOB AbstractAsyncJob.producer {} and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
     }
 
     /**

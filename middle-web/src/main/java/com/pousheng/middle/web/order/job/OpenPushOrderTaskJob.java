@@ -47,7 +47,7 @@ public class OpenPushOrderTaskJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
-        log.info("START SCHEDULE ON OPEN PUSH ORDER TASK");
+        log.info("START JOB OpenPushOrderTaskJob.doProcessFailedOpenPushOrderTask");
         //获取待处理的失败任务
         Response<List<OpenPushOrderTask>> r =  openPushOrderTaskReadService.findByStatus(0);
         if (!r.isSuccess()){
@@ -76,7 +76,7 @@ public class OpenPushOrderTaskJob {
                 e.printStackTrace();
             }
         }
-        log.info("END SCHEDULE ON OPEN PUSH ORDER TASK");
+        log.info("END JOB OpenPushOrderTaskJob.doProcessFailedOpenPushOrderTask");
     }
 
     /**

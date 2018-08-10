@@ -133,8 +133,8 @@ public class SkxSycnShipmentService implements CompensateBizService {
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);
-        if (StringUtils.isEmpty(skxShipInfo.getShipmentSerialNo())) {
-            shipmentExtra.setShipmentSerialNo(Splitters.COMMA.splitToList(skxShipInfo.getShipmentSerialNo()).get(0));
+        if (!StringUtils.isEmpty(skxShipInfo.getShipmentSerialNo())) {
+            update.setShipmentSerialNo(Splitters.COMMA.splitToList(skxShipInfo.getShipmentSerialNo()).get(0));
         }
         update.setShipmentCorpCode(skxShipInfo.getShipmentCorpCode());
 

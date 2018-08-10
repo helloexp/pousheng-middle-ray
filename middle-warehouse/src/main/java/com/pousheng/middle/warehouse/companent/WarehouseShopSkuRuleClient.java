@@ -7,6 +7,8 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Splitters;
+import io.terminus.common.utils.Joiners;
+import io.terminus.open.client.common.dto.ItemMappingCriteria;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -28,13 +30,14 @@ import java.util.stream.Collectors;
 @Slf4j
 public class WarehouseShopSkuRuleClient {
 
-    private static final String API_PATH_PREFIX =  "api/inventory/shop-sku-rule";
+    private static final String API_PATH_PREFIX = "api/inventory/shop-sku-rule";
 
     @Autowired
     private InventoryBaseClient inventoryBaseClient;
 
     /**
      * 创建新的商品推送规则
+     *
      * @param warehouseShopSkuStockRule
      * @return
      */
@@ -44,7 +47,7 @@ public class WarehouseShopSkuRuleClient {
         }
 
         try {
-            return Response.ok((Long) inventoryBaseClient.postJson(API_PATH_PREFIX+"/create",
+            return Response.ok((Long) inventoryBaseClient.postJson(API_PATH_PREFIX + "/create",
                     JSON.toJSONString(warehouseShopSkuStockRule), Long.class));
 
         } catch (Exception e) {
@@ -57,6 +60,7 @@ public class WarehouseShopSkuRuleClient {
 
     /**
      * 更新商品推送规则
+     *
      * @param warehouseShopSkuStockRule
      * @return
      */
@@ -66,7 +70,7 @@ public class WarehouseShopSkuRuleClient {
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.putJson(API_PATH_PREFIX+"/"+warehouseShopSkuStockRule.getId(),
+            return Response.ok((Boolean) inventoryBaseClient.putJson(API_PATH_PREFIX + "/" + warehouseShopSkuStockRule.getId(),
                     JSON.toJSONString(warehouseShopSkuStockRule), Boolean.class));
 
         } catch (Exception e) {
@@ -79,11 +83,12 @@ public class WarehouseShopSkuRuleClient {
 
     /**
      * 根据ID获取规则信息
+     *
      * @return
      */
-    public WarehouseShopSkuStockRule findById (Long id) {
+    public WarehouseShopSkuStockRule findById(Long id) {
         try {
-            return (WarehouseShopSkuStockRule) inventoryBaseClient.get(API_PATH_PREFIX+"/"+id,
+            return (WarehouseShopSkuStockRule) inventoryBaseClient.get(API_PATH_PREFIX + "/" + id,
                     null, null, Maps.newHashMap(), WarehouseShopSkuStockRule.class, false);
 
         } catch (Exception e) {
@@ -126,13 +131,17 @@ public class WarehouseShopSkuRuleClient {
 
     /**
      * 根据店铺ID和skucode(模糊)列表获取配置过的店铺及规则数据
+     *
      * @return
      */
-    public Map<String, WarehouseShopSkuStockRule> findSkuRules (Long shopId, String skuCodeFluz) {
+    public Map<String, WarehouseShopSkuStockRule> findSkuRules(ItemMappingCriteria criteria) {
         try {
             Map<String, Object> params = Maps.newHashMap();
-            params.put("shopId", shopId);
-            params.put("skuCodeFluz", skuCodeFluz);
+            params.put("shopId", criteria.getOpenShopId());
+            params.put("skuCodeFluz", criteria.getSkuCode());
+            if (StringUtils.isEmpty(criteria.getSkuCodes())) {
+                params.put("skuCodes", Joiners.COMMA.join(criteria.getSkuCodes()));
+            }
 
             List<WarehouseShopSkuStockRule> rules = (List<WarehouseShopSkuStockRule>) inventoryBaseClient.get("api/inventory/shop-sku-rule/findSkuRules",
                     null, null, params, WarehouseShopSkuStockRule.class, true);

@@ -394,6 +394,9 @@ public class Refunds {
             log.debug("API-REFUND-SYNCHKCANCELREFUND-START param: refundId [{}] ", refundId);
         }
         Refund refund = refundReadLogic.findRefundById(refundId);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+            throw new JsonResponseException("reject.goods.can.not.be.canceled");
+        }
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT)){
             //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
             if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){

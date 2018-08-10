@@ -772,6 +772,9 @@ public class Refunds {
         List<RefundItem> refundItemList = refundReadLogic.findRefundItems(refund);
         //发货单是否有效
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
         //获取发货单中商品信息
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         refundItemList.stream().forEach(x->{
@@ -782,11 +785,22 @@ public class Refunds {
             }
         });
 
-
         //更新发货单商品中的已退货数量
         Map<String, String> shipmentExtraMap = shipment.getExtra();
         shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
         shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+
+
+        Map<String, String> extraMap = refund.getExtra();
+
+        //填入售后单仓库id
+        refundExtra.setWarehouseId(shipmentExtra.getWarehouseId());
+        //填入售后单仓库名称
+        refundExtra.setWarehouseName(shipmentExtra.getWarehouseName());
+
+        extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
+
+        refund.setExtra(extraMap);
 
         // 更新售后单
         Response<Boolean> res = refundWriteLogic.update(refund);

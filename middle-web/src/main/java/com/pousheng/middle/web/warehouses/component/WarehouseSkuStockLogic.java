@@ -90,7 +90,7 @@ public class WarehouseSkuStockLogic {
         }
 
         for (AvailableInventoryDTO availableInventoryDTO : availableInvRes.getResult()) {
-            r.put(availableInventoryDTO.getSkuCode(), availableInventoryDTO.getTotalAvailQuantity());
+            r.put(availableInventoryDTO.getSkuCode(), availableInventoryDTO.getAvailableQuantityWithoutSafe());
         }
 
         return Response.ok(r);

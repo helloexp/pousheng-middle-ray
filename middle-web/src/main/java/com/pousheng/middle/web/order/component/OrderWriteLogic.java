@@ -252,7 +252,7 @@ public class OrderWriteLogic {
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())) {
                 throw new OPServerException(200, "shop.order.cancel.failed");
             }
-            throw new JsonResponseException("shop.order.cancel.failed");
+            throw new JsonResponseException("invalid.order.status.can.not.cancel");
         }
         //获取该订单下所有的子单和发货单
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId,

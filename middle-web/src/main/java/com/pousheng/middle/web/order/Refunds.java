@@ -577,6 +577,9 @@ public class Refunds {
         Refund refund =  refundReadLogic.findRefundById(refundId);
         OrderRefund orderRefund =  refundReadLogic.findOrderRefundByRefundId(refundId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+            throw new JsonResponseException("reject.goods.can.not.be.confirm.refunds");
+        }
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())){
             throw new JsonResponseException("only.channel.jd.can.manual.confirm.return");
         }

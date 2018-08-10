@@ -278,8 +278,8 @@ public class OrderWriteLogic {
         if (count > 0) {
             //发货单取消失败,订单状态设置为取消失败
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())) {
-                throw new OPServerException(200, "sync.order.to.yyedi.fail");
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue()) || Objects.equals(shopOrder.getOutFrom(), "hk")) {
+                throw new OPServerException(200, "sync.cancel.order.request.to.yyedi.or.mpos.fail");
             }
         } else {
             //发货单取消成功,订单状态设置为取消成功

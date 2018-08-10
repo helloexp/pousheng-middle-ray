@@ -445,9 +445,9 @@ public class Shipments {
      * @return 发货单id集合
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @LogMe(description = "生成销售发货单")
-    public List<Long> createSalesShipment(@PathVariable("id") @LogMeId Long shopOrderId,
-                                          @RequestParam(value = "dataList") @LogMeId String dataList) {
+    @ApiOperation(value = "生成销售发货单")
+    public List<Long> createSalesShipment(@PathVariable("id") Long shopOrderId,
+                                          @RequestParam(value = "dataList") String dataList) {
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-SHIP-START param: shopOrderId [{}] dataList [{}]",shopOrderId,dataList);
         }
@@ -610,10 +610,10 @@ public class Shipments {
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    @LogMe(description = "生成换货发货单")
-    public List<Long> createAfterShipment(@PathVariable("id") @LogMeId Long refundId,
-                                          @RequestParam(value = "dataList") @LogMeId String dataList,
-                                          @RequestParam(required = false, defaultValue = "2") @LogMeId Integer shipType) {
+    @ApiOperation(value = "生成换货发货单")
+    public List<Long> createAfterShipment(@PathVariable("id") Long refundId,
+                                          @RequestParam(value = "dataList") String dataList,
+                                          @RequestParam(required = false, defaultValue = "2") Integer shipType) {
 
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",refundId,dataList,shipType);
         List<ShipmentRequest> requestDataList = JsonMapper.nonEmptyMapper().fromJson(dataList, JsonMapper.nonEmptyMapper().createCollectionType(List.class, ShipmentRequest.class));

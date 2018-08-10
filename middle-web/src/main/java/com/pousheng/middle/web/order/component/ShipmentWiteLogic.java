@@ -149,6 +149,10 @@ public class ShipmentWiteLogic {
     @Value("${pousheng.order.email.confirm.group}")
     private String[] mposEmailGroup;
 
+    // 邮件发送开关
+    @Value("${pousheng.msg.send}")
+    private Boolean sendLock;
+
     @Autowired
     private ShopCacher shopCacher;
 
@@ -1415,7 +1419,7 @@ public class ShipmentWiteLogic {
                         list.addAll(Arrays.asList(mposEmailGroup));
                     //获得区部联系人邮箱
                     list.addAll(getZoneContractEmails(shipmentExtra));
-                    if (list.size() > 0) {
+                    if (list.size() > 0 && sendLock) {
                         log.info("send mpos email to : {}", JSON_MAPPER.toJson(list));
                         mailLogic.sendMail(String.join(",", list),shop.getName() + "店铺，你有一张订单待接单，订单号为:" + shopOrder.getOutId() + "，请立即处理");
                         log.info("send email to mpos success");

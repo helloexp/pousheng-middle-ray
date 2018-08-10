@@ -190,6 +190,9 @@ msg:
     userName: mpos_order_notify@pousheng.com
     password: ps_1233
 
+#邮件开关
+pousheng.msg.send: ${EMAIL_LOCK}
+
 msg.template.list:
   - key: email.order.confirm
     title: 派单提醒

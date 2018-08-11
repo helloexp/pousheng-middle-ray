@@ -168,6 +168,9 @@ public class StockPusher {
 
     public void submit(List<String> skuCodes) {
 
+        if(log.isDebugEnabled()){
+            log.debug("STOCK-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}",skuCodes,System.currentTimeMillis());
+        }
         log.info("start to push skus: {}", skuCodes);
         //先清理本地缓存
         //shopGroupRuleCacher.refreshAll();
@@ -307,7 +310,9 @@ public class StockPusher {
             redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
         }
 
-
+        if(log.isDebugEnabled()){
+            log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},start time:{}",skuCodes,System.currentTimeMillis());
+        }
     }
 
     private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName) {
@@ -465,6 +470,10 @@ public class StockPusher {
                     continue;
                 }
                 availableWarehouse.add(warehouseId);
+            } catch (ServiceException e){
+                log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
+                        warehouseId, e.getMessage());
+                continue;
             } catch (Exception e) {
                 log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
                         warehouseId, Throwables.getStackTraceAsString(e));

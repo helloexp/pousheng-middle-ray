@@ -285,7 +285,7 @@ public class QueryHkWarhouseOrShopStockApi {
         }else{
             groupIds = Sets.newHashSet(groupRuleCacherProxy.findByWarehouseId(warehouse.getId()));
         }
-        log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
+        //log.warn("find warehouse id {} , groupIds {}", warehouse.getId(), groupIds);
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }

@@ -100,7 +100,7 @@ public class InventoryClient {
         try {
             List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailableInventory/"+shopId,
                     JSON.toJSONString(requests), AvailableInventoryDTO.class);
-            log.info("get available inventory shopId:{}  requestJson:{}  result:{}", shopId, JSON.toJSONString(requests), JSON.toJSONString(availableInvList));
+            //log.info("get available inventory shopId:{}  requestJson:{}  result:{}", shopId, JSON.toJSONString(requests), JSON.toJSONString(availableInvList));
             if (ObjectUtils.isEmpty(availableInvList)) {
                 return Response.ok(Lists.newArrayList());
             }

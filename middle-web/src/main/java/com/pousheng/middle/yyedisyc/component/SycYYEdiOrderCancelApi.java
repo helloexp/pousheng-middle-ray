@@ -42,7 +42,7 @@ public class SycYYEdiOrderCancelApi {
         YYEdiCancelRequest request = new YYEdiCancelRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("paramJson:{}",paramJson);
+        log.info("start do cancel yyedi order paramJson:{}",paramJson);
         String gateway = hkGateway+"/common/yyedi/default/cancelorder";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -54,7 +54,7 @@ public class SycYYEdiOrderCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync cancel shipment to yyedi result:{}",responseBody);
+        log.info("end do cancel yyedi order paramJson:{},result:{}",paramJson,responseBody);
         return responseBody;
     }
 }

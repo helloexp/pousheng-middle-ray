@@ -81,6 +81,7 @@ public class SyncShipmentPosLogic {
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
+
     /**
      * 同步发货单到恒康
      *
@@ -95,32 +96,32 @@ public class SyncShipmentPosLogic {
             }
             ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
             ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
-            String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay())?"2":shipmentExtra.getShipmentWay();
-            if(Strings.isNullOrEmpty(shipmentWay)){
-                log.error("shipment(id:{}) shipment way invalid",shipment.getId());
+            String shipmentWay = StringUtils.isEmpty(shipmentExtra.getShipmentWay()) ? "2" : shipmentExtra.getShipmentWay();
+            if (Strings.isNullOrEmpty(shipmentWay)) {
+                log.error("shipment(id:{}) shipment way invalid", shipment.getId());
                 throw new ServiceException("shipment.way.invalid");
             }
 
-            HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(shipmentDetail,shipmentWay);
-            String url ="/common/erp/pos/addnetsalshop";
-            if(isWarehouseShip(shipmentWay)){
-                url="/common/erp/pos/addnetsalstock";
+            HkShipmentPosRequestData requestData = makeHkShipmentPosRequestData(shipmentDetail, shipmentWay);
+            String url = "/common/erp/pos/addnetsalshop";
+            if (isWarehouseShip(shipmentWay)) {
+                url = "/common/erp/pos/addnetsalstock";
             }
-            String result = sycHkShipmentPosApi.doSyncShipmentPos(requestData,url);
-            log.info("sync shipment pos to hk,response:{}",result);
-            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
-            if(!Objects.equal(response.getCode(),"00000")){
-                log.error("sync shipment(code:{}) shipment pos to hk fail,error:{}",shipment.getShipmentCode(),response.getMessage());
+            String result = sycHkShipmentPosApi.doSyncShipmentPos(requestData, url);
+            log.info("sync shipment pos to hk,response:{}", result);
+            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result, SycShipmentPosResponse.class);
+            if (!Objects.equal(response.getCode(), "00000")) {
+                log.error("sync shipment(code:{}) shipment pos to hk fail,error:{}", shipment.getShipmentCode(), response.getMessage());
                 return Response.fail(response.getMessage());
             }
 
             //网店零售订单号
             String billNo = getBillNo(response.getReturnJson());
             shipmentExtra.setHkResaleOrderId(billNo);
-            Map<String,String> extraMap = shipment.getExtra();
-            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO,JSON_MAPPER.toJson(shipmentExtra));
+            Map<String, String> extraMap = shipment.getExtra();
+            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
             //更新extra
-            shipmentWiteLogic.updateExtra(shipment.getId(),extraMap);
+            shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
 
 
             return Response.ok();
@@ -132,7 +133,6 @@ public class SyncShipmentPosLogic {
     }
 
 
-
     /**
      * 同步发货单收货信息到恒康
      *
@@ -142,31 +142,31 @@ public class SyncShipmentPosLogic {
     public Response<Boolean> syncShipmentDoneToHk(Shipment shipment) {
         try {
 
-            String url ="/common/erp/pos/updatenetsalreceiptdate";
+            String url = "/common/erp/pos/updatenetsalreceiptdate";
             HkShimentDoneRequestData requestData = new HkShimentDoneRequestData();
             requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
 
             HkShimentDoneInfo doneInfo = new HkShimentDoneInfo();
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            if(Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())){
-                log.error("shipment(id:{}) sync hk confirm fail,param invalid",shipment.getId());
+            if (Strings.isNullOrEmpty(shipmentExtra.getHkResaleOrderId())) {
+                log.error("shipment(id:{}) sync hk confirm fail,param invalid", shipment.getId());
                 return Response.fail("shipment.confirm.param.invalid");
             }
 
             doneInfo.setNetbillno(shipment.getShipmentCode());
             //如果确认收货时间是空的，直接传当前时间
-            if (Arguments.isNull(shipment.getConfirmAt())){
+            if (Arguments.isNull(shipment.getConfirmAt())) {
                 doneInfo.setReceiptdate(formatter.print(shipment.getUpdatedAt().getTime()));
-            }else{
+            } else {
                 doneInfo.setReceiptdate(formatter.print(shipment.getConfirmAt().getTime()));
             }
 
             requestData.setBizContent(Lists.newArrayList(doneInfo));
 
-            String result = sycHkShipmentPosApi.doSyncShipmentDone(requestData,url);
-            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result,SycShipmentPosResponse.class);
-            if(!Objects.equal(response.getCode(),"00000")){
-                log.error("sync shipment confirm at to hk fail,error:{}",response.getMessage());
+            String result = sycHkShipmentPosApi.doSyncShipmentDone(requestData, url);
+            SycShipmentPosResponse response = JsonMapper.nonEmptyMapper().fromJson(result, SycShipmentPosResponse.class);
+            if (!Objects.equal(response.getCode(), "00000")) {
+                log.error("sync shipment confirm at to hk fail,error:{}", response.getMessage());
                 return Response.fail(response.getMessage());
             }
             return Response.ok();
@@ -178,24 +178,23 @@ public class SyncShipmentPosLogic {
     }
 
 
-
-    private HkShipmentPosRequestData makeHkShipmentPosRequestData(ShipmentDetail shipmentDetail,String shipmentWay){
+    private HkShipmentPosRequestData makeHkShipmentPosRequestData(ShipmentDetail shipmentDetail, String shipmentWay) {
 
 
         HkShipmentPosRequestData requestData = new HkShipmentPosRequestData();
         requestData.setTranReqDate(formatter.print(System.currentTimeMillis()));
-        if(isWarehouseShip(shipmentWay)){
+        if (isWarehouseShip(shipmentWay)) {
             log.info("current shipment(id:{}) is warehouse shipment");
             requestData.setSid("PS_ERP_POS_netsalstock");//仓发
-        }else {
+        } else {
             requestData.setSid("PS_ERP_POS_netsalshop");//店发
         }
-        HkShipmentPosContent bizContent = makeHkShipmentPosContent(shipmentDetail,shipmentWay);
+        HkShipmentPosContent bizContent = makeHkShipmentPosContent(shipmentDetail, shipmentWay);
         requestData.setBizContent(bizContent);
         return requestData;
     }
 
-    private HkShipmentPosContent makeHkShipmentPosContent(ShipmentDetail shipmentDetail,String shipmentWay) {
+    private HkShipmentPosContent makeHkShipmentPosContent(ShipmentDetail shipmentDetail, String shipmentWay) {
 
 
         Shipment shipment = shipmentDetail.getShipment();
@@ -205,10 +204,10 @@ public class SyncShipmentPosLogic {
 
         posContent.setChanneltype("b2c");//订单来源类型, 是b2b还是b2c
 
-        if(isWarehouseShip(shipmentWay)){
+        if (isWarehouseShip(shipmentWay)) {
             WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
-            if(StringUtils.isEmpty(warehouse.getOutCode())){
-                log.error("warehouse(id:{}) out code invalid",warehouse.getId());
+            if (StringUtils.isEmpty(warehouse.getOutCode())) {
+                log.error("warehouse(id:{}) out code invalid", warehouse.getId());
                 throw new ServiceException("warehouse.out.code.invalid");
             }
             posContent.setCompanyid(warehouse.getCompanyId());//实际发货账套id
@@ -216,20 +215,20 @@ public class SyncShipmentPosLogic {
 
             //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
-            Map<String,String> extraMap = openShop.getExtra();
+            Map<String, String> extraMap = openShop.getExtra();
             String companyId = extraMap.get("companyCode");
             String code = extraMap.get("hkPerformanceShopOutCode");
 
             posContent.setNetcompanyid(companyId);//线上店铺所属公司id
             posContent.setNetshopcode(code);//线上店铺code
-        }else {
+        } else {
             Shop receivershop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
             posContent.setCompanyid(receivershop.getBusinessId().toString());//实际发货账套id
             posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
 
             //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
-            Map<String,String> extraMap = openShop.getExtra();
+            Map<String, String> extraMap = openShop.getExtra();
             String companyId = extraMap.get("companyCode");
             String code = extraMap.get("hkPerformanceShopOutCode");
 
@@ -241,19 +240,19 @@ public class SyncShipmentPosLogic {
 
         posContent.setNetstockcode(posStockCode);//todo 线上店铺所属公司的虚拟仓代码
         posContent.setNetbillno(shipment.getShipmentCode());//端点唯一订单号
-        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        Map<String, String> shopOrderExtra = shopOrder.getExtra();
         String isHkPosOrder = shopOrderExtra.get("isHkPosOrder");
-        if (!StringUtils.isEmpty(isHkPosOrder)&&Objects.equal(isHkPosOrder,"true")){
+        if (!StringUtils.isEmpty(isHkPosOrder) && Objects.equal(isHkPosOrder, "true")) {
             String outOrderId = shopOrderExtra.get("hkOutOrderId");
-            posContent.setSourcebillno(outOrderId==null?"":outOrderId);//订单来源单号
-        }else{
+            posContent.setSourcebillno(outOrderId == null ? "" : outOrderId);//订单来源单号
+        } else {
             posContent.setSourcebillno("");//订单来源单号
         }
         posContent.setBilldate(formatter.print(shopOrder.getOutCreatedAt().getTime()));//订单日期
         posContent.setOperator("MPOS_EDI");//线上店铺帐套操作人code
         posContent.setRemark(shopOrder.getBuyerNote());//备注
 
-        HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail,shipmentWay);
+        HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail, shipmentWay);
         List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(shipmentDetail);
         posContent.setNetsalorder(netsalorder);
         posContent.setOrdersizes(ordersizes);
@@ -264,28 +263,30 @@ public class SyncShipmentPosLogic {
     private List<HkShipmentPosItem> makeHkShipmentPosItem(ShipmentDetail shipmentDetail) {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
         List<HkShipmentPosItem> posItems = Lists.newArrayListWithCapacity(shipmentItems.size());
-        for (ShipmentItem shipmentItem : shipmentItems){
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            if (shipmentItem.getShipQuantity() != null && shipmentItem.getShipQuantity() == 0) {
+                continue;
+            }
             HkShipmentPosItem hkShipmentPosItem = new HkShipmentPosItem();
             hkShipmentPosItem.setMatbarcode(shipmentItem.getSkuCode());
-            hkShipmentPosItem.setQty(shipmentItem.getQuantity());
-            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee())
-                    .divide(new BigDecimal(shipmentItem.getQuantity()),6,RoundingMode.HALF_DOWN)
-                    .divide(new BigDecimal(100),6,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanFee() == null ? 0 : shipmentItem.getCleanFee())
+                    .divide(new BigDecimal(shipmentItem.getQuantity()), 6, RoundingMode.HALF_DOWN)
+                    .divide(new BigDecimal(100), 6, RoundingMode.HALF_DOWN).toString());
             //平台分摊到发货单上面的优惠金额
-            hkShipmentPosItem.setCouponprice(new BigDecimal(shipmentItem.getSharePlatformDiscount()==null?0:shipmentItem.getSharePlatformDiscount())
-                    .divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setCouponprice(new BigDecimal(shipmentItem.getSharePlatformDiscount() == null ? 0 : shipmentItem.getSharePlatformDiscount())
+                    .divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             if (shipmentItem.getShipQuantity() == null) {
                 hkShipmentPosItem.setQty(shipmentItem.getQuantity());
             } else {
                 hkShipmentPosItem.setQty(shipmentItem.getShipQuantity());
             }
-            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            hkShipmentPosItem.setBalaprice(new BigDecimal(shipmentItem.getCleanPrice() == null ? 0 : shipmentItem.getCleanPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             posItems.add(hkShipmentPosItem);
         }
         return posItems;
     }
 
-    private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail,String shipmentWay) {
+    private HkShipmentPosInfo makeHkShipmentPosInfo(ShipmentDetail shipmentDetail, String shipmentWay) {
 
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
         OpenClientPaymentInfo openClientPaymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
@@ -304,12 +305,12 @@ public class SyncShipmentPosLogic {
         posInfo.setPaymentdate(formatter.print(shopOrder.getCreatedAt().getTime())); //付款时间
 
         //获取会员卡号
-        String cardcode ="";
-        if(Arguments.notNull(shopOrder.getBuyerId())&&shopOrder.getBuyerId()>0L&&shopOrder.getShopName().startsWith("官网")){
-            Response<MemberProfile>  memberProfileRes = ucUserOperationLogic.findByUserId(shopOrder.getBuyerId());
-            if(!memberProfileRes.isSuccess()){
-                log.error("find member profile by user id:{} fail,error:{}",shopOrder.getBuyerId(),memberProfileRes.getError());
-            }else {
+        String cardcode = "";
+        if (Arguments.notNull(shopOrder.getBuyerId()) && shopOrder.getBuyerId() > 0L && shopOrder.getShopName().startsWith("官网")) {
+            Response<MemberProfile> memberProfileRes = ucUserOperationLogic.findByUserId(shopOrder.getBuyerId());
+            if (!memberProfileRes.isSuccess()) {
+                log.error("find member profile by user id:{} fail,error:{}", shopOrder.getBuyerId(), memberProfileRes.getError());
+            } else {
                 cardcode = memberProfileRes.getResult().getOuterId();
             }
         }
@@ -333,22 +334,22 @@ public class SyncShipmentPosLogic {
         }
         totalPrice = totalPrice.add(new BigDecimal(shipmentExtra.getShipmentShipFee() == null ? 0 : shipmentExtra.getShipmentShipFee()));
         posInfo.setPayamountbakup(totalPrice.divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString()); //线上实付金额
-        posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee()==null?0:shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());//邮费成本
+        posInfo.setExpresscost(new BigDecimal(shipmentExtra.getShipmentShipFee() == null ? 0 : shipmentExtra.getShipmentShipFee()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());//邮费成本
         posInfo.setCodcharges("0");//货到付款服务费
         posInfo.setPreremark(""); //优惠信息
-        if(CollectionUtils.isEmpty(invoices)){
+        if (CollectionUtils.isEmpty(invoices)) {
             posInfo.setIsinvoice("0"); //是否开票
 
-        }else {
+        } else {
             posInfo.setIsinvoice("1"); //是否开票
             posInfo.setInvoice_name(invoices.get(0).getTitle()); //发票抬头
             posInfo.setTaxno("");//税号
         }
 
-        Map<String,String> shopOrderExtra = shopOrder.getExtra();
+        Map<String, String> shopOrderExtra = shopOrder.getExtra();
         //卖家备注
-        String sellerNote ="";
-        if(!CollectionUtils.isEmpty(shopOrderExtra)&&shopOrderExtra.containsKey("customerServiceNote")){
+        String sellerNote = "";
+        if (!CollectionUtils.isEmpty(shopOrderExtra) && shopOrderExtra.containsKey("customerServiceNote")) {
             sellerNote = shopOrderExtra.get("customerServiceNote");
         }
 
@@ -375,41 +376,39 @@ public class SyncShipmentPosLogic {
         }*/
         posInfo.setExpressbillno(shipmentExtra.getShipmentSerialNo()); //物流单号
         posInfo.setWms_ordercode(""); //第三方物流单号
-        if(Arguments.isNull(shipmentExtra.getShipmentDate())){
+        if (Arguments.isNull(shipmentExtra.getShipmentDate())) {
             posInfo.setConsignmentdate(formatter.print(new Date().getTime())); //发货时间
-        }else {
+        } else {
             posInfo.setConsignmentdate(formatter.print(shipmentExtra.getShipmentDate().getTime())); //发货时间
 
         }
         //添加重量
-        if (java.util.Objects.isNull(shipmentExtra.getWeight())){
+        if (java.util.Objects.isNull(shipmentExtra.getWeight())) {
             posInfo.setWeight("0.00");
             posInfo.setParcelweight("0.00");
-        }else{
+        } else {
             posInfo.setWeight(String.valueOf(shipmentExtra.getWeight()));
             posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
         }
         return posInfo;
     }
 
-    private String getBillNo(String data) throws Exception{
-        Map<String,String> map =objectMapper.readValue(data, JacksonType.MAP_OF_STRING);
-        if(!CollectionUtils.isEmpty(map)&&map.containsKey("billNo")){
+    private String getBillNo(String data) throws Exception {
+        Map<String, String> map = objectMapper.readValue(data, JacksonType.MAP_OF_STRING);
+        if (!CollectionUtils.isEmpty(map) && map.containsKey("billNo")) {
             return map.get("billNo");
-        } else{
+        } else {
             throw new ServiceException("hk.result.bill.no.invalid");
         }
     }
 
-    private Boolean isWarehouseShip(String shipmentWay){
-        if(Objects.equal(shipmentWay,"2")){
+    private Boolean isWarehouseShip(String shipmentWay) {
+        if (Objects.equal(shipmentWay, "2")) {
             return Boolean.TRUE;
-        }else {
+        } else {
             return Boolean.FALSE;
         }
     }
-
-
 
 
 }

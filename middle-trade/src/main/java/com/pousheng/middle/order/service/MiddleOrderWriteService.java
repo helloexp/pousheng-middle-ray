@@ -5,6 +5,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.spu.model.SkuTemplate;
 
 import java.util.List;
 import java.util.Map;
@@ -36,14 +37,12 @@ public interface MiddleOrderWriteService {
     public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode);
 
     /**
-     * 更新子单的skuCode and skuId
-     *
-     * @param skuId   子单skuId
-     * @param skuCode 子单skuCode
-     * @param id      子单主键(更新条件)
+     * 更新子单sku信息
+     * @param skuTemplate
+     * @param id
      * @return
      */
-    public Response<Boolean> updateSkuOrderCodeAndSkuId(long skuId, String skuCode, long id);
+    Response<Boolean> updateSkuInfo(SkuTemplate skuTemplate, long id) ;
 
     /**
      * 更新订单的收货信息

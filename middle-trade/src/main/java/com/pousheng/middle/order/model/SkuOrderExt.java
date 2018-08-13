@@ -15,4 +15,8 @@ public class SkuOrderExt implements java.io.Serializable {
     private String skuCode;
 
     private Long skuId;
+
+    private String name;
+
+    private String skuAttributes;
 }

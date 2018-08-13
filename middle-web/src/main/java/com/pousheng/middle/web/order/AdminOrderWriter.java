@@ -290,7 +290,7 @@ public class AdminOrderWriter {
             throw new JsonResponseException(("find.sku.template.failed"));
         }
         SkuTemplate skuTemplate = skuResponse.getResult().get(0);
-        Response<Boolean> response = middleOrderWriteService.updateSkuOrderCodeAndSkuId(skuTemplate.getId(), skuCode, id);
+        Response<Boolean> response = middleOrderWriteService.updateSkuInfo(skuTemplate, id);
         if (!response.isSuccess()) {
             log.error("update skuCode failed,skuCodeId is({})", id);
             throw new JsonResponseException(response.getError());

@@ -44,5 +44,10 @@ public class ExpressCodeCriteria extends PagingCriteria implements java.io.Seria
      */
     private String mposCode;
 
+    /**
+     * 咕咚快递代码
+     */
+    private String codoonCode;
+
 
 }

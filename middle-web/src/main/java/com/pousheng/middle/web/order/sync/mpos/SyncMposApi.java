@@ -33,7 +33,7 @@ public class SyncMposApi {
         log.info("queryEcpOrderIdByOutIdForHk,param:{}",outId);
         Map<String, Object> requestParams = Maps.newHashMap();
         requestParams.put("outId",outId);
-        String responseBody = paranaClient.systemGet("mpos.order.ship.api",requestParams);
+        String responseBody = paranaClient.systemGet("query.order.id.by.out.id.api",requestParams);
         log.info("queryEcpOrderIdByOutIdForHk out id:{} response:{}",outId,responseBody);
         return responseBody;
     }

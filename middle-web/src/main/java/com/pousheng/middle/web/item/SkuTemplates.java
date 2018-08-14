@@ -24,6 +24,8 @@ import com.pousheng.middle.item.service.SkuTemplateSearchWriteService;
 import com.pousheng.middle.task.dto.ItemGroupTask;
 import com.pousheng.middle.task.model.ScheduleTask;
 import com.pousheng.middle.task.service.ScheduleTaskWriteService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.web.events.item.*;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.utils.MapFilter;
@@ -33,6 +35,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
@@ -99,6 +102,8 @@ public class SkuTemplates {
     private SkuTemplateSearchWriteService skuTemplateSearchWriteService;
     @Autowired
     private MaterialPusher materialPusher;
+    @Autowired
+    private InventoryClient inventoryClient;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
@@ -262,6 +267,9 @@ public class SkuTemplates {
             log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());
             throw new JsonResponseException(r.getError());
         }
+
+
+
         if(log.isDebugEnabled()){
             log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}] ,resp: [{}]",
                     ids,skuCode,name,spuId,type,pageNo,pageSize,statuses,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
@@ -921,5 +929,75 @@ public class SkuTemplates {
         if(!CollectionUtils.isEmpty(materialIds)){
             materialPusher.removeMaterialIds(Lists.newArrayList(materialIds));
         }
+    }
+
+    // 查询库存中心可用库存，赋值给StockQuantity
+    // 计算所有仓库下的可用库存（物理-占用-安全-所有指定）
+    @ApiOperation("货品分页查询用于赠品活动")
+    @RequestMapping(value = "/api/sku-template/for/gift/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<SkuTemplate> getGiftSkuPagination(@RequestParam(value = "ids", required = false) List<Long> ids, @RequestParam(value = "skuCode", required = false) String skuCode,
+                                          @RequestParam(value = "name", required = false) String name,
+                                          @RequestParam(value = "spuId", required = false) Long spuId,
+                                          @RequestParam(value = "type", required = false) Integer type,
+                                          @RequestParam(value = "pageNo", required = false) Integer pageNo,
+                                          @RequestParam(value = "pageSize", required = false) Integer pageSize,
+                                          @RequestParam(value = "statuses", required = false) List<Integer> statuses){
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}]",
+                    ids,skuCode,name,spuId,type,pageNo,pageSize,statuses);
+        }
+        Map<String, Object> params = Maps.newHashMap();
+        if (Objects.nonNull(ids)) {
+            params.put("ids", ids);
+        }
+        if (StringUtils.hasText(skuCode)) {
+            params.put("skuCode", skuCode);
+        }
+        if (StringUtils.hasText(name)) {
+            params.put("name", name);
+        }
+        if (spuId != null) {
+            params.put("spuId", spuId);
+        }
+
+        if (type != null) {
+            params.put("type", type);
+        }
+        if (Objects.isNull(statuses)) {
+            params.put("statuses", Lists.newArrayList(1, -3));
+        } else if (!statuses.isEmpty()) {
+            params.put("statuses", statuses);
+        }
+        Response<Paging<SkuTemplate>> r = skuTemplateReadService.findBy(pageNo, pageSize, params);
+        if (!r.isSuccess()) {
+            log.error("failed to pagination skuTemplates with params({}), error code:{}", params, r.getError());
+            throw new JsonResponseException(r.getError());
+        }
+        //赠品活动商品列表转skuCode列表
+        List<String> skus = r.getResult().getData().stream().map(temp ->
+            temp.getSkuCode()).collect(Collectors.toList());
+        if(!CollectionUtils.isEmpty(skus)){
+            //查询库存中心可用库存
+            //计算所有仓库下的可用库存（物理-占用-安全-所有指定）
+            Response<List<AvailableInventoryDTO>> invResponse = inventoryClient.getAvailableNoNeedWarehouseAndShop(skus);
+            if(!invResponse.isSuccess()){
+                log.error("find available stock  by gift skus failed,skus is {},caused by {}",skus.toString(),invResponse.getError());
+                throw new JsonResponseException(invResponse.getError());
+            }
+            //设置商品列表可用库存
+            r.getResult().getData().forEach(item ->{
+                int availableStock = 0;
+                Optional<AvailableInventoryDTO> invDto = invResponse.getResult().stream().filter(invItem -> Objects.equals(invItem.getSkuCode(),item.getSkuCode())).findFirst();
+                if(invDto.isPresent()){
+                    availableStock = invDto.get().getInventoryUnAllocQuantity();
+                }
+                item.setStockQuantity(availableStock);
+            });
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-SKU-TEMPLATE-PAGINATION-START param: ids [{}] skuCode [{}] name [{}] spuId [{}] type [{}] pageNo [{}] pageSize [{}] statuses [{}] ,resp: [{}]",
+                    ids,skuCode,name,spuId,type,pageNo,pageSize,statuses,JsonMapper.nonEmptyMapper().toJson(r.getResult()));
+        }
+        return r.getResult();
     }
 }

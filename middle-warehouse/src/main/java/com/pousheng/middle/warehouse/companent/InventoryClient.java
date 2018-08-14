@@ -258,4 +258,24 @@ public class InventoryClient {
     }
 
 
+    /**
+     * 获取多个sku在所有仓库下的可用库存情况
+     *
+     * @param skuCodeList
+     * @return
+     */
+    public Response<List<AvailableInventoryDTO>> getAvailableNoNeedWarehouseAndShop (List<String> skuCodeList) {
+        try {
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient.postJsonRetList("api/inventory/query/getAvailableNoNeedWarehouseAndShop",
+                    JSON.toJSONString(skuCodeList), AvailableInventoryDTO.class);
+            if (ObjectUtils.isEmpty(availableInvList)) {
+                return Response.ok(Lists.newArrayList());
+            }
+            return Response.ok(availableInvList);
+        } catch (Exception e) {
+            log.error("get available inventory fail, cause:{}",Throwables.getStackTraceAsString(e));
+            return Response.fail(e.getMessage());
+        }
+    }
+
 }

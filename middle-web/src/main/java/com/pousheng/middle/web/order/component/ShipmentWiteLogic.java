@@ -1615,10 +1615,13 @@ public class ShipmentWiteLogic {
         });
         Map<String, String> refundExtra = refund.getExtra();
         refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundChangeItems));
-        refund.setExtra(refundExtra);
-        refundWriteLogic.update(refund);
-        //将售后单状态变为创建发货单
-        updateRefundStatus(refund);
+        Response<Boolean> updateResp= updateRefundStatus(refund);
+        if (updateResp.isSuccess()) {
+            Refund update = new Refund();
+            update.setId(refund.getId());
+            update.setExtra(refundExtra);
+            refundWriteLogic.update(update);
+        }
 
     }
 
@@ -1667,13 +1670,14 @@ public class ShipmentWiteLogic {
      *
      * @param refund 售后单
      */
-    private void updateRefundStatus(Refund refund) {
+    private Response<Boolean> updateRefundStatus(Refund refund) {
         Flow flow = flowPicker.pickAfterSales();
         Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.REVOKE.toOrderOperation());
         Response<Boolean> updateStatusRes = refundWriteService.updateStatus(refund.getId(), targetStatus);
         if (!updateStatusRes.isSuccess()) {
             log.error("update refund(id:{}) status to:{} fail,error:{}", refund, targetStatus, updateStatusRes.getError());
         }
+        return updateStatusRes;
     }
 
     /**

@@ -121,6 +121,12 @@ public class TradeConstants {
     public static final String REFUND_WAIT_CANCEL = "0";
     public static final String REFUND_CANCELED = "1";
 
+    /**
+     * 换货售后单添加锁标识
+     */
+    public static final String AFTER_SALE_EXHCANGE_UN_LOCK="UNLOCK";
+    public static final String AFTER_SALE_EXHCANGE_LOCK="LOCK";
+
     //活动商品
     public static final String ACTIVITY_ITEM = "activityItems";
     //赠品

@@ -100,6 +100,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             //借用tradeNo字段来标记售中退款的逆向单是否已处理
             refund.setTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
             refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }else{
+            //其他类型的售后单添加一个锁标识
+            refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
         }
 
         //判断售后单对应的是否是天猫订单

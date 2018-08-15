@@ -153,6 +153,8 @@ public class Shipments {
 
     @Autowired
     private RefundWriteLogic refundWriteLogic;
+    @Autowired
+    private MiddleRefundWriteService middleRefundWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -620,6 +622,14 @@ public class Shipments {
         //List<Long> warehouseIds = requestDataList.stream().filter(Objects::nonNull).map(ShipmentRequest::getWarehouseId).collect(Collectors.toList());
         //判断是否是全渠道订单的售后单，如果不是全渠道订单的售后单，不能选择店仓
         //this.validateRefundAllChannelWarehouse(warehouseIds,refundId);
+        //售后单生成换货发货单时加锁
+        Response<Boolean> startResponse = middleRefundWriteService
+                .updateTradeNo(refundId,TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK,
+                        TradeConstants.AFTER_SALE_EXHCANGE_LOCK);
+        if (!startResponse.isSuccess()){
+            log.info("lock refunds failed,refundId {},caused by {}",refundId,startResponse.getError());
+            throw new JsonResponseException(startResponse.getError());
+        }
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
             try {
@@ -706,7 +716,13 @@ public class Shipments {
             } catch (Exception e){
                 log.error("handle shipmentRequest:{} fail,cause;{}",shipmentRequest,Throwables.getStackTraceAsString(e));
             }
-
+        }
+        //生成发货单之后解锁
+        Response<Boolean> endResponse = middleRefundWriteService
+                .updateTradeNo(refundId,TradeConstants.AFTER_SALE_EXHCANGE_LOCK,
+                        TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
+        if (!endResponse.isSuccess()){
+            log.error("unlock refunds failed,refundId {},caused by {}",refundId,startResponse.getError());
         }
         return shipmentIds;
     }

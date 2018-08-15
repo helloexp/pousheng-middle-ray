@@ -400,8 +400,8 @@ public class RefundWriteLogic {
         Map<String, String> tagMap = Maps.newHashMap();
         tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
         refund.setTags(tagMap);
-
-
+        //添加一个锁标识
+        refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
         //创建售后单
         Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(shopOrder.getId()), OrderLevel.SHOP);
         if (!rRefundRes.isSuccess()) {
@@ -1155,6 +1155,8 @@ public class RefundWriteLogic {
         Map<String, String> tagMap = Maps.newHashMap();
         tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.MANUAL.value()));
         refund.setTags(tagMap);
+        //添加一个锁标识
+        refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
         //创建售后单
         Response<Long> rRefundRes = middleRefundWriteService.create(refund, Lists.newArrayList(shopOrder.getId()), OrderLevel.SHOP);
         if (!rRefundRes.isSuccess()) {

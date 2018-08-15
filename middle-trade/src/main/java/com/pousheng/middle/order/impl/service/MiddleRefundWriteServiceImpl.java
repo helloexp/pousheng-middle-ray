@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleChangeReceiveInfo;
+import com.pousheng.middle.order.impl.dao.RefundExtDao;
 import com.pousheng.middle.order.impl.manager.MiddleRefundManager;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import io.terminus.common.model.Response;
@@ -38,6 +39,8 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
     private ShopOrderDao orderDao;
     @Autowired
     private RefundDao refundDao;
+    @Autowired
+    private RefundExtDao refundExtDao;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -118,6 +121,29 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
         return Response.ok(result);
     }
 
+    @Override
+    public Response<Boolean> updateTradeNo(Long refundId, String originTradeNo, String newTradeNo) {
+        try {
+            if (log.isDebugEnabled()){
+                log.debug("start update trade no,refundId {},originTradeNo {},newTradeNo {}"
+                        ,refundId,originTradeNo,newTradeNo);
+            }
+            boolean result = refundExtDao.updateTradeNo(refundId,originTradeNo,newTradeNo);
+            if (result){
+                log.info("update trade no,refundId {},originTradeNo {},newTradeNo {},result {}"
+                        ,refundId,originTradeNo,newTradeNo,result);
+                return Response.ok(Boolean.TRUE);
+            }else{
+                log.error("update trade no failed,refundId {},originTradeNo {},newTradeNo {},result {}"
+                        ,refundId,originTradeNo,newTradeNo,result);
+                return Response.fail("update.trade.no.failed");
+            }
+        }catch (Exception e){
+            log.error("update trade no failed,refundId {},originTradeNo {},newTradeNo {},caused by {}"
+                    ,refundId,originTradeNo,newTradeNo,Throwables.getStackTraceAsString(e));
+            return Response.fail("update.trade.no.failed");
+        }
+    }
 
 
 }

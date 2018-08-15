@@ -32,4 +32,14 @@ public interface MiddleRefundWriteService {
      */
     public Response<Boolean> updateReceiveInfos(long refundId, MiddleChangeReceiveInfo middleChangeReceiveInfo);
 
+
+    /**
+     * 乐观锁控制防止换货单重复生成发货单
+     * @param refundId
+     * @param originTradeNo
+     * @param newTradeNo
+     * @return
+     */
+    public Response<Boolean> updateTradeNo(Long refundId,String originTradeNo,String newTradeNo);
+
 }

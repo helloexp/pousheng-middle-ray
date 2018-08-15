@@ -13,8 +13,7 @@
     <update id="updateTradeNo" parameterType="RefundExt">
         UPDATE
         <include refid="tb"/>
-        SET updated_at=now()
-        <if test="tradeNo != null">,`trade_no` = #{newTradeNo}</if>
+        SET updated_at=now(), `trade_no` = #{newTradeNo}
         WHERE id=#{id} and trade_no = #{originTradeNo}
     </update>
 

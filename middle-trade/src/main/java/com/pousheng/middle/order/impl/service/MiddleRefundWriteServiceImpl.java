@@ -130,6 +130,8 @@ public class MiddleRefundWriteServiceImpl implements MiddleRefundWriteService{
             }
             boolean result = refundExtDao.updateTradeNo(refundId,originTradeNo,newTradeNo);
             if (result){
+                log.info("update trade no,refundId {},originTradeNo {},newTradeNo {},result {}"
+                        ,refundId,originTradeNo,newTradeNo,result);
                 return Response.ok(Boolean.TRUE);
             }else{
                 log.error("update trade no failed,refundId {},originTradeNo {},newTradeNo {},result {}"

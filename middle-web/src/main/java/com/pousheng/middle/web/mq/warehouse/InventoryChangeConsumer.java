@@ -54,7 +54,7 @@ public class InventoryChangeConsumer {
         }
 
         try {
-            log.info("inventory changed: start to consume mq message, msgId:{}");
+            log.info("inventory changed: start to consume mq message, msg:{}",skuCodeJson);
 
             List<String> skuCodes = Lists.newArrayList();
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);

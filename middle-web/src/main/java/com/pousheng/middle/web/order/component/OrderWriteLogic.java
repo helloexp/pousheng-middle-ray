@@ -745,6 +745,9 @@ public class OrderWriteLogic {
         CHANNEL.put("苏宁", "suning");
         CHANNEL.put("分期乐", "fenqile");
         CHANNEL.put("淘宝", "taobao");
+        CHANNEL.put("苏宁特卖", "suning-sale");
+        CHANNEL.put("云聚", "yunjubbc");
+        CHANNEL.put("咕咚", "codoon");
     }
 
     private static final Map<String, Integer> PAY_TYPE = Maps.newHashMap();

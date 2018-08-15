@@ -13,8 +13,8 @@ import org.springframework.stereotype.Repository;
 @Repository
 public class SkuOrderExtDao extends MyBatisDao<SkuOrderExt> {
 
-    public boolean updateSkuCodeAndSkuIdById(SkuOrderExt skuOrderExt){
-        return getSqlSession().update(sqlId("updateSkuCodeAndSkuIdById"),skuOrderExt) == 1;
+    public boolean updateSkuInfoById(SkuOrderExt skuOrderExt){
+        return getSqlSession().update(sqlId("updateSkuInfoById"),skuOrderExt) == 1;
     }
 
     public void updateBuyerNameByOrderId(Long orderId, String buyerName) {

@@ -9,12 +9,14 @@
     <sql id="tb">
         parana_sku_orders
     </sql>
-    <update id="updateSkuCodeAndSkuIdById" parameterType="SkuOrderExt">
+    <update id="updateSkuInfoById" parameterType="SkuOrderExt">
         UPDATE
         <include refid="tb"/>
         SET updated_at=now()
         <if test="skuId != null">,`sku_id` = #{skuId}</if>
         <if test="skuCode != null">,`sku_code` = #{skuCode}</if>
+        <if test="name != null">,`item_name` = #{name}</if>
+        <if test="skuAttributes !=null">,`sku_attributes` = #{skuAttributes}</if>
         WHERE id=#{id}
     </update>
 

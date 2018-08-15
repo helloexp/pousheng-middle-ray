@@ -16,6 +16,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.impl.dao.*;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -62,10 +63,10 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
             return Response.ok();
 
         } catch (ServiceException e) {
-            log.error("failed to update order(id:{}) operation:{} error:{}",shopOrder.getOrderCode(),operation.getText(), e.getMessage());
+            log.error("failed to update order(id:{}) operation:{} error:{}", shopOrder.getOrderCode(), operation.getText(), e.getMessage());
             return Response.fail(e.getMessage());
         } catch (Exception e) {
-            log.error("failed to update order(id:{}) operation:{}, cause:{}", shopOrder.getOrderCode(),operation.getText(),Throwables.getStackTraceAsString(e));
+            log.error("failed to update order(id:{}) operation:{}, cause:{}", shopOrder.getOrderCode(), operation.getText(), Throwables.getStackTraceAsString(e));
             return Response.fail("order.update.fail");
         }
     }
@@ -87,20 +88,22 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
     }
 
     @Override
-    public Response<Boolean> updateSkuOrderCodeAndSkuId(long skuId, String skuCode, long id) {
+    public Response<Boolean> updateSkuInfo(SkuTemplate skuTemplate, long id) {
         try {
             SkuOrderExt skuOrderExt = new SkuOrderExt();
             skuOrderExt.setId(id);
-            skuOrderExt.setSkuId(skuId);
-            skuOrderExt.setSkuCode(skuCode);
-            boolean result = skuOrderExtDao.updateSkuCodeAndSkuIdById(skuOrderExt);
+            skuOrderExt.setName(skuTemplate.getName());
+            skuOrderExt.setSkuId(skuTemplate.getId());
+            skuOrderExt.setSkuAttributes(skuTemplate.getAttrsJson());
+            skuOrderExt.setSkuCode(skuTemplate.getSkuCode());
+            boolean result = skuOrderExtDao.updateSkuInfoById(skuOrderExt);
             if (!result) {
-                log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({})", id, skuId, skuCode);
+                log.error("failed to update skuOrder(id={}),skuTemplate is({})", id, skuTemplate);
                 return Response.fail("update.sku.order.failed");
             }
             return Response.ok();
         } catch (Exception e) {
-            log.error("failed to update skuOrder(id={}),skuId is({}),skuCode is({}),cause by {}", id, skuId, skuCode, Throwables.getStackTraceAsString(e));
+            log.error("failed to update skuOrder(id={}),skuTemplate is({}),skuCode is({}),cause by {}", id, skuTemplate, Throwables.getStackTraceAsString(e));
             return Response.fail("update.sku.order.failed");
         }
     }

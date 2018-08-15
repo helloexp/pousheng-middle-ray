@@ -586,8 +586,14 @@ public class ShipmentWiteLogic {
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
+        Long shipmentId = null;
         //创建发货单
-        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
+        try {
+            shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
+        } catch (Exception e) {
+            log.error("create shipment fail and lock stock fail");
+            throw new ServiceException(e.getMessage());
+        }
 
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
@@ -677,8 +683,14 @@ public class ShipmentWiteLogic {
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
         shipment.setExtra(extraMap);
+        Long shipmentId = null;
         //创建发货单
-        Long shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
+        try {
+            shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
+        } catch (Exception e) {
+            log.error("create shipment fail and lock stock fail");
+            throw new ServiceException(e.getMessage());
+        }
 
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
@@ -1285,44 +1297,57 @@ public class ShipmentWiteLogic {
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
         log.info("MPOS DISPATCH SUCCESS result:{}", dispatchOrderItemInfo);
 
-        for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
-            Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
-            if (shipmentId != null) {
-                Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
-                if (!shipmentRes.isSuccess()) {
-                    log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
-                }
-                Shipment shipment = shipmentRes.getResult();
-                if (isFirst)
-                    orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+        List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
 
-                //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
-                Map<String, String> extraMap = shopOrder.getExtra();
-                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-                if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                    if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+        for (WarehouseShipment warehouseShipment : dispatchOrderItemInfo.getWarehouseShipments()) {
+            try {
+                Long shipmentId = this.createShipment(shopOrder, skuOrders, warehouseShipment);
+                if (shipmentId != null) {
+                    Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+                    if (!shipmentRes.isSuccess()) {
+                        log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                         continue;
                     }
-                }
+                    Shipment shipment = shipmentRes.getResult();
+                    if (isFirst)
+                        orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
 
-                this.handleSyncShipment(shipment,1,shopOrder);
+                    //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
+                    Map<String, String> extraMap = shopOrder.getExtra();
+                    String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+                    String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+                    if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                        if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                            continue;
+                        }
+                    }
+
+                    this.handleSyncShipment(shipment,1,shopOrder);
+                }
+            } catch (Exception e) {
+                log.error("warehouse dispatch order fail, sku info {}, order id {}", warehouseShipment.getSkuCodeAndQuantities(), shopOrder.getId());
+                skuCodeAndQuantityList.addAll(warehouseShipment.getSkuCodeAndQuantities());
             }
         }
         for (ShopShipment shopShipment : dispatchOrderItemInfo.getShopShipments()) {
-            Long shipmentId = this.createShopShipment(shopOrder, skuOrders, shopShipment);
-            if (shipmentId != null) {
-                Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
-                if (!shipmentRes.isSuccess()) {
-                    log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
-                }
-                Shipment shipment = shipmentRes.getResult();
-                if (isFirst)
-                    orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
-                this.handleSyncShipment(shipment, 2, shopOrder);
-            }
+           try {
+               Long shipmentId = this.createShopShipment(shopOrder, skuOrders, shopShipment);
+               if (shipmentId != null) {
+                   Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
+                   if (!shipmentRes.isSuccess()) {
+                       log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+                   }
+                   Shipment shipment = shipmentRes.getResult();
+                   if (isFirst)
+                       orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                   this.handleSyncShipment(shipment, 2, shopOrder);
+               }
+           } catch (Exception e) {
+               log.error("shop dispatch order fail, sku info {}, order id {}", shopShipment.getSkuCodeAndQuantities(), shopOrder.getId());
+               skuCodeAndQuantityList.addAll(shopShipment.getSkuCodeAndQuantities());
+           }
         }
-        List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
+
         if (!CollectionUtils.isEmpty(skuCodeAndQuantityList)) {
             //如果是恒康pos订单或者全渠道订单，暂不处理
             if (shopOrder.getExtra().containsKey(TradeConstants.IS_HK_POS_ORDER) || orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {

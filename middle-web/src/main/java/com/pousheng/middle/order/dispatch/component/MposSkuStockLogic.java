@@ -11,7 +11,9 @@ import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
@@ -20,6 +22,7 @@ import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -65,7 +68,6 @@ public class MposSkuStockLogic {
      * @param withSafe 是否使用安全库存
      */
     public Response<Boolean> lockStock(Shipment shipment, Boolean withSafe){
-
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
         return this.lockStock(dispatchOrderItemInfo, withSafe);
 

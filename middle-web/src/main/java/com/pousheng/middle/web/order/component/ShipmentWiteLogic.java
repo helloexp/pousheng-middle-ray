@@ -1556,7 +1556,7 @@ public class ShipmentWiteLogic {
             if (log.isDebugEnabled()){
                 log.debug("ShipmentWiteLogic rollbackShipment,shipment {},result {}",shipment,cancelShipmentResponse);
             }
-            //换货发货单发货之前可以取消发货单，将已经处理的发货单数量恢复成初始状态，如果所有的发货单的alreadyHandleNumber已经是0，则将售后待状态变更为退货完成待创建发货单,取消发货单失败则订单状态不作变更
+            //换货发货单发货之前可以取消发货单，将已经处理的发货单数量恢复成初始状态,则将售后待状态变更为退货完成待创建发货单,取消发货单失败则订单状态不作变更
             if (count == 0) {
                 this.rollbackChangeRefund(shipment, orderShipment, refund);
             } else {
@@ -1610,7 +1610,8 @@ public class ShipmentWiteLogic {
         List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
         refundChangeItems.forEach(refundChangeItem -> {
             if (skuCodesAndQuantity.containsKey(refundChangeItem.getSkuCode())) {
-                refundChangeItem.setAlreadyHandleNumber(refundChangeItem.getAlreadyHandleNumber() == null ? 0 : refundChangeItem.getAlreadyHandleNumber() - skuCodesAndQuantity.get(refundChangeItem.getSkuCode()));
+                refundChangeItem.setAlreadyHandleNumber(refundChangeItem.getAlreadyHandleNumber() == null ? 0 :
+                        refundChangeItem.getAlreadyHandleNumber() - skuCodesAndQuantity.get(refundChangeItem.getSkuCode()));
             }
         });
         Map<String, String> refundExtra = refund.getExtra();

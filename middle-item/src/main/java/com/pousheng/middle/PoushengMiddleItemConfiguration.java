@@ -1,6 +1,7 @@
 package com.pousheng.middle;
 
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
+import com.pousheng.middle.item.SearchStockLogProperties;
 import com.pousheng.middle.item.impl.service.DefaultIndexedSkuTemplateFactory;
 import com.pousheng.middle.item.impl.service.DefaultIndexedSkuTemplateGuarder;
 import com.pousheng.middle.item.service.IndexedSkuTemplateFactory;
@@ -27,7 +28,8 @@ import org.springframework.context.annotation.Import;
 @ComponentScan({"com.pousheng.middle.shop.impl","com.pousheng.middle.task.impl","com.pousheng.middle.category.impl","com.pousheng.middle.group.impl","com.pousheng.middle.item","io.terminus.search.api","com.pousheng.middle.shop.cacher"})
 @Import({ItemAutoConfig.class})
 @EnableConfigurationProperties({
-        SearchSkuTemplateProperties.class
+        SearchSkuTemplateProperties.class,
+        SearchStockLogProperties.class
 })
 public class PoushengMiddleItemConfiguration {
 

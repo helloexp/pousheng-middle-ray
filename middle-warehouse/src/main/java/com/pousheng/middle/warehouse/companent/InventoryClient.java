@@ -82,6 +82,20 @@ public class InventoryClient {
         }
     }
 
+
+    public Response<SkuInventory> findInventoryById(Long id) {
+        if (ObjectUtils.isEmpty(id)) {
+            return Response.fail("inventory.fail.parameter");
+        }
+        try {
+            return Response.ok((SkuInventory) inventoryBaseClient.post("api/inventory/query/" + id, ImmutableMap.of("id", id), SkuInventory.class));
+        } catch (Exception e) {
+            log.error("fail to trade inventory, cause:{}", Throwables.getStackTraceAsString(e));
+
+            return Response.fail(e.getMessage());
+        }
+    }
+
     /**
      * 获取可用库存数量
      *

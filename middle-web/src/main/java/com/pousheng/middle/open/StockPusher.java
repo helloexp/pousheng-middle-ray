@@ -1,5 +1,6 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -27,10 +28,13 @@ import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.events.warehouse.StockPushLogic;
 import com.pousheng.middle.web.item.cacher.*;
+import com.pousheng.middle.web.middleLog.dto.StockLogDto;
+import com.pousheng.middle.web.middleLog.dto.StockLogTypeEnum;
 import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.rocketmq.core.TerminusMQProducer;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
@@ -50,6 +54,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
+import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -114,15 +119,24 @@ public class StockPusher {
 
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
+    private static String SHOP_CODE = "hkPerformanceShopCode";
+
+    private static Integer PUSH_SIZE = 500;
+
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
     @Autowired
     private QueryHkWarhouseOrShopStockApi queryHkWarhouseOrShopStockApi;
 
     @Autowired
+    private TerminusMQProducer producer;
+    @Value("${terminus.rocketmq.stockLogTopic}")
+    private String stockLogTopic;
+
+    @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors()*2, Runtime.getRuntime().availableProcessors()*3, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 3, 60L, TimeUnit.MINUTES,
                 new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     @Override
@@ -168,8 +182,8 @@ public class StockPusher {
 
     public void submit(List<String> skuCodes) {
 
-        if(log.isDebugEnabled()){
-            log.debug("STOCK-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}",skuCodes,System.currentTimeMillis());
+        if (log.isDebugEnabled()) {
+            log.debug("STOCK-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}", skuCodes, System.currentTimeMillis());
         }
         log.info("start to push skus: {}", skuCodes);
         //先清理本地缓存
@@ -181,6 +195,7 @@ public class StockPusher {
         Table<Long, String, Integer> shopSkuStockForCodoon = HashBasedTable.create();
         //库存推送日志记录
         final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
+        List<StockPushLog> logs = Lists.newArrayList();
         for (String skuCode : skuCodes) {
             try {
                 Long spuId = skuCodeCacher.getUnchecked(skuCode);
@@ -196,28 +211,29 @@ public class StockPusher {
                 List<Long> shopIds = r.getResult();
                 for (Long shopId : shopIds) {
                     log.info("start to push sku to shop: {}", shopId);
+                    Long stock = 0L;
                     try {
                         OpenShop openShop = openShopCacher.getUnchecked(shopId);
-                        if(openShop == null){
-                            log.error("failed to find shop(id={})，so skip to continue",shopId);
+                        if (openShop == null) {
+                            log.error("failed to find shop(id={})，so skip to continue", shopId);
                             continue;
                         }
 
-                        if (Objects.equals(shopId,mposOpenShopId)){
+                        if (Objects.equals(shopId, mposOpenShopId)) {
                             continue;
                         }
 
                         //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
-                        Response<com.google.common.base.Optional<ItemMapping>> optionalRes = mappingReadService.findBySkuCodeAndOpenShopId(skuCode,shopId);
-                        if (!optionalRes.isSuccess()){
-                            log.error("find item mapping by sku code:{} shop id:{} ,error:{}",skuCode,shopId,optionalRes.getError());
+                        Response<com.google.common.base.Optional<ItemMapping>> optionalRes = mappingReadService.findBySkuCodeAndOpenShopId(skuCode, shopId);
+                        if (!optionalRes.isSuccess()) {
+                            log.error("find item mapping by sku code:{} shop id:{} ,error:{}", skuCode, shopId, optionalRes.getError());
                             continue;
                         }
 
                         com.google.common.base.Optional<ItemMapping> mappingOptional = optionalRes.getResult();
 
-                        if (!mappingOptional.isPresent()){
-                            log.warn("current shop id:{} not sale sku code:{} so skip",shopId,skuCode);
+                        if (!mappingOptional.isPresent()) {
+                            log.warn("current shop id:{} not sale sku code:{} so skip", shopId, skuCode);
                             continue;
                         }
 
@@ -237,18 +253,17 @@ public class StockPusher {
                         //计算每个店铺的可用库存
                         Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
                         if (!rWarehouseIds.isSuccess()) {
-                            log.error("find warehouse list by shopId fail: shopId: {}, caused: {]",shopId, rWarehouseIds.getError());
+                            log.error("find warehouse list by shopId fail: shopId: {}, caused: {]", shopId, rWarehouseIds.getError());
                             continue;
                         }
 
-                        Long stock = 0L;
                         //根据商品分组规则判断该店铺是否运行售卖此SKU
-                        boolean isOnSale = queryHkWarhouseOrShopStockApi.isVendible(skuCode,shopId);
+                        boolean isOnSale = queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
                         //根据商品分组规则，如果不售卖则推送0
-                        if(!isOnSale){
+                        if (!isOnSale) {
                             log.info("this sku is not on sale in this shop, so set push stock to 0 (skuCode is {},shopId is {})", skuCode, shopId);
                             stock = 0L;
-                        }else{
+                        } else {
                             //跟店铺类型、营业状态过滤可用店仓
                             List<Long> warehouseIds = getAvailableForShopWarehouse(rWarehouseIds.getResult());
                             //根据商品分组规则过滤可发货的仓库列表
@@ -259,13 +274,13 @@ public class StockPusher {
                             }
                             warehouseIds = queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode);
 
-                            if(warehouseIds==null||warehouseIds.isEmpty()){
+                            if (warehouseIds == null || warehouseIds.isEmpty()) {
                                 stock = 0L;
-                            }else {
+                            } else {
                                 stock = this.calculateStock(shopId, skuCode, warehouseIds, shopStockRule);
                             }
                         }
-                        if(stock == null){
+                        if (stock == null) {
                             continue;
                         }
 
@@ -276,22 +291,26 @@ public class StockPusher {
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
-                        }else if(Objects.equals(openShop.getChannel(), MiddleChannel.CODOON.getValue())) {
+                        } else if (Objects.equals(openShop.getChannel(), MiddleChannel.CODOON.getValue())) {
                             log.info("start to push to codoon shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStockForCodoon.put(shopId, skuCode, Math.toIntExact(stock));
-                        }else {
+                        } else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
                             log.info("parall update stock start");
                             this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
                             log.info("parall update stock return");
                         }
+                        createAndPushLogs(logs, skuCode, shopId, stock, Boolean.TRUE, null);
 
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));
+                        createAndPushLogs(logs, skuCode, shopId, stock, Boolean.FALSE, e.getMessage());
+
                     }
                 }
+                pushLogs(logs);
             } catch (Exception e) {
                 log.error("failed to push stock,sku is {}", skuCode);
             }
@@ -307,8 +326,8 @@ public class StockPusher {
         log.info("send to codoon by parall update stock return");
         //库存日志推送
         if (!thirdStockPushLogs.isEmpty()) {
-            thirdStockPushLogs.forEach(item->{
-                log.info("stock push third shop log info:{}",item.toString());
+            thirdStockPushLogs.forEach(item -> {
+                log.info("stock push third shop log info:{}", item.toString());
             });
         }
 
@@ -317,8 +336,39 @@ public class StockPusher {
             redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
         }
 
-        if(log.isDebugEnabled()){
-            log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}",skuCodes,System.currentTimeMillis());
+        if (log.isDebugEnabled()) {
+            log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}", skuCodes, System.currentTimeMillis());
+        }
+    }
+
+    private void createAndPushLogs(List<StockPushLog> logs, String skuCode, Long shopId, Long stock, Boolean status, String msg) {
+        try {
+            OpenShop shop = openShopCacher.get(shopId);
+            String shopCode = shop.getExtra().get(SHOP_CODE);
+            if (StringUtils.isEmpty(shopCode)) {
+                shopCode = Splitter.on("-").splitToList(shop.getAppKey()).get(1);
+            }
+            StockPushLog log = new StockPushLog().shopId(shopId)
+                    .shopName(shop.getShopName())
+                    .outId(shopCode)
+                    .skuCode(skuCode)
+                    .quantity(stock)
+                    .status(status ? 1 : 2)
+                    .cause(msg).syncAt(new Date());
+            logs.add(log);
+            if (!logs.isEmpty() || logs.size() % PUSH_SIZE == 0) {
+                pushLogs(logs);
+            }
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void pushLogs(List<StockPushLog> logs) {
+        if (!logs.isEmpty()) {
+            String logJson = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(logs);
+            producer.send(stockLogTopic, new StockLogDto().logJson(logJson).type(StockLogTypeEnum.MIDDLETOSHOP.value()));
+            logs.clear();
         }
     }
 
@@ -343,18 +393,11 @@ public class StockPusher {
             }
             log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
                     stock.intValue(), skuCode, shopId);
-            //异步生成库存推送日志
-            StockPushLog stockPushLog = new StockPushLog();
-            stockPushLog.setShopId(shopId);
-            stockPushLog.setShopName(shopName);
-            stockPushLog.setSkuCode(skuCode);
-            stockPushLog.setQuantity((long) stock.intValue());
-            stockPushLog.setStatus(rP.isSuccess() ? 1 : 2);
-            stockPushLog.setCause(rP.isSuccess() ? "" : rP.getError());
-            stockPushLog.setSyncAt(new Date());
-            stockPushLogs.add(stockPushLog);
             //库存日志推送
-            log.info("stock push third shop log info:{}",stockPushLogs.toString());
+            log.info("stock push third shop log info:{}", stockPushLogs.toString());
+            //// TODO: 2018/8/20
+            createAndPushLogs(stockPushLogs, skuCode, shopId, (long) stock.intValue(), rP.isSuccess(), rP.getError());
+            pushLogs(stockPushLogs);
         });
     }
 
@@ -378,25 +421,32 @@ public class StockPusher {
                         log.error("failed to push stocks {} to shop(id={}), error code{}",
                                 paranaSkuStocks, shopId, r.getError());
                     }
+
+                    //生成库存推送日志
+                    List<StockPushLog> stockPushLogs = Lists.newArrayList();
+                    //库存日志推送
+                    paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, (long) (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
+                    pushLogs(stockPushLogs);
                 } catch (Exception e) {
                     log.error("sync offical stock failed,caused by {}", Throwables.getStackTraceAsString(e));
                 }
             }
+
 
         });
     }
 
 
     /**
-     * @Description 查询库存中心计算可用库存
-     * @Date        2018/7/11
-     * @param       shopId
-     * @param       skuCode
-     * @param       warehouseIds
-     * @param       shopStockRule
+     * @param shopId
+     * @param skuCode
+     * @param warehouseIds
+     * @param shopStockRule
      * @return
+     * @Description 查询库存中心计算可用库存
+     * @Date 2018/7/11
      */
-    private Long calculateStock(Long shopId,String skuCode,List<Long> warehouseIds,WarehouseShopStockRule shopStockRule){
+    private Long calculateStock(Long shopId, String skuCode, List<Long> warehouseIds, WarehouseShopStockRule shopStockRule) {
         Long stock = 0L;
 
         long start1 = System.currentTimeMillis();
@@ -404,9 +454,9 @@ public class StockPusher {
                 Lists.transform(warehouseIds, input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
         ), shopId);
         long end1 = System.currentTimeMillis();
-        log.info("get available inventory cost: {}", (end1-start1));
+        log.info("get available inventory cost: {}", (end1 - start1));
         if (!getRes.isSuccess()) {
-            log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
+            log.error("error to find available inventory quantity: shopId: {}, caused: {]", shopId, getRes.getError());
             return null;
         }
         Long channelStock = 0L;
@@ -419,7 +469,7 @@ public class StockPusher {
                 skuCode, shopId, channelStock, shareStock);
 
         //如果库存数量小于0则推送0
-        if (channelStock < 0L){
+        if (channelStock < 0L) {
             log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
                     shopId, skuCode, channelStock, shareStock);
 
@@ -442,10 +492,10 @@ public class StockPusher {
     }
 
     /**
-     * @Description 校验门店类型为下单门店或营业状态为歇业，如果则门店店仓不可用；默认返回是false
-     * @Date        2018/7/7
-     * @param       warehouseIds
+     * @param warehouseIds
      * @return
+     * @Description 校验门店类型为下单门店或营业状态为歇业，如果则门店店仓不可用；默认返回是false
+     * @Date 2018/7/7
      */
     private List<Long> getAvailableForShopWarehouse(List<Long> warehouseIds) {
 
@@ -478,7 +528,7 @@ public class StockPusher {
                     continue;
                 }
                 availableWarehouse.add(warehouseId);
-            } catch (ServiceException e){
+            } catch (ServiceException e) {
                 log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
                         warehouseId, e.getMessage());
                 continue;

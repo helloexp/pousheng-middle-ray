@@ -1,0 +1,36 @@
+{
+  "stocklog": {
+    "_all": {
+      "enabled": false
+    },
+    "properties": {
+      "id": {
+        "type": "long"
+      },
+      "type": {
+        "type": "integer"
+      },
+      "skuCode": {
+        "type": "keyword"
+      },
+      "materialId": {
+        "type": "keyword"
+      },
+      "warehouseCode": {
+        "type": "keyword"
+      },
+      "warehouseName": {
+        "type": "keyword"
+      },
+      "status":{
+        "type": "integer"
+      },
+      "operate":{
+        "type": "integer"
+      },
+      "createdAt": {
+        "type": "date"
+      }
+    }
+  }
+}

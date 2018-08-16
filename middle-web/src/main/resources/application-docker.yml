@@ -159,6 +159,14 @@ skutemplate:
     full-dump-range: -1
     batch-size: 10000
 
+stocklog:
+  search:
+    index-name: stocklogs
+    index-type: stocklog
+    mapping-path: stock_log_mapping.json
+    full-dump-range: -1
+    batch-size: 100
+
 gd_map:
   searchApi: 'http://restapi.amap.com/v3/place/text'
   districtApi: 'http://restapi.amap.com/v3/place/text'
@@ -261,3 +269,4 @@ failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
 
 is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
 
+terminus.rocketmq.stockLogTopic: stockLogTopic

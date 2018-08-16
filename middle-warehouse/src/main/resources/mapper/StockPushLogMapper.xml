@@ -10,6 +10,8 @@
         <result column="shop_id" property="shopId"/>
         <result column="shop_name" property="shopName"/>
         <result column="sku_code" property="skuCode"/>
+        <result column="out_id" property="outId"/>
+        <result column="material_id" property="materialId"/>
         <result column="quantity" property="quantity"/>
         <result column="status" property="status"/>
         <result column="cause" property="cause"/>
@@ -29,11 +31,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name,sku_code,quantity,status,cause,sync_at,created_at, updated_at
+        shop_id, shop_name,out_id,sku_code,material_id,quantity,status,cause,sync_at,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName},#{skuCode}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
+        #{shopId}, #{shopName},#{outId},#{skuCode},#{materialId}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -42,7 +44,17 @@
 
         <if test="shopName != null">and `shop_name` =#{shopName}</if>
 
+        <if test="outId !=null">and `out_id` = #{outId}</if>
+
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
+
+        <if test="materialId != null">and `material_id` = #{materialId}</if>
+
+        <if test="status != null">and `status` = #{status}</if>
+
+        <if test="startAt != null">AND <![CDATA[sync_at >= #{startAt}]]> </if>
+
+        <if test="endAt != null">AND <![CDATA[sync_at <= #{endAt}]]> </if>
     </sql>
 
     <sql id="order">
@@ -63,7 +75,8 @@
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.shopId}, #{i.shopName}, #{i.skuCode}, #{i.quantity}, #{i.status}, #{i.cause}, #{i.syncAt}, now(), now()
+            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause},
+            #{i.syncAt}, now(), now()
             )
         </foreach>
     </insert>
@@ -81,8 +94,10 @@
         <set>
             <if test="shopId != null">shop_id = #{shopId},</if>
             <if test="shopName != null">`shop_name` = #{shopName},</if>
+            <if test="outId !=null">and `out_id` = #{outId}</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>
-            <if test="quantity != null"> quantity = #{quantity},</if>
+            <if test="materialId != null">material_id = #{materialId},</if>
+            <if test="quantity != null">quantity = #{quantity},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}

@@ -5,6 +5,7 @@
 package com.pousheng.middle.item.impl.service;
 
 import com.pousheng.middle.item.SearchSkuTemplateProperties;
+import com.pousheng.middle.item.SearchStockLogProperties;
 import io.terminus.parana.search.BaseESInitiator;
 import io.terminus.search.core.ESClient;
 import lombok.extern.slf4j.Slf4j;
@@ -25,14 +26,19 @@ public class PsESItemInitiator extends BaseESInitiator {
 
     private final SearchSkuTemplateProperties searchSkuTemplateProperties;
 
+    private final SearchStockLogProperties searchStockLogProperties;
+
     @Autowired
-    public PsESItemInitiator(ESClient esClient, SearchSkuTemplateProperties searchSkuTemplateProperties) {
+    public PsESItemInitiator(ESClient esClient, SearchSkuTemplateProperties searchSkuTemplateProperties,
+                             SearchStockLogProperties searchStockLogProperties) {
         super(esClient);
         this.searchSkuTemplateProperties = searchSkuTemplateProperties;
+        this.searchStockLogProperties = searchStockLogProperties;
     }
 
     @PostConstruct
     public void init() throws Exception {
         init(searchSkuTemplateProperties.getIndexName(), searchSkuTemplateProperties.getIndexType(), searchSkuTemplateProperties.getMappingPath());
+        init(searchStockLogProperties.getIndexName(), searchStockLogProperties.getIndexType(), searchStockLogProperties.getMappingPath());
     }
 }

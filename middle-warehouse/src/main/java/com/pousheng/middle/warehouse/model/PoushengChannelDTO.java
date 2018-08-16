@@ -58,6 +58,16 @@ public class PoushengChannelDTO implements Serializable {
     private Long channelLeftQuantity;
 
     /**
+     * 店铺外码
+     */
+    private String openShopCode;
+
+    /**
+     * 仓库外码
+     */
+    private String warehouseCode;
+
+    /**
      * 创建时间/指定时间
      */
     private Date createdAt;

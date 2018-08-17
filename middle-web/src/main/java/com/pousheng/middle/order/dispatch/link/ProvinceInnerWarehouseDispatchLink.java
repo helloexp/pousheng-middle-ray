@@ -65,6 +65,7 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
         Set<Long>  alreadyQueryWarehouseIds = warehouseSkuCodeQuantityTable.rowKeySet();
 
         //省内的mpos仓,如果没有则进入下个规则
+        //FIXME 由于省id不同且没有转换 需要改成根据省名称模糊匹配。此规则已弃用。如果重新弃用需要调整.added by longjun.tlj
         List<AddressGps> addressGpses = warehouseAddressComponent.findWarehouseAddressGps(Long.valueOf(receiverInfo.getProvinceId()));
         if(CollectionUtils.isEmpty(addressGpses)){
             return Boolean.TRUE;

@@ -22,13 +22,11 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
-import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -283,43 +281,48 @@ public class MemberShopOperationLogic {
         addressGps.setBusinessType(AddressBusinessType.SHOP.getValue());
         addressGps.setDetail(addressDto.getAddress());
         //省
-
-        log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
-        WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
-        if(Arguments.isNull(province)){
-            log.error("not find middle province by code:{} and name:{}",addressDto.getProvinceCode(),addressDto.getProvinceName());
-            return null;
-        }
-        addressGps.setProvinceId(province.getId());
-        addressGps.setProvince(province.getName());
+        //移除省转换 removed by longjun.tlj
+//        log.info("[START-TRANS-ADDRESS] addressDto:{}",addressDto);
+//        WarehouseAddress province = transToWarehouseAddress(addressDto.getProvinceCode(),addressDto.getProvinceName());
+//        if(Arguments.isNull(province)){
+//            log.error("not find middle province by code:{} and name:{}",addressDto.getProvinceCode(),addressDto.getProvinceName());
+//            return null;
+//        }
+//        addressGps.setProvinceId(province.getId());
+//        addressGps.setProvince(province.getName());
+        addressGps.setProvince(addressDto.getProvinceName());
 
         //市
-        WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
-        if(Arguments.isNull(city)){
-            log.error("not find middle city by code:{} and name:{}",addressDto.getCityCode(),addressDto.getCityName());
-            //如果根据id 查询不到则用pid和name查询
-            city = transToWarehouseAddress(province.getId(),addressDto.getCityName());
-            if(Arguments.isNull(city)){
-                log.error("not find middle city by pid:{} and name:{}",province.getId(),addressDto.getCityName());
-                return null;
-            }
-        }
-        addressGps.setCityId(city.getId());
-        addressGps.setCity(city.getName());
+        //移除市转换 removed by longjun.tlj
+//        WarehouseAddress city = transToWarehouseAddress(addressDto.getCityCode(),addressDto.getCityName());
+//        if(Arguments.isNull(city)){
+//            log.error("not find middle city by code:{} and name:{}",addressDto.getCityCode(),addressDto.getCityName());
+//            //如果根据id 查询不到则用pid和name查询
+//            city = transToWarehouseAddress(province.getId(),addressDto.getCityName());
+//            if(Arguments.isNull(city)){
+//                log.error("not find middle city by pid:{} and name:{}",province.getId(),addressDto.getCityName());
+//                return null;
+//            }
+//        }
+//        addressGps.setCityId(city.getId());
+//        addressGps.setCity(city.getName());
+        addressGps.setCity(addressDto.getCityName());
 
         //区
-        WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
-        if(Arguments.isNull(region)){
-            log.error("not find middle region by code:{} and name:{}",addressDto.getAreaCode(),addressDto.getAreaName());
-            //如果根据id 查询不到则用pid和name查询
-            region = transToWarehouseAddress(city.getId(),addressDto.getAreaName());
-            if(Arguments.isNull(region)){
-                log.error("not find middle region by pid:{} and name:{}",city.getId(),addressDto.getAreaName());
-                return null;
-            }
-        }
-        addressGps.setRegionId(region.getId());
-        addressGps.setRegion(region.getName());
+        //移除区转换 removed by longjun.tlj
+//        WarehouseAddress region = transToWarehouseAddress(addressDto.getAreaCode(),addressDto.getAreaName());
+//        if(Arguments.isNull(region)){
+//            log.error("not find middle region by code:{} and name:{}",addressDto.getAreaCode(),addressDto.getAreaName());
+//            //如果根据id 查询不到则用pid和name查询
+//            region = transToWarehouseAddress(city.getId(),addressDto.getAreaName());
+//            if(Arguments.isNull(region)){
+//                log.error("not find middle region by pid:{} and name:{}",city.getId(),addressDto.getAreaName());
+//                return null;
+//            }
+//        }
+//        addressGps.setRegionId(region.getId());
+//        addressGps.setRegion(region.getName());
+        addressGps.setRegion(addressDto.getAreaName());
 
         return addressGps;
     }
@@ -372,6 +375,7 @@ public class MemberShopOperationLogic {
     }
 
     //将会员中心的地址与中台地址做比较，转换为中台的地址
+    @Deprecated
     private WarehouseAddress transToWarehouseAddress(String code,String name){
         try {
             if(Strings.isNullOrEmpty(code)){

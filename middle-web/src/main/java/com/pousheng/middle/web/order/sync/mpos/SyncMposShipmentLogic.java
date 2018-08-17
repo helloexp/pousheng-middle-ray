@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.mpos;
 
 import com.google.common.base.Function;
+import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -322,7 +323,7 @@ public class SyncMposShipmentLogic{
         String orderBusinessId;
         //mpos门店则直接取app_key
         if (orderReadLogic.isMposOpenShop(shipment.getShopId())){
-            List<String> businessIdAndOutCode = Splitters.UNDERSCORE.splitToList(openShop.getAppKey());
+            List<String> businessIdAndOutCode = Splitter.on("-").splitToList(openShop.getAppKey());
             orderBusinessId = businessIdAndOutCode.get(0);
             orderShopCode = businessIdAndOutCode.get(1);
         } else {

@@ -380,7 +380,8 @@ public class ExportTradeBillListener {
                         }
                     }
                     //查询关联的交易订单
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(refundInfo.getRefund().getReleOrderCode());
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(refundInfo.getOrderRefund().getOrderCode());
+                    //订单支付信息
                     OpenClientPaymentInfo paymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
                     //查询关联的pos单
                     PoushengSettlementPos posSettleMent = null;

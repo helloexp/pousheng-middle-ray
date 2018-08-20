@@ -1491,63 +1491,7 @@ public class Shipments {
 
 
 
-    @RequestMapping(value = "api/order/shipment/fix")
-    public Integer fixOrderShipment(OrderShipmentCriteria criteria){
-        int count = 0;
-        int errorCount = 0;
-        /**
-         * 分页获取数据，再做转换
-         */
-        int pageNo = 0,pageSize = 100;
-        boolean next = true;
-        log.info("start fix order shipment spucode and address.....");
-        while(next){
-            pageNo ++;
-            criteria.setPageNo(pageNo);
-            criteria.setPageSize(pageSize);
-            Response<Paging<OrderShipment>> response = orderShipmentReadService.paging(criteria);
-            if(!response.isSuccess()){
-                log.error("find order shipment by criteria:{} failed,cause:{}",criteria,response.getError());
-                throw new JsonResponseException(response.getError());
-            }
-            List<OrderShipment> list = response.getResult().getData();
-            for (OrderShipment os:list) {
-                if(os.getProvinceId() != null) {
-                    continue;
-                }
-                OrderShipment os1 = new OrderShipment();
-                try{
-                    Shipment shipment = shipmentReadLogic.findShipmentById(os.getShipmentId());
-                    os1.setId(os.getId());
-                    os1.setSpuCodes(getSpusFromShipment(shipment));
-                    ReceiverInfo receiverInfo = this.trans2ReceiverInfo(shipment.getReceiverInfos());
-                    if(receiverInfo != null){
-                        if(receiverInfo.getProvinceId() != null) {
-                            os1.setProvinceId(receiverInfo.getProvinceId().longValue());
-                        }
-                        if(receiverInfo.getCityId() != null) {
-                            os1.setCityId(receiverInfo.getCityId().longValue());
-                        }
-                        if(receiverInfo.getRegionId() != null) {
-                            os1.setRegionId(receiverInfo.getRegionId().longValue());
-                        }
-                    }
-                    orderShipmentWriteService.update(os1);
-                }catch (Exception e){
-                    errorCount ++;
-                    log.error("fix shipment(id:{}) failed,cause:{}", os.getShipmentId(),Throwables.getStackTraceAsString(e));
-                    continue;
-                }
-            }
-            count += list.size();
-            log.info("fix order shipment count:{},failed count:{}",count,errorCount);
-            if(list.size() < pageSize) {
-                next = false;
-            }
-        }
-        log.info("fix order shipment spucode and address end.....");
-        return count;
-    }
+
 
     private String getSpusFromShipment(Shipment shipment){
         StringBuilder sb = new StringBuilder();

@@ -96,21 +96,21 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     private String spuCode;
 
     /**
-     * 省id
+     * 省
      */
-    private Long provinceId;
+    private String province;
 
 
 
     /**
-     * 市id
+     * 市
      */
-    private Long cityId;
+    private String city;
 
     /**
-     * 区id
+     * 区
      */
-    private Long regionId;
+    private String region;
 
     /**
      * 快递单状态

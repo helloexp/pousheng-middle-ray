@@ -503,3 +503,7 @@ alter table pousheng_item_group_skus add mark  tinyint  not null default 0  comm
 
 alter table parana_order_shipments add part_ship  tinyint  not null default 0  comment '1部分发货' after type ;
 
+
+alter table `parana_order_shipments` change `province_id` `province` varchar(50) DEFAULT NULL COMMENT '省';
+alter table `parana_order_shipments` change `city_id` `city` varchar(50) DEFAULT NULL COMMENT '市';
+alter table `parana_order_shipments` change `region_id` `region` varchar(50) DEFAULT NULL COMMENT '区';

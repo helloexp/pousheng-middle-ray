@@ -118,6 +118,37 @@ public class CreateShipments {
 
 
     /**
+     *
+     *
+     * @param code   单据code
+     * @param type 1 销售发货  2 换货发货
+     * @return 商品信息
+     */
+    @RequestMapping(value = "/api/query/wait/handle/shop/id", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Long> findShopIdByOrderCode(@RequestParam String code, @RequestParam(defaultValue = "1") Integer type) {
+        if (log.isDebugEnabled()){
+            log.debug("API-WAIT-HANDLE-SHOP-START param: id [{}] code [{}]",code,type);
+        }
+        if (Objects.equals(1, type)) {
+            ShopOrder orderBase = orderReadLogic.findShopOrderByCode(code);
+            if (Arguments.isNull(orderBase)){
+                log.error("not find order by code:{}",code);
+                return Response.fail("order.not.exist");
+            }
+            return Response.ok(orderBase.getShopId());
+        }
+
+        Refund refund = refundReadLogic.findRefundByRefundCode(code);
+        if (Arguments.isNull(refund)){
+            log.error("not find refund by code:{}",code);
+            return Response.fail("refund.not.exist");
+        }
+        return Response.ok(refund.getShopId());
+
+    }
+
+
+    /**
      * 发货预览
      *
      * @param id          单据id

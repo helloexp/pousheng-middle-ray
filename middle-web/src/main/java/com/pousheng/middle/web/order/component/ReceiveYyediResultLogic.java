@@ -38,6 +38,7 @@ public class ReceiveYyediResultLogic {
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
+
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     /**

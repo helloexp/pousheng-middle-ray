@@ -36,7 +36,6 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.swagger.annotations.ApiOperation;
-import io.terminus.applog.annotation.LogMe;
 import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -83,8 +82,6 @@ public class Shipments {
 
     @RpcConsumer
     private OrderShipmentReadService orderShipmentReadService;
-    @Autowired
-    private ObjectMapper objectMapper;
     @Autowired
     private OrderReadLogic orderReadLogic;
     @Autowired
@@ -147,6 +144,8 @@ public class Shipments {
     private OrderShipmentWriteService orderShipmentWriteService;
     @Autowired
     private ShipmentWriteManger shipmentWriteManger;
+    @Autowired
+    private MiddleOrderWriteService middleOrderWriteService;
 
     @Autowired
     private ShopCacher shopCacher;
@@ -157,7 +156,7 @@ public class Shipments {
     private MiddleRefundWriteService middleRefundWriteService;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
-
+    private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
     /**
      * 发货单分页 注意查的是 orderShipment
@@ -459,6 +458,9 @@ public class Shipments {
         //this.validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
         //创建订单不能选择店仓
         this.validateIsCreateOrderImportOrder(warehouseIds,shopOrderId);
+        //生成新的发货单之后需要释放之前占用的库存
+        orderWriteLogic.releaseRejectShipmentOccupyStock(shopOrderId);
+
         List<Long> shipmentIds = Lists.newArrayList();
         //用于判断运费是否已经算过
         int shipmentFeeCount = 0;
@@ -630,6 +632,9 @@ public class Shipments {
             log.info("lock refunds failed,refundId {},caused by {}",refundId,startResponse.getError());
             throw new JsonResponseException(startResponse.getError());
         }
+        //生成换货发货单首先需要把该售后单下拒单占用的库存全部释放
+        refundWriteLogic.releaseRejectShipmentOccupyStock(refundId);
+
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
             try {

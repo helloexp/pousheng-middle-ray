@@ -79,7 +79,7 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
                 (r, executor) -> log.error("task {} is rejected", r));
     }
 
-//    @Scheduled(cron = "0 */3 * * * ?")
+    //    @Scheduled(cron = "0 */3 * * * ?")
     public void producer() {
         if (canProduce()) {
             super.producer();
@@ -88,7 +88,7 @@ public class YyEdiShipAsyncJob extends AbstractAsyncJob {
         }
     }
 
-//    @PostConstruct
+    //    @PostConstruct
     public void consumer() {
         log.info("[YYEDI SHIP CONSUMER START...]");
         super.consumer();

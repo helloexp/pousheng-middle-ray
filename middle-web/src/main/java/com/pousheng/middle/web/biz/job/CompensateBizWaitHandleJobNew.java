@@ -114,7 +114,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
             map.put(DateTime.now().toString(), poushengCompensateBizs.stream().map(PoushengCompensateBiz::getId).collect(Collectors.toList()));
             pageNo ++;
         }
-        // 再查状态为失败，但是重试次数小于3次的
+         //再查状态为失败，但是重试次数小于3次的
         pageNo = 1;
         while (true) {
             PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();

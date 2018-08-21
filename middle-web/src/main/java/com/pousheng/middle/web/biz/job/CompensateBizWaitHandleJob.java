@@ -13,6 +13,7 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +36,7 @@ public class CompensateBizWaitHandleJob {
     @Autowired
     private CompensateBizProcessor compensateBizProcessor;
 
-//    @Scheduled(cron = "0 */1 * * * ?")
+    //@Scheduled(cron = "0 */3 * * * ?")
     @GetMapping("/api/compensate/biz/wait/handle/job")
     public void processWaitHandleJob() {
         log.info("[pousheng-middle-compensate-biz-wait-handle-job] start...");
@@ -61,22 +62,30 @@ public class CompensateBizWaitHandleJob {
                     continue;
                 }
                 //乐观锁控制更新为处理中
-                Response<Boolean> rU=  poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),poushengCompensateBiz.getStatus(),PoushengCompensateBizStatus.PROCESSING.name());
+                Response<Boolean> rU=  poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),
+                        poushengCompensateBiz.getStatus(),PoushengCompensateBizStatus.PROCESSING.name());
                 if (!rU.isSuccess()){
                     continue;
                 }
                 //业务处理
                 try{
                     compensateBizProcessor.doProcess(poushengCompensateBiz);
-                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
+                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),
+                            PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
                 }catch (BizException e0){
-                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e0);
-                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
-                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),e0.getMessage(),(poushengCompensateBiz.getCnt()+1));
+                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",
+                            poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e0);
+                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),
+                            PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
+                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),
+                            e0.getMessage(),(poushengCompensateBiz.getCnt()+1));
                 }catch (Exception e1){
-                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e1);
-                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
-                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),e1.getMessage(),(poushengCompensateBiz.getCnt()+1));
+                    log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",
+                            poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e1);
+                    poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),
+                            PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
+                    poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),
+                            e1.getMessage(),(poushengCompensateBiz.getCnt()+1));
                 }
 
             }

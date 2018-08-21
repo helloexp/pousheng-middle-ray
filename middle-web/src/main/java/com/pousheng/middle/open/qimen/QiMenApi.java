@@ -54,6 +54,8 @@ public class QiMenApi {
     private final ErpOpenApiClient erpOpenApiClient;
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     private static final String WMS_APP_KEY = "terminus-wms";

@@ -10,6 +10,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
@@ -94,6 +95,8 @@ public class RefundWriteLogic {
 
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     /**
      * 更新换货商品处理数量
@@ -1616,5 +1619,34 @@ public class RefundWriteLogic {
 
         log.error("cancel refund(id:{}) fail,because after sale:{}",refund.getId(),afterSale);
         return Response.fail("refund.status.invalid");
+    }
+
+    /**
+     * 售后单释放拒单库存
+     * @param refundId 售后单id
+     */
+    public void releaseRejectShipmentOccupyStock(Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<RejectShipmentOccupy> shipmentOccupies = refundReadLogic.getShipmentOccupies(refund);
+        if (!shipmentOccupies.isEmpty()){
+            //生成新的发货单之后需要释放之前占用的库存
+            List<RejectShipmentOccupy> newShipmentOccupies = Lists.newArrayList();
+            for (RejectShipmentOccupy rejectShipmentOccupy :shipmentOccupies){
+                //如果已经被释放则可以忽略
+                if (Objects.equals(rejectShipmentOccupy.getStatus(),RejectShipmentOccupy.ShipmentOccupyStatus.RELEASE.name())){
+                    newShipmentOccupies.add(rejectShipmentOccupy);
+                    continue;
+                }
+                Shipment rejectShipment = shipmentReadLogic.findShipmentById(rejectShipmentOccupy.getShipmentId());
+                mposSkuStockLogic.unLockStock(rejectShipment);
+                rejectShipmentOccupy.setStatus(RejectShipmentOccupy.ShipmentOccupyStatus.RELEASE.name());
+                newShipmentOccupies.add(rejectShipmentOccupy);
+            }
+
+            Map<String, String> originRefundExtra = refund.getExtra();
+            originRefundExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonDefaultMapper().toJson(newShipmentOccupies));
+            refund.setExtra(originRefundExtra);
+            update(refund);
+        }
     }
 }

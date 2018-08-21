@@ -287,4 +287,12 @@ public class TradeConstants {
 
     // 共享仓标记
     public static final String IS_SHARED_STOCK = "sharedStock";
+    //宝胜中台mq消费group
+    public static final String POUSHENG_MIDDLE_MQ_CONSUMER_GROUP="pousheng-middle-consumer-group";
+    /**
+     * CompensateBiz业务处理topic
+     */
+    public static final String POUSHENG_MIDDLE_COMPENSATE_BIZ_TOPIC="pousheng-middle-compensate-biz-topic";
+    //mpos发货单被拒单的需要释放库存的发货单集合
+    public static final String REJECT_SHIPMENT_OCCUPY_LIST="rejectShipmentOccupyList";
 }

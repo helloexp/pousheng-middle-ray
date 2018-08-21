@@ -19,10 +19,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Refund;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.RefundReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,10 +28,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.Nullable;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -374,7 +368,6 @@ public class RefundReadLogic {
     }
 
     /**
-<<<<<<< HEAD
      * 通过outId获取渠道
      *
      * @return 获取渠道
@@ -438,4 +431,21 @@ public class RefundReadLogic {
         return null;
     }
 
+
+    /**
+     * 查看发货单占用信息
+     * @param refund
+     * @return
+     */
+    public List<RejectShipmentOccupy> getShipmentOccupies(Refund refund){
+        Map<String,String> extraMap = refund.getExtra();
+
+        if(!extraMap.containsKey(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST)){
+            log.info("refund(id:{}) extra not contain key:{}",refund.getId(),
+                    TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST);
+            return new ArrayList<>();
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST),
+                mapper.createCollectionType(List.class,RejectShipmentOccupy.class));
+    }
 }

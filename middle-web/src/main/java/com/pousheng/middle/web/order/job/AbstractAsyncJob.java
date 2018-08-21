@@ -1,3 +1,4 @@
+
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Stopwatch;
@@ -73,7 +74,7 @@ public abstract class AbstractAsyncJob {
             return;
         }
         Stopwatch stopwatch = Stopwatch.createStarted();
-        log.info("START JOB AbstractAsyncJob.producer {}", getKeySuffix());
+        log.info("[START TO PRODUCER {} TASK]", getKeySuffix());
         Map<String, List<Long>> map = getPushIds();
         if (log.isDebugEnabled()) {
             log.debug("producer:{} get {} group task", getKeySuffix(), map.size());
@@ -87,7 +88,9 @@ public abstract class AbstractAsyncJob {
             }
         });
         stopwatch.stop();
-        log.debug("END JOB AbstractAsyncJob.producer {} and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
+        if (log.isDebugEnabled()) {
+            log.debug("[END TO PRODUCER {} TASK],and cost {} seconds", getKeySuffix(), stopwatch.elapsed(TimeUnit.SECONDS));
+        }
     }
 
     /**

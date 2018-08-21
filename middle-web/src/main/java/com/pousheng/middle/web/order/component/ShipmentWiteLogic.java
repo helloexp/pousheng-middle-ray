@@ -3,7 +3,6 @@ package com.pousheng.middle.web.order.component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -96,8 +95,6 @@ public class ShipmentWiteLogic {
     @Autowired
     private OrderWriteLogic orderWriteLogic;
     @Autowired
-    private ObjectMapper objectMapper;
-    @Autowired
     private SkuOrderReadService skuOrderReadService;
     @Autowired
     private DispatchOrderEngine dispatchOrderEngine;
@@ -155,6 +152,7 @@ public class ShipmentWiteLogic {
 
     @Autowired
     private ShopCacher shopCacher;
+    private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
         if (log.isDebugEnabled()){
@@ -1372,8 +1370,13 @@ public class ShipmentWiteLogic {
                 syncMposOrderLogic.syncNotDispatcherSkuToMpos(shopOrder, skuCodeAndQuantityList);
             }
         }
-        if (isFirst)
+        if (isFirst) {
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
+        }
+        //释放mpos拒单的库存
+        if (!dispatchOrderItemInfo.getWarehouseShipments().isEmpty()||!dispatchOrderItemInfo.getShopShipments().isEmpty()) {
+            orderWriteLogic.releaseRejectShipmentOccupyStock(shopOrder.getId());
+        }
         //如果没有派出去的单子则提示库存不足
         if (dispatchOrderItemInfo.getWarehouseShipments().isEmpty() && dispatchOrderItemInfo.getShopShipments().isEmpty()) {
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());

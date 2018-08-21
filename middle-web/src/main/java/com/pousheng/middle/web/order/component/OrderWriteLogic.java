@@ -5,8 +5,10 @@ import com.google.common.base.Strings;
 import com.google.common.collect.*;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
+import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
@@ -23,6 +25,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
@@ -87,6 +90,8 @@ public class OrderWriteLogic {
 
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {
@@ -283,6 +288,8 @@ public class OrderWriteLogic {
         } else {
             //发货单取消成功,订单状态设置为取消成功
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+            //取消成功则释放库存
+            this.releaseRejectShipmentOccupyStock(shopOrderId);
         }
 
     }
@@ -331,6 +338,8 @@ public class OrderWriteLogic {
         } else {
             //发货单取消失败,订单状态设置为取消失败
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+            //取消成功则释放库存
+            this.releaseRejectShipmentOccupyStock(shopOrderId);
         }
         if (log.isDebugEnabled()){
             log.debug("OrderWriteLogic cancelShopOrder,shopOrderId {},count {}",shopOrderId,count);
@@ -412,7 +421,8 @@ public class OrderWriteLogic {
                 log.info("after auto cancel sku order,try to auto create shipment,shopOrder id is {}", shopOrder.getId());
                 shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
-
+            //取消成功则释放库存
+            this.releaseRejectShipmentOccupyStock(shopOrderId);
         }
     }
 
@@ -484,7 +494,8 @@ public class OrderWriteLogic {
                 log.info("after cancel sku order,try to auto create shipment,shopOrder id is {}", shopOrder.getId());
                 shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
-
+            //取消成功则释放库存
+            this.releaseRejectShipmentOccupyStock(shopOrderId);
         }
         if (count > 0) {
             return Response.fail(errorMsg);
@@ -1063,6 +1074,36 @@ public class OrderWriteLogic {
         log.info("order amount recover ,shopOrderId={},shopId={}",shopOrderId,shopId);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         jdYunDingSyncStockLogic.syncUpdateJdOrderAmount(shopOrder.getShopId(),shopOrder.getOutId());
+    }
+
+    /**
+     * 正向订单mpos拒单释放占用库存
+     * @param shopOrderId
+     */
+    public void releaseRejectShipmentOccupyStock(Long shopOrderId){
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        List<RejectShipmentOccupy> shipmentOccupies = orderReadLogic.getShipmentOccupies(shopOrder);
+        if (!shipmentOccupies.isEmpty()){
+            //生成新的发货单之后需要释放之前占用的库存
+            List<RejectShipmentOccupy> newShipmentOccupies = Lists.newArrayList();
+            for (RejectShipmentOccupy rejectShipmentOccupy :shipmentOccupies){
+                //如果已经被释放则可以忽略
+                if (Objects.equals(rejectShipmentOccupy.getStatus(),RejectShipmentOccupy.ShipmentOccupyStatus.RELEASE.name())){
+                    newShipmentOccupies.add(rejectShipmentOccupy);
+                    continue;
+                }
+                Shipment rejectShipment = shipmentReadLogic.findShipmentById(rejectShipmentOccupy.getShipmentId());
+                mposSkuStockLogic.unLockStock(rejectShipment);
+                rejectShipmentOccupy.setStatus(RejectShipmentOccupy.ShipmentOccupyStatus.RELEASE.name());
+                newShipmentOccupies.add(rejectShipmentOccupy);
+            }
+            ShopOrder newShopOrder = orderReadLogic.findShopOrderById(shopOrder.getId());
+            //更新占用库存的发货单状态
+            Map<String, String> shopOrderExtra = newShopOrder.getExtra();
+            shopOrderExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonDefaultMapper().toJson(newShipmentOccupies));
+            newShopOrder.setExtra(shopOrderExtra);
+            middleOrderWriteService.updateShopOrder(newShopOrder);
+        }
     }
 }
 

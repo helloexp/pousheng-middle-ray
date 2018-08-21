@@ -42,6 +42,7 @@ public class NotifyHkOrderDoneLogic {
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
+
     /**
      * 创建通知恒康发货单收货时间任务
      *

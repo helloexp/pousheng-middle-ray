@@ -9,6 +9,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -227,13 +228,24 @@ public class MposOrderHandleLogic {
             skuCodeAndQuantity.put(shipmentItem.getSkuCode(),0- shipmentItem.getQuantity());
         }
         if (!Objects.equals(refund.getRefundType(), MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())) {
-             refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantity);
+            refundWriteLogic.updateSkuHandleNumber(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantity);
         } else {
-             refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantity);
+            refundWriteLogic.updateSkuHandleNumberForLost(orderShipment.getAfterSaleOrderId(), skuCodeAndQuantity);
         }
+        //换货被拒单不立即释放库存，等到生成新的发货单之后才会释放库存
+        //mposSkuStockLogic.unLockStock(shipment);
 
-        //解锁库存
-        mposSkuStockLogic.unLockStock(shipment);
+        //记录拒单的发货单号
+        List<RejectShipmentOccupy> shipmentOccupies = refundReadLogic.getShipmentOccupies(refund);
+        RejectShipmentOccupy rejectShipmentOccupy = new RejectShipmentOccupy();
+        rejectShipmentOccupy.setShipmentId(shipment.getId());
+        rejectShipmentOccupy.setStatus(RejectShipmentOccupy.ShipmentOccupyStatus.OCCUPY.name());
+        shipmentOccupies.add(rejectShipmentOccupy);
+        Refund newRefund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
+        Map<String, String> refundExtra = newRefund.getExtra();
+        refundExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonDefaultMapper().toJson(shipmentOccupies));
+        newRefund.setExtra(refundExtra);
+        refundWriteLogic.update(newRefund);
 
     }
 

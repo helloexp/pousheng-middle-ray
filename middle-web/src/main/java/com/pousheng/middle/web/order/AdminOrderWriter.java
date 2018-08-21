@@ -5,8 +5,10 @@ import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.component.OpenClientOrderLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
+import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
@@ -102,6 +104,8 @@ public class AdminOrderWriter {
     private OrderReadService orderReadService;
     @Autowired
     private ShopOrderReadService shopOrderReadService;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     @Value("${logging.path}")
     private String filePath;
@@ -533,6 +537,9 @@ public class AdminOrderWriter {
             log.error("shop order cancel failed,skuOrderId is {},caused by {}", id, r.getError());
             throw new JsonResponseException("cancel.shop.order.failed");
         }
+        //释放mpos占用的库存
+        orderWriteLogic.releaseRejectShipmentOccupyStock(shopOrder.getId());
+
         if(log.isDebugEnabled()){
             log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-END param: id [{}] shopOrderCancelReason [{}]",id,shopOrderCancelReason);
         }
@@ -569,6 +576,9 @@ public class AdminOrderWriter {
             log.error("sku order cancel failed,skuOrderId is {},caused by{}", id, r.getError());
             throw new JsonResponseException("cancel.sku.order.failed");
         }
+        //释放mpos占用的库存
+        orderWriteLogic.releaseRejectShipmentOccupyStock(skuOrder.getOrderId());
+
         if(log.isDebugEnabled()){
             log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-END param: id [{}] skuOrderCancelReason [{}]",id,skuOrderCancelReason);
         }

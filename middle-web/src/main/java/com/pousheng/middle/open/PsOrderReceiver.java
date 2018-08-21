@@ -36,11 +36,9 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.DefaultOrderReceiver;
 import io.terminus.open.client.common.channel.OpenClientChannel;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
-import io.terminus.open.client.common.utils.PriceConverter;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenClientOrderConsignee;
 import io.terminus.open.client.order.dto.OpenClientOrderInvoice;
-import io.terminus.open.client.order.dto.OpenClientOrderItem;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.common.model.ParanaUser;
@@ -137,6 +135,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     /**

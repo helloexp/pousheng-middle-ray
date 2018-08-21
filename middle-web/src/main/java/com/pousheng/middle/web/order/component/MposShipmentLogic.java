@@ -6,6 +6,7 @@ import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
+import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
@@ -120,10 +121,22 @@ public class MposShipmentLogic {
             this.syncOrderStatus(shipment, MiddleOrderStatus.SHIPPED.getValue());
         }
         if (event.getMiddleOrderEvent() == MiddleOrderEvent.MPOS_REJECT) {
-            //解锁库存
-            mposSkuStockLogic.unLockStock(shipment);
+            //mpos拒单首先不解锁库存，等到生成新的发货单再去解锁库存
+            //mposSkuStockLogic.unLockStock(shipment);
+
             OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            //记录拒单的返货单号
+            List<RejectShipmentOccupy> shipmentOccupies = orderReadLogic.getShipmentOccupies(shopOrder);
+            RejectShipmentOccupy rejectShipmentOccupy = new RejectShipmentOccupy();
+            rejectShipmentOccupy.setShipmentId(shipment.getId());
+            rejectShipmentOccupy.setStatus(RejectShipmentOccupy.ShipmentOccupyStatus.OCCUPY.name());
+            shipmentOccupies.add(rejectShipmentOccupy);
+
+            Map<String, String> shopOrderExtra = shopOrder.getExtra();
+            shopOrderExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonEmptyMapper().toJson(shipmentOccupies));
+            orderWriteService.updateOrderExtra(shopOrder.getId(),OrderLevel.SHOP,shopOrderExtra);
+
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder, skuCodeAndQuantities);
         }

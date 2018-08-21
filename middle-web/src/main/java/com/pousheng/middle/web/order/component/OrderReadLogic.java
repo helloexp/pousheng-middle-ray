@@ -5,6 +5,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
+import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
@@ -672,6 +673,23 @@ public class OrderReadLogic {
             throw new ServiceException("find.skuOrder.failed");
         }
         return skuOrderFilters.get(0);
+    }
+
+    /**
+     * 查看发货单占用信息
+     * @param shopOrder
+     * @return
+     */
+    public List<RejectShipmentOccupy> getShipmentOccupies(ShopOrder shopOrder){
+        Map<String,String> extraMap = shopOrder.getExtra();
+
+        if(!extraMap.containsKey(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST)){
+            log.info("shopOrder(id:{}) extra not contain key:{}",shopOrder.getId(),
+                    TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST);
+           return new ArrayList<>();
+        }
+        return mapper.fromJson(extraMap.get(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST),
+                mapper.createCollectionType(List.class,RejectShipmentOccupy.class));
     }
 
 

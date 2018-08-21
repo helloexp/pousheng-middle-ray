@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleAfterSaleInfo;
@@ -80,6 +81,8 @@ public class Refunds {
     private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -416,7 +419,7 @@ public class Refunds {
         if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
             throw new JsonResponseException("reject.goods.can.not.be.canceled");
         }
-        if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT)){
+        if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
             if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){
                 OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
@@ -435,12 +438,14 @@ public class Refunds {
             //回滚发货单的数量
             refundWriteLogic.rollbackRefundQuantities(refund);
         }else{
+            //拒收单取消
             OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
             Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, syncSuccessOrderOperation);
             if (!updateSyncStatusRes.isSuccess()) {
                 log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                 throw new JsonResponseException(updateSyncStatusRes.getError());
             }
+            refundWriteLogic.releaseRejectShipmentOccupyStock(refundId);
         }
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-SYNCHKCANCELREFUND-END param: refundId [{}] ", refundId);
@@ -529,9 +534,12 @@ public class Refunds {
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-CANCELREFUNDFORCHANGE-START param: id [{}]", id);
         }
-        Refund refund = refundReadLogic.findRefundById(id);
-        if (refundReadLogic.isAfterSaleCanCancelShip(refund)){
-            //如果允许取消发货则修改状态
+        Refund originRefund = refundReadLogic.findRefundById(id);
+        if (refundReadLogic.isAfterSaleCanCancelShip(originRefund)){
+            //如果允许取消发货则修改状态，退货改换货需要判断一下是否存在有库存没有释放的情况
+            refundWriteLogic.releaseRejectShipmentOccupyStock(id);
+
+            Refund refund = refundReadLogic.findRefundById(id);
             refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());

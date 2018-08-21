@@ -314,7 +314,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
 
-        if (OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO) {
+        if (OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO
+                &&richSkusByShop.getExtra() != null && !richSkusByShop.getExtra().containsKey("importOrder")) {
             //这里先把buyer和mobile改为占位符，因为数据加密后长度很长，会导致数据库长度不够
             richOrder.getBuyer().setName(ENCRYPTED_FIELD_PLACE_HOLDER);
             if (richSkusByShop.getReceiverInfo() != null) {

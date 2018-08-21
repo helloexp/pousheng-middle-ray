@@ -254,12 +254,14 @@ public class ShipmentWiteLogic {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
             if (!Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                log.info("cancel hk shipment,shipment id is {}", shipment.getId());
-
-                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
-                    throw new JsonResponseException(syncRes.getError());
+                // 仓发 同步派发中心失败的不用再去调用取消接口
+                if (!Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_FAIL.getValue())) {
+                    log.info("cancel hk shipment,shipment id is {}", shipment.getId());
+                    Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment);
+                    if (!syncRes.isSuccess()) {
+                        log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                        throw new JsonResponseException(syncRes.getError());
+                    }
                 }
             }
             //

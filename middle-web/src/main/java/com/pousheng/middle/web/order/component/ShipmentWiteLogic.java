@@ -1517,7 +1517,7 @@ public class ShipmentWiteLogic {
 
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         //判断该发货单是否可以撤销，已取消的或者已经发货的发货单是不能撤销的
-        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) || shipment.getStatus() > MiddleShipmentsStatus.SHIPPED.getValue()) {
+        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) || shipment.getStatus() == MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue()) {
             throw new JsonResponseException("invalid.shipment.status.can.not.cancel");
         }
         //判断发货单类型，如果发货单类型是销售发货单正常处理

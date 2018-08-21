@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -79,17 +80,24 @@ public class EcpOrderLogic {
                 }
             }
             //同步订单信息到电商平台
-            this.syncEcpShipmentInfos(shopOrder.getId());
+            int count = 0;
+            String error = "";
+            this.syncEcpShipmentInfos(shopOrder.getId(),count,error);
+            if (count>0){
+                throw new BizException(error);
+            }
         } catch (ServiceException e) {
             log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
+            throw new BizException(Throwables.getStackTraceAsString(e));
         }catch (Exception e) {
             log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
+            throw new BizException(Throwables.getStackTraceAsString(e));
         }
 
     }
 
 
-    private void syncEcpShipmentInfos(Long shopOrderId){
+    private void syncEcpShipmentInfos(Long shopOrderId,int count,String error){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取第一个返货单生成时冗余的发货单id
         String shipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
@@ -102,13 +110,25 @@ public class EcpOrderLogic {
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
             if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())){
                 //同步到云聚
-                syncOrderToEcpLogic.syncToYunJu(shopOrder);
+                Response<Boolean> response = syncOrderToEcpLogic.syncToYunJu(shopOrder);
+                if (!response.isSuccess()){
+                    count++;
+                    error = response.getError();
+                }
 
             }else{
-                syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+                Response<Boolean> response = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
+                if (!response.isSuccess()){
+                    count++;
+                    error = response.getError();
+                }
             }
         }else{
-            syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
+            Response<Boolean> response = syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
+            if (!response.isSuccess()){
+                count++;
+                error = response.getError();
+            }
         }
 
     }

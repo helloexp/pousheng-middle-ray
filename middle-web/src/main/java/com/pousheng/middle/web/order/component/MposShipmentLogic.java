@@ -10,7 +10,11 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.web.events.trade.MposShipmentUpdateEvent;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
@@ -89,6 +93,8 @@ public class MposShipmentLogic {
     private RefundWriteService refundWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
     /**
      * 判断是否所有发货单都更新了 更新订单状态
@@ -161,7 +167,12 @@ public class MposShipmentLogic {
                 }
             } else {
                 log.info("new all channel  order notify ecp start,shipment is {}", shipment);
-                ecpOrderLogic.shipToEcp(shipment.getId());
+                //ecpOrderLogic.shipToEcp(shipment.getId());
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setBizType(PoushengCompensateBizType.SYNC_ECP.name());
+                biz.setBizId(String.valueOf(shipment.getId()));
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+                poushengCompensateBizWriteService.create(biz);
             }
         }
 

@@ -58,4 +58,8 @@ public enum PoushengCompensateBizType {
      */
     SKX_SYNC_SHIPMENT_RESULT,
 
+    /**
+     * 同步发货结果到第三方
+     */
+    SYNC_ECP;
 }

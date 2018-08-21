@@ -456,17 +456,11 @@ public class AdminOrderWriter {
         for (Long shopOrderId : ids) {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
             try {
-                if (orderReadLogic.isAllChannelOpenShop(shopOrder.getShopId())) {
-                    log.info("MPOS-ORDER-DISPATCH-START shopOrder(id:{}) outerId:{}", shopOrder.getId(), shopOrder.getOutId());
-                    shipmentWiteLogic.toDispatchOrder(shopOrder);
-                    log.info("MPOS-ORDER-DISPATCH-END shopOrder(id:{}) outerId:{} success...", shopOrder.getId(), shopOrder.getOutId());
-                } else {
-                    Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
-                    if (!response.isSuccess()) {
-                        log.error("auto handle shop order failed, order id is {},error:{}", shopOrderId, response.getError());
-                        failedShopOrderIds.add(shopOrderId);
-                        continue;
-                    }
+                Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
+                if (!response.isSuccess()) {
+                    log.error("auto handle shop order failed, order id is {},error:{}", shopOrderId, response.getError());
+                    failedShopOrderIds.add(shopOrderId);
+                    continue;
                 }
             } catch (Exception e) {
                 log.error("auto handle order failed,shop order id is {},cause by {}", shopOrder.getOrderCode(), e.getMessage());

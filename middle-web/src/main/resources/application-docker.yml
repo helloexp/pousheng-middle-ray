@@ -256,3 +256,9 @@ outlook.mail.copy: mpos_order_notify@pousheng.com
 #是否为库存推送第三方的消息消费节点
 inventory.push.topic.consume.enable: ${INV_PUSH_TOPIC_CONSUME_ENABLE}
 
+# 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
+failed.order.warning.email.receives: ${FAILED_ORDER_WARNING_EMAIL_RECEIVES}
+
+# 失败订单和发货单邮件通知JOB的触发器表达式
+failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
+

@@ -47,4 +47,20 @@ public class MailLogic {
         SimpleMailSender.sendTextMail(mailInfo);
         log.info("Send Mail Over!");
     }
+
+    public void sendMail (String receives, String title,String content) {
+        MailSenderInfo mailInfo = new MailSenderInfo();
+        mailInfo.setMailServerHost(mailServer);
+        mailInfo.setMailServerPort("25");
+        mailInfo.setValidate(true);
+        mailInfo.setUserName(username);
+        mailInfo.setPassword(password);
+        mailInfo.setFromAddress(username);
+        mailInfo.setToAddress(receives);
+//        mailInfo.setBccAddress(emailCopy);
+        mailInfo.setSubject(title);
+        mailInfo.setContent(content);
+        SimpleMailSender.sendTextMail(mailInfo);
+        log.info("Send Mail Over!");
+    }
 }

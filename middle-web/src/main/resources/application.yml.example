@@ -153,3 +153,10 @@ terminus:
   rocketmq:
     nameServerAddress: localhost:9876
     producerGroup: testGroup
+
+
+# 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
+failed.order.warning.email.receives: longjun.tlj@alibaba-inc.com
+
+# 失败订单和发货单邮件通知JOB的触发器表达式
+failed.order.warning.job.cron: 0 0 6,18 * * ?

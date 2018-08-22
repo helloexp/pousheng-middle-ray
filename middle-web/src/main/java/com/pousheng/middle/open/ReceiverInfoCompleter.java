@@ -45,21 +45,21 @@ public class ReceiverInfoCompleter {
 
         //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
         //移除省市区转换 removed by longjun.tlj
-//        Long provinceId = queryAddressId(1L,receiverInfo.getProvince());
-//        if(Arguments.notNull(provinceId)){
-//            receiverInfo.setProvinceId(Integer.valueOf(provinceId.toString()));
-//        }else {
-//            handleResult.setSuccess(Boolean.FALSE);
-//            errors.add("第三方渠道省："+receiverInfo.getProvince()+"未匹配到中台的省");
-//        }
-//
-//        Long cityId = queryAddressId(provinceId,receiverInfo.getCity());
-//        if(Arguments.notNull(cityId)){
-//            receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
-//        }else {
-//            handleResult.setSuccess(Boolean.FALSE);
-//            errors.add("第三方渠道市："+receiverInfo.getCity()+"未匹配到中台的市");
-//        }
+        Long provinceId = queryAddressId(1L,receiverInfo.getProvince());
+        if (Arguments.notNull(provinceId)){
+            receiverInfo.setProvinceId(Integer.valueOf(provinceId.toString()));
+        } else {
+            handleResult.setSuccess(Boolean.FALSE);
+            errors.add("第三方渠道省：" + receiverInfo.getProvince()+ "未匹配到中台的省");
+        }
+
+        Long cityId = queryAddressId(provinceId,receiverInfo.getCity());
+        if (Arguments.notNull(cityId)){
+            receiverInfo.setCityId(Integer.valueOf(cityId.toString()));
+        } else {
+            handleResult.setSuccess(Boolean.FALSE);
+            errors.add("第三方渠道市："+ receiverInfo.getCity()+ "未匹配到中台的市");
+        }
 //
 //        if (StringUtils.hasText(receiverInfo.getRegion())){
 //            Long regionId = queryAddressId(cityId,receiverInfo.getRegion());
@@ -91,14 +91,14 @@ public class ReceiverInfoCompleter {
         }
         //目前中台省的pi都是1，所以这里直接写死，如果有变动的话这里也需要做对应的修改
         //移除省市区转换 removed by longjun.tlj
-//        Long provinceId = queryAddressId(1L,address.getProvince());
-//        if(Arguments.notNull(provinceId)){
-//            address.setProvinceId(provinceId);
-//        }
-//        Long cityId = queryAddressId(provinceId,address.getCity());
-//        if(Arguments.notNull(cityId)){
-//            address.setCityId(cityId);
-//        }
+        Long provinceId = queryAddressId(1L,address.getProvince());
+        if(Arguments.notNull(provinceId)){
+            address.setProvinceId(provinceId);
+        }
+        Long cityId = queryAddressId(provinceId,address.getCity());
+        if(Arguments.notNull(cityId)){
+            address.setCityId(cityId);
+        }
 //
 //        if (StringUtils.hasText(address.getRegion())){
 //            List<String> specialRegions = Lists.newArrayList(SpecialRegion.YUANQU.getName(),SpecialRegion.YUANQU.getDesc());

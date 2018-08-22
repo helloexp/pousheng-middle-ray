@@ -2,13 +2,17 @@ package com.pousheng.middle.warehouse.companent;
 
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Splitters;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -87,6 +91,37 @@ public class WarehouseShopSkuRuleClient {
         }
 
         return null;
+    }
+
+
+    /**
+     * 创建新的商品推送规则
+     *
+     * @param rules
+     * @return
+     */
+    public Response<List<String>> batchCreateOrUpdate(List<WarehouseShopSkuStockRule> rules) {
+        if (StringUtils.isEmpty(rules)) {
+            return Response.fail("warehouse.shop.rule.create.fail.parameter");
+        }
+        log.info("create shop sku rule , warehouseShopSkuStockRules is {}", JSON.toJSONString(rules));
+        try {
+            Map<String, Object> params = new HashMap<>();
+            params.put("warehouseShopSkuStockRules", JSON.toJSONString(rules));
+            String result = (String) inventoryBaseClient.post(API_PATH_PREFIX + "/batchCreateOrUpdate",
+                    params, String.class);
+            if (StringUtils.isEmpty(result)) {
+                log.info(" create shop sku rule fail list {}", result);
+                return Response.ok(Lists.newArrayList());
+            }
+            return Response.ok(Splitters.COMMA.splitToList(result));
+
+        } catch (Exception e) {
+            log.error("create shop sku rule fail, cause:{}", Throwables.getStackTraceAsString(e));
+
+            return Response.fail(e.getMessage());
+        }
+
     }
 
     /**

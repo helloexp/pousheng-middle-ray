@@ -30,16 +30,19 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -225,33 +228,37 @@ public class Refunds {
             log.error("find refund by refund ids:{} result size not equal request id size:{}", refundIds, refunds.size(), refundIds.size());
             throw new JsonResponseException("refund.id.invalid");
         }
+
+        List<String> checkFailedRefundCodes = Lists.newArrayList();
+        List<String> handleFailedRefundCodes = Lists.newArrayList();
+        List<String> syncFailedRefundCodes = Lists.newArrayList();
         //判断是否存在没有完善的售后单
-        int count=0;
-        List<String> failedRefundCodes = org.assertj.core.util.Lists.newArrayList();
-        for (Refund refund:refunds){
+        refunds = refunds.stream().filter(refund -> {
             Map<String,String> refundExtraMap = refund.getExtra();
             if (!refundExtraMap.containsKey(TradeConstants.MIDDLE_REFUND_COMPLETE_FLAG)){
-                failedRefundCodes.add(refund.getRefundCode());
-                count++;
+                checkFailedRefundCodes.add(refund.getRefundCode());
+                log.error("refund(id:{}) check fail", refund.getId());
+                return false;
             }
-        }
-        if (count>0){
-            throw new JsonResponseException("存在售后单信息未完善,请完善之后再审核,未完善的售后单号:"+ failedRefundCodes);
-        }
+            return true;
+        }).collect(Collectors.toList());
+
         refunds.forEach(refund -> {
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
                 OrderOperation orderOperation = MiddleOrderEvent.LOST_HANDLE.toOrderOperation();
                 Response<Boolean> response = refundWriteLogic.updateStatusLocking(refund, orderOperation);
                 if (!response.isSuccess()) {
                     log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
-                    throw new JsonResponseException(response.getError());
+                    //throw new JsonResponseException(response.getError());
+                    handleFailedRefundCodes.add(refund.getRefundCode());
                 }
             }else{
                 OrderOperation orderOperation = MiddleOrderEvent.HANDLE.toOrderOperation();
                 Response<Boolean> response = refundWriteLogic.updateStatusLocking(refund, orderOperation);
                 if (!response.isSuccess()) {
                     log.error("refund(id:{}) operation:{} fail", refund.getId(), orderOperation);
-                    throw new JsonResponseException(response.getError());
+                    //throw new JsonResponseException(response.getError());
+                    handleFailedRefundCodes.add(refund.getRefundCode());
                 }else{
                     //审核之后同步售后单到恒康
                     Flow flow = flowPicker.pickAfterSales();
@@ -260,13 +267,25 @@ public class Refunds {
                     Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                     if (!syncRes.isSuccess()) {
                         log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                        syncFailedRefundCodes.add(refund.getRefundCode());
                     }
                 }
             }
         });
+
+        if(!CollectionUtils.isEmpty(checkFailedRefundCodes)
+                ||!CollectionUtils.isEmpty(handleFailedRefundCodes)
+                ||!CollectionUtils.isEmpty(syncFailedRefundCodes)) {
+            throw new InvalidException("refund.batch.deal.fail.info(check.incomplete={0},handle.failed={1},sync.failed={2})",
+                    checkFailedRefundCodes.toString(),
+                    handleFailedRefundCodes.toString(),
+                    syncFailedRefundCodes.toString());
+        }
+
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-BATCH-HANDLE-END param: data [{}]", data);
         }
+
     }
 
 

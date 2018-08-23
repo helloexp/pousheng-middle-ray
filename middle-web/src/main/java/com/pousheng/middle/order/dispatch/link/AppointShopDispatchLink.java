@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dispatch.link;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.contants.DispatchContants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
@@ -15,6 +16,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
@@ -46,6 +48,8 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
     private WarehouseAddressCacher warehouseAddressCacher;
     @RpcConsumer
     private WarehouseAddressRuleClient warehouseAddressRuleClient;
+    @Autowired
+    private ReceiverInfoCompleter receiverInfoCompleter;
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
@@ -67,6 +71,9 @@ public class AppointShopDispatchLink implements DispatchOrderLink{
         //查询当前店铺的派单仓范围
 
         List<Long> addressIds = Lists.newArrayListWithExpectedSize(3);
+        if (Arguments.isNull(receiverInfo.getCityId())){
+            receiverInfoCompleter.complete(receiverInfo);
+        }
         Long currentAddressId =  Long.valueOf(receiverInfo.getCityId());
         addressIds.add(currentAddressId);
         while (currentAddressId > 1) {

@@ -9,6 +9,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
+import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
@@ -140,6 +141,8 @@ public class ShipmentWiteLogic {
     private ZoneContractReadService zoneContractReadService;
     @Autowired
     private MailLogic mailLogic;
+    @Autowired
+    private ReceiverInfoCompleter receiverInfoCompleter;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -446,9 +449,12 @@ public class ShipmentWiteLogic {
             return false;
         }
         ReceiverInfo receiverInfo = response.getResult().get(0);
-        if (Arguments.isNull(receiverInfo.getCityId())) {
+        if (Arguments.isNull(receiverInfo.getCity())) {
             log.error("receive info:{} city id is null,so skip auto create shipment", receiverInfo);
             return false;
+        }
+        if (Arguments.isNull(receiverInfo.getCityId())){
+            receiverInfoCompleter.complete(receiverInfo);
         }
         //选择发货仓库
         List<WarehouseShipment> warehouseShipments = warehouseChooser.choose(shopOrder, Long.valueOf(receiverInfo.getCityId()), skuCodeAndQuantities);

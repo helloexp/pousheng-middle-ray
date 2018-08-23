@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.gson.JsonObject;
+import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -23,6 +24,7 @@ import com.pousheng.middle.yyedisyc.dto.trade.YJErpShipmentProductInfo;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.constant.ExtraKeyConstant;
 import io.terminus.parana.attribute.dto.SkuAttribute;
@@ -67,6 +69,8 @@ public class SyncYJErpShipmentLogic {
     private SkuTemplateReadService skuTemplateReadService;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
+    @Autowired
+    private ReceiverInfoCompleter receiverInfoCompleter;
 
 
     /**
@@ -216,6 +220,9 @@ public class SyncYJErpShipmentLogic {
         YJErpShipmentInfo yjErpShipmentInfo = new YJErpShipmentInfo();
         Shipment shipment = shipmentDetail.getShipment();
         ReceiverInfo receiverInfo = shipmentDetail.getReceiverInfo();
+        if (Arguments.isNull(receiverInfo.getCityId())){
+            receiverInfoCompleter.complete(receiverInfo);
+        }
         // 外部单号,中台发货单号
         yjErpShipmentInfo.setOther_order_sn(shipment.getShipmentCode());
         // 收货人
@@ -224,8 +231,8 @@ public class SyncYJErpShipmentLogic {
         yjErpShipmentInfo.setProvince(String.valueOf(receiverInfo.getProvinceId()));
         // 市 编码
         yjErpShipmentInfo.setCity(String.valueOf(receiverInfo.getCityId()));
-        // 区 编码
-        yjErpShipmentInfo.setArea(String.valueOf(receiverInfo.getRegionId()));
+        // 区 编码 非必填
+        //yjErpShipmentInfo.setArea(String.valueOf(receiverInfo.getRegionId()));
         // 省 名称
         yjErpShipmentInfo.setProvince_name(receiverInfo.getProvince());
         // 市 名称

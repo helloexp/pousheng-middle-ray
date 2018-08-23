@@ -42,4 +42,7 @@ public class SpuMaterialCacher {
         return this.spuMaterialCacher.getUnchecked(materialId);
     }
 
+    public void refreshById(String spuMaterial) {
+        this.spuMaterialCacher.refresh(spuMaterial);
+    }
 }

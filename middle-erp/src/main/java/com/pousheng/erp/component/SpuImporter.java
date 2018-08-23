@@ -7,12 +7,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.cache.ErpSpuCacher;
+import com.pousheng.erp.cache.SpuMaterialCacher;
 import com.pousheng.erp.dao.mysql.SkuGroupRuleDao;
 import com.pousheng.erp.dao.mysql.SpuMaterialDao;
 import com.pousheng.erp.manager.ErpSpuManager;
 import com.pousheng.erp.model.*;
 import com.pousheng.erp.rules.SkuGroupRuler;
-import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.brand.model.Brand;
@@ -47,6 +47,8 @@ public class SpuImporter {
 
     private final ErpSpuCacher spuCacher;
 
+    private final SpuMaterialCacher spuMaterialCacher;
+
     private final SkuGroupRuleDao skuGroupRuleDao;
 
     private final BackCategoryDao categoryDao;
@@ -68,6 +70,7 @@ public class SpuImporter {
     @Autowired
     public SpuImporter(ErpBrandCacher brandCacher,
                        ErpSpuCacher spuCacher,
+                       SpuMaterialCacher spuMaterialCacher,
                        SkuGroupRuleDao skuGroupRuleDao,
                        BackCategoryDao categoryDao,
                        ErpSpuManager spuManager,
@@ -75,6 +78,7 @@ public class SpuImporter {
                        MaterialFetcher materialFetcher, SkuTemplateDao skuTemplateDao, SpuDao spuDao) {
         this.brandCacher = brandCacher;
         this.spuCacher = spuCacher;
+        this.spuMaterialCacher = spuMaterialCacher;
         this.skuGroupRuleDao = skuGroupRuleDao;
         this.categoryDao = categoryDao;
         this.spuManager = spuManager;
@@ -124,6 +128,15 @@ public class SpuImporter {
             SpuMaterial exist = spuMaterialDao.findByMaterialId(materialId);
             if (exist != null) {
                 log.info("material(id={}) has been synchronized, ", materialId);
+                if (!StringUtils.isEmpty(material.getSale_date())) {
+                    SimpleDateFormat sdf = new SimpleDateFormat(DATE_PATTERN);
+                    Date new_sale_date = sdf.parse(material.getSale_date());
+                    if (!exist.getSaleDate().equals(new_sale_date)) {
+                        exist.setSaleDate(new_sale_date);
+                        spuMaterialDao.update(exist);
+                        spuMaterialCacher.refreshById(materialId);
+                    }
+                }
                 Long spuId = exist.getSpuId();
                 Spu spu = spuCacher.findById(spuId);
                 leafId = spu.getCategoryId();

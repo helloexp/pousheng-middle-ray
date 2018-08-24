@@ -21,12 +21,6 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
-import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiReturnLogic;
-import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundCancelApi;
-import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundOrderApi;
-import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiReturnInfo;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -79,12 +73,6 @@ public class SyncRefundLogic {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private SyncShipmentLogic syncShipmentLogic;
-    @Autowired
-    private SyncYYEdiReturnLogic syncYYEdiReturnLogic;
-    @Autowired
-    private SycYYEdiRefundOrderApi sycYYEdiRefundOrderApi;
-    @Autowired
-    private SycYYEdiRefundCancelApi sycYYEdiRefundCancelApi;
 
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
@@ -92,13 +80,13 @@ public class SyncRefundLogic {
     private static final DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     /**
-     * 同步退货单到skx和yyedi
+     * 同步退货单到skx
      *
      * @param refund 退货单
      * @return 同步结果 result 为恒康的退货单编号
      */
-    public Response<Boolean> syncRefundToSkxAndYYedi(Refund refund) {
-        log.info("sync refund(id:{}) to skx and yyedi",refund.getId());
+    public Response<Boolean> syncRefundToSkx(Refund refund) {
+        log.info("sync refund(id:{}) to skx", refund.getId());
 
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
@@ -110,21 +98,19 @@ public class SyncRefundLogic {
 
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //skx退货单同步skx是否成功
-        Boolean skxRefundSyncSkxResult = Arguments.isNull(refundExtra.getSkxRefundSyncSkxResult())?Boolean.FALSE:refundExtra.getSkxRefundSyncSkxResult();
-        //skx退货单同步YYedi是否成功
-        Boolean skxRefundSyncYyediResult = Arguments.isNull(refundExtra.getSkxRefundSyncYyediResult())?Boolean.FALSE:refundExtra.getSkxRefundSyncYyediResult();;
+        Boolean skxRefundSyncSkxResult = Arguments.isNull(refundExtra.getSkxRefundSyncSkxResult()) ? Boolean.FALSE : refundExtra.getSkxRefundSyncSkxResult();
 
         Flow flow = flowPicker.pickAfterSales();
-        Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+        Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
         refund.setStatus(targetStatus);
 
-        String syncErrorMsg="";
+        String syncErrorMsg = "";
         //同步skx
-        if(!skxRefundSyncSkxResult){
+        if (!skxRefundSyncSkxResult) {
             try {
                 //要根据不同步的售后单类型来决定同步成功或失败的状态
                 String response = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
-                SycRefundResponse sycRefundResponse =JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
+                SycRefundResponse sycRefundResponse = JsonMapper.nonEmptyMapper().fromJson(response, SycRefundResponse.class);
                 HkResponseHead head = sycRefundResponse.getHead();
                 if (Objects.equals(head.getCode(), "0")) {
                     skxRefundSyncSkxResult = Boolean.TRUE;
@@ -133,69 +119,32 @@ public class SyncRefundLogic {
                     Refund update = new Refund();
                     update.setId(refund.getId());
                     SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
-                    Map<String,String> extraMap = refund.getExtra();
+                    Map<String, String> extraMap = refund.getExtra();
                     extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
                     extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
                     update.setExtra(extraMap);
-                    Response<Boolean> updateRes =  refundWriteLogic.update(update);
-                    if(!updateRes.isSuccess()){
-                        log.error("update refund:{} fail,error:{}",update,updateRes.getError());
+                    Response<Boolean> updateRes = refundWriteLogic.update(update);
+                    if (!updateRes.isSuccess()) {
+                        log.error("update refund:{} fail,error:{}", update, updateRes.getError());
                     }
                 } else {
                     skxRefundSyncSkxResult = Boolean.FALSE;
                     //更新同步状态
-                    updateRefundSyncResult(refund, Boolean.FALSE,skxRefundSyncYyediResult);
-                    syncErrorMsg = "同步失败，SKX返回信息:"+head.getMessage();
+                    updateRefundSyncResult(refund, Boolean.FALSE);
+                    syncErrorMsg = "同步失败，SKX返回信息:" + head.getMessage();
                     log.error(syncErrorMsg);
                 }
             } catch (Exception e) {
                 log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
                 skxRefundSyncSkxResult = Boolean.FALSE;
                 //更新同步状态
-                updateRefundSyncResult(refund,Boolean.FALSE,skxRefundSyncYyediResult);
+                updateRefundSyncResult(refund, Boolean.FALSE);
                 syncErrorMsg = "同步SKX失败";
 
             }
         }
 
-
-
-        //同步yyedi
-        if(!skxRefundSyncYyediResult){
-            try {
-                //要根据不同步的售后单类型来决定同步成功或失败的状态
-                YYEdiReturnInfo returnInfo =syncYYEdiReturnLogic.makeSyncYYEdiRefund(refund);
-                String response = sycYYEdiRefundOrderApi.doSyncRefundOrder(Lists.newArrayList(returnInfo));
-                YYEdiResponse yyEdiResponse =JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-                if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
-                    skxRefundSyncYyediResult = Boolean.TRUE;
-                    //更新标记位
-                    refundExtra.setSkxRefundSyncYyediResult(Boolean.TRUE);
-                    Refund update = new Refund();
-                    update.setId(refund.getId());
-                    Map<String,String> extraMap = refund.getExtra();
-                    extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-                    update.setExtra(extraMap);
-                    Response<Boolean> updateRes =  refundWriteLogic.update(update);
-                    if(!updateRes.isSuccess()){
-                        log.error("update refund:{} fail,error:{}",update,updateRes.getError());
-                    }
-                }else{
-                    skxRefundSyncYyediResult = Boolean.FALSE;
-                    //更新同步状态
-                    updateRefundSyncResult(refund,skxRefundSyncSkxResult,Boolean.FALSE);
-                    syncErrorMsg = "订单派发中心返回信息:"+yyEdiResponse.getDescription();
-                    log.error(syncErrorMsg);
-                }
-            } catch (Exception e) {
-                log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
-                //更新同步状态
-                updateRefundSyncResult(refund,skxRefundSyncSkxResult,Boolean.FALSE);
-                syncErrorMsg = "同步YYEDI失败";
-            }
-        }
-
-        if(skxRefundSyncSkxResult&&skxRefundSyncYyediResult){
+        if (skxRefundSyncSkxResult) {
             //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
             OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
             Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
@@ -204,7 +153,7 @@ public class SyncRefundLogic {
                 return Response.fail(updateSyncStatusRes.getError());
             }
             return Response.ok(Boolean.TRUE);
-        }else {
+        } else {
             updateRefundSyncFial(refund);
             return Response.fail(syncErrorMsg);
         }
@@ -228,12 +177,12 @@ public class SyncRefundLogic {
             }
 
             Flow flow = flowPicker.pickAfterSales();
-            Integer targetStatus = flow.target(refund.getStatus(),orderOperation);
+            Integer targetStatus = flow.target(refund.getStatus(), orderOperation);
             refund.setStatus(targetStatus);
 
             //要根据不同步的售后单类型来决定同步成功或失败的状态
             String response = sycHkRefundOrderApi.doSyncRefundOrder(this.makeSyncHkRefund(refund), this.makeSycHkRefundItemList(refund));
-            SycRefundResponse sycRefundResponse =JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
+            SycRefundResponse sycRefundResponse = JsonMapper.nonEmptyMapper().fromJson(response, SycRefundResponse.class);
             HkResponseHead head = sycRefundResponse.getHead();
             if (Objects.equals(head.getCode(), "0")) {
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
@@ -249,7 +198,7 @@ public class SyncRefundLogic {
                 Refund update = new Refund();
                 update.setId(refund.getId());
                 SycHkRefundResponseBody body = sycRefundResponse.getRefundBody();
-                Map<String,String> extraMap = refund.getExtra();
+                Map<String, String> extraMap = refund.getExtra();
                 extraMap.put(TradeConstants.HK_REFUND_ID, String.valueOf(body.getErpOrderNo()));
                 update.setExtra(extraMap);
 
@@ -257,7 +206,7 @@ public class SyncRefundLogic {
             } else {
                 //更新同步状态
                 updateRefundSyncFial(refund);
-                return Response.fail("恒康返回信息:"+head.getMessage());
+                return Response.fail("恒康返回信息:" + head.getMessage());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -271,7 +220,7 @@ public class SyncRefundLogic {
     }
 
 
-    private void updateRefundSyncResult(Refund refund,Boolean skxRefundSyncSkxResult,Boolean skxRefundSyncYyediResult){
+    private void updateRefundSyncResult(Refund refund, Boolean skxRefundSyncSkxResult) {
 
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 
@@ -279,7 +228,6 @@ public class SyncRefundLogic {
         Refund toUpdate = new Refund();
         toUpdate.setId(refund.getId());
         refundExtra.setSkxRefundSyncSkxResult(skxRefundSyncSkxResult);
-        refundExtra.setSkxRefundSyncYyediResult(skxRefundSyncYyediResult);
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         toUpdate.setExtra(extraMap);
         Response<Boolean> updateRes = refundWriteLogic.update(toUpdate);
@@ -291,7 +239,7 @@ public class SyncRefundLogic {
     }
 
 
-    private void updateRefundCancelSyncResult(Refund refund,Boolean skxRefundCancelSyncSkxResult,Boolean skxRefundCancelSyncYyediResult){
+    private void updateRefundCancelSyncResult(Refund refund, Boolean skxRefundCancelSyncSkxResult) {
 
         Map<String, String> extraMap = refund.getExtra() != null ? refund.getExtra() : Maps.newHashMap();
 
@@ -299,7 +247,6 @@ public class SyncRefundLogic {
         Refund toUpdate = new Refund();
         toUpdate.setId(refund.getId());
         refundExtra.setSkxRefundCancelSyncSkxResult(skxRefundCancelSyncSkxResult);
-        refundExtra.setSkxRefundCancelSyncYyediResult(skxRefundCancelSyncYyediResult);
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         toUpdate.setExtra(extraMap);
         Response<Boolean> updateRes = refundWriteLogic.update(toUpdate);
@@ -310,7 +257,7 @@ public class SyncRefundLogic {
 
     }
 
-    private void updateRefundSyncFial(Refund refund){
+    private void updateRefundSyncFial(Refund refund) {
         OrderOperation orderOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
         Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
         if (!updateSyncStatusRes.isSuccess()) {
@@ -319,7 +266,7 @@ public class SyncRefundLogic {
     }
 
     //获取同步成功事件
-    private OrderOperation  getSyncSuccessOperation(Refund refund) {
+    private OrderOperation getSyncSuccessOperation(Refund refund) {
         MiddleRefundType middleRefundType = MiddleRefundType.from(refund.getRefundType());
         if (Arguments.isNull(middleRefundType)) {
             log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
@@ -360,10 +307,10 @@ public class SyncRefundLogic {
             Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
 
-            String response = sycHkOrderCancelApi.doCancelOrder( refund.getRefundCode(),1);
-            SycRefundResponse sycRefundResponse  = JsonMapper.nonEmptyMapper().fromJson(response,SycRefundResponse.class);
+            String response = sycHkOrderCancelApi.doCancelOrder(refund.getRefundCode(), 1);
+            SycRefundResponse sycRefundResponse = JsonMapper.nonEmptyMapper().fromJson(response, SycRefundResponse.class);
             HkResponseHead head = sycRefundResponse.getHead();
-            if (Objects.equals(head.getCode(),"0")) {
+            if (Objects.equals(head.getCode(), "0")) {
                 //同步调用成功后，更新售后单的状态
                 Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
                 OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
@@ -381,7 +328,7 @@ public class SyncRefundLogic {
                     log.error("refund(id:{}) operation :{} fail,error:{}", refund.getId(), syncSuccessOrderOperation.getText(), updateSyncStatusRes.getError());
                     return Response.fail(updateSyncStatusRes.getError());
                 }
-                return Response.fail("恒康返回信息:"+head.getMessage());
+                return Response.fail("恒康返回信息:" + head.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {
@@ -399,7 +346,7 @@ public class SyncRefundLogic {
     }
 
 
-    public Response<Boolean> syncRefundCancelToSkxAndYYedi(Refund refund){
+    public Response<Boolean> syncRefundCancelToSkx(Refund refund) {
         //更新状态为同步中
         OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
         Response<Boolean> updateStatusRes = refundWriteLogic.updateStatusLocking(refund, orderOperation);
@@ -411,14 +358,12 @@ public class SyncRefundLogic {
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         //skx退货单取消同步skx是否成功
         Boolean skxRefundCancelSyncSkxResult = Arguments.isNull(refundExtra.getSkxRefundCancelSyncSkxResult()) ? Boolean.FALSE : refundExtra.getSkxRefundCancelSyncSkxResult();
-        //skx退货单取消同步YYedi是否成功
-        Boolean skxRefundCancelSyncYyediResult = Arguments.isNull(refundExtra.getSkxRefundCancelSyncYyediResult()) ? Boolean.FALSE : refundExtra.getSkxRefundCancelSyncYyediResult();
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         String syncErrorMsg = "";
         if (!skxRefundCancelSyncSkxResult) {
             try {
-                String response = sycHkOrderCancelApi.doCancelOrder(refund.getRefundCode(),1);
+                String response = sycHkOrderCancelApi.doCancelOrder(refund.getRefundCode(), 1);
                 SycRefundResponse sycRefundResponse = JsonMapper.nonEmptyMapper().fromJson(response, SycRefundResponse.class);
                 HkResponseHead head = sycRefundResponse.getHead();
                 if (Objects.equals(head.getCode(), "0")) {
@@ -437,7 +382,7 @@ public class SyncRefundLogic {
                 } else {
                     skxRefundCancelSyncSkxResult = Boolean.FALSE;
                     //更新同步状态
-                    updateRefundCancelSyncResult(refund, Boolean.FALSE, skxRefundCancelSyncYyediResult);
+                    updateRefundCancelSyncResult(refund, Boolean.FALSE);
                     syncErrorMsg = "同步失败，SKX返回信息:" + head.getMessage();
                     log.error(syncErrorMsg);
                 }
@@ -445,51 +390,13 @@ public class SyncRefundLogic {
                 log.error("sync hk refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
                 skxRefundCancelSyncSkxResult = Boolean.FALSE;
                 //更新同步状态
-                updateRefundCancelSyncResult(refund, Boolean.FALSE, skxRefundCancelSyncYyediResult);
+                updateRefundCancelSyncResult(refund, Boolean.FALSE);
                 syncErrorMsg = "同步SKX失败";
 
             }
         }
 
-        if (!skxRefundCancelSyncYyediResult) {
-            try {
-                //要根据不同步的售后单类型来决定同步成功或失败的状态
-                YYEdiCancelInfo yyEdiCancelInfo = new YYEdiCancelInfo();
-                yyEdiCancelInfo.setBillNo(refund.getRefundCode());
-                yyEdiCancelInfo.setReMark(refund.getBuyerNote());
-                String response = sycYYEdiRefundCancelApi.doCancelOrder(Lists.newArrayList(yyEdiCancelInfo));
-                YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response, YYEdiResponse.class);
-
-                if (Objects.equals(yyEdiResponse.getErrorCode(), TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS) || Objects.equals(yyEdiResponse.getErrorCode(), TradeConstants.YYEDI_RESPONSE_CANCELED)) {
-                    skxRefundCancelSyncYyediResult = Boolean.TRUE;
-                    //更新标记位
-                    refundExtra.setSkxRefundCancelSyncYyediResult(Boolean.TRUE);
-                    Refund update = new Refund();
-                    update.setId(refund.getId());
-                    Map<String, String> extraMap = refund.getExtra();
-                    extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-                    update.setExtra(extraMap);
-                    Response<Boolean> updateRes = refundWriteLogic.update(update);
-                    if (!updateRes.isSuccess()) {
-                        log.error("update refund:{} fail,error:{}", update, updateRes.getError());
-                    }
-                } else {
-                    skxRefundCancelSyncYyediResult = Boolean.FALSE;
-                    //更新同步状态
-                    updateRefundCancelSyncResult(refund, skxRefundCancelSyncSkxResult, Boolean.FALSE);
-                    syncErrorMsg = "同步失败，yyedi返回信息:" + yyEdiResponse.getErrorCode();
-                    log.error(syncErrorMsg);
-                }
-            } catch (Exception e) {
-                log.error("sync yyedi refund fail failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
-                //更新同步状态
-                skxRefundCancelSyncYyediResult = Boolean.FALSE;
-                updateRefundCancelSyncResult(refund, skxRefundCancelSyncSkxResult, Boolean.FALSE);
-                syncErrorMsg = "同步YYEDI失败";
-            }
-        }
-
-        if (skxRefundCancelSyncSkxResult && skxRefundCancelSyncYyediResult) {
+        if (skxRefundCancelSyncSkxResult) {
             //同步调用成功后，更新售后单的状态
             Refund newStatusRefund = refundReadLogic.findRefundById(refund.getId());
             OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
@@ -532,10 +439,10 @@ public class SyncRefundLogic {
         sycHkRefund.setShopId(String.valueOf(shipmentExtra.getErpOrderShopCode()));
         sycHkRefund.setShopName("斯凯奇");
         //退货仓
-        if (refundExtra.getWarehouseId()!=null){
+        if (refundExtra.getWarehouseId() != null) {
             Response<WarehouseDTO> response = warehouseClient.findById(refundExtra.getWarehouseId());
-            if (!response.isSuccess()){
-                log.error("find warehouse by id :{} failed,  cause:{}",shipmentExtra.getWarehouseId(),response.getError());
+            if (!response.isSuccess()) {
+                log.error("find warehouse by id :{} failed,  cause:{}", shipmentExtra.getWarehouseId(), response.getError());
                 throw new ServiceException(response.getError());
             }
             WarehouseDTO warehouse = response.getResult();
@@ -543,7 +450,7 @@ public class SyncRefundLogic {
         }
         sycHkRefund.setPerformanceShopId(String.valueOf(shipmentExtra.getErpPerformanceShopCode()));
         //退款金额为页面上申请的退款金额
-        sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN).toString());
+        sycHkRefund.setRefundOrderAmount(new BigDecimal(refund.getFee() == null ? 0 : refund.getFee()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
         sycHkRefund.setRefundFreight(0);
         //换货是在中台完成,不通知恒康,所以只有退款退货,仅退款两项
         //中台状态1:售后退款,2:退货退款,恒康状态0:退货退款,1:仅退款
@@ -552,7 +459,7 @@ public class SyncRefundLogic {
         sycHkRefund.setStatus(String.valueOf(4));
         //售后单创建时间
         sycHkRefund.setCreatedDate(formatter.print(refund.getCreatedAt().getTime()));
-        sycHkRefund.setTotalRefund(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+        sycHkRefund.setTotalRefund(new BigDecimal(refund.getFee() == null ? 0 : refund.getFee()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
         //寄回物流单号
         sycHkRefund.setLogisticsCode(refundExtra.getShipmentSerialNo());
         //寄回物流公司代码
@@ -588,9 +495,9 @@ public class SyncRefundLogic {
             //换货原因,可不填
             item.setReason(refund.getBuyerNote());
             //商品价格
-            item.setSalePrice(new BigDecimal(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            item.setSalePrice(new BigDecimal(refundItem.getSkuPrice() == null ? 0 : refundItem.getSkuPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             //商品总净价
-            item.setRefundAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN).toString());
+            item.setRefundAmount(new BigDecimal(refundItem.getFee() == null ? 0 : refundItem.getFee()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN).toString());
             //商品名称
             item.setItemName(refundItem.getSkuName());
             //外部订单号
@@ -679,13 +586,14 @@ public class SyncRefundLogic {
 
     /**
      * 获取恒康
+     *
      * @param warehouseId
      * @return
      */
-    private String getHkWarehouseCodeById(long warehouseId){
+    private String getHkWarehouseCodeById(long warehouseId) {
         Response<WarehouseDTO> response = warehouseClient.findById(warehouseId);
-        if (!response.isSuccess()){
-            log.error("find warehouse by id :{} failed",warehouseId);
+        if (!response.isSuccess()) {
+            log.error("find warehouse by id :{} failed", warehouseId);
             throw new ServiceException("find.warehouse.failed");
         }
         return response.getResult().getWarehouseCode();

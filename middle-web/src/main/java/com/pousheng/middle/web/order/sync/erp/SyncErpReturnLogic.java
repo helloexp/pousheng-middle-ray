@@ -97,7 +97,7 @@ public class SyncErpReturnLogic {
                 case "hk":
                     //skx的逆向单要同步skx和yyedi
                     if(Objects.equals(openShop.getId(),skxOpenShopId)){
-                        return syncRefundLogic.syncRefundToSkxAndYYedi(refund);
+                        return syncRefundLogic.syncRefundToSkx(refund);
                     }else {
                         return syncRefundLogic.syncRefundToHk(refund);
                     }
@@ -124,7 +124,7 @@ public class SyncErpReturnLogic {
             case "hk":
                 //skx的逆向单要同步skx和yyedi
                 if(Objects.equals(openShop.getId(),skxOpenShopId)){
-                    return syncRefundLogic.syncRefundToSkxAndYYedi(refund);
+                    return syncRefundLogic.syncRefundToSkx(refund);
                 }else {
                     return syncRefundLogic.syncRefundToHk(refund);
                 }
@@ -220,7 +220,7 @@ public class SyncErpReturnLogic {
         switch (erpSyncType){
             case "hk":
                 if(Objects.equals(openShop.getId(),skxOpenShopId)){
-                    return syncRefundLogic.syncRefundCancelToSkxAndYYedi(refund);
+                    return syncRefundLogic.syncRefundCancelToSkx(refund);
                 }else {
                     return syncRefundLogic.syncRefundCancelToHk(refund);
                 }

@@ -86,11 +86,21 @@ public class ImportSkuStockRuleService implements CompensateBizService {
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalSkuStockRuleRecord> helper, String[] strs, String error) {
         AbnormalSkuStockRuleRecord abnormalSkuStockRuleRecord = new AbnormalSkuStockRuleRecord();
-        abnormalSkuStockRuleRecord.setSkuCode(strs[0].replace("\"", ""));
-        abnormalSkuStockRuleRecord.setSafeStock(strs[1].replace("\"", ""));
-        abnormalSkuStockRuleRecord.setRatio(strs[2].replace("\"", ""));
-        abnormalSkuStockRuleRecord.setJitStock(strs[3].replace("\"", ""));
-        abnormalSkuStockRuleRecord.setStatus(strs[4].replace("\"", ""));
+        if (!StringUtils.isEmpty(strs[0])) {
+            abnormalSkuStockRuleRecord.setSkuCode(strs[0].replace("\"", ""));
+        }
+        if (!StringUtils.isEmpty(strs[1])) {
+            abnormalSkuStockRuleRecord.setSafeStock(strs[1].replace("\"", ""));
+        }
+        if (!StringUtils.isEmpty(strs[2])) {
+            abnormalSkuStockRuleRecord.setRatio(strs[2].replace("\"", ""));
+        }
+        if (!StringUtils.isEmpty(strs[3])) {
+            abnormalSkuStockRuleRecord.setJitStock(strs[3].replace("\"", ""));
+        }
+        if (!StringUtils.isEmpty(strs[4])) {
+            abnormalSkuStockRuleRecord.setStatus(strs[4].replace("\"", ""));
+        }
         abnormalSkuStockRuleRecord.setReason(error);
         helper.appendToExcel(abnormalSkuStockRuleRecord);
     }

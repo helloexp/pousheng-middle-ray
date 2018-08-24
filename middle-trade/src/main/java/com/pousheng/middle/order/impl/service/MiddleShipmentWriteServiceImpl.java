@@ -5,10 +5,8 @@ import com.google.common.base.Throwables;
 import com.pousheng.middle.order.impl.manager.MiddleShipmentManager;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.impl.dao.ShopOrderDao;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -21,12 +19,16 @@ import org.springframework.stereotype.Service;
 public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteService{
 
     @Autowired
+    private ShopOrderDao shopOrderDao;
+
+    @Autowired
     private MiddleShipmentManager middleShipmentManager;
 
     @Override
     public Response<Long> createForAfterSale(Shipment shipment, OrderRefund orderRefund, Long afterSaleOrderId) {
         try {
             shipment.setStatus(MoreObjects.firstNonNull(shipment.getStatus(), 1));
+            ShopOrder order = shopOrderDao.findById(orderRefund.getOrderId());
             OrderShipment orderShipment = new OrderShipment();
             orderShipment.setOrderId(orderRefund.getOrderId());
             orderShipment.setOrderCode(orderRefund.getOrderCode());
@@ -39,6 +41,7 @@ public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteServic
             orderShipment.setShopName(shipment.getShopName());
             orderShipment.setShipWay(shipment.getShipWay());
             orderShipment.setShipId(shipment.getShipId());
+            orderShipment.setOrderTime(order.getOutCreatedAt());
             Long shipmentId = middleShipmentManager.create(shipment, orderShipment);
             return Response.ok(shipmentId);
         } catch (Exception e) {

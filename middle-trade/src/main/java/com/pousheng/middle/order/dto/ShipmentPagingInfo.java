@@ -7,6 +7,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -14,7 +15,7 @@ import java.util.Set;
  * Created by songrenfei on 2017/6/20
  */
 @Data
-public class ShipmentPagingInfo implements Serializable{
+public class ShipmentPagingInfo implements Serializable {
 
     private static final long serialVersionUID = 7706149878099313346L;
 
@@ -30,11 +31,19 @@ public class ShipmentPagingInfo implements Serializable{
     private Shipment shipment;
 
     /**
+     * 快递单号
+     */
+    private List<String> shipmentSerialNos;
+
+    /**
      * 订单信息
      */
     private ShopOrder shopOrder;
 
-    //extra信息
+    /**
+     * extra信息
+     */
+
     private ShipmentExtra shipmentExtra;
 
     /**

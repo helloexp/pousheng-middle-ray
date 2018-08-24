@@ -166,9 +166,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
         Map<String, String> extraMap = shipment.getExtra();
         //为了防止yyedi重复请求，清理备注
         update.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
-        if (!StringUtils.isEmpty(yyEdiShipInfo.getShipmentSerialNo())) {
-            update.setShipmentSerialNo(Splitters.COMMA.splitToList(yyEdiShipInfo.getShipmentSerialNo()).get(0));
-        }
+        update.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
         shipmentExtra.setRemark(null);
         shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
         shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());

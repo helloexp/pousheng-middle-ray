@@ -43,6 +43,7 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
@@ -158,6 +159,10 @@ public class Shipments {
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
+    /**
+     * 快递单号
+     */
+    private static final Integer MIN_LENGTH = 8;
 
     /**
      * 发货单分页 注意查的是 orderShipment
@@ -194,6 +199,9 @@ public class Shipments {
             shipmentCriteria.setOrderIds(list.stream().map(ShopOrder::getId).collect(Collectors.toList()));
         }
         if (shipmentCriteria.getShipmentSerialNo() != null){
+            if (shipmentCriteria.getShipmentSerialNo().length() < MIN_LENGTH) {
+                throw new JsonResponseException("shipment.serial.no.too.short");
+            }
             Response<List<Shipment>> response = shipmentReadService.findBySerialNo(shipmentCriteria.getShipmentSerialNo());
             if (!response.isSuccess()) {
                 throw new JsonResponseException(response.getError());
@@ -226,6 +234,9 @@ public class Shipments {
         shipmentPagingInfos.forEach(shipmentPagingInfo -> {
             Shipment shipment = shipmentPagingInfo.getShipment();
             try {
+                if (!StringUtils.isEmpty(shipment.getShipmentSerialNo())) {
+                    shipmentPagingInfo.setShipmentSerialNos(Splitters.COMMA.splitToList(shipment.getShipmentSerialNo()));
+                }
                 shipmentPagingInfo.setOperations(flow.availableOperations(shipment.getStatus()));
                 shipmentPagingInfo.setShipmentExtra(shipmentReadLogic.getShipmentExtra(shipment));
             } catch (JsonResponseException e) {

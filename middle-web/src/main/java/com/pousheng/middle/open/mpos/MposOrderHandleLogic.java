@@ -128,8 +128,10 @@ public class MposOrderHandleLogic {
                 orderEvent = MiddleOrderEvent.SHIP;
                 update = new Shipment();
                 update.setId(shipment.getId());
+                update.setShipmentSerialNo(extra.get(TradeConstants.SHIP_SERIALNO));
                 //保存物流信息
                 shipmentExtra.setShipmentSerialNo(extra.get(TradeConstants.SHIP_SERIALNO));
+
                 if(Objects.nonNull(extra.get(TradeConstants.SHIP_CORP_CODE))){
                     try{
 
@@ -139,7 +141,7 @@ public class MposOrderHandleLogic {
                         DateTime dt = DateTime.parse(extra.get(TradeConstants.SHIP_DATE), DFT);
                         shipmentExtra.setShipmentDate(dt.toDate());
                         update.setShipmentCorpCode(expressCode.getHkCode());
-
+                        update.setShipmentCorpName(expressCode.getName());
                     }catch (Exception e){
                         log.error("query express(code:{}) failed,cause:{}",extra.get(TradeConstants.SHIP_CORP_CODE),Throwables.getStackTraceAsString(e));
                     }
@@ -152,7 +154,6 @@ public class MposOrderHandleLogic {
                 // 物流单号
                 if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
                     shipmentExtra.setExpressOrderId(extra.get(TradeConstants.EXPRESS_ORDER_ID));
-                    update.setShipmentSerialNo(extra.get(TradeConstants.EXPRESS_ORDER_ID));
                 }
 
                 List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);

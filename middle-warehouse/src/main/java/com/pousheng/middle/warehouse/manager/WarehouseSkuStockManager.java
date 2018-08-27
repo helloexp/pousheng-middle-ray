@@ -59,7 +59,9 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.lock(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to occupy inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
+                log.info("tradeRet getError is {}", tradeRet.getError());
                 if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
+                    log.info("begin to create lock task, shipment id is {}", Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                     // 超时的错误进入biz表给后面轮询
                     createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                 }

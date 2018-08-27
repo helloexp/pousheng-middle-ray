@@ -55,15 +55,6 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
             if (log.isDebugEnabled()) {
                 log.debug("find biz task by ids:{}, status: {}, res: {}", ids, status, result);
             }
-            // 查询状态PROCESSING的任务为空，检查任务状态
-            if (CollectionUtils.isEmpty(result)) {
-                Response<PoushengCompensateBiz> response = this.findById(ids.get(0));
-                if (response.isSuccess()) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("find empty PROCESSING task, first task: {}", response.getResult());
-                    }
-                }
-            }
             return Response.ok(result);
         } catch (Exception e) {
             log.error("find poushengCompensateBiz by ids :{} failed,  cause:{}", ids, Throwables.getStackTraceAsString(e));

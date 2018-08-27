@@ -80,10 +80,10 @@ public abstract class AbstractAsyncJob {
         }
         map.forEach((key, ids) -> {
             if (!CollectionUtils.isEmpty(ids)) {
+                waitHandle(ids);
                 jedisTemplate.execute(jedis -> {
                     jedis.lpush(getQueueKey(), JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(ids));
                 });
-                waitHandle(ids);
             }
         });
         stopwatch.stop();
@@ -229,7 +229,7 @@ public abstract class AbstractAsyncJob {
                             }
                             continue;
                         }
-                        List<Long> ids = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(idStr, List.class);
+                        List<Long> ids = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(idStr, JsonMapper.nonEmptyMapper().createCollectionType(List.class, Long.class));
                         consume(ids);
                     }
                 }

@@ -259,3 +259,5 @@ failed.order.warning.email.receives: ${FAILED_ORDER_WARNING_EMAIL_RECEIVES}
 # 失败订单和发货单邮件通知JOB的触发器表达式
 failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
 
+is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
+

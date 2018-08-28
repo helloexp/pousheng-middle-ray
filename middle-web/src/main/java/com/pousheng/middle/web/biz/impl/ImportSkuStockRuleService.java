@@ -65,7 +65,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
 
     private static final String DEFAULT_CLOUD_PATH = "export";
 
-    private static final Integer DEFAULT_PAGE_SIZE = 30;
+    private static final Integer DEFAULT_PAGE_SIZE = 10;
 
 
     @Override
@@ -145,7 +145,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         Long openShopId = info.getOpenShopId();
         Long shopRuleId = info.getShopRuleId();
         ExcelExportHelper<AbnormalSkuStockRuleRecord> helper = ExcelExportHelper.newExportHelper(AbnormalSkuStockRuleRecord.class);
-        List<String[]> list = HandlerFileUtil.getInstance().handle(filePath);
+        List<String[]> list = HandlerFileUtil.getInstance().handlerExcelStockRules(filePath);
         for (int i = 1; i < list.size(); i++) {
             String[] strs = list.get(i);
             if (Strings.isNullOrEmpty(strs[0]) || "\"\"".equals(strs[0])) {
@@ -164,7 +164,8 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                 appendErrorToExcel(helper, strs, "请输入正确的虚拟库存");
                 continue;
             }
-            if (Strings.isNullOrEmpty(strs[4]) || "\"\"".equals(strs[4]) || (Integer.valueOf(strs[4]) != -1 && Integer.valueOf(strs[4]) != 1)) {
+            if (Strings.isNullOrEmpty(strs[4]) || "\"\"".equals(strs[4]) ||
+                    !strs[4].matches("^-?\\d+$") || (Integer.valueOf(strs[4]) != -1 && Integer.valueOf(strs[4]) != 1)) {
                 appendErrorToExcel(helper, strs, "请输入正确的状态");
                 continue;
             }
@@ -186,7 +187,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                 rule.setSkuCode(skuCode);
                 rule.setSafeStock(Long.valueOf(strs[1]));
                 rule.setRatio(Integer.valueOf(strs[2]));
-                rule.setJitStock(Long.valueOf(strs[3]));
+                rule.setJitStock(StringUtils.isEmpty(strs[3]) ? null : Long.valueOf(strs[3]));
                 rule.setStatus(Integer.valueOf(strs[4]));
                 rules.add(rule);
 

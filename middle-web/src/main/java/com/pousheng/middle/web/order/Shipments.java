@@ -1655,7 +1655,7 @@ public class Shipments {
     @ApiOperation("快递单详情")
     @RequestMapping(value = "/api/shipmentExpress/detail", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public ShipmentExpress findDetail(@RequestParam(required = true, value = "shipmentCode") String shipmentCode,@RequestParam(required = true, value = "shipmentExpressCode") String shipmentExpressCode) {
-        Response<ShipmentExpress> result = shipmentReadService.findShipmentExpress(shipmentCode,shipmentExpressCode);
+        Response<ShipmentExpress> result = shipmentReadService.findShipmentExpress(shipmentCode, Splitters.COMMA.splitToList(shipmentExpressCode).get(0));
         return  result.getResult();
     }
 

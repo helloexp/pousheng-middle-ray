@@ -88,6 +88,28 @@ public class HandlerFileUtil<T> {
     }
 
 
+    public List<String[]> handlerExcelStockRules(String fileUrl) {
+
+        List<String[]> list;
+        try {
+            URL url = new URL(fileUrl);
+            InputStream insr = url.openConnection().getInputStream();
+            list = ExcelCovertCsvReader
+                    .readerExcelAt(
+                            insr, 6, 20001);
+            if (CollectionUtils.isEmpty(list)) {
+                log.error("import excel is empty so skip");
+                throw new JsonResponseException("excel.content.is.empty");
+            }
+            log.info("import excel size:{}", list.size());
+        } catch (Exception e) {
+            log.error("read import excel file fail,causeL:{}", Throwables.getStackTraceAsString(e));
+            throw new JsonResponseException("read.excel.fail");
+        }
+        return list;
+    }
+
+
     /**
      * 限制excel导入最大条数
      */

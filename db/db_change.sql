@@ -428,6 +428,9 @@ CREATE TABLE `pousheng_schedule_task` (
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8 COMMENT='任务信息表';
 
 
+alter table parana_shipments modify column shipment_serial_no varchar(256)
+
+
 
 -- 添加仓库派单优先级类型
 alter table `pousheng_warehouse_rules` add `item_priority_type` tinyint(4)  NULL COMMENT '仓库优先级类型 1距离 2排序' after `shop_group_id`;
@@ -502,6 +505,8 @@ alter table pousheng_item_rules add type  tinyint  not null default 0  comment '
 alter table pousheng_item_group_skus add mark  tinyint  not null default 0  comment '0自动打标,1人工打标' after sku_code ;
 
 alter table parana_order_shipments add part_ship  tinyint  not null default 0  comment '1部分发货' after type ;
+
+
 
 
 alter table `parana_order_shipments` change `province_id` `province` varchar(50) DEFAULT NULL COMMENT '省';

@@ -116,9 +116,9 @@ public class WarehouseShopSkuRuleClient {
             String result = (String) inventoryBaseClient.post(API_PATH_PREFIX + "/batchCreateOrUpdate",
                     params, String.class);
             if (StringUtils.isEmpty(result)) {
-                log.info(" create shop sku rule fail list {}", result);
                 return Response.ok(Lists.newArrayList());
             }
+            log.info("create shop sku rule fail list {}", result);
             return Response.ok(Splitters.COMMA.splitToList(result));
 
         } catch (Exception e) {
@@ -139,7 +139,7 @@ public class WarehouseShopSkuRuleClient {
             Map<String, Object> params = Maps.newHashMap();
             params.put("shopId", criteria.getOpenShopId());
             params.put("skuCodeFluz", criteria.getSkuCode());
-            if (StringUtils.isEmpty(criteria.getSkuCodes())) {
+            if (!StringUtils.isEmpty(criteria.getSkuCodes())) {
                 params.put("skuCodes", Joiners.COMMA.join(criteria.getSkuCodes()));
             }
 

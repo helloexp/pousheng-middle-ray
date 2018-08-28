@@ -512,3 +512,11 @@ alter table parana_order_shipments add part_ship  tinyint  not null default 0  c
 alter table `parana_order_shipments` change `province_id` `province` varchar(50) DEFAULT NULL COMMENT '省';
 alter table `parana_order_shipments` change `city_id` `city` varchar(50) DEFAULT NULL COMMENT '市';
 alter table `parana_order_shipments` change `region_id` `region` varchar(50) DEFAULT NULL COMMENT '区';
+
+
+alter table parana_order_receiver_infos modify column receiver_info_json varchar(2048) DEFAULT NULL COMMENT 'json表示的收货信息';
+alter table parana_shipments modify column receiver_infos varchar(2048) DEFAULT NULL COMMENT '收货人信息';
+
+
+alter table parana_receiver_infos modify column `receive_user_name` varchar(100) NOT NULL COMMENT '收货人姓名';
+alter table parana_receiver_infos modify column `mobile` varchar(64) NOT NULL DEFAULT '' COMMENT '手机号';

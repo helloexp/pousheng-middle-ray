@@ -52,5 +52,17 @@
         </where>
     </select>
 
-
+    <select id="pagingSort" parameterType="map" resultMap="ShipmentMap">
+        select id,
+        <include refid="cols_exclude_id"/>
+        from
+        <include refid="tb"/>
+        <where>
+            <include refid="criteria"/>
+        </where>
+        <if test="sort!=null">
+            order by #{sort}
+        </if>
+        limit #{offset}, #{limit}
+    </select>
 </mapper>

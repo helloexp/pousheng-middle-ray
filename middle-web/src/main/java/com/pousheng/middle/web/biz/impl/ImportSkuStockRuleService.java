@@ -219,8 +219,8 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                                 appendErrorToExcel(helper, createStrs(ruleMap.get(skuCode)), "更新或创建异常");
                             }
                         }
+                        pageList.clear();
                     }
-                    pageList.clear();
                 }
             } catch (Exception e) {
                 log.error("import warehouse shop sku rule abnormalty cause by {}", e);

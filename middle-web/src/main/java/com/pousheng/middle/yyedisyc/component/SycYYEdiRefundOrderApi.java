@@ -27,12 +27,6 @@ public class SycYYEdiRefundOrderApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
-    @Value("${gateway.yjerp.host}")
-    private String yjGateway;
-
-    @Value("${gateway.yjerp.accessKey}")
-    private String yjaccessKey;
-
     public String doSyncRefundOrder(List<YYEdiReturnInfo> requestData){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
@@ -64,9 +58,9 @@ public class SycYYEdiRefundOrderApi {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync refund to yj erp paramJson:{}",paramJson);
-        String gateway =yjGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
+        String gateway =hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",yjaccessKey)
+                .header("verifycode",accessKey)
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")

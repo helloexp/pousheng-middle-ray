@@ -10,6 +10,7 @@ import com.pousheng.middle.order.dto.ShipmentDetail;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.Municipality;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
@@ -234,7 +235,7 @@ public class SyncYJErpShipmentLogic {
         // 区 编码 非必填
         //yjErpShipmentInfo.setArea(String.valueOf(receiverInfo.getRegionId()));
         // 省 名称
-        yjErpShipmentInfo.setProvince_name(receiverInfo.getProvince());
+        yjErpShipmentInfo.setProvince_name(Municipality.getName(receiverInfo.getProvince()));
         // 市 名称
         yjErpShipmentInfo.setCity_name(receiverInfo.getCity());
         // 区 名称

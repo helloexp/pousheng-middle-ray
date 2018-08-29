@@ -1,5 +1,7 @@
 package com.pousheng.middle.order.enums;
 
+import java.util.Objects;
+
 /**
  *直辖市
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -19,6 +21,15 @@ public enum Municipality {
         this.value = value;
         this.name = name;
         this.desc = desc;
+    }
+
+    public static String getName(String name){
+        for (Municipality obj : Municipality.values()) {
+            if (Objects.equals(obj.getDesc(), name)) {
+                return obj.getName();
+            }
+        }
+        return name;
     }
 
     public int getValue() {

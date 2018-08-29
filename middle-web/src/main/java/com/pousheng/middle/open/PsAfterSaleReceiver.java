@@ -176,7 +176,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 refundItem.setApplyQuantity(shipmentItem.getQuantity());
                 refundItem.setSharePlatformDiscount(shipmentItem.getSharePlatformDiscount());
                 //售中退款不需要更新退货数量
-                if (!Objects.equals(refund.getRefundType(),MiddleRefundType.ON_SALES_REFUND.value())||
+                if (!Objects.equals(refund.getRefundType(),MiddleRefundType.ON_SALES_REFUND.value())&&
                         !Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_REFUND.value())){
                     updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
                 }

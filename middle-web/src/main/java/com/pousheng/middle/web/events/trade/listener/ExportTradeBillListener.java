@@ -394,17 +394,17 @@ public class ExportTradeBillListener {
                     ArrayList<String> querySkuCodes = Lists.newArrayList();
 
                     PoushengSettlementPos finalPosSettleMent = posSettleMent;
+                    Refund refund =  refundInfo.getRefund();
                     refundItems.forEach(item -> {
                         RefundExportEntity export = new RefundExportEntity();
                         export.setOrderCode(refundInfo.getOrderRefund().getOrderCode());
-                        export.setRefundCode(refundInfo.getRefund().getRefundCode());
+                        export.setRefundCode(refund.getRefundCode());
                         //export.setRefundSubCode(item.getSkuCode());
-                        export.setShopName(refundInfo.getRefund().getShopName());
-                        export.setMemo(refundInfo.getRefund().getBuyerNote());
-                        export.setRefundType(MiddleRefundType.from(refundInfo.getRefund().getRefundType()).toString());
-                        export.setStatus(MiddleRefundStatus.fromInt(refundInfo.getRefund().getStatus()).getName());
-
-                        export.setAmt(item.getFee() == null ? null : new BigDecimal(item.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
+                        export.setShopName(refund.getShopName());
+                        export.setMemo(refund.getBuyerNote());
+                        export.setRefundType(MiddleRefundType.from(refund.getRefundType()).toString());
+                        export.setStatus(MiddleRefundStatus.fromInt(refund.getStatus()).getName());
+                        export.setAmt(refund.getFee() == null ? null : new BigDecimal(refund.getFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
                         export.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                         if (item.getCleanPrice() != null && item.getApplyQuantity() != null){
                             export.setTotalPrice(new BigDecimal(item.getCleanPrice()).multiply(new BigDecimal(item.getApplyQuantity())).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
@@ -441,7 +441,7 @@ public class ExportTradeBillListener {
                         export.setApplyQuantity(item.getApplyQuantity());
                         //实际数量
                         //export.setActualQuantity(item.getApplyQuantity());
-                        export.setOrderCode(refundInfo.getRefund().getReleOrderCode());
+                        export.setOrderCode(refund.getReleOrderCode());
                         export.setShipCode(refundExtra.getShipmentId());
                         export.setOutCode(shopOrder.getOutId());
                         export.setPayOrderCreateDate(shopOrder.getCreatedAt());
@@ -451,8 +451,8 @@ public class ExportTradeBillListener {
                         if(!Objects.isNull(paymentInfo)) {
                             export.setPayOrderPayDate(paymentInfo.getPaidAt());
                         }
-                        export.setAfterSaleCreateDate(refundInfo.getRefund().getCreatedAt());
-                        export.setAfterSaleRefundDate(refundInfo.getRefund().getUpdatedAt());
+                        export.setAfterSaleCreateDate(refund.getCreatedAt());
+                        export.setAfterSaleRefundDate(refund.getUpdatedAt());
                         export.setAfterSaleExpressCompany(refundExtra.getShipmentCorpName());
                         export.setAfterSaleExpressNo(refundExtra.getShipmentSerialNo());
 

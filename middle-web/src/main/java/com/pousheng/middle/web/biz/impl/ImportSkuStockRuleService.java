@@ -29,17 +29,15 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
-import io.terminus.open.client.mapping.impl.manager.ItemMappingManager;
-import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * @author zhaoxw
@@ -205,7 +203,10 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                     pageList.add(rules.get(i));
                     //分页处理
                     if (pageList.size() % DEFAULT_PAGE_SIZE == 0 || i == rules.size() - 1) {
-                        Map<String, WarehouseShopSkuStockRule> ruleMap = pageList.stream().collect(Collectors.toMap(WarehouseShopSkuStockRule::getSkuCode, e -> e));
+                        Map<String, WarehouseShopSkuStockRule> ruleMap = new HashMap<>();
+                        for (WarehouseShopSkuStockRule rule : pageList) {
+                            ruleMap.put(rule.getSkuCode(), rule);
+                        }
                         Response<List<String>> resp = warehouseShopSkuRuleClient.batchCreateOrUpdate(pageList);
                         //如果执行失败，则认为这一批都失败
                         if (!resp.isSuccess()) {

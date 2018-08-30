@@ -16,6 +16,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -76,11 +77,20 @@ public class FailedOrderEmailWarningJobs {
     @Value("${failed.order.warning.email.receives}")
     private String receives;
 
+
+    @Autowired
+    private HostLeader hostLeader;
+
     /**
      * 默认为每天6点18点触发
      */
     @Scheduled(cron ="${failed.order.warning.job.cron}")
     public void run(){
+
+        if(!hostLeader.isLeader()) {
+            log.info("email warning job current leader is:{}, skip ", hostLeader.currentLeaderId());
+            return;
+        }
         log.info("the email warning job of failed order start");
         try{
 

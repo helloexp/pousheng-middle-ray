@@ -96,7 +96,7 @@ public class HandlerFileUtil<T> {
             InputStream insr = url.openConnection().getInputStream();
             list = ExcelCovertCsvReader
                     .readerExcelAt(
-                            insr, 6, 20001);
+                            insr, 6, 5001);
             if (CollectionUtils.isEmpty(list)) {
                 log.error("import excel is empty so skip");
                 throw new JsonResponseException("excel.content.is.empty");

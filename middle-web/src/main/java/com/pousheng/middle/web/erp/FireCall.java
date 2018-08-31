@@ -22,6 +22,7 @@ import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
+import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -146,6 +147,8 @@ public class FireCall {
     private GroupRuleCacherProxy GroupRuleCacherProxy;
     @Autowired
     private InventoryChangeProducer inventoryChangeProducer;
+    @Autowired
+    private MposSkuStockLogic mposSkuStockLogic;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -1015,5 +1018,39 @@ public class FireCall {
 
         log.info("END-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
 
+    }
+
+
+    /**
+     * 修复未扣减库存发货单
+     * @param fileName
+     */
+    @RequestMapping(value = "/fix/decrease/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixDecreaseStock(@RequestParam String fileName){
+        String url = "/pousheng/file/"+ fileName + ".csv";
+        File file1 = new File(url);
+        List<String> codes = readShipmentCode(file1);
+
+        log.info("START-HANDLE-FIX-DECREASE-STOCK-API for:{} COUNT:{}",url,codes.size());
+        int count = 0;
+        for (String shipmentCode : codes) {
+            Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(shipmentCode);
+            if (!shipmentRes.isSuccess()) {
+                log.error("find shipment by code :{} fail,error:{}", shipmentCode, shipmentRes.getError());
+                continue;
+            }
+            Shipment shipment = shipmentRes.getResult();
+
+            Response<Boolean> resp = mposSkuStockLogic.decreaseStock(shipment);
+            if (!resp.isSuccess()) {
+                log.error("decrease stock by shipment code {} fail,error:{}", shipmentCode, shipmentRes.getError());
+                continue;
+            }
+            else {
+                count++;
+            }
+        }
+
+        log.info("END-HANDLE-FIX-DECREASE-STOCK-API for:{}, SUCCESS RESULT:{}",url, count);
     }
 }

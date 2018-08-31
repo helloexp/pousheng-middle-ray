@@ -139,7 +139,7 @@ public class MposSkuStockLogic {
      */
     public Response<Boolean> unLockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
 
-        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+        if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
             return Response.ok();
         }
 
@@ -164,7 +164,7 @@ public class MposSkuStockLogic {
     public Response<Boolean> decreaseStock(Shipment shipment){
 
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-        if(!isCareStock(dispatchOrderItemInfo.getOpenShopId())){
+        if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
             return Response.ok();
         }
 
@@ -187,7 +187,7 @@ public class MposSkuStockLogic {
 
     /**
      * 当前店铺下的订单是否关心库存
-     * @param openShopId 店铺id
+     * @param orderId 店铺id
      * @return true 关心 false 不关心
      */
     private Boolean isCareStock(Long orderId) {

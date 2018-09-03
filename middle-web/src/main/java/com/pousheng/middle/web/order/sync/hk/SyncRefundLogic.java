@@ -467,6 +467,8 @@ public class SyncRefundLogic {
         //订单来源
         sycHkRefund.setOnlineType(String.valueOf(syncShipmentLogic.getHkOnlinePay(shopOrder).getValue()));
         sycHkRefund.setMemo(refund.getBuyerNote());
+        //是否是拒货单
+        sycHkRefund.setIsRefused(refund.getRefundType() == MiddleRefundType.REJECT_GOODS.value() ? "1" : "0");
         return sycHkRefund;
     }
 

@@ -356,7 +356,7 @@ public class StockPusher {
                     .status(status ? 1 : 2)
                     .cause(msg).syncAt(new Date());
             logs.add(stockPushLog);
-            if (!logs.isEmpty() || logs.size() % PUSH_SIZE == 0) {
+            if (!logs.isEmpty() && logs.size() % PUSH_SIZE == 0) {
                 pushLogs(logs);
             }
         } catch (ExecutionException e) {

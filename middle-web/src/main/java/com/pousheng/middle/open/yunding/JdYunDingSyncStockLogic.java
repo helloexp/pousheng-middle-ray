@@ -81,6 +81,27 @@ public class JdYunDingSyncStockLogic {
         }
     }
 
+    public Response<Boolean> syncJdYundingStock(ItemMapping itemMapping, Integer stock) {
+        try {
+            //推送库存
+            HashMap params = Maps.newHashMap();
+            params.put("shopId", itemMapping.getOpenShopId());
+            params.put("openItemId", itemMapping.getChannelItemId());
+            params.put("skuCode", itemMapping.getSkuCode());
+            params.put("openSkuId", itemMapping.getChannelSkuId());
+            params.put("stock", stock);
+            String result = this.post(itemMapping.getOpenShopId(), "jd.stock.push.api", params);
+            if (!result.contains("success")) {
+                log.error("order by ship by params:{} fail, request result:{}", params, result);
+                return Response.fail(result);
+            }
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("push jd order failed, caused by {}", Throwables.getStackTraceAsString(e));
+            return Response.fail("push.jd.order.failed");
+        }
+    }
+
     /**
      * 更新京东云鼎订单金额
      * @param shopId 店铺id

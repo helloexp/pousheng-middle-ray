@@ -140,7 +140,7 @@ public class WarehouseShopSkuStockRules {
         criteria.setPageNo(pageNo);
         criteria.setPageSize(pageSize);
         criteria.setBizType(PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.name());
-        Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.paging(criteria);
+        Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.pagingForShow(criteria);
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }

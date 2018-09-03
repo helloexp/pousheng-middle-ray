@@ -34,10 +34,6 @@ public class CompensateBizResetJob {
             log.info("current leader is {}, skip", hostLeader.currentLeaderId());
             return;
         }
-        Response<Boolean> response = autoCompensationWriteService.resetStatus();
-        if (!response.isSuccess()) {
-            log.error("reset long time handling task failed,cause:{}", response.getError());
-        }
         Response<Boolean> response1 = poushengCompensateBizWriteService.resetStatus();
         if (!response1.isSuccess()) {
             log.error("reset long time handling task failed,cause:{}", response1.getError());

@@ -153,6 +153,7 @@ CREATE TABLE `pousheng_stock_push_logs`
   `shop_id` bigint(20) NOT NULL COMMENT '店铺id',
   `shop_name` varchar(64) NOT NULL COMMENT '店铺名称',
   `sku_code` varchar(40) DEFAULT NULL COMMENT 'SKU 编码 (标准库存单位编码)',
+  `channel_sku_id` VARCHAR(64) DEFAULT NULL COMMENT '外部渠道sku编码',
   `quantity` bigint(20) NOT NULL COMMENT 'sku数量',
   `status` int(1) NOT NULL COMMENT '1:推送成功,2:推送失败',
   `cause` varchar(512) DEFAULT NULL COMMENT '失败原因',

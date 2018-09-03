@@ -24,13 +24,6 @@ public class AutoCompensationDao extends MyBatisDao<AutoCompensation> {
     }
 
     /**
-     * 重置状态
-     */
-    public void resetStatus() {
-        getSqlSession().update(sqlId("resetStatus"));
-    }
-
-    /**
      * 查询指定状态的id集合
      *
      * @param ids    id集合

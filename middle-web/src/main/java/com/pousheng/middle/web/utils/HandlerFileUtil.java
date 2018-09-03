@@ -74,7 +74,7 @@ public class HandlerFileUtil<T> {
         try {
             URL url = new URL(fileUrl);
             InputStream insr = url.openConnection().getInputStream();
-            list = ExcelUtil.readerExcel(insr, "Sheet0", 5);
+            list = ExcelUtil.readerExcel(insr,  5);
             if (CollectionUtils.isEmpty(list)) {
                 log.error("import excel is empty so skip");
                 throw new JsonResponseException("excel.content.is.empty");
@@ -88,7 +88,7 @@ public class HandlerFileUtil<T> {
     }
 
 
-    public List<String[]> handlerExcelStockRules(String fileUrl) {
+    public List<String[]> handlerExcel(String fileUrl) {
 
         List<String[]> list;
         try {

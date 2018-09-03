@@ -10,6 +10,7 @@
         <result column="shop_id" property="shopId"/>
         <result column="shop_name" property="shopName"/>
         <result column="sku_code" property="skuCode"/>
+        <result column="channel_sku_id" property="channelSkuId" />
         <result column="out_id" property="outId"/>
         <result column="material_id" property="materialId"/>
         <result column="quantity" property="quantity"/>
@@ -31,11 +32,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name,out_id,sku_code,material_id,quantity,status,cause,sync_at,created_at, updated_at
+        shop_id, shop_name,out_id,sku_code,channel_sku_id,material_id,quantity,status,cause,sync_at,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName},#{outId},#{skuCode},#{materialId}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
+        #{shopId}, #{shopName},#{outId},#{skuCode},#{channelSkuId},#{materialId}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -47,6 +48,8 @@
         <if test="outId !=null">and `out_id` = #{outId}</if>
 
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
+
+        <if test="channelSkuId != null">`channel_sku_id` = #{channelSkuId}</if>
 
         <if test="materialId != null">and `material_id` = #{materialId}</if>
 
@@ -75,7 +78,7 @@
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause},
+            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.channelSkuId}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause},
             #{i.syncAt}, now(), now()
             )
         </foreach>
@@ -96,6 +99,7 @@
             <if test="shopName != null">`shop_name` = #{shopName},</if>
             <if test="outId !=null">and `out_id` = #{outId}</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>
+            <if test="channelSkuId != null">channel_sku_id = #{channelSkuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
             <if test="quantity != null">quantity = #{quantity},</if>
             updated_at=now()

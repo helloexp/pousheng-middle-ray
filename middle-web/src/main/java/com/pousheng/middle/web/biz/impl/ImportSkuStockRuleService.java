@@ -4,13 +4,9 @@ import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.pousheng.middle.common.utils.batchhandle.AbnormalSkuStockRuleRecord;
 import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.common.utils.component.AzureOSSBlobClient;
-import com.pousheng.middle.item.dto.SearchSkuTemplate;
-import com.pousheng.middle.item.enums.PsItemGroupSkuMark;
-import com.pousheng.middle.item.enums.PsItemGroupSkuType;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -24,7 +20,6 @@ import com.pousheng.middle.web.utils.HandlerFileUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
@@ -143,7 +138,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         Long openShopId = info.getOpenShopId();
         Long shopRuleId = info.getShopRuleId();
         ExcelExportHelper<AbnormalSkuStockRuleRecord> helper = ExcelExportHelper.newExportHelper(AbnormalSkuStockRuleRecord.class);
-        List<String[]> list = HandlerFileUtil.getInstance().handlerExcelStockRules(filePath);
+        List<String[]> list = HandlerFileUtil.getInstance().handlerExcel(filePath);
         for (int i = 1; i < list.size(); i++) {
             String[] strs = list.get(i);
             if (Strings.isNullOrEmpty(strs[0]) || "\"\"".equals(strs[0])) {

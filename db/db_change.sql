@@ -1046,3 +1046,5 @@ alter table parana_receiver_infos modify column `mobile` varchar(64) NOT NULL DE
 alter table pousheng_stock_push_logs add out_id  varchar(64)  not null default 0  comment '店铺外码' after shop_name ;
 
 alter table pousheng_stock_push_logs add material_id  varchar(64)  not null default 0  comment '货号' after sku_code ;
+ALTER TABLE pousheng_stock_push_logs ADD channel_sku_id VARCHAR(64) DEFAULT NULL COMMENT '第三方sku编号' AFTER sku_code;
+ALTER TABLE parana_item_mappings ADD ratio TINYINT(4) DEFAULT NULL COMMENT '商品推送比例' AFTER channel_sku_id;

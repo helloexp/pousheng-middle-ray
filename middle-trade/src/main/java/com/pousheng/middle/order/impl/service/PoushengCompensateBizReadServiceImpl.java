@@ -46,6 +46,17 @@ public class PoushengCompensateBizReadServiceImpl implements PoushengCompensateB
     }
 
     @Override
+    public Response<Paging<PoushengCompensateBiz>> pagingForShow(PoushengCompensateBizCriteria criteria) {
+        try {
+            Paging<PoushengCompensateBiz> paging = poushengCompensateBizDao.pagingForShow(criteria.getOffset(),criteria.getLimit(),criteria.toMap());
+            return Response.ok(paging);
+        } catch (Exception e) {
+            log.error("failed to paging poushengCompensateBiz, criteria={}, cause:{}",criteria, Throwables.getStackTraceAsString(e));
+            return Response.fail("paging.poushengCompensateBiz.find.fail");
+        }
+    }
+
+    @Override
     public Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status) {
         try {
             if (log.isDebugEnabled()) {

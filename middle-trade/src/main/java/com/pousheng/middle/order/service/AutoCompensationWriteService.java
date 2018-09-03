@@ -35,10 +35,4 @@ public interface AutoCompensationWriteService {
      */
     Response<Boolean> updateStatus(List<Long> ids, Integer status);
 
-    /**
-     * 长时间处于处理中的任务重置状态为待处理
-     * @return
-     */
-    Response<Boolean> resetStatus();
-
 }

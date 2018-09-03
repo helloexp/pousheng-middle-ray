@@ -128,6 +128,15 @@
         order by id asc limit #{offset},#{limit}
     </select>
 
+    <select id="pagingForShow" parameterType="list" resultMap="PoushengCompensateBizMap">
+        select id, <include refid="cols_exclude_id"/>
+        from <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+        order by id desc limit #{offset},#{limit}
+    </select>
+
     <select id="count" parameterType="list" resultType="long">
         select count(1)
         from <include refid="tb"/>

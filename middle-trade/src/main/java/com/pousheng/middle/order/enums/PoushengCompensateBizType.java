@@ -62,9 +62,15 @@ public enum PoushengCompensateBizType {
      * 同步发货结果到第三方
      */
     SYNC_ECP,
+
     /**
      * 批量导入库存推送规则
      */
-    IMPORT_SHOP_SKU_RULE
+    IMPORT_SHOP_SKU_RULE,
+
+    /**
+     * 批量导入商品推送比例
+     */
+    IMPORT_ITEM_PUSH_RATIO
 
 }

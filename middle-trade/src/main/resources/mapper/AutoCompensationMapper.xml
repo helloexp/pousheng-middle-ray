@@ -128,15 +128,5 @@
         </foreach>
     </update>
 
-    <update id="resetStatus">
-        UPDATE
-        <include refid="tb"/>
-        <set>
-            status = #{targetStatus},
-            updated_at=now()
-        </set>
-        where status = #{srcStatus} AND <![CDATA[ updated_at < date_add(now(),interval - 10 minute) ]]>
-    </update>
-
 
 </mapper>

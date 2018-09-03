@@ -406,7 +406,7 @@ public class ExcelUtil {
     }
 
 
-    public static List<String[]> readerExcel(InputStream inputStream, String sheetName, int minColumns) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
+    public static List<String[]> readerExcel(InputStream inputStream, int minColumns) throws OpenXML4JException, ParserConfigurationException, SAXException, IOException {
         OPCPackage p = OPCPackage.open(inputStream);
         ExcelUtil xlsx2csv = new ExcelUtil(p, System.out,
                  minColumns);

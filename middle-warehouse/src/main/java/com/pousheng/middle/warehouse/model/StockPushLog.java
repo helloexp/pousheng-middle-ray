@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.model;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -19,6 +20,10 @@ public class StockPushLog implements Serializable {
     private String outId;
     private String shopName;
     private String skuCode;
+    /**
+     * 渠道skuId
+     */
+    private String channelSkuId;
     private String materialId;
     /**
      * 1.成功,2.失败
@@ -135,6 +140,11 @@ public class StockPushLog implements Serializable {
 
     public StockPushLog updatedAt(Date updatedAt) {
         this.updatedAt = updatedAt;
+        return this;
+    }
+
+    public StockPushLog channelSkuId(String channelSkuId) {
+        this.channelSkuId = channelSkuId;
         return this;
     }
 }

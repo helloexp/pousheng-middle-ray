@@ -60,6 +60,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Collectors;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -124,6 +125,10 @@ public class StockPusher {
     private static final String SHOP_CODE = "hkPerformanceShopCode";
 
     private static final Integer PUSH_SIZE = 500;
+
+    private static final Long PUSH_ZERO = 0L;
+
+    private static final Integer HUNDRED = 100;
 
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
@@ -226,16 +231,15 @@ public class StockPusher {
                         }
 
                         //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
-                        Response<com.google.common.base.Optional<ItemMapping>> optionalRes = mappingReadService.findBySkuCodeAndOpenShopId(skuCode, shopId);
-                        if (!optionalRes.isSuccess()) {
-                            log.error("find item mapping by sku code:{} shop id:{} ,error:{}", skuCode, shopId, optionalRes.getError());
+                        Response<List<ItemMapping>> itemMappingRes = mappingReadService.listBySkuCodeAndOpenShopId(skuCode, shopId);
+                        if (!itemMappingRes.isSuccess()) {
+                            log.error("fail to find item mapping by skuCode={},openShopId={},cause:{}",
+                                    skuCode, shopId, itemMappingRes.getError());
                             continue;
                         }
-
-                        com.google.common.base.Optional<ItemMapping> mappingOptional = optionalRes.getResult();
-
-                        if (!mappingOptional.isPresent()) {
-                            log.warn("current shop id:{} not sale sku code:{} so skip", shopId, skuCode);
+                        List<ItemMapping> itemMappings = itemMappingRes.getResult();
+                        if (CollectionUtils.isEmpty(itemMappings)) {
+                            log.warn("item mapping not found by skuCode={},openShopId={}", skuCode, shopId);
                             continue;
                         }
 
@@ -307,13 +311,24 @@ public class StockPusher {
                         } else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                            this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
+                            log.info("parall update stock start");
+                            // 如果只有1条，或者多条都没有设置比例，就按默认的推第一个
+                            List<ItemMapping> ratioItemMappings = itemMappings.stream().filter(im -> Objects.nonNull(im.getRatio())).collect(Collectors.toList());
+                            if (CollectionUtils.isEmpty(ratioItemMappings)) {
+                                ItemMapping itemMapping = itemMappings.get(0);
+                                this.prallelUpdateStock(itemMapping, stock);
+                            } else {
+                                // 设置比例按比例推，未设置的不推
+                                for (ItemMapping im : ratioItemMappings) {
+                                    this.prallelUpdateStock(im, stock * im.getRatio() / HUNDRED);
+                                }
+                            }
+                            log.info("parall update stock return");
                         }
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));
-                        createAndPushLogs(logs, skuCode, shopId, stock, Boolean.FALSE, e.getMessage());
-
+                        createAndPushLogs(logs, skuCode, shopId, null, stock, Boolean.FALSE, e.getMessage());
                     }
                 }
             } catch (Exception e) {
@@ -329,7 +344,7 @@ public class StockPusher {
         }
     }
 
-    private void createAndPushLogs(List<StockPushLog> logs, String skuCode, Long shopId, Long stock, Boolean status, String msg) {
+    private void createAndPushLogs(List<StockPushLog> logs, String skuCode, Long shopId, String channelSkuId, Long stock, Boolean status, String msg) {
         try {
             OpenShop shop = openShopCacher.get(shopId);
             String shopCode = shop.getExtra().get(SHOP_CODE);
@@ -340,6 +355,7 @@ public class StockPusher {
                     .shopName(shop.getShopName())
                     .outId(shopCode)
                     .skuCode(skuCode)
+                    .channelSkuId(channelSkuId)
                     .quantity(stock)
                     .status(status ? 1 : 2)
                     .cause(msg).syncAt(new Date());
@@ -361,31 +377,33 @@ public class StockPusher {
         }
     }
 
-    private void prallelUpdateStock(String skuCode, Long shopId, Long stock, String shopName) {
+    private void prallelUpdateStock(ItemMapping itemMapping, Long stock) {
         executorService.submit(() -> {
+            if (log.isDebugEnabled()) {
+                log.debug("start to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
+                        stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
+            }
             List<StockPushLog> stockPushLogs = Lists.newArrayList();
-            OpenShop openShop = openShopCacher.getUnchecked(shopId);
+            OpenShop openShop = openShopCacher.getUnchecked(itemMapping.getOpenShopId());
             Map<String, String> extra = openShop.getExtra();
             Response<Boolean> rP = null;
             if (extra.get("isYunDing") != null && Objects.equals(extra.get("isYunDing"), "true")) {
-                rP = jdYunDingSyncStockLogic.syncJdYundingStock(shopId, skuCode, Math.toIntExact(stock));
+                rP = jdYunDingSyncStockLogic.syncJdYundingStock(itemMapping, Math.toIntExact(stock));
                 if (!rP.isSuccess()) {
                     log.error("failed to push isYunDing stock of sku(skuCode={}) to shop(id={}), error code{}",
-                            skuCode, shopId, rP.getError());
+                            itemMapping.getSkuCode(), itemMapping.getOpenShopId(), rP.getError());
                 }
             } else {
-                rP = itemServiceCenter.updateSkuStock(shopId, skuCode, stock.intValue());
+                rP = itemServiceCenter.updateSkuStock(itemMapping, stock.intValue());
                 if (!rP.isSuccess()) {
                     log.error("failed to push stock of sku(skuCode={}) to shop(id={}), error code{}",
-                            skuCode, shopId, rP.getError());
+                            itemMapping.getSkuCode(), itemMapping.getOpenShopId(), rP.getError());
                 }
             }
-            log.info("success to push stock(value={}) of sku(skuCode={}) to shop(id={})",
-                    stock.intValue(), skuCode, shopId);
+            log.info("success to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
+                    stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
             //库存日志推送
-            log.info("stock push third shop log info:{}", stockPushLogs.toString());
-            //// TODO: 2018/8/20
-            createAndPushLogs(stockPushLogs, skuCode, shopId, (long) stock.intValue(), rP.isSuccess(), rP.getError());
+            createAndPushLogs(stockPushLogs, itemMapping.getSkuCode(), itemMapping.getOpenShopId(), itemMapping.getChannelSkuId(), (long) stock.intValue(), rP.isSuccess(), rP.getError());
             pushLogs(stockPushLogs);
 
             //如果推送成功则将本次推送记录写入缓存
@@ -418,7 +436,7 @@ public class StockPusher {
                     //生成库存推送日志
                     List<StockPushLog> stockPushLogs = Lists.newArrayList();
                     //库存日志推送
-                    paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
+                    paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, null, (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
                     pushLogs(stockPushLogs);
 
                     //如果推送成功则将本次推送记录写入缓存

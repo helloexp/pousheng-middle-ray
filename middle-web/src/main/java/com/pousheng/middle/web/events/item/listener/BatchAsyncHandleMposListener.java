@@ -340,7 +340,7 @@ public class BatchAsyncHandleMposListener {
         try {
             recordToRedis(key, PsItemConstants.EXECUTING, userId);
             helper = ExcelExportHelper.newExportHelper(SearchSkuTemplateEntity.class);
-            list = ExcelUtil.readerExcel(file.getInputStream(), "Sheet0", 15);
+            list = ExcelUtil.readerExcel(file.getInputStream(),  15);
             if (CollectionUtils.isEmpty(list) || list.get(0).length != 15)
                 throw new Exception();
         } catch (Exception e) {
@@ -399,7 +399,7 @@ public class BatchAsyncHandleMposListener {
         try {
             recordToRedis(key, PsItemConstants.EXECUTING, userId);
             helper = ExcelExportHelper.newExportHelper(AbnormalRecord.class);
-            list = ExcelUtil.readerExcel(file.getInputStream(), "Sheet0", 5);
+            list = ExcelUtil.readerExcel(file.getInputStream(), 5);
             if (CollectionUtils.isEmpty(list)) {
                 log.error("import excel is empty so skip");
                 throw new JsonResponseException("excel.content.is.empty");

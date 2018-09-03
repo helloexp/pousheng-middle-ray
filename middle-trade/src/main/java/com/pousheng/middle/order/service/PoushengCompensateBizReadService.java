@@ -25,12 +25,20 @@ public interface PoushengCompensateBizReadService {
 
 
     /**
-     * 操作日志分页
+     * 操作日志分页(顺序,任务处理)
      *
      * @param criteria
      * @return
      */
     Response<Paging<PoushengCompensateBiz>> paging(PoushengCompensateBizCriteria criteria);
+
+    /**
+     * 操作日志分页（倒序,前端展示）
+     *
+     * @param criteria
+     * @return
+     */
+    Response<Paging<PoushengCompensateBiz>> pagingForShow(PoushengCompensateBizCriteria criteria);
 
     /**
      * 根据id集合查询

@@ -53,14 +53,4 @@ public class AutoCompensationWriteServiceImpl implements AutoCompensationWriteSe
         }
     }
 
-    @Override
-    public Response<Boolean> resetStatus() {
-        try {
-            autoCompensationDao.resetStatus();
-            return Response.ok(Boolean.TRUE);
-        } catch (Exception e) {
-            log.error("reset auto compensation task failed,cause:{}", Throwables.getStackTraceAsString(e));
-            return Response.fail("reset.compensation.status.fail");
-        }
-    }
 }

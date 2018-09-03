@@ -348,14 +348,14 @@ public class StockPusher {
             if (StringUtils.isEmpty(shopCode)) {
                 shopCode = Splitter.on("-").splitToList(shop.getAppKey()).get(1);
             }
-            StockPushLog log = new StockPushLog().shopId(shopId)
+            StockPushLog stockPushLog = new StockPushLog().shopId(shopId)
                     .shopName(shop.getShopName())
                     .outId(shopCode)
                     .skuCode(skuCode)
                     .quantity(stock)
                     .status(status ? 1 : 2)
                     .cause(msg).syncAt(new Date());
-            logs.add(log);
+            logs.add(stockPushLog);
             if (!logs.isEmpty() || logs.size() % PUSH_SIZE == 0) {
                 pushLogs(logs);
             }
@@ -365,6 +365,7 @@ public class StockPusher {
     }
 
     private void pushLogs(List<StockPushLog> logs) {
+        log.info("start to push middle to shop stock log");
         if (!logs.isEmpty()) {
             String logJson = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(logs);
             producer.send(stockLogTopic, new StockLogDto().logJson(logJson).type(StockLogTypeEnum.MIDDLETOSHOP.value()));

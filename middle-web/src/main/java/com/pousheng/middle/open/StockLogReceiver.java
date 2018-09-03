@@ -25,6 +25,7 @@ import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -40,6 +41,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @MQConsumer
+@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
 public class StockLogReceiver {
 
     @Autowired
@@ -61,9 +63,9 @@ public class StockLogReceiver {
     @MQSubscribe(topic = "stockLogTopic", consumerGroup = "stockLogGroup",
             consumeMode = ConsumeMode.CONCURRENTLY)
     public void pushLog(StockLogDto dto) {
-        log.info("start to push hk to middle  stock logs to ES");
-        List<IndexedStockLog> logs = makeLogs(dto);
-        log.info("END to push hk to middle  stock logs to ES");
+        log.info("start to push hk to middle  stock logs to ES/DB，type={}", dto.getType());
+        makeLogs(dto);
+        log.info("END to push hk to middle  stock logs to ES/DB");
     }
 
     private List<IndexedStockLog> makeLogs(StockLogDto dto) {
@@ -105,7 +107,7 @@ public class StockLogReceiver {
                     .warehouseCode(warehouseDTO.getOutCode()).warehouseName(warehouseDTO.getWarehouseName())
                     .createdAt(dto.getUpdatedAt()).type(StockLogTypeEnum.HKTOMIDDLE.value()));
         }
-         return logs;
+        return logs;
     }
 
     /**

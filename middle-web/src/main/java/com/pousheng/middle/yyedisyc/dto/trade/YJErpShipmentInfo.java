@@ -99,6 +99,12 @@ public class YJErpShipmentInfo implements Serializable {
     private String message;
 
     /**
+     * 下单店铺名称
+     */
+    @JsonProperty(value = "order_from")
+    private String order_from;
+
+    /**
      * 有货商品可以先发货:1，等待所有商品到货一起发货:2
      * 默认 1
      */
@@ -314,6 +320,16 @@ public class YJErpShipmentInfo implements Serializable {
     @JsonIgnore
     public void setMessage(String message) {
         this.message = message;
+    }
+
+    @JsonIgnore
+    public String getOrder_from() {
+        return order_from;
+    }
+
+    @JsonIgnore
+    public void setOrder_from(String order_from) {
+        this.order_from = order_from;
     }
 
     @JsonIgnore

@@ -81,7 +81,7 @@ public class EcpOrderLogic {
             //同步订单信息到电商平台
             int count = 0;
             String error = "";
-            this.syncEcpShipmentInfos(shopOrder.getId(),count,error);
+            count = this.syncEcpShipmentInfos(shopOrder.getId(),count,error);
             if (count>0){
                 throw new BizException(error);
             }
@@ -96,7 +96,7 @@ public class EcpOrderLogic {
     }
 
 
-    private void syncEcpShipmentInfos(Long shopOrderId,int count,String error){
+    private int syncEcpShipmentInfos(Long shopOrderId,int count,String error){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取第一个返货单生成时冗余的发货单id
         String shipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
@@ -129,7 +129,7 @@ public class EcpOrderLogic {
                 error = response.getError();
             }
         }
-
+        return count;
     }
 
 }

@@ -251,6 +251,8 @@ public class SyncYJErpShipmentLogic {
         // 配送方式
         yjErpShipmentInfo.setDelivery_type_id(2);
         ShopOrder shopOrder = shipmentDetail.getShopOrder();
+        // 下单店铺名称
+        yjErpShipmentInfo.setOrder_from(shopOrder.getShopName());
         if (shopOrder.getExtra().containsKey(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE)
                 && Objects.equals(shopOrder.getExtra().get(TradeConstants.SHOP_ORDER_HK_EXPRESS_CODE), TradeConstants.JD_VEND_CUST_ID)) {
             // 京东配送

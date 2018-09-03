@@ -274,6 +274,9 @@ public class OrderWriteLogic {
         //取消发货单
         int count = 0;//判断是否存在取消失败的发货单
         for (Shipment shipment : shipments) {
+            if(shipment.getShopName().startsWith("yj") && Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
+                throw new OPServerException(200, "shop.order.in.deal");
+            }
             Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单

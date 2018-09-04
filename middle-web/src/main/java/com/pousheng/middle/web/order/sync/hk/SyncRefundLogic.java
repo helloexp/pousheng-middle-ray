@@ -281,7 +281,7 @@ public class SyncRefundLogic {
             case AFTER_SALES_CHANGE:
                 return MiddleOrderEvent.SYNC_CHANGE_SUCCESS.toOrderOperation();
             case REJECT_GOODS:
-                return MiddleOrderEvent.RETURN.toOrderOperation();
+                return MiddleOrderEvent.SYNC_SALE_REFUSE_SUCCESS.toOrderOperation();
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
                 throw new ServiceException("refund.type.invalid");

@@ -119,9 +119,9 @@ public class StockPusher {
 
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
-    private static String SHOP_CODE = "hkPerformanceShopCode";
+    private static final String SHOP_CODE = "hkPerformanceShopCode";
 
-    private static Integer PUSH_SIZE = 500;
+    private static final Integer PUSH_SIZE = 500;
 
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
@@ -186,11 +186,6 @@ public class StockPusher {
             log.debug("STOCK-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}", skuCodes, System.currentTimeMillis());
         }
         log.info("start to push skus: {}", skuCodes);
-        //先清理本地缓存
-        //shopGroupRuleCacher.refreshAll();
-        //warehouseGroupRuleCacher.refreshAll();
-        //itemGroupCacher.refreshAll();
-
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
         Table<Long, String, Integer> shopSkuStockForCodoon = HashBasedTable.create();
         //库存推送日志记录
@@ -301,8 +296,6 @@ public class StockPusher {
                             this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
                             log.info("parall update stock return");
                         }
-                        createAndPushLogs(logs, skuCode, shopId, stock, Boolean.TRUE, null);
-
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
                                 skuCode, shopId, Throwables.getStackTraceAsString(e));
@@ -310,7 +303,6 @@ public class StockPusher {
 
                     }
                 }
-                pushLogs(logs);
             } catch (Exception e) {
                 log.error("failed to push stock,sku is {}", skuCode);
             }
@@ -422,11 +414,10 @@ public class StockPusher {
                         log.error("failed to push stocks {} to shop(id={}), error code{}",
                                 paranaSkuStocks, shopId, r.getError());
                     }
-
                     //生成库存推送日志
                     List<StockPushLog> stockPushLogs = Lists.newArrayList();
                     //库存日志推送
-                    paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, (long) (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
+                    paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
                     pushLogs(stockPushLogs);
                 } catch (Exception e) {
                     log.error("sync offical stock failed,caused by {}", Throwables.getStackTraceAsString(e));

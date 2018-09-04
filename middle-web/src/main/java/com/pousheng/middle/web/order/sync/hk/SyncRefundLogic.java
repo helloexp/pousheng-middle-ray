@@ -580,6 +580,8 @@ public class SyncRefundLogic {
                 return HkRefundType.HK_AFTER_SALES_RETURN;
             case AFTER_SALES_CHANGE:
                 return HkRefundType.HK_AFTER_SALES_RETURN;
+            case REJECT_GOODS:
+                return HkRefundType.HK_AFTER_SALES_RETURN;
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
                 throw new ServiceException("refund.type.invalid");

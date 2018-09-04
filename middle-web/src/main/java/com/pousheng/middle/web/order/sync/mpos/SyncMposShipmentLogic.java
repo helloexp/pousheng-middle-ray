@@ -347,6 +347,8 @@ public class SyncMposShipmentLogic{
         param.put("skuInfo",mapper.toJson(shipmentReadLogic.getShipmentItems(shipment)));
         //外部订单号
         param.put("outOrderId",shopOrder.getOutId());
+        //订单来源渠道
+        param.put("channel", shopOrder.getOutFrom());
         //中台联系人信息
         ReceiverInfo receiverInfo =  orderReadLogic.findReceiverInfo(shopOrder.getId());
         param.put("receiverInfoJson",mapper.toJson(receiverInfo));

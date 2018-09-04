@@ -108,10 +108,10 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
                 break;
             }
             List<PoushengCompensateBiz> poushengCompensateBizs = response.getResult().getData();
-            if (poushengCompensateBizs.isEmpty()) {
+            map.put(DateTime.now().toString(), poushengCompensateBizs.stream().map(PoushengCompensateBiz::getId).collect(Collectors.toList()));
+            if (poushengCompensateBizs.size() < pageSize) {
                 break;
             }
-            map.put(DateTime.now().toString(), poushengCompensateBizs.stream().map(PoushengCompensateBiz::getId).collect(Collectors.toList()));
             pageNo ++;
         }
          //再查状态为失败，但是重试次数小于3次的
@@ -128,10 +128,10 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
                 break;
             }
             List<PoushengCompensateBiz> poushengCompensateBizs = response.getResult().getData();
-            if (poushengCompensateBizs.isEmpty()) {
+            map.put(DateTime.now().toString(), poushengCompensateBizs.stream().map(PoushengCompensateBiz::getId).collect(Collectors.toList()));
+            if (poushengCompensateBizs.size() < pageSize) {
                 break;
             }
-            map.put(DateTime.now().toString(), poushengCompensateBizs.stream().map(PoushengCompensateBiz::getId).collect(Collectors.toList()));
             pageNo ++;
         }
         return map;

@@ -125,7 +125,7 @@
         <where>
         <include refid="queryCondition"/>
         </where>
-        order by id desc limit #{offset},#{limit}
+        order by id asc limit #{offset},#{limit}
     </select>
 
     <select id="count" parameterType="list" resultType="long">

@@ -676,7 +676,7 @@ public class Shipments {
 
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
-            try {
+            //try {
                 String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
                 Long warehouseId = shipmentRequest.getWarehouseId();
                 Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
@@ -757,9 +757,9 @@ public class Shipments {
                 shipmentWiteLogic.syncExchangeShipment(shipmentId);
                 shipmentIds.add(shipmentId);
 
-            } catch (Exception e){
-                log.error("handle shipmentRequest:{} fail,cause;{}",shipmentRequest,Throwables.getStackTraceAsString(e));
-            }
+            //} catch (Exception e){
+            //    log.error("handle shipmentRequest:{} fail,cause;{}",shipmentRequest,Throwables.getStackTraceAsString(e));
+            //}
         }
         //生成发货单之后解锁
         Response<Boolean> endResponse = middleRefundWriteService

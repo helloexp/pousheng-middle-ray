@@ -137,7 +137,7 @@ public class StockLogReceiver {
         for (InventoryTradeLog dto : inventoryTradeLogs) {
             WarehouseDTO warehouseDTO = warehouseCacher.findByCode(dto.getWarehouseCode());
             logs.add(new IndexedStockLog().skuCode(dto.getSkuCode()).materialId(materialMap.get(dto.getSkuCode()))
-                    .shipmentId(dto.getShipmentId()).quantity(dto.getQuantity().intValue())
+                    .shipmentId("SHP" + dto.getShipmentId()).quantity(dto.getQuantity().intValue())
                     .warehouseCode(warehouseDTO.getOutCode()).warehouseName(warehouseDTO.getWarehouseName())
                     .createdAt(dto.getCreatedAt()).operate(dto.getType())
                     .type(StockLogTypeEnum.TRADE.value()));

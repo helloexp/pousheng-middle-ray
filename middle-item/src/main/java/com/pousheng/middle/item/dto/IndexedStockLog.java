@@ -28,7 +28,7 @@ public class IndexedStockLog implements Serializable {
     /**
      * 发货单id
      */
-    private Long shipmentId;
+    private String shipmentId;
 
     /**
      * 商品编码
@@ -86,11 +86,11 @@ public class IndexedStockLog implements Serializable {
         return this;
     }
 
-    public Long getShipmentId() {
+    public String getShipmentId() {
         return shipmentId;
     }
 
-    public IndexedStockLog shipmentId(Long shipmentId) {
+    public IndexedStockLog shipmentId(String shipmentId) {
         this.shipmentId = shipmentId;
         return this;
     }

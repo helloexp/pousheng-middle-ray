@@ -16,6 +16,9 @@
       "materialId": {
         "type": "keyword"
       },
+      "shipmentId": {
+        "type": "keyword"
+      },
       "warehouseCode": {
         "type": "keyword"
       },

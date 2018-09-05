@@ -18,6 +18,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Created by cp on 9/4/17
@@ -52,7 +53,10 @@ public class ReceiverInfoCompleter {
             handleResult.setSuccess(Boolean.FALSE);
             errors.add("第三方渠道省：" + receiverInfo.getProvince()+ "未匹配到中台的省");
         }
-
+        //如果市一级地址为空，则用区一级地址顶上
+        if (!Objects.isNull(receiverInfo.getCity())&&StringUtils.isEmpty(receiverInfo.getCity().trim())){
+            receiverInfo.setCity(receiverInfo.getRegion());
+        }
         Long cityId = queryAddressId(provinceId,receiverInfo.getCity());
         if (Arguments.notNull(cityId)){
             receiverInfo.setCityId(Integer.valueOf(cityId.toString()));

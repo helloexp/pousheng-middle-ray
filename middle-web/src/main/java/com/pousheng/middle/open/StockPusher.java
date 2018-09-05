@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
+import com.pousheng.middle.open.stock.StockPushCacher;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -45,6 +46,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
@@ -134,6 +136,12 @@ public class StockPusher {
     private String stockLogTopic;
 
     @Autowired
+    private StockPushCacher stockPushCacher;
+    @Setter
+    @Value("${stock.push.cache.enable: true}")
+    private boolean StockPusherCacheEnable;
+
+    @Autowired
     public StockPusher(@Value("${index.queue.size: 120000}") int queueSize,
                        @Value("${cache.duration.in.minutes: 60}") int duration) {
         this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 3, 60L, TimeUnit.MINUTES,
@@ -187,7 +195,6 @@ public class StockPusher {
         }
         log.info("start to push skus: {}", skuCodes);
         Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
-        Table<Long, String, Integer> shopSkuStockForCodoon = HashBasedTable.create();
         //库存推送日志记录
         final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
         List<StockPushLog> logs = Lists.newArrayList();
@@ -274,6 +281,17 @@ public class StockPusher {
                             } else {
                                 stock = this.calculateStock(shopId, skuCode, warehouseIds, shopStockRule);
                             }
+
+                            //校验缓存中是否有推送记录且推送数量一致，则本次不推送
+                            if(StockPusherCacheEnable){
+                                Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode);
+                                if(log.isDebugEnabled()){
+                                    log.debug("compare current stock({}) with cacheStock({}),result is {}", stock, cacheStock, (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()));
+                                }
+                                if(!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()){
+                                    continue;
+                                }
+                            }
                         }
                         if (stock == null) {
                             continue;
@@ -286,15 +304,10 @@ public class StockPusher {
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
-                        } else if (Objects.equals(openShop.getChannel(), MiddleChannel.CODOON.getValue())) {
-                            log.info("start to push to codoon shop: {}, with quantity: {}", openShop, stock);
-                            shopSkuStockForCodoon.put(shopId, skuCode, Math.toIntExact(stock));
                         } else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
-                            log.info("parall update stock start");
                             this.prallelUpdateStock(skuCode, shopId, stock, shopStockRule.getShopName());
-                            log.info("parall update stock return");
                         }
                     } catch (Exception e) {
                         log.error("failed to push stock of sku(skuCode={}) to shop(id={}), cause: {}",
@@ -309,24 +322,7 @@ public class StockPusher {
         }
 
         //官网批量推送
-        log.info("send to parana by parall update stock start");
         sendToParana(shopSkuStock);
-        log.info("send to parana by parall update stock return");
-        //咕咚批量推送
-        log.info("send to codoon by parall update stock start");
-        sendToParana(shopSkuStockForCodoon);
-        log.info("send to codoon by parall update stock return");
-        //库存日志推送
-        if (!thirdStockPushLogs.isEmpty()) {
-            thirdStockPushLogs.forEach(item -> {
-                log.info("stock push third shop log info:{}", item.toString());
-            });
-        }
-
-        //库存日志推送
-        if (!thirdStockPushLogs.isEmpty()) {
-            redisQueueProvider.startProvider(JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(thirdStockPushLogs));
-        }
 
         if (log.isDebugEnabled()) {
             log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}", skuCodes, System.currentTimeMillis());
@@ -391,6 +387,11 @@ public class StockPusher {
             //// TODO: 2018/8/20
             createAndPushLogs(stockPushLogs, skuCode, shopId, (long) stock.intValue(), rP.isSuccess(), rP.getError());
             pushLogs(stockPushLogs);
+
+            //如果推送成功则将本次推送记录写入缓存
+            if(StockPusherCacheEnable && rP.isSuccess()){
+                stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode, stock.intValue());
+            }
         });
     }
 
@@ -419,6 +420,13 @@ public class StockPusher {
                     //库存日志推送
                     paranaSkuStocks.forEach(stock -> createAndPushLogs(stockPushLogs, stock.getSkuCode(), shopId, (long) stock.getStock().intValue(), r.isSuccess(), r.getError()));
                     pushLogs(stockPushLogs);
+
+                    //如果推送成功则将本次推送记录写入缓存
+                    if(StockPusherCacheEnable && r.isSuccess()){
+                        paranaSkuStocks.forEach(skuStock -> {
+                            stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuStock.getSkuCode(), skuStock.getStock());
+                        });
+                    }
                 } catch (Exception e) {
                     log.error("sync offical stock failed,caused by {}", Throwables.getStackTraceAsString(e));
                 }

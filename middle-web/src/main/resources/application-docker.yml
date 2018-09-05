@@ -270,3 +270,9 @@ failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
 is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
 
 terminus.rocketmq.stockLogTopic: stockLogTopic
+
+#最后库存推送记录缓存开关
+stock.push.cache.enable: ${STOCK_PUSH_CACHE_ENABLE}
+#最后库存推送记录缓存失效时间
+stock.push.cache.duration.in.hours: ${STOCK_PUSH_CACHE_DURATION_IN_HOURS}
+

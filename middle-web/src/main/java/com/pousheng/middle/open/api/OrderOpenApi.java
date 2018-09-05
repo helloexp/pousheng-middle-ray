@@ -438,20 +438,30 @@ public class OrderOpenApi {
                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
 
-            try {
-                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+            Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+            //仓发拒收单直接同步订单恒康就好了
+            if (Objects.equals(shipment.getShipWay(), 2) && Objects.equals(refund.getRefundType(), MiddleRefundType.REJECT_GOODS.value())) {
+                Response<Boolean> r = syncRefundPosLogic.syncSaleRefuseToHK(refund);
                 if (!r.isSuccess()) {
                     Map<String, Object> param1 = Maps.newHashMap();
                     param1.put("refundId", refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK, r.getError());
                 }
-            } catch (Exception e) {
-                Map<String, Object> param1 = Maps.newHashMap();
-                param1.put("refundId", refund.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
+            } else {
+                try {
+                    Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                    if (!r.isSuccess()) {
+                        Map<String, Object> param1 = Maps.newHashMap();
+                        param1.put("refundId", refund.getId());
+                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
+                    }
+                } catch (Exception e) {
+                    Map<String, Object> param1 = Maps.newHashMap();
+                    param1.put("refundId", refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
+                }
+
             }
-
-
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);
 

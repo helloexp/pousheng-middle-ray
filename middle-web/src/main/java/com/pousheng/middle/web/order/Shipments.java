@@ -676,7 +676,7 @@ public class Shipments {
 
         List<Long> shipmentIds = Lists.newArrayList();
         for (ShipmentRequest shipmentRequest : requestDataList) {
-            //try {
+            try {
                 String data = JsonMapper.nonEmptyMapper().toJson(shipmentRequest.getData());
                 Long warehouseId = shipmentRequest.getWarehouseId();
                 Map<String, Integer> skuCodeAndQuantity = analysisSkuCodeAndQuantity(data);
@@ -757,18 +757,28 @@ public class Shipments {
                 shipmentWiteLogic.syncExchangeShipment(shipmentId);
                 shipmentIds.add(shipmentId);
 
-            //} catch (Exception e){
-            //    log.error("handle shipmentRequest:{} fail,cause;{}",shipmentRequest,Throwables.getStackTraceAsString(e));
-            //}
+            }catch (JsonResponseException | ServiceException e){
+                log.error("handle shipmentRequest:{} fail,cause;{}", shipmentRequest, Throwables.getStackTraceAsString(e));
+                unLock(refundId);
+                throw new JsonResponseException(e.getMessage());
+            } catch (Exception e){
+                log.error("handle shipmentRequest:{} fail,cause;{}", shipmentRequest, Throwables.getStackTraceAsString(e));
+                unLock(refundId);
+                throw new JsonResponseException("生成换货发货单失败");
+            }
         }
+        unLock(refundId);
+        return shipmentIds;
+    }
+
+    private void unLock(Long refundId) {
         //生成发货单之后解锁
         Response<Boolean> endResponse = middleRefundWriteService
-                .updateTradeNo(refundId,TradeConstants.AFTER_SALE_EXHCANGE_LOCK,
+                .updateTradeNo(refundId, TradeConstants.AFTER_SALE_EXHCANGE_LOCK,
                         TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
-        if (!endResponse.isSuccess()){
-            log.error("unlock refunds failed,refundId {},caused by {}",refundId,startResponse.getError());
+        if (!endResponse.isSuccess()) {
+            log.error("unlock refunds failed,refundId {},caused by {}", refundId, endResponse.getError());
         }
-        return shipmentIds;
     }
 
     /**

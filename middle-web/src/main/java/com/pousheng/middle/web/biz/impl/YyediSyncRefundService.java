@@ -8,15 +8,13 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
-import com.pousheng.middle.web.order.component.AutoCompensateLogic;
-import com.pousheng.middle.web.order.component.RefundReadLogic;
-import com.pousheng.middle.web.order.component.RefundWriteLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -27,12 +25,14 @@ import io.terminus.parana.order.model.Shipment;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传退货信息业务处理〉
@@ -55,6 +55,8 @@ public class YyediSyncRefundService implements CompensateBizService {
     private RefundReadLogic refundReadLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
 
     @Override
@@ -135,6 +137,23 @@ public class YyediSyncRefundService implements CompensateBizService {
                 autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, e.getMessage());
             }
         }
+
+        //将实际入库数量更新为发货单的refundQuantity
+        Map<String,String> refundConfirmItemAndQuantity = items.stream().
+                filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        for (ShipmentItem shipmentItem:shipmentItems){
+            if (refundConfirmItemAndQuantity.containsKey(shipmentItem.getSkuCode())){
+                shipmentItem.setRefundQuantity(Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode())));
+            }
+            newShipmentItems.add(shipmentItem);
+        }
+        Map<String,String> shipmentExtra = shipment.getExtra();
+        shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
+        shipment.setExtra(shipmentExtra);
+        shipmentWiteLogic.update(shipment);
+
         //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
         refundWriteLogic.getThirdRefundResult(refund);
 

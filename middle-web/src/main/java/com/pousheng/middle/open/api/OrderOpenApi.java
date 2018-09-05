@@ -749,6 +749,8 @@ public class OrderOpenApi {
                 throw new JsonResponseException("refund.not.allow.hk.confirm");
             case AFTER_SALES_CHANGE:
                 return MiddleOrderEvent.RETURN_CHANGE.toOrderOperation();
+            case REJECT_GOODS:
+                return MiddleOrderEvent.RETURN.toOrderOperation();
             default:
                 log.error("refund(id:{}) type:{} invalid", refund.getId(), refund.getRefundType());
                 throw new JsonResponseException("refund.type.invalid");

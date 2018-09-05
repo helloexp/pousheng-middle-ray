@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -139,16 +140,25 @@ public class YyediSyncRefundService implements CompensateBizService {
         }
 
         //将实际入库数量更新为发货单的refundQuantity
+        //实际退货sku-quantity集合
         Map<String,String> refundConfirmItemAndQuantity = items.stream().
                 filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
+        //售后申请sku-quantity的集合
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        Map<String,Integer> refundApplyItemAndQuantity = refundItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(RefundItem::getSkuCode,RefundItem::getApplyQuantity));
+        //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         List<ShipmentItem> newShipmentItems = Lists.newArrayList();
         for (ShipmentItem shipmentItem:shipmentItems){
             if (refundConfirmItemAndQuantity.containsKey(shipmentItem.getSkuCode())){
-                shipmentItem.setRefundQuantity(Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode())));
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
+                        (refundApplyItemAndQuantity.get(shipmentItem.getSkuCode())-
+                                Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode()))));
             }
             newShipmentItems.add(shipmentItem);
         }
+
         Map<String,String> shipmentExtra = shipment.getExtra();
         shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
         shipment.setExtra(shipmentExtra);

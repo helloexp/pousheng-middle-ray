@@ -43,7 +43,6 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
@@ -100,8 +99,6 @@ public class OrderOpenApi {
     private ReceiveSkxResultLogic receiveSkxResultLogic;
     @Autowired
     private SyncMposApi syncMposApi;
-    @Value("${skx.open.shop.id}")
-    private Long skxOpenShopId;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -441,20 +438,19 @@ public class OrderOpenApi {
                syncMposOrderLogic.notifyMposRefundReceived(refund.getOutId());
             }
 
-            if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
-                try {
-                    Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-                    if (!r.isSuccess()) {
-                        Map<String, Object> param1 = Maps.newHashMap();
-                        param1.put("refundId", refund.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
-                    }
-                } catch (Exception e) {
+            try {
+                Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
+                if (!r.isSuccess()) {
                     Map<String, Object> param1 = Maps.newHashMap();
                     param1.put("refundId", refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
                 }
+            } catch (Exception e) {
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", refund.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
             }
+
 
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
             refundWriteLogic.getThirdRefundResult(refund);

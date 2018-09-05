@@ -297,20 +297,21 @@ public class RefundWriteLogic {
             log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
             throw new JsonResponseException(updateRes.getError());
         }
-        //回滚发货单的已退货数量
-        shipmentItems.forEach(it -> {
-            RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
-            if (refundItem != null) {
-                it.setRefundQuantity(it.getRefundQuantity() - refundItem.getApplyQuantity());
-            }
 
-        });
+        //如果不是售后仅退款 删除时要回滚数量
+        if (!refund.getRefundType().equals(MiddleRefundType.AFTER_SALES_REFUND.value())) {
+            shipmentItems.forEach(it -> {
+                RefundItem refundItem = skuCodeAndRefundItemMap.get(it.getSkuCode());
+                if (refundItem != null) {
+                    it.setRefundQuantity(it.getRefundQuantity() - refundItem.getApplyQuantity());
+                }
+            });
+            //更新发货单商品中的已退货数量
+            Map<String, String> shipmentExtraMap = shipment.getExtra();
+            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonDefaultMapper().toJson(shipmentItems));
+            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+        }
 
-
-        //更新发货单商品中的已退货数量
-        Map<String, String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonDefaultMapper().toJson(shipmentItems));
-        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
     }
 
 

@@ -18,6 +18,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 推送一个店铺所有的sku库存
@@ -70,8 +71,10 @@ public class ShopSkuStockPushListener {
             List<ItemMapping> data = p.getData();
             List<String> skuCodes = Lists.newArrayList();
             for (ItemMapping datum : data) {
-                log.info("trying to push stock of sku(code={})", datum.getSkuCode());
-                skuCodes.add(datum.getSkuCode());
+                String skuCode = datum.getSkuCode();
+                if(!Objects.isNull(skuCode)&&!Objects.equals(skuCode,"")) {
+                    skuCodes.add(skuCode);
+                }
             }
             //stockPusher.submit(skuCodes);
             List<InventoryChangeDTO> inventoryChanges = com.google.common.collect.Lists.newArrayList();

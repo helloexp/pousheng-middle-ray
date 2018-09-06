@@ -60,15 +60,19 @@ public class InventoryChangeConsumer {
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);
             if (!ObjectUtils.isEmpty(changeDTOS)) {
                 for (InventoryChangeDTO dto : changeDTOS) {
-                    if (StringUtils.isNotBlank(dto.getSkuCode())) {
-                        skuCodes.add(dto.getSkuCode());
-                    } else {
-                        if (null != dto.getWarehouseId()) {
-                            Response<List<InventoryDTO>> inventoryList = inventoryClient.findSkuStocks(dto.getWarehouseId(), null);
-                            if (inventoryList.isSuccess() && !ObjectUtils.isEmpty(inventoryList.getResult())) {
-                                skuCodes.addAll(Lists.transform(inventoryList.getResult(), input -> input.getSkuCode()));
+                    try {
+                        if (StringUtils.isNotBlank(dto.getSkuCode())) {
+                            skuCodes.add(dto.getSkuCode());
+                        } else {
+                            if (null != dto.getWarehouseId()) {
+                                Response<List<InventoryDTO>> inventoryList = inventoryClient.findSkuStocks(dto.getWarehouseId(), null);
+                                if (inventoryList.isSuccess() && !ObjectUtils.isEmpty(inventoryList.getResult())) {
+                                    skuCodes.addAll(Lists.transform(inventoryList.getResult(), input -> input.getSkuCode()));
+                                }
                             }
                         }
+                    }catch (Exception e){
+                        log.error("fail to handle inventory change, because: {}", Throwables.getStackTraceAsString(e));
                     }
                 }
 

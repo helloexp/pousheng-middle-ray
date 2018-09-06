@@ -264,6 +264,14 @@ public class ShipmentWiteLogic {
                         throw new JsonResponseException(syncRes.getError());
                     }
                 }
+                else {
+                    // 直接更新为取消
+                    Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation());
+                    if (!cancelRes.isSuccess()) {
+                        log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
+                        throw new JsonResponseException(cancelRes.getError());
+                    }
+                }
             }
             //
             if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {

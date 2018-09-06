@@ -16,4 +16,8 @@ public class EditSubmitChangeItem implements java.io.Serializable {
     private Integer changeQuantity;
     //换货商品价格
     private Integer changeSkuPrice;
+    //换货单需要发货的仓库id
+    private Long exchangeWarehouseId;
+    //换货单需要发货的仓库名称
+    private String exchangeWarehouseName;
 }

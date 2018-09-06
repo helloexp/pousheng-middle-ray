@@ -14,6 +14,7 @@ import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.MiddleShipmentType;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -39,6 +40,8 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.parana.order.enums.ShipmentOccupyType;
+import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;
@@ -188,6 +191,11 @@ public class AdminOrderWriter {
         Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
         if (!response.isSuccess()) {
             throw new JsonResponseException("rollback.shop.order.failed");
+        }
+        //如果未处理原因是备注订单已经占库被撤销的，则未处理原因变为备注订单客服取消占库发货单
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getHandleStatus(),OrderWaitHandleType.NOTE_ORDER_OCCUPY_SHIPMENT_CREATED.value())){
+            shipmentWiteLogic.updateShipmentNote(shopOrder,OrderWaitHandleType.NOTE_ORDER_OCCUPY_SHIPMENT_CANCELED.value());
         }
         log.info("end try to roll back shop order shopOrderId is {}", shopOrderId);
 
@@ -642,6 +650,28 @@ public class AdminOrderWriter {
         }
 
     }
+    /**
+     *
+     * 正常订单占用库存发货单确认后同步mpos或者yyedi
+     * @return
+     */
+    @RequestMapping(value = "/api/order/{orderId}/occupy/shipment/confirm",method = RequestMethod.PUT)
+    @OperationLogType("备注订单占库发货单确认")
+    public Response<Boolean> confirmOrderOccupyShipments(@PathVariable("orderId") @OperationLogParam Long orderId){
+        if (log.isDebugEnabled()){
+            log.debug("confirm order occupy shipments start,shopOrderId {}",orderId);
+        }
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
+        List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(orderId);
+        for (Shipment shipment:shipments){
+            //修改发货单类型，并且同步订单派发中心或者mpos
+            shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(shipment.getId(),ShipmentOccupyType.SALE_N.name());
+            shipmentWiteLogic.syncExchangeShipment(shipment.getId());
+        }
+        //确认订单之后，将未处理状态修改已经处理
+        shipmentWiteLogic.updateShipmentNote(shopOrder,OrderWaitHandleType.HANDLE_DONE.value());
+        return Response.ok(Boolean.TRUE);
+    }
 
     /**
      * 创建订单
@@ -653,9 +683,9 @@ public class AdminOrderWriter {
     @PermissionCheck(PermissionCheck.PermissionCheckType.SHOP_ORDER)
     @LogMe(description = "创建订单",ignore = true)
     public Response<Boolean> createMiddleOrder(@RequestBody @LogMeContext OpenFullOrderInfo openFullOrderInfo) {
-            if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()){
                 log.debug("API-CREATEMIDDLEORDER-START param: openFullOrderInfo [{}] ",openFullOrderInfo);
-            }
+        }
         try {
             openFullOrderInfo.getOrder().setStatus(1);
             Response<Boolean> response = openClientOrderLogic.createOrder(openFullOrderInfo);

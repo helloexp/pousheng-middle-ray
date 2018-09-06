@@ -7,6 +7,9 @@ import java.util.Objects;
  * @author tony
  */
 public enum OrderWaitHandleType {
+    /**
+     * 详细备注
+     */
     ORIGIN_STATUS_SAVE(-1, "初始状态"),
     WAIT_AUTO_CREATE_SHIPMENT(0, "防止并发"),
     WAIT_HANDLE(1, "尚未尝试自动生成发货单"),
@@ -23,7 +26,12 @@ public enum OrderWaitHandleType {
     SHOP_STOCK_LOCK_FAIL(12, "mpos门店商品库存锁定失败"),
     WAREHOUSE_RULE_NOT_FOUND(13, "来源店铺没有配置对应的默认发货仓规则"),
     UNKNOWN_ERROR(14, "未知错误"),
-    SHOP_MAPPING_MISS(15, "门店对应的店铺映射关系缺失");
+    SHOP_MAPPING_MISS(15, "门店对应的店铺映射关系缺失"),
+    NOTE_ORDER_NO_SOTCK(17,"备注订单无库存"),
+    //有备注的订单正向流转过程:备注订单正在处理->备注订单已经占用库存->确认占库->已经处理
+    //有备注订单库存不足:订单有备注->备注订单无库存
+    NOTE_ORDER_OCCUPY_SHIPMENT_CREATED(18,"备注订单已经占库"),
+    NOTE_ORDER_OCCUPY_SHIPMENT_CANCELED(19,"备注订单客服取消占库发货单");
 
     private final int value;
     private final String desc;

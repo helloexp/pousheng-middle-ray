@@ -35,4 +35,8 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
 
     //分摊到发货单上面的平台优惠
     private Integer sharePlatformDiscount;
+
+    //商品对应着哪个发货仓库
+    private Long itemWarehouseId;
+    private String itemWarehouseName;
 }

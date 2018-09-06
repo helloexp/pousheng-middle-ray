@@ -70,6 +70,7 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
         }
     }
 
+    @Override
     public Response<Paging<ShipmentPagingInfo>> findBy(OrderShipmentCriteria criteria) {
         try {
             Paging<OrderShipment> paging = orderShipmentDao.paging(criteria.toMap());

@@ -19,9 +19,10 @@ public class EditSubmitRefundInfo implements Serializable {
     private List<EditSubmitRefundItem> editSubmitRefundItems;
 
     /**
-     * 换货商品集合
+     * 待换货商品集合
      */
     private List<EditSubmitChangeItem> editSubmitChangeItems;
+
     //退款金额
     private Long fee;
     //备注

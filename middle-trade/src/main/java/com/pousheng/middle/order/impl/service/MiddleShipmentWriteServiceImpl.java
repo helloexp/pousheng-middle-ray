@@ -42,6 +42,7 @@ public class MiddleShipmentWriteServiceImpl implements MiddleShipmentWriteServic
             orderShipment.setShipWay(shipment.getShipWay());
             orderShipment.setShipId(shipment.getShipId());
             orderShipment.setOrderTime(order.getOutCreatedAt());
+            orderShipment.setIsOccupyShipment(shipment.getIsOccupyShipment());
             Long shipmentId = middleShipmentManager.create(shipment, orderShipment);
             return Response.ok(shipmentId);
         } catch (Exception e) {

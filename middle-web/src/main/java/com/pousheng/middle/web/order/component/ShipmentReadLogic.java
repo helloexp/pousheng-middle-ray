@@ -402,7 +402,15 @@ public class ShipmentReadLogic {
             log.error("shipment(id:{}) extra not contain key:{}",shipment.getId(),TradeConstants.SHIPMENT_ITEM_INFO);
             throw new JsonResponseException("shipment.extra.item.info.null");
         }
-        return mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
+        List<ShipmentItem> shipmentItems = mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
+        List<ShipmentItem> shipmentItemList = Lists.newArrayList();
+        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
+        for (ShipmentItem shipmentItem:shipmentItems){
+            shipmentItem.setItemWarehouseId(shipmentExtra.getWarehouseId());
+            shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
+            shipmentItemList.add(shipmentItem);
+        }
+        return shipmentItemList;
     }
 
 
@@ -509,6 +517,20 @@ public class ShipmentReadLogic {
      */
     public List<Shipment> findByShopOrderId(Long shopOrderId){
         Response<List<Shipment>> r = shipmentReadService.findByOrderIdAndOrderLevel(shopOrderId,OrderLevel.SHOP);
+        if (!r.isSuccess()){
+            log.error("find shipment list by shop order id failed,shopOrderId is {},caused by {}",shopOrderId,r.getError());
+            throw new JsonResponseException("find.shipment.failed");
+        }
+        return r.getResult();
+    }
+
+    /**
+     * 根据店铺订单主键查询发货单
+     * @param shopOrderId 店铺订单主键
+     * @return
+     */
+    public List<Shipment> findByShopOrderIdAndType(Long shopOrderId,Integer type){
+        Response<List<Shipment>> r = shipmentReadService.findByOrderIdAndOrderLevelAndType(shopOrderId,OrderLevel.SHOP,type);
         if (!r.isSuccess()){
             log.error("find shipment list by shop order id failed,shopOrderId is {},caused by {}",shopOrderId,r.getError());
             throw new JsonResponseException("find.shipment.failed");
@@ -664,11 +686,21 @@ public class ShipmentReadLogic {
         List<ShipmentItem> shipmentItems = Lists.newArrayList();
         for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
             Shipment shipment = shipmentPagingInfo.getShipment();
-            if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())){
+            if (Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())
+                    ||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.REJECTED.getValue())){
                 continue;
             }
+            ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
             List<ShipmentItem> shipmentItemList= this.getShipmentItems(shipment);
-            shipmentItems.addAll(shipmentItemList);
+            //用于添加warehouseid
+            List<ShipmentItem> newShipmentItemList = Lists.newArrayList();
+            //添加发货仓库
+            for (ShipmentItem shipmentItem:shipmentItemList){
+                shipmentItem.setItemWarehouseId(shipmentExtra.getWarehouseId());
+                shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
+                newShipmentItemList.add(shipmentItem);
+            }
+            shipmentItems.addAll(newShipmentItemList);
         }
         //根据货品条码去重
         Map<String,ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();

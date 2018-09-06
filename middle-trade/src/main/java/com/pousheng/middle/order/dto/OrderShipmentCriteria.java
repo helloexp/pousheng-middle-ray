@@ -153,6 +153,12 @@ public class OrderShipmentCriteria extends PagingCriteria implements Serializabl
     private Boolean partShip;
 
     /**
+     * 判断是否是专门的占库发货单
+     * @see io.terminus.parana.order.enums.ShipmentOccupyType
+     */
+    private String isOccupyShipment;
+
+    /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
     @Override

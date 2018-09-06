@@ -295,4 +295,6 @@ public class TradeConstants {
     public static final String POUSHENG_MIDDLE_COMPENSATE_BIZ_TOPIC="pousheng-middle-compensate-biz-topic";
     //mpos发货单被拒单的需要释放库存的发货单集合
     public static final String REJECT_SHIPMENT_OCCUPY_LIST="rejectShipmentOccupyList";
+    //有备注的订单处理标识
+    public static final String ORDER_NOTE_PROCESS_FLAG="orderNoteProcessFlag";
 }

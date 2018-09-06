@@ -27,6 +27,11 @@ public class RefundItem extends BasicItemInfo implements Serializable{
 
     //已处理数量（换货的发货）
     private Integer alreadyHandleNumber;
+
+    //换货商品所选的仓库id
+    private Long exchangeWarehouseId;
+    //换货商品所选择的仓库名称
+    private String exchangeWarehouseName;
     //商品id
     private String itemId;
     //换货时存放的需要申请售后的skuCode

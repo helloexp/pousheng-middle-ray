@@ -530,10 +530,10 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.SYNC_CHANGE_SUCCESS.toOrderOperation(),
                     MiddleRefundStatus.CHANGE_SYNC_HK_SUCCESS.getValue());
 
-            //同步换货成功-待退货 -->换货退货-完成 --> 已退货待创建发货
+            //同步换货成功-待退货 -->换货退货-完成 -->
             addTransition(MiddleRefundStatus.CHANGE_SYNC_HK_SUCCESS.getValue(),
                     MiddleOrderEvent.RETURN_CHANGE.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
+                    MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue());
 
             //已退货待创建发货 -->创建发货单（换货商品全部生成发货单） --> 待发货
             addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue(),
@@ -563,6 +563,15 @@ public class MiddleFlowBook {
             addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue(),
                     MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation(),
                     MiddleRefundStatus.DONE.getValue());
+            //已退货待确认发货->取消换货->已完成
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation(),
+                    MiddleRefundStatus.DONE.getValue());
+            //已退货待确认发货->确认->待发货
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
+                    MiddleOrderEvent.CONFIRM_OCCUPY_SHIPMENT.toOrderOperation(),
+                    MiddleRefundStatus.WAIT_SHIP.getValue());
+
 
 
             //===========逆向流程
@@ -613,9 +622,12 @@ public class MiddleFlowBook {
             //取消同步失败 -->>换货退货-完成 --> 已退货待创建发货
             addTransition(MiddleRefundStatus.SYNC_HK_CANCEL_FAIL.getValue(),
                     MiddleOrderEvent.RETURN_CHANGE.toOrderOperation(),
+                    MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue());
+
+            //已退货待确认发货-->重新生成-->已退货等待重新生成发货单
+            addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
+                    MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation(),
                     MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
-
-
             // ============ 公共操作 ==========
 
 

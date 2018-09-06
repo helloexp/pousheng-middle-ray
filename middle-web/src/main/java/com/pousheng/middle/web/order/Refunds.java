@@ -39,6 +39,9 @@ import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.Value;
+import io.terminus.parana.order.enums.ShipmentOccupyType;
+import io.terminus.parana.order.enums.ShipmentType;
+import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -197,13 +200,20 @@ public class Refunds {
                 //进退款，退货退款，换货的售后单的完善
                 refundWriteLogic.completeHandle(refund, editSubmitRefundInfo);
                 if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
-                    //完善之后同步售后单到订单派发中心
-                    Flow flow = flowPicker.pickAfterSales();
-                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                    refund.setStatus(targetStatus);
-                    Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
-                    if (!syncRes.isSuccess()) {
-                        log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+
+                    //对于换货售后单来讲必须等到占用库存成功之后更新售后单售后单状态
+                    boolean result = refundWriteLogic.createOccupyShipments(editSubmitRefundInfo.getEditSubmitChangeItems(),refund.getId());
+                    if (result){
+                        //完善之后同步售后单到订单派发中心
+                        Flow flow = flowPicker.pickAfterSales();
+                        Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                        refund.setStatus(targetStatus);
+                        Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
+                        if (!syncRes.isSuccess()) {
+                            log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                        }
+                    }else{
+                        throw new JsonResponseException("complete.refund.failed");
                     }
                 }
             }
@@ -272,13 +282,35 @@ public class Refunds {
                     handleFailedRefundCodes.add(refund.getRefundCode());
                 }else{
                     //审核之后同步售后单到恒康
-                    Flow flow = flowPicker.pickAfterSales();
-                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                    refund.setStatus(targetStatus);
-                    Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
-                    if (!syncRes.isSuccess()) {
-                        log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
-                        syncFailedRefundCodes.add(refund.getRefundCode());
+                    if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+                        List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+                        List<EditSubmitChangeItem> editSubmitChangeItems = Lists.newArrayList();
+                        for (RefundItem refundItem:refundChangeItems){
+                            EditSubmitChangeItem editSubmitChangeItem = new EditSubmitChangeItem();
+                            editSubmitChangeItem.setExchangeWarehouseId(refundItem.getExchangeWarehouseId());
+                            editSubmitChangeItem.setExchangeWarehouseName(refundItem.getExchangeWarehouseName());
+                            editSubmitChangeItem.setChangeSkuCode(refundItem.getSkuCode());
+                            editSubmitChangeItem.setChangeQuantity(refundItem.getApplyQuantity());
+                            editSubmitChangeItems.add(editSubmitChangeItem);
+                        }
+                        boolean result = refundWriteLogic.createOccupyShipments(editSubmitChangeItems,refund.getId());
+                        if (result){
+                            Flow flow = flowPicker.pickAfterSales();
+                            Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                            refund.setStatus(targetStatus);
+                            Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
+                            if (!syncRes.isSuccess()) {
+                                log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                                syncFailedRefundCodes.add(refund.getRefundCode());                            }
+                        }
+                    }else {
+                        Flow flow = flowPicker.pickAfterSales();
+                        Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                        refund.setStatus(targetStatus);
+                        Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
+                        if (!syncRes.isSuccess()) {
+                            log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
+                            syncFailedRefundCodes.add(refund.getRefundCode());                        }
                     }
                 }
             }
@@ -380,6 +412,8 @@ public class Refunds {
             log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
         }
+        //取消成功之后，换货售后单需要取消占用库存发货单(异步操作即可)
+
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-SYNCHKREFUND-END param: refundId [{}] ", refundId);
         }
@@ -445,6 +479,9 @@ public class Refunds {
             }
             //回滚发货单的数量
             refundWriteLogic.rollbackRefundQuantities(refund);
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+                refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
+            }
         }else{
             //拒收单取消
             OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
@@ -548,6 +585,13 @@ public class Refunds {
             refundWriteLogic.releaseRejectShipmentOccupyStock(id);
 
             Refund refund = refundReadLogic.findRefundById(id);
+            //如果允许取消，则将占库发货单取消即可
+            List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refund.getId());
+            for (OrderShipment orderShipment:orderShipments){
+                //修改发货单类型，并且同步订单派发中心或者mpos
+                Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+                shipmentWiteLogic.cancelOccupyShipment(shipment);
+            }
             refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             Flow flow = flowPicker.pickAfterSales();
             Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
@@ -732,6 +776,56 @@ public class Refunds {
         return resp;
     }
 
+    /**
+     *
+     * 售后占用库存发货单确认后同步mpos或者yyedi
+     * @param refundId 售后单id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{refundId}/occupy/shipment/confirm",method = RequestMethod.PUT)
+    @OperationLogType("售后单占库发货单确认")
+    public Response<Boolean> confirmAfterSaleOccupyShipments(@PathVariable("refundId") @OperationLogParam Long refundId){
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        for (OrderShipment orderShipment:orderShipments){
+            //修改发货单类型，并且同步订单派发中心或者mpos
+            shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(orderShipment.getShipmentId(),ShipmentOccupyType.CHANGE_N.name());
+            shipmentWiteLogic.syncExchangeShipment(orderShipment.getShipmentId());
+        }
+        //修改售后单状态为待发货
+        refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CONFIRM_OCCUPY_SHIPMENT.toOrderOperation());
+        return Response.ok(Boolean.TRUE);
+    }
+
+    /**
+     * 占库发货单取消
+     * @param refundId 售后单id
+     * @return
+     */
+    @RequestMapping(value = "/api/refund/{refundId}/occupy/shipment/cancel",method = RequestMethod.PUT)
+    @OperationLogType("售后单占库发货单取消")
+    public Response<Boolean> cancelAfterSaleOccupyShipments(@PathVariable("refundId") @OperationLogParam Long refundId){
+        //占库发货单整体取消
+        refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
+        //修改售后单状态为待发货
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
+        //售后单已经申请售后的数量设置为0
+        List<RefundItem> exchangeItems = refundReadLogic.findRefundChangeItems(refund);
+        List<RefundItem> newExchangeItems = Lists.newArrayList();
+        for (RefundItem refundItem :exchangeItems){
+            refundItem.setAlreadyHandleNumber(0);
+            newExchangeItems.add(refundItem);
+        }
+        Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+        Map<String,String> refundExtra = newRefund.getExtra();
+        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newExchangeItems));
+        newRefund.setExtra(refundExtra);
+        refundWriteLogic.update(newRefund);
+
+        return Response.ok(Boolean.TRUE);
+    }
+
         /**
          * 根据订单号获取所关联的售后单号,包括订单号自身，需要判断哪些状态的售后单不允许售后（负面清单）
          * @param code
@@ -753,6 +847,7 @@ public class Refunds {
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue()))
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_HANDLE.getValue()))
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue()))
+                    .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue()))
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.WAIT_SHIP.getValue()))
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_CREATE_SHIPMENT.getValue()))
                     .filter(it->!Objects.equals(it.getStatus(),MiddleRefundStatus.LOST_WAIT_SHIP.getValue()))

@@ -65,6 +65,7 @@ public enum MiddleOrderEvent {
     SYNC_YYEDI(38, "syncYYEdi", "admin"),
     CANCEL_SHIP_YYEDI(39,"cancelShip","seller"),
     SYNC_SALE_REFUSE_SUCCESS(40,"cancelShip","seller"),
+    CONFIRM_OCCUPY_SHIPMENT(41,"confirmOccupyShipment","admin"),
     BUYER_CANCEL(-1, "buyerCancel", "buyer"),
     SELLER_CANCEL(-2, "sellerCancel", "seller,admin"),
     REFUND_APPLY(-3, "refundApply", "buyer"),
@@ -81,7 +82,8 @@ public enum MiddleOrderEvent {
     RETURN_CONFIRM(-16, "returnConfirm", "seller"),
     ON_SALE_RETURN(-17,"onSaleReturn","seller"),
     AFTER_SALE_CANCEL_SHIP(-18,"afterSaleCancelShip","seller"),
-    CANCEL_ALL_CHANNEL_SHIPMENT(-19,"cancelAllChannel","seller");
+    CANCEL_ALL_CHANNEL_SHIPMENT(-19,"cancelAllChannel","seller"),
+    AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT(-20,"afterSaleReCreateShipment","admin");
 
 
     @Getter

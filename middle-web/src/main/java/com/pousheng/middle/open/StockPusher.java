@@ -408,7 +408,7 @@ public class StockPusher {
 
             //如果推送成功则将本次推送记录写入缓存
             if(StockPusherCacheEnable && rP.isSuccess()){
-                stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode, stock.intValue());
+                stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getSkuCode(), stock.intValue());
             }
         });
     }

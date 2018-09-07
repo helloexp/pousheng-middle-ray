@@ -230,7 +230,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
         //转换为中台的物流信息
-
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
         criteria.setPoushengCode(shipmentCorpCode);
         Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
@@ -247,7 +246,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
-
+        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         refund.setExtra(extraMap);
 
     }

@@ -376,7 +376,8 @@ public class RefundWriteLogic {
         refund.setReleOrderCode(submitRefundInfo.getReleOrderNo());
         //完善仓库及物流信息
         completeWareHoseAndExpressInfo(shipment,submitRefundInfo.getRefundType(), refundExtra, submitRefundInfo);
-
+        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItems));
         //完善换货信息
@@ -450,6 +451,8 @@ public class RefundWriteLogic {
 
         //完善仓库及物流信息
         completeWareHoseAndExpressInfo(shipment,refund.getRefundType(), refundExtra, submitRefundInfo);
+        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
         //添加处理完成时间
         refundExtra.setHandleDoneAt(new Date());
         //todo 是否可以修改售后单id
@@ -584,6 +587,8 @@ public class RefundWriteLogic {
         refundExtra.setShipmentId(shipment.getShipmentCode());
         //完善退货仓库及物流信息
         completeYunJUWareHoseAndExpressInfo(shopOrder,submitRefundInfo.getRefundType(),refundExtra,submitRefundInfo);
+        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO,mapper.toJson(refundExtra));
         extraMap.put(TradeConstants.REFUND_ITEM_INFO,mapper.toJson(refundItems));
@@ -1648,6 +1653,42 @@ public class RefundWriteLogic {
             originRefundExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonDefaultMapper().toJson(newShipmentOccupies));
             refund.setExtra(originRefundExtra);
             update(refund);
+        }
+    }
+
+
+    public void expressFix() {
+        if (log.isDebugEnabled()) {
+            log.debug("start to fix refund express info....");
+        }
+        MiddleRefundCriteria middleRefundCriteria = new MiddleRefundCriteria();
+        Integer pageNo = 1;
+        Integer pageSize = 20;
+        while (true) {
+            middleRefundCriteria.setPageNo(pageNo);
+            middleRefundCriteria.setSize(pageSize);
+            Paging<Refund> refundPaging = refundReadLogic.pagingForFix(middleRefundCriteria);
+            List<Refund> refunds = refundPaging.getData();
+            for (Refund refund: refunds) {
+                if (Objects.isNull(refund.getShipmentCorpCode())) {
+                    RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+                    if (Objects.nonNull(refundExtra)) {
+                        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
+                        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+                        this.update(refund);
+                    }
+                }
+            }
+            if (refunds.size() < pageSize) {
+                break;
+            }
+            pageNo ++;
+            if (log.isDebugEnabled()) {
+                log.debug("fixing refund express info, total: {}, now page is {}", refundPaging.getTotal(), pageNo);
+            }
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("end to fix refund express info...");
         }
     }
 }

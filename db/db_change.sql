@@ -1048,3 +1048,7 @@ alter table pousheng_stock_push_logs add out_id  varchar(64)  not null default 0
 alter table pousheng_stock_push_logs add material_id  varchar(64)  not null default 0  comment '货号' after sku_code ;
 ALTER TABLE pousheng_stock_push_logs ADD channel_sku_id VARCHAR(64) DEFAULT NULL COMMENT '第三方sku编号' AFTER sku_code;
 ALTER TABLE parana_item_mappings ADD ratio TINYINT(4) DEFAULT NULL COMMENT '商品推送比例' AFTER channel_sku_id;
+
+# 2018-09-07 售后单校验快递唯一性
+alter table parana_refunds add `shipment_corp_code`  varchar(32)  default null  comment '快递公司代码' after seller_note ;
+alter table parana_refunds add `shipment_serial_no`  varchar(32)  default null  comment '快递单号' after shipment_corp_code ;

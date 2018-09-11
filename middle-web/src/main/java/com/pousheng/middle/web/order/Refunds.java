@@ -166,8 +166,7 @@ public class Refunds {
             //创建丢件补发类型的售后单
             return refundWriteLogic.createRefundForLost(submitRefundInfo);
         }else{
-            if(!refundReadLogic.checkShipInfoUnique(submitRefundInfo.getShipmentCorpCode(),
-                    submitRefundInfo.getShipmentSerialNo())) {
+            if(!refundReadLogic.checkShipInfoUnique(submitRefundInfo.getShipmentSerialNo())) {
                 throw new JsonResponseException("submit.ship.info.exists");
             }
             //创建仅退款，退货退款，换货的售后单
@@ -193,8 +192,7 @@ public class Refunds {
                 //丢件补发售后单完善
                 refundWriteLogic.completeHandleForLostType(refund,editSubmitRefundInfo);
             }else{
-                if(!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentCorpCode(),
-                        editSubmitRefundInfo.getShipmentSerialNo())) {
+                if(!refundReadLogic.checkShipInfoUnique(editSubmitRefundInfo.getShipmentSerialNo())) {
                     throw new JsonResponseException("submit.ship.info.exists");
                 }
                 //进退款，退货退款，换货的售后单的完善
@@ -946,15 +944,15 @@ public class Refunds {
 
     @RequestMapping(value = "/api/refund/express/unique/check", method = RequestMethod.GET)
     @ApiOperation(value = "检查退货物流信息唯一性")
-    public Response<Boolean> expressUniqueCheck (@RequestParam String shipmentCorpCode, @RequestParam String shipmentSerialNo) {
+    public Response<Boolean> expressUniqueCheck (@RequestParam String shipmentSerialNo) {
         if (log.isDebugEnabled()) {
-            log.debug("CHECK REFUND EXPRESS UNIQUE by shipmentCorpCode:{}, shipmentSerialNo:{}",
-                    shipmentCorpCode, shipmentSerialNo);
+            log.debug("CHECK REFUND EXPRESS UNIQUE by shipmentSerialNo:{}",
+                     shipmentSerialNo);
         }
-        Boolean result = refundReadLogic.checkShipInfoUnique(shipmentCorpCode, shipmentSerialNo);
+        Boolean result = refundReadLogic.checkShipInfoUnique(shipmentSerialNo);
         if (log.isDebugEnabled()) {
-            log.debug("CHECK REFUND EXPRESS UNIQUE by shipmentCorpCode:{}, shipmentSerialNo:{}, res: {}",
-                    shipmentCorpCode, shipmentSerialNo, result);
+            log.debug("CHECK REFUND EXPRESS UNIQUE by shipmentSerialNo:{}, res: {}",
+                    shipmentSerialNo, result);
         }
         return Response.ok(result);
     }

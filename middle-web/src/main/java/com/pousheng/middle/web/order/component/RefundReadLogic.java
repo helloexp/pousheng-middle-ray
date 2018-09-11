@@ -452,11 +452,14 @@ public class RefundReadLogic {
                 mapper.createCollectionType(List.class, RejectShipmentOccupy.class));
     }
 
-    public Boolean checkShipInfoUnique(String shipmentCorpCode, String shipmentSerialNo) {
-        Response<List<Refund>> response = refundReadService.findByShipInfo(shipmentCorpCode, shipmentSerialNo);
+    public Boolean checkShipInfoUnique(String shipmentSerialNo) {
+        if (StringUtils.isEmpty(shipmentSerialNo)) {
+            return true;
+        }
+        Response<List<Refund>> response = refundReadService.findByShipInfo(shipmentSerialNo);
         if (!response.isSuccess()) {
-            log.error("fail to check ship info by shipmentCorpCode:{}, shipmentSerialNo:{}, cause:{}",
-                    shipmentCorpCode, shipmentSerialNo, response.getError());
+            log.error("fail to check ship info by shipmentSerialNo:{}, cause:{}",
+                    shipmentSerialNo, response.getError());
             throw new JsonResponseException(response.getError());
         }
         List<Refund> list = response.getResult();

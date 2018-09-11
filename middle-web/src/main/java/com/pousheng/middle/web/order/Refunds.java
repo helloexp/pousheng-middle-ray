@@ -39,6 +39,7 @@ import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.Value;
+import io.terminus.parana.order.enums.AfterSaleOrderType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -200,7 +201,10 @@ public class Refunds {
                 if (Objects.equals(editSubmitRefundInfo.getOperationType(),2)) {
 
                     //对于换货售后单来讲必须等到占用库存成功之后更新售后单售后单状态
-                    boolean result = refundWriteLogic.createOccupyShipments(editSubmitRefundInfo.getEditSubmitChangeItems(),refund.getId());
+                    boolean result =true;
+                    if(Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+                        result = refundWriteLogic.createOccupyShipments(editSubmitRefundInfo.getEditSubmitChangeItems(),refund.getId());
+                    }
                     if (result){
                         //完善之后同步售后单到订单派发中心
                         Flow flow = flowPicker.pickAfterSales();

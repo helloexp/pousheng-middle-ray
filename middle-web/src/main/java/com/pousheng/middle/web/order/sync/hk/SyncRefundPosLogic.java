@@ -80,7 +80,7 @@ public class SyncRefundPosLogic {
         try {
             if (shopOrder.getShopName().startsWith("yj")) {
                 if (!shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_SYNCHK)
-                        || Objects.equal("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                        || Objects.equal("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_SYNCHK))) {
                     return Response.ok();
                 }
             }

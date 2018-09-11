@@ -100,9 +100,9 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.YJ_OUTID, order.getOutId());
             extra.put(ExtraKeyConstant.SHIPMENT_TYPE, order.getShipmentType() + "");
 //             是否关心库存
-            extra.put(ExtraKeyConstant.IS_CARESTOCK, order.getIsCareStock());
+            extra.put(ExtraKeyConstant.IS_CARESTOCK, StringUtils.isEmpty(order.getIsCareStock()) ? "N" : order.getIsCareStock());
             // 是否传hk
-            extra.put(ExtraKeyConstant.IS_SYNCHK, order.getIsSyncHk());
+            extra.put(ExtraKeyConstant.IS_SYNCHK, StringUtils.isEmpty(order.getIsSyncHk()) ? "N" : order.getIsCareStock());
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);
             }
@@ -283,4 +283,5 @@ public class OpenOrderConverter {
     private Integer calcSkuDiscount(Long orderDiscount, Long originFee, OpenFullOrderItem openFullOrderItem) {
         return new BigDecimal(orderDiscount).multiply(new BigDecimal(openFullOrderItem.getOriginFee())).multiply(new BigDecimal(openFullOrderItem.getQuantity())).divide(new BigDecimal(originFee), 10, RoundingMode.HALF_DOWN).intValue();
     }
+
 }

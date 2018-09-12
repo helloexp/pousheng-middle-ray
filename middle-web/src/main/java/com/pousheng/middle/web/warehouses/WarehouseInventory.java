@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.erp.model.SpuMaterial;
 import com.pousheng.erp.service.SpuMaterialReadService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.warehouse.model.SkuInventory;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -141,4 +142,15 @@ public class WarehouseInventory {
         return retPage;
     }
 
+    /**
+     * 根据warehouseId和skuCode查询库存情况
+     * @param warehouseId
+     * @param skuCode
+     * @return
+     */
+    @RequestMapping(value = "/by/id-skucode", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<InventoryDTO> findByWarehouseIdAndSkuCode(@RequestParam Long warehouseId,@RequestParam String skuCode){
+        Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
+        return response;
+    }
 }

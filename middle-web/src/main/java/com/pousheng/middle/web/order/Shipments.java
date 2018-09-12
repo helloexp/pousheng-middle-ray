@@ -1311,6 +1311,17 @@ public class Shipments {
                 .collect(Collectors.toList());
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        for (ShipmentItem shipmentItem:shipmentItems){
+            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getItemWarehouseId(),shipmentItem.getSkuCode());
+            if (!response.isSuccess()){
+                shipmentItem.setItemStock(0L);
+            }else{
+                InventoryDTO inventoryDTO = response.getResult();
+                shipmentItem.setItemStock(inventoryDTO.getAvailStock());
+            }
+            newShipmentItems.add(shipmentItem);
+        }
         return shipmentItems;
     }
 

@@ -39,4 +39,6 @@ public class ShipmentItem extends BasicItemInfo implements Serializable{
     //商品对应着哪个发货仓库
     private Long itemWarehouseId;
     private String itemWarehouseName;
+    //仓库对应的sku库存
+    private Long itemStock;
 }

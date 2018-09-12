@@ -19,6 +19,7 @@ import com.pousheng.middle.order.service.MiddleShipmentWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
+import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -1473,7 +1474,19 @@ public class Shipments {
     @RequestMapping(value = "api/order/{id}/aftersale/shipment/items", method = RequestMethod.GET)
     public List<ShipmentItem> findShipmentItemByAfterSaleId(@PathVariable("id") String code) {
         Refund refund = refundReadLogic.findRefundByRefundCode(code);
-       return shipmentReadLogic.findAfterSaleShipmentItems(refund.getRefundCode());
+        List<ShipmentItem>  shipmentItems = shipmentReadLogic.findAfterSaleShipmentItems(refund.getRefundCode());
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        for (ShipmentItem shipmentItem:shipmentItems){
+            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getItemWarehouseId(),shipmentItem.getSkuCode());
+            if (!response.isSuccess()){
+                shipmentItem.setItemStock(0L);
+            }else{
+                InventoryDTO inventoryDTO = response.getResult();
+                shipmentItem.setItemStock(inventoryDTO.getAvailStock());
+            }
+            newShipmentItems.add(shipmentItem);
+        }
+       return newShipmentItems;
     }
 
     /**

@@ -1,6 +1,5 @@
 package com.pousheng.middle.open.stock;
 
-import com.pousheng.middle.open.StockPusher;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.model.Response;
@@ -25,20 +24,22 @@ import java.util.*;
 public class StockPusherApi {
 
     @Autowired
-    private StockPusher stockPusher;
+    private StockPusherClient stockPusherClient;
+    @Autowired
+    private StockPusherLogic stockPushLogic;
 
 
     @ApiOperation("库存推送")
     @RequestMapping(value = "/submit", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> submit(@RequestBody List<String> skuCodes) {
-        stockPusher.submit(skuCodes);
+        stockPusherClient.submit(skuCodes);
         return Response.ok(true);
     }
 
     @ApiOperation("是否启用推送记录缓存")
     @RequestMapping(value = "/cache/setting", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> submit(@RequestBody boolean flag) {
-        stockPusher.setStockPusherCacheEnable(flag);
+        stockPushLogic.setStockPusherCacheEnable(flag);
         return Response.ok(true);
     }
 

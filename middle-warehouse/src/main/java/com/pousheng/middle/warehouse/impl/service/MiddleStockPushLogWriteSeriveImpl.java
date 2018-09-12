@@ -52,4 +52,24 @@ public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWrit
         }
 
     }
+
+    @Override
+    public Response<Boolean> batchUpdateResultByRequestIdAndLineNo(List<StockPushLog> stockPushLogs) {
+        try {
+            if (stockPushLogs.isEmpty()) {
+                return Response.fail("stockPushLogs.is.null");
+            }
+            int result = stockPushLogDao.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
+            if (result > 0) {
+                return Response.ok(Boolean.TRUE);
+            } else {
+                return Response.fail("stockPushLogDao.update.fail");
+            }
+        } catch (Exception e) {
+            log.error("batch update stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
+            return Response.fail("stockPushLogDao.batchCreate.fail");
+        }
+    }
+
+
 }

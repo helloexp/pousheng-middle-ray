@@ -16,6 +16,8 @@
         <result column="quantity" property="quantity"/>
         <result column="status" property="status"/>
         <result column="cause" property="cause"/>
+        <result column="requestNo" property="requestNo"/>
+        <result column="lineNo" property="lineNo"/>
         <result column="sync_at" property="syncAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
@@ -32,11 +34,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name,out_id,sku_code,channel_sku_id,material_id,quantity,status,cause,sync_at,created_at, updated_at
+        shop_id, shop_name,out_id,sku_code,channel_sku_id,material_id,quantity,status,cause,request_no,line_no,sync_at,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName},#{outId},#{skuCode},#{channelSkuId},#{materialId}, #{quantity},#{status},#{cause},#{syncAt}, now(), now()
+        #{shopId}, #{shopName},#{outId},#{skuCode},#{channelSkuId},#{materialId}, #{quantity},#{status},#{cause},#{requestNo},#{lineNo},#{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -54,6 +56,10 @@
         <if test="materialId != null">and `material_id` = #{materialId}</if>
 
         <if test="status != null">and `status` = #{status}</if>
+
+        <if test="requestNo != null">and `request_no` = #{requestNo}</if>
+
+        <if test="lineNo != null">and `line_no` = #{lineNo}</if>
 
         <if test="startAt != null">AND <![CDATA[sync_at >= #{startAt}]]> </if>
 
@@ -78,7 +84,7 @@
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.channelSkuId}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause},
+            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.channelSkuId}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause}, #{i.requestNo}, #{i.lineNo},
             #{i.syncAt}, now(), now()
             )
         </foreach>
@@ -102,9 +108,24 @@
             <if test="channelSkuId != null">channel_sku_id = #{channelSkuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>
             <if test="quantity != null">quantity = #{quantity},</if>
+            <if test="requestNo != null">request_no = #{requestNo},</if>
+            <if test="lineNo != null">line_no = #{lineNo},</if>
             updated_at=now()
         </set>
         WHERE id = #{id}
+    </update>
+
+    <update id="batchUpdateResultByRequestIdAndLineNo" parameterType="StockPushLog">
+        <foreach collection="list" item="i" index="index" separator=",">
+            UPDATE
+            <include refid="tb"/>
+            <set>
+                status = #{i.status},
+                cause = #{i.cause},
+                updated_at=now()
+            </set>
+            WHERE request_no = #{i.requestNo} and line_no = #{i.lineNo};
+        </foreach>
     </update>
 
     <delete id="delete" parameterType="long">

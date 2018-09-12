@@ -27,4 +27,11 @@ public interface MiddleStockPushLogWriteService {
      */
     Response<Boolean> creates(List<StockPushLog> stockPushLogs);
 
+    /**
+     * @Description TODO
+     * @Date        2018/9/13
+     * @param       stockPushLogs
+     * @return
+     */
+    public Response<Boolean> batchUpdateResultByRequestIdAndLineNo(List<StockPushLog> stockPushLogs);
 }

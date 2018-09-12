@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.StockPusher;
+import com.pousheng.middle.open.stock.StockPusherClient;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
@@ -14,9 +15,7 @@ import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -36,7 +35,7 @@ import java.util.List;
 public class InventoryChangeConsumer {
 
     @Autowired
-    private StockPusher stockPusher;
+    private StockPusherClient stockPusherClient;
     @Autowired
     private InventoryClient inventoryClient;
 
@@ -76,7 +75,7 @@ public class InventoryChangeConsumer {
                     }
                 }
 
-                stockPusher.submit(skuCodes);
+                stockPusherClient.submit(skuCodes);
             }
 
         } catch (Exception e) {

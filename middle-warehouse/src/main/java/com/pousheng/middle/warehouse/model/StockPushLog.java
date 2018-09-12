@@ -31,6 +31,8 @@ public class StockPushLog implements Serializable {
     private int status;
     private String cause;
     private Long quantity;
+    private String requestNo;
+    private String lineNo;
     private Date syncAt;
     private Date createdAt;
     private Date updatedAt;

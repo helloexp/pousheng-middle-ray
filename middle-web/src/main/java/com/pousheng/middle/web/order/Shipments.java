@@ -42,6 +42,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -578,19 +579,24 @@ public class Shipments {
                 throw new JsonResponseException("lock.stock.error");
             }*/
             //创建发货单
-            Long shipmentId = null;
+            Long shipmentId;
             try {
                 shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.TRUE);
 
                 // 异步订阅 用于记录库存数量的日志
                 eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
-            } catch (Exception e) {
-                log.error("failed to gen shipment shopOrderId : {} :", shopOrderId, Throwables.getStackTraceAsString(e));
+            } catch (ServiceException e){
+                log.error("failed to create shipment shopOrderId : {} error:{}:", shopOrderId, e.getMessage());
+                continue;
+            }catch (Exception e) {
+                log.error("failed to create shipment shopOrderId : {} cause:{}:", shopOrderId, Throwables.getStackTraceAsString(e));
+                continue;
             }
             shipmentIds.add(shipmentId);
             Response<Shipment> shipmentRes = shipmentReadService.findById(shipmentId);
             if (!shipmentRes.isSuccess()) {
                 log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
+                continue;
             }
             //生成发货单之后需要将发货单id添加到子单中
             for (SkuOrder skuOrder : skuOrders) {

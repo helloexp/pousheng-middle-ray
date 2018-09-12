@@ -1322,7 +1322,7 @@ public class Shipments {
             }
             newShipmentItems.add(shipmentItem);
         }
-        return shipmentItems;
+        return newShipmentItems;
     }
 
     /**

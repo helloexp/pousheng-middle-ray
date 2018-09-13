@@ -139,7 +139,7 @@ public class YyediSyncRefundService implements CompensateBizService {
             }
         }
 
-        //将实际入库数量更新为发货单的refundQuantity
+     /*   //将实际入库数量更新为发货单的refundQuantity
         //实际退货sku-quantity集合
         Map<String,String> refundConfirmItemAndQuantity = items.stream().
                 filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
@@ -162,7 +162,7 @@ public class YyediSyncRefundService implements CompensateBizService {
         Map<String,String> shipmentExtra = shipment.getExtra();
         shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
         shipment.setExtra(shipmentExtra);
-        shipmentWiteLogic.update(shipment);
+        shipmentWiteLogic.update(shipment);*/
 
         //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
         refundWriteLogic.getThirdRefundResult(refund);

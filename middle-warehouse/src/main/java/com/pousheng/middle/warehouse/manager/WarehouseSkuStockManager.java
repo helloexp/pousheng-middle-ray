@@ -1,6 +1,7 @@
 package com.pousheng.middle.warehouse.manager;
 
 import com.google.common.collect.Lists;
+import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -9,6 +10,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
+import com.pousheng.middle.warehouse.event.TaskLockEvent;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.model.ShipmentItem;
@@ -38,6 +40,9 @@ public class WarehouseSkuStockManager {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     @Autowired
+    private EventBus eventBus;
+
+    @Autowired
     public WarehouseSkuStockManager(InventoryClient inventoryClient, PoushengCompensateBizWriteService poushengCompensateBizWriteService) {
         this.inventoryClient = inventoryClient;
         this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
@@ -63,7 +68,8 @@ public class WarehouseSkuStockManager {
                 if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
                     log.info("begin to create lock task, shipment id is {}", Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                     // 超时的错误进入biz表给后面轮询
-                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+//                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                    eventBus.post(new TaskLockEvent(Long.parseLong(inventoryTradeDTO.getBizSrcId())));
                 }
                 return Response.fail(tradeRet.getError());
             }
@@ -90,7 +96,8 @@ public class WarehouseSkuStockManager {
                 log.error("fail to occupy inventory for user dispatch logic, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
                 if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
                     // 超时的错误进入biz表给后面轮询
-                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+//                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                    eventBus.post(new TaskLockEvent(Long.parseLong(inventoryTradeDTO.getBizSrcId())));
                 }
                 return Response.fail(tradeRet.getError());
             }

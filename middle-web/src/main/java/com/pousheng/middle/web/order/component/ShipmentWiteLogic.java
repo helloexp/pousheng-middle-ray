@@ -728,7 +728,7 @@ public class ShipmentWiteLogic {
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         log.info("auto create shipment,step four");
         //封装发货信息
-        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity);
+        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, warehouseId, shopOrder.getShopId());
         //发货单商品金额
         Long shipmentItemFee = 0L;
         //发货单总的优惠
@@ -835,7 +835,7 @@ public class ShipmentWiteLogic {
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         log.info("auto create shipment,step four");
         //封装发货信息
-        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity);
+        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, deliveyShopId, shopOrder.getShopId());
         //发货单商品金额
         Long shipmentItemFee = 0L;
         //发货单总的优惠
@@ -1196,7 +1196,8 @@ public class ShipmentWiteLogic {
      * @param skuOrderIdAndQuantity 子单的主键和数量的集合
      * @return shipmentItem的集合
      */
-    public List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long, Integer> skuOrderIdAndQuantity) {
+    public List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long, Integer> skuOrderIdAndQuantity,
+                                                Long warehouseId, Long shopId) {
         Map<Long, SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId, it -> it));
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
         for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
@@ -1207,6 +1208,9 @@ public class ShipmentWiteLogic {
             } else {
                 shipmentItem.setIsGift(Boolean.FALSE);
             }
+            shipmentItem.setWarehouseId(warehouseId);
+            shipmentItem.setShopId(shopId);
+            shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
             shipmentItem.setRefundQuantity(0);
             // 实际发货数量

@@ -1,9 +1,8 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
-import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
@@ -33,7 +32,7 @@ import java.util.List;
 @RequestMapping("/api/warehouse/shop-rule")
 @Slf4j
 @OperationLogModule(OperationLogModule.Module.WAREHOUSE_SHOP_RULE)
-public class WarehouseShopStockRules {
+public class ShopStockRules {
 
     @Autowired
     private WarehouseShopRuleClient warehousePushRuleClient;
@@ -50,36 +49,17 @@ public class WarehouseShopStockRules {
      * @param warehouseShopStockRule 店铺库存发货规则
      * @return 新创建的规则id
      */
-    @ApiOperation("创建店铺库存发货规则")
+    @ApiOperation("创建店铺库存推送规则")
     @LogMe(description = "创建店铺库存发货规则", compareTo = "warehousePushRuleClient#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Long create(@RequestBody @LogMeContext WarehouseShopStockRule warehouseShopStockRule){
-        authCheck(warehouseShopStockRule.getShopId());
+    public Long create(@RequestBody @LogMeContext ShopStockRule warehouseShopStockRule){
+        userManageShopReader.authCheck(warehouseShopStockRule.getShopId());
         Response<Long> r = warehousePushRuleClient.createShopRule(warehouseShopStockRule);
         if(!r.isSuccess()){
             log.error("failed to create {}, error code:{}", warehouseShopStockRule, r.getError());
             throw new JsonResponseException(r.getError());
         }
         return r.getResult();
-    }
-
-
-    /**
-     * 检查当前登录用户是否有操作对应店铺的权限
-     *
-     * @param shopId 店铺id
-     */
-    private void authCheck(Long shopId) {
-        ParanaUser user = UserUtil.getCurrentUser();
-        List<OpenClientShop> shops =  userManageShopReader.findManageShops(user);
-        List<Long> shopIds = Lists.newArrayListWithCapacity(shops.size());
-        for (OpenClientShop shop : shops) {
-            shopIds.add(shop.getOpenShopId());
-        }
-        if(!shopIds.contains(shopId)){
-            log.error("user({}) can not create shopStockRule for  shop(id={})", user, shopId);
-            throw new JsonResponseException("shop.not.allowed");
-        }
     }
 
     /**
@@ -91,7 +71,7 @@ public class WarehouseShopStockRules {
      * @return 对应的店铺库存分配规则
      */
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<WarehouseShopStockRule> pagination(@RequestParam(required = false, value = "shopId") Long shopId,
+    public Paging<ShopStockRule> pagination(@RequestParam(required = false, value = "shopId") Long shopId,
                                                      @RequestParam(required = false, value = "pageNo") Integer pageNo,
                                                      @RequestParam(required = false, value = "pageSize") Integer pageSize) {
 
@@ -121,20 +101,20 @@ public class WarehouseShopStockRules {
      * @param warehouseShopStockRule 店铺推送规则
      * @return 是否成功
      */
-    @ApiOperation("更新店铺推送规则")
+    @ApiOperation("更新店铺库存发货规则")
     @LogMe(description = "更新店铺库存发货规则", ignore = true)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
     public Boolean update(@PathVariable @LogMeContext Long id,
-                          @RequestBody @LogMeContext WarehouseShopStockRule warehouseShopStockRule){
-        WarehouseShopStockRule exist = warehousePushRuleClient.findById(id);
+                          @RequestBody @LogMeContext ShopStockRule warehouseShopStockRule){
+        ShopStockRule exist = warehousePushRuleClient.findById(id);
         if(null == exist) {
-            log.error("failed to find WarehouseShopStockRule(id={})", id);
+            log.error("failed to find ShopStockRule(id={})", id);
             throw new JsonResponseException("warehouse.shop.rule.find.fail");
         }
 
         Long shopId = exist.getShopId();
-        authCheck(shopId);
+        userManageShopReader.authCheck(shopId);
         warehouseShopStockRule.setId(id);
         warehouseShopStockRule.setShopId(shopId);
         Response<Boolean> rU = warehousePushRuleClient.updateShopRule(warehouseShopStockRule);
@@ -152,15 +132,15 @@ public class WarehouseShopStockRules {
      * @return 是否成功
      */
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public WarehouseShopStockRule findById(@PathVariable Long id){
-        WarehouseShopStockRule exist = warehousePushRuleClient.findById(id);
+    public ShopStockRule findById(@PathVariable Long id){
+        ShopStockRule exist = warehousePushRuleClient.findById(id);
         if(null == exist){
-            log.error("failed to find WarehouseShopStockRule(id={})", id);
+            log.error("failed to find ShopStockRule(id={})", id);
             throw new JsonResponseException("warehouse.shop.rule.find.fail");
         }
         //检查用户是否有读取这个规则的权限
         Long shopId = exist.getShopId();
-        authCheck(shopId);
+        userManageShopReader.authCheck(shopId);
         return exist;
     }
 
@@ -173,7 +153,6 @@ public class WarehouseShopStockRules {
     @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogIgnore
     public Boolean push(@RequestParam("shopId")Long shopId){
-        //eventBus.post(new PushEvent(shopId, null));
         shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, null));
         return Boolean.TRUE;
     }

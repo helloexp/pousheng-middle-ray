@@ -11,21 +11,45 @@ import java.util.Date;
  * Date: 2018-05-10
  */
 @Data
-public class WarehouseShopSkuStockRule implements Serializable {
+public class ShopWarehouseSkuStockRule implements Serializable {
 
     private static final long serialVersionUID = 3019054647264967216L;
 
     private Long id;
+    /**
+     * 仓库id
+     */
+    private Long warehouseId;
+
 
     /**
-     * 店铺分配规则id
+     * 仓库名称
      */
-    private Long shopRuleId;
+    private String warehouseName;
+
+
+    /**
+     * 仓库编码
+     */
+    private String warehouseCode;
 
     /**
      * 店铺id
      */
     private Long shopId;
+
+
+    /**
+     * 店铺名称
+     */
+    private String shopName;
+
+
+    /**
+     * 店铺外码
+     */
+    private String outId;
+
 
     /**
      * sku编号，也就是商品条码

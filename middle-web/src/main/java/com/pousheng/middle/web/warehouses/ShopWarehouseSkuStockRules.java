@@ -13,13 +13,12 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.warehouse.companent.ShopWarehouseSkuRuleClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
-import com.pousheng.middle.warehouse.companent.WarehouseShopSkuRuleClient;
-import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
-import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopWarehouseSkuStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
-import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
@@ -27,6 +26,7 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -37,10 +37,7 @@ import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.dto.ItemMappingCriteria;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
-import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.parana.common.model.ParanaUser;
-import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SpuReadService;
 import io.terminus.search.api.model.WithAggregations;
@@ -65,10 +62,10 @@ import java.util.stream.Collectors;
 @Slf4j
 @OperationLogModule(OperationLogModule.Module.WAREHOUSE_SHOP_RULE)
 @Api(description = "店铺下商品的库存分配规则相关api")
-public class WarehouseShopSkuStockRules {
+public class ShopWarehouseSkuStockRules {
 
     @Autowired
-    private WarehouseShopSkuRuleClient warehouseShopSkuRuleClient;
+    private ShopWarehouseSkuRuleClient warehouseShopSkuRuleClient;
     @RpcConsumer
     private MappingReadService mappingReadService;
     @Autowired
@@ -92,23 +89,24 @@ public class WarehouseShopSkuStockRules {
     @Autowired
     private GroupRuleCacherProxy groupRuleCacherProxy;
 
+
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     /**
      * 创建商品库存推送规则
      *
-     * @param warehouseShopSkuStockRule 商品库存推送规则
+     * @param shopWarehouseSkuStockRule 商品库存推送规则
      * @return 新创建的规则id
      */
     @ApiOperation("创建商品库存推送规则")
     @LogMe(description = "创建商品级库存推送规则", compareTo = "warehouseShopSkuRuleClient#findById")
     @RequestMapping(value = "/create", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("创建")
-    public Long create(@RequestBody WarehouseShopSkuStockRule warehouseShopSkuStockRule) {
-        authCheck(warehouseShopSkuStockRule.getShopId());
-        Response<Long> createRet = warehouseShopSkuRuleClient.createShopSkuRule(warehouseShopSkuStockRule);
+    public Long create(@LogMeContext @RequestBody ShopWarehouseSkuStockRule shopWarehouseSkuStockRule) {
+        userManageShopReader.authCheck(shopWarehouseSkuStockRule.getShopId());
+        Response<Long> createRet = warehouseShopSkuRuleClient.createShopSkuRule(shopWarehouseSkuStockRule);
         if (!createRet.isSuccess()) {
-            log.error("failed to create {}, cause:{}", warehouseShopSkuStockRule, createRet.getError());
+            log.error("failed to create {}, cause:{}", shopWarehouseSkuStockRule, createRet.getError());
             throw new JsonResponseException(createRet.getError());
         }
         return createRet.getResult();
@@ -125,10 +123,11 @@ public class WarehouseShopSkuStockRules {
     @RequestMapping(value = "/import", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("批量导入创建商品级库存推送规则")
     public Response<Long> create(@RequestBody SkuStockRuleImportInfo info) {
-        authCheck(info.getOpenShopId());
+        userManageShopReader.authCheck(info.getOpenShopId());
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.toString());
         biz.setContext(mapper.toJson(info));
+        biz.setBizId(info.getOpenShopId() + "-" + info.getWarehouseId());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         return poushengCompensateBizWriteService.create(biz);
     }
@@ -144,11 +143,14 @@ public class WarehouseShopSkuStockRules {
     @ApiOperation("查询导入文件的处理记录")
     @RequestMapping(value = "/import/result/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("查询导入文件的处理记录")
-    public Paging<PoushengCompensateBiz> create(@RequestParam(required = false, value = "pageNo") Integer pageNo,
-                                                @RequestParam(required = false, value = "pageSize") Integer pageSize) {
+    public Paging<PoushengCompensateBiz> importPaging(@RequestParam(required = false, value = "pageNo") Integer pageNo,
+                                                      @RequestParam(required = false, value = "pageSize") Integer pageSize,
+                                                      Long openShopId,
+                                                      Long warehouseId) {
         PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
         criteria.setPageNo(pageNo);
         criteria.setPageSize(pageSize);
+        criteria.setBizId(openShopId + "-" + warehouseId);
         criteria.setBizType(PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.name());
         Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.pagingForShow(criteria);
         if (!response.isSuccess()) {
@@ -158,19 +160,6 @@ public class WarehouseShopSkuStockRules {
     }
 
 
-    private void authCheck(Long shopId) {
-        ParanaUser user = UserUtil.getCurrentUser();
-        List<OpenClientShop> shops = userManageShopReader.findManageShops(user);
-        List<Long> shopIds = Lists.newArrayListWithCapacity(shops.size());
-        for (OpenClientShop shop : shops) {
-            shopIds.add(shop.getOpenShopId());
-        }
-        if (!shopIds.contains(shopId)) {
-            log.error("user({}) can not create shopStockRule for  shop(id={})", user, shopId);
-            throw new JsonResponseException("shop.not.allowed");
-        }
-    }
-
     /**
      * 列出当前用户能查看的商品推送规则
      *
@@ -178,11 +167,11 @@ public class WarehouseShopSkuStockRules {
      * @return 对应的商品库存分配规则
      */
     @ApiOperation("列出当前用户能查看的商品推送规则")
-    @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Paging<WarehouseShopSkuStockRule> pagination(ItemMappingCriteria criteria) {
+    @RequestMapping(value = "/{warehouseId}/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Paging<ShopWarehouseSkuStockRule> pagination(@PathVariable Long warehouseId, ItemMappingCriteria criteria) {
         OpenShop openShop = openShopCacher.findById(criteria.getOpenShopId());
         if (Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue())) {
-            return paginationForYJ(criteria);
+            return paginationForYJ(warehouseId, criteria);
         }
         if (!StringUtils.isEmpty(criteria.getMaterialId())) {
             Map<String, String> params = Maps.newHashMap();
@@ -203,7 +192,7 @@ public class WarehouseShopSkuStockRules {
             return new Paging<>(0L, Lists.newArrayList());
         }
 
-        Map<String, WarehouseShopSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(criteria);
+        Map<String, ShopWarehouseSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(warehouseId, criteria);
         List<String> skuCodes = mappingRes.getResult().getData().stream().filter(e -> e.getSkuCode() != null).map(ItemMapping::getSkuCode).collect(Collectors.toList());
         Map<String, String> params = Maps.newHashMap();
         params.put("skuCodes", Joiners.COMMA.join(skuCodes));
@@ -212,7 +201,7 @@ public class WarehouseShopSkuStockRules {
             return new Paging<>(0L, Lists.newArrayList());
         }
         Map<String, String> skuCodesMaterailMap = result.getData().stream().collect(Collectors.toMap(SearchSkuTemplate::getSkuCode, SearchSkuTemplate::getSpuCode));
-        Map<String, WarehouseShopSkuStockRule> rules = Maps.newHashMap();
+        Map<String, ShopWarehouseSkuStockRule> rules = Maps.newHashMap();
         for (ItemMapping itemMapping : mappingRes.getResult().getData()) {
             if (StringUtils.isBlank(itemMapping.getSkuCode())) {
                 continue;
@@ -220,10 +209,10 @@ public class WarehouseShopSkuStockRules {
             if (rules.containsKey(itemMapping.getSkuCode())) {
                 continue;
             }
-            WarehouseShopSkuStockRule stockRule;
-            WarehouseShopSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
+            ShopWarehouseSkuStockRule stockRule;
+            ShopWarehouseSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
             if (null == item) {
-                stockRule = new WarehouseShopSkuStockRule();
+                stockRule = new ShopWarehouseSkuStockRule();
             } else {
                 stockRule = item;
             }
@@ -247,14 +236,15 @@ public class WarehouseShopSkuStockRules {
             rules.put(itemMapping.getSkuCode(), stockRule);
         }
 
-        Paging<WarehouseShopSkuStockRule> ret = new Paging<>();
+        Paging<ShopWarehouseSkuStockRule> ret = new Paging<>();
         ret.setTotal(mappingRes.getResult().getTotal());
         ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
         return ret;
     }
 
-    public Paging<WarehouseShopSkuStockRule> paginationForYJ(ItemMappingCriteria criteria) {
+
+    public Paging<ShopWarehouseSkuStockRule> paginationForYJ(Long warehouseId, ItemMappingCriteria criteria) {
         OpenShop openShop = openShopCacher.findById(criteria.getOpenShopId());
         Map<String, String> params = Maps.newHashMap();
         if (Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue())) {
@@ -275,16 +265,16 @@ public class WarehouseShopSkuStockRules {
             return new Paging<>(0L, Lists.newArrayList());
         }
         criteria.setSkuCodes(result.getData().stream().map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList()));
-        Map<String, WarehouseShopSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(criteria);
-        Map<String, WarehouseShopSkuStockRule> rules = Maps.newHashMap();
+        Map<String, ShopWarehouseSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(warehouseId, criteria);
+        Map<String, ShopWarehouseSkuStockRule> rules = Maps.newHashMap();
         for (SearchSkuTemplate itemMapping : result.getData()) {
             if (rules.containsKey(itemMapping.getSkuCode())) {
                 continue;
             }
-            WarehouseShopSkuStockRule stockRule;
-            WarehouseShopSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
+            ShopWarehouseSkuStockRule stockRule;
+            ShopWarehouseSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
             if (null == item) {
-                stockRule = new WarehouseShopSkuStockRule();
+                stockRule = new ShopWarehouseSkuStockRule();
             } else {
                 stockRule = item;
             }
@@ -294,38 +284,40 @@ public class WarehouseShopSkuStockRules {
             stockRule.setShopId(criteria.getOpenShopId());
             rules.put(itemMapping.getSkuCode(), stockRule);
         }
-        Paging<WarehouseShopSkuStockRule> ret = new Paging<>();
+        Paging<ShopWarehouseSkuStockRule> ret = new Paging<>();
         ret.setTotal(result.getTotal());
         ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
         return ret;
     }
 
+
     /**
      * 更新商品推送规则
      *
      * @param id                        规则id
-     * @param warehouseShopSkuStockRule 商品推送规则
+     * @param shopWarehouseSkuStockRule 商品推送规则
      * @return 是否成功
      */
     @ApiOperation("更新商品推送规则")
-    @LogMe(description = "更新商品级推送规则", ignore = true)
+    @LogMe(description = "更新商品级库存推送规则", ignore = true)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
-    public Boolean update(@PathVariable Long id, @RequestBody WarehouseShopSkuStockRule warehouseShopSkuStockRule) {
-        WarehouseShopSkuStockRule exist = warehouseShopSkuRuleClient.findById(id);
+    public Boolean update(@LogMeContext @PathVariable Long id,@LogMeContext @RequestBody ShopWarehouseSkuStockRule shopWarehouseSkuStockRule) {
+        ShopWarehouseSkuStockRule exist = warehouseShopSkuRuleClient.findById(id);
         if (null == exist) {
-            log.error("failed to find WarehouseShopSkuStockRule(id={}), error code:{}", id);
+            log.error("failed to find ShopWarehouseSkuStockRule(id={}), error code:{}", id);
             throw new JsonResponseException("warehouse.shop.sku.rule.find.fail");
         }
 
-        authCheck(exist.getShopId());
+        userManageShopReader.authCheck(exist.getShopId());
 
-        warehouseShopSkuStockRule.setId(id);
-        warehouseShopSkuStockRule.setShopId(exist.getShopId());
-        warehouseShopSkuStockRule.setSkuCode(exist.getSkuCode());
-        Response<Boolean> updRet = warehouseShopSkuRuleClient.updateShopSkuRule(warehouseShopSkuStockRule);
+        shopWarehouseSkuStockRule.setId(id);
+        shopWarehouseSkuStockRule.setShopId(exist.getShopId());
+        shopWarehouseSkuStockRule.setWarehouseId(exist.getWarehouseId());
+        shopWarehouseSkuStockRule.setSkuCode(exist.getSkuCode());
+        Response<Boolean> updRet = warehouseShopSkuRuleClient.updateShopSkuRule(shopWarehouseSkuStockRule);
         if (!updRet.isSuccess()) {
-            log.error("failed to update {}, cause:{}", warehouseShopSkuStockRule, updRet.getError());
+            log.error("failed to update {}, cause:{}", shopWarehouseSkuStockRule, updRet.getError());
             throw new JsonResponseException(updRet.getError());
         }
         return updRet.getResult();
@@ -339,14 +331,14 @@ public class WarehouseShopSkuStockRules {
      */
     @ApiOperation("读取商品推送规则")
     @RequestMapping(value = "/{id}", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public WarehouseShopSkuStockRule findById(@PathVariable Long id) {
-        WarehouseShopSkuStockRule exist = warehouseShopSkuRuleClient.findById(id);
+    public ShopWarehouseSkuStockRule findById(@PathVariable Long id) {
+        ShopWarehouseSkuStockRule exist = warehouseShopSkuRuleClient.findById(id);
         if (null == exist) {
-            log.error("failed to find WarehouseShopSkuStockRule(id={}), error code:{}", id);
+            log.error("failed to find ShopWarehouseSkuStockRule(id={}), error code:{}", id);
             throw new JsonResponseException("warehouse.shop.sku.rule.find.fail");
         }
 
-        authCheck(exist.getShopId());
+        userManageShopReader.authCheck(exist.getShopId());
 
         return exist;
     }
@@ -363,11 +355,10 @@ public class WarehouseShopSkuStockRules {
     @OperationLogIgnore
     public Boolean push(@RequestParam("shopId") Long shopId, @RequestParam("skuCode") String skuCode) {
         // 验证店铺级规则是否启用
-        WarehouseShopStockRule shopRule = warehouseShopRuleClient.findByShopId(shopId);
+        ShopStockRule shopRule = warehouseShopRuleClient.findByShopId(shopId);
         if (null == shopRule || shopRule.getStatus() != 1) {
             throw new JsonResponseException("warehouse.shop.rule.invalid");
         }
-        //eventBus.post(new PushEvent(shopId, skuCode));
         shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, skuCode));
         return Boolean.TRUE;
     }

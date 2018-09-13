@@ -4,7 +4,8 @@ import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -29,10 +30,11 @@ public class WarehouseShopRuleClient {
 
     /**
      * 创建新的店铺推送规则
+     *
      * @param warehouseShopStockRule
      * @return
      */
-    public Response<Long> createShopRule(WarehouseShopStockRule warehouseShopStockRule) {
+    public Response<Long> createShopRule(ShopStockRule warehouseShopStockRule) {
         if (null == warehouseShopStockRule) {
             return Response.fail("warehouse.shop.rule.create.fail.parameter");
         }
@@ -51,16 +53,17 @@ public class WarehouseShopRuleClient {
 
     /**
      * 更新店铺推送规则
+     *
      * @param warehouseShopStockRule
      * @return
      */
-    public Response<Boolean> updateShopRule(WarehouseShopStockRule warehouseShopStockRule) {
+    public Response<Boolean> updateShopRule(ShopStockRule warehouseShopStockRule) {
         if (null == warehouseShopStockRule) {
             return Response.fail("warehouse.shop.rule.update.fail.parameter");
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.putJson("api/inventory/shop-rule/"+warehouseShopStockRule.getId(),
+            return Response.ok((Boolean) inventoryBaseClient.putJson("api/inventory/shop-rule/" + warehouseShopStockRule.getId(),
                     JSON.toJSONString(warehouseShopStockRule), Boolean.class));
 
         } catch (Exception e) {
@@ -72,12 +75,13 @@ public class WarehouseShopRuleClient {
 
     /**
      * 根据ID获取规则信息
+     *
      * @return
      */
-    public WarehouseShopStockRule findById (Long id) {
+    public ShopStockRule findById(Long id) {
         try {
-            return (WarehouseShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/"+id,
-                    null, null, Maps.newHashMap(), WarehouseShopStockRule.class, false);
+            return (ShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/" + id,
+                    null, null, Maps.newHashMap(), ShopStockRule.class, false);
 
         } catch (Exception e) {
             log.error("find shop rule by id fail, id: {}, cause:{}", id, Throwables.getStackTraceAsString(e));
@@ -88,12 +92,13 @@ public class WarehouseShopRuleClient {
 
     /**
      * 根据shopId获取规则信息
+     *
      * @return
      */
-    public WarehouseShopStockRule findByShopId (Long shopId) {
+    public ShopStockRule findByShopId(Long shopId) {
         try {
-            return (WarehouseShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/findByShopId/"+shopId,
-                    null, null, Maps.newHashMap(), WarehouseShopStockRule.class, false);
+            return (ShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/findByShopId/" + shopId,
+                    null, null, Maps.newHashMap(), ShopStockRule.class, false);
 
         } catch (Exception e) {
             log.error("find shop rule by shopId fail, shopId: {}, cause:{}", shopId, Throwables.getStackTraceAsString(e));
@@ -109,10 +114,10 @@ public class WarehouseShopRuleClient {
      * @param skuCode
      * @return
      */
-    public Response<WarehouseShopStockRule> findByShopIdAndSku (Long shopId, String skuCode) {
+    public Response<ShopStockRuleDto> findByShopIdAndSku(Long shopId, String skuCode) {
         try {
-            return Response.ok((WarehouseShopStockRule) inventoryBaseClient.get("api/inventory/shop-rule/findByShopIdAndSku/"+shopId+"/"+skuCode,
-                    null, null, Maps.newHashMap(), WarehouseShopStockRule.class, false));
+            return Response.ok((ShopStockRuleDto) inventoryBaseClient.get("api/inventory/shop-rule/findByShopIdAndSku/" + shopId + "/" + skuCode,
+                    null, null, Maps.newHashMap(), ShopStockRule.class, false));
         } catch (Exception e) {
             log.info("find shop rule by shop and skuCode fail, shopId:{}, skuCode:{}, cause:{}", shopId, skuCode, e.getMessage());
 
@@ -122,14 +127,15 @@ public class WarehouseShopRuleClient {
 
     /**
      * 根据条件分页
+     *
      * @return
      */
-    public Paging<WarehouseShopStockRule> shopRulePagination (Integer pageNo, Integer pageSize, List<Long> shopIds) {
+    public Paging<ShopStockRule> shopRulePagination(Integer pageNo, Integer pageSize, List<Long> shopIds) {
         try {
             Map<String, Object> params = Maps.newHashMap();
             params.put("shopIds", JSON.toJSONString(shopIds));
 
-            Paging<WarehouseShopStockRule> rulePaging = (Paging<WarehouseShopStockRule>) inventoryBaseClient.get("api/inventory/shop-rule/paging",
+            Paging<ShopStockRule> rulePaging = (Paging<ShopStockRule>) inventoryBaseClient.get("api/inventory/shop-rule/paging",
                     pageNo, pageSize, params, Paging.class, false);
 
             if (null != rulePaging) {
@@ -140,7 +146,7 @@ public class WarehouseShopRuleClient {
             log.error("shop rule pagination fail, cause:{}", Throwables.getStackTraceAsString(e));
         }
 
-        return new Paging<WarehouseShopStockRule>(0L, Lists.newArrayList());
+        return new Paging<ShopStockRule>(0L, Lists.newArrayList());
     }
 
 }

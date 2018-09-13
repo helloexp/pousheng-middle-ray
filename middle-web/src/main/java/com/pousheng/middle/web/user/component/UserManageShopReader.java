@@ -13,6 +13,7 @@ import io.terminus.parana.auth.model.Operator;
 import io.terminus.parana.auth.service.OperatorReadService;
 import io.terminus.parana.common.enums.UserRole;
 import io.terminus.parana.common.model.ParanaUser;
+import io.terminus.parana.common.utils.UserUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -86,6 +87,24 @@ public class UserManageShopReader {
         });
 
         return openClientShops;
+    }
+
+    /**
+     * 检查当前登录用户是否有操作对应店铺的权限
+     *
+     * @param shopId 店铺id
+     */
+    public void authCheck(Long shopId) {
+        ParanaUser user = UserUtil.getCurrentUser();
+        List<OpenClientShop> shops =  this.findManageShops(user);
+        List<Long> shopIds = Lists.newArrayListWithCapacity(shops.size());
+        for (OpenClientShop shop : shops) {
+            shopIds.add(shop.getOpenShopId());
+        }
+        if(!shopIds.contains(shopId)){
+            log.error("user({}) can not create shopStockRule for  shop(id={})", user, shopId);
+            throw new JsonResponseException("shop.not.allowed");
+        }
     }
 
 

@@ -7,7 +7,10 @@ import com.pousheng.auth.service.PsUserReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
+import com.pousheng.middle.warehouse.dto.ShopWarehouseSkuStockRule;
 import com.pousheng.middle.warehouse.model.PoushengChannelDTO;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopWarehouseStockRule;
 import com.pousheng.middle.warehouse.model.SkuInventory;
 import com.pousheng.middle.web.middleLog.dto.ApplogDto;
 import com.pousheng.middle.web.middleLog.dto.ApplogTypeEnum;
@@ -25,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,8 +35,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -154,13 +157,48 @@ public class ApplicationLogs {
                     }
                     result.put("channel_stock", JSON.toJSONString(dtos));
                     break;
-                case CREATE_DISPATCH_RULE:
-                    result.put("rule", list.get(list.size() - 1).toString());
+                case CREATE_WAREHOUSE_SKU_PUSH_RULE:
+                case UPDATE_WAREHOUSE_SKU_PUSH_RULE:
+                    ShopWarehouseSkuStockRule shopWarehouseSkuStockRule = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), ShopWarehouseSkuStockRule.class);
+                    shopWarehouseSkuStockRule.setShopName(middleShopCacher.findById(shopWarehouseSkuStockRule.getShopId()).getShopName());
+                    shopWarehouseSkuStockRule.setOutId(middleShopCacher.findById(shopWarehouseSkuStockRule.getShopId()).getExtra().get("hkPerformanceShopCode"));
+                    shopWarehouseSkuStockRule.setWarehouseName(warehouseCacher.findById(shopWarehouseSkuStockRule.getWarehouseId()).getWarehouseName());
+                    shopWarehouseSkuStockRule.setWarehouseCode(warehouseCacher.findById(shopWarehouseSkuStockRule.getWarehouseId()).getOutCode());
+                    result.put("warehouse_sku_rules", JSON.toJSONString(Lists.newArrayList(shopWarehouseSkuStockRule)));
+
                     break;
-                case UPDATE_DISPATCH_RULE:
-                    result.put("shopName", middleShopCacher.findById(Long.parseLong(list.get(0).toString())).getShopName());
-                    result.put("rule", list.get(list.size() - 1).toString());
+                case CREATE_WAREHOUSE_PUSH_RULE:
+                case UPDATE_WAREHOUSE_PUSH_RULE:
+                case BATCH_WAREHOUSE_USH_RULE:
+                    ShopWarehouseStockRule shopWarehouseStockRule = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), ShopWarehouseStockRule.class);
+                    shopWarehouseStockRule.setShopName(middleShopCacher.findById(shopWarehouseStockRule.getShopId()).getShopName());
+                    shopWarehouseStockRule.setOutId(middleShopCacher.findById(shopWarehouseStockRule.getShopId()).getExtra().get("hkPerformanceShopCode"));
+                    shopWarehouseStockRule.setWarehouseName(warehouseCacher.findById(shopWarehouseStockRule.getWarehouseId()).getWarehouseName());
+                    shopWarehouseStockRule.setWarehouseCode(warehouseCacher.findById(shopWarehouseStockRule.getWarehouseId()).getOutCode());
+                    result.put("warehouse_rules", JSON.toJSONString(Lists.newArrayList(shopWarehouseStockRule)));
                     break;
+
+                case CREATE_SHOP_PUSH_RULE:
+                case UPDATE_SHOP_PUSH_RULE:
+                    ShopStockRule shopStockRule = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), ShopStockRule.class);
+                    shopStockRule.setShopName(middleShopCacher.findById(shopStockRule.getShopId()).getShopName());
+                    shopStockRule.setOutId(middleShopCacher.findById(shopStockRule.getShopId()).getExtra().get("hkPerformanceShopCode"));
+                    result.put("shop_rule", JSON.toJSONString(shopStockRule));
+                    break;
+
+                case BATCH_WAREHOUSE_SKU_PUSH_RULE:
+                    List<ShopWarehouseSkuStockRule> rules = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), new TypeReference<List<ShopWarehouseSkuStockRule>>() {
+                    });
+                    for (ShopWarehouseSkuStockRule d : rules) {
+                        d.setShopName(middleShopCacher.findById(d.getShopId()).getShopName());
+                        d.setOutId(middleShopCacher.findById(d.getShopId()).getExtra().get("hkPerformanceShopCode"));
+                        d.setWarehouseName(warehouseCacher.findById(d.getWarehouseId()).getWarehouseName());
+                        d.setWarehouseCode(warehouseCacher.findById(d.getWarehouseId()).getOutCode());
+
+                        result.put("warehouse_sku_rules", JSON.toJSONString(rules));
+                    }
+                    break;
+
                 default:
                     log.error("incorrect stock log type");
 

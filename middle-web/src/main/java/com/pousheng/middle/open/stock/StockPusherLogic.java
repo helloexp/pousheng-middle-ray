@@ -33,8 +33,9 @@ import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.warehouse.model.StockPushLog;
-import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.item.cacher.ItemGroupCacher;
 import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
 import com.pousheng.middle.web.item.cacher.WarehouseGroupRuleCacher;
@@ -230,7 +231,7 @@ public class StockPusherLogic {
     }
 
     public void pushLogs(List<StockPushLog> logs) {
-        if(log.isDebugEnabled()) {
+        if (log.isDebugEnabled()) {
             log.debug("start to push middle to shop stock log({})", logs.toString());
         }
         if (!logs.isEmpty()) {
@@ -241,18 +242,18 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 云聚jit可用库存计算
-     * @Date        2018/9/13
-     * @param       shopId
-     * @param       skuWareshouseIds
+     * @param shopId
+     * @param skuWareshouseIds
      * @param
      * @return
+     * @Description 云聚jit可用库存计算
+     * @Date 2018/9/13
      */
-    public Table<String,Long,Long> calculateYjStock(Long shopId, Map<String, List<Long>> skuWareshouseIds, Map<String, WarehouseShopStockRule> shopStockRules){
-        Table<String,Long,Long> stockTable = HashBasedTable.create();
+    public Table<String, Long, Long> calculateYjStock(Long shopId, Map<String, List<Long>> skuWareshouseIds, Map<String, ShopStockRuleDto> shopStockRules) {
+        Table<String, Long, Long> stockTable = HashBasedTable.create();
         //库存中心可用库存查询
         List<AvailableInventoryRequest> requests = Lists.newArrayList();
-        skuWareshouseIds.forEach((skuCode,warehouseIds) ->{
+        skuWareshouseIds.forEach((skuCode, warehouseIds) -> {
             warehouseIds.forEach(warehouseId -> {
                 requests.add(AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(warehouseId).build());
 
@@ -260,47 +261,20 @@ public class StockPusherLogic {
         });
 
 
-        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailableInventory(requests,shopId);
+        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailableInventory(requests, shopId);
         if (!getRes.isSuccess()) {
-            log.error("error to find available inventory quantity: shopId: {}, requests: {}, caused: {]",shopId, requests.toString(), getRes.getError());
+            log.error("error to find available inventory quantity: shopId: {}, requests: {}, caused: {]", shopId, requests.toString(), getRes.getError());
             return null;
         }
         List<AvailableInventoryDTO> availableInventoryDTOs = getRes.getResult();
 
         //计算可用库存
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
-            availableInventoryDTOs.forEach(availableInventoryDTO -> {
+            availableInventoryDTOs.forEach(dto -> {
                 try {
-                    Long stock = 0L;
-                    String skuCode = availableInventoryDTO.getSkuCode();
-                    Long warehouseId = availableInventoryDTO.getWarehouseId();
-                    WarehouseShopStockRule shopStockRule = shopStockRules.get(skuCode);
-                    Integer channelStock = availableInventoryDTO.getChannelRealQuantity();
-                    Integer shareStock = availableInventoryDTO.getInventoryUnAllocQuantity();
-
-                    //如果库存数量小于0则推送0
-                    if (channelStock < 0) {
-                        log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
-                                shopId, skuCode, channelStock, shareStock);
-                        channelStock = 0;
-                    }
-                    if (null != shopStockRule.getSafeStock()) {
-                        shareStock = shareStock - shopStockRule.getSafeStock().intValue();
-                    }
-                    //按照设定的比例确定推送数量
-                    Long yjjitQty = 0L; //todo
-                    stock = Math.max(0,
-                            channelStock
-                                    + shareStock * shopStockRule.getRatio() / 100
-                                    + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
-                                    + yjjitQty
-                    );
-                    log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
-                            skuCode, shopId, stock);
-
-                    stockTable.put(skuCode, warehouseId, stock);
-                }catch (Exception e){
-                    log.error("failed to calculate,case:{}",Throwables.getStackTraceAsString(e));
+                    stockTable.put(dto.getSkuCode(), dto.getWarehouseId(), calculateWarehouseStock(dto, shopStockRules.get(dto.getSkuCode())));
+                } catch (Exception e) {
+                    log.error("failed to calculate,case:{}", Throwables.getStackTraceAsString(e));
                 }
             });
         }
@@ -310,12 +284,12 @@ public class StockPusherLogic {
 
 
     /**
-     * @Description 获取默认发货仓
-     * @Date        2018/9/13
      * @param
      * @return
+     * @Description 获取默认发货仓
+     * @Date 2018/9/13
      */
-    public List<Long> getWarehouseIdsByShopId(Long shopId){
+    public List<Long> getWarehouseIdsByShopId(Long shopId) {
         Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
         if (!rWarehouseIds.isSuccess()) {
             log.error("find warehouse list by shopId fail: shopId: {}, caused: {]", shopId, rWarehouseIds.getError());
@@ -325,49 +299,49 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 获取库存推送规则
-     * @Date        2018/9/13
-     * @param       shopId
-     * @param       skuCodes
+     * @param shopId
+     * @param skuCodes
      * @return
+     * @Description 获取库存推送规则
+     * @Date 2018/9/13
      */
-    public Map<String,WarehouseShopStockRule> getWarehouseShopStockRules(Long shopId,List<String> skuCodes){
+    public Map<String, ShopStockRuleDto> getWarehouseShopStockRules(Long shopId, List<String> skuCodes) {
         //默认发货仓规则
-        Map<String,WarehouseShopStockRule> shopStockRules = Maps.newHashMap();
-        skuCodes.forEach(skuCode ->{
-                    Response<WarehouseShopStockRule> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
+        Map<String, ShopStockRuleDto> shopStockRules = Maps.newHashMap();
+        skuCodes.forEach(skuCode -> {
+                    Response<ShopStockRuleDto> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
                     if (!rShopStockRule.isSuccess()) {
                         log.warn("failed to find shop stock push rule for shop(id={}), error code:{}",
                                 shopId, rShopStockRule.getError());
                         return;
                     }
-                    shopStockRules.put(skuCode,rShopStockRule.getResult());
+                    shopStockRules.put(skuCode, rShopStockRule.getResult());
                 }
         );
         return shopStockRules;
     }
 
     /**
-     * @Description 库存推送YJ
-     * @Date        2018/7/4
-     * @param       yunjuStockInfoList
+     * @param yunjuStockInfoList
      * @return
+     * @Description 库存推送YJ
+     * @Date 2018/7/4
      */
-    public void sendToYj(Long shopId,List<YjStockInfo> yunjuStockInfoList){
+    public void sendToYj(Long shopId, List<YjStockInfo> yunjuStockInfoList) {
 
-        if(log.isDebugEnabled()){
-            log.debug("send request({}) to yunju jit",yunjuStockInfoList.toString());
+        if (log.isDebugEnabled()) {
+            log.debug("send request({}) to yunju jit", yunjuStockInfoList.toString());
         }
         this.executorService.submit(() -> {
             //List<StockPushLogEs> stockPushLogs = Lists.newArrayList();
-            String traceId = UUID.randomUUID().toString().replace("-","");
+            String traceId = UUID.randomUUID().toString().replace("-", "");
             if (!yunjuStockInfoList.isEmpty()) {
                 Response<Boolean> resp = yjStockPushClient.syncStocks(traceId,
                         YjStockRequest.builder().stockInfo(yunjuStockInfoList).build());
                 //成功则写入缓存
-                if(stockPusherCacheEnable && resp.isSuccess()){
+                if (stockPusherCacheEnable && resp.isSuccess()) {
                     yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                        WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode());
+                        WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
                         stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_WARE,
                                 warehouse.getId().toString(),
                                 yjStockInfo.getBarCode(),
@@ -377,30 +351,30 @@ public class StockPusherLogic {
                 //写入推送日志
                 List<StockPushLog> stockPushLogs = Lists.newArrayList();
                 OpenShop shop = openShopCacher.getUnchecked(shopId);
-                String shopCode = StringUtils.isEmpty(shop.getExtra().get(SHOP_CODE))?null:Splitter.on("-").splitToList(shop.getAppKey()).get(1);
+                String shopCode = StringUtils.isEmpty(shop.getExtra().get(SHOP_CODE)) ? null : Splitter.on("-").splitToList(shop.getAppKey()).get(1);
                 String shopName = shop.getShopName();
                 int status = resp.isSuccess() ? StockPushLogStatus.PUSH_SUCESS.value() : StockPushLogStatus.PUSH_FAIL.value();
                 String cause = resp.isSuccess() ? "" : resp.getError();
                 Date curDate = new Date();
 
                 yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                    WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode());
+                    WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(), yjStockInfo.getCompanyCode());
                     StockPushLog stockPushLog =
                             StockPushLog.builder()
-                            .requestNo(traceId)
-                            .lineNo(yjStockInfo.getLineNo())
-                            .shopId(shopId)
-                            .shopName(shopName)
-                            .outId(shopCode)
-                            .warehouseId(warehouse.getId())
-                            .warehouseName(warehouse.getWarehouseName())
-                            .warehouseOuterCode(warehouse.getOutCode())
-                            .skuCode(yjStockInfo.getBarCode())
-                            .quantity((long)yjStockInfo.getNum())
-                            .status(status)
-                            .cause(cause)
-                            .syncAt(curDate)
-                            .build();
+                                    .requestNo(traceId)
+                                    .lineNo(yjStockInfo.getLineNo())
+                                    .shopId(shopId)
+                                    .shopName(shopName)
+                                    .outId(shopCode)
+                                    .warehouseId(warehouse.getId())
+                                    .warehouseName(warehouse.getWarehouseName())
+                                    .warehouseOuterCode(warehouse.getOutCode())
+                                    .skuCode(yjStockInfo.getBarCode())
+                                    .quantity((long) yjStockInfo.getNum())
+                                    .status(status)
+                                    .cause(cause)
+                                    .syncAt(curDate)
+                                    .build();
                     stockPushLogs.add(stockPushLog);
                 });
                 this.pushLogs(stockPushLogs);
@@ -409,31 +383,31 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 构造同步云聚请求
-     * @Date        2018/7/4
-     * @param       yunjuStockInfoList
-     * @param       skuCode
+     * @param yunjuStockInfoList
+     * @param skuCode
      * @return
+     * @Description 构造同步云聚请求
+     * @Date 2018/7/4
      */
-    public void appendYjRequest(List<YjStockInfo> yunjuStockInfoList, Table<String,Long,Long> stocks) {
-        int lineNo=1;
-        if(Objects.isNull(stocks)){
+    public void appendYjRequest(List<YjStockInfo> yunjuStockInfoList, Table<String, Long, Long> stocks) {
+        int lineNo = 1;
+        if (Objects.isNull(stocks)) {
             log.error("appendYjRequest parameter stocks is null");
             return;
         }
 
-        Set<Table.Cell<String,Long,Long>> cells = stocks.cellSet();
-        for(Table.Cell<String,Long,Long> cell:cells){
+        Set<Table.Cell<String, Long, Long>> cells = stocks.cellSet();
+        for (Table.Cell<String, Long, Long> cell : cells) {
             String skuCode = cell.getRowKey();
             Long warehouseId = cell.getColumnKey();
             Long availStock = cell.getValue();
             Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_WARE, warehouseId.toString(), skuCode);
 
             WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
-            String companyId= warehouse.getCompanyId();
+            String companyId = warehouse.getCompanyId();
             String outCode = warehouse.getOutCode();
 
-            if(!Objects.isNull(cacheStock) && availStock.intValue() == cacheStock.intValue()) {
+            if (!Objects.isNull(cacheStock) && availStock.intValue() == cacheStock.intValue()) {
                 return;
             }
             //添加到待同步列表中
@@ -450,19 +424,19 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 过滤仓库的商品分组取的可售的仓库列表
-     * @Date        2018/9/13
-     * @param       shopId
-     * @param       skuWareshouseIds
+     * @param shopId
+     * @param warehouseIds
      * @return
+     * @Description 过滤仓库的商品分组取的可售的仓库列表
+     * @Date 2018/9/13
      */
-    public Map<String,List<Long>> filterWarehouseSkuGroup(Long shopId, List<String> skuCodes, List<Long>  warehouseIds) {
+    public Map<String, List<Long>> filterWarehouseSkuGroup(Long shopId, List<String> skuCodes, List<Long> warehouseIds) {
         //查询商品分组
-        Map<String,List<Long>> skuWareshouseIds = Maps.newHashMap();
+        Map<String, List<Long>> skuWareshouseIds = Maps.newHashMap();
         OpenShop openShop = openShopCacher.getUnchecked(shopId);
         String companyCode = openShop.getExtra().get("companyCode");
 
-        skuCodes.forEach(skuCode ->{
+        skuCodes.forEach(skuCode -> {
             skuWareshouseIds.put(skuCode, queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode));
             //skuWareshouseIds.put(skuCode, warehouseIds); //todo
         });
@@ -471,19 +445,19 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 查询店铺的商品分组取的可售的仓库列表
-     * @Date        2018/9/13
-     * @param       shopId
-     * @param       skuWareshouseIds
+     * @param shopId
+     * @param skuCodes
      * @return
+     * @Description 查询店铺的商品分组取的可售的仓库列表
+     * @Date 2018/9/13
      */
     public List<String> filterShopSkuGroup(Long shopId, List<String> skuCodes) {
         //根据商品分组规则判断该店铺是否运行售卖此SKU
-        return skuCodes.stream().filter(skuCode ->{
+        return skuCodes.stream().filter(skuCode -> {
                     return queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
                     //return true; //todo
                 }
-                ).collect(Collectors.toList());
+        ).collect(Collectors.toList());
     }
 
 
@@ -517,7 +491,7 @@ public class StockPusherLogic {
             pushLogs(stockPushLogs);
 
             //如果推送成功则将本次推送记录写入缓存
-            if(stockPusherCacheEnable && rP.isSuccess()){
+            if (stockPusherCacheEnable && rP.isSuccess()) {
                 stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getSkuCode(), stock.intValue());
             }
         });
@@ -550,7 +524,7 @@ public class StockPusherLogic {
                     pushLogs(stockPushLogs);
 
                     //如果推送成功则将本次推送记录写入缓存
-                    if(stockPusherCacheEnable && r.isSuccess()){
+                    if (stockPusherCacheEnable && r.isSuccess()) {
                         paranaSkuStocks.forEach(skuStock -> {
                             stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuStock.getSkuCode(), skuStock.getStock());
                         });
@@ -566,14 +540,13 @@ public class StockPusherLogic {
      * @param shopId
      * @param skuCode
      * @param warehouseIds
-     * @param shopStockRule
+     * @param shopStockRuleDto
      * @return
      * @Description 查询库存中心计算可用库存
      * @Date 2018/7/11
      */
-    public Long calculateStock(Long shopId, String skuCode, List<Long> warehouseIds, WarehouseShopStockRule shopStockRule) {
-        Long stock = 0L;
-
+    public Long calculateStock(Long shopId, String skuCode, List<Long> warehouseIds, ShopStockRuleDto shopStockRuleDto) {
+        Long stockSum = 0L;
         long start1 = System.currentTimeMillis();
         Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
                 Lists.transform(warehouseIds, input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
@@ -584,37 +557,49 @@ public class StockPusherLogic {
             log.error("error to find available inventory quantity: shopId: {}, caused: {]", shopId, getRes.getError());
             return null;
         }
-        Long channelStock = 0L;
-        Long shareStock = 0L;
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
-            channelStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
-            shareStock = getRes.getResult().stream().mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
+            for (AvailableInventoryDTO dto : getRes.getResult()) {
+                stockSum = stockSum + calculateWarehouseStock(dto, shopStockRuleDto);
+            }
         }
-        log.info("search sku stock by skuCode is {},shopId is {},channelStock is {},shareStock is {}",
-                skuCode, shopId, channelStock, shareStock);
 
+        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                skuCode, shopId, stockSum);
+
+        return stockSum;
+    }
+
+
+    private Long calculateWarehouseStock(AvailableInventoryDTO dto, ShopStockRuleDto shopStockRuleDto) {
+        Long channelStock = (long) (dto.getChannelRealQuantity());
+        Long shareStock = (long) (dto.getInventoryUnAllocQuantity());
+        ShopStockRule shopStockRule;
+        if (shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())) {
+            shopStockRule = shopStockRuleDto.getWarehouseRule().get(dto.getWarehouseId());
+        } else {
+            shopStockRule = shopStockRuleDto.getShopRule();
+        }
         //如果库存数量小于0则推送0
         if (channelStock < 0L) {
-            log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
-                    shopId, skuCode, channelStock, shareStock);
-
+            log.warn("shop(id={}) warehouseId(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                    shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), dto.getSkuCode(), channelStock, shareStock);
             channelStock = 0L;
         }
 
         if (null != shopStockRule.getSafeStock()) {
             shareStock = shareStock - shopStockRule.getSafeStock();
         }
-
         //按照设定的比例确定推送数量
-        stock = Math.max(0,
+        Long stock = Math.max(0,
                 channelStock
                         + shareStock * shopStockRule.getRatio() / 100
                         + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
         );
-        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
-                skuCode, shopId, stock);
+        log.info("search sku stock by skuCode is {},shopId is {}, warehouseId is {},channelStock is {},shareStock is {}",
+                dto.getSkuCode(), shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), channelStock, shareStock);
         return stock;
     }
+
 
     /**
      * @param warehouseIds
@@ -667,15 +652,15 @@ public class StockPusherLogic {
     }
 
     /**
-     * @Description 查询云聚jit店铺
-     * @Date        2018/9/13
      * @param
      * @return
+     * @Description 查询云聚jit店铺
+     * @Date 2018/9/13
      */
     //todo 缓存优化
-    public List<OpenShop>  getYjShop() {
+    public List<OpenShop> getYjShop() {
         Response<List<OpenShop>> resp = openShopReadService.findByChannel(MiddleChannel.YUNJUJIT.getValue());
-        if(!resp.isSuccess()){
+        if (!resp.isSuccess()) {
             log.error("can not find yunju jit shop");
         }
         return resp.getResult();
@@ -688,29 +673,29 @@ public class StockPusherLogic {
      * @param       skuWareshouseIds
      * @return
      */
-    public Table<String,Long,Long> getYjJitOccupyQty(Long shopId,
-                                                     Map<String,List<Long>> skuWareshouseIds){
-        if(log.isDebugEnabled()){
+    public Table<String, Long, Long> getYjJitOccupyQty(Long shopId,
+                                                       Map<String, List<Long>> skuWareshouseIds) {
+        if (log.isDebugEnabled()) {
             log.debug("query occupyed order occupied inventory ,parameter: shopId({}),skuWareshouseIds({}) ",
-                    shopId,skuWareshouseIds.toString());
+                    shopId, skuWareshouseIds.toString());
         }
 
-        Table<String,Long,Long> occupyTable = HashBasedTable.create();
+        Table<String, Long, Long> occupyTable = HashBasedTable.create();
 
         List<Long> shopIds = Arrays.asList(shopId);
-        List<String> skuCodes =  Lists.newArrayList(skuWareshouseIds.keySet());
+        List<String> skuCodes = Lists.newArrayList(skuWareshouseIds.keySet());
         List<Long> warehouseIds = Lists.newArrayList();
         skuWareshouseIds.values().forEach(item -> warehouseIds.addAll(item));
 
-        if(CollectionUtils.isEmpty(shopIds) || CollectionUtils.isEmpty(skuCodes) || CollectionUtils.isEmpty(warehouseIds)){
+        if (CollectionUtils.isEmpty(shopIds) || CollectionUtils.isEmpty(skuCodes) || CollectionUtils.isEmpty(warehouseIds)) {
             return occupyTable;
         }
 
-        Response<List<SkuOrderLockStock>> orderResp = middleOrderReadService.findOccupyQuantityList(shopIds,warehouseIds,skuCodes);
-        if(!orderResp.isSuccess()){
-            log.error("failed to search Jit order for shopIds ({}) warehouseIds ({}) skuCodes ({}), cause:{}",shopIds,warehouseIds,skuCodes,orderResp.getError());
-        }else{
-            if(log.isDebugEnabled()){
+        Response<List<SkuOrderLockStock>> orderResp = middleOrderReadService.findOccupyQuantityList(shopIds, warehouseIds, skuCodes);
+        if (!orderResp.isSuccess()) {
+            log.error("failed to search Jit order for shopIds ({}) warehouseIds ({}) skuCodes ({}), cause:{}", shopIds, warehouseIds, skuCodes, orderResp.getError());
+        } else {
+            if (log.isDebugEnabled()) {
                 log.debug("query occupyed order occupied inventory , Jit order result is {} ",
                         orderResp.getResult().toString());
             }
@@ -731,22 +716,22 @@ public class StockPusherLogic {
                 MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue()
         ));
         List<ShipmentItem> shipmentItems = shipmentReadLogic.findShipmentItems(criteria);
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("query occupyed order occupied inventory , Jit shipment result is {} ",
-                    shipmentItems==null?null:shipmentItems.toString());
+                    shipmentItems == null ? null : shipmentItems.toString());
         }
 
-        skuWareshouseIds.forEach((skuCode,wareIds) -> {
+        skuWareshouseIds.forEach((skuCode, wareIds) -> {
             wareIds.forEach(wareId -> {
                 List<Integer> qtys = Lists.newArrayList();
-                if(orderResp.isSuccess()){
+                if (orderResp.isSuccess()) {
                     orderResp.getResult().forEach(skuOrderLockStock -> {
                         if (Objects.equals(skuCode, skuOrderLockStock.getSkuCode()) && Objects.equals(wareId, skuOrderLockStock.getWarehouseId())) {
                             qtys.add(skuOrderLockStock.getQuantity());
                         }
                     });
                 }
-                if(!Objects.isNull(shipmentItems)) {
+                if (!Objects.isNull(shipmentItems)) {
                     shipmentItems.forEach(shipmentItem -> {
                         if (Objects.equals(skuCode, shipmentItem.getSkuCode()) && Objects.equals(wareId, shipmentItem.getWarehouseId())) {
                             qtys.add(shipmentItem.getQuantity());
@@ -754,13 +739,13 @@ public class StockPusherLogic {
                     });
                 }
 
-                if(CollectionUtils.isEmpty(qtys)){
+                if (CollectionUtils.isEmpty(qtys)) {
                     return;
                 }
-                occupyTable.put(skuCode,wareId,new Long(qtys.stream().mapToInt(Integer::intValue).sum()));
+                occupyTable.put(skuCode, wareId, new Long(qtys.stream().mapToInt(Integer::intValue).sum()));
             });
         });
-        if(log.isDebugEnabled()){
+        if (log.isDebugEnabled()) {
             log.debug("query occupyed order occupied inventory ,result:{} ",
                     occupyTable.toString());
         }

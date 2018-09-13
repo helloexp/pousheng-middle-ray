@@ -1,4 +1,5 @@
 package com.pousheng.middle.open.stock;
+
 import com.google.common.base.Throwables;
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Lists;
@@ -7,8 +8,9 @@ import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
+import com.pousheng.middle.warehouse.dto.ShopStockRule;
+import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.warehouse.model.StockPushLog;
-import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
@@ -20,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
@@ -107,14 +110,14 @@ public class ShopStockPusher {
                             continue;
                         }
 
-                        Response<WarehouseShopStockRule> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
+                        Response<ShopStockRuleDto> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId, skuCode);
                         if (!rShopStockRule.isSuccess()) {
                             log.warn("failed to find shop stock push rule for shop(id={}), error code:{}",
                                     shopId, rShopStockRule.getError());
                             continue;
                         }
                         //和安全库存进行比较, 确定推送库存数量
-                        WarehouseShopStockRule shopStockRule = rShopStockRule.getResult();
+                        ShopStockRule shopStockRule = rShopStockRule.getResult().getShopRule();
                         if (shopStockRule.getStatus() < 0) { //非启用状态
                             log.warn("there is no valid stock push rule for shop(id={}), so skip to continue", shopId);
                             continue;
@@ -147,16 +150,16 @@ public class ShopStockPusher {
                             if (warehouseIds == null || warehouseIds.isEmpty()) {
                                 stock = 0L;
                             } else {
-                                stock = stockPushLogic.calculateStock(shopId, skuCode, warehouseIds, shopStockRule);
+                                stock = stockPushLogic.calculateStock(shopId, skuCode, warehouseIds, rShopStockRule.getResult());
                             }
 
                             //校验缓存中是否有推送记录且推送数量一致，则本次不推送
-                            if(StockPusherCacheEnable){
+                            if (StockPusherCacheEnable) {
                                 Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode);
-                                if(log.isDebugEnabled()){
+                                if (log.isDebugEnabled()) {
                                     log.debug("compare current stock({}) with cacheStock({}),result is {}", stock, cacheStock, (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()));
                                 }
-                                if(!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()){
+                                if (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()) {
                                     continue;
                                 }
                             }

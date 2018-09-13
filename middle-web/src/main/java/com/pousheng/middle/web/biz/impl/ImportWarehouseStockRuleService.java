@@ -1,103 +1,87 @@
 package com.pousheng.middle.web.biz.impl;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.common.utils.batchhandle.AbnormalSkuStockRuleRecord;
+import com.pousheng.middle.common.utils.batchhandle.AbnormalWarehouseStockRuleRecord;
 import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
-import com.pousheng.middle.item.dto.SearchSkuTemplate;
-import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
-import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
-import com.pousheng.middle.warehouse.companent.ShopWarehouseSkuRuleClient;
-import com.pousheng.middle.warehouse.dto.ShopWarehouseSkuStockRule;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.ShopWarehouseRuleClient;
+import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.dto.ShopWarehouseStockRule;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
-import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
-import io.terminus.open.client.center.shop.OpenShopCacher;
-import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
-import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-
 
 /**
  * @author zhaoxw
  * @date 2018/8/9
  */
-@CompensateAnnotation(bizType = PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE)
+@CompensateAnnotation(bizType = PoushengCompensateBizType.IMPORT_WAREHOUSE_SKU_RULE)
 @Service
 @Slf4j
-public class ImportSkuStockRuleService implements CompensateBizService {
+public class ImportWarehouseStockRuleService implements CompensateBizService {
 
     @RpcConsumer
     private MappingReadService mappingReadService;
 
     @RpcConsumer
-    private ShopWarehouseSkuRuleClient warehouseShopSkuRuleClient;
+    private ShopWarehouseRuleClient warehouseShopRuleClient;
 
-    @Autowired
-    private OpenShopCacher openShopCacher;
-
-    @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-
-    @Autowired
-    private SkuTemplateSearchReadService skuTemplateSearchReadService;
-
-    @Autowired
-    private GroupRuleCacherProxy groupRuleCacherProxy;
+    @RpcConsumer
+    private WarehouseRulesClient warehouseRulesClient;
 
     @Autowired
     private UploadFileComponent uploadFileComponent;
 
-    private static final Integer DEFAULT_PAGE_SIZE = 10;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
-    private static final String TEMPLATE_NAME = "ps_search.mustache";
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+    private static final Integer DEFAULT_PAGE_SIZE = 10;
 
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
-        log.info("import sku stock rule start ....,poushengCompensateBiz is {}", poushengCompensateBiz);
+        log.info("import warehouse stock rule start ....,poushengCompensateBiz is {}", poushengCompensateBiz);
         if (null == poushengCompensateBiz) {
-            log.warn("ImportSkuStockRule.doProcess params is null");
+            log.warn("ImportWarehouseStockRuleService.doProcess params is null");
             return;
         }
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
-            log.warn("ImportSkuStockRule.doProcess context is null");
+            log.warn("ImportWarehouseStockRuleService.doProcess context is null");
             return;
         }
         poushengCompensateBiz = makeRules(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
     }
 
-    private void appendErrorToExcel(ExcelExportHelper<AbnormalSkuStockRuleRecord> helper, String[] strs, String error) {
-        AbnormalSkuStockRuleRecord abnormalSkuStockRuleRecord = new AbnormalSkuStockRuleRecord();
+    private void appendErrorToExcel(ExcelExportHelper<AbnormalWarehouseStockRuleRecord> helper, String[] strs, String error) {
+        AbnormalWarehouseStockRuleRecord abnormalSkuStockRuleRecord = new AbnormalWarehouseStockRuleRecord();
         if (!StringUtils.isEmpty(strs[0])) {
-            abnormalSkuStockRuleRecord.setSkuCode(strs[0].replace("\"", ""));
+            abnormalSkuStockRuleRecord.setWarehouseCode(strs[0].replace("\"", ""));
         }
         if (!StringUtils.isEmpty(strs[1])) {
             abnormalSkuStockRuleRecord.setSafeStock(strs[1].replace("\"", ""));
@@ -115,9 +99,9 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         helper.appendToExcel(abnormalSkuStockRuleRecord);
     }
 
-    private String[] createStrs(ShopWarehouseSkuStockRule rule) {
+    private String[] createStrs(ShopWarehouseStockRule rule) {
         String[] strs = new String[10];
-        strs[0] = rule.getSkuCode();
+        strs[0] = rule.getWarehouseId().toString();
         strs[1] = rule.getSafeStock().toString();
         strs[2] = rule.getRatio().toString();
         strs[3] = rule.getJitStock() == null ? null : rule.getJitStock().toString();
@@ -126,22 +110,16 @@ public class ImportSkuStockRuleService implements CompensateBizService {
     }
 
     private PoushengCompensateBiz makeRules(PoushengCompensateBiz poushengCompensateBiz) {
-        List<ShopWarehouseSkuStockRule> rules = Lists.newArrayList();
+        List<ShopWarehouseStockRule> rules = Lists.newArrayList();
         SkuStockRuleImportInfo info = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), SkuStockRuleImportInfo.class);
         String filePath = info.getFilePath();
         Long openShopId = info.getOpenShopId();
-        Long warehouseId = info.getWarehouseId();
-        OpenShop openShop = openShopCacher.findById(openShopId);
-        Boolean isYunJuJIT = Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue());
-        Map<String, String> params =new HashMap<>();
-        List<Long> groupIds = groupRuleCacherProxy.findByShopId(openShopId);
-        params.put("groupIds", Joiners.COMMA.join(groupIds));
-        ExcelExportHelper<AbnormalSkuStockRuleRecord> helper = ExcelExportHelper.newExportHelper(AbnormalSkuStockRuleRecord.class);
+        ExcelExportHelper<AbnormalWarehouseStockRuleRecord> helper = ExcelExportHelper.newExportHelper(AbnormalWarehouseStockRuleRecord.class);
         List<String[]> list = HandlerFileUtil.getInstance().handlerExcel(filePath);
         for (int i = 1; i < list.size(); i++) {
             String[] strs = list.get(i);
             if (Strings.isNullOrEmpty(strs[0]) || "\"\"".equals(strs[0])) {
-                appendErrorToExcel(helper, strs, "请输入正确的货品条码");
+                appendErrorToExcel(helper, strs, "请输入正确的仓库编码");
                 continue;
             }
             if (Strings.isNullOrEmpty(strs[1]) || "\"\"".equals(strs[1]) || !strs[1].matches("[0-9]+")) {
@@ -163,37 +141,25 @@ public class ImportSkuStockRuleService implements CompensateBizService {
             }
             String skuCode = strs[0].replace("\"", "");
             try {
-                if(isYunJuJIT){
-                    if(CollectionUtils.isEmpty(groupIds)){
-                        appendErrorToExcel(helper, strs, "该skuCode不在该店铺的销售范围内");
-                        continue;
-                    }
-                    params.put("skuCode",skuCode);
-                    Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 50, TEMPLATE_NAME, params, SearchSkuTemplate.class);
-                    if (!response.isSuccess()) {
-                        log.error("query sku template by params:{}  fail,error:{}", params, response.getError());
-                        appendErrorToExcel(helper, strs, response.getError());
-                    }
-                    if (response.getResult().getTotal() == 0) {
-                        appendErrorToExcel(helper, strs, "该skuCode不在该店铺的销售范围内");
-                        continue;
-                    }
-                }else{
-                    Response<Optional<ItemMapping>> resp = mappingReadService.findBySkuCodeAndOpenShopId(skuCode, openShopId);
-                    //不存在记录日志
-                    if (!resp.isSuccess()) {
-                        appendErrorToExcel(helper, strs, resp.getError());
-                        continue;
-                    }
-                    if (!resp.getResult().isPresent()) {
-                        appendErrorToExcel(helper, strs, "该skuCode在当前店铺内无映射关系");
-                        continue;
-                    }
+                Response<List<Long>> resp = warehouseRulesClient.findWarehouseIdsByShopId(openShopId);
+                //查询默认发货仓列表失败
+                if (!resp.isSuccess()) {
+                    throw new JsonResponseException(resp.getError());
                 }
-                ShopWarehouseSkuStockRule rule = new ShopWarehouseSkuStockRule();
-                rule.setWarehouseId(warehouseId);
+                WarehouseDTO warehouseDTO;
+                try {
+                    warehouseDTO = warehouseCacher.findByCode(strs[0]);
+                } catch (Exception e) {
+                    appendErrorToExcel(helper, strs, "未找到对应仓库");
+                    continue;
+                }
+                if (!resp.getResult().contains(warehouseDTO.getId())) {
+                    appendErrorToExcel(helper, strs, "仓库不在默认发货仓规则内");
+                    continue;
+                }
+                ShopWarehouseStockRule rule = new ShopWarehouseStockRule();
+                rule.setWarehouseId(warehouseDTO.getId());
                 rule.setShopId(openShopId);
-                rule.setSkuCode(skuCode);
                 rule.setSafeStock(Long.valueOf(strs[1]));
                 rule.setRatio(Integer.valueOf(strs[2]));
                 rule.setJitStock(StringUtils.isEmpty(strs[3]) ? null : Long.valueOf(strs[3]));
@@ -207,32 +173,12 @@ public class ImportSkuStockRuleService implements CompensateBizService {
             }
 
         }
-        List<ShopWarehouseSkuStockRule> pageList = Lists.newArrayList();
         if (!StringUtils.isEmpty(rules)) {
             try {
-                for (int i = 0; i < rules.size(); i++) {
-                    pageList.add(rules.get(i));
-                    //分页处理
-                    if (pageList.size() % DEFAULT_PAGE_SIZE == 0 || i == rules.size() - 1) {
-                        Map<String, ShopWarehouseSkuStockRule> ruleMap = new HashMap<>();
-                        for (ShopWarehouseSkuStockRule rule : pageList) {
-                            ruleMap.put(rule.getSkuCode(), rule);
-                        }
-                        Response<List<String>> resp = warehouseShopSkuRuleClient.batchCreateOrUpdate(pageList);
-                        //如果执行失败，则认为这一批都失败
-                        if (!resp.isSuccess()) {
-                            for (ShopWarehouseSkuStockRule rule : pageList) {
-                                appendErrorToExcel(helper, createStrs(rule), resp.getError());
-                            }
-
-                        }
-                        //如果有返回错误的skuCode
-                        if (!StringUtils.isEmpty(resp.getResult())) {
-                            for (String skuCode : resp.getResult()) {
-                                appendErrorToExcel(helper, createStrs(ruleMap.get(skuCode)), "更新或创建异常");
-                            }
-                        }
-                        pageList.clear();
+                for (ShopWarehouseStockRule rule : rules) {
+                    Response<Boolean> response = warehouseShopRuleClient.createOrUpdate(rule);
+                    if (!response.isSuccess()) {
+                        appendErrorToExcel(helper, createStrs(rule), response.getError());
                     }
                 }
             } catch (Exception e) {
@@ -246,8 +192,9 @@ public class ImportSkuStockRuleService implements CompensateBizService {
             String url = uploadFileComponent.exportAbnormalRecord(helper.transformToFile());
             poushengCompensateBiz.setLastFailedReason(url);
             poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
-            log.error("import warehouse shop sku rule abnormality");
+            log.error("import shop  warehouse rule abnormality");
         }
         return poushengCompensateBiz;
     }
+
 }

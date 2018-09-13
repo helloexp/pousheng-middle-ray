@@ -17,9 +17,9 @@ public class SkuStockRuleImportInfo implements Serializable{
 
     private Long openShopId;
 
-    private Long userId;
+    private Long warehouseId;
 
-    private Long shopRuleId;
+    private Long userId;
 
     public String getFilePath() {
         return filePath;
@@ -39,6 +39,15 @@ public class SkuStockRuleImportInfo implements Serializable{
         return this;
     }
 
+    public Long getWarehouseId() {
+        return warehouseId;
+    }
+
+    public SkuStockRuleImportInfo warehouseId(Long warehouseId) {
+        this.warehouseId = warehouseId;
+        return this;
+    }
+
     public Long getUserId() {
         return userId;
     }
@@ -48,16 +57,4 @@ public class SkuStockRuleImportInfo implements Serializable{
         return this;
     }
 
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
-
-    public Long getShopRuleId() {
-        return shopRuleId;
-    }
-
-    public SkuStockRuleImportInfo shopRuleId(Long shopRuleId) {
-        this.shopRuleId = shopRuleId;
-        return this;
-    }
 }

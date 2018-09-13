@@ -72,7 +72,6 @@ public class MposSkuStockLogic {
      * @param shipment 发货单信息
      * @param withSafe 是否使用安全库存
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Response<Boolean> lockStock(Shipment shipment, Boolean withSafe){
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
         return this.lockStock(dispatchOrderItemInfo, withSafe);

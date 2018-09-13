@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- *发货单发货完成后通知电商的方法
+ * 发货单发货完成后通知电商的方法
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/1/4
  * pousheng-middle
@@ -67,7 +67,7 @@ public class HKShipmentDoneLogic {
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
     public void doneShipment(Shipment shipment) {
-        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
+        log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
         //判断发货单是否发货完
         if (shipment.getType() == ShipmentType.SALES_SHIP.value()) {
             //判断发货单是否已经全部发货完成,如果全部发货完成之后需要更新order的状态为待收货
@@ -76,13 +76,13 @@ public class HKShipmentDoneLogic {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             Flow flow = flowPicker.pickOrder();
             log.info("HK SHIPMENT DONE LISTENER shopOrderStatus is {}", shopOrder.getStatus());
-            if (flow.operationAllowed(shopOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
-                //更新子订单中的信息
-                List<Long> skuOrderIds = Lists.newArrayList();
-                Map<Long, Integer> skuInfos = shipment.getSkuInfos();
-                skuOrderIds.addAll(skuInfos.keySet());
-                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-                for (SkuOrder skuOrder : skuOrders) {
+            //更新子订单中的信息
+            List<Long> skuOrderIds = Lists.newArrayList();
+            Map<Long, Integer> skuInfos = shipment.getSkuInfos();
+            skuOrderIds.addAll(skuInfos.keySet());
+            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+            for (SkuOrder skuOrder : skuOrders) {
+                if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
                     Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                     if (!updateRlt.getResult()) {
                         log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
@@ -101,7 +101,7 @@ public class HKShipmentDoneLogic {
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类
-        if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value()||shipment.getType()==3) {
+        if (shipment.getType() == ShipmentType.EXCHANGE_SHIP.value() || shipment.getType() == 3) {
             //如果发货单已经全部发货完成,需要更新refund表的状态为待确认收货,rufund表的状态为待收货完成,C
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
@@ -110,13 +110,13 @@ public class HKShipmentDoneLogic {
             //获取该售后单下所有的发
             Refund refund = refundReadLogic.findRefundById(afterSaleOrderId);
             List<Integer> shipmentStatuses = orderShipments.stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-            if (shipmentStatuses.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())){
+            if (shipmentStatuses.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())) {
                 return;
             }
             if (refund.getStatus() == MiddleRefundStatus.WAIT_SHIP.getValue()) {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
                 List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());
-                log.info("HK SHIPMENT DONE LISTENER for change,orderShipMentStatusList is {}",orderShipMentStatusList);
+                log.info("HK SHIPMENT DONE LISTENER for change,orderShipMentStatusList is {}", orderShipMentStatusList);
                 if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
@@ -127,7 +127,7 @@ public class HKShipmentDoneLogic {
                     }
                     //将shipmentExtra的已发货时间塞入值,
                     Flow flow = flowPicker.pickAfterSales();
-                    Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.SHIP.toOrderOperation());
+                    Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation());
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
                     refundExtra.setShipAt(new Date());
                     Map<String, String> extrMap = refund.getExtra();
@@ -143,7 +143,7 @@ public class HKShipmentDoneLogic {
             }
             //丢件补发类型
             if (refund.getStatus() == MiddleRefundStatus.LOST_WAIT_SHIP.getValue()) {
-                log.info("HK SHIPMENT DONE LISTENER for lost,shipmentId is {}",shipment.getId());
+                log.info("HK SHIPMENT DONE LISTENER for lost,shipmentId is {}", shipment.getId());
                 Response<Boolean> resRlt = refundWriteLogic.updateStatus(refund, MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
                 if (!resRlt.isSuccess()) {
                     log.error("update refund status error (id:{}),original status is {}", refund.getId(), refund.getStatus());
@@ -151,7 +151,7 @@ public class HKShipmentDoneLogic {
                 }
                 //将shipmentExtra的已发货时间塞入值,
                 Flow flow = flowPicker.pickAfterSales();
-                Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
+                Integer targetStatus = flow.target(refund.getStatus(), MiddleOrderEvent.LOST_SHIPPED.toOrderOperation());
                 RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
                 refundExtra.setShipAt(new Date());
                 Map<String, String> extrMap = refund.getExtra();
@@ -169,7 +169,7 @@ public class HKShipmentDoneLogic {
         //真正扣减库存
         mposSkuStockLogic.decreaseStock(shipment);
 
-        log.info("HK SHIPMENT DONE LISTENER end, shipmentId is {},shipmentType is {}",shipment.getId(),shipment.getType());
+        log.info("HK SHIPMENT DONE LISTENER end, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
 
     }
 }

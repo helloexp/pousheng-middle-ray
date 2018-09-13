@@ -438,3 +438,34 @@ CREATE TABLE `pousheng_stock_record_log` (
   `updated_at` datetime DEFAULT NULL COMMENT '更新时间',
   PRIMARY KEY (`id`)
 )  COMMENT='库存查询日志';
+
+drop table if exists `parana_shipment_items`;
+CREATE TABLE `parana_shipment_items` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `shipment_id` bigint(20) NOT NULL COMMENT '发货单id',
+  `warehouse_id` bigint(20) NOT NULL COMMENT '仓库id',
+  `shop_id` bigint(20) NOT NULL COMMENT '门店id',
+  `status` smallint(6) NOT NULL COMMENT '冗余发货单状态',
+  `sku_order_id` bigint(20) NOT NULL COMMENT '子订单id',
+  `sku_code` varchar(40) DEFAULT NULL COMMENT 'SKU 编码 (标准库存单位编码)',
+  `out_sku_code` varchar(64) DEFAULT NULL COMMENT 'sku外部id',
+  `sku_out_id` varchar(64) DEFAULT NULL COMMENT '外部自订单id',
+  `sku_name` varchar(512) NOT NULL COMMENT '商品名称',
+  `item_id` varchar(40) DEFAULT NULL COMMENT '商品id',
+  `clean_price` bigint(20) NOT NULL COMMENT '商品净价',
+  `clean_fee` bigint(20) NOT NULL COMMENT '商品总净价',
+  `refund_quantity` int(11) NOT NULL COMMENT '退货数量',
+  `quantity` int(11) NOT NULL COMMENT '预计发货数量',
+  `ship_quantity` int(11) NOT NULL COMMENT '实际发货数量',
+  `occupy_quantity` int(11) NOT NULL COMMENT '发货占用数量',
+  `integral` int(11) NOT NULL COMMENT '积分减免',
+  `sku_price` bigint(20) DEFAULT NULL COMMENT '价格',
+  `sku_discount` bigint(20) DEFAULT '0',
+  `is_gift` smallint(6) DEFAULT '1' COMMENT '是否是赠品 0:不是 1:是',
+  `extra_json` text,
+  `share_platform_discount` int(11) DEFAULT '0' COMMENT '分摊优惠',
+  `created_at` datetime DEFAULT NULL COMMENT '发货单明细创建时间',
+  `updated_at` datetime DEFAULT NULL COMMENT '发货单明细更新时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_items_shipments_id` (`shipment_id`)
+) COMMENT='发货单明细表';

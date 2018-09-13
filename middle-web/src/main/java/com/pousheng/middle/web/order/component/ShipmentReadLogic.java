@@ -10,6 +10,7 @@ import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.impl.service.PsShipmentItemReadServiceImpl;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
@@ -63,6 +64,8 @@ public class ShipmentReadLogic {
     private ShipmentReadService shipmentReadService;
     @RpcConsumer
     private ShipmentItemReadService shipmentItemReadService;
+    @RpcConsumer
+    private PsShipmentItemReadServiceImpl psShipmentItemReadService;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
     @Autowired
@@ -752,6 +755,16 @@ public class ShipmentReadLogic {
         Response<List<ShipmentItem>> r = shipmentItemReadService.findByShipmentId(shipmentId);
         if (!r.isSuccess()){
             log.error("find shipment item list by shipment id failed,shipmentId is {},caused by {}",shipmentId,r.getError());
+            throw new JsonResponseException("shipment.item.find.fail");
+        }
+        return r.getResult();
+    }
+
+
+    public List<ShipmentItem> findShipmentItems(ShipmentItemCriteria criteria){
+        Response<List<ShipmentItem>> r = psShipmentItemReadService.findShipmentItems(criteria);
+        if (!r.isSuccess()){
+            log.error("find shipment item list by {},caused by {}",criteria.toString(),r.getError());
             throw new JsonResponseException("shipment.item.find.fail");
         }
         return r.getResult();

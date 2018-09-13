@@ -7,13 +7,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.pousheng.middle.open.api.dto.*;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.SubmitRefundInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrder;
 import io.terminus.open.client.order.dto.OpenFullOrderAddress;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.open.client.order.dto.OpenFullOrderItem;
+import io.terminus.parana.constans.TradeConstants;
+import io.terminus.parana.order.model.ShipmentItem;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
@@ -116,10 +120,10 @@ public class PoushengYJTest {
         openFullOrder.setChannel("yunjubbc");
         openFullOrder.setCompanyCode("300");
         openFullOrder.setCreatedAt("20180101123302");
-        openFullOrder.setFee(399500L);
-        openFullOrder.setOriginFee(399500L);
+        openFullOrder.setFee(10000L);
+        openFullOrder.setOriginFee(10000L);
         openFullOrder.setShipFee(0L);
-        openFullOrder.setOutOrderId("396783963+121");
+        openFullOrder.setOutOrderId("3367839+121");
         openFullOrder.setOriginShipFee(0L);
         openFullOrder.setShipmentType(1);
         openFullOrder.setPayType(1);
@@ -129,19 +133,31 @@ public class PoushengYJTest {
 
         // 50个子订单
         List<OpenFullOrderItem> items =  Lists.newArrayList();
-        for (int i = 0; i < 1; i++) {
+//        for (int i = 0; i < 1; i++) {
             OpenFullOrderItem item = new OpenFullOrderItem();
-            item.setOutSkuorderId("296783963+111_677778");
-            item.setSkuCode("4053984270750");
+            item.setOutSkuorderId("236703963+111_677778");
+            item.setSkuCode("4053984439560");
             item.setItemType("01");
             item.setItemName("测试商品");
-            item.setQuantity(3);
-            item.setOriginFee(79900L);
+            item.setQuantity(4);
+            item.setOriginFee(1000L);
             item.setDiscount(0L);
-            item.setCleanPrice(79900L);
-            item.setCleanFee(239700L);
+            item.setCleanPrice(1000L);
+            item.setCleanFee(4000L);
             items.add(item);
-        }
+
+        OpenFullOrderItem item1 = new OpenFullOrderItem();
+        item1.setOutSkuorderId("236781963+111_677778");
+        item1.setSkuCode("6903313008203");
+        item1.setItemType("02");
+        item1.setItemName("测试商品");
+        item1.setQuantity(3);
+        item1.setOriginFee(2000L);
+        item1.setDiscount(0L);
+        item1.setCleanPrice(2000L);
+        item1.setCleanFee(6000L);
+        items.add(item1);
+//        }
 
         OpenFullOrderAddress address = new OpenFullOrderAddress();
         address.setProvince("江苏省");
@@ -382,10 +398,39 @@ public class PoushengYJTest {
 
     @Test
     public void method22() throws UnsupportedEncodingException {
-        String orderInfo="[{\"address\":{\"city\":\"北京市\",\"detail\":\"北京 北京市 朝阳区 朝外大街10号 昆泰大厦裙楼7层\",\"mobile\":\"13700000000\",\"phone\":\"010-88888888\",\"province\":\"北京\",\"receiveUserName\":\"小强\",\"region\":\"朝阳区\"},\"item\":[{\"cleanFee\":79800,\"cleanPrice\":39900,\"discount\":0,\"itemType\":\"01\",\"originFee\":39900,\"outSkuorderId\":\"296206115+3_2849018\",\"quantity\":2,\"skuCode\":\"4057289618996\"},{\"cleanFee\":79800,\"cleanPrice\":39900,\"discount\":0,\"itemType\":\"01\",\"originFee\":39900,\"outSkuorderId\":\"296206115+3_2849017\",\"quantity\":2,\"skuCode\":\"4057289618903\"}],\"invoice\":{},\"order\":{\"buyerName\":\"小强\",\"channel\":\"YJ\",\"companyCode\":\"300\",\"createdAt\":\"20180423155708\",\"fee\":65440,\"originFee\":159600,\"originShipFee\":1600,\"outOrderId\":\"296206115+3\",\"payType\":1,\"shipFee\":1600,\"shipmentType\":1,\"shopCode\":\"11310014\",\"status\":1,\"stockId\":\"300-WH310551\"}}]";
-        List<OpenFullOrderInfo> orders = (List)JsonMapper.nonEmptyMapper().fromJson(orderInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, new Class[]{OpenFullOrderInfo.class}));
-        System.out.println();
+        String info = "["
+                + "{"
+                + "\"skuCode\":\"6903313017076\","
+                + "\"skuName\":\"CONVERSE(匡威)CONVERSE ALL STAR系列中性硫化鞋101000\","
+                + "\"cleanPrice\":39800,"
+                + "\"cleanFee\":39800,"
+                + "\"attrs\":"
+                + "["
+                + "{"
+                + "\"attrKey\":\"颜色\","
+                + "\"attrVal\":\"红色\","
+                + "\"showImage\":false"
+                + "},"
+                + "{"
+                + "\"attrKey\":\"尺码\","
+                + "\"attrVal\":\"4\","
+                + "\"showImage\":false"
+                + "}"
+                + "],"
+                + "\"refundQuantity\":0,"
+                + "\"quantity\":1,"
+                + "\"integral\":0,"
+                + "\"skuPrice\":39800"
+                + "}"
+                + "]";
+        List<ShipmentItem> list = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(info,
+                JsonMapper.JSON_NON_EMPTY_MAPPER.createCollectionType(List.class,ShipmentItem.class));
+//        System.out.println(list.get(0));
+        RefundItem refundItem = new RefundItem();
+        BeanMapper.copy(list.get(0), refundItem);
+        System.out.println(refundItem.getAttrs());
     }
+
 
 
 }

@@ -49,6 +49,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -387,6 +388,12 @@ public class RefundWriteLogic {
             shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
         }
 
+        //更新发货单商品中的已退货数量
+//        Map<String, String> shipmentExtraMap = shipment.getExtra();
+//        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonDefaultMapper().toJson(shipmentItems));
+//        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+        //TODO 更新发货单明细
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
     }
 
 
@@ -494,11 +501,12 @@ public class RefundWriteLogic {
             throw new JsonResponseException(rRefundRes.getError());
         }
 
-        //更新发货单商品中的已退货数量
-        Map<String, String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,
-                JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+        //TODO 更新发货单明细
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
+//        Map<String, String> shipmentExtraMap = shipment.getExtra();
+//        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+//        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+
         //如果是手工创建的售后单是点击的提交，直接同步恒康
         if (Objects.equals(submitRefundInfo.getOperationType(), 2)) {
             if (!Objects.equals(submitRefundInfo.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
@@ -626,10 +634,12 @@ public class RefundWriteLogic {
 
         //如果退货商品信息变了则更新对应发货商品的退货数量
         if (isRefundItemChanged) {
+            // TODO 更新发货单明细
+            shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
             //更新发货单商品中的已退货数量
-            Map<String, String> shipmentExtraMap = shipment.getExtra();
-            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(shipmentItems));
-            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+//            Map<String, String> shipmentExtraMap = shipment.getExtra();
+//            shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(shipmentItems));
+//            shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
         }
 
 
@@ -726,9 +736,11 @@ public class RefundWriteLogic {
         }
 
         //更新发货单商品中的已退货数量
-        Map<String,String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-        shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
+        //TODO 更新发货单明细
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
+//        Map<String,String> shipmentExtraMap = shipment.getExtra();
+//        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+//        shipmentWiteLogic.updateExtra(shipment.getId(),shipmentExtraMap);
         //如果是手工创建的售后单是点击的提交，直接同步恒康
         if(Objects.equals(submitRefundInfo.getOperationType(),2)){
             Refund newRefund = refundReadLogic.findRefundById(refund.getId());
@@ -829,7 +841,7 @@ public class RefundWriteLogic {
      * @param editSubmitRefundInfo 编辑时前端传过来的参数
      * @param refundItems          之前已经选择的售后商品集合
      */
-    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems, EditSubmitRefundInfo editSubmitRefundInfo, List<RefundItem> refundItems,Integer refundType) {
+    private void updateShipmentItemRefundQuantityForEdit(List<ShipmentItem> shipmentItems, EditSubmitRefundInfo editSubmitRefundInfo, List<RefundItem> refundItems, Integer refundType) {
         //前台传输进来的售后商品集合
         List<EditSubmitRefundItem> editSubmitRefundItems = editSubmitRefundInfo.getEditSubmitRefundItems();
         List<String> editSkuCodes = editSubmitRefundItems.stream().filter(Objects::nonNull).map(EditSubmitRefundItem::getRefundSkuCode).collect(Collectors.toList());
@@ -1181,9 +1193,11 @@ public class RefundWriteLogic {
             }
 
         });
-        Map<String, String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+        //TODO 更新发货单明细
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
+//        Map<String, String> shipmentExtraMap = shipment.getExtra();
+//        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+//        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
     }
 
 

@@ -35,7 +35,9 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -93,6 +95,18 @@ public class yyEDIOpenApi {
 
 
     /**
+     * yyEDI回传jit发货信息
+     * @param shipInfo
+     */
+    @OpenMethod(key = "jit.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
+    public void receiveJitShipmentResult(String shipInfo) {
+        log.info("YYEDI-JIT-SHIPMENT-INFO-START param: shipInfo [{}]", shipInfo);
+        dealErpShipmentInfo(shipInfo);
+        log.info("YYEDI-JIT-SHIPMENT-INFO-END param: shipInfo [{}]", shipInfo);
+    }
+
+
+    /**
      *
      * @param shipInfo yyEdi or yjErp 回调中台传回发货信息
      */
@@ -102,6 +116,15 @@ public class yyEDIOpenApi {
         List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
         YyEdiResponse error = new YyEdiResponse();
         try {
+            if (StringUtils.isEmpty(shipInfo)) {
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setErrorCode("-100");
+                field.setErrorMsg("发货信息空");
+                fields.add(field);
+                error.setFields(fields);
+                String reason = JsonMapper.nonEmptyMapper().toJson(error);
+                throw new OPServerException(200, reason);
+            }
             results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YyEdiShipInfo.class));
             fields = Lists.newArrayList();
             int count = 0;

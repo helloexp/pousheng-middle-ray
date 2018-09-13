@@ -44,7 +44,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -54,6 +53,7 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -514,13 +514,7 @@ public class Shipments {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
             Long warehouseId = shipmentRequest.getWarehouseId();
             Map<Long, Integer> skuOrderIdAndQuantity = analysisSkuOrderIdAndQuantity(data);
-            OpenShop openShop = orderReadLogic.findOpenShopByShopId(shopOrder.getShopId());
-            /*String erpType = orderReadLogic.getOpenShopExtraMapValueByKey(TradeConstants.ERP_SYNC_TYPE, openShop);
-            if (StringUtils.isEmpty(erpType) || Objects.equals(erpType, "hk")) {
-                if (!orderReadLogic.validateCompanyCode(warehouseId, shopOrder.getShopId())) {
-                    throw new JsonResponseException("warehouse.must.be.in.one.company");
-                }
-            }*/
+
             //判断是否可以生成发货单
             for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
                 SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrderId, OrderLevel.SKU);
@@ -571,18 +565,18 @@ public class Shipments {
             Shipment shipment = makeShipment(shopOrderId, warehouseId, shipmentItemFee, shipmentDiscountFee, shipmentTotalFee
                     , shipmentShipFee, ShipmentType.SALES_SHIP.value(), shipmentShipDiscountFee, shipmentTotalPrice, shopOrder.getShopId());
             shipment.setSkuInfos(skuOrderIdAndQuantity);
+            shipment.setShopId(shopOrder.getShopId());
+            shipment.setShopName(shopOrder.getShopName());
+
+            // TODO
+            // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
+            shipmentWiteLogic.convertShipmentItem(shopOrder, warehouseId, shipmentItems);
+
             Map<String, String> extraMap = shipment.getExtra();
             extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
             extraMap.put(TradeConstants.SHOP_ORDER_ID, String.valueOf(shopOrderId));
             shipment.setExtra(extraMap);
-            shipment.setShopId(shopOrder.getShopId());
-            shipment.setShopName(shopOrder.getShopName());
-           /* //锁定库存
-            Response<Boolean> lockStockRlt = mposSkuStockLogic.lockStock(shipment);
-            if (!lockStockRlt.isSuccess()) {
-                log.error("this shipment can not unlock stock,shipment id is :{}", shipment.getId());
-                throw new JsonResponseException("lock.stock.error");
-            }*/
+
             //创建发货单
             Long shipmentId;
             try {
@@ -1102,11 +1096,15 @@ public class Shipments {
             shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
             //初始情况下,refundQuery为0
             if (skuOrder.getShipmentType() != null && Objects.equals(skuOrder.getShipmentType(), 1)) {
-                shipmentItem.setIsGift(true);
+                shipmentItem.setIsGift(Boolean.TRUE);
             } else {
-                shipmentItem.setIsGift(false);
+                shipmentItem.setIsGift(Boolean.FALSE);
             }
             shipmentItem.setRefundQuantity(0);
+            // 实际发货数量
+            shipmentItem.setShipQuantity(0);
+            // 实际发货占用数量
+            shipmentItem.setOccupyQuantity(shipmentItem.getQuantity());
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuOutId(skuOrder.getOutId());
@@ -1139,13 +1137,13 @@ public class Shipments {
             //商品id
             String outItemId = "";
             try {
+                //商品属性
+                shipmentItem.setExtraJson(JSON_MAPPER.toJson(skuOrder.getSkuAttrs()));
                 outItemId = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID, skuOrder);
             } catch (Exception e) {
                 log.info("outItemmId is not exist");
             }
             shipmentItem.setItemId(outItemId);
-            //商品属性
-            shipmentItem.setAttrs(skuOrder.getSkuAttrs());
 
             shipmentItems.add(shipmentItem);
 
@@ -1163,6 +1161,10 @@ public class Shipments {
             shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
             //退货数量,因为丢件补发或者是换货是允许继续售后的，所以这里面的数量为0
             shipmentItem.setRefundQuantity(0);
+            // 实际发货数量
+            shipmentItem.setShipQuantity(0);
+            // 实际发货占用数量
+            shipmentItem.setOccupyQuantity(shipmentItem.getQuantity());
             shipmentItem.setSkuName(refundItem.getSkuName());
             //商品单价
             shipmentItem.setSkuPrice(refundItem.getSkuPrice());
@@ -1176,7 +1178,12 @@ public class Shipments {
             //商品id
             shipmentItem.setItemId(refundItem.getItemId());
             //商品属性
-            shipmentItem.setAttrs(refundItem.getAttrs());
+            try {
+                shipmentItem.setExtraJson(JSON_MAPPER.toJson(refundItem.getAttrs()));
+            } catch (Exception e) {
+                log.error("attrs json is error {}", refundItem.getAttrs());
+            }
+
             shipmentItems.add(shipmentItem);
         }
 
@@ -1316,7 +1323,7 @@ public class Shipments {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItemsForList(shipments);
         List<ShipmentItem> newShipmentItems = Lists.newArrayList();
         for (ShipmentItem shipmentItem:shipmentItems){
-            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getItemWarehouseId(),shipmentItem.getSkuCode());
+            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getWarehouseId(),shipmentItem.getSkuCode());
             if (!response.isSuccess()){
                 shipmentItem.setItemStock(0L);
             }else{
@@ -1491,7 +1498,7 @@ public class Shipments {
         List<ShipmentItem>  shipmentItems = shipmentReadLogic.findAfterSaleShipmentItems(refund.getRefundCode());
         List<ShipmentItem> newShipmentItems = Lists.newArrayList();
         for (ShipmentItem shipmentItem:shipmentItems){
-            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getItemWarehouseId(),shipmentItem.getSkuCode());
+            Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(shipmentItem.getWarehouseId(),shipmentItem.getSkuCode());
             if (!response.isSuccess()){
                 shipmentItem.setItemStock(0L);
             }else{

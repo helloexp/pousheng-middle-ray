@@ -27,6 +27,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
@@ -78,6 +79,8 @@ public class OpenOrderConverter {
         fullOrder.setOriginShipFee(Math.toIntExact(order.getOriginShipFee() == null ? 0 : order.getOriginShipFee()));
         fullOrder.setBuyerName(order.getBuyerName());
         fullOrder.setBuyerRemark(order.getBuyerNote());
+        //订单类型
+        fullOrder.setType(order.getType());
         if (order.getPayType() != null) {
             fullOrder.setPayType(order.getPayType().equals(1) ?
                     OpenClientOrderPayType.ONLINE : OpenClientOrderPayType.CASH_ON_DELIVERY);
@@ -110,6 +113,18 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.ORDER_EXPRESS_NAME,order.getOrderHkExpressName());
             //bbc 物流号
             extra.put(ExtraKeyConstant.SHIPMENT_SERIAL_NO,order.getShipmentSerialNo());
+            // 客商编码
+            extra.put(ExtraKeyConstant.VEND_CUST_Code, order.getVendCustCode());
+            // 目的仓编码
+            extra.put(ExtraKeyConstant.INTER_STOCK_CODE, order.getInterStockCode());
+            // 下游单号
+            extra.put(ExtraKeyConstant.PRE_FINISH_BILLO, order.getPreFinishBillo());
+            // 批次号
+            extra.put(ExtraKeyConstant.BATCH_NO, order.getBatchNo());
+            // 批次描述
+            extra.put(ExtraKeyConstant.BATCH_MARK, order.getBatchMark());
+            // 渠道代码
+            extra.put(ExtraKeyConstant.CHANNEL_CODE, order.getChannelCode());
 
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);

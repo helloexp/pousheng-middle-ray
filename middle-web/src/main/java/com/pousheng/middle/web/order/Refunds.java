@@ -37,11 +37,15 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderRefund;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.Value;
 import io.terminus.parana.order.enums.AfterSaleOrderType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
+import io.terminus.parana.attribute.dto.SkuAttribute;
+import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
@@ -929,16 +933,18 @@ public class Refunds {
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         refundItemList.stream().forEach(x->{
             for (ShipmentItem shipmentItem : shipmentItems) {
-                if (Objects.equals(x.getSkuCode(), shipmentItem.getSkuCode())) {
+                if (Objects.equals(x.getSkuOrderId(), shipmentItem.getSkuOrderId())) {
                     shipmentItem.setRefundQuantity((shipmentItem.getRefundQuantity() == null ? 0 : shipmentItem.getRefundQuantity()) + x.getApplyQuantity());
                 }
             }
         });
 
         //更新发货单商品中的已退货数量
-        Map<String, String> shipmentExtraMap = shipment.getExtra();
-        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
-        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+        //TODO 更新发货单明细
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
+//        Map<String, String> shipmentExtraMap = shipment.getExtra();
+//        shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+//        shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
 
 
         Map<String, String> extraMap = refund.getExtra();
@@ -1070,20 +1076,22 @@ public class Refunds {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
-        Map<String, ShipmentItem> shipmentItemMap = shipmentItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(ShipmentItem::getSkuCode, it -> it));
+        Map<Long, ShipmentItem> shipmentItemMap = shipmentItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, it -> it));
 
         List<EditRefundItem> editRefundItems = Lists.newArrayListWithCapacity(shipmentItems.size());
         for (RefundItem refundItem : refundItems) {
             EditRefundItem editRefundItem = new EditRefundItem();
             BeanMapper.copy(refundItem, editRefundItem);
-            ShipmentItem shipmentItem = shipmentItemMap.get(refundItem.getSkuCode());
+            ShipmentItem shipmentItem = shipmentItemMap.get(refundItem.getSkuOrderId());
             editRefundItem.setQuantity(shipmentItem.getQuantity());
             editRefundItem.setRefundQuantity(shipmentItem.getRefundQuantity());
             //商品id
             editRefundItem.setItemId(shipmentItem.getItemId());
             //商品属性
-            editRefundItem.setAttrs(shipmentItem.getAttrs());
+            List<SkuAttribute> attrs = shipmentItem.getAttrs();
+
+            editRefundItem.setAttrs(attrs);
             editRefundItems.add(editRefundItem);
         }
 

@@ -1,14 +1,13 @@
 package com.pousheng.middle.web.order.sync.ecp;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.pousheng.middle.hksyc.component.SycYunJuShipmentOrderApi;
 import com.pousheng.middle.hksyc.dto.LogisticsInfo;
 import com.pousheng.middle.hksyc.dto.YJRespone;
 import com.pousheng.middle.hksyc.dto.YJSyncShipmentRequest;
-import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -22,10 +21,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.order.dto.OpenClientOrderShipment;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
@@ -304,6 +300,14 @@ public class SyncOrderToEcpLogic {
                         logisticsInfo.setDelivery_name(shipmentExtra.getWarehouseName());//发货人 经讨论是可以是发货仓
                         logisticsInfo.setDelivery_time(DateFormatUtils.format(shipmentExtra.getShipmentDate(),"yyyy-MM-dd HH:mm:ss"));
                         logisticsInfo.setAmount(shipmentItem.getShipQuantity()==null?shipmentItem.getQuantity():shipmentItem.getShipQuantity()); //实际发货数量
+
+                        //增加jit新增字段
+                        logisticsInfo.setArrival_time(shipmentExtra.getExpectDate());
+                        logisticsInfo.setDelivery_method(shipmentExtra.getTransportMethodCode());
+                        if (shipmentExtra.getBoxNoMap() != null) {
+                            logisticsInfo.setBox_no(shipmentExtra.getBoxNoMap().get(shipmentItem.getSkuCode()));
+                        }
+
                         logisiticis.add(logisticsInfo);
                     }
                     if (itemFailed) {

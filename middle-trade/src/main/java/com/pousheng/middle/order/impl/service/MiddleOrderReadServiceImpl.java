@@ -4,6 +4,8 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
+import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
+import com.pousheng.middle.order.impl.dao.SkuOrderExtDao;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
@@ -36,6 +38,12 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
     private InvoiceDao invoiceDao;
     @Autowired
     private OrderReceiverInfoDao orderReceiverInfoDao;
+
+    @Autowired
+    private ShopOrderExtDao shopOrderExtDao;
+
+    @Autowired
+    private SkuOrderExtDao skuOrderExtDao;
 
 
     @Override
@@ -75,5 +83,21 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
             log.error("find order receiver info by order id:{} order level:{} fai,cause:{}",orderId,orderLevel.getValue(),Throwables.getStackTraceAsString(e));
             return Response.fail("order.receiver.info.find.fail");
         }
+    }
+
+    @Override
+    public Response<List<ShopOrder>> findByOutIdsAndOutFrom(List<String> outIds, String outFrom) {
+        try {
+            return Response.ok(shopOrderExtDao.findByOutIdsAndOutFrom(outIds, outFrom));
+        }catch (Exception e){
+            log.error("failed to find shop orders by out_ids:{},out_from:{},cause:{}",outIds,outFrom,
+                Throwables.getStackTraceAsString(e));
+            return Response.fail("failed.to.find.shop.orders");
+        }
+    }
+
+    @Override
+    public Response<List<String>> findSkuCodesByOrderIds(List<Long> orderIds) {
+        return Response.ok(skuOrderExtDao.findSkuCodesByOrderIds(orderIds));
     }
 }

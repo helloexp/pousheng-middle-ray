@@ -42,8 +42,6 @@ public class ShipmentWriteManger {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private MiddleShipmentWriteService middleShipmentWriteService;
-    @Autowired
-    private EventBus eventBus;
 
     @Transactional
     public Long createShipmentByConcurrent(Shipment shipment, ShopOrder shopOrder, Boolean withSafe){

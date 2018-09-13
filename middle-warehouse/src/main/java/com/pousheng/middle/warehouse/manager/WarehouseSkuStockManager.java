@@ -1,7 +1,6 @@
 package com.pousheng.middle.warehouse.manager;
 
 import com.google.common.collect.Lists;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -12,6 +11,7 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.model.ShipmentItem;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -108,17 +108,17 @@ public class WarehouseSkuStockManager {
         List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         List<InventoryTradeDTO> releaseList = Lists.newArrayList();
         List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
-        Map<String, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
-                .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
+        Map<Long, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
+                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getShipQuantity));
         for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
-            if (itemMap.get(sq.getSkuCode()) == null) {
+            if (itemMap.get(sq.getSkuOrderId()) == null) {
                 continue;
             }
-            if (itemMap.get(sq.getSkuCode()) < sq.getQuantity()) {
+            if (itemMap.get(sq.getSkuOrderId()) < sq.getQuantity()) {
                 unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
-                        .quantity(sq.getQuantity() - itemMap.get(sq.getSkuCode())));
+                        .quantity(sq.getQuantity() - itemMap.get(sq.getSkuOrderId())));
             }
-            sq.setQuantity(itemMap.get(sq.getSkuCode()));
+            sq.setQuantity(itemMap.get(sq.getSkuOrderId()));
         }
         tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
                 inventoryTradeDTO, actualShipment.getSkuCodeAndQuantities()));

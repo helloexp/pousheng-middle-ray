@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.io.Serializable;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * 发货单扩展信息
@@ -105,4 +106,31 @@ public class ShipmentExtra implements Serializable{
 
     //备注
     private String remark;
+
+    /**
+     * 预计出/入库日期，维品会预计到货时间格式：yyyyMMddHHmmss
+     */
+    private String expectDate;
+
+    /**
+     * 发运方式编码
+     */
+    private String transportMethodCode;
+
+    /**
+     * 发运方式名称
+     */
+    private String transportMethodName;
+
+    /**
+     * 品牌
+     */
+    private String cardRemark;
+
+    /**
+     * 箱号Map
+     * key为skuCode
+     * value为箱号
+     */
+    private Map<String,String> boxNoMap;
 }

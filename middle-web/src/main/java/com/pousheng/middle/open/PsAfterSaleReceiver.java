@@ -9,7 +9,6 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -29,6 +28,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.dto.OpenClientAfterSale;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleStatus;
 import io.terminus.open.client.order.enums.OpenClientAfterSaleType;
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.RefundWriteService;
@@ -171,7 +171,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 refundItem.setCleanFee(shipmentItem.getCleanFee());
                 refundItem.setCleanPrice(shipmentItem.getCleanPrice());
                 refundItem.setAlreadyHandleNumber(shipmentItem.getQuantity());
-                refundItem.setAttrs(shipmentItem.getAttrs());
+                List<SkuAttribute> attrs = shipmentItem.getAttrs();
+                refundItem.setAttrs(attrs);
                 refundItem.setItemId(shipmentItem.getItemId());
                 refundItem.setApplyQuantity(shipmentItem.getQuantity());
                 refundItem.setSharePlatformDiscount(shipmentItem.getSharePlatformDiscount());
@@ -181,11 +182,13 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     updateShipmentItemRefundQuantity(skuOfRefund.getSkuCode(), shipmentItem.getQuantity(), shipmentItems);
                 }
                 //更新发货单商品中的已退货数量
-                Map<String, String> shipmentExtraMap = shipment.getExtra();
-                shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
+//                Map<String, String> shipmentExtraMap = shipment.getExtra();
+//                shipmentExtraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(shipmentItems));
                 //如果拉取下来的售后单是已取消，则不需要更新已退货数量
                 if (!Objects.equals(refund.getStatus(), MiddleRefundStatus.CANCELED.getValue())) {
-                    shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+//                    shipmentWiteLogic.updateExtra(shipment.getId(), shipmentExtraMap);
+                    //TODO 更新发货单明细
+                    shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
                 }
             }
             refundItem.setSkuCode(skuOrder.getSkuCode());

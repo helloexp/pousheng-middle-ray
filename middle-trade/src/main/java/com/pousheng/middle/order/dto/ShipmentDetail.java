@@ -2,6 +2,7 @@ package com.pousheng.middle.order.dto;
 
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import lombok.Data;
 
 import java.io.Serializable;

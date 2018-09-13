@@ -179,6 +179,14 @@ public abstract class AbstractAsyncJob {
     }
 
     /**
+     * 立即消费
+     * @param ids
+     */
+    public void immediateConsume(List<Long> ids){
+        consume(ids);
+    }
+
+    /**
      * 业务类型
      */
     public enum BizType {

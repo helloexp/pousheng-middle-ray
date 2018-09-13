@@ -33,15 +33,18 @@ public class StockRecordLog implements Serializable {
     @ApiModelProperty(value = "sku信息", position = 5)
     private String skuCode;
 
-    @ApiModelProperty(value = "库存查询内容", position = 6)
+    @ApiModelProperty(value = "子订单id", position = 6)
+    private Long skuOrderId;
+
+    @ApiModelProperty(value = "库存查询内容", position = 7)
     private String context;
 
-    @ApiModelProperty(value = "日志类型", position = 7)
+    @ApiModelProperty(value = "日志类型", position = 8)
     private String type;
 
-    @ApiModelProperty(value = "创建时间", position = 8)
+    @ApiModelProperty(value = "创建时间", position = 9)
     private Date createdAt;
 
-    @ApiModelProperty(value = "更新时间", position = 9)
+    @ApiModelProperty(value = "更新时间", position = 10)
     private Date updatedAt;
 }

@@ -49,4 +49,19 @@ public interface MiddleOrderReadService {
      * @return 发票信息
      */
     Response<List<OrderReceiverInfo>> findOrderReceiverInfo(Long orderId, OrderLevel orderLevel);
+
+    /**
+     * 根据来源批量查询订单信息
+     * @param outIds
+     * @param outFrom
+     * @return
+     */
+    Response<List<ShopOrder>> findByOutIdsAndOutFrom(List<String> outIds,String outFrom);
+
+    /**
+     * 根据订单编号批量查询SkuCode列表
+     * @param orderIds
+     * @return
+     */
+    Response<List<String>> findSkuCodesByOrderIds(List<Long> orderIds);
 }

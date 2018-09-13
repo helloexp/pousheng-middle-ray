@@ -14,8 +14,9 @@ public enum MiddleChannel {
     FENQILE("fenqile", "分期乐"),
     OFFICIAL("official", "官网"),
     SUNINGSALE("suning-sale", "苏宁特卖"),
-    YUNJUBBC("yunjubbc", "云聚"),
-    CODOON("codoon","咕咚");
+    YUNJUBBC("yunjubbc", "云聚BBC"),
+    CODOON("codoon","咕咚"),
+    YUNJUJIT("yunjujit", "云聚JIT");
 
     private final String value;
 

@@ -1,16 +1,7 @@
 package com.pousheng.middle.hksyc.dto;
 
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.io.BaseEncoding;
-import io.terminus.common.utils.JsonMapper;
-import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-
-import java.io.UnsupportedEncodingException;
 
 @Data
 @NoArgsConstructor
@@ -65,7 +56,19 @@ public class LogisticsInfo {
      */
     private Integer amount;
 
+    /**
+     * 到达时间
+     */
+    private String arrival_time;
 
+    /**
+     * 货运方式
+     */
+    private String delivery_method;
 
+    /**
+     * 箱号
+     */
+    private String box_no;
 
 }

@@ -11,6 +11,7 @@
         <result column="warehouse_id" property="warehouseId"/>
         <result column="shop_id" property="shopId"/>
         <result column="sku_code" property="skuCode"/>
+        <result column="sku_order_id" property="skuOrderId"/>
         <result column="context" property="context"/>
         <result column="type" property="type"/>
         <result column="created_at" property="createdAt"/>
@@ -27,11 +28,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shipment_id, warehouse_id, shop_id, sku_code, context, type, created_at, updated_at
+        shipment_id, warehouse_id, shop_id, sku_code, sku_order_id, context, type, created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shipmentId}, #{warehouseId}, #{shopId}, #{skuCode}, #{context}, #{type}, now(), now()
+        #{shipmentId}, #{warehouseId}, #{shopId}, #{skuCode}, #{skuOrderId}, #{context}, #{type}, now(), now()
     </sql>
 
 

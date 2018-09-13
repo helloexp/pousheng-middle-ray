@@ -28,6 +28,8 @@ import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.ShipmentItem;
+import io.terminus.parana.order.service.ShipmentItemReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -59,6 +61,8 @@ public class ShipmentReadLogic {
 
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
+    @RpcConsumer
+    private ShipmentItemReadService shipmentItemReadService;
     @Autowired
     private WarehouseCompanyRuleReadService warehouseCompanyRuleReadService;
     @Autowired
@@ -143,9 +147,9 @@ public class ShipmentReadLogic {
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setQuantity(skuOrder.getQuantity());
             if (skuOrder.getShipmentType()!=null&&Objects.equals(skuOrder.getShipmentType(),1)){
-                shipmentItem.setIsGift(true);
+                shipmentItem.setIsGift(Boolean.TRUE);
             }else{
-                shipmentItem.setIsGift(false);
+                shipmentItem.setIsGift(Boolean.FALSE);
             }
             SkuOrder originSkuOrder = (SkuOrder) orderReadLogic.findOrder(skuOrder.getId(),OrderLevel.SKU);
             //积分
@@ -170,13 +174,14 @@ public class ShipmentReadLogic {
             //商品id
             String outItemId="";
             try{
+                //商品属性
+                shipmentItem.setExtraJson(mapper.toJson(skuOrder.getSkuAttrs()));
                 outItemId =  orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.MIDDLE_OUT_ITEM_ID,skuOrder);
             }catch (Exception e){
                 log.info("outItemmId is not exist");
             }
             shipmentItem.setItemId(outItemId);
-            //商品属性
-            shipmentItem.setAttrs(skuOrder.getSkuAttrs());
+
             shipmentItems.add(shipmentItem);
         }
         shipmentPreview.setShipmentItems(shipmentItems);
@@ -236,7 +241,13 @@ public class ShipmentReadLogic {
             shipmentItem.setSkuPrice(refundItem.getSkuPrice());
             shipmentItem.setSkuDiscount(refundItem.getSkuDiscount());
             shipmentItem.setItemId(refundItem.getItemId());
-            shipmentItem.setAttrs(refundItem.getAttrs());
+
+            try {
+                shipmentItem.setExtraJson(mapper.toJson(refundItem.getAttrs()));
+            } catch (Exception e) {
+                log.error("attrs json is error {}", refundItem.getAttrs());
+            }
+
             shipmentItems.add(shipmentItem);
         }
         shipmentPreview.setShipmentItems(shipmentItems);
@@ -398,19 +409,25 @@ public class ShipmentReadLogic {
             log.error("shipment(id:{}) extra field is null",shipment.getId());
             throw new JsonResponseException("shipment.extra.is.null");
         }
+        // 如果明细对应的key:shipmentItemInfo 有内容则直接取,
+        // 否则根据发货单id去发货明细表取
         if(!extraMap.containsKey(TradeConstants.SHIPMENT_ITEM_INFO)){
             log.error("shipment(id:{}) extra not contain key:{}",shipment.getId(),TradeConstants.SHIPMENT_ITEM_INFO);
             throw new JsonResponseException("shipment.extra.item.info.null");
         }
-        List<ShipmentItem> shipmentItems = mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
-        List<ShipmentItem> shipmentItemList = Lists.newArrayList();
-        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
-        for (ShipmentItem shipmentItem:shipmentItems){
-            shipmentItem.setItemWarehouseId(shipmentExtra.getWarehouseId());
-            shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
-            shipmentItemList.add(shipmentItem);
+
+        if (StringUtils.isEmpty(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO))) {
+            return findByShipmentId(shipment.getId());
         }
-        return shipmentItemList;
+
+        List<ShipmentItem> list = mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
+        //添加发货仓库
+        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
+        for (ShipmentItem shipmentItem:list){
+            shipmentItem.setWarehouseId(shipmentExtra.getWarehouseId());
+//                shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
+        }
+        return list;
     }
 
 
@@ -589,7 +606,7 @@ public class ShipmentReadLogic {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
             skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
             skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-            skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+            skuCodeAndQuantity.setQuantity(shipmentItem.getOccupyQuantity() == null ? shipmentItem.getQuantity() : shipmentItem.getOccupyQuantity());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         return skuCodeAndQuantities;
@@ -696,20 +713,20 @@ public class ShipmentReadLogic {
             List<ShipmentItem> newShipmentItemList = Lists.newArrayList();
             //添加发货仓库
             for (ShipmentItem shipmentItem:shipmentItemList){
-                shipmentItem.setItemWarehouseId(shipmentExtra.getWarehouseId());
-                shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
+                shipmentItem.setWarehouseId(shipmentExtra.getWarehouseId());
+//                shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
                 newShipmentItemList.add(shipmentItem);
             }
             shipmentItems.addAll(newShipmentItemList);
         }
         //根据货品条码去重
-        Map<String,ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();
+        Map<Long,ShipmentItem> skuCodeShipmentItems = Maps.newHashMap();
         for (ShipmentItem shipmentItem:shipmentItems){
-            skuCodeShipmentItems.put(shipmentItem.getSkuCode(),shipmentItem);
+            skuCodeShipmentItems.put(shipmentItem.getSkuOrderId(),shipmentItem);
         }
         List<ShipmentItem> newShipmentItems = Lists.newArrayList();
-        for (String skuCode:skuCodeShipmentItems.keySet()){
-            newShipmentItems.add(skuCodeShipmentItems.get(skuCode));
+        for (Long skuOrderId:skuCodeShipmentItems.keySet()){
+            newShipmentItems.add(skuCodeShipmentItems.get(skuOrderId));
         }
         return newShipmentItems;
     }
@@ -729,5 +746,14 @@ public class ShipmentReadLogic {
         //获取订单下对应发货单的所有发货商品列表
         List<ShipmentItem> shipmentItems = this.getShipmentItemsForList(shipments);
         return shipmentItems;
+    }
+
+    public List<ShipmentItem> findByShipmentId(Long shipmentId){
+        Response<List<ShipmentItem>> r = shipmentItemReadService.findByShipmentId(shipmentId);
+        if (!r.isSuccess()){
+            log.error("find shipment item list by shipment id failed,shipmentId is {},caused by {}",shipmentId,r.getError());
+            throw new JsonResponseException("shipment.item.find.fail");
+        }
+        return r.getResult();
     }
 }

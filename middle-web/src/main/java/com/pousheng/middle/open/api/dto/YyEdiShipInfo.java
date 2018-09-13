@@ -43,6 +43,27 @@ public class YyEdiShipInfo {
     private String yjShipmentId;
 
     /**
+     * 到货时间
+     * 格式:yyyyMMddHHmmss
+     */
+    private String expectDate;
+
+    /**
+     * 发运方式编码
+     */
+    private String transportMethodCode;
+
+    /**
+     * 发货方式名称
+     */
+    private String transportMethodName;
+
+    /**
+     * 品牌
+     */
+    private String cardRemark;
+
+    /**
      * 详细发货情况
      */
     private List<ItemInfo> itemInfos;
@@ -70,6 +91,11 @@ public class YyEdiShipInfo {
          * 物流单号
          */
         private String shipmentSerialNo;
+
+        /**
+         * 箱号
+         */
+        private String boxNo;
 
         public String getSkuCode() {
             return skuCode;

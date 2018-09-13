@@ -20,6 +20,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.RefundReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;

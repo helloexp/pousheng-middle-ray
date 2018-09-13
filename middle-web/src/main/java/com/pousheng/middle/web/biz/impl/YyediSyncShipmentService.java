@@ -16,31 +16,33 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.OrderShipmentWriteService;
 import com.pousheng.middle.web.biz.CompensateBizService;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.common.utils.Splitters;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -85,6 +87,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
+    @RpcConsumer
+    private OrderShipmentReadService orderShipmentReadService;
+
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
         if (null == poushengCompensateBiz) {
@@ -102,12 +107,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
             return;
         }
         shipInfos.stream().forEach(a -> {
-            String shiopmentId = a.getShipmentId();
+            String shipmentId = a.getShipmentId();
             try {
                 this.oneBiz(a);
 
             } catch (Exception e) {
-                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shiopmentId, Throwables.getStackTraceAsString(e));
+                log.error("YyediSyncShipmentService. forEach shipInfos ({}) is error: {}", shipmentId, Throwables.getStackTraceAsString(e));
             }
 
         });
@@ -130,15 +135,28 @@ public class YyediSyncShipmentService implements CompensateBizService {
         Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
         //检查是否是部分发货
         List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
+
         Boolean partShip = Boolean.FALSE;
+        Map<String,String> boxNoMap=null;
         if (yyEdiShipInfo.getItemInfos() != null) {
+            //构造箱号数据
+            boxNoMap = yyEdiShipInfo.getItemInfos().stream().
+                collect(
+                    Collectors.toMap(
+                        YyEdiShipInfo.ItemInfo::getSkuCode,
+                        YyEdiShipInfo.ItemInfo::getBoxNo)
+                );
+
             Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
                     .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));
+            //查询订单来源 以区分是否是JIT渠道的大订单
+            ShopOrder order = queryShopOrder(shipmentId);
+            if (order == null) {
+                throw new BizException("failed to query shop order");
+            }
+            boolean fromJit = MiddleChannel.YUNJUJIT.getValue().equals(order.getOutFrom());
             for (ShipmentItem s : items) {
-                if (s.getQuantity() > itemMap.get(s.getSkuCode())) {
-                    partShip = Boolean.TRUE;
-                }
-                s.setShipQuantity(itemMap.get(s.getSkuCode()));
+                assignShipmentQuantity(s, itemMap, fromJit, partShip);
             }
         }else{
             for (ShipmentItem s : items) {
@@ -170,6 +188,14 @@ public class YyediSyncShipmentService implements CompensateBizService {
         shipmentExtra.setRemark(null);
         shipmentExtra.setShipmentSerialNo(yyEdiShipInfo.getShipmentSerialNo());
         shipmentExtra.setShipmentCorpCode(yyEdiShipInfo.getShipmentCorpCode());
+
+        //增加jit新增字段
+        shipmentExtra.setExpectDate(yyEdiShipInfo.getExpectDate());
+        shipmentExtra.setTransportMethodCode(yyEdiShipInfo.getTransportMethodCode());
+        shipmentExtra.setTransportMethodName(yyEdiShipInfo.getTransportMethodName());
+        shipmentExtra.setCardRemark(yyEdiShipInfo.getCardRemark());
+        shipmentExtra.setBoxNoMap(boxNoMap);
+
         if (Objects.isNull(yyEdiShipInfo.getWeight())) {
             shipmentExtra.setWeight(0L);
         } else {
@@ -208,5 +234,53 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     }
 
+    /**
+     * 根据发货单号反查订单信息
+     *
+     * @param shipmentId
+     * @return
+     */
+    private ShopOrder queryShopOrder(Long shipmentId) {
+        Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipmentId);
+        if (!orderShipmentResponse.isSuccess() || orderShipmentResponse.getResult() == null) {
+            throw new BizException("failed to query order shipment.");
+        }
+        SkuOrder skuOrderInfo = (SkuOrder)orderReadLogic.findOrder(orderShipmentResponse.getResult().getOrderId(),
+            OrderLevel.SKU);
+        if (skuOrderInfo == null) {
+            throw new BizException("failed to query sku order");
+        }
+        return orderReadLogic.findShopOrderById(skuOrderInfo.getOrderId());
+    }
+
+    /**
+     * 分配发货数量给sku
+     * @param item
+     * @param quantityMap
+     * @param fromJit
+     * @param partShip
+     */
+    private void assignShipmentQuantity(ShipmentItem item, Map<String, Integer> quantityMap, boolean fromJit,
+                                        boolean partShip) {
+        Integer shipmentQuantity = quantityMap.get(item.getSkuCode());
+        //JIT发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
+        if (fromJit) {
+            if (item.getQuantity() > shipmentQuantity) {
+                partShip = Boolean.TRUE;
+                item.setShipQuantity(shipmentQuantity);
+                //设置剩下的总数为0
+                quantityMap.put(item.getSkuCode(), 0);
+            } else {
+                item.setShipQuantity(item.getQuantity());
+                //设置总数为减去已分配过的数量
+                quantityMap.put(item.getSkuCode(), shipmentQuantity - item.getQuantity());
+            }
+        } else {
+            if (item.getQuantity() > quantityMap.get(item.getSkuCode())) {
+                partShip = Boolean.TRUE;
+            }
+            item.setShipQuantity(quantityMap.get(item.getSkuCode()));
+        }
+    }
 
 }

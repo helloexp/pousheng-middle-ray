@@ -3,9 +3,7 @@ package com.pousheng.middle.web.biz.impl;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.dispatch.component.DispatchComponent;
-import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -22,12 +20,11 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.center.shop.OpenShopCacher;
-import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -37,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import static com.pousheng.middle.constants.Constants.IS_CARE_STOCK;
 
 /**
  * Created with IntelliJ IDEA

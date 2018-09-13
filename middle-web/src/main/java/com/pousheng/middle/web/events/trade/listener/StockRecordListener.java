@@ -6,7 +6,6 @@ import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.hksyc.dto.item.HkSkuStockInfo;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.model.StockRecordLog;
 import com.pousheng.middle.order.service.StockRecordLogWriteService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
@@ -18,8 +17,8 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.parana.order.enums.ShipmentWay;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ShipmentReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -94,12 +93,12 @@ public class StockRecordListener {
         }
         List<ShipmentItem> shipmentItemList = shipmentReadLogic.getShipmentItems(shipment);
         for (ShipmentItem shipmentItem : shipmentItemList) {
-            recordLog(warehouseId, shipmentItem.getSkuCode(), shopId, shipmentId, type);
+            recordLog(warehouseId, shipmentItem.getSkuCode(), shipmentItem.getSkuOrderId(), shopId, shipmentId, type);
         }
     }
 
 
-    public void recordLog (Long warehouseId, String skuCode, Long shopId, Long shipmentId, String type) {
+    public void recordLog (Long warehouseId, String skuCode, Long skuOrderId, Long shopId, Long shipmentId, String type) {
         List<Long> warehouseIds = Lists.newArrayList();
         warehouseIds.add(warehouseId);
         List<String> skuCodes = Lists.newArrayList();
@@ -111,6 +110,7 @@ public class StockRecordListener {
         stockRecordLog.setWarehouseId(warehouseId);
         stockRecordLog.setShopId(shopId);
         stockRecordLog.setSkuCode(skuCode);
+        stockRecordLog.setSkuOrderId(skuOrderId);
         stockRecordLog.setContext(context);
         stockRecordLog.setType(type);
         Response<Long> res = stockRecordLogWriteService.create(stockRecordLog);

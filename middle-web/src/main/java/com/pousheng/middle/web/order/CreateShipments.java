@@ -2,7 +2,6 @@ package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.item.enums.ShopType;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dto.ShipmentItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
 import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
@@ -21,7 +20,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;

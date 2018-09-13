@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.dto;
 
+import io.terminus.parana.order.model.ShipmentItem;
 import lombok.Data;
 
 import java.io.Serializable;

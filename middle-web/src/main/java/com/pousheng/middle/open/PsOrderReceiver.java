@@ -22,12 +22,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.OrderWriteLogic;
-import com.pousheng.middle.web.order.component.PoushengGiftActivityReadLogic;
-import com.pousheng.middle.web.order.component.PsGiftActivityStrategy;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -48,11 +43,7 @@ import io.terminus.parana.order.dto.RichOrder;
 import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.RichSkusByShop;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.Invoice;
-import io.terminus.parana.order.model.ReceiverInfo;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.InvoiceWriteService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShopOrderReadService;
@@ -65,6 +56,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -75,6 +67,7 @@ import java.util.Objects;
 /**
  * Created by cp on 7/25/17
  */
+@Primary
 @Component
 @Slf4j
 public class PsOrderReceiver extends DefaultOrderReceiver {

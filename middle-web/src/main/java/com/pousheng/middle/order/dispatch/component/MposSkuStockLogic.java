@@ -27,6 +27,8 @@ import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
@@ -70,6 +72,7 @@ public class MposSkuStockLogic {
      * @param shipment 发货单信息
      * @param withSafe 是否使用安全库存
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public Response<Boolean> lockStock(Shipment shipment, Boolean withSafe){
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
         return this.lockStock(dispatchOrderItemInfo, withSafe);

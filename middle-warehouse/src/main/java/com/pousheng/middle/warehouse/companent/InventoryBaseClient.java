@@ -25,7 +25,7 @@ public class InventoryBaseClient {
 
     private final String host;
 
-    public static final int HttpTime = 3000;
+    public static final int HttpTime = 5000;
 
     @Autowired
     public InventoryBaseClient(@Value("${gateway.inventory.host}") String host) {

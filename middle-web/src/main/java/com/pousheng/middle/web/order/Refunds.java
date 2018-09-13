@@ -720,6 +720,21 @@ public class Refunds {
         return num;
     }
 
+    @RequestMapping(value = "/api/refund/max/refund/fee",method = RequestMethod.GET,produces = MediaType.APPLICATION_JSON_VALUE)
+    public int maxRefundFee(@RequestParam(value = "list") String list){
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-MAXREFUNDFEE-START param: list [{}]", list);
+        }
+        List<RefundFeeData> refundFeeDatas = JsonMapper.nonEmptyMapper().fromJson(list, JsonMapper.nonEmptyMapper().createCollectionType(List.class,RefundFeeData.class));
+        int maxRefundFee = 0;
+        for (RefundFeeData refundFeeData:refundFeeDatas){
+            maxRefundFee += refundFeeData.getApplyQuantity()*refundFeeData.getCleanPrice();
+        }
+        if(log.isDebugEnabled()){
+            log.debug("API-REFUND-MAXREFUNDFEE-START param: list [{}] maxFee[{}]",list,maxRefundFee);
+        }
+        return maxRefundFee;
+    }
     /**
      * 修改订单的收货信息，主要是换货使用
      * @param id 售后单主键

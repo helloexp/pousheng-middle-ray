@@ -37,6 +37,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -55,6 +56,7 @@ import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -1771,12 +1773,14 @@ public class RefundWriteLogic {
             Paging<Refund> refundPaging = refundReadLogic.pagingForFix(middleRefundCriteria);
             List<Refund> refunds = refundPaging.getData();
             for (Refund refund : refunds) {
-                if (Objects.isNull(refund.getShipmentCorpCode())) {
+                Refund update = new Refund();
+                update.setId(refund.getId());
+                if (Strings.isNullOrEmpty(refund.getShipmentCorpCode())) {
                     RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
                     if (Objects.nonNull(refundExtra)) {
-                        refund.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
-                        refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
-                        this.update(refund);
+                        update.setShipmentCorpCode(refundExtra.getShipmentCorpCode());
+                        update.setShipmentSerialNo(refundExtra.getShipmentSerialNo());
+                        this.update(update);
                     }
                 }
             }

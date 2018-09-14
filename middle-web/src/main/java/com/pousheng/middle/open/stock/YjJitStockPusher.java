@@ -51,12 +51,18 @@ public class YjJitStockPusher{
     }
 
     private Table<String,Long,Long> calculate(Long shopId, Map<String,List<Long>> skuWareshouseIds, Map<String,WarehouseShopStockRule> warehouseShopStockRules){
-        //查询Jit占用库存
-            //查询Jit失效订单占用
-            //查询Jit拣货单发货单占用
+        //查询Jit占用库存 包括 查询Jit失效订单占用 和 查询Jit拣货单发货单占用
+        Table<String,Long,Long> occupyTable = stockPushLogic.getYjJitOccupyQty(shopId,skuWareshouseIds);
 
         //查询可用库存
         Table<String,Long,Long> stockTable = stockPushLogic.calculateYjStock(shopId,skuWareshouseIds, warehouseShopStockRules);
+
+        //累加可用库存和占用库存
+        occupyTable.cellSet().forEach(cell -> {
+            if(stockTable.contains(cell.getRowKey(),cell.getColumnKey())){
+                stockTable.put(cell.getRowKey(),cell.getColumnKey(),stockTable.get(cell.getRowKey(),cell.getColumnKey())+ cell.getValue());
+            }
+        });
 
         return stockTable;
     }

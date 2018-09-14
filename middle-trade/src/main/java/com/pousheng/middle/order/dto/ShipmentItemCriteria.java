@@ -41,7 +41,7 @@ public class ShipmentItemCriteria extends PagingCriteria implements Serializable
     /**
      * 条码
      */
-    private List<Long> skuCodes;
+    private List<String> skuCodes;
 
 
     /**

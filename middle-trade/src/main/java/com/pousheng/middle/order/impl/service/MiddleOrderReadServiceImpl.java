@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
 import com.pousheng.middle.order.impl.dao.SkuOrderExtDao;
+import com.pousheng.middle.order.model.SkuOrderLockStock;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import io.terminus.boot.rpc.common.annotation.RpcProvider;
 import io.terminus.common.model.Paging;
@@ -99,5 +100,25 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
     @Override
     public Response<List<String>> findSkuCodesByOrderIds(List<Long> orderIds) {
         return Response.ok(skuOrderExtDao.findSkuCodesByOrderIds(orderIds));
+    }
+
+    /**
+     * 查询云聚Jit时效订单sku_order 中占用的数量
+     * @param shopIds
+     * @param warehouseIds
+     * @param skuCodes
+     * @return
+     */
+    @Override
+    public Response<List<SkuOrderLockStock>> findOccupyQuantityList(List<Long> shopIds,
+                                                           List<Long> warehouseIds, List<String> skuCodes){
+        try {
+            return Response.ok(skuOrderExtDao.queryOccupyQuantityList(shopIds,warehouseIds,skuCodes));
+        }catch (Exception e){
+            log.error("failed to find shop orders by shopIds:{},warehouseIds:{},skuCodes:{}, cause:{}",
+                    shopIds,warehouseIds,skuCodes,Throwables.getStackTraceAsString(e));
+            return Response.fail("failed.to.find.shop.orders");
+        }
+
     }
 }

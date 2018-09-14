@@ -16,7 +16,10 @@ import com.pousheng.middle.open.stock.yunju.dto.StockPushLogStatus;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockInfo;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockRequest;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
+import com.pousheng.middle.order.dto.ShipmentItemCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.model.SkuOrderLockStock;
+import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.enums.ShopOpeningStatus;
@@ -36,6 +39,8 @@ import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
 import com.pousheng.middle.web.item.cacher.WarehouseGroupRuleCacher;
 import com.pousheng.middle.web.middleLog.dto.StockLogDto;
 import com.pousheng.middle.web.middleLog.dto.StockLogTypeEnum;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.redis.RedisQueueProvider;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -48,6 +53,7 @@ import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -135,6 +141,8 @@ public class StockPusherLogic {
     private WarehouseGroupRuleCacher warehouseGroupRuleCacher;
     @Autowired
     private ItemGroupCacher itemGroupCacher;
+    @Autowired
+    private ShipmentReadLogic shipmentReadLogic;
 
 
     private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
@@ -142,6 +150,9 @@ public class StockPusherLogic {
 
     @Autowired
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
+
+    @Autowired
+    private MiddleOrderReadService middleOrderReadService;
 
 
     @Autowired
@@ -382,6 +393,10 @@ public class StockPusherLogic {
      */
     public void appendYjRequest(List<YjStockInfo> yunjuStockInfoList, Table<String,Long,Long> stocks) {
         int lineNo=1;
+        if(Objects.isNull(stocks)){
+            log.error("appendYjRequest parameter stocks is null");
+            return;
+        }
 
         Set<Table.Cell<String,Long,Long>> cells = stocks.cellSet();
         for(Table.Cell<String,Long,Long> cell:cells){
@@ -423,8 +438,8 @@ public class StockPusherLogic {
         String companyCode = openShop.getExtra().get("companyCode");
 
         skuCodes.forEach(skuCode ->{
-            skuWareshouseIds.put(skuCode, queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode));
-            //skuWareshouseIds.put(skuCode, warehouseIds); //todo
+            //skuWareshouseIds.put(skuCode, queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode));
+            skuWareshouseIds.put(skuCode, warehouseIds); //todo
         });
 
         return skuWareshouseIds;
@@ -440,8 +455,8 @@ public class StockPusherLogic {
     public List<String> filterShopSkuGroup(Long shopId, List<String> skuCodes) {
         //根据商品分组规则判断该店铺是否运行售卖此SKU
         return skuCodes.stream().filter(skuCode ->{
-                    return queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
-                    //return true; //todo
+                    //return queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
+                    return true; //todo
                 }
                 ).collect(Collectors.toList());
     }
@@ -640,5 +655,62 @@ public class StockPusherLogic {
             log.error("can not find yunju jit shop");
         }
         return resp.getResult();
+    }
+
+    /*
+     * @Description 查询云聚Jit订单占用的库存
+     * @Date        2018/9/14
+     * @param       shopId
+     * @param       skuWareshouseIds
+     * @return
+     */
+    public Table<String,Long,Long> getYjJitOccupyQty(Long shopId,
+                                                     Map<String,List<Long>> skuWareshouseIds){
+        Table<String,Long,Long> occupyTable = HashBasedTable.create();
+
+        List<Long> shopIds = Arrays.asList(shopId);
+        List<String> skuCodes =  Lists.newArrayList(skuWareshouseIds.keySet());
+        List<Long> warehouseIds = Lists.newArrayList();
+        skuWareshouseIds.values().forEach(item -> warehouseIds.addAll(item));
+        List<SkuOrderLockStock> skuOrderLockStocks= Lists.newArrayList();
+
+        if(CollectionUtils.isEmpty(shopIds) || CollectionUtils.isEmpty(skuCodes) || CollectionUtils.isEmpty(warehouseIds)){
+            return occupyTable;
+        }
+
+        Response<List<SkuOrderLockStock>> orderResp = middleOrderReadService.findOccupyQuantityList(shopIds,warehouseIds,skuCodes);
+        if(!orderResp.isSuccess()){
+            log.error("failed to search Jit order for shopIds ({}) warehouseIds ({}) skuCodes ({}), cause:{}",shopIds,warehouseIds,skuCodes,orderResp.getError());
+        }else{
+            orderResp.getResult();
+        }
+
+        ShipmentItemCriteria criteria = new ShipmentItemCriteria();
+        criteria.setShopIds(shopIds);
+        criteria.setSkuCodes(skuCodes);
+        criteria.setWarehouseIds(warehouseIds);
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.findShipmentItems(criteria);
+
+        skuWareshouseIds.forEach((skuCode,wareIds) -> {
+            wareIds.forEach(wareId -> {
+                List<Integer> qtys = Lists.newArrayList();
+                skuOrderLockStocks.forEach(skuOrderLockStock -> {
+                    if(Objects.equals(skuCode, skuOrderLockStock.getSkuCode()) && Objects.equals(wareId,skuOrderLockStock.getWarehouseId())){
+                        qtys.add(skuOrderLockStock.getQuantity());
+                    }
+                });
+                shipmentItems.forEach(shipmentItem -> {
+                    if(Objects.equals(skuCode, shipmentItem.getSkuCode()) && Objects.equals(wareId,shipmentItem.getWarehouseId())){
+                        qtys.add(shipmentItem.getQuantity());
+                    }
+                });
+
+                if(CollectionUtils.isEmpty(qtys)){
+                    return;
+                }
+                occupyTable.put(skuCode,wareId,new Long(qtys.stream().mapToInt(Integer::intValue).sum()));
+            });
+        });
+        return occupyTable;
     }
 }

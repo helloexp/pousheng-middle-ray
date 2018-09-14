@@ -1,6 +1,8 @@
 package com.pousheng.middle.order.service;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
+import com.pousheng.middle.order.model.SkuOrderLockStock;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.parana.order.model.Invoice;
@@ -64,4 +66,14 @@ public interface MiddleOrderReadService {
      * @return
      */
     Response<List<String>> findSkuCodesByOrderIds(List<Long> orderIds);
+
+    /**
+     * 查询云聚Jit时效订单sku_order 中占用的数量
+     * @param shopIds
+     * @param warehouseIds
+     * @param skuCodes
+     * @return
+     */
+    public Response<List<SkuOrderLockStock>> findOccupyQuantityList(List<Long> shopIds,
+                                                           List<Long> warehouseIds, List<String> skuCodes);
 }

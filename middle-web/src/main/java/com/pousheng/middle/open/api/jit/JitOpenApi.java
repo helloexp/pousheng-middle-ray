@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api.jit;
 
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.manager.JitOrderManager;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -38,6 +39,31 @@ public class JitOpenApi {
 
     @Autowired
     private EventBus eventBus;
+
+    @Autowired
+    private JitOrderManager jitOrderManager;
+
+    /**
+     * 保存时效的订单
+     * @param orderInfo
+     * @return
+     */
+    @OpenMethod(key="push.out.rt.order.api",paramNames = {"orderInfo"},httpMethods = RequestMethod.POST)
+    public OPResponse<String> saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo){
+        try {
+            OpenFullOrderInfo fullOrderInfo=JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(orderInfo,OpenFullOrderInfo.class);
+            //参数验证
+            OPResponse<String> validateResponse=validateParam(orderInfo);
+            if(!validateResponse.isSuccess()){
+                return validateResponse;
+            }
+            jitOrderManager.handleRealTimeOrder(fullOrderInfo);
+        } catch (Exception e) {
+            log.error("failed to save jit realtime order.param:{}",orderInfo,e);
+            return OPResponse.fail("failed.save.jit.realtime.order",e.getMessage());
+        }
+        return OPResponse.ok();
+    }
 
     /**
      * 保存推送的订单

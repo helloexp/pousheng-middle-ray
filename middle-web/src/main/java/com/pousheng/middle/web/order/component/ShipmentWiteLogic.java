@@ -300,7 +300,8 @@ public class ShipmentWiteLogic {
                 }
             }
             //店铺发货
-            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
+            if (orderReadLogic.isAllChannelOpenShop(shipment.getShopId()) && Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)
+                    &&flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_ALL_CHANNEL_SHIPMENT.toOrderOperation())) {
                 log.info("cancel all channel shipment,shipment id is {}", shipment.getId());
                 MposResponse res = null;
                 if (orderReadLogic.isNewAllChannelOpenShop(shipment.getShopId())) {

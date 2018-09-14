@@ -305,9 +305,9 @@ public class MiddleFlowBook {
 
             //==========mpos逆向流程补充
             //待接单 -->取消发货 --> 已取消
-            addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
+          /*  addTransition(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
                     MiddleOrderEvent.CANCEL_SHIP.toOrderOperation(),
-                    MiddleShipmentsStatus.CANCELED.getValue());
+                    MiddleShipmentsStatus.CANCELED.getValue());*/
 
             //===========正向流程
             //待同步hk -->同步hk -> 同步中

@@ -2,11 +2,9 @@ package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.component.OpenOrderConverter;
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
-import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -30,7 +28,7 @@ import java.util.List;
  * @author: yjc
  * @date: 2018/8/28下午2:26
  */
-@CompensateAnnotation(bizType = PoushengCompensateBizType.OUT_OPEN_ORDER)
+//@CompensateAnnotation(bizType = PoushengCompensateBizType.OUT_OPEN_ORDER)
 @Service
 @Slf4j
 public class OpenOrderService implements CompensateBizService {

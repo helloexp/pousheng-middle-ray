@@ -10,20 +10,12 @@ import com.google.common.hash.Hashing;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
-import com.pousheng.middle.yyedisyc.component.SycYYEdiOrderCancelApi;
-import com.pousheng.middle.yyedisyc.component.SycYYEdiRefundOrderApi;
-import com.pousheng.middle.yyedisyc.dto.YJErpResponse;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.order.dto.OpenFullOrder;
-import io.terminus.open.client.order.dto.OpenFullOrderAddress;
-import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.junit.Test;
-import sun.misc.BASE64Encoder;
 
 import java.util.List;
 import java.util.Map;
@@ -347,6 +339,31 @@ public class PoushengYJErpTest {
             JSONObject data = JSONObject.parseObject(responseObj.getString("data"));
             System.out.print(data.getString("order_sn"));
         }
+    }
+
+
+    @Test
+    public void doSyncShipmentOrder(){
+
+        WmsShipmentInfo requestData=new WmsShipmentInfo();
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
+
+        WmsShipmentInfoRequest request = new WmsShipmentInfoRequest();
+        request.setBizContent(requestData);
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
+        log.info("sync shipment to yyedi erp paramJson:{}",paramJson);
+        String gateway ="https://esbt.pousheng.com/common/pserp/wms/wmsjitdeliver";
+        String responseBody = HttpRequest.post(gateway)
+            .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
+            .header("serialNo",serialNo)
+            .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+            .contentType("application/json")
+            .trustAllHosts().trustAllCerts()
+            .send(paramJson)
+            .connectTimeout(10000).readTimeout(10000)
+            .body();
+
+        log.info("sync shipment to yyedi erp result:{}",responseBody);
     }
 
 }

@@ -126,6 +126,17 @@ public class OpenOrderConverter {
             // 渠道代码
             extra.put(ExtraKeyConstant.CHANNEL_CODE, order.getChannelCode());
 
+            //预计出/入库日期
+            extra.put(ExtraKeyConstant.EXPECT_DATE,order.getExpectDate());
+            //发运编码
+            extra.put(ExtraKeyConstant.TRANSPORT_METHOD_CODE,order.getTransportMethodCode());
+            //发运方式
+            extra.put(ExtraKeyConstant.TRANSPORT_METHOD_NAME,order.getTransportMethodName());
+            //品牌
+            extra.put(ExtraKeyConstant.CARD_REMARK,order.getCardRemark());
+            //时效订单号
+            extra.put(ExtraKeyConstant.REALTIME_ORDER_IDS,order.getRealtimeOrderIds());
+
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);
             }

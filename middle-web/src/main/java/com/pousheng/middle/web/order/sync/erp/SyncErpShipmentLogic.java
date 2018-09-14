@@ -12,6 +12,7 @@ import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.yjerp.SyncYJErpShipmentLogic;
+import com.pousheng.middle.web.order.sync.yyedi.SyncWmsShipmentLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -24,11 +25,8 @@ import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 
@@ -63,6 +61,9 @@ public class SyncErpShipmentLogic {
     @Autowired
     private WarehouseClient warehouseClient;
 
+    @Autowired
+    private SyncWmsShipmentLogic syncWmsShipmentLogic;
+
 
     /**
      * 根据配置渠道确定将发货单同步到hk还是订单派发中心
@@ -92,7 +93,11 @@ public class SyncErpShipmentLogic {
             case "hk":
                 return syncShipmentLogic.syncShipmentToHk(shipment);
             case "yyEdi":
-                return syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
+                if (MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom())) {
+                    return syncWmsShipmentLogic.syncShipmentToWms(shipment);
+                } else {
+                    return syncYYEdiShipmentLogic.syncShipmentToYYEdi(shipment);
+                }
             default:
                 log.error("can not find sync erp type,openShopId is {}", shopOrder.getShopId());
                 return Response.fail("find.open.shop.extra.erp.sync.type.fail");

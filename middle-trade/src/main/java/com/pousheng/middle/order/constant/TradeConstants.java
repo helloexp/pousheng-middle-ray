@@ -297,4 +297,9 @@ public class TradeConstants {
     public static final String REJECT_SHIPMENT_OCCUPY_LIST="rejectShipmentOccupyList";
     //有备注的订单处理标识
     public static final String ORDER_NOTE_PROCESS_FLAG="orderNoteProcessFlag";
+
+    /**
+     * 云聚JIT单据类型
+     */
+    public static final String YUN_JU_JIT_BILL_TYPE="Sal_Ship";
 }

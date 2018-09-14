@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -506,22 +505,7 @@ public class SyncYYEdiShipmentLogic {
         WarehouseDTO warehouse = rW.getResult();
         List<YYEdiShipmentItem> items = Lists.newArrayListWithCapacity(shipmentItems.size());
 
-        boolean isJitOrder=fromJit(shipmentDetail.getShopOrder());
-        Map<String,Integer> skuQuantityMap=Maps.newHashMap();
-        //如果是jit拣货单 则根据sku-code合并计算数量
-        if(isJitOrder) {
-            skuQuantityMap = caculateSkuQuantity(shipmentItems);
-        }
-        //记录已经处理过的sku-code 避免重复
-        Map<String,Boolean> existSku=Maps.newHashMap();
-
         for (ShipmentItem shipmentItem : shipmentItems) {
-            //如果是JIT拣货单 且已经处理过了 就直接跳过。
-            if (isJitOrder
-                && existSku.containsKey(shipmentItem.getSkuCode())
-                && existSku.get(shipmentItem.getSkuCode())) {
-                continue;
-            }
             YYEdiShipmentItem item = new YYEdiShipmentItem();
             //公司内码
             item.setCompanyCode(warehouse.getCompanyCode());
@@ -556,14 +540,6 @@ public class SyncYYEdiShipmentLogic {
             //中台尺码id
             String sizeId = extraMaps.get(TradeConstants.HK_SIZE_ID);
             item.setSizeCode(sizeId);
-
-            //如果是jit拣货单 则取合并过的数量
-            if (isJitOrder) {
-                item.setExpectQty(skuQuantityMap.get(shipmentItem.getSkuCode()));
-                existSku.put(shipmentItem.getSkuCode(),Boolean.TRUE);
-            } else {
-                item.setExpectQty(shipmentItem.getQuantity());
-            }
 
             //销售单价(减去所有的优惠(优惠需要按比例计算))
             item.setBalaPrice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
@@ -636,26 +612,6 @@ public class SyncYYEdiShipmentLogic {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
         }
-    }
-
-    /**
-     * 是否是云聚JIT订单
-     * @param order
-     * @return
-     */
-    private boolean fromJit(ShopOrder order){
-        return MiddleChannel.YUNJUJIT.getValue().equals(order.getOutFrom());
-    }
-
-    /**
-     * 根据skucode合并数量
-     * @param shipmentItems
-     * @return
-     */
-    private Map<String,Integer> caculateSkuQuantity(List<ShipmentItem> shipmentItems){
-        //stream 实现
-        return shipmentItems.stream().collect(
-            Collectors.groupingBy(ShipmentItem::getSkuCode,Collectors.summingInt(ShipmentItem::getOccupyQuantity)));
     }
 
 }

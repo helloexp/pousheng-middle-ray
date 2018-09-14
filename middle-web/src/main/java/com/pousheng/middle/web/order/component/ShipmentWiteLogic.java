@@ -238,13 +238,17 @@ public class ShipmentWiteLogic {
         }
 
         Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+
+        log.info("shipment current status {}, target status {}", shipment.getStatus(), targetStatus);
+
+
         Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(), targetStatus);
         if (!updateRes.isSuccess()) {
             log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(), targetStatus, shipment.getStatus(), updateRes.getError());
             return Response.fail(updateRes.getError());
         }
         if (log.isDebugEnabled()){
-            log.debug("ShipmentWiteLogic updateStatusLocking,shipment {},orderOperation {},result {}",shipment,orderOperation,Boolean.TRUE);
+            log.debug("ShipmentWiteLogic updateStatusLocking,shipment {}, current status {},orderOperation {},result {}",shipment, shipment.getStatus(),orderOperation,Boolean.TRUE);
         }
         return Response.ok(Boolean.TRUE);
 
@@ -304,14 +308,6 @@ public class ShipmentWiteLogic {
                 if (!syncRes.isSuccess()) {
                     log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
                     throw new JsonResponseException(syncRes.getError());
-                }
-                else {
-                    // 直接更新为取消
-                    Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation());
-                    if (!cancelRes.isSuccess()) {
-                        log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
-                        throw new JsonResponseException(cancelRes.getError());
-                    }
                 }
             }
             //店铺发货

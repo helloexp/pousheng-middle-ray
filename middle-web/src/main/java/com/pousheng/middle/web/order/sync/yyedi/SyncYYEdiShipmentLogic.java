@@ -161,6 +161,7 @@ public class SyncYYEdiShipmentLogic {
             }
 
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
+
             shipment.setStatus(targetStatus);//塞入最新的状态*/
 
             List<YYEdiCancelInfo> reqeustData = new ArrayList<>();

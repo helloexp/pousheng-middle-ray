@@ -21,5 +21,6 @@ import java.util.Map;
 public class YjStockRequest implements Serializable {
 
     private static final long serialVersionUID = 6693766962801255789L;
+    String serialno;
     List<YjStockInfo> stockInfo;
 }

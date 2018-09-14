@@ -9,8 +9,12 @@ import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Response;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -35,21 +39,18 @@ import java.util.List;
 @Api(description = "云聚库存更新")
 public class YjStockPushReceiptApi {
     private static final String YJ_ERROR_CODE_SUCESS = "0";
-    private YjStockReceiptRequest request;
     @Autowired
     private MiddleStockPushLogWriteService middleStockPushLogWriteService;
 
     @ApiOperation("云聚库存更新回执")
     @RequestMapping(value = "/receipt", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OpenMethod(key = "yj.stock.push.receipt.api", paramNames = {"result"}, httpMethods = RequestMethod.POST)
-    public YjStockReceiptResponse receipt(@RequestBody YjStockReceiptRequest request){
-
+    public void receipt(@RequestBody YjStockReceiptRequest request){
+        log.info("YUN-JIT-STOCK-PUSH-RESULT-START, parameter:{}",request.toString());
         YjStockReceiptResponse resp = new YjStockReceiptResponse();
         List<StockPushLog> stockPushLogs = new ArrayList<>();
         try {
             String requestNo = request.getSerialNo();
-            request.getError();
-            request.getErrorInfo();
             List<StockItem> items = request.getItems();
             items.forEach(item -> {
                 StockPushLog pushLog = new StockPushLog();
@@ -63,16 +64,13 @@ public class YjStockPushReceiptApi {
                 stockPushLogs.add(pushLog);
             });
             middleStockPushLogWriteService.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
-
+        }catch (JsonResponseException | ServiceException e) {
+            log.error("failed to update yunju stock receipt,error:{}", e.getMessage());
+            throw new OPServerException(200,e.getMessage());
         }catch (Exception e){
             log.error("failed to update yunju stock receipt,cause:{} ",Throwables.getStackTraceAsString(e));
-            resp.setSuccess(Boolean.FALSE);
-            resp.setError("1");
-            resp.setMessage(e.getMessage());
-            return resp;
+            throw new OPServerException(200,e.getMessage());
         }
-        resp.setSuccess(Boolean.TRUE);
-        resp.setError(YJ_ERROR_CODE_SUCESS);
-        return resp;
+        log.info("YUN-JIT-STOCK-PUSH-RESULT-END");
     }
 }

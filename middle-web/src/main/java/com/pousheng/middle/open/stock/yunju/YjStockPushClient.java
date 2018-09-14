@@ -51,8 +51,8 @@ public class YjStockPushClient {
     @ApiOperation("推送云聚库存")
     @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<Boolean> syncStocks(@RequestBody String traceId,@RequestBody YjStockRequest request){
-        //String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
-
+        log.info("YUN-JIT-STOCK-PUSH-CLIENT-START, traceId:{} ,request:{} ",traceId, request.toString());
+        request.setSerialno(traceId);
         ObjectMapper mapper = new ObjectMapper();
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         //String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
@@ -67,8 +67,8 @@ public class YjStockPushClient {
                     .header("serialNo",traceId)
                     .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                     .contentType("application/json")
-                    //.trustAllHosts().trustAllCerts()
-                    .send(paramJson)
+                    .trustAllHosts().trustAllCerts()
+                     .send(paramJson)
                     .connectTimeout(10000).readTimeout(10000)
                     .body();
             log.info("rpc yunju stock push serialNo:{},responseBody={}",traceId,responseBody);

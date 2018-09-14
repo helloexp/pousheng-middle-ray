@@ -258,7 +258,7 @@ public class StockPusherLogic {
 
         Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailableInventory(requests,shopId);
         if (!getRes.isSuccess()) {
-            log.error("error to find available inventory quantity: shopId: {}, caused: {]",shopId, getRes.getError());
+            log.error("error to find available inventory quantity: shopId: {}, requests: {}, caused: {]",shopId, requests.toString(), getRes.getError());
             return null;
         }
         List<AvailableInventoryDTO> availableInventoryDTOs = getRes.getResult();
@@ -407,7 +407,7 @@ public class StockPusherLogic {
 
             WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
             String companyId= warehouse.getCompanyId();
-            String outCode = warehouse.getExtra().get("outCode");
+            String outCode = warehouse.getOutCode();
 
             if(!Objects.isNull(cacheStock) && availStock.intValue() == cacheStock.intValue()) {
                 return;

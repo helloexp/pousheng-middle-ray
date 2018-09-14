@@ -1,5 +1,6 @@
 package com.pousheng.middle.order.model;
 
+import lombok.Builder;
 import lombok.Data;
 
 import java.util.Date;

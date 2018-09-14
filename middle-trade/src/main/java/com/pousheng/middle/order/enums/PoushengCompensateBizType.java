@@ -74,7 +74,7 @@ public enum PoushengCompensateBizType {
     IMPORT_SHOP_SKU_RULE,
 
     /**
-     *
+     * 导入商品推送比例
      */
     IMPORT_ITEM_PUSH_RATIO,
 
@@ -96,6 +96,11 @@ public enum PoushengCompensateBizType {
     /**
      *
      */
-    JIT_BIG_ORDER
+    JIT_BIG_ORDER,
+
+    /**
+     * 批量导入商品供货规则
+     */
+    IMPORT_ITEM_SUPPLY_RULE
 
 }

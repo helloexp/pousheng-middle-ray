@@ -6,13 +6,11 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
-import com.pousheng.middle.warehouse.dto.InventoryDTO;
-import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.model.SkuInventory;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -302,6 +300,27 @@ public class InventoryClient {
             log.error("get available inventory fail, cause:{}",Throwables.getStackTraceAsString(e));
             return Response.fail(e.getMessage());
         }
+    }
+
+    /**
+     * 保存商品供货规则
+     */
+    public Response<Boolean> saveShopSkuSupplyRule(ShopSkuSupplyRuleCreateRequest request) {
+        try {
+            Boolean result = (Boolean) inventoryBaseClient.postJson("api/inventory/shop/sku/supply/rule/create", JsonMapper.nonEmptyMapper().toJson(request), Boolean.class);
+            return Response.ok(result);
+        } catch (Exception e) {
+            log.error("fail save shop sku supply rule by request:{}, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("save.sku.supply.rule.fail");
+        }
+    }
+
+    /**
+     * 保存商品供货规则 & 范围
+     */
+    public Response<Boolean> batchSaveShopSkuSupplyRule(ShopSkuSupplyRuleBatchCreateRequest request) {
+        Boolean result = (Boolean) inventoryBaseClient.postJson("api/inventory/shop/sku/supply/rule/batch/create", JsonMapper.nonEmptyMapper().toJson(request), Boolean.class);
+        return Response.ok(result);
     }
 
 }

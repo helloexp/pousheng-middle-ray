@@ -62,6 +62,7 @@ public class JitOpenApi {
      */
     @OpenMethod(key = "push.out.rt.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public OPResponse<String> saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
+        log.info("receive yj rt order info {}", orderInfo);
         try {
             OPResponse<OpenFullOrderInfo> basicVilidateResp = validateBaiscParam(orderInfo);
             if (!basicVilidateResp.isSuccess()) {
@@ -78,6 +79,7 @@ public class JitOpenApi {
             log.error("failed to save jit realtime order.param:{}", orderInfo, e);
             return OPResponse.fail("failed.save.jit.realtime.order", e.getMessage());
         }
+        log.info("receive yj rt order success");
         return OPResponse.ok();
     }
 
@@ -89,6 +91,7 @@ public class JitOpenApi {
      */
     @OpenMethod(key = "push.out.jit.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public OPResponse<String> saveOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
+        log.info("receive yj jit order info {}", orderInfo);
         try {
             OPResponse<OpenFullOrderInfo> basicVilidateResp = validateBaiscParam(orderInfo);
             if (!basicVilidateResp.isSuccess()) {
@@ -121,7 +124,7 @@ public class JitOpenApi {
                 HandleJITBigOrderEvent event = new HandleJITBigOrderEvent();
                 event.setId(response.getResult());
                 eventBus.post(event);
-                log.info("post event completed");
+                log.info("receive yj jit order success");
                 return OPResponse.ok("success");
             } else {
                 return OPResponse.fail("failed.save.jit.big.order");

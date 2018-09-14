@@ -14,7 +14,10 @@ public class ItemPushRatioAbnormalRecord {
     @ExportTitle("外部电商平台id")
     private String openShopId;
 
-    @ExportTitle("电商商品编号")
+    @ExportTitle("item")
+    private String channelItemId;
+
+    @ExportTitle("sku")
     private String channelSkuId;
 
     @ExportTitle("商品推送比例")

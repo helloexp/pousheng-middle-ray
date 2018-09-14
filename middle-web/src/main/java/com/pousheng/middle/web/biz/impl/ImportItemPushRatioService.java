@@ -11,7 +11,7 @@ import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
-import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
@@ -21,11 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Description: 异步处理 批量导入商品推送比例
@@ -79,30 +80,63 @@ public class ImportItemPushRatioService implements CompensateBizService {
             String[] str = list.get(i);
             String failReason = "";
             try {
-                if (StringUtils.isEmpty(str[0]) || StringUtils.isEmpty(str[1])) {
-                    failReason = "外部电商平台id/电商商品编号不可为空";
+                if (StringUtils.isEmpty(str[0])) {
+                    failReason = "外部电商平台id不可为空";
                     continue;
                 }
+                if ((StringUtils.isEmpty(str[1]) && StringUtils.isEmpty(str[2]))) {
+                    failReason = "item和sku不能同时为空";
+                    continue;
+                }
+
                 Integer ratio = null;
-                if (Objects.nonNull(str[2])) {
-                    ratio = Integer.valueOf(str[2].replace("\"", ""));
+                if (Objects.nonNull(str[3])) {
+                    ratio = Integer.valueOf(str[3].replace("\"", ""));
                     if (ratio <= 0 || ratio > 100) {
                         failReason = "商品推送比例必须为大于0，小于等于100的整数";
                         continue;
                     }
                 }
-                Response<Optional<ItemMapping>> itemMappingRes = mappingReadService.findByChannelSkuIdAndOpenShopId(str[1].replace("\"", ""), Long.valueOf(str[0].replace("\"", "")));
-                if (!itemMappingRes.isSuccess() || !itemMappingRes.getResult().isPresent()) {
-                    log.error("fail to find item-mapping by channelSkuId:{}, openShopId:{}, cause:{}", str[1], str[0], itemMappingRes.getError());
-                    failReason = "该商品映射不存在";
-                    continue;
-                }
-                ItemMapping itemMapping = itemMappingRes.getResult().get();
-                Response<Boolean> response = mappingWriteService.updatePushRatio(itemMapping.getId(), ratio);
-                if (!response.isSuccess() || !response.getResult()) {
-                    log.error("fail to update item-mapping(id:{}) ratio:{}", itemMapping.getId(), str[2]);
-                    failReason = "设置商品推送比例失败";
-                    continue;
+                // 如果sku不为空,设置sku比例，否则更新item下所有sku的比例
+                if (!StringUtils.isEmpty(str[2])) {
+                    Response<Optional<ItemMapping>> itemMappingRes = mappingReadService.findByChannelSkuIdAndOpenShopId(str[2].replace("\"", ""), Long.valueOf(str[0].replace("\"", "")));
+                    if (!itemMappingRes.isSuccess() || !itemMappingRes.getResult().isPresent()) {
+                        log.error("fail to find item-mapping by channelSkuId:{}, openShopId:{}, cause:{}", str[2], str[0], itemMappingRes.getError());
+                        failReason = "该商品映射不存在";
+                        continue;
+                    }
+                    ItemMapping itemMapping = itemMappingRes.getResult().get();
+                    Response<Boolean> response = mappingWriteService.updatePushRatio(itemMapping.getId(), ratio);
+                    if (!response.isSuccess() || !response.getResult()) {
+                        log.error("fail to update item-mapping(id:{}) ratio:{}", itemMapping.getId(), str[3]);
+                        failReason = "设置商品推送比例失败";
+                        continue;
+                    }
+                } else {
+                    Integer pageNo = 1;
+                    Integer pageSize = 20;
+                    while (true) {
+                        Response<Paging<ItemMapping>> pagingResponse = mappingReadService.findBy(Long.valueOf(str[0].replace("\"", "")), null, null, null, null, str[1].replace("\"", ""), null, pageNo, pageSize);
+                        if (!pagingResponse.isSuccess()) {
+                            log.error("fail to paging item-mapping by openShopId:{}, channel_item_id:{}", str[0], str[1]);
+                            break;
+                        }
+                        Paging<ItemMapping> paging = pagingResponse.getResult();
+                        List<ItemMapping> itemMappings = paging.getData();
+                        if (!CollectionUtils.isEmpty(itemMappings)) {
+                            List<Long> ids = itemMappings.stream().map(ItemMapping::getId).collect(Collectors.toList());
+                            Response<Boolean> bolResponse = mappingWriteService.batchpdatePushRatio(ids, ratio);
+                            if (!bolResponse.isSuccess()) {
+                                log.error("fail to batch update item-mapping(ids:{}) ratio:{}", ids, str[3]);
+                                failReason = "设置商品推送比例失败";
+                                break;
+                            }
+                        }
+                        if (itemMappings.size() < pageSize) {
+                            break;
+                        }
+                        pageNo++;
+                    }
                 }
             } catch (NumberFormatException nfe) {
                 failReason = "外部电商平台id/商品推送比例为空或不是整数";
@@ -115,10 +149,13 @@ public class ImportItemPushRatioService implements CompensateBizService {
                         record.setOpenShopId(str[0].replace("\"", ""));
                     }
                     if (!StringUtils.isEmpty(str[1])) {
-                        record.setChannelSkuId(str[1].replace("\"", ""));
+                        record.setChannelItemId(str[1].replace("\"", ""));
                     }
                     if (!StringUtils.isEmpty(str[2])) {
-                        record.setRatio(str[2].replace("\"", ""));
+                        record.setChannelSkuId(str[2].replace("\"", ""));
+                    }
+                    if (!StringUtils.isEmpty(str[3])) {
+                        record.setRatio(str[3].replace("\"", ""));
                     }
                     record.setFailReason(failReason);
                     helper.appendToExcel(record);

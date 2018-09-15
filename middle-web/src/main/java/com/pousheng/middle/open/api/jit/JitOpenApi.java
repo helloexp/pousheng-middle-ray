@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api.jit;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.manager.JitOrderManager;
@@ -20,6 +21,7 @@ import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.entity.OPResponse;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -61,26 +63,20 @@ public class JitOpenApi {
      * @return
      */
     @OpenMethod(key = "push.out.rt.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
-    public OPResponse<String> saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
+    public void saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
         log.info("receive yj rt order info {}", orderInfo);
+
+        OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
+        //参数验证
+        validateBaiscParam(fullOrderInfo);
+
         try {
-            OPResponse<OpenFullOrderInfo> basicVilidateResp = validateBaiscParam(orderInfo);
-            if (!basicVilidateResp.isSuccess()) {
-                return OPResponse.fail(basicVilidateResp.getError());
-            }
-            OpenFullOrderInfo fullOrderInfo = basicVilidateResp.getResult();
-            //参数验证
-            OPResponse<String> validateResponse = validateBaiscParam(fullOrderInfo);
-            if (!validateResponse.isSuccess()) {
-                return validateResponse;
-            }
             jitOrderManager.handleRealTimeOrder(fullOrderInfo);
         } catch (Exception e) {
-            log.error("failed to save jit realtime order.param:{}", orderInfo, e);
-            return OPResponse.fail("failed.save.jit.realtime.order", e.getMessage());
+            log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"failed.save.jit.realtime.order");
         }
-        log.info("receive yj rt order success");
-        return OPResponse.ok();
+        log.info("receive yj rt order:{} success",orderInfo);
     }
 
     /**
@@ -90,31 +86,26 @@ public class JitOpenApi {
      * @return
      */
     @OpenMethod(key = "push.out.jit.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
-    public OPResponse<String> saveOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
+    public void saveOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
         log.info("receive yj jit order info {}", orderInfo);
         try {
-            OPResponse<OpenFullOrderInfo> basicVilidateResp = validateBaiscParam(orderInfo);
-            if (!basicVilidateResp.isSuccess()) {
-                return OPResponse.fail(basicVilidateResp.getError());
-            }
-            OpenFullOrderInfo fullOrderInfo = basicVilidateResp.getResult();
+            OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
             //参数验证
-            OPResponse<String> validateResponse = validateBaiscParam(fullOrderInfo);
-            if (!validateResponse.isSuccess()) {
-                return validateResponse;
-            }
+             validateBaiscParam(fullOrderInfo);
             //验证时效订单是否存在
-            OPResponse<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);
-            if (!validateResponse.isSuccess()) {
-                return OPResponse.fail(realOrderValidateResp.getError());
+            Response<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);
+            if (!realOrderValidateResp.isSuccess()) {
+                log.error("valid jit order info:{} fail,error:{}",orderInfo,realOrderValidateResp.getError());
+                throw new OPServerException(200,realOrderValidateResp.getError());
             }
             List<String> skuCodes = fullOrderInfo.getItem().stream().
                 map(OpenFullOrderItem::getSkuCode).collect(Collectors.toList());
             //验证skuItem是否存在
-            OPResponse<String> skuItemValidateResp = validateSkuItemExist(realOrderValidateResp.getResult(),
+            Response<String> skuItemValidateResp = validateSkuItemExist(realOrderValidateResp.getResult(),
                 skuCodes);
             if (!skuItemValidateResp.isSuccess()) {
-                return OPResponse.fail(realOrderValidateResp.getError());
+                log.error("valid skus :{} is exist fail,",skuCodes,skuItemValidateResp.getError());
+                throw new OPServerException(200,skuItemValidateResp.getError());
             }
             //save to db
             Response<Long> response = saveDataToTask(orderInfo);
@@ -125,14 +116,13 @@ public class JitOpenApi {
                 event.setId(response.getResult());
                 eventBus.post(event);
                 log.info("receive yj jit order success");
-                return OPResponse.ok("success");
             } else {
-                return OPResponse.fail("failed.save.jit.big.order");
+                throw new OPServerException("failed.save.jit.big.order");
             }
 
         } catch (Exception e) {
-            log.error("failed to save jit big order.param:{}", orderInfo, e);
-            return OPResponse.fail("failed.save.jit.big.order", e.getMessage());
+            log.error("failed to save jit big order.param:{},cause:{}", orderInfo, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,"failed.save.jit.big.order");
         }
     }
 
@@ -150,12 +140,18 @@ public class JitOpenApi {
         return poushengCompensateBizWriteService.create(biz);
     }
 
-    protected OPResponse<OpenFullOrderInfo> validateBaiscParam(String orderInfo) {
+    protected OpenFullOrderInfo validateBaiscParam(String orderInfo) {
         if (StringUtils.isBlank(orderInfo)) {
-            return OPResponse.fail("orderInfo is required");
+            log.error("yj rt order info invalid is blank");
+            throw new OPServerException(200,"orderInfo is required");
         }
-        OpenFullOrderInfo result = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(orderInfo, OpenFullOrderInfo.class);
-        return OPResponse.ok(result);
+
+        try {
+            return JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(orderInfo, OpenFullOrderInfo.class);
+        } catch (Exception e){
+            log.error("trans order info json：{} to object fail,cause:{}",orderInfo, Throwables.getStackTraceAsString(e));
+            throw new OPServerException("order.info.invalid");
+        }
     }
 
     /**
@@ -164,23 +160,22 @@ public class JitOpenApi {
      * @param fullOrderInfo
      * @return
      */
-    protected OPResponse<String> validateBaiscParam(OpenFullOrderInfo fullOrderInfo) {
+    protected void validateBaiscParam(OpenFullOrderInfo fullOrderInfo) {
         if (fullOrderInfo == null) {
-            return OPResponse.fail("param orderInfo incorrect");
+            throw new OPServerException(200,"param orderInfo incorrect");
         }
         OpenFullOrder openFullOrder = fullOrderInfo.getOrder();
         if (Objects.isNull(openFullOrder)) {
-            return OPResponse.fail("openFullOrder.is.null");
+            throw new OPServerException(200,"openFullOrder.is.null");
         }
         List<OpenFullOrderItem> items = fullOrderInfo.getItem();
         if (Objects.isNull(items) || items.isEmpty()) {
-            return OPResponse.fail("openFullOrderItems.is.null");
+            throw new OPServerException(200,"openFullOrderItems.is.null");
         }
         OpenFullOrderAddress address = fullOrderInfo.getAddress();
         if (Objects.isNull(address)) {
-            return OPResponse.fail("openFullOrderAddress.is.null");
+            throw new OPServerException(200,"openFullOrderAddress.is.null");
         }
-        return OPResponse.ok();
     }
 
     /**
@@ -189,26 +184,26 @@ public class JitOpenApi {
      * @param fullOrderInfo
      * @return
      */
-    protected OPResponse<List<Long>> validateRealOrderIdsExist(OpenFullOrderInfo fullOrderInfo) {
+    protected Response<List<Long>> validateRealOrderIdsExist(OpenFullOrderInfo fullOrderInfo) {
         if (StringUtils.isBlank(fullOrderInfo.getOrder().getRealtimeOrderIds())) {
-            return OPResponse.fail("realtimeOrderIds is required");
+            return Response.fail("realtimeOrderIds is required");
         }
         List<String> outIds = Splitter.on(SymbolConsts.COMMA).trimResults().
             splitToList(fullOrderInfo.getOrder().getRealtimeOrderIds());
-        if(CollectionUtils.isEmpty(outIds)){
-            return OPResponse.fail("realtimeOrderIds is required");
+        if (CollectionUtils.isEmpty(outIds)){
+            return Response.fail("realtimeOrderIds is required");
         }
         Response<List<ShopOrder>> response = middleOrderReadService.findByOutIdsAndOutFrom(
             outIds, fullOrderInfo.getOrder().getChannelCode());
         if (response == null
             || !response.isSuccess()) {
-            return OPResponse.fail("failed.to.validate.realtime.orders");
+            return Response.fail("failed.to.validate.realtime.orders");
         }
         if (CollectionUtils.isEmpty(response.getResult())) {
-            return OPResponse.fail("realtimeOrderIds.not.exist");
+            return Response.fail("realtimeOrderIds.not.exist");
         }
         List<Long> orderIds = response.getResult().stream().map(ShopOrder::getId).collect(Collectors.toList());
-        return OPResponse.ok(orderIds);
+        return Response.ok(orderIds);
     }
 
     /**
@@ -218,21 +213,21 @@ public class JitOpenApi {
      * @param skuCodes
      * @return
      */
-    protected OPResponse<String> validateSkuItemExist(List<Long> orderIds, List<String> skuCodes) {
+    protected Response<String> validateSkuItemExist(List<Long> orderIds, List<String> skuCodes) {
         if (CollectionUtils.isEmpty(skuCodes)) {
-            return OPResponse.fail("sku is required");
+            return Response.fail("sku.code.is.required");
         }
         Response<List<String>> response = middleOrderReadService.findSkuCodesByOrderIds(orderIds);
-        if (response == null
-            || !response.isSuccess()) {
-            return OPResponse.fail("failed.to.validate.realtime.orders");
+        if (!response.isSuccess()) {
+            log.error("find sku code by order ids:{} fail,error:{}",orderIds,response.getError());
+            return Response.fail("failed.to.validate.realtime.orders");
         }
         for (String code : skuCodes) {
             if (response.getResult().contains(code)) {
                 String msg = MessageFormat.format("realorders not contain skuCode {0}", code);
-                return OPResponse.fail(msg);
+                return Response.fail(msg);
             }
         }
-        return OPResponse.ok();
+        return Response.ok();
     }
 }

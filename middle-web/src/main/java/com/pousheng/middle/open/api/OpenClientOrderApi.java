@@ -181,7 +181,7 @@ public class OpenClientOrderApi {
         if (Objects.isNull(openFullOrder.getChannel())){
             throw new ServiceException("channel.is.null");
         }
-        String outId = openFullOrder.getCompanyCode()+"-"+openFullOrder.getOutOrderId();
+        String outId = openFullOrder.getOutOrderId();
         String channel = openFullOrder.getChannel();
         Response<Optional<ShopOrder>>  rP = shopOrderReadService.findByOutIdAndOutFrom(outId,channel);
         if (!rP.isSuccess()){

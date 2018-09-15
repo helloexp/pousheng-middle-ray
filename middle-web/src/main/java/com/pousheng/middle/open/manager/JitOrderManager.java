@@ -253,7 +253,7 @@ public class JitOrderManager extends PsOrderReceiver {
         if (Objects.isNull(openFullOrder.getChannel())) {
             return OPResponse.fail("channel.is.null");
         }
-        String outId = openFullOrder.getCompanyCode() + SymbolConsts.MINUS + openFullOrder.getOutOrderId();
+        String outId = openFullOrder.getOutOrderId();
         String channel = openFullOrder.getChannel();
         Response<Optional<ShopOrder>> rP = shopOrderReadService.findByOutIdAndOutFrom(outId, channel);
         if (!rP.isSuccess()) {

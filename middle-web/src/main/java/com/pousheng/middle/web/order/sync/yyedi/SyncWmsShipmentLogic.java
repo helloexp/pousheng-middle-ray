@@ -17,8 +17,9 @@ import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.sync.constants.WmsShipmentResponseCode;
 import com.pousheng.middle.yyedisyc.component.SyncWmsShipmentOrderApi;
-import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
+import com.pousheng.middle.yyedisyc.dto.WmsResponse;
 import com.pousheng.middle.yyedisyc.dto.trade.WmsShipmentInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.WmsShipmentItem;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -103,8 +104,8 @@ public class SyncWmsShipmentLogic {
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);
             WmsShipmentInfo list = this.makeShipmentOrderDto(shipment,shipment.getType());
-            YYEdiResponse response  = JsonMapper.nonEmptyMapper().fromJson(syncWmsShipmentOrderApi.doSyncShipmentOrder(list),YYEdiResponse.class);
-            if (Objects.equals(response.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
+            WmsResponse response  = JsonMapper.nonEmptyMapper().fromJson(syncWmsShipmentOrderApi.doSyncShipmentOrder(list),WmsResponse.class);
+            if (Objects.equals(response.getCode(), WmsShipmentResponseCode.SUCCESS)){
                 //整体成功
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
@@ -119,7 +120,7 @@ public class SyncWmsShipmentLogic {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                return Response.fail(response.getFields().get(0).getErrorMsg());
+                return Response.fail(response.getReturnJson());
             }
         } catch (Exception e) {
             log.error("sync wms shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));

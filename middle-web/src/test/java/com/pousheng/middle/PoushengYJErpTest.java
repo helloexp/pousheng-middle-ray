@@ -7,6 +7,7 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
+import com.pousheng.middle.hksyc.dto.JitOrderReceiptRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
@@ -395,6 +396,30 @@ public class PoushengYJErpTest {
         //post("http://127.0.0.1:8092/api/gateway",params);
 
         post("http://middle-api-test.pousheng.com/api/gateway", params);
+    }
+
+
+    @Test
+    public void sendJitOrderReceipt(){
+        JitOrderReceiptRequest receiptRequest=new JitOrderReceiptRequest();
+        receiptRequest.setOrder_sn("302197428+103");
+        receiptRequest.setError_code(1);
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);;
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(receiptRequest);
+        log.info("send jit order receipt paramJson:{}",paramJson);
+        String gateway ="https://esbt.pousheng.com/common-yjerp/yjerp/default/pushmgorderdealreturn";
+        String responseBody = HttpRequest.post(gateway)
+            .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
+            .header("serialNo",serialNo)
+            .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+            .contentType("application/json")
+            .trustAllHosts()
+            .trustAllCerts()
+            .send(paramJson)
+            .connectTimeout(10000).readTimeout(10000)
+            .body();
+
+        log.info("send jit order receipt. result:{}",responseBody);
     }
 
 }

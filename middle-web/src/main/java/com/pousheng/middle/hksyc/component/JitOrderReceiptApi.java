@@ -22,6 +22,16 @@ public class JitOrderReceiptApi {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
+    /**
+     * 成功
+     */
+    public static final int SUCCESS=1;
+
+    /**
+     * 失败
+     */
+    public static final int FAILED=2;
+
     @Value("${gateway.hk.host}")
     private String hkGateway;
 

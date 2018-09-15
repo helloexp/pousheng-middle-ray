@@ -31,7 +31,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
-import java.text.MessageFormat;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -111,15 +110,6 @@ public class JitOpenApi {
                 log.error("valid jit order info:{} fail,error:{}",orderInfo,realOrderValidateResp.getError());
                 throw new OPServerException(200,realOrderValidateResp.getError());
             }
-            //List<String> skuCodes = fullOrderInfo.getItem().stream().
-            //    map(OpenFullOrderItem::getSkuCode).collect(Collectors.toList());
-            ////验证skuItem是否存在
-            //Response<String> skuItemValidateResp = validateSkuItemExist(realOrderValidateResp.getResult(),
-            //    skuCodes);
-            //if (!skuItemValidateResp.isSuccess()) {
-            //    log.error("valid skus :{} is exist fail,",skuCodes,skuItemValidateResp.getError());
-            //    throw new OPServerException(200,skuItemValidateResp.getError());
-            //}
             //save to db
             Response<Long> response = saveDataToTask(orderInfo);
             if (response.isSuccess()) {
@@ -217,30 +207,5 @@ public class JitOpenApi {
         }
         List<Long> orderIds = response.getResult().stream().map(ShopOrder::getId).collect(Collectors.toList());
         return Response.ok(orderIds);
-    }
-
-    /**
-     * 验证skucode是不是都被时效订单推送过来了
-     *
-     * @param orderIds
-     * @param skuCodes
-     * @return
-     */
-    protected Response<String> validateSkuItemExist(List<Long> orderIds, List<String> skuCodes) {
-        if (CollectionUtils.isEmpty(skuCodes)) {
-            return Response.fail("sku.code.is.required");
-        }
-        Response<List<String>> response = middleOrderReadService.findSkuCodesByOrderIds(orderIds);
-        if (!response.isSuccess()) {
-            log.error("find sku code by order ids:{} fail,error:{}",orderIds,response.getError());
-            return Response.fail("failed.to.validate.realtime.orders");
-        }
-        for (String code : skuCodes) {
-            if (response.getResult().contains(code)) {
-                String msg = MessageFormat.format("realorders not contain skuCode {0}", code);
-                return Response.fail(msg);
-            }
-        }
-        return Response.ok();
     }
 }

@@ -1,13 +1,5 @@
 package com.pousheng.middle.web.biz.impl;
 
-import com.pousheng.middle.order.enums.PoushengCompensateBizType;
-import com.pousheng.middle.order.model.PoushengCompensateBiz;
-import com.pousheng.middle.web.biz.CompensateBizService;
-import com.pousheng.middle.web.biz.Exception.BizException;
-import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
-import io.terminus.msg.common.StringUtil;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.hksyc.component.JitOrderReceiptApi;
@@ -16,12 +8,18 @@ import com.pousheng.middle.hksyc.dto.YJRespone;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.open.manager.RedisLockClient;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.web.biz.CompensateBizService;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
+import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.center.job.order.component.OrderExecutor;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -29,7 +27,9 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
 import java.util.List;
@@ -90,7 +90,7 @@ public class JitBigOrderService implements CompensateBizService {
         //发送回执
         JitOrderReceiptRequest request = new JitOrderReceiptRequest();
         request.setOrder_sn(outOrderId);
-        request.setError_code(0);
+        request.setError_code(JitOrderReceiptApi.SUCCESS);
         try {
             boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
             if (!lock) {
@@ -100,10 +100,10 @@ public class JitBigOrderService implements CompensateBizService {
             //handle jit big order
             handle(fullOrderInfo);
         } catch (Exception e) {
-            log.error("failed to handle JIT big order.param:{}", poushengCompensateBiz);
+            log.error("failed to handle JIT big order.param:{}", poushengCompensateBiz,e);
 //            throw new BizException("failed to handle JIT big order,cause by {}", e);
             // TODO只执行一次
-            request.setError_code(-100);
+            request.setError_code(JitOrderReceiptApi.FAILED);
 
         } finally {
             redisLockClient.unlock(key, ticket);

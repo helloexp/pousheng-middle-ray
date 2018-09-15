@@ -22,7 +22,7 @@ public class JitOrderReceiptRequest implements Serializable {
 
     /**
      * 错误码
-     * 0 代表成功 1 代表失败
+     * 1 成功 2 失败
      */
     private Integer error_code;
 

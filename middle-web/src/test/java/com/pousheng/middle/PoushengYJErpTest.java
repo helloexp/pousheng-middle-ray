@@ -34,7 +34,7 @@ public class PoushengYJErpTest {
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
 
-
+    private static final String SID = "PS_ERP_WMS_wmsjitdeliver";
     /**
      * 同步发货单到云聚ERP
      */
@@ -349,9 +349,12 @@ public class PoushengYJErpTest {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
 
         WmsShipmentInfoRequest request = new WmsShipmentInfoRequest();
+        request.setSid(SID);
+        String now = DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN));
+        request.setTranReqDate(now);
         request.setBizContent(requestData);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("sync shipment to yyedi erp paramJson:{}",paramJson);
+        log.info("sync shipment to wms erp paramJson:{}",paramJson);
         String gateway ="https://esbt.pousheng.com/common/pserp/wms/wmsjitdeliver";
         String responseBody = HttpRequest.post(gateway)
             .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
@@ -363,7 +366,35 @@ public class PoushengYJErpTest {
             .connectTimeout(10000).readTimeout(10000)
             .body();
 
-        log.info("sync shipment to yyedi erp result:{}",responseBody);
+        log.info("sync shipment to wms erp result:{}",responseBody);
+    }
+
+    @Test
+    public void aaa(){
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey", "pousheng");
+        params.put("pampasCall", "push.out.rt.order.api");
+
+        String str="{\"address\":{\"city\":\"北京市\",\"detail\":\"银河soho\",\"mobile\":\"13700000000\","
+            + "\"province\":\"北京\",\"receiveUserName\":\"唯品会\",\"region\":\"东城区\"},\"invoice\":{},"
+            + "\"item\":[{\"cleanFee\":1,\"cleanPrice\":1,\"discount\":0,\"originFee\":1,"
+            + "\"outSkuorderId\":\"308971541_886736621999\",\"quantity\":\"1\",\"skuCode\":\"886736621999\"}],"
+            + "\"order\":{\"buyerName\":\"唯品会\",\"channel\":\"yunjurt\",\"companyCode\":\"300\","
+            + "\"createdAt\":\"20180915100838\",\"fee\":1,\"isCareStock\":\"N\",\"isSyncHk\":\"N\",\"originFee\":1,"
+            + "\"originShipFee\":0,\"outOrderId\":\"308971541+40\",\"payType\":1,\"shipFee\":0,\"shipmentType\":1,"
+            + "\"shopCode\":\"11310202\",\"status\":1,\"stockId\":\"300-300000325\"}}";
+        params.put("orderInfo", str);
+
+
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+            .putString(toVerify, Charsets.UTF_8)
+            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+        params.put("sign", sign);
+
+        //post("http://127.0.0.1:8092/api/gateway",params);
+
+        post("http://middle-api-test.pousheng.com/api/gateway", params);
     }
 
 }

@@ -10,6 +10,7 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
 import com.pousheng.middle.web.events.trade.HandleJITBigOrderEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -69,16 +70,24 @@ public class JitOpenApi {
         OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
         //参数验证
         validateBaiscParam(fullOrderInfo);
-        OPResponse<String> response;
+        OPResponse<String> response =null;
         try {
-            response=jitOrderManager.handleRealTimeOrder(fullOrderInfo);
+            response = jitOrderManager.handleRealTimeOrder(fullOrderInfo);
 
+        } catch (JitUnlockStockTimeoutException juste) {
+            log.warn("lock stock timeout. try to save unlock task biz to recover stock.", orderInfo,
+                Throwables.getStackTraceAsString(juste));
+            jitOrderManager.saveUnlockInventoryTask(juste.getData());
         } catch (Exception e) {
-            log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"failed.save.jit.realtime.order");
+            log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200, "failed.save.jit.realtime.order");
         }
-        if(!response.isSuccess()){
-            throw new OPServerException(200,response.getError());
+        if (response == null
+            || !response.isSuccess()) {
+            log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo,
+                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(response));
+            throw new OPServerException(200, response.getError());
         }
         log.info("receive yj rt order:{} success",orderInfo);
     }
@@ -102,15 +111,15 @@ public class JitOpenApi {
                 log.error("valid jit order info:{} fail,error:{}",orderInfo,realOrderValidateResp.getError());
                 throw new OPServerException(200,realOrderValidateResp.getError());
             }
-            List<String> skuCodes = fullOrderInfo.getItem().stream().
-                map(OpenFullOrderItem::getSkuCode).collect(Collectors.toList());
-            //验证skuItem是否存在
-            Response<String> skuItemValidateResp = validateSkuItemExist(realOrderValidateResp.getResult(),
-                skuCodes);
-            if (!skuItemValidateResp.isSuccess()) {
-                log.error("valid skus :{} is exist fail,",skuCodes,skuItemValidateResp.getError());
-                throw new OPServerException(200,skuItemValidateResp.getError());
-            }
+            //List<String> skuCodes = fullOrderInfo.getItem().stream().
+            //    map(OpenFullOrderItem::getSkuCode).collect(Collectors.toList());
+            ////验证skuItem是否存在
+            //Response<String> skuItemValidateResp = validateSkuItemExist(realOrderValidateResp.getResult(),
+            //    skuCodes);
+            //if (!skuItemValidateResp.isSuccess()) {
+            //    log.error("valid skus :{} is exist fail,",skuCodes,skuItemValidateResp.getError());
+            //    throw new OPServerException(200,skuItemValidateResp.getError());
+            //}
             //save to db
             Response<Long> response = saveDataToTask(orderInfo);
             if (response.isSuccess()) {

@@ -163,6 +163,8 @@ public class SyncWmsShipmentLogic {
 
         WarehouseDTO warehouse = rW.getResult();
         WmsShipmentInfo shipmentInfo = new WmsShipmentInfo();
+        // 手工单号
+        shipmentInfo.setManualbillno(shopOrderExtra.get(ExtraKeyConstant.JIT_ORDER_ID));
         //公司内码
         shipmentInfo.setCompanycode(warehouse.getCompanyCode());
         //仓库
@@ -170,7 +172,7 @@ public class SyncWmsShipmentLogic {
         //仓库编码
         shipmentInfo.setInterstockcode(shopOrderExtra.get(ExtraKeyConstant.INTER_STOCK_CODE));
         ////仓库名称
-        //shipmentInfo.setInterstockname(warehouse.getWarehouseName());
+        shipmentInfo.setInterstockname(warehouse.getWarehouseName());
         //erp单号，中台发货单代码
         shipmentInfo.setBillno(String.valueOf(shipment.getShipmentCode()));
         //单据类型

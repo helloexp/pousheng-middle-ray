@@ -87,6 +87,10 @@ public class JitBigOrderService implements CompensateBizService {
         String key = MessageFormat.format(
                 CacheConsts.JITCacheKeys.ORDER_SYNC_LOCK_KEY_PATTERN,outOrderId);
         String ticket = UUID.randomUUID().toString();
+        //发送回执
+        JitOrderReceiptRequest request = new JitOrderReceiptRequest();
+        request.setOrder_sn(outOrderId);
+        request.setError_code(0);
         try {
             boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
             if (!lock) {
@@ -97,19 +101,17 @@ public class JitBigOrderService implements CompensateBizService {
             handle(fullOrderInfo);
         } catch (Exception e) {
             log.error("failed to handle JIT big order.param:{}", poushengCompensateBiz);
-            throw new BizException("failed to handle JIT big order,cause by {}", e);
+//            throw new BizException("failed to handle JIT big order,cause by {}", e);
+            // TODO只执行一次
+            request.setError_code(-100);
+
         } finally {
             redisLockClient.unlock(key, ticket);
         }
-        //发送回执
-        JitOrderReceiptRequest request = new JitOrderReceiptRequest();
-        request.setOrder_sn(outOrderId);
-        request.setError_code(0);
 
         YJRespone respone = jitOrderReceiptApi.sendReceipt(request);
         // 若回执发送失败 则创建补偿任务补发
-        if (respone != null ||
-                0 != respone.getError()) { //失败
+        if (respone != null && 0 != respone.getError()) { //失败
             //保存bizTask
             String task = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(request);
             saveReceiptTask(task);

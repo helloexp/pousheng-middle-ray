@@ -113,6 +113,8 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.ORDER_EXPRESS_NAME,order.getOrderHkExpressName());
             //bbc 物流号
             extra.put(ExtraKeyConstant.SHIPMENT_SERIAL_NO,order.getShipmentSerialNo());
+            // 拣货单号
+            extra.put(ExtraKeyConstant.JIT_ORDER_ID, order.getJitOrderId());
             // 客商编码
             extra.put(ExtraKeyConstant.VEND_CUST_Code, order.getVendCustCode());
             // 目的仓编码

@@ -804,6 +804,9 @@ public class Refunds {
     public Response<Boolean> confirmAfterSaleOccupyShipments(@PathVariable("refundId") @OperationLogParam Long refundId){
         Refund refund = refundReadLogic.findRefundById(refundId);
         List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        if (orderShipments.isEmpty()){
+            throw new JsonResponseException("no.exist.occupy.shipments");
+        }
         for (OrderShipment orderShipment:orderShipments){
             //修改发货单类型，并且同步订单派发中心或者mpos
             shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(orderShipment.getShipmentId(),ShipmentOccupyType.CHANGE_N.name());

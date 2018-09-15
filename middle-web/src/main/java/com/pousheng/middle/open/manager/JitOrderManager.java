@@ -7,7 +7,6 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.PsOrderReceiver;
 import com.pousheng.middle.open.component.OpenOrderConverter;
-import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -127,17 +126,10 @@ public class JitOrderManager extends PsOrderReceiver {
      */
     @Transactional
     public OPResponse<String> handleRealTimeOrder(OpenFullOrderInfo openFullOrderInfo) {
-        String shopCode;
-
-        if (MiddleChannel.YUNJUJIT.getValue().equals(openFullOrderInfo.getOrder().getChannel())) {
-            shopCode = openFullOrderInfo.getOrder()
+        String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
+            openFullOrderInfo.getOrder()
                 .getShopCode();
-        } else {
-            shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
-                openFullOrderInfo.getOrder()
-                    .getShopCode();
 
-        }
         //查询该渠道的店铺信息
         Long openShopId = validateOpenShop(shopCode);
         OpenShop openShop = openShopCacher.findById(openShopId);
@@ -298,6 +290,7 @@ public class JitOrderManager extends PsOrderReceiver {
         try {
             //发送http请求查询库存
             Response<List<AvailableInventoryDTO>> response = inventoryClient.getAvailableInventory(requests, shopId);
+            log.info("query available inventory.result:{}",JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(response));
             if (!response.isSuccess()) {
                 return false;
             }

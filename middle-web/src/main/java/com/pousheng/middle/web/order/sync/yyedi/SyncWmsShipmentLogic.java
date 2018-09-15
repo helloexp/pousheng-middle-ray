@@ -105,7 +105,7 @@ public class SyncWmsShipmentLogic {
             shipment.setStatus(targetStatus);
             WmsShipmentInfo list = this.makeShipmentOrderDto(shipment,shipment.getType());
             WmsResponse response  = JsonMapper.nonEmptyMapper().fromJson(syncWmsShipmentOrderApi.doSyncShipmentOrder(list),WmsResponse.class);
-            if (Objects.equals(response.getCode(), WmsShipmentResponseCode.SUCCESS)){
+            if (Objects.equals(response.getCode(), WmsShipmentResponseCode.SUCCESS.getCode())){
                 //整体成功
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);

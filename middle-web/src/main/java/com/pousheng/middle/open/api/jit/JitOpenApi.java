@@ -69,12 +69,16 @@ public class JitOpenApi {
         OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
         //参数验证
         validateBaiscParam(fullOrderInfo);
-
+        OPResponse<String> response;
         try {
-            jitOrderManager.handleRealTimeOrder(fullOrderInfo);
+            response=jitOrderManager.handleRealTimeOrder(fullOrderInfo);
+
         } catch (Exception e) {
             log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo, Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,"failed.save.jit.realtime.order");
+        }
+        if(!response.isSuccess()){
+            throw new OPServerException(200,response.getError());
         }
         log.info("receive yj rt order:{} success",orderInfo);
     }

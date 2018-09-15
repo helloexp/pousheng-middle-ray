@@ -124,7 +124,6 @@ public class JitOrderManager extends PsOrderReceiver {
      *
      * @param openFullOrderInfo 订单信息
      */
-    @Transactional
     public OPResponse<String> handleRealTimeOrder(OpenFullOrderInfo openFullOrderInfo) {
         String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
             openFullOrderInfo.getOrder()

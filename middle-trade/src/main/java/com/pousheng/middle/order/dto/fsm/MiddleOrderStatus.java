@@ -26,7 +26,9 @@ public enum MiddleOrderStatus {
 
     CANCEL_FAILED(-5, "取消失败"),                                     //取消失败
 
-    REVOKE_FAILED(-6, "撤销失败");                                     //撤销失败
+    REVOKE_FAILED(-6, "撤销失败"),                                    //撤销失败
+
+    JIT_STOCK_RELEASED(-7,"jit时效订单库存已释放");
 
     private final int value;
     private final String name;

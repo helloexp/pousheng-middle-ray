@@ -25,6 +25,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.channel.OpenClientChannel;
+import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
@@ -100,6 +101,9 @@ public class AdminOrderReader {
         if (StringUtils.isNotEmpty(middleOrderCriteria.getMobile())){
           middleOrderCriteria.setOutBuyerId(middleOrderCriteria.getMobile());
         }
+        //不显示jit时效订单来源
+        middleOrderCriteria.setExcludeOutFrom(JitConsts.YUNJU_REALTIME);
+
         Response<Paging<ShopOrder>> pagingRes =  middleOrderReadService.pagingShopOrder(middleOrderCriteria);
         if(!pagingRes.isSuccess()){
             return Response.fail(pagingRes.getError());

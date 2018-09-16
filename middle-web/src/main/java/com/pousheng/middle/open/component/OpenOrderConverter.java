@@ -16,6 +16,7 @@ import io.terminus.open.client.item.service.PushedItemReadService;
 import io.terminus.open.client.order.dto.*;
 import io.terminus.open.client.order.enums.OpenClientOrderPayType;
 import io.terminus.open.client.order.enums.OpenClientOrderStatus;
+import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.dto.fsm.OrderStatus;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -138,6 +139,8 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.CARD_REMARK,order.getCardRemark());
             //时效订单号
             extra.put(ExtraKeyConstant.REALTIME_ORDER_IDS,order.getRealtimeOrderIds());
+            //订单来源
+            extra.put(JitConsts.JIT_CHANNEL,order.getChannel());
 
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);

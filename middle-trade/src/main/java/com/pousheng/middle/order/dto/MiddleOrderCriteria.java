@@ -93,6 +93,16 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 处理状态
      */
     private Integer handleStatus;
+
+    /**
+     * 排除外部订单来源
+     */
+    private String excludeOutFrom;
+
+    /**
+     * 排除订单类型
+     */
+    private Integer excludeType;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */

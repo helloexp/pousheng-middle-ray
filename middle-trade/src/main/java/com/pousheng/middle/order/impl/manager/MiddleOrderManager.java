@@ -8,6 +8,7 @@ import com.pousheng.middle.order.model.ShopOrderExt;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.impl.dao.OrderReceiverInfoDao;
@@ -23,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
 
@@ -43,6 +45,8 @@ public class MiddleOrderManager {
     private OrderReceiverInfoDao orderReceiverInfoDao;
     @Autowired
     private ShopOrderExtDao shopOrderExtDao;
+
+    private static final JsonMapper mapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
 
     /**
      * 更新总单与子单的状态,适用于总单的取消和撤销流程
@@ -200,6 +204,34 @@ public class MiddleOrderManager {
 
     public Flow pickOrder() {
         return MiddleFlowBook.orderFlow;
+    }
+
+    /**
+     * 批量更新订单状态 适用于JIT时效订单
+     * @param shopOrderIds
+     * @param skuOrderIds
+     */
+    @Transactional
+    public void updateOrderStatus(List<Long> shopOrderIds,List<Long> skuOrderIds,Integer status){
+        String exceptionMsg;
+        boolean flag=false;
+        for(Long orderId:shopOrderIds){
+            flag=shopOrderDao.updateStatus(orderId,status);
+            if(!flag){
+                exceptionMsg= MessageFormat.format("failed to update shop order[{0}] to status[{1}].param:{2}",
+                    orderId,status,mapper.toJson(shopOrderIds));
+                throw new ServiceException(exceptionMsg);
+            }
+        }
+
+        for(Long skuOrderId:skuOrderIds){
+            flag=skuOrderDao.updateStatus(skuOrderId,status);
+            if(!flag){
+                exceptionMsg= MessageFormat.format("failed to update sku order[{0}] to status[{1}].param:{2}",
+                    skuOrderId,status,mapper.toJson(skuOrderIds));
+                throw new ServiceException(exceptionMsg);
+            }
+        }
     }
 
 }

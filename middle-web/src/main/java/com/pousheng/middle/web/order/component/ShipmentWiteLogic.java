@@ -152,7 +152,7 @@ public class ShipmentWiteLogic {
     private ShipmentItemWriteService shipmentItemWriteService;
 
     @Autowired
-    private JitOrderLogic jitOrderLogic;
+    private JitRealtimeOrderStockManager jitRealtimeOrderStockManager;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -777,7 +777,7 @@ public class ShipmentWiteLogic {
 
         //jit释放实效库存
         if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
-            jitOrderLogic.releaseRealtimeOrderInventory(shopOrder);
+            jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);
         }
 
         Map<String, String> extraMap = shipment.getExtra();

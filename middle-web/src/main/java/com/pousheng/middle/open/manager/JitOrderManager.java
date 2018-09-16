@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.PsOrderReceiver;
 import com.pousheng.middle.open.component.OpenOrderConverter;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -154,6 +155,9 @@ public class JitOrderManager extends PsOrderReceiver {
         }
         //组装参数
         OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+
+        //设置为jit时效订单类型
+        openClientFullOrder.setType(MiddleOrderType.JIT_REAL_TIME.getValue());
         //保存订单
         handleReceiveOrder(OpenClientShop.from(openShop), Lists.newArrayList(openClientFullOrder),
             warehouseDTO.getId());

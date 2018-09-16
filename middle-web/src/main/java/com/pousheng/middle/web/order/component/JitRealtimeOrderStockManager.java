@@ -4,6 +4,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -21,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.text.MessageFormat;
@@ -29,12 +32,12 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
- * JIT订单逻辑
+ * JIT时效订单库存
  * @author tanlongjun
  */
 @Slf4j
 @Component
-public class JitOrderLogic {
+public class JitRealtimeOrderStockManager {
 
     public static final JsonMapper mapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
 
@@ -50,7 +53,8 @@ public class JitOrderLogic {
     @Autowired
     private WarehouseCacher warehouseCacher;
 
-
+    @Autowired
+    private MiddleOrderManager middleOrderManager;
     /**
      * 释放实效订单库存
      * @param order jit订单
@@ -71,9 +75,24 @@ public class JitOrderLogic {
         //批量查询sku订单
         List<Long> orderIds=orderList.stream().map(ShopOrder::getId).collect(Collectors.toList());
         List<SkuOrder> skuOrderList=querySkuOrders(orderIds);
-        //释放库存
-        unlock(warehouseDTO.getId(),skuOrderList);
 
+        //更新状态并释放库存
+        handleReleaseLogic(warehouseDTO.getId(),orderIds,skuOrderList);
+    }
+
+    /**
+     * 更新状态并释放库存
+     * @param warehouseId
+     * @param shopOrderList
+     * @param skuOrderList
+     */
+    @Transactional
+    public void handleReleaseLogic(Long warehouseId,List<Long> shopOrderList,List<SkuOrder> skuOrderList){
+        List<Long> skuOrderIds=skuOrderList.stream().map(SkuOrder::getId).collect(Collectors.toList());
+        middleOrderManager.updateOrderStatus(shopOrderList,skuOrderIds,
+            MiddleOrderStatus.JIT_STOCK_RELEASED.getValue());
+        //释放库存
+        unlock(warehouseId,skuOrderList);
     }
 
     /**

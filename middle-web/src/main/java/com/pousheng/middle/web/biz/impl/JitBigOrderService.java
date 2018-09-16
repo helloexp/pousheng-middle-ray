@@ -111,7 +111,8 @@ public class JitBigOrderService implements CompensateBizService {
 
         YJRespone respone = jitOrderReceiptApi.sendReceipt(request);
         // 若回执发送失败 则创建补偿任务补发
-        if (respone != null && 0 != respone.getError()) { //失败
+        if (respone == null
+            || (respone != null && 0 != respone.getError())) { //失败
             //保存bizTask
             String task = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(request);
             saveReceiptTask(task);

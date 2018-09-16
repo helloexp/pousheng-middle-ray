@@ -56,7 +56,6 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -151,6 +150,9 @@ public class ShipmentWiteLogic {
     private ShipmentItemReadService shipmentItemReadService;
     @RpcConsumer
     private ShipmentItemWriteService shipmentItemWriteService;
+
+    @Autowired
+    private JitOrderLogic jitOrderLogic;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -772,6 +774,11 @@ public class ShipmentWiteLogic {
         // TODO
         // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
         convertShipmentItem(shopOrder, warehouseId, shipmentItems);
+
+        //jit释放实效库存
+        if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
+            jitOrderLogic.releaseRealtimeOrderInventory(shopOrder);
+        }
 
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));

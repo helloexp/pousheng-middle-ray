@@ -8,13 +8,11 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
-import com.pousheng.middle.order.dto.RejectShipmentOccupy;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentType;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
@@ -41,7 +39,6 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
-import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;
@@ -138,7 +135,8 @@ public class AdminOrderWriter {
             ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //同步到电商平台
             String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())){
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())
+                || Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
                 //同步到云聚
                 syncOrderToEcpLogic.syncToYunJu(shopOrder);
 

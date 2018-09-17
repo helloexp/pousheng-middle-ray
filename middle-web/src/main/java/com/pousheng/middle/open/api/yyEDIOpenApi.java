@@ -95,14 +95,14 @@ public class yyEDIOpenApi {
 
 
     /**
-     * yyEDI回传jit发货信息
+     * wsm回传jit发货信息
      * @param shipInfo
      */
     @OpenMethod(key = "jit.shipments.api", paramNames = {"shipInfo"}, httpMethods = RequestMethod.POST)
     public void receiveJitShipmentResult(String shipInfo) {
-        log.info("YYEDI-JIT-SHIPMENT-INFO-START param: shipInfo [{}]", shipInfo);
-        dealErpShipmentInfo(shipInfo);
-        log.info("YYEDI-JIT-SHIPMENT-INFO-END param: shipInfo [{}]", shipInfo);
+        log.info("WMS-JIT-SHIPMENT-INFO-START param: shipInfo [{}]", shipInfo);
+        dealWmsShipmentInfo(shipInfo);
+        log.info("WMS-JIT-SHIPMENT-INFO-END param: shipInfo [{}]", shipInfo);
     }
 
 
@@ -346,5 +346,166 @@ public class yyEDIOpenApi {
                 throw new JsonResponseException("refund.type.invalid");
         }
 
+    }
+
+    /**
+     *
+     * @param shipInfo wms 回调中台传回发货信息
+     */
+    public void dealWmsShipmentInfo (String shipInfo) {
+        List<YyEdiShipInfo> results = null;
+        List<YyEdiResponseDetail> fields = Lists.newArrayList();
+        List<YyEdiShipInfo> okShipInfos = Lists.newArrayList();
+        YyEdiResponse error = new YyEdiResponse();
+        try {
+            if (StringUtils.isEmpty(shipInfo)) {
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setErrorCode("-100");
+                field.setErrorMsg("发货信息空");
+                fields.add(field);
+                error.setFields(fields);
+                String reason = JsonMapper.nonEmptyMapper().toJson(error);
+                throw new OPServerException(200, reason);
+            }
+            results = JsonMapper.nonEmptyMapper().fromJson(shipInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YyEdiShipInfo.class));
+            fields = Lists.newArrayList();
+            int count = 0;
+            for (YyEdiShipInfo yyEdiShipInfo : results) {
+                try {
+                    String shipmentCode = yyEdiShipInfo.getShipmentId();
+                    Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
+
+                    validateWmsShipment(yyEdiShipInfo,fields);
+                    if (yyEdiShipInfo.getItemInfos() != null) {
+                        Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
+                        if (size == 0) {
+                            Map<String,String> extraMap = shipment.getExtra();
+                            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+                            shipmentExtra.setRemark("物流整单缺货");
+
+                            extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
+                            shipment.setExtra(extraMap);
+                            Response<Boolean> response = shipmentWriteService.update(shipment);
+                            if (!response.isSuccess()) {
+                                log.error("wms.shipments.api update shipment fail ,caused by {}", response.getError());
+                                throw new ServiceException(response.getError());
+                            }
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(yyEdiShipInfo.getYyEDIShipmentId());
+                            field.setErrorCode("-100");
+                            field.setErrorMsg("物流整单缺货");
+                            fields.add(field);
+                            count++;
+                            continue;
+                        }
+                    }
+                    //判断状态及获取接下来的状态
+                    Flow flow = flowPicker.pickShipments();
+                    OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
+                    if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+
+                        log.error("shipment(id={})'s status({}) not fit for ship",
+                            shipment.getId(), shipment.getStatus());
+                        if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())
+                            ||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
+                            ||Objects.equals(shipment.getStatus(),MiddleShipmentsStatus.CONFIRMED_FAIL.getValue())){
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(MoreObjects.firstNonNull(yyEdiShipInfo.getYyEDIShipmentId(), yyEdiShipInfo.getYjShipmentId()));
+                            field.setErrorCode("300");
+                            field.setErrorMsg("已经发货完成，请勿再次发货");
+                            fields.add(field);
+                        }else{
+                            YyEdiResponseDetail field = new YyEdiResponseDetail();
+                            field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                            field.setYyEdiShipmentId(MoreObjects.firstNonNull(yyEdiShipInfo.getYyEDIShipmentId(), yyEdiShipInfo.getYjShipmentId()));
+                            field.setErrorCode("400");
+                            field.setErrorMsg("发货单状态异常");
+                            fields.add(field);
+                        }
+                        count++;
+                        continue;
+                    }
+                    //校验成功，直接转存至okShipInfos
+                    okShipInfos.add(yyEdiShipInfo);
+                } catch (Exception e) {
+                    log.error("update shipment failed,shipment id is {},caused by {}", yyEdiShipInfo.getShipmentId(), Throwables.getStackTraceAsString(e));
+                    YyEdiResponseDetail field = new YyEdiResponseDetail();
+                    field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                    field.setYyEdiShipmentId(MoreObjects.firstNonNull(yyEdiShipInfo.getYyEDIShipmentId(), yyEdiShipInfo.getYjShipmentId()));
+                    field.setErrorCode("-100");
+                    field.setErrorMsg(e.getMessage());
+                    fields.add(field);
+                    count++;
+                    continue;
+
+                }
+                YyEdiResponseDetail field = new YyEdiResponseDetail();
+                field.setShipmentId(yyEdiShipInfo.getShipmentId());
+                field.setYyEdiShipmentId(MoreObjects.firstNonNull(yyEdiShipInfo.getYyEDIShipmentId(), yyEdiShipInfo.getYjShipmentId()));
+                field.setErrorCode("200");
+                field.setErrorMsg("");
+                fields.add(field);
+            }
+            if (CollectionUtils.isNotEmpty(okShipInfos)) {
+                Response<Long> response = receiveYyediResultLogic.createShipmentResultTask(okShipInfos);
+                if (!response.isSuccess()) {
+                    log.error("wms.shipments.api.createShipmentResultTask.failed,caused by {}", response.getError());
+                    throw new ServiceException("yyEDI.shipments.api.createShipmentResultTask.failed");
+                }
+            }
+            if (count > 0) {
+                throw new ServiceException("shipment.receive.shipinfo.failed");
+            }
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("wms shipment handle result to pousheng fail,error:{}", Throwables.getStackTraceAsString(e));
+            error.setFields(fields);
+            String reason = JsonMapper.nonEmptyMapper().toJson(error);
+            throw new OPServerException(200, reason);
+        } catch (Exception e) {
+            log.error("wms shipment handle result failed，caused by {}", Throwables.getStackTraceAsString(e));
+            error.setFields(fields);
+            String reason = JsonMapper.nonEmptyMapper().toJson(error);
+            throw new OPServerException(200, reason);
+        }
+    }
+
+    /**
+     * 验证报文必填字段
+     * @param shipInfo
+     * @param fields
+     */
+    private void validateWmsShipment(YyEdiShipInfo shipInfo,List<YyEdiResponseDetail> fields){
+        if(shipInfo==null){
+            throwValidateFailedException("",fields,"shipment info required");
+        }
+        if(StringUtils.isEmpty(shipInfo.getCardRemark())){
+            throwValidateFailedException("",fields,"cardRemark required");
+        }
+        if(StringUtils.isEmpty(shipInfo.getTransportMethodCode())){
+            throwValidateFailedException("",fields,"transportMethodCode required");
+        }
+        if(StringUtils.isEmpty(shipInfo.getTransportMethodName())){
+            throwValidateFailedException("",fields,"transportMethodName required");
+        }
+        if(StringUtils.isEmpty(shipInfo.getExpectDate())){
+            throwValidateFailedException("",fields,"expectDate required");
+        }
+    }
+
+    /**
+     * 抛报文验证失败异常
+     * @param shipmentId
+     * @param fields
+     * @param message
+     */
+    private void throwValidateFailedException(String shipmentId,List<YyEdiResponseDetail> fields,String message){
+        YyEdiResponseDetail field = new YyEdiResponseDetail();
+        field.setShipmentId(shipmentId);
+        field.setErrorCode("200");
+        field.setErrorMsg("");
+        fields.add(field);
+        throw new ServiceException(message);
     }
 }

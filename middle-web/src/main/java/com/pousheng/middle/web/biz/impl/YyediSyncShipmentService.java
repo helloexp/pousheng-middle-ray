@@ -35,8 +35,6 @@ import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -44,6 +42,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -141,11 +140,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
         if (yyEdiShipInfo.getItemInfos() != null) {
             //构造箱号数据
             boxNoMap = yyEdiShipInfo.getItemInfos().stream().
-                collect(
-                    Collectors.toMap(
-                        YyEdiShipInfo.ItemInfo::getSkuCode,
-                        YyEdiShipInfo.ItemInfo::getBoxNo)
-                );
+                collect(HashMap::new,(m,v)->m.put(v.getSkuCode(),v.getBoxNo()),HashMap::putAll);
 
             Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
                     .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));

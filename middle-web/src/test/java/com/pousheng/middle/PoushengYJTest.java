@@ -8,7 +8,6 @@ import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.pousheng.middle.open.api.dto.*;
 import com.pousheng.middle.order.dto.RefundItem;
-import com.pousheng.middle.order.dto.SubmitRefundInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
@@ -16,19 +15,14 @@ import io.terminus.open.client.order.dto.OpenFullOrder;
 import io.terminus.open.client.order.dto.OpenFullOrderAddress;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.open.client.order.dto.OpenFullOrderItem;
-import io.terminus.parana.constans.TradeConstants;
 import io.terminus.parana.order.model.ShipmentItem;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
-import org.springframework.util.Assert;
-import sun.nio.cs.UnicodeEncoder;
 
 import java.io.UnsupportedEncodingException;
-import java.net.URLDecoder;
-import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -431,6 +425,38 @@ public class PoushengYJTest {
         System.out.println(refundItem.getAttrs());
     }
 
+    @Test
+    public void testreceiveJitShipmentResult() {
 
+        Map<String, Object> params = Maps.newTreeMap();
+
+        params.put("appKey", "pousheng");
+        params.put("pampasCall", "jit.shipments.api");
+
+
+        YyEdiShipInfo yyEdiShipInfo = new YyEdiShipInfo();
+
+        yyEdiShipInfo.setWeight(100L);
+        yyEdiShipInfo.setShipmentCorpCode("STO");
+        yyEdiShipInfo.setYyEDIShipmentId("7777777");
+        yyEdiShipInfo.setShipmentSerialNo("yyedei777777");
+        yyEdiShipInfo.setShipmentDate(DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss").print(new DateTime()));
+        yyEdiShipInfo.setShipmentId("SHP102744"); //shipmentcode
+        ArrayList<YyEdiShipInfo> yyEdiShipInfos = Lists.newArrayList(yyEdiShipInfo);
+
+        String data = mapper.toJson(yyEdiShipInfos);
+        log.info("data:{}", data);
+        params.put("shipInfo", data);
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+            .putString(toVerify, UTF_8)
+            .putString("6a0e@93204aefe45d47f6e488", UTF_8).hash().toString();
+        params.put("sign", sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));
+
+        post("http://127.0.0.1:8092/api/gateway", params);
+
+    }
 
 }

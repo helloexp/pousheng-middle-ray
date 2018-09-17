@@ -21,6 +21,7 @@ import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
 import java.util.Map;
 import java.util.Objects;
 
@@ -107,7 +108,8 @@ public class EcpOrderLogic {
         //最后一个发货单发货完成之后需要将订单同步到电商
         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
-            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())){
+            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())
+                || Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())){
                 //同步到云聚
                 Response<Boolean> response = syncOrderToEcpLogic.syncToYunJu(shopOrder);
                 if (!response.isSuccess()){

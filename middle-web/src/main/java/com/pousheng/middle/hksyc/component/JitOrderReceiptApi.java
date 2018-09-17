@@ -49,7 +49,7 @@ public class JitOrderReceiptApi {
 
         String paramJson = JsonMapper.nonEmptyMapper().toJson(receiptRequest);
         log.info("sendReceipt to jit out order id:{} paramJson:{}", receiptRequest.getOrder_sn(),paramJson);
-        String uri = "/common-yjerp/yjerp/default/mgorderdealreturn";
+        String uri = "/common-yjerp/yjerp/default/pushmgorderdealreturn";
         String gateway = hkGateway + uri;
         String responseBody = null;
         try {
@@ -62,10 +62,10 @@ public class JitOrderReceiptApi {
                     .connectTimeout(1000000).readTimeout(1000000)
                     .body();
 
-            log.info("request jit mgorderdealreturn out order id:{}  responseBody={}",receiptRequest.getOrder_sn(), responseBody);
+            log.info("request jit pushmgorderdealreturn out order id:{}  responseBody={}",receiptRequest.getOrder_sn(), responseBody);
 
         } catch (Exception e) {
-            log.error("request jit mgorderdealreturn out order id:{} exception happens,exception={}",receiptRequest.getOrder_sn(), Throwables.getStackTrace(e));
+            log.error("request jit pushmgorderdealreturn out order id:{} exception happens,exception={}",receiptRequest.getOrder_sn(), Throwables.getStackTrace(e));
             return  null;
         }
         YJRespone response = JsonMapper.nonEmptyMapper().fromJson(responseBody, YJRespone.class);

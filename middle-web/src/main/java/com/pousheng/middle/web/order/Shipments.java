@@ -1117,8 +1117,6 @@ public class Shipments {
             shipmentItem.setRefundQuantity(0);
             // 实际发货数量
             shipmentItem.setShipQuantity(0);
-            // 实际发货占用数量
-            shipmentItem.setOccupyQuantity(shipmentItem.getQuantity());
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuOutId(skuOrder.getOutId());
@@ -1181,8 +1179,6 @@ public class Shipments {
             shipmentItem.setRefundQuantity(0);
             // 实际发货数量
             shipmentItem.setShipQuantity(0);
-            // 实际发货占用数量
-            shipmentItem.setOccupyQuantity(shipmentItem.getQuantity());
             shipmentItem.setSkuName(refundItem.getSkuName());
             //商品单价
             shipmentItem.setSkuPrice(refundItem.getSkuPrice());

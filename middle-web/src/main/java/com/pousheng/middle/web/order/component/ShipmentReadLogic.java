@@ -609,7 +609,7 @@ public class ShipmentReadLogic {
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
             skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
             skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-            skuCodeAndQuantity.setQuantity(shipmentItem.getOccupyQuantity() == null ? shipmentItem.getQuantity() : shipmentItem.getOccupyQuantity());
+            skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         return skuCodeAndQuantities;

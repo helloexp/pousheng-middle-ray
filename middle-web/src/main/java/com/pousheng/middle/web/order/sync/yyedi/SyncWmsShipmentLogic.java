@@ -350,7 +350,7 @@ public class SyncWmsShipmentLogic {
     private Map<String,Integer> caculateSkuQuantity(List<ShipmentItem> shipmentItems){
         //stream 实现
         return shipmentItems.stream().collect(
-            Collectors.groupingBy(ShipmentItem::getSkuCode,Collectors.summingInt(ShipmentItem::getOccupyQuantity)));
+            Collectors.groupingBy(ShipmentItem::getSkuCode,Collectors.summingInt(ShipmentItem::getQuantity)));
     }
 
 }

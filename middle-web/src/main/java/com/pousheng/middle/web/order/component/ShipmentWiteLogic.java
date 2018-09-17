@@ -666,12 +666,12 @@ public class ShipmentWiteLogic {
                 for (ShipmentItem it : shipmentItems) {
                     if (Objects.equals(key, it.getSkuCode())) {
                         if (quantity <= 0) {
-                            it.setOccupyQuantity(0);
+                            it.setQuantity(0);
                         }
                         else {
                             // 发货数量大于库存
                             if (it.getQuantity() > quantity) {
-                                it.setOccupyQuantity(quantity);
+                                it.setQuantity(quantity);
                             }
                             quantity = quantity - it.getQuantity();
                         }
@@ -1227,8 +1227,6 @@ public class ShipmentWiteLogic {
             shipmentItem.setRefundQuantity(0);
             // 实际发货数量
             shipmentItem.setShipQuantity(0);
-            // 实际发货占用数量
-            shipmentItem.setOccupyQuantity(shipmentItem.getQuantity());
             shipmentItem.setSkuOrderId(skuOrderId);
             shipmentItem.setSkuName(skuOrder.getItemName());
             shipmentItem.setSkuOutId(skuOrder.getOutId());

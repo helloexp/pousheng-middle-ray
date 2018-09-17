@@ -3,6 +3,7 @@ package com.pousheng.middle.web.order.sync.ecp;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.hksyc.component.SycYunJuShipmentOrderApi;
+import com.pousheng.middle.hksyc.component.SyncYunJuJitShipmentApi;
 import com.pousheng.middle.hksyc.dto.LogisticsInfo;
 import com.pousheng.middle.hksyc.dto.YJRespone;
 import com.pousheng.middle.hksyc.dto.YJSyncShipmentRequest;
@@ -57,6 +58,9 @@ public class SyncOrderToEcpLogic {
     private SkuOrderReadService skuOrderReadService;
     @Autowired
     private SycYunJuShipmentOrderApi sycYunJuShipmentOrderApi;
+
+    @Autowired
+    private SyncYunJuJitShipmentApi syncYunJuJitShipmentApi;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
@@ -325,7 +329,12 @@ public class SyncOrderToEcpLogic {
                     Map<String, String> extraMap = shipment.getExtra();
                     extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
                     shipment.setExtra(extraMap);
-                    YJRespone yjRespone = sycYunJuShipmentOrderApi.doSyncShipmentOrder(syncShipmentRequest);
+                    YJRespone yjRespone;
+                    if (MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom())) {
+                        yjRespone = syncYunJuJitShipmentApi.doSyncShipmentOrder(syncShipmentRequest);
+                    } else {
+                        yjRespone = sycYunJuShipmentOrderApi.doSyncShipmentOrder(syncShipmentRequest);
+                    }
                         // 去调用云聚接口
                         if (yjRespone != null&&0==yjRespone.getError()) { //成功
                             shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());

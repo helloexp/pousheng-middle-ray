@@ -8,12 +8,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.hash.Hashing;
 import com.pousheng.middle.hksyc.dto.JitOrderReceiptRequest;
+import com.pousheng.middle.hksyc.dto.YJSyncShipmentRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Throwables;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.junit.Test;
@@ -420,6 +422,35 @@ public class PoushengYJErpTest {
             .body();
 
         log.info("send jit order receipt. result:{}",responseBody);
+    }
+
+    @Test
+    public void doSyncJitShipmentOrder() {
+        YJSyncShipmentRequest syncShipmentRequest=new YJSyncShipmentRequest();
+        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
+
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(syncShipmentRequest);
+        log.info("doSyncShipmentOrder to yj jit order id:{} paramJson:{}", syncShipmentRequest.getOrder_sn(),paramJson);
+        String uri = "https://esbt.pousheng.com/common-yjerp/yjerp/default/pushmgviporderout";
+        String responseBody = null;
+        try {
+            responseBody = HttpRequest.post(uri)
+                .header("verifycode", "b82d30f3f1fc4e43b3f427ba3d7b9a50")
+                .header("serialNo", serialNo)
+                .header("sendTime", DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .contentType("application/json")
+                .trustAllHosts().trustAllCerts()
+                .send(paramJson)
+                .connectTimeout(1000000).readTimeout(1000000)
+                .body();
+
+            log.info("rpc yunju jit mgorderout out order id:{}  responseBody={}",syncShipmentRequest.getOrder_sn(), responseBody);
+
+        } catch (Exception e) {
+            log.error("rpc yunju jit mgorderout out order id:{} exception happens,exception={}",syncShipmentRequest.getOrder_sn(), Throwables
+                .getStackTrace(e));
+        }
+
     }
 
 }

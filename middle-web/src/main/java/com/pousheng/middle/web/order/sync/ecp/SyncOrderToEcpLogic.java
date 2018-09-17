@@ -184,6 +184,7 @@ public class SyncOrderToEcpLogic {
                     log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                     Response<Boolean> response = null;
                     if (!isTaobaoGiftShipmentOnly(shopOrder, shipmentItems)) {
+                        log.info("try ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
                         response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
                     } else {
                         response = Response.ok(Boolean.TRUE);

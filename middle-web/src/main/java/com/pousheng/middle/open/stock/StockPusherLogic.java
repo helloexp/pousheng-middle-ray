@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.jd.open.api.sdk.domain.Ware;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.open.stock.yunju.YjStockPushClient;
 import com.pousheng.middle.open.stock.yunju.dto.StockPushLogStatus;
@@ -223,9 +224,47 @@ public class StockPusherLogic {
                 pushLogs(logs);
             }
         } catch (ExecutionException e) {
-            e.printStackTrace();
+            log.error("failed to create stock push logs, cause{}",Throwables.getStackTraceAsString(e));
         }
     }
+
+    /**
+     * @Description 创建库存推送日志DTO
+     * @Date        2018/9/17
+     * @param       logs
+     * @param       requestNo
+     * @param       lineNo
+     * @param       skuCode
+     * @param       warehouseId
+     * @param       channelSkuId
+     * @param       stock
+     * @param       status
+     * @param       msg
+     * @return
+     */
+    public void createAndPushLogsForYunjuJIT(List<StockPushLog> logs,String requestNo, String lineNo, String skuCode, Long warehouseId, String channelSkuId, Long stock, Boolean status, String msg) {
+        try {
+            WarehouseDTO warehouseDTO = warehouseCacher.findById(warehouseId);
+            String outCode = warehouseDTO.getOutCode();
+            StockPushLog stockPushLog = new StockPushLog().lineNo(lineNo)
+                    .requestNo(requestNo)
+                    .shopId(warehouseId)
+                    .shopName(warehouseDTO.getWarehouseName())
+                    .outId(warehouseDTO.getWarehouseName())
+                    .skuCode(skuCode)
+                    .channelSkuId(channelSkuId)
+                    .quantity(stock)
+                    .status(status ? 1 : 2)
+                    .cause(msg).syncAt(new Date());
+            logs.add(stockPushLog);
+            if (!logs.isEmpty() && logs.size() % PUSH_SIZE == 0) {
+                pushLogs(logs);
+            }
+        } catch (Exception e) {
+            log.error("failed to create stock push logs, cause{}",Throwables.getStackTraceAsString(e));
+        }
+    }
+
 
     public void pushLogs(List<StockPushLog> logs) {
         log.info("start to push middle to shop stock log");
@@ -350,6 +389,10 @@ public class StockPusherLogic {
      * @return
      */
     public void sendToYj(List<YjStockInfo> yunjuStockInfoList){
+
+        if(log.isDebugEnabled()){
+            log.debug("send request({}) to yunju jit",yunjuStockInfoList.toString());
+        }
         this.executorService.submit(() -> {
             //List<StockPushLogEs> stockPushLogs = Lists.newArrayList();
             String traceId = UUID.randomUUID().toString().replace("-","");
@@ -371,9 +414,11 @@ public class StockPusherLogic {
 
                 List<StockPushLog> stockPushLogs = Lists.newArrayList();
                 yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                    this.createAndPushLogs(stockPushLogs,
+                    this.createAndPushLogsForYunjuJIT(stockPushLogs,
+                            traceId,
+                            yjStockInfo.getLineNo(),
                             yjStockInfo.getBarCode(),
-                            warehouseCacher.findByCode(yjStockInfo.getWarehouseCode()).getId(),
+                            warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode()).getId(),
                             null,
                             (long) yjStockInfo.getNum(),
                             resp.isSuccess(),
@@ -422,6 +467,7 @@ public class StockPusherLogic {
                     .build());
 
         }
+
     }
 
     /**
@@ -666,13 +712,17 @@ public class StockPusherLogic {
      */
     public Table<String,Long,Long> getYjJitOccupyQty(Long shopId,
                                                      Map<String,List<Long>> skuWareshouseIds){
+        if(log.isDebugEnabled()){
+            log.debug("query occupyed order occupied inventory ,parameter: shopId({shopid}),skuWareshouseIds(){} ",
+                    shopId,skuWareshouseIds.toString());
+        }
+
         Table<String,Long,Long> occupyTable = HashBasedTable.create();
 
         List<Long> shopIds = Arrays.asList(shopId);
         List<String> skuCodes =  Lists.newArrayList(skuWareshouseIds.keySet());
         List<Long> warehouseIds = Lists.newArrayList();
         skuWareshouseIds.values().forEach(item -> warehouseIds.addAll(item));
-        List<SkuOrderLockStock> skuOrderLockStocks= Lists.newArrayList();
 
         if(CollectionUtils.isEmpty(shopIds) || CollectionUtils.isEmpty(skuCodes) || CollectionUtils.isEmpty(warehouseIds)){
             return occupyTable;
@@ -682,7 +732,10 @@ public class StockPusherLogic {
         if(!orderResp.isSuccess()){
             log.error("failed to search Jit order for shopIds ({}) warehouseIds ({}) skuCodes ({}), cause:{}",shopIds,warehouseIds,skuCodes,orderResp.getError());
         }else{
-            orderResp.getResult();
+            if(log.isDebugEnabled()){
+                log.debug("query occupyed order occupied inventory , Jit order result is {} ",
+                        orderResp.getResult().toString());
+            }
         }
 
         ShipmentItemCriteria criteria = new ShipmentItemCriteria();
@@ -690,20 +743,28 @@ public class StockPusherLogic {
         criteria.setSkuCodes(skuCodes);
         criteria.setWarehouseIds(warehouseIds);
         List<ShipmentItem> shipmentItems = shipmentReadLogic.findShipmentItems(criteria);
+        if(log.isDebugEnabled()){
+            log.debug("query occupyed order occupied inventory , Jit shipment result is {} ",
+                    shipmentItems==null?null:shipmentItems.toString());
+        }
 
         skuWareshouseIds.forEach((skuCode,wareIds) -> {
             wareIds.forEach(wareId -> {
                 List<Integer> qtys = Lists.newArrayList();
-                skuOrderLockStocks.forEach(skuOrderLockStock -> {
-                    if(Objects.equals(skuCode, skuOrderLockStock.getSkuCode()) && Objects.equals(wareId,skuOrderLockStock.getWarehouseId())){
-                        qtys.add(skuOrderLockStock.getQuantity());
-                    }
-                });
-                shipmentItems.forEach(shipmentItem -> {
-                    if(Objects.equals(skuCode, shipmentItem.getSkuCode()) && Objects.equals(wareId,shipmentItem.getWarehouseId())){
-                        qtys.add(shipmentItem.getQuantity());
-                    }
-                });
+                if(orderResp.isSuccess()){
+                    orderResp.getResult().forEach(skuOrderLockStock -> {
+                        if (Objects.equals(skuCode, skuOrderLockStock.getSkuCode()) && Objects.equals(wareId, skuOrderLockStock.getWarehouseId())) {
+                            qtys.add(skuOrderLockStock.getQuantity());
+                        }
+                    });
+                }
+                if(!Objects.isNull(shipmentItems)) {
+                    shipmentItems.forEach(shipmentItem -> {
+                        if (Objects.equals(skuCode, shipmentItem.getSkuCode()) && Objects.equals(wareId, shipmentItem.getWarehouseId())) {
+                            qtys.add(shipmentItem.getQuantity());
+                        }
+                    });
+                }
 
                 if(CollectionUtils.isEmpty(qtys)){
                     return;
@@ -711,6 +772,10 @@ public class StockPusherLogic {
                 occupyTable.put(skuCode,wareId,new Long(qtys.stream().mapToInt(Integer::intValue).sum()));
             });
         });
+        if(log.isDebugEnabled()){
+            log.debug("query occupyed order occupied inventory ,result:{} ",
+                    occupyTable.toString());
+        }
         return occupyTable;
     }
 }

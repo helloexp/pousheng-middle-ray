@@ -31,7 +31,9 @@ public class StockPushLog implements Serializable {
     private int status;
     private String cause;
     private Long quantity;
+
     private String requestNo;
+
     private String lineNo;
     private Date syncAt;
     private Date createdAt;
@@ -147,6 +149,23 @@ public class StockPushLog implements Serializable {
 
     public StockPushLog channelSkuId(String channelSkuId) {
         this.channelSkuId = channelSkuId;
+        return this;
+    }
+
+    public String getRequestNo() {
+        return requestNo;
+    }
+
+    public StockPushLog requestNo(String requestNo) {
+        this.requestNo = requestNo;
+        return this;
+    }
+    public String getLineNo() {
+        return lineNo;
+    }
+
+    public StockPushLog lineNo(String lineNo) {
+        this.lineNo = lineNo;
         return this;
     }
 }

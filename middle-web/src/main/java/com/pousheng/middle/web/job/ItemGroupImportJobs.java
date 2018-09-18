@@ -89,6 +89,7 @@ public class ItemGroupImportJobs {
     /**
      * 每5分钟触发一次
      */
+    @RequestMapping("api/my/test")
     @Scheduled(cron = "0 0/5 * * * ?")
     public void synchronizeSpu() {
         log.info("START JOB ItemGroupImportJobs.synchronizeSpu");

@@ -484,8 +484,8 @@ public class StockPusherLogic {
         String companyCode = openShop.getExtra().get("companyCode");
 
         skuCodes.forEach(skuCode ->{
-            //skuWareshouseIds.put(skuCode, queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode));
-            skuWareshouseIds.put(skuCode, warehouseIds); //todo
+            skuWareshouseIds.put(skuCode, queryHkWarhouseOrShopStockApi.isVendibleWarehouse(skuCode, warehouseIds, companyCode));
+            //skuWareshouseIds.put(skuCode, warehouseIds); //todo
         });
 
         return skuWareshouseIds;
@@ -501,8 +501,8 @@ public class StockPusherLogic {
     public List<String> filterShopSkuGroup(Long shopId, List<String> skuCodes) {
         //根据商品分组规则判断该店铺是否运行售卖此SKU
         return skuCodes.stream().filter(skuCode ->{
-                    //return queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
-                    return true; //todo
+                    return queryHkWarhouseOrShopStockApi.isVendible(skuCode, shopId);
+                    //return true; //todo
                 }
                 ).collect(Collectors.toList());
     }

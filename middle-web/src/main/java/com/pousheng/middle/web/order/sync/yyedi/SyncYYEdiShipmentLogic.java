@@ -540,6 +540,7 @@ public class SyncYYEdiShipmentLogic {
             //中台尺码id
             String sizeId = extraMaps.get(TradeConstants.HK_SIZE_ID);
             item.setSizeCode(sizeId);
+            item.setExpectQty(shipmentItem.getQuantity());
 
             //销售单价(减去所有的优惠(优惠需要按比例计算))
             item.setBalaPrice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));

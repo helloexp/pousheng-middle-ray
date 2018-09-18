@@ -2027,6 +2027,8 @@ public class RefundWriteLogic {
             shipmentItem.setSkuPrice(refundItem.getSkuPrice());
             //商品积分
             shipmentItem.setIntegral(0);
+            //实际发货数量
+            shipmentItem.setShipQuantity(0);
             shipmentItem.setSkuDiscount(refundItem.getSkuDiscount());
             shipmentItem.setCleanFee(refundItem.getCleanFee());
             shipmentItem.setCleanPrice(refundItem.getCleanPrice());

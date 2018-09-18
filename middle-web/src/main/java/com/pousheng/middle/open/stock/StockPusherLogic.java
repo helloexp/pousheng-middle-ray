@@ -250,7 +250,7 @@ public class StockPusherLogic {
                     .requestNo(requestNo)
                     .shopId(warehouseId)
                     .shopName(warehouseDTO.getWarehouseName())
-                    .outId(warehouseDTO.getWarehouseName())
+                    .outId(warehouseDTO.getOutCode())
                     .skuCode(skuCode)
                     .channelSkuId(channelSkuId)
                     .quantity(stock)

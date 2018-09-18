@@ -108,43 +108,6 @@ public class OpenClientOrderApi {
         log.info("receive open orders end");
     }
 
-    /**
-     * 针对云聚jit类型长报文订单进行异步操作
-     * @param orderInfo
-     */
-    @OpenMethod(key = "push.out.open.order.api2", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
-    public void receiveOpenOrder(@NotEmpty String orderInfo){
-        log.info("receiveOpenOrder received yun ju jit open client order info param is {}",orderInfo);
-        List<OpenFullOrderInfo> orders = JsonMapper.nonEmptyMapper()
-                .fromJson(orderInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class,OpenFullOrderInfo.class));
-        if (CollectionUtils.isEmpty(orders)) {
-            log.error("request parameter string={} are illegal",orderInfo);
-            throw new OPServerException(200,"parameters are illegal");
-        }
-        for (OpenFullOrderInfo openFullOrderInfo:orders){
-            try{
-                //参数校验
-                this.validateParam(openFullOrderInfo);
-                //查询该渠道的店铺信息
-                String shopCode = openFullOrderInfo.getOrder().getCompanyCode()+"-"+openFullOrderInfo.getOrder().getShopCode();
-                this.validateOpenShop(shopCode);
-                Long openShopId =  this.validateOpenShop(shopCode);
-                OpenShop openShop = openShopCacher.findById(openShopId);
-                Map<String, String> openShopExtra = openShop.getExtra();
-                String isOrderInsertMiddle = openShopExtra.get(IS_ORDER_INSERT_MIDDLE);
-                //判断该订单是否需要存放到中台
-                if (StringUtils.isEmpty(isOrderInsertMiddle)||Objects.equals(isOrderInsertMiddle,"true")){
-                    //业务参数校验
-                    this.validateBusiParam(openFullOrderInfo);
-                    createOpenOrderTask(openFullOrderInfo);
-                }
-            }catch (Exception e){
-                log.error("create open  order:{} failed,caused by {}",orderInfo, Throwables.getStackTraceAsString(e));
-                throw new OPServerException(200,"create.middle.order.fail");
-            }
-        }
-    }
-
 
     /**
      * 参数校验
@@ -207,6 +170,9 @@ public class OpenClientOrderApi {
             throw new ServiceException("find.open.shop.failed");
         }
         List<OpenClientShop> openClientShops = rP.getResult();
+        if(CollectionUtils.isEmpty(openClientShops)) {
+            throw new OPServerException(200,"find.open.shop.fail");
+        }
         java.util.Optional<OpenClientShop> openClientShopOptional =  openClientShops.stream().findAny();
         OpenClientShop openClientShop =   openClientShopOptional.get();
         return openClientShop.getOpenShopId();

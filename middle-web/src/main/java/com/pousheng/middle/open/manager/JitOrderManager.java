@@ -34,6 +34,7 @@ import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.pampas.openplatform.entity.OPResponse;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.api.AbstractPersistedOrderMaker;
 import io.terminus.parana.order.dto.PersistedOrderInfos;
@@ -238,6 +239,9 @@ public class JitOrderManager extends PsOrderReceiver {
             throw new ServiceException("find.open.shop.failed");
         }
         List<OpenClientShop> openClientShops = rP.getResult();
+        if(CollectionUtils.isEmpty(openClientShops)) {
+            throw new OPServerException(200,"find.open.shop.fail");
+        }
         java.util.Optional<OpenClientShop> openClientShopOptional = openClientShops.stream().findAny();
         OpenClientShop openClientShop = openClientShopOptional.get();
         return openClientShop.getOpenShopId();

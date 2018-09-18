@@ -11,6 +11,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -159,6 +160,8 @@ public class Shipments {
     private RefundWriteLogic refundWriteLogic;
     @Autowired
     private MiddleRefundWriteService middleRefundWriteService;
+    @Autowired
+    private MiddleOrderFlowPicker flowPicker;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
@@ -1954,6 +1957,58 @@ public class Shipments {
                 Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentDone(shipment, 2, MiddleOrderEvent.HK_CONFIRME_FAILED.toOrderOperation());
                 if (!syncRes.isSuccess()) {
                     log.error("sync  shipment(id:{}) done to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                }
+            }
+            pageNo++;
+        }
+    }
+
+    /**
+     * 中台订单状态修复，发货单已经发货->订单状态还是待发货
+     * @param status
+     */
+    @RequestMapping(value = "api/shipment/recover/order/status",method = RequestMethod.GET)
+    public void recoverOrderStatus(@RequestParam Integer status){
+        int pageNo = 1;
+        int pageSize = 100;
+        while(true){
+            OrderShipmentCriteria orderShipmentCriteria = new OrderShipmentCriteria();
+            orderShipmentCriteria.setPageNo(pageNo);
+            orderShipmentCriteria.setPageSize(pageSize);
+            orderShipmentCriteria.setStatus(status);
+            Response<Paging<ShipmentPagingInfo>> response = orderShipmentReadService.findBy(orderShipmentCriteria);
+            if (!response.isSuccess()) {
+                log.error("find shipment by criteria:{} fail,error:{}", orderShipmentCriteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+
+            Paging<ShipmentPagingInfo> shipmentPaging = response.getResult();
+            List<ShipmentPagingInfo> shipmentPagingInfos = shipmentPaging.getData();
+            if (shipmentPagingInfos.isEmpty()){
+                log.error("all order status recovered,pageNo {}",pageNo);
+                break;
+            }
+            for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
+                Shipment shipment = shipmentPagingInfo.getShipment();
+                ShopOrder shopOrder = shipmentPagingInfo.getShopOrder();
+                if (shopOrder.getStatus()>= MiddleOrderStatus.SHIPPED.getValue()){
+                    continue;
+                }
+                Flow flow = flowPicker.pickOrder();
+                log.info("shop order recover status,shopOrderId {}, shopOrderStatus is {}", shopOrder.getId(),shopOrder.getStatus());
+                //更新子订单中的信息
+                List<Long> skuOrderIds = Lists.newArrayList();
+                Map<Long, Integer> skuInfos = shipment.getSkuInfos();
+                skuOrderIds.addAll(skuInfos.keySet());
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                for (SkuOrder skuOrder : skuOrders) {
+                    log.info("sku order recover status,skuOrderId {},shopOrderId{},status {}",skuOrder.getId(),skuOrder.getOrderId(),skuOrder.getStatus());
+                    if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
+                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
+                        if (!updateRlt.getResult()) {
+                            log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                        }
+                    }
                 }
             }
             pageNo++;

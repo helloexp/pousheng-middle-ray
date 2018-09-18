@@ -240,12 +240,8 @@ public class YyediSyncShipmentService implements CompensateBizService {
         if (!orderShipmentResponse.isSuccess() || orderShipmentResponse.getResult() == null) {
             throw new BizException("failed to query order shipment.");
         }
-        SkuOrder skuOrderInfo = (SkuOrder)orderReadLogic.findOrder(orderShipmentResponse.getResult().getOrderId(),
-            OrderLevel.SKU);
-        if (skuOrderInfo == null) {
-            throw new BizException("failed to query sku order");
-        }
-        return orderReadLogic.findShopOrderById(skuOrderInfo.getOrderId());
+
+        return orderReadLogic.findShopOrderById(orderShipmentResponse.getResult().getOrderId());
     }
 
     /**

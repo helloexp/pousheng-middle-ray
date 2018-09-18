@@ -1989,26 +1989,30 @@ public class Shipments {
                 break;
             }
             for (ShipmentPagingInfo shipmentPagingInfo:shipmentPagingInfos){
-                Shipment shipment = shipmentPagingInfo.getShipment();
-                ShopOrder shopOrder = shipmentPagingInfo.getShopOrder();
-                if (shopOrder.getStatus()>= MiddleOrderStatus.SHIPPED.getValue()){
-                    continue;
-                }
-                Flow flow = flowPicker.pickOrder();
-                log.info("shop order recover status,shopOrderId {}, shopOrderStatus is {}", shopOrder.getId(),shopOrder.getStatus());
-                //更新子订单中的信息
-                List<Long> skuOrderIds = Lists.newArrayList();
-                Map<Long, Integer> skuInfos = shipment.getSkuInfos();
-                skuOrderIds.addAll(skuInfos.keySet());
-                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-                for (SkuOrder skuOrder : skuOrders) {
-                    log.info("sku order recover status,skuOrderId {},shopOrderId{},status {}",skuOrder.getId(),skuOrder.getOrderId(),skuOrder.getStatus());
-                    if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
-                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
-                        if (!updateRlt.getResult()) {
-                            log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                try{
+                    Shipment shipment = shipmentPagingInfo.getShipment();
+                    ShopOrder shopOrder = shipmentPagingInfo.getShopOrder();
+                    if (shopOrder.getStatus()>= MiddleOrderStatus.SHIPPED.getValue()){
+                        continue;
+                    }
+                    Flow flow = flowPicker.pickOrder();
+                    log.info("shop order recover status,shopOrderId {}, shopOrderStatus is {}", shopOrder.getId(),shopOrder.getStatus());
+                    //更新子订单中的信息
+                    List<Long> skuOrderIds = Lists.newArrayList();
+                    Map<Long, Integer> skuInfos = shipment.getSkuInfos();
+                    skuOrderIds.addAll(skuInfos.keySet());
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                    for (SkuOrder skuOrder : skuOrders) {
+                        log.info("sku order recover status,skuOrderId {},shopOrderId{},status {}",skuOrder.getId(),skuOrder.getOrderId(),skuOrder.getStatus());
+                        if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
+                            Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
+                            if (!updateRlt.getResult()) {
+                                log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                            }
                         }
                     }
+                }catch (Exception e){
+                    log.error("recover error {}",Throwables.getStackTraceAsString(e));
                 }
             }
             pageNo++;

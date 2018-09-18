@@ -1909,7 +1909,7 @@ public class RefundWriteLogic {
             //检查库存是否充足
             checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
             //封装发货信息
-            List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity);
+            List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity,warehouseId);
             //发货单商品金额
             Long shipmentItemFee = 0L;
             //发货单总的优惠
@@ -2012,7 +2012,7 @@ public class RefundWriteLogic {
      * @param skuCodeAndQuantity
      * @return
      */
-    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity) {
+    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity,Long warehouseId) {
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
 
         Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
@@ -2034,6 +2034,8 @@ public class RefundWriteLogic {
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
             //商品id
             shipmentItem.setItemId(refundItem.getItemId());
+            //仓库id
+            shipmentItem.setWarehouseId(warehouseId);
             //商品属性
             shipmentItem.setAttrs(refundItem.getAttrs());
             shipmentItems.add(shipmentItem);

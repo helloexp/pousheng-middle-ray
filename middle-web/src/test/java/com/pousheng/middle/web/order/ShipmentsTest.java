@@ -13,7 +13,6 @@ package com.pousheng.middle.web.order;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.AbstractRestApiTest;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
@@ -89,8 +88,6 @@ public class ShipmentsTest extends AbstractRestApiTest {
         private SyncErpShipmentLogic syncErpShipmentLogic;
         @MockBean
         private InventoryClient inventoryClient;
-        @MockBean
-        private StockPusher stockPusher;
         @MockBean
         private PermissionUtil permissionUtil;
         @MockBean

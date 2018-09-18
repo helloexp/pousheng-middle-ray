@@ -3,7 +3,6 @@ package com.pousheng.middle.web.events.trade.listener;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
@@ -31,9 +30,6 @@ public class UnLockStockListener {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
-
-    @Autowired
-    private StockPusher stockPusher;
 
     @PostConstruct
     public void init() {

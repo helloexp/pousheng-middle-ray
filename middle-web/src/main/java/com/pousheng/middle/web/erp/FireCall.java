@@ -20,7 +20,6 @@ import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -117,9 +116,6 @@ public class FireCall {
     @RpcConsumer
     @Setter
     private MappingReadService mappingReadService;
-    @Autowired
-    @Setter
-    private StockPusher stockPusher;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
     @Autowired

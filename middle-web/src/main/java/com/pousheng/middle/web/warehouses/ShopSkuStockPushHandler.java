@@ -5,7 +5,6 @@ import com.google.common.collect.Sets;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
@@ -46,9 +45,6 @@ public class ShopSkuStockPushHandler {
 
     @RpcConsumer
     private MappingReadService mappingReadService;
-
-    @Autowired
-    private StockPusher stockPusher;
 
     @Autowired
     private InventoryChangeProducer inventoryChangeProducer;

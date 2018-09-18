@@ -2,7 +2,6 @@ package com.pousheng.middle.web.events.warehouse;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.web.mq.warehouse.InventoryChangeProducer;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -35,9 +34,6 @@ public class ShopSkuStockPushListener {
 
     @RpcConsumer
     private MappingReadService mappingReadService;
-
-    @Autowired
-    private StockPusher stockPusher;
 
     @PostConstruct
     public void init() {

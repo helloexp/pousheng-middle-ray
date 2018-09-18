@@ -10,7 +10,6 @@ import com.pousheng.erp.component.SpuImporter;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.web.AbstractRestApiTest;
@@ -57,8 +56,6 @@ public class FireCallTest extends AbstractRestApiTest {
         @MockBean
         private MappingReadService mappingReadService;
         @MockBean
-        private StockPusher stockPusher;
-        @MockBean
         private SkuTemplateSearchReadService skuTemplateSearchReadService;
         @SpyBean
         private FireCall api;
@@ -96,8 +93,6 @@ public class FireCallTest extends AbstractRestApiTest {
 
     private MappingReadService mappingReadService;
 
-    private StockPusher stockPusher;
-
     private FireCall api;
 
     private String templateName = "ps_search.mustache";
@@ -130,7 +125,6 @@ public class FireCallTest extends AbstractRestApiTest {
         api.setGroupRuleCacherProxy(GroupRuleCacherProxy);
         api.setSkuTemplateSearchReadService(skuTemplateSearchReadService);
         api.setMappingReadService(mappingReadService);
-        api.setStockPusher(stockPusher);
     }
 
     @Test

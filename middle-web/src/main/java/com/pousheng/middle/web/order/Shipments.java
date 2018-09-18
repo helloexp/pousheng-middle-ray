@@ -6,7 +6,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
@@ -118,8 +117,6 @@ public class Shipments {
     private WarehouseSkuStockManager warehouseSkuStockManager;
     @RpcConsumer
     private ShipmentReadService shipmentReadService;
-    @Autowired
-    private StockPusher stockPusher;
     @Autowired
     private PermissionUtil permissionUtil;
     @RpcConsumer

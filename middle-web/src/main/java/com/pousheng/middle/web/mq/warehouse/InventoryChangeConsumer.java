@@ -3,7 +3,6 @@ package com.pousheng.middle.web.mq.warehouse;
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
-import com.pousheng.middle.open.StockPusher;
 import com.pousheng.middle.open.stock.StockPusherClient;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;

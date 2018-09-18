@@ -224,7 +224,7 @@ public class StockPusherLogic {
                 pushLogs(logs);
             }
         } catch (ExecutionException e) {
-            log.error("failed to create stock push logs, cause{}",Throwables.getStackTraceAsString(e));
+            e.printStackTrace();
         }
     }
 
@@ -534,8 +534,8 @@ public class StockPusherLogic {
             log.info("success to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
                     stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
             //库存日志推送
-            this.createAndPushLogs(stockPushLogs, itemMapping.getSkuCode(), itemMapping.getOpenShopId(), itemMapping.getChannelSkuId(), (long) stock.intValue(), rP.isSuccess(), rP.getError());
-            this.pushLogs(stockPushLogs);
+            createAndPushLogs(stockPushLogs, itemMapping.getSkuCode(), itemMapping.getOpenShopId(), itemMapping.getChannelSkuId(), (long) stock.intValue(), rP.isSuccess(), rP.getError());
+            pushLogs(stockPushLogs);
 
             //如果推送成功则将本次推送记录写入缓存
             if(stockPusherCacheEnable && rP.isSuccess()){
@@ -695,7 +695,6 @@ public class StockPusherLogic {
      */
     //todo 缓存优化
     public List<OpenShop>  getYjShop() {
-
         Response<List<OpenShop>> resp = openShopReadService.findByChannel(MiddleChannel.YUNJUJIT.getValue());
         if(!resp.isSuccess()){
             log.error("can not find yunju jit shop");

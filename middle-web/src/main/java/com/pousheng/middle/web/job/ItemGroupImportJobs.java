@@ -37,6 +37,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.File;
@@ -165,30 +166,11 @@ public class ItemGroupImportJobs {
                             appendErrorToExcel(helper, strs, "加入分组失败：" + skuTemplateRes.getError());
                             continue;
                         }
-                        //判断商品是否被排除在外
-                        if (PsItemGroupSkuType.GROUP.value().equals(type)
-                                && searchSkuTemplate.getExcludeGroupIds().contains(groupId)) {
-                            appendErrorToExcel(helper, strs, "加入分组失败：该商品为该组的排除商品");
-                            continue;
-                        }
-                        //判断商品是否已在组内
-                        if (PsItemGroupSkuType.EXCLUDE.value().equals(type)
-                                && searchSkuTemplate.getGroupIds().contains(groupId)) {
-                            appendErrorToExcel(helper, strs, "加入排除商品失败：该商品已在分组内");
-                            continue;
-                        }
                         skuTemplates.add(skuTemplateRes.getResult());
                         //每1000条更新下mysql和search
                         if (i % 1000 == 0) {
                             //批量添加或删除映射关系
-                            List<String> skuCodes = skuTemplates.stream()
-                                    .map(SkuTemplate::getSkuCode).collect(Collectors.toList());
-                            itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, PsItemGroupSkuMark.ARTIFICIAL.value());
-                            //批量更新es
-                            skuTemplateDumpService.batchGroupDump(skuTemplates);
-                            if (PsItemGroupSkuType.GROUP.value().equals(type)) {
-                                batchNoticeHk(skuTemplates);
-                            }
+                            batchHandle(skuTemplates, groupId, type);
                             skuTemplates.clear();
                         }
                     } catch (Exception jre) {
@@ -201,13 +183,7 @@ public class ItemGroupImportJobs {
             //非1000条的更新下
             if (!CollectionUtils.isEmpty(skuTemplates)) {
                 //批量添加或删除映射关系
-                List<String> skuCodes = skuTemplates.stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList());
-                itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, PsItemGroupSkuMark.ARTIFICIAL.value());
-                //批量更新es
-                skuTemplateDumpService.batchGroupDump(skuTemplates);
-                if (PsItemGroupSkuType.GROUP.value().equals(type)) {
-                    batchNoticeHk(skuTemplates);
-                }
+                batchHandle(skuTemplates, groupId, type);
             }
             if (helper.size() > 0) {
                 String url = this.uploadToAzureOSS(helper.transformToFile());
@@ -221,6 +197,18 @@ public class ItemGroupImportJobs {
             scheduleTask.setStatus(TaskStatusEnum.ERROR.value());
             scheduleTaskWriteService.update(scheduleTask);
             log.error("async handle item group task error", Throwables.getStackTraceAsString(e));
+        }
+    }
+
+    private void batchHandle(List<SkuTemplate> skuTemplates, Long groupId, Integer type) {
+        List<String> skuCodes = skuTemplates.stream().map(SkuTemplate::getSkuCode).collect(Collectors.toList());
+        //为了做到转移分组，先删除旧数据，再创建新数据
+        itemGroupSkuWriteService.batchDelete(skuCodes, groupId, type == 1 ? 0 : 1, PsItemGroupSkuMark.ARTIFICIAL.value());
+        itemGroupSkuWriteService.batchCreate(skuCodes, groupId, type, PsItemGroupSkuMark.ARTIFICIAL.value());
+        //批量更新es
+        skuTemplateDumpService.batchGroupDump(skuTemplates);
+        if (PsItemGroupSkuType.GROUP.value().equals(type)) {
+            batchNoticeHk(skuTemplates);
         }
     }
 

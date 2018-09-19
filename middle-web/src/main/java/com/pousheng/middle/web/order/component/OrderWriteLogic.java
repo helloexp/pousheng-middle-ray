@@ -18,6 +18,8 @@ import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -29,6 +31,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.utils.RespHelper;
@@ -92,6 +95,12 @@ public class OrderWriteLogic {
     private JdYunDingSyncStockLogic jdYunDingSyncStockLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+
+    @Autowired
+    private JitRealtimeOrderStockManager jitRealtimeOrderStockManager;
+
+    @Autowired
+    private WarehouseCacher warehouseCacher;
 
 
     public boolean updateOrder(OrderBase orderBase, OrderLevel orderLevel, MiddleOrderEvent orderEvent) {
@@ -1107,6 +1116,39 @@ public class OrderWriteLogic {
             newShopOrder.setExtra(shopOrderExtra);
             middleOrderWriteService.updateShopOrder(newShopOrder);
         }
+    }
+
+    /**
+     * 取消jit时效订单
+     * @param shopOrderId
+     */
+    public void autoCancelJitRealtimeOrder(Long shopOrderId) {
+        log.debug("OrderWriteLogic autoCancelJitRealtimeOrder,shopOrderId {}",shopOrderId);
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue())) {
+            log.warn("this jit order has been canceled,shopOrderId is {}", shopOrderId);
+            return;
+        }
+        //判断该订单是否有取消订单的权限
+        if (!validateAutoCancelShopOrder(shopOrder)) {
+            log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}", shopOrder.getId());
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())) {
+                throw new OPServerException(200, "shop.order.cancel.failed");
+            }
+            throw new JsonResponseException("invalid.order.status.can.not.cancel");
+        }
+        //获取该订单下所有的子单和发货单
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId,
+            MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
+            MiddleOrderStatus.WAIT_SHIP.getValue());
+
+        Map<String,String> extra=shopOrder.getExtra();
+        //查询仓库信息
+        String warehouseCode=extra.get(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID);
+        WarehouseDTO warehouseDTO = warehouseCacher.findByCode(warehouseCode);
+        //取消订单释放库存
+        jitRealtimeOrderStockManager.cancelJitOrderAndUnlockStock(shopOrder,skuOrders,warehouseDTO.getId());
+
     }
 }
 

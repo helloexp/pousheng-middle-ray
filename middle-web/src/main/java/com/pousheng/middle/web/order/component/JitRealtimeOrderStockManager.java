@@ -4,6 +4,8 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
+import com.pousheng.middle.open.manager.JitOrderManager;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.impl.manager.MiddleOrderManager;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
@@ -12,6 +14,7 @@ import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -29,6 +32,7 @@ import org.springframework.util.CollectionUtils;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -55,6 +59,9 @@ public class JitRealtimeOrderStockManager {
 
     @Autowired
     private MiddleOrderManager middleOrderManager;
+
+    @Autowired
+    private JitOrderManager jitOrderManager;
     /**
      * 释放实效订单库存
      * @param order jit订单
@@ -169,9 +176,34 @@ public class JitRealtimeOrderStockManager {
         }
         Response<Boolean> response = inventoryClient.unLock(inventoryTradeDTOList);
         if (!response.isSuccess() || !response.getResult()) {
-            String msg=MessageFormat.format("failed to unlock inventory.param:{0},response:{1}",
-                mapper.toJson(inventoryTradeDTOList),mapper.toJson(response));
-            throw new BizException(msg);
+            if (Objects.equals(response.getError(), "inventory.response.timeout")) {
+                JitUnlockStockTimeoutException exception = new JitUnlockStockTimeoutException(response.getError());
+                exception.setData(inventoryTradeDTOList);
+                throw exception;
+            } else {
+                String msg = MessageFormat.format("failed to unlock inventory.param:{0},response:{1}",
+                    mapper.toJson(inventoryTradeDTOList), mapper.toJson(response));
+                throw new BizException(msg);
+            }
+        }
+    }
+
+    /**
+     * 取消时效订单并释放库存
+     * @param shopOrder
+     * @param skuOrders
+     * @param warehouseId
+     */
+    @Transactional
+    public void cancelJitOrderAndUnlockStock(ShopOrder shopOrder, List<SkuOrder> skuOrders,Long warehouseId) {
+        middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
+        try {
+            unlock(warehouseId, skuOrders);
+        } catch (JitUnlockStockTimeoutException e) {
+            String param=mapper.toJson(e.getData());
+            log.warn("failed to unlock stock of order[{}].param:{}],",shopOrder.getId(),param);
+            //超时则保存biz补偿
+            jitOrderManager.saveUnlockInventoryTask(e.getData());
         }
     }
 

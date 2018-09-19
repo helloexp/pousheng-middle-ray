@@ -126,6 +126,7 @@ public class JitOrderManager extends PsOrderReceiver {
      *
      * @param openFullOrderInfo 订单信息
      */
+    @Transactional
     public OPResponse<String> handleRealTimeOrder(OpenFullOrderInfo openFullOrderInfo) {
         String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
             openFullOrderInfo.getOrder()
@@ -159,6 +160,9 @@ public class JitOrderManager extends PsOrderReceiver {
 
         //设置为jit时效订单类型
         openClientFullOrder.setType(MiddleOrderType.JIT_REAL_TIME.getValue());
+        //保存中台仓库id
+        Map<String,String> extraMap=openClientFullOrder.getExtra();
+        extraMap.put(JitConsts.WAREHOUSE_ID,String.valueOf(warehouseDTO.getId()));
         //保存订单
         handleReceiveOrder(OpenClientShop.from(openShop), Lists.newArrayList(openClientFullOrder),
             warehouseDTO.getId());

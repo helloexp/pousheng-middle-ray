@@ -8,6 +8,7 @@ import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -34,7 +35,6 @@ import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -593,9 +593,11 @@ public class OrderOpenApi {
         Long orderId = findOrderIdByOutIdAndOutFrom(outId,outFrom);
 
         try {
-
-            orderWriteLogic.autoCancelShopOrder(orderId);
-
+            if (MiddleChannel.YUNJURT.getValue().equals(outFrom)) {
+                orderWriteLogic.autoCancelJitRealtimeOrder(orderId);
+            } else {
+                orderWriteLogic.autoCancelShopOrder(orderId);
+            }
         } catch (JsonResponseException e){
             log.error("cancel shop order id:{} fail",orderId);
             throw new OPServerException(200, e.getMessage());

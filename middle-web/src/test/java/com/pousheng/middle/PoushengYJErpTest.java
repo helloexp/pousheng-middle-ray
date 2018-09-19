@@ -453,4 +453,26 @@ public class PoushengYJErpTest {
 
     }
 
+    @Test
+    public void testCancelJitOrder(){
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey", "pousheng");
+        params.put("pampasCall", "out.order.cancel.api");
+
+        //CancelOutOrderInfo info=new CancelOutOrderInfo();
+        //info.setOutOrderId("");
+        //params.put("data", str);
+
+
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+            .putString(toVerify, Charsets.UTF_8)
+            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+        params.put("sign", sign);
+
+        //post("http://127.0.0.1:8092/api/gateway",params);
+
+        post("http://middle-api-test.pousheng.com/api/gateway", params);
+    }
+
 }

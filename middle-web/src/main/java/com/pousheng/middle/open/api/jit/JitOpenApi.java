@@ -23,6 +23,7 @@ import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.entity.OPResponse;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
+import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -197,7 +198,7 @@ public class JitOpenApi {
             return Response.fail("realtimeOrderIds is required");
         }
         Response<List<ShopOrder>> response = middleOrderReadService.findByOutIdsAndOutFrom(
-            outIds, fullOrderInfo.getOrder().getChannelCode());
+            outIds, JitConsts.YUNJU_REALTIME);
         if (response == null
             || !response.isSuccess()) {
             return Response.fail("failed.to.validate.realtime.orders");

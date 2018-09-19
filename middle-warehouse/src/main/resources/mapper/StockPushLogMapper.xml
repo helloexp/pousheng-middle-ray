@@ -12,6 +12,9 @@
         <result column="sku_code" property="skuCode"/>
         <result column="channel_sku_id" property="channelSkuId" />
         <result column="out_id" property="outId"/>
+        <result column="warehouse_id" property="warehouseId"/>
+        <result column="warehouse_name" property="warehouseName"/>
+        <result column="warehouse_outer_code" property="warehouseOuterCode"/>
         <result column="material_id" property="materialId"/>
         <result column="quantity" property="quantity"/>
         <result column="status" property="status"/>
@@ -34,11 +37,11 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        shop_id, shop_name,out_id,sku_code,channel_sku_id,material_id,quantity,status,cause,request_no,line_no,sync_at,created_at, updated_at
+        shop_id, shop_name,out_id, warehouse_id, warehouse_name, warehouse_outer_code, sku_code,channel_sku_id,material_id,quantity,status,cause,request_no,line_no,sync_at,created_at, updated_at
     </sql>
 
     <sql id="vals">
-        #{shopId}, #{shopName},#{outId},#{skuCode},#{channelSkuId},#{materialId}, #{quantity},#{status},#{cause},#{requestNo},#{lineNo},#{syncAt}, now(), now()
+        #{shopId}, #{shopName},#{outId},#{warehouseId}, #{warehouseName}, #{warehouseOuterCode}, #{skuCode},#{channelSkuId},#{materialId}, #{quantity},#{status},#{cause},#{requestNo},#{lineNo},#{syncAt}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -48,6 +51,12 @@
         <if test="shopName != null">and `shop_name` =#{shopName}</if>
 
         <if test="outId !=null">and `out_id` = #{outId}</if>
+
+        <if test="outId !=null">and `warehouse_id` = #{warehouseId}</if>
+
+        <if test="outId !=null">and `warehouse_name` = #{warehouseName}</if>
+
+        <if test="outId !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
 
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
 
@@ -84,7 +93,7 @@
         VALUES
         <foreach collection="list" item="i" index="index" separator=",">
             (
-            #{i.shopId}, #{i.shopName},#{i.outId}, #{i.skuCode}, #{i.channelSkuId}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause}, #{i.requestNo}, #{i.lineNo},
+            #{i.shopId}, #{i.shopName},#{i.outId},#{i.warehouseId}, #{i.warehouseName}, #{i.warehouseOuterCode}, #{i.skuCode}, #{i.channelSkuId}, #{i.materialId}, #{i.quantity}, #{i.status}, #{i.cause}, #{i.requestNo}, #{i.lineNo},
             #{i.syncAt}, now(), now()
             )
         </foreach>
@@ -104,6 +113,9 @@
             <if test="shopId != null">shop_id = #{shopId},</if>
             <if test="shopName != null">`shop_name` = #{shopName},</if>
             <if test="outId !=null">and `out_id` = #{outId}</if>
+            <if test="outId !=null">and `warehouse_id` = #{warehouseId}</if>
+            <if test="outId !=null">and `warehouse_name` = #{warehouseName}</if>
+            <if test="outId !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>
             <if test="channelSkuId != null">channel_sku_id = #{channelSkuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>

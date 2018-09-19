@@ -62,23 +62,26 @@ public class YjStockPushReceiptApi {
                 //部分失败
                 List<StockItem> items = request.getItems();
                 items.forEach(item -> {
-                    StockPushLog pushLog = new StockPushLog();
+
                     String lineNo = item.getLineNo();
                     int status = YJ_ERROR_CODE_SUCESS.equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_FAIL.value();
                     String cause = item.getErrorInfo();
-                    pushLog.setRequestNo(requestNo);
-                    pushLog.setLineNo(lineNo);
-                    pushLog.setStatus(status);
-                    pushLog.setCause(cause);
+                    StockPushLog pushLog = StockPushLog.builder()
+                            .requestNo(requestNo)
+                            .lineNo(lineNo)
+                            .status(status)
+                            .cause(cause)
+                            .build();
                     stockPushLogs.add(pushLog);
                 });
                 middleStockPushLogWriteService.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
             }else {
                 //全部成功/失败
-                StockPushLog pushLog = new StockPushLog();
-                pushLog.setRequestNo(requestNo);
-                pushLog.setStatus(Objects.isEqual(error,YJ_ERROR_CODE_SUCESS)?StockPushLogStatus.DEAL_SUCESS.value():StockPushLogStatus.DEAL_FAIL.value());
-                pushLog.setCause(errorInfo);
+                StockPushLog pushLog = StockPushLog.builder()
+                        .requestNo(requestNo)
+                        .status(Objects.isEqual(error,YJ_ERROR_CODE_SUCESS)?StockPushLogStatus.DEAL_SUCESS.value():StockPushLogStatus.DEAL_FAIL.value())
+                        .cause(errorInfo)
+                        .build();
                 middleStockPushLogWriteService.updateStatusByRequest(pushLog);
             }
         }catch (JsonResponseException | ServiceException e) {

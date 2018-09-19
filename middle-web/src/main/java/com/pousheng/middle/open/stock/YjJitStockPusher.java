@@ -61,7 +61,7 @@ public class YjJitStockPusher{
                 log.debug("yunju jit stock push stocks:{}",stocks==null?null:stocks.toString());
             }
             //调用云聚接口推送库存
-            this.send(stocks);
+            this.send(shopId,stocks);
         });
     }
 
@@ -82,10 +82,10 @@ public class YjJitStockPusher{
         return stockTable;
     }
 
-    private void send(Table<String,Long,Long> stocks){
+    private void send(Long shopId,Table<String,Long,Long> stocks){
         List<YjStockInfo> YjStockInfos = Lists.newArrayList();
         stockPushLogic.appendYjRequest(YjStockInfos,stocks);
-        stockPushLogic.sendToYj(YjStockInfos);
+        stockPushLogic.sendToYj(shopId,YjStockInfos);
     }
 
 }

@@ -211,14 +211,16 @@ public class StockPusherLogic {
             if (StringUtils.isEmpty(shopCode)) {
                 shopCode = Splitter.on("-").splitToList(shop.getAppKey()).get(1);
             }
-            StockPushLog stockPushLog = new StockPushLog().shopId(shopId)
+            StockPushLog stockPushLog = StockPushLog.builder()
+                    .shopId(shopId)
                     .shopName(shop.getShopName())
                     .outId(shopCode)
                     .skuCode(skuCode)
                     .channelSkuId(channelSkuId)
                     .quantity(stock)
                     .status(status ? 1 : 2)
-                    .cause(msg).syncAt(new Date());
+                    .cause(msg).syncAt(new Date())
+                    .build();
             logs.add(stockPushLog);
             if (!logs.isEmpty() && logs.size() % PUSH_SIZE == 0) {
                 pushLogs(logs);
@@ -228,46 +230,10 @@ public class StockPusherLogic {
         }
     }
 
-    /**
-     * @Description 创建库存推送日志DTO
-     * @Date        2018/9/17
-     * @param       logs
-     * @param       requestNo
-     * @param       lineNo
-     * @param       skuCode
-     * @param       warehouseId
-     * @param       channelSkuId
-     * @param       stock
-     * @param       status
-     * @param       msg
-     * @return
-     */
-    public void createAndPushLogsForYunjuJIT(List<StockPushLog> logs,String requestNo, String lineNo, String skuCode, Long warehouseId, String channelSkuId, Long stock, Boolean status, String msg) {
-        try {
-            WarehouseDTO warehouseDTO = warehouseCacher.findById(warehouseId);
-            String outCode = warehouseDTO.getOutCode();
-            StockPushLog stockPushLog = new StockPushLog().lineNo(lineNo)
-                    .requestNo(requestNo)
-                    .shopId(warehouseId)
-                    .shopName(warehouseDTO.getWarehouseName())
-                    .outId(warehouseDTO.getOutCode())
-                    .skuCode(skuCode)
-                    .channelSkuId(channelSkuId)
-                    .quantity(stock)
-                    .status(status ? 1 : 2)
-                    .cause(msg).syncAt(new Date());
-            logs.add(stockPushLog);
-            if (!logs.isEmpty() && logs.size() % PUSH_SIZE == 0) {
-                pushLogs(logs);
-            }
-        } catch (Exception e) {
-            log.error("failed to create stock push logs, cause{}",Throwables.getStackTraceAsString(e));
-        }
-    }
-
-
     public void pushLogs(List<StockPushLog> logs) {
-        log.info("start to push middle to shop stock log");
+        if(log.isDebugEnabled()) {
+            log.debug("start to push middle to shop stock log({})", logs.toString());
+        }
         if (!logs.isEmpty()) {
             String logJson = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(logs);
             producer.send(stockLogTopic, new StockLogDto().logJson(logJson).type(StockLogTypeEnum.MIDDLETOSHOP.value()));
@@ -388,7 +354,7 @@ public class StockPusherLogic {
      * @param       yunjuStockInfoList
      * @return
      */
-    public void sendToYj(List<YjStockInfo> yunjuStockInfoList){
+    public void sendToYj(Long shopId,List<YjStockInfo> yunjuStockInfoList){
 
         if(log.isDebugEnabled()){
             log.debug("send request({}) to yunju jit",yunjuStockInfoList.toString());
@@ -402,29 +368,43 @@ public class StockPusherLogic {
                 //成功则写入缓存
                 if(stockPusherCacheEnable && resp.isSuccess()){
                     yunjuStockInfoList.stream().forEach(yjStockInfo -> {
+                        WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode());
                         stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_WARE,
-                                yjStockInfo.getWarehouseCode(),
+                                warehouse.getId().toString(),
                                 yjStockInfo.getBarCode(),
                                 yjStockInfo.getNum());
                     });
                 }
                 //写入推送日志
+                List<StockPushLog> stockPushLogs = Lists.newArrayList();
+                OpenShop shop = openShopCacher.getUnchecked(shopId);
+                String shopCode = StringUtils.isEmpty(shop.getExtra().get(SHOP_CODE))?null:Splitter.on("-").splitToList(shop.getAppKey()).get(1);
+                String shopName = shop.getShopName();
                 int status = resp.isSuccess() ? StockPushLogStatus.PUSH_SUCESS.value() : StockPushLogStatus.PUSH_FAIL.value();
                 String cause = resp.isSuccess() ? "" : resp.getError();
+                Date curDate = new Date();
 
-                List<StockPushLog> stockPushLogs = Lists.newArrayList();
                 yunjuStockInfoList.stream().forEach(yjStockInfo -> {
-                    this.createAndPushLogsForYunjuJIT(stockPushLogs,
-                            traceId,
-                            yjStockInfo.getLineNo(),
-                            yjStockInfo.getBarCode(),
-                            warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode()).getId(),
-                            null,
-                            (long) yjStockInfo.getNum(),
-                            resp.isSuccess(),
-                            resp.getError());
-                    this.pushLogs(stockPushLogs);
+                    WarehouseDTO warehouse = warehouseCacher.findByOutCodeAndBizId(yjStockInfo.getWarehouseCode(),yjStockInfo.getCompanyCode());
+                    StockPushLog stockPushLog =
+                            StockPushLog.builder()
+                            .requestNo(traceId)
+                            .lineNo(yjStockInfo.getLineNo())
+                            .shopId(shopId)
+                            .shopName(shopName)
+                            .outId(shopCode)
+                            .warehouseId(warehouse.getId())
+                            .warehouseName(warehouse.getWarehouseName())
+                            .warehouseOuterCode(warehouse.getOutCode())
+                            .skuCode(yjStockInfo.getBarCode())
+                            .quantity((long)yjStockInfo.getNum())
+                            .status(status)
+                            .cause(cause)
+                            .syncAt(curDate)
+                            .build();
+                    stockPushLogs.add(stockPushLog);
                 });
+                this.pushLogs(stockPushLogs);
             }
         });
     }

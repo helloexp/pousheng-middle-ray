@@ -29,7 +29,6 @@ import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ShipmentItemReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.shop.model.Shop;
@@ -610,6 +609,7 @@ public class ShipmentReadLogic {
             skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
             skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
             skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+            skuCodeAndQuantity.setShipmentItemId(shipmentItem.getId());
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         });
         return skuCodeAndQuantities;

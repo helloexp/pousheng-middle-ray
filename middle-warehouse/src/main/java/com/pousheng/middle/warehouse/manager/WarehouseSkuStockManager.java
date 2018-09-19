@@ -198,7 +198,11 @@ public class WarehouseSkuStockManager {
             currTrade.setQuantity(quantity);
             currTrade.setSkuCode(skuCode);
             currTrade.setBizSrcId(inventoryTradeDTO.getBizSrcId());
-            currTrade.setSubBizSrcId(Lists.newArrayList(inventoryTradeDTO.getSubBizSrcId()));
+            if(skuCodeAndQuantity.getShipmentItemId()!=null){
+                currTrade.setSubBizSrcId(Lists.newArrayList(skuCodeAndQuantity.getShipmentItemId().toString()));
+            }else {
+                currTrade.setSubBizSrcId(Lists.newArrayList(inventoryTradeDTO.getSubBizSrcId()));
+            }
             currTrade.setShopId(inventoryTradeDTO.getShopId());
             currTrade.setUniqueCode(inventoryTradeDTO.getUniqueCode());
 

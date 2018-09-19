@@ -12,30 +12,19 @@ import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import io.terminus.common.exception.JsonResponseException;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.center.shop.OpenShopCacher;
-import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
-import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-
-import static com.pousheng.middle.constants.Constants.IS_CARE_STOCK;
 
 /**
  * mpos商品库存操作
@@ -118,29 +107,6 @@ public class MposSkuStockLogic {
 
 
         DispatchOrderItemInfo dispatchOrderItemInfo = shipmentReadLogic.getDispatchOrderItem(shipment);
-        if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
-            return Response.ok();
-        }
-
-        //仓库发货
-        List<WarehouseShipment> warehouseShipments = dispatchOrderItemInfo.getWarehouseShipments();
-
-        //没有说明不是仓发直接返回
-        if(CollectionUtils.isEmpty(warehouseShipments)){
-            return Response.ok();
-        }
-        warehouseSkuStockManager.unlockStock(dispatchComponent.genInventoryTradeDTO(dispatchOrderItemInfo), warehouseShipments);
-
-        return Response.ok();
-
-    }
-
-    /**
-     * 解锁库存
-     * @param dispatchOrderItemInfo
-     */
-    public Response<Boolean> unLockStock(DispatchOrderItemInfo dispatchOrderItemInfo){
-
         if(!isCareStock(dispatchOrderItemInfo.getOrderId())){
             return Response.ok();
         }

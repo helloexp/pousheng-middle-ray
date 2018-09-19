@@ -137,7 +137,7 @@ public class WarehouseShopSkuStockRules {
     /**
      * 查询导入文件的处理记录
      *
-     * @param pageNo 第几页
+     * @param pageNo   第几页
      * @param pageSize 分页大小
      * @return 查询结果
      */
@@ -187,7 +187,7 @@ public class WarehouseShopSkuStockRules {
         if (!StringUtils.isEmpty(criteria.getMaterialId())) {
             Map<String, String> params = Maps.newHashMap();
             params.put("spuCode", criteria.getMaterialId());
-            WithAggregations<SearchSkuTemplate> result = searchByParams(params);
+            WithAggregations<SearchSkuTemplate> result = searchByParams(params, 100, 1);
             if (result.getTotal() == 0) {
                 return new Paging<>(0L, Lists.newArrayList());
             }
@@ -207,7 +207,7 @@ public class WarehouseShopSkuStockRules {
         List<String> skuCodes = mappingRes.getResult().getData().stream().filter(e -> e.getSkuCode() != null).map(ItemMapping::getSkuCode).collect(Collectors.toList());
         Map<String, String> params = Maps.newHashMap();
         params.put("skuCodes", Joiners.COMMA.join(skuCodes));
-        WithAggregations<SearchSkuTemplate> result = searchByParams(params);
+        WithAggregations<SearchSkuTemplate> result = searchByParams(params, skuCodes.size(), 1);
         if (result.getTotal() == 0) {
             return new Paging<>(0L, Lists.newArrayList());
         }
@@ -259,7 +259,7 @@ public class WarehouseShopSkuStockRules {
         Map<String, String> params = Maps.newHashMap();
         if (Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue())) {
             List<Long> groupIds = groupRuleCacherProxy.findByShopId(criteria.getOpenShopId());
-            if(CollectionUtils.isEmpty(groupIds)){
+            if (CollectionUtils.isEmpty(groupIds)) {
                 return new Paging<>(0L, Lists.newArrayList());
             }
             params.put("groupIds", Joiners.COMMA.join(groupIds));
@@ -270,7 +270,7 @@ public class WarehouseShopSkuStockRules {
         if (!StringUtils.isEmpty(criteria.getSkuCode())) {
             params.put("skuCode", criteria.getSkuCode());
         }
-        WithAggregations<SearchSkuTemplate> result = searchByParams(params);
+        WithAggregations<SearchSkuTemplate> result = searchByParams(params, criteria.getPageSize(), criteria.getPageNo());
         if (result.getTotal() == 0) {
             return new Paging<>(0L, Lists.newArrayList());
         }
@@ -372,9 +372,9 @@ public class WarehouseShopSkuStockRules {
         return Boolean.TRUE;
     }
 
-    private WithAggregations<SearchSkuTemplate> searchByParams(Map<String, String> params) {
+    private WithAggregations<SearchSkuTemplate> searchByParams(Map<String, String> params, Integer pageSize, Integer pageNo) {
         String templateName = "ps_search.mustache";
-        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 50, templateName, params, SearchSkuTemplate.class);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
         if (!response.isSuccess()) {
             log.error("query sku template by params:{}  fail,error:{}", params, response.getError());
             throw new JsonResponseException(response.getError());

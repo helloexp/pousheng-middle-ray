@@ -7,7 +7,10 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.common.utils.batchhandle.AbnormalSkuStockRuleRecord;
 import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.common.utils.component.AzureOSSBlobClient;
+import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -16,23 +19,30 @@ import com.pousheng.middle.warehouse.companent.WarehouseShopSkuRuleClient;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
+import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author zhaoxw
@@ -53,12 +63,23 @@ public class ImportSkuStockRuleService implements CompensateBizService {
     private WarehouseShopSkuRuleClient warehouseShopSkuRuleClient;
 
     @Autowired
+    private OpenShopCacher openShopCacher;
+
+    @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
+    @Autowired
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
+
+    @Autowired
+    private GroupRuleCacherProxy groupRuleCacherProxy;
 
 
     private static final String DEFAULT_CLOUD_PATH = "export";
 
     private static final Integer DEFAULT_PAGE_SIZE = 10;
+
+    private static final String TEMPLATE_NAME = "ps_search.mustache";
 
 
     @Override
@@ -136,6 +157,11 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         SkuStockRuleImportInfo info = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), SkuStockRuleImportInfo.class);
         String filePath = info.getFilePath();
         Long openShopId = info.getOpenShopId();
+        OpenShop openShop = openShopCacher.findById(openShopId);
+        Boolean isYunJuJIT = Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue());
+        Map<String, String> params =new HashMap<>();
+        List<Long> groupIds = groupRuleCacherProxy.findByShopId(openShopId);
+        params.put("groupIds", Joiners.COMMA.join(groupIds));
         Long shopRuleId = info.getShopRuleId();
         ExcelExportHelper<AbnormalSkuStockRuleRecord> helper = ExcelExportHelper.newExportHelper(AbnormalSkuStockRuleRecord.class);
         List<String[]> list = HandlerFileUtil.getInstance().handlerExcel(filePath);
@@ -164,15 +190,32 @@ public class ImportSkuStockRuleService implements CompensateBizService {
             }
             String skuCode = strs[0].replace("\"", "");
             try {
-                Response<Optional<ItemMapping>> resp = mappingReadService.findBySkuCodeAndOpenShopId(skuCode, openShopId);
-                //不存在记录日志
-                if (!resp.isSuccess()) {
-                    appendErrorToExcel(helper, strs, resp.getError());
-                    continue;
-                }
-                if (!resp.getResult().isPresent()) {
-                    appendErrorToExcel(helper, strs, "该skuCode在当前店铺内无映射关系");
-                    continue;
+                if(isYunJuJIT){
+                    if(CollectionUtils.isEmpty(groupIds)){
+                        appendErrorToExcel(helper, strs, "该skuCode不在该店铺的销售范围内");
+                        continue;
+                    }
+                    params.put("skuCode",skuCode);
+                    Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 50, TEMPLATE_NAME, params, SearchSkuTemplate.class);
+                    if (!response.isSuccess()) {
+                        log.error("query sku template by params:{}  fail,error:{}", params, response.getError());
+                        appendErrorToExcel(helper, strs, response.getError());
+                    }
+                    if (response.getResult().getTotal() == 0) {
+                        appendErrorToExcel(helper, strs, "该skuCode不在该店铺的销售范围内");
+                        continue;
+                    }
+                }else{
+                    Response<Optional<ItemMapping>> resp = mappingReadService.findBySkuCodeAndOpenShopId(skuCode, openShopId);
+                    //不存在记录日志
+                    if (!resp.isSuccess()) {
+                        appendErrorToExcel(helper, strs, resp.getError());
+                        continue;
+                    }
+                    if (!resp.getResult().isPresent()) {
+                        appendErrorToExcel(helper, strs, "该skuCode在当前店铺内无映射关系");
+                        continue;
+                    }
                 }
                 WarehouseShopSkuStockRule rule = new WarehouseShopSkuStockRule();
                 rule.setShopRuleId(shopRuleId);

@@ -7,6 +7,7 @@ import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -17,6 +18,8 @@ import com.pousheng.middle.warehouse.companent.WarehouseShopSkuRuleClient;
 import com.pousheng.middle.warehouse.dto.WarehouseShopSkuStockRule;
 import com.pousheng.middle.warehouse.model.WarehouseShopStockRule;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
+import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
+import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
 import com.pousheng.middle.web.user.component.UserManageShopReader;
 import com.pousheng.middle.web.utils.operationlog.OperationLogIgnore;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
@@ -30,10 +33,12 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.dto.ItemMappingCriteria;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.spu.model.Spu;
@@ -43,6 +48,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -81,6 +87,10 @@ public class WarehouseShopSkuStockRules {
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     @Autowired
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
+    @Autowired
+    private OpenShopCacher openShopCacher;
+    @Autowired
+    private GroupRuleCacherProxy groupRuleCacherProxy;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -170,6 +180,10 @@ public class WarehouseShopSkuStockRules {
     @ApiOperation("列出当前用户能查看的商品推送规则")
     @RequestMapping(value = "/paging", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
     public Paging<WarehouseShopSkuStockRule> pagination(ItemMappingCriteria criteria) {
+        OpenShop openShop = openShopCacher.findById(criteria.getOpenShopId());
+        if (Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue())) {
+            return paginationForYJ(criteria);
+        }
         if (!StringUtils.isEmpty(criteria.getMaterialId())) {
             Map<String, String> params = Maps.newHashMap();
             params.put("spuCode", criteria.getMaterialId());
@@ -237,6 +251,52 @@ public class WarehouseShopSkuStockRules {
         ret.setTotal(mappingRes.getResult().getTotal());
         ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
 
+        return ret;
+    }
+
+    public Paging<WarehouseShopSkuStockRule> paginationForYJ(ItemMappingCriteria criteria) {
+        OpenShop openShop = openShopCacher.findById(criteria.getOpenShopId());
+        Map<String, String> params = Maps.newHashMap();
+        if (Objects.equals(openShop.getChannel(), MiddleChannel.YUNJUJIT.getValue())) {
+            List<Long> groupIds = groupRuleCacherProxy.findByShopId(criteria.getOpenShopId());
+            if(CollectionUtils.isEmpty(groupIds)){
+                return new Paging<>(0L, Lists.newArrayList());
+            }
+            params.put("groupIds", Joiners.COMMA.join(groupIds));
+        }
+        if (!StringUtils.isEmpty(criteria.getMaterialId())) {
+            params.put("spuCode", criteria.getMaterialId());
+        }
+        if (!StringUtils.isEmpty(criteria.getSkuCode())) {
+            params.put("skuCode", criteria.getSkuCode());
+        }
+        WithAggregations<SearchSkuTemplate> result = searchByParams(params);
+        if (result.getTotal() == 0) {
+            return new Paging<>(0L, Lists.newArrayList());
+        }
+        criteria.setSkuCodes(result.getData().stream().map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList()));
+        Map<String, WarehouseShopSkuStockRule> ruleMap = warehouseShopSkuRuleClient.findSkuRules(criteria);
+        Map<String, WarehouseShopSkuStockRule> rules = Maps.newHashMap();
+        for (SearchSkuTemplate itemMapping : result.getData()) {
+            if (rules.containsKey(itemMapping.getSkuCode())) {
+                continue;
+            }
+            WarehouseShopSkuStockRule stockRule;
+            WarehouseShopSkuStockRule item = ruleMap.get(itemMapping.getSkuCode());
+            if (null == item) {
+                stockRule = new WarehouseShopSkuStockRule();
+            } else {
+                stockRule = item;
+            }
+            stockRule.setSkuCode(itemMapping.getSkuCode());
+            stockRule.setMaterialId(itemMapping.getSpuCode());
+            stockRule.setSkuName(itemMapping.getName());
+            stockRule.setShopId(criteria.getOpenShopId());
+            rules.put(itemMapping.getSkuCode(), stockRule);
+        }
+        Paging<WarehouseShopSkuStockRule> ret = new Paging<>();
+        ret.setTotal(result.getTotal());
+        ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
         return ret;
     }
 

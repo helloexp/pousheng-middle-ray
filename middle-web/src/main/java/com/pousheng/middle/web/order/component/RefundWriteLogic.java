@@ -10,6 +10,7 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
@@ -1908,8 +1909,11 @@ public class RefundWriteLogic {
             OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refundId);
             //检查库存是否充足
             checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
+
+            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderRefund.getOrderId());
+
             //封装发货信息
-            List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity,warehouseId,refund.getShopId());
+            List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity,warehouseId,shopOrder);
             //发货单商品金额
             Long shipmentItemFee = 0L;
             //发货单总的优惠
@@ -2012,13 +2016,22 @@ public class RefundWriteLogic {
      * @param skuCodeAndQuantity
      * @return
      */
-    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity,Long warehouseId,Long shopId) {
+    private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity,Long warehouseId,ShopOrder shopOrder) {
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
 
         Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
         for (String skuCode : skuCodeAndQuantity.keySet()) {
             ShipmentItem shipmentItem = new ShipmentItem();
             RefundItem refundItem = refundItemMap.get(skuCode);
+            // 默认占库
+            shipmentItem.setCareStock(1);
+            // 云聚渠道 不关心库存
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                        && Objects.equals("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    shipmentItem.setCareStock(0);
+                }
+            }
             shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
             //退货数量,因为丢件补发或者是换货是允许继续售后的，所以这里面的数量为0
             shipmentItem.setRefundQuantity(0);
@@ -2034,7 +2047,7 @@ public class RefundWriteLogic {
             shipmentItem.setCleanPrice(refundItem.getCleanPrice());
             shipmentItem.setSkuCode(refundItem.getSkuCode());
             shipmentItem.setOutSkuCode(refundItem.getOutSkuCode());
-            shipmentItem.setShopId(shopId);
+            shipmentItem.setShopId(shopOrder.getShopId());
             shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             //商品id
             shipmentItem.setItemId(refundItem.getItemId());

@@ -6,6 +6,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
@@ -533,7 +534,7 @@ public class Shipments {
             //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常
             checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
             //封装发货信息
-            List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrders, skuOrderIdAndQuantity, warehouseId, shopOrder.getShopId());
+            List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrders, skuOrderIdAndQuantity, warehouseId, shopOrder);
             //发货单商品金额
             Long shipmentItemFee = 0L;
             //发货单总的优惠
@@ -715,7 +716,7 @@ public class Shipments {
                 //检查库存是否充足
                 checkStockIsEnough(warehouseId, skuCodeAndQuantity, openShop.getId());
                 //封装发货信息
-                List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity, warehouseId, shopOrder.getShopId());
+                List<ShipmentItem> shipmentItems = makeChangeShipmentItems(refundChangeItems, skuCodeAndQuantity, warehouseId, shopOrder);
                 //发货单商品金额
                 Long shipmentItemFee = 0L;
                 //发货单总的优惠
@@ -1088,7 +1089,7 @@ public class Shipments {
 
 
     private List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long, Integer> skuOrderIdAndQuantity,
-                                                 Long warehouseId, Long shopId) {
+                                                 Long warehouseId, ShopOrder shopOrder) {
         Map<Long, SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId, it -> it));
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
         for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
@@ -1108,8 +1109,16 @@ public class Shipments {
                 Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
                 shipmentItem.setWarehouseId(shop.getId());
             }
-
-            shipmentItem.setShopId(shopId);
+            // 默认占库
+            shipmentItem.setCareStock(1);
+            // 云聚渠道 不关心库存
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                        && Objects.equals("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    shipmentItem.setCareStock(0);
+                }
+            }
+            shipmentItem.setShopId(shopOrder.getShopId());
             shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             shipmentItem.setRefundQuantity(0);
             // 实际发货数量
@@ -1161,15 +1170,24 @@ public class Shipments {
     }
 
     private List<ShipmentItem> makeChangeShipmentItems(List<RefundItem> refundChangeItems, Map<String, Integer> skuCodeAndQuantity,
-                                                       Long warehouseId, Long shopId) {
+                                                       Long warehouseId, ShopOrder shopOrder) {
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuCodeAndQuantity.size());
 
         Map<String, RefundItem> refundItemMap = refundChangeItems.stream().filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
         for (String skuCode : skuCodeAndQuantity.keySet()) {
             ShipmentItem shipmentItem = new ShipmentItem();
             RefundItem refundItem = refundItemMap.get(skuCode);
+            // 默认占库
+            shipmentItem.setCareStock(1);
+            // 云聚渠道 不关心库存
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                        && Objects.equals("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    shipmentItem.setCareStock(0);
+                }
+            }
             shipmentItem.setWarehouseId(warehouseId);
-            shipmentItem.setShopId(shopId);
+            shipmentItem.setShopId(shopOrder.getShopId());
             shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
             //退货数量,因为丢件补发或者是换货是允许继续售后的，所以这里面的数量为0
@@ -1840,7 +1858,7 @@ public class Shipments {
                         shipmentShipDiscountFee = shipmentShipFee - Long.valueOf(shopOrder.getShipFee() == null ? 0 : shopOrder.getShipFee());
                     }
 
-                    List<ShipmentItem> newShipmentItems = shipmentWiteLogic.makeShipmentItems(skuOrders, skuInfos, shipmentExtra.getWarehouseId(), shopOrder.getShopId());
+                    List<ShipmentItem> newShipmentItems = shipmentWiteLogic.makeShipmentItems(skuOrders, skuInfos, shipmentExtra.getWarehouseId(), shopOrder);
                     //发货单商品金额
                     Long shipmentItemFee = 0L;
                     //发货单总的优惠
@@ -1923,7 +1941,7 @@ public class Shipments {
                     shipmentShipDiscountFee = shipmentShipFee - Long.valueOf(shopOrder.getShipFee() == null ? 0 : shopOrder.getShipFee());
                 }
 
-                List<ShipmentItem> newShipmentItems = shipmentWiteLogic.makeShipmentItems(skuOrders, skuInfos, shipmentExtra.getWarehouseId(), shopOrder.getShopId());
+                List<ShipmentItem> newShipmentItems = shipmentWiteLogic.makeShipmentItems(skuOrders, skuInfos, shipmentExtra.getWarehouseId(), shopOrder);
                 //发货单商品金额
                 Long shipmentItemFee = 0L;
                 //发货单总的优惠

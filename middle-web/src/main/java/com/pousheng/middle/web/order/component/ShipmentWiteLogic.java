@@ -11,6 +11,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.DispatchOrderEngine;
@@ -641,12 +642,16 @@ public class ShipmentWiteLogic {
 
     /**
      * 补充发货明细的占用库存信息
+     * yunjujit渠道并且关心库存的前提下进行数量分配
      * @param shopOrder 订单
      * @param warehouseId 仓库id
      * @param shipmentItems 发货明细
      */
     public void convertShipmentItem(ShopOrder shopOrder, Long warehouseId, List<ShipmentItem> shipmentItems) {
-        if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
+        if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom()) &&
+            shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                && Objects.equals("Y", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+
             List<String> skuCodes = Lists.transform(shipmentItems, new Function<ShipmentItem, String>() {
                 @Nullable
                 @Override
@@ -735,7 +740,7 @@ public class ShipmentWiteLogic {
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         log.info("auto create shipment,step four");
         //封装发货信息
-        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, warehouseId, shopOrder.getShopId());
+        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, warehouseId, shopOrder);
         //发货单商品金额
         Long shipmentItemFee = 0L;
         //发货单总的优惠
@@ -847,7 +852,7 @@ public class ShipmentWiteLogic {
         List<SkuOrder> skuOrdersShipment = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         log.info("auto create shipment,step four");
         //封装发货信息
-        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, deliveyShopId, shopOrder.getShopId());
+        List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrdersShipment, skuOrderIdAndQuantity, deliveyShopId, shopOrder);
         //发货单商品金额
         Long shipmentItemFee = 0L;
         //发货单总的优惠
@@ -1209,7 +1214,7 @@ public class ShipmentWiteLogic {
      * @return shipmentItem的集合
      */
     public List<ShipmentItem> makeShipmentItems(List<SkuOrder> skuOrders, Map<Long, Integer> skuOrderIdAndQuantity,
-                                                Long warehouseId, Long shopId) {
+                                                Long warehouseId, ShopOrder shopOrder) {
         Map<Long, SkuOrder> skuOrderMap = skuOrders.stream().filter(Objects::nonNull).collect(Collectors.toMap(SkuOrder::getId, it -> it));
         List<ShipmentItem> shipmentItems = Lists.newArrayListWithExpectedSize(skuOrderIdAndQuantity.size());
         for (Long skuOrderId : skuOrderIdAndQuantity.keySet()) {
@@ -1220,8 +1225,17 @@ public class ShipmentWiteLogic {
             } else {
                 shipmentItem.setIsGift(Boolean.FALSE);
             }
+            // 默认占库
+            shipmentItem.setCareStock(1);
+            // 云聚渠道 不关心库存
+            if (shopOrder.getShopName().startsWith("yj")) {
+                if (shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
+                        && Objects.equals("N", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
+                    shipmentItem.setCareStock(0);
+                }
+            }
             shipmentItem.setWarehouseId(warehouseId);
-            shipmentItem.setShopId(shopId);
+            shipmentItem.setShopId(shopOrder.getShopId());
             shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
             shipmentItem.setQuantity(skuOrderIdAndQuantity.get(skuOrderId));
             shipmentItem.setRefundQuantity(0);

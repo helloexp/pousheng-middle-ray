@@ -55,7 +55,7 @@ public class YjStockPushReceiptApi {
             items.forEach(item -> {
                 StockPushLog pushLog = new StockPushLog();
                 String lineNo = item.getLineNo();
-                int status = YJ_ERROR_CODE_SUCESS.equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_SUCESS.value();
+                int status = YJ_ERROR_CODE_SUCESS.equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_FAIL.value();
                 String cause = item.getErrorInfo();
                 pushLog.setRequestNo(requestNo);
                 pushLog.setLineNo(lineNo);

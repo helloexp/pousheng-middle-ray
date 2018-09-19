@@ -115,18 +115,37 @@
         WHERE id = #{id}
     </update>
 
-    <update id="batchUpdateResultByRequestIdAndLineNo" parameterType="StockPushLog">
-        <foreach collection="list" item="i" index="index" separator=",">
-            UPDATE
-            <include refid="tb"/>
-            <set>
-                status = #{i.status},
-                cause = #{i.cause},
-                updated_at=now()
-            </set>
-            WHERE request_no = #{i.requestNo} and line_no = #{i.lineNo};
+    <update id="batchUpdateResultByRequestIdAndLineNo" parameterType="list">
+        update
+        <include refid="tb"/>
+        <trim prefix="set" suffixOverrides=",">
+            <trim prefix="status =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.status!=null">
+                        when request_no = #{i.requestNo} and line_no = #{i.lineNo} then #{i.status}
+                    </if>
+                </foreach>
+            </trim>
+            <trim prefix=" cause =case" suffix="end,">
+                <foreach collection="list" item="i" index="index">
+                    <if test="i.cause!=null">
+                        when request_no = #{i.requestNo} and line_no = #{i.lineNo} then #{i.cause}
+                    </if>
+                </foreach>
+            </trim>
+
+            <trim prefix="updated_at =case" suffix="end," >
+                <foreach collection="list" item="i" index="index">
+                    when request_no = #{i.requestNo} and line_no = #{i.lineNo} then now()
+                </foreach>
+            </trim>
+        </trim>
+        where
+        <foreach collection="list" separator="or" item="i" index="index" >
+            request_no = #{i.requestNo} and line_no = #{i.lineNo}
         </foreach>
     </update>
+
 
     <delete id="delete" parameterType="long">
         DELETE FROM

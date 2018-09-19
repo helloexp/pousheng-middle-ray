@@ -115,7 +115,7 @@
         WHERE id = #{id}
     </update>
 
-    <update id="batchUpdateResultByRequestIdAndLineNo" parameterType="list">
+    <update id="batchUpdateFailureByRequestIdAndLineNo" parameterType="list">
         update
         <include refid="tb"/>
         <trim prefix="set" suffixOverrides=",">
@@ -144,8 +144,33 @@
         <foreach collection="list" separator="or" item="i" index="index" >
             request_no = #{i.requestNo} and line_no = #{i.lineNo}
         </foreach>
+
     </update>
 
+    <update id="batchUpdateSuccessByRequestIdAndLineNo" parameterType="map">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            `status` = 3,
+            updated_at=now()
+        </set>
+        WHERE request_no = #{requestNo} and line_no not in
+        <foreach collection="lineNos" open="(" separator="," close=")"
+                 item="lineNo">
+            #{lineNo}
+        </foreach>
+    </update>
+
+    <update id="updateStatusByRequest" parameterType="StockPushLog">
+        UPDATE
+        <include refid="tb"/>
+        <set>
+            <if test="status != null">`status` = #{status},</if>
+            <if test="cause != null">`cause` = #{cause},</if>
+            updated_at=now()
+        </set>
+        WHERE request_no = #{request_no}
+    </update>
 
     <delete id="delete" parameterType="long">
         DELETE FROM

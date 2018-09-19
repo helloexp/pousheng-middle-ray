@@ -37,14 +37,29 @@ public class YjJitStockPusher{
             Long shopId = openShop.getId();
             //店铺默认发货仓
             List<Long> warehouseIds = stockPushLogic.getWarehouseIdsByShopId(shopId);
+            if(log.isDebugEnabled()){
+                log.debug("yunju jit stock push warehouseIds:{}",warehouseIds.toString());
+            }
             //店铺商品分组
             List<String> filteredSkuCodes = stockPushLogic.filterShopSkuGroup(shopId,skuCodes);
+            if(log.isDebugEnabled()){
+                log.debug("yunju jit stock push filteredSkuCodes:{}",filteredSkuCodes==null?null:filteredSkuCodes.toString());
+            }
             //库存推送规则
             Map<String,WarehouseShopStockRule> warehouseShopStockRules = stockPushLogic.getWarehouseShopStockRules(shopId, filteredSkuCodes);
+            if(log.isDebugEnabled()){
+                log.debug("yunju jit stock push warehouseShopStockRules:{}",warehouseShopStockRules==null?null:warehouseShopStockRules.toString());
+            }
             //过滤仓库商品分组
             Map<String,List<Long>>  skuWareshouseIds = stockPushLogic.filterWarehouseSkuGroup(shopId, filteredSkuCodes, warehouseIds);
+            if(log.isDebugEnabled()){
+                log.debug("yunju jit stock push skuWareshouseIds:{}",skuWareshouseIds==null?null:skuWareshouseIds.toString());
+            }
             //计算可用可用库存
             Table<String,Long,Long> stocks = this.calculate(shopId, skuWareshouseIds, warehouseShopStockRules);
+            if(log.isDebugEnabled()){
+                log.debug("yunju jit stock push stocks:{}",stocks==null?null:stocks.toString());
+            }
             //调用云聚接口推送库存
             this.send(stocks);
         });

@@ -712,7 +712,7 @@ public class StockPusherLogic {
     public Table<String,Long,Long> getYjJitOccupyQty(Long shopId,
                                                      Map<String,List<Long>> skuWareshouseIds){
         if(log.isDebugEnabled()){
-            log.debug("query occupyed order occupied inventory ,parameter: shopId({shopid}),skuWareshouseIds(){} ",
+            log.debug("query occupyed order occupied inventory ,parameter: shopId({}),skuWareshouseIds({}) ",
                     shopId,skuWareshouseIds.toString());
         }
 

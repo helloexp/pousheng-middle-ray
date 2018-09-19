@@ -34,4 +34,12 @@ public interface MiddleStockPushLogWriteService {
      * @return
      */
     public Response<Boolean> batchUpdateResultByRequestIdAndLineNo(List<StockPushLog> stockPushLogs);
+
+    /**
+     * @Description TODO
+     * @Date        2018/9/19
+     * @param       stockPushLog
+     * @return
+     */
+    public Response<Boolean> updateStatusByRequest(StockPushLog stockPushLog);
 }

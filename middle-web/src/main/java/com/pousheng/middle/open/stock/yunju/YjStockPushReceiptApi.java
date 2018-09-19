@@ -7,6 +7,7 @@ import com.pousheng.middle.open.stock.yunju.dto.YjStockReceiptRequest;
 import com.pousheng.middle.open.stock.yunju.dto.YjStockReceiptResponse;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
+import de.danielbechler.util.Objects;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
@@ -39,6 +40,8 @@ import java.util.List;
 @Api(description = "云聚库存更新")
 public class YjStockPushReceiptApi {
     private static final String YJ_ERROR_CODE_SUCESS = "0";
+    private static final String YJ_ERROR_CODE_PARTIAL_FAILURE = "1";
+
     @Autowired
     private MiddleStockPushLogWriteService middleStockPushLogWriteService;
 
@@ -46,24 +49,38 @@ public class YjStockPushReceiptApi {
     @RequestMapping(value = "/receipt", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @OpenMethod(key = "yj.stock.push.receipt.api", paramNames = {"result"}, httpMethods = RequestMethod.POST)
     public void receipt(@RequestBody YjStockReceiptRequest request){
+        long startTime = System.currentTimeMillis();
         log.info("YUN-JIT-STOCK-PUSH-RESULT-START, parameter:{}",request.toString());
         YjStockReceiptResponse resp = new YjStockReceiptResponse();
         List<StockPushLog> stockPushLogs = new ArrayList<>();
         try {
             String requestNo = request.getSerialNo();
-            List<StockItem> items = request.getItems();
-            items.forEach(item -> {
+            String error = request.getError();
+            String errorInfo = request.getErrorInfo();
+
+            if(Objects.isEqual(error,YJ_ERROR_CODE_PARTIAL_FAILURE)){
+                //部分失败
+                List<StockItem> items = request.getItems();
+                items.forEach(item -> {
+                    StockPushLog pushLog = new StockPushLog();
+                    String lineNo = item.getLineNo();
+                    int status = YJ_ERROR_CODE_SUCESS.equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_FAIL.value();
+                    String cause = item.getErrorInfo();
+                    pushLog.setRequestNo(requestNo);
+                    pushLog.setLineNo(lineNo);
+                    pushLog.setStatus(status);
+                    pushLog.setCause(cause);
+                    stockPushLogs.add(pushLog);
+                });
+                middleStockPushLogWriteService.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
+            }else {
+                //全部成功/失败
                 StockPushLog pushLog = new StockPushLog();
-                String lineNo = item.getLineNo();
-                int status = YJ_ERROR_CODE_SUCESS.equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_FAIL.value();
-                String cause = item.getErrorInfo();
                 pushLog.setRequestNo(requestNo);
-                pushLog.setLineNo(lineNo);
-                pushLog.setStatus(status);
-                pushLog.setCause(cause);
-                stockPushLogs.add(pushLog);
-            });
-            middleStockPushLogWriteService.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
+                pushLog.setStatus(Objects.isEqual(error,YJ_ERROR_CODE_SUCESS)?StockPushLogStatus.DEAL_SUCESS.value():StockPushLogStatus.DEAL_FAIL.value());
+                pushLog.setCause(errorInfo);
+                middleStockPushLogWriteService.updateStatusByRequest(pushLog);
+            }
         }catch (JsonResponseException | ServiceException e) {
             log.error("failed to update yunju stock receipt,error:{}", e.getMessage());
             throw new OPServerException(200,e.getMessage());
@@ -71,6 +88,6 @@ public class YjStockPushReceiptApi {
             log.error("failed to update yunju stock receipt,cause:{} ",Throwables.getStackTraceAsString(e));
             throw new OPServerException(200,e.getMessage());
         }
-        log.info("YUN-JIT-STOCK-PUSH-RESULT-END");
+        log.info("YUN-JIT-STOCK-PUSH-RESULT-END,cost:{}",System.currentTimeMillis() - startTime);
     }
 }

@@ -1,5 +1,6 @@
 package com.pousheng.middle.warehouse.impl.dao;
 
+import com.google.common.collect.ImmutableMap;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
@@ -14,7 +15,15 @@ import java.util.List;
 @Repository
 public class StockPushLogDao extends MyBatisDao<StockPushLog> {
 
-    public int batchUpdateResultByRequestIdAndLineNo(List<StockPushLog> stockPushLogs) {
-        return getSqlSession().update(sqlId("batchUpdateResultByRequestIdAndLineNo"), stockPushLogs);
+    public int batchUpdateSucessByRequestIdAndLineNo(String requestNo,List<String> lineNos) {
+        return getSqlSession().update(sqlId("batchUpdateSuccessByRequestIdAndLineNo"), ImmutableMap.of("requestNo",requestNo,"lineNos",lineNos));
     }
+    public int batchUpdateFailureByRequestIdAndLineNo(List<StockPushLog> stockPushLogs) {
+        return getSqlSession().update(sqlId("batchUpdateFailureByRequestIdAndLineNo"), stockPushLogs);
+    }
+
+    public int updateStatusByRequest(StockPushLog stockPushLog) {
+        return getSqlSession().update(sqlId("updateStatusByRequest"), stockPushLog);
+    }
+
 }

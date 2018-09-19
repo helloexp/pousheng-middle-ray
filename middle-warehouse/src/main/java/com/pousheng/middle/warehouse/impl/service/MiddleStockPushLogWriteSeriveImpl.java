@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -59,8 +60,12 @@ public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWrit
             if (stockPushLogs.isEmpty()) {
                 return Response.fail("stockPushLogs.is.null");
             }
-            int result = stockPushLogDao.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
-            if (result > 0) {
+            String requestNo = stockPushLogs.get(0).getRequestNo();
+            List<String> lineNos = stockPushLogs.stream().map(stockPushLog -> stockPushLog.getLineNo()).collect(Collectors.toList());
+
+            int result1 = stockPushLogDao.batchUpdateSucessByRequestIdAndLineNo(requestNo,lineNos);
+            int result2 = stockPushLogDao.batchUpdateFailureByRequestIdAndLineNo(stockPushLogs);
+            if (result1 > 0 && result2 >0) {
                 return Response.ok(Boolean.TRUE);
             } else {
                 return Response.fail("stockPushLogDao.update.fail");
@@ -68,6 +73,21 @@ public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWrit
         } catch (Exception e) {
             log.error("batch update stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
             return Response.fail("stockPushLogDao.batchCreate.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> updateStatusByRequest(StockPushLog stockPushLog){
+        try {
+            int result = stockPushLogDao.updateStatusByRequest(stockPushLog);
+            if (result > 0) {
+                return Response.ok(Boolean.TRUE);
+            } else {
+                return Response.fail("stockPushLogDao.update.fail");
+            }
+        } catch (Exception e) {
+            log.error("create stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
+            return Response.fail("stockPushLogDao.create.fail");
         }
     }
 

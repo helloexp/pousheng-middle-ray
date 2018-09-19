@@ -28,14 +28,16 @@ public class SkuOrderExtDao extends MyBatisDao<SkuOrderExt> {
      * @param shopIds
      * @param warehouseIds
      * @param skuCodes
+     * @param type
      * @return
      */
     public List<SkuOrderLockStock> queryOccupyQuantityList(List<Long> shopIds,
-                                                           List<Long> warehouseIds, List<String> skuCodes){
+                                                           List<Long> warehouseIds, List<String> skuCodes,Integer type){
         return  getSqlSession().selectList(sqlId("findOccupyGroup"),
             ImmutableMap.of("shopIds", shopIds,
                 "warehouseIds", warehouseIds,
-                "skuCodes",skuCodes));
+                "skuCodes",skuCodes,
+                "type",type));
 
     }
 

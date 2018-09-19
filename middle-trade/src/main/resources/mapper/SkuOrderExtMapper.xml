@@ -63,6 +63,9 @@
                 #{skuCode}
             </foreach>
         </if>
+        <if test="type != null">
+            AND `type` =#{type}
+        </if>
         GROUP BY sku_code,company_id,shop_id
     </select>
 

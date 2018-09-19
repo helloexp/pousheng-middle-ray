@@ -4,6 +4,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderType;
 import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
 import com.pousheng.middle.order.impl.dao.SkuOrderExtDao;
 import com.pousheng.middle.order.model.SkuOrderLockStock;
@@ -113,11 +114,12 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
     public Response<List<SkuOrderLockStock>> findOccupyQuantityList(List<Long> shopIds,
                                                            List<Long> warehouseIds, List<String> skuCodes){
         try {
-            return Response.ok(skuOrderExtDao.queryOccupyQuantityList(shopIds,warehouseIds,skuCodes));
+            return Response.ok(skuOrderExtDao.queryOccupyQuantityList(shopIds,warehouseIds,skuCodes,
+                MiddleOrderType.JIT_REAL_TIME.getValue()));
         }catch (Exception e){
             log.error("failed to find shop orders by shopIds:{},warehouseIds:{},skuCodes:{}, cause:{}",
                     shopIds,warehouseIds,skuCodes,Throwables.getStackTraceAsString(e));
-            return Response.fail("failed.to.find.shop.orders");
+            return Response.fail("failed.to.find.occupy.quantity.list");
         }
 
     }

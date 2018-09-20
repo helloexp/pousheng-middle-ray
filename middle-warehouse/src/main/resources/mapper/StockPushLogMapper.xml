@@ -52,11 +52,11 @@
 
         <if test="outId !=null">and `out_id` = #{outId}</if>
 
-        <if test="outId !=null">and `warehouse_id` = #{warehouseId}</if>
+        <if test="warehouseId !=null">and `warehouse_id` = #{warehouseId}</if>
 
-        <if test="outId !=null">and `warehouse_name` = #{warehouseName}</if>
+        <if test="warehouseName !=null">and `warehouse_name` = #{warehouseName}</if>
 
-        <if test="outId !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
+        <if test="warehouseOuterCode !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
 
         <if test="skuCode != null">and `sku_code` = #{skuCode}</if>
 
@@ -113,9 +113,9 @@
             <if test="shopId != null">shop_id = #{shopId},</if>
             <if test="shopName != null">`shop_name` = #{shopName},</if>
             <if test="outId !=null">and `out_id` = #{outId}</if>
-            <if test="outId !=null">and `warehouse_id` = #{warehouseId}</if>
-            <if test="outId !=null">and `warehouse_name` = #{warehouseName}</if>
-            <if test="outId !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
+            <if test="warehouseId !=null">and `warehouse_id` = #{warehouseId}</if>
+            <if test="warehouseName !=null">and `warehouse_name` = #{warehouseName}</if>
+            <if test="warehouseOuterCode !=null">and `warehouse_outer_code` = #{warehouseOuterCode}</if>
             <if test="skuCode != null">sku_code = #{skuCode},</if>
             <if test="channelSkuId != null">channel_sku_id = #{channelSkuId},</if>
             <if test="materialId != null">material_id = #{materialId},</if>

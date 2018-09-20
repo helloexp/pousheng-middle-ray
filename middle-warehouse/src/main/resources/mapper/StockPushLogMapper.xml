@@ -181,7 +181,7 @@
             <if test="cause != null">`cause` = #{cause},</if>
             updated_at=now()
         </set>
-        WHERE request_no = #{request_no}
+        WHERE request_no = #{requestNo}
     </update>
 
     <delete id="delete" parameterType="long">

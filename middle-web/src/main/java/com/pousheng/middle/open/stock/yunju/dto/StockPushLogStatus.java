@@ -9,14 +9,13 @@ import java.util.Objects;
  */
 public enum StockPushLogStatus {
 
-        PUSH_SUCESS(1, "推送成功"),
+    DEAL_SUCESS(1, "同步成功"),
 
-        PUSH_FAIL(2, "推送失败"),
+    DEAL_FAIL(2, "同步失败"),
 
-        DEAL_SUCESS(3, "处理成功"),
+    PUSH_SUCESS(3, "推送成功"),
 
-        DEAL_FAIL(4, "处理失败");
-
+    PUSH_FAIL(4, "推送失败");
 
     private final int value;
     private final String desc;

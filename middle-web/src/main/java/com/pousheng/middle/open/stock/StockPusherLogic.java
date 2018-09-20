@@ -19,6 +19,7 @@ import com.pousheng.middle.open.stock.yunju.dto.YjStockRequest;
 import com.pousheng.middle.open.yunding.JdYunDingSyncStockLogic;
 import com.pousheng.middle.order.dto.ShipmentItemCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.SkuOrderLockStock;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -54,6 +55,7 @@ import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.parana.order.enums.ShipmentStatus;
 import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -721,6 +723,16 @@ public class StockPusherLogic {
         criteria.setShopIds(shopIds);
         criteria.setSkuCodes(skuCodes);
         criteria.setWarehouseIds(warehouseIds);
+        criteria.setStatusList(Arrays.asList(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_ING.getValue(),
+                MiddleShipmentsStatus.ACCEPTED.getValue(),
+                MiddleShipmentsStatus.WAIT_SHIP.getValue(),
+                MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_ACCEPT_FAILED.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_FAIL.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue(),
+                MiddleShipmentsStatus.SYNC_HK_CANCEL_FAIL.getValue()
+        ));
         List<ShipmentItem> shipmentItems = shipmentReadLogic.findShipmentItems(criteria);
         if(log.isDebugEnabled()){
             log.debug("query occupyed order occupied inventory , Jit shipment result is {} ",

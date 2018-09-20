@@ -45,8 +45,9 @@
         FROM
         <include refid="tb"/>
         WHERE
+         `status` !=-7
         <if test="shopIds != null">
-            shop_id IN
+            AND shop_id IN
             <foreach collection="shopIds" open="(" separator="," close=")" item="shopId">
                 #{shopId}
             </foreach>

@@ -671,6 +671,45 @@ public class AdminOrderWriter {
         return Response.ok(Boolean.TRUE);
     }
 
+
+    /**
+     *
+     * 正常订单占用库存发货单批量确认后同步mpos或者yyedi
+     * @return
+     */
+    @ApiOperation("占库发货单批量确认")
+    @RequestMapping(value = "/api/order/batch/occupy/shipment/confirm",method = RequestMethod.PUT)
+    @LogMe(description = "占库发货单批量确认",ignore = true)
+    public Response<Boolean> batchonfirmOrderOccupyShipments(@RequestParam(value = "ids") @LogMeContext List<Long> ids){
+        if (log.isDebugEnabled()){
+            log.debug("confirm order occupy shipments start,shopOrderIds {}",ids);
+        }
+        if (Objects.isNull(ids) || ids.isEmpty()) {
+            throw new JsonResponseException("order.ids.can.not.be.null");
+        }
+        for (Long shopOrderId:ids){
+            try {
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+                List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrderId);
+                for (Shipment shipment:shipments){
+                    //修改发货单类型，并且同步订单派发中心或者mpos
+                    shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(shipment.getId(),ShipmentOccupyType.SALE_N.name());
+                    shipmentWiteLogic.syncExchangeShipment(shipment.getId());
+                }
+                //确认订单之后，将未处理状态修改已经处理
+                shipmentWiteLogic.updateShipmentNote(shopOrder,OrderWaitHandleType.HANDLE_DONE.value());
+            }catch (Exception e){
+                log.error("batch confirm order occupy shipments failed,shopOrderId {},caused by {}",
+                        shopOrderId,Throwables.getStackTraceAsString(e));
+            }
+        }
+        if (log.isDebugEnabled()){
+            log.debug("confirm order occupy shipments end,shopOrderIds {}",ids);
+        }
+        return Response.ok(Boolean.TRUE);
+    }
+
+
     /**
      * 创建订单
      *

@@ -827,63 +827,6 @@ public class Shipments {
         }
 
     }
-    /**
-     * 批量订单生成发货单自动处理逻辑
-     *
-     * @param ids
-     * @return
-     */
-    @ApiOperation("批量同步发货单")
-    @RequestMapping(value = "api/shipments/batch/sync/hk", method = RequestMethod.PUT)
-    @LogMe(description = "批量同步发货单",ignore = true)
-    public void batchSyncHkShipments(@RequestParam(value = "ids") @LogMeContext List<Long> ids){
-        if(log.isDebugEnabled()){
-            log.debug("API-batchSyncHkShipments-START param: ids [{}] ",ids);
-        }
-        if (Objects.isNull(ids) || ids.isEmpty()) {
-            throw new JsonResponseException("shipment.ids.can.not.be.null");
-        }
-        for (Long shipmentId:ids){
-            OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
-            if (Objects.equals(orderShipment.getType(), 1)) {
-                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-                Map<String, String> extraMap = shopOrder.getExtra();
-                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-                if (!org.apache.commons.lang3.StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                    if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus) &&
-                            Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
-                       log.error("step order shipment can not be synced,shipmentId {}",shipmentId);
-                       continue;
-                    }
-                }
-                //如果是占库发货单同步订单派发中心，则订单未处理原因修改为已经处理
-                if (Objects.equals(orderShipment.getIsOccupyShipment(),ShipmentOccupyType.SALE_Y.toString())){
-                    shipmentWiteLogic.updateShipmentNote(shopOrder,OrderWaitHandleType.HANDLE_DONE.value());
-                    //占库发货单变为非占库发货单
-                    shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(orderShipment.getShipmentId(),ShipmentOccupyType.CHANGE_N.name());
-                }
-            }
-            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            //发货仓库是mpos仓且是店仓则同步到门店
-            if (Objects.equals(shipmentExtra.getShipmentWay(),TradeConstants.MPOS_SHOP_DELIVER)){
-                log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
-                ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-                shipmentWiteLogic.handleSyncShipment(shipment,2,shopOrder);;
-            }else{
-                log.info("sync shipment to hk,shipmentId is {}",shipment.getId());
-                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
-                    continue;
-                }
-            }
-        }
-        if(log.isDebugEnabled()){
-            log.debug("API-batchSyncHkShipments-END param: ids [{}] ",ids);
-        }
-    }
 
     /**
      * 取消发货单,这个时候没有同步到恒康

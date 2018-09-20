@@ -16,17 +16,13 @@ import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.service.*;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
-import com.pousheng.middle.order.service.MiddleShipmentWriteService;
-import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
-import com.pousheng.middle.order.service.PoushengSettlementPosWriteService;
-import com.pousheng.middle.warehouse.dto.InventoryDTO;
-import com.pousheng.middle.warehouse.enums.WarehouseType;
-import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
+import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.manager.WarehouseSkuStockManager;
+import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.web.events.trade.UnLockStockEvent;
 import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import com.pousheng.middle.web.order.component.*;
@@ -38,8 +34,6 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.swagger.annotations.ApiOperation;
-import io.terminus.applog.annotation.LogMe;
-import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -55,7 +49,6 @@ import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -71,10 +64,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -163,6 +152,9 @@ public class Shipments {
     private MiddleRefundWriteService middleRefundWriteService;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+
+    @Autowired
+    private JitRealtimeOrderStockManager jitRealtimeOrderStockManager;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
@@ -571,6 +563,11 @@ public class Shipments {
             // TODO
             // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
             shipmentWiteLogic.convertShipmentItem(shopOrder, warehouseId, shipmentItems);
+
+            //jit释放实效库存
+            if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
+                jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);
+            }
 
             Map<String, String> extraMap = shipment.getExtra();
             extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));

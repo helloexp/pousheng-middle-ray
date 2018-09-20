@@ -225,6 +225,7 @@ public class SyncWmsShipmentLogic {
      * @param shipment
      * @param shipmentDetail
      * @return
+     * //TODO log error
      */
     private List<WmsShipmentItem> getSyncWmsShipmentItem(Shipment shipment, ShipmentDetail shipmentDetail) {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
@@ -233,7 +234,6 @@ public class SyncWmsShipmentLogic {
         if (!rW.isSuccess()){
             throw new ServiceException("");
         }
-        WarehouseDTO warehouse = rW.getResult();
         List<WmsShipmentItem> items = Lists.newArrayListWithCapacity(shipmentItems.size());
 
         boolean isJitOrder=fromJit(shipmentDetail.getShopOrder());

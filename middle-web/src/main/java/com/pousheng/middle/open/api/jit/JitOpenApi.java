@@ -2,23 +2,33 @@ package com.pousheng.middle.open.api.jit;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.constants.SymbolConsts;
+import com.pousheng.middle.open.api.OpenClientOrderApi;
+import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.open.manager.JitOrderManager;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
 import com.pousheng.middle.web.events.trade.HandleJITBigOrderEvent;
+import com.pousheng.middle.web.utils.ApiParamUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.order.dto.OpenFullOrder;
-import io.terminus.open.client.order.dto.OpenFullOrderAddress;
-import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.open.client.order.dto.OpenFullOrderItem;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.annotations.OpenBean;
 import io.terminus.pampas.openplatform.annotations.OpenMethod;
 import io.terminus.pampas.openplatform.entity.OPResponse;
@@ -33,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import javax.validation.constraints.NotNull;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -56,7 +67,19 @@ public class JitOpenApi {
 
     @RpcConsumer
     private MiddleOrderReadService middleOrderReadService;
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
 
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+
+    @Autowired
+    private OpenShopCacher openShopCacher;
+    @Autowired
+    private OpenOrderConverter openOrderConverter;
+
+    @Autowired
+    private OpenClientOrderApi openClientOrderApi;
     /**
      * 保存时效的订单
      *
@@ -65,19 +88,34 @@ public class JitOpenApi {
      */
     @OpenMethod(key = "push.out.rt.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public void saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
-        log.info("receive yj rt order info {}", orderInfo);
+        log.info("PUSH-OUT-RT-ORDER-API START orderInfo:{}", orderInfo);
 
         OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
         //参数验证
         validateBaiscParam(fullOrderInfo);
         OPResponse<String> response =null;
         try {
-            response = jitOrderManager.handleRealTimeOrder(fullOrderInfo);
+            ApiParamUtil.validateRequired(fullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
+                "originShipFee","shipmentType","payType","status","channel","createdAt","stockId");
+            for(OpenFullOrderItem item:fullOrderInfo.getItem()){
+                ApiParamUtil.validateRequired(item,"outSkuorderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
+            }
+            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","mobile","province","city","region","detail");
+
+            response = handleRealTimeOrder(fullOrderInfo);
 
         } catch (JitUnlockStockTimeoutException juste) {
             log.warn("lock stock timeout. try to save unlock task biz to recover stock.", orderInfo,
                 Throwables.getStackTraceAsString(juste));
             jitOrderManager.saveUnlockInventoryTask(juste.getData());
+        } catch (ServiceException se) {
+            log.error("failed to save jit rt order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(se));
+            throw new OPServerException(200, se.getMessage());
+        } catch (OPServerException oe) {
+            log.error("failed to save jit rt order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(oe));
+            throw oe;
         } catch (Exception e) {
             log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo,
                 Throwables.getStackTraceAsString(e));
@@ -89,7 +127,7 @@ public class JitOpenApi {
                 JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(response));
             throw new OPServerException(200, response.getError());
         }
-        log.info("receive yj rt order:{} success",orderInfo);
+        log.info("PUSH-OUT-RT-ORDER-API END. success.{}",orderInfo);
     }
 
     /**
@@ -100,11 +138,20 @@ public class JitOpenApi {
      */
     @OpenMethod(key = "push.out.jit.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public void saveOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
-        log.info("receive yj jit order info {}", orderInfo);
+        log.info("PUSH-OUT-JIT-ORDER-API START.orderInfo: {}", orderInfo);
         try {
             OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
             //参数验证
              validateBaiscParam(fullOrderInfo);
+             ApiParamUtil.validateRequired(fullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
+                 "originShipFee","shipmentType","payType","type","status","channel","realtimeOrderIds","createdAt","stockId","interStockCode",
+                 "preFinishBillo","batchNo","batchMark","channelCode","expectDate","transportMethodCode","transportMethodName","cardRemark","jitOrderId");
+             for(OpenFullOrderItem item:fullOrderInfo.getItem()){
+                 ApiParamUtil.validateRequired(item,"outSkuorderId","vipsOrderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
+             }
+
+            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","mobile","province","city","region","detail");
+
             //验证时效订单是否存在
             Response<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);
             if (!realOrderValidateResp.isSuccess()) {
@@ -119,15 +166,25 @@ public class JitOpenApi {
                 HandleJITBigOrderEvent event = new HandleJITBigOrderEvent();
                 event.setId(response.getResult());
                 eventBus.post(event);
-                log.info("receive yj jit order success");
+                log.info("PUSH-OUT-JIT-ORDER-API END.success.{}",orderInfo);
             } else {
                 throw new OPServerException("failed.save.jit.big.order");
             }
 
+        } catch (ServiceException se) {
+            log.error("failed to save jit order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(se));
+            throw new OPServerException(200, se.getMessage());
+        } catch (OPServerException oe) {
+            log.error("failed to save jit order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(oe));
+            throw oe;
         } catch (Exception e) {
-            log.error("failed to save jit big order.param:{},cause:{}", orderInfo, Throwables.getStackTraceAsString(e));
-            throw new OPServerException(200,"failed.save.jit.big.order");
+            log.error("failed to save jit order.param:{},cause:{}", orderInfo,
+                Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200, "failed.save.jit.big.order");
         }
+
     }
 
     /**
@@ -180,6 +237,7 @@ public class JitOpenApi {
         if (Objects.isNull(address)) {
             throw new OPServerException(200,"openFullOrderAddress.is.null");
         }
+
     }
 
     /**
@@ -208,5 +266,53 @@ public class JitOpenApi {
         }
         List<Long> orderIds = response.getResult().stream().map(ShopOrder::getId).collect(Collectors.toList());
         return Response.ok(orderIds);
+    }
+
+    /**
+     * 处理时效订单
+     * @param openFullOrderInfo
+     * @return
+     */
+    protected OPResponse<String> handleRealTimeOrder(OpenFullOrderInfo openFullOrderInfo) {
+        String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
+            openFullOrderInfo.getOrder()
+                .getShopCode();
+
+        //查询该渠道的店铺信息
+        Long openShopId = openClientOrderApi.validateOpenShop(shopCode);
+        OpenShop openShop = openShopCacher.findById(openShopId);
+        Map<String, Integer> skuItemMap = Maps.newHashMap();
+        for (OpenFullOrderItem item : openFullOrderInfo.getItem()) {
+            skuItemMap.put(item.getSkuCode(), item.getQuantity());
+        }
+
+        //查询仓库编号
+        String stockId = openFullOrderInfo.getOrder().getStockId();
+        WarehouseDTO warehouseDTO = warehouseCacher.findByCode(stockId);
+
+        //验证库存是否足够
+        boolean outstock = jitOrderManager.validateInventory(openShopId, warehouseDTO.getId(), skuItemMap);
+        if (!outstock) {
+            return OPResponse.fail("inventory.not.enough");
+        }
+
+        //业务参数校验
+        OPResponse<String> response = jitOrderManager.validateBusiParam(openFullOrderInfo);
+        if (!response.isSuccess()) {
+            return response;
+        }
+        //组装参数
+        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
+
+        //设置为jit时效订单类型
+        openClientFullOrder.setType(MiddleOrderType.JIT_REAL_TIME.getValue());
+        //保存中台仓库id
+        Map<String,String> extraMap=openClientFullOrder.getExtra();
+        extraMap.put(JitConsts.WAREHOUSE_ID,String.valueOf(warehouseDTO.getId()));
+        //保存订单
+        jitOrderManager.handleReceiveOrder(OpenClientShop.from(openShop), Lists.newArrayList(openClientFullOrder),
+            warehouseDTO.getId());
+
+        return OPResponse.ok();
     }
 }

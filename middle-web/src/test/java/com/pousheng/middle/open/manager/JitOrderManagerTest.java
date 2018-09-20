@@ -156,7 +156,7 @@ public class JitOrderManagerTest {
         //order.setChannel(JitConsts.YUN_JU_JIT);
         //info.setOrder(order);
         //orders.add(info);
-        jitOrderManager.batchHandleRealTimeOrder(Lists.newArrayList(openFullOrderInfo));
+        //jitOrderManager.batchHandleRealTimeOrder(Lists.newArrayList(openFullOrderInfo));
     }
 
     @Test

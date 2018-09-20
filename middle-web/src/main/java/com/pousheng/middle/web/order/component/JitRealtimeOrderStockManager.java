@@ -19,6 +19,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.constants.ParanaTradeConstants;
+import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.service.SkuOrderReadService;
@@ -120,7 +121,7 @@ public class JitRealtimeOrderStockManager {
         List<String> outIds= Splitter.on(SymbolConsts.COMMA).trimResults().splitToList(orderIdsStr);
 
         Response<List<ShopOrder>> response = middleOrderReadService.findByOutIdsAndOutFrom(
-            outIds, order.getOutFrom());
+            outIds, JitConsts.YUNJU_REALTIME);
         if (response == null
             || !response.isSuccess()) {
             exceptionMsg= MessageFormat.format("failed.to.query.realtime.orders.param:{0},response:{1}",

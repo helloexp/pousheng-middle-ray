@@ -373,9 +373,10 @@ public class yyEDIOpenApi {
             for (YyEdiShipInfo yyEdiShipInfo : results) {
                 try {
                     String shipmentCode = yyEdiShipInfo.getShipmentId();
+                    validateWmsShipment(yyEdiShipInfo,fields);
+
                     Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
 
-                    validateWmsShipment(yyEdiShipInfo,fields);
                     if (yyEdiShipInfo.getItemInfos() != null) {
                         Integer size = yyEdiShipInfo.getItemInfos().stream().filter(e -> e.getQuantity() > 0).collect(Collectors.toList()).size();
                         if (size == 0) {
@@ -478,19 +479,51 @@ public class yyEDIOpenApi {
      */
     private void validateWmsShipment(YyEdiShipInfo shipInfo,List<YyEdiResponseDetail> fields){
         if(shipInfo==null){
-            throwValidateFailedException("",fields,"shipment info required");
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment info required");
         }
-        if(StringUtils.isEmpty(shipInfo.getCardRemark())){
-            throwValidateFailedException("",fields,"cardRemark required");
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getYyEDIShipmentId())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment yyEDIShipmentId required");
         }
-        if(StringUtils.isEmpty(shipInfo.getTransportMethodCode())){
-            throwValidateFailedException("",fields,"transportMethodCode required");
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getShipmentCorpCode())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment shipmentCorpCode required");
         }
-        if(StringUtils.isEmpty(shipInfo.getTransportMethodName())){
-            throwValidateFailedException("",fields,"transportMethodName required");
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getShipmentDate())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment shipmentDate required");
         }
-        if(StringUtils.isEmpty(shipInfo.getExpectDate())){
-            throwValidateFailedException("",fields,"expectDate required");
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getShipmentSerialNo())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment shipmentSerialNo required");
+        }
+
+
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getCardRemark())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment cardRemark required");
+        }
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getTransportMethodCode())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment transportMethodCode required");
+        }
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getTransportMethodName())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment transportMethodName required");
+        }
+        if(org.apache.commons.lang3.StringUtils.isBlank(shipInfo.getExpectDate())){
+            throwValidateFailedException(shipInfo.getShipmentId(),fields,"shipment expectDate required");
+        }
+
+        for(YyEdiShipInfo.ItemInfo itemInfo:shipInfo.getItemInfos()){
+            if(org.apache.commons.lang3.StringUtils.isBlank(itemInfo.getSkuCode())){
+                throwValidateFailedException(shipInfo.getShipmentId(),fields,"itemInfo skuCode required");
+            }
+            if(org.apache.commons.lang3.StringUtils.isBlank(itemInfo.getShipmentCorpCode())){
+                throwValidateFailedException(shipInfo.getShipmentId(),fields,"itemInfo shipmentCorpCode required");
+            }
+            if(org.apache.commons.lang3.StringUtils.isBlank(itemInfo.getShipmentSerialNo())){
+                throwValidateFailedException(shipInfo.getShipmentId(),fields,"itemInfo shipmentSerialNo required");
+            }
+            if(itemInfo.getQuantity()==null){
+                throwValidateFailedException(shipInfo.getShipmentId(),fields,"itemInfo quantity required");
+            }
+            if(org.apache.commons.lang3.StringUtils.isBlank(itemInfo.getBoxNo())){
+                throwValidateFailedException(shipInfo.getShipmentId(),fields,"itemInfo boxNo required");
+            }
         }
     }
 
@@ -503,8 +536,8 @@ public class yyEDIOpenApi {
     private void throwValidateFailedException(String shipmentId,List<YyEdiResponseDetail> fields,String message){
         YyEdiResponseDetail field = new YyEdiResponseDetail();
         field.setShipmentId(shipmentId);
-        field.setErrorCode("200");
-        field.setErrorMsg("");
+        field.setErrorCode("-100");
+        field.setErrorMsg(message);
         fields.add(field);
         throw new ServiceException(message);
     }

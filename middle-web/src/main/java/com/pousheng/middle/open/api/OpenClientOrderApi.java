@@ -13,7 +13,6 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.job.order.component.OrderExecutor;
-import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -161,7 +160,7 @@ public class OpenClientOrderApi {
      * @param shopCode
      * @return
      */
-    private Long validateOpenShop(String shopCode){
+    public Long validateOpenShop(String shopCode){
 
         //查询店铺的信息，如果没有就新建一个
         Response<List<OpenClientShop>> rP = openShopReadService.search(null,null,shopCode);

@@ -4,37 +4,28 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.constants.SymbolConsts;
 import com.pousheng.middle.open.PsOrderReceiver;
 import com.pousheng.middle.open.component.OpenOrderConverter;
-import com.pousheng.middle.order.dto.fsm.MiddleOrderType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
-import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
-import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
-import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientFullOrder;
 import io.terminus.open.client.order.dto.OpenFullOrder;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
-import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.pampas.openplatform.entity.OPResponse;
-import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.api.AbstractPersistedOrderMaker;
 import io.terminus.parana.order.dto.PersistedOrderInfos;
@@ -46,7 +37,6 @@ import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,14 +56,6 @@ public class JitOrderManager extends PsOrderReceiver {
     private final AbstractPersistedOrderMaker orderMaker;
     private final OrderManager orderManager;
 
-    private final RedisLockClient redisLockClient;
-    private final OpenShopCacher openShopCacher;
-
-    /**
-     * 根据渠道判断订单是否插入中台
-     */
-    private static final String IS_ORDER_INSERT_MIDDLE = "isOrderInsertMiddle";
-
     @RpcConsumer
     private OpenShopReadService openShopReadService;
 
@@ -83,91 +65,20 @@ public class JitOrderManager extends PsOrderReceiver {
 
     private final InventoryClient inventoryClient;
 
-    @Autowired
-    private WarehouseCacher warehouseCacher;
-
     @RpcConsumer
     private OrderWriteService orderWriteService;
 
     @RpcConsumer
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
-    public JitOrderManager(AbstractPersistedOrderMaker orderMaker, OrderManager orderManager,
-                           OpenShopCacher openShopCacher, InventoryClient inventoryClient,
-                           OpenOrderConverter openOrderConverter, RedisLockClient redisLockClient) {
+    public static final JsonMapper mapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
+
+    public JitOrderManager(AbstractPersistedOrderMaker orderMaker, OrderManager orderManager, InventoryClient inventoryClient,
+                           OpenOrderConverter openOrderConverter) {
         this.orderMaker = orderMaker;
         this.orderManager = orderManager;
-        this.openShopCacher = openShopCacher;
-        this.redisLockClient = redisLockClient;
         this.openOrderConverter = openOrderConverter;
         this.inventoryClient = inventoryClient;
-    }
-
-    /**
-     * 批量处理时效订单
-     *
-     * @param orders 订单列表
-     * @return
-     */
-    @Transactional
-    public OPResponse<String> batchHandleRealTimeOrder(List<OpenFullOrderInfo> orders) {
-        for (OpenFullOrderInfo openFullOrderInfo : orders) {
-            OPResponse<String> response = handleRealTimeOrder(openFullOrderInfo);
-            if (!response.isSuccess()) {
-                return response;
-            }
-        }
-
-        return OPResponse.ok();
-    }
-
-    /**
-     * 处理时效订单
-     *
-     * @param openFullOrderInfo 订单信息
-     */
-    @Transactional
-    public OPResponse<String> handleRealTimeOrder(OpenFullOrderInfo openFullOrderInfo) {
-        String shopCode = openFullOrderInfo.getOrder().getCompanyCode() + SymbolConsts.MINUS +
-            openFullOrderInfo.getOrder()
-                .getShopCode();
-
-        //查询该渠道的店铺信息
-        Long openShopId = validateOpenShop(shopCode);
-        OpenShop openShop = openShopCacher.findById(openShopId);
-        Map<String, Integer> skuItemMap = Maps.newHashMap();
-        for (OpenFullOrderItem item : openFullOrderInfo.getItem()) {
-            skuItemMap.put(item.getSkuCode(), item.getQuantity());
-        }
-
-        //查询仓库编号
-        String stockId = openFullOrderInfo.getOrder().getStockId();
-        WarehouseDTO warehouseDTO = warehouseCacher.findByCode(stockId);
-
-        //验证库存是否足够
-        boolean outstock = validateInventory(openShopId, warehouseDTO.getId(), skuItemMap);
-        if (!outstock) {
-            return OPResponse.fail("inventory.not.enough");
-        }
-
-        //业务参数校验
-        OPResponse<String> response = validateBusiParam(openFullOrderInfo);
-        if (!response.isSuccess()) {
-            return response;
-        }
-        //组装参数
-        OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
-
-        //设置为jit时效订单类型
-        openClientFullOrder.setType(MiddleOrderType.JIT_REAL_TIME.getValue());
-        //保存中台仓库id
-        Map<String,String> extraMap=openClientFullOrder.getExtra();
-        extraMap.put(JitConsts.WAREHOUSE_ID,String.valueOf(warehouseDTO.getId()));
-        //保存订单
-        handleReceiveOrder(OpenClientShop.from(openShop), Lists.newArrayList(openClientFullOrder),
-            warehouseDTO.getId());
-
-        return OPResponse.ok();
     }
 
     /**
@@ -228,36 +139,37 @@ public class JitOrderManager extends PsOrderReceiver {
         lockInventory(warehouseId, persistedOrderInfos.getSkuOrdersByShopId());
     }
 
-    /**
-     * 查询外部渠道
-     *
-     * @param shopCode
-     * @return
-     */
-    private Long validateOpenShop(String shopCode) {
-
-        //查询店铺的信息，如果没有就新建一个
-        Response<List<OpenClientShop>> rP = openShopReadService.search(null, null, shopCode);
-        if (!rP.isSuccess()) {
-            log.error("find open shop failed,shopCode is {},caused by {}", shopCode, rP.getError());
-            throw new ServiceException("find.open.shop.failed");
-        }
-        List<OpenClientShop> openClientShops = rP.getResult();
-        if(CollectionUtils.isEmpty(openClientShops)) {
-            throw new OPServerException(200,"find.open.shop.fail");
-        }
-        java.util.Optional<OpenClientShop> openClientShopOptional = openClientShops.stream().findAny();
-        OpenClientShop openClientShop = openClientShopOptional.get();
-        return openClientShop.getOpenShopId();
-
-    }
+    ///**
+    // * 查询外部渠道
+    // *
+    // * @param shopCode
+    // * @return
+    // */
+    ////TODO
+    //public Long validateOpenShop(String shopCode) {
+    //
+    //    //查询店铺的信息
+    //    Response<List<OpenClientShop>> rP = openShopReadService.search(null, null, shopCode);
+    //    if (!rP.isSuccess()) {
+    //        log.error("find open shop failed,shopCode is {},caused by {}", shopCode, rP.getError());
+    //        throw new ServiceException("find.open.shop.failed");
+    //    }
+    //    List<OpenClientShop> openClientShops = rP.getResult();
+    //    if(CollectionUtils.isEmpty(openClientShops)) {
+    //        throw new OPServerException(200,"find.open.shop.fail");
+    //    }
+    //    java.util.Optional<OpenClientShop> openClientShopOptional = openClientShops.stream().findAny();
+    //    OpenClientShop openClientShop = openClientShopOptional.get();
+    //    return openClientShop.getOpenShopId();
+    //
+    //}
 
     /**
      * 业务参数校验
      *
      * @param openFullOrderInfo
      */
-    private OPResponse<String> validateBusiParam(OpenFullOrderInfo openFullOrderInfo) {
+    public OPResponse<String> validateBusiParam(OpenFullOrderInfo openFullOrderInfo) {
         OpenFullOrder openFullOrder = openFullOrderInfo.getOrder();
         if (Objects.isNull(openFullOrder.getOutOrderId())) {
             return OPResponse.fail("outOrderId.is.null");
@@ -267,6 +179,7 @@ public class JitOrderManager extends PsOrderReceiver {
         }
         String outId = openFullOrder.getOutOrderId();
         String channel = openFullOrder.getChannel();
+        //TODO  remove
         Response<Optional<ShopOrder>> rP = shopOrderReadService.findByOutIdAndOutFrom(outId, channel);
         if (!rP.isSuccess()) {
             log.error("find shopOrder failed,outId is {},outFrom is {},caused by {}", outId, channel, rP.getError());
@@ -287,6 +200,7 @@ public class JitOrderManager extends PsOrderReceiver {
         List<AvailableInventoryRequest> requests = Lists.newArrayList();
         if (skus == null
             || skus.isEmpty()) {
+            log.warn("sku info is empty.shopId:{},warehouseId:{},skus:{}",shopId,warehouseId,skus);
             return false;
         }
         //构造请求参数
@@ -301,30 +215,39 @@ public class JitOrderManager extends PsOrderReceiver {
         try {
             //发送http请求查询库存
             Response<List<AvailableInventoryDTO>> response = inventoryClient.getAvailableInventory(requests, shopId);
-            log.info("query available inventory.result:{}",JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(response));
+            log.info("query available inventory.result:{}",mapper.toJson(response));
             if (!response.isSuccess()) {
+                log.warn("failed to query available inventory.shopId:{},request param:{},response:{}",shopId,
+                    mapper.toJson(requests),mapper.toJson(response));
                 return false;
             }
 
             List<AvailableInventoryDTO> list = response.getResult();
             if (CollectionUtils.isEmpty(list)) {
+                log.warn("query available inventory result is empty.shopId:{},request param:{},response:{}",shopId,
+                    mapper.toJson(requests),mapper.toJson(response));
                 return false;
             }
 
             for (AvailableInventoryDTO dto : list) {
                 Integer quantity = skus.get(dto.getSkuCode());
                 if (quantity == null) {
+                    log.warn("sku code {} quantity is null .shopId:{},skucode:{}",shopId,dto.getSkuCode());
                     continue;
                 }
                 if (dto.getTotalAvailQuantity() == null) {
+                    log.warn("sku code {} total availalbe quantity is null .shopId:{},response:{}",shopId,
+                        mapper.toJson(response));
                     return false;
                 }
                 if (quantity.compareTo(dto.getTotalAvailQuantity()) >= 0) {
+                    log.warn("sku code {} total availalbe quantity less than target qty .shopId:{},response:{},target qty:{}",
+                        shopId,mapper.toJson(response),quantity);
                     return false;
                 }
             }
         } catch (Exception e) {
-            log.error("failed to query inventory,shopId:{},AvailableInventoryRequest:{}", shopId, requests);
+            log.error("failed to query inventory,shopId:{},AvailableInventoryRequest:{}", shopId, mapper.toJson(requests));
             return false;
         }
         return true;
@@ -354,7 +277,8 @@ public class JitOrderManager extends PsOrderReceiver {
         }
         Response<Boolean> response = inventoryClient.lock(inventoryTradeDTOList);
         if (!response.isSuccess() || !response.getResult()) {
-            log.error("failed to lock inventory.param:{}", inventoryTradeDTOList);
+            log.error("failed to lock inventory.param:{}.response:{}", mapper.toJson(inventoryTradeDTOList),
+                mapper.toJson(response));
             // save unlock inventory task.
             if (Objects.equals(response.getError(), "inventory.response.timeout")) {
                 JitUnlockStockTimeoutException exception = new JitUnlockStockTimeoutException();

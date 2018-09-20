@@ -27,6 +27,8 @@ import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.assertj.core.util.Lists;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -306,7 +308,7 @@ public class SyncOrderToEcpLogic {
                         logisticsInfo.setAmount(shipmentItem.getShipQuantity()==null?shipmentItem.getQuantity():shipmentItem.getShipQuantity()); //实际发货数量
 
                         //增加jit新增字段
-                        logisticsInfo.setArrival_time(shipmentExtra.getExpectDate());
+                        logisticsInfo.setArrival_time(convertDateFormat(shipmentExtra.getExpectDate()));
                         logisticsInfo.setDelivery_method(shipmentExtra.getTransportMethodCode());
                         if (shipmentExtra.getBoxNoMap() != null) {
                             logisticsInfo.setBox_no(shipmentExtra.getBoxNoMap().get(shipmentItem.getSkuCode()));
@@ -366,5 +368,10 @@ public class SyncOrderToEcpLogic {
         }
         return Response.ok(Boolean.TRUE);
 
+    }
+
+    private static String convertDateFormat(String date){
+        DateTime dateTime=DateTime.parse(date, DateTimeFormat.forPattern("yyyyMMddHHmmss"));
+        return dateTime.toString("yyyy-MM-dd HH:mm:ss");
     }
 }

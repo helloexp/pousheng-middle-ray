@@ -475,4 +475,28 @@ public class PoushengYJErpTest {
         post("http://middle-api-test.pousheng.com/api/gateway", params);
     }
 
+    @Test
+    public void testWMSjitShipment(){
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey", "pousheng");
+        params.put("pampasCall", "jit.shipments.api");
+
+        String shipInfo="[{\"cardRemark\":\"\",\"expectDate\":\"20180918235900\",\"itemInfos\":[],"
+            + "\"shipmentCorpCode\":\"品骏\",\"shipmentDate\":\"\",\"shipmentId\":\"SHP8659292\","
+            + "\"shipmentSerialNo\":\"\",\"transportMethodCode\":\"1\",\"transportMethodName\":\"汽运\",\"weight\":0.0,"
+            + "\"yyEDIShipmentId\":\"1809X0028\"}]";
+        params.put("shipInfo", shipInfo);
+
+
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+            .putString(toVerify, Charsets.UTF_8)
+            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+        params.put("sign", sign);
+
+        post("http://127.0.0.1:8092/api/gateway",params);
+
+        //post("http://middle-api-test.pousheng.com/api/gateway", params);
+    }
+
 }

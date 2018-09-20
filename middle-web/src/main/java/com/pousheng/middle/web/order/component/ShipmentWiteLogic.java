@@ -894,6 +894,10 @@ public class ShipmentWiteLogic {
         Long shipmentId = null;
         //创建发货单
         try {
+            //jit释放实效库存
+            if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
+                jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);
+            }
             shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
         } catch (Exception e) {
             log.error("create shipment fail and lock stock fail");
@@ -1564,7 +1568,7 @@ public class ShipmentWiteLogic {
                     }
                 }
             } catch (Exception e) {
-                log.error("warehouse dispatch order fail, sku info {}, order id {}", warehouseShipment.getSkuCodeAndQuantities(), shopOrder.getId());
+                log.error("warehouse dispatch order fail, sku info {}, order id {}", warehouseShipment.getSkuCodeAndQuantities(), shopOrder.getId(),e);
                 skuCodeAndQuantityList.addAll(warehouseShipment.getSkuCodeAndQuantities());
             }
         }

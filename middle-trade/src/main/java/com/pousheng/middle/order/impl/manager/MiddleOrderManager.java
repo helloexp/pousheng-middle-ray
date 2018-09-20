@@ -220,6 +220,7 @@ public class MiddleOrderManager {
             if(!flag){
                 exceptionMsg= MessageFormat.format("failed to update shop order[{0}] to status[{1}].param:{2}",
                     orderId,status,mapper.toJson(shopOrderIds));
+                log.error(exceptionMsg);
                 throw new ServiceException(exceptionMsg);
             }
         }
@@ -229,6 +230,7 @@ public class MiddleOrderManager {
             if(!flag){
                 exceptionMsg= MessageFormat.format("failed to update sku order[{0}] to status[{1}].param:{2}",
                     skuOrderId,status,mapper.toJson(skuOrderIds));
+                log.error(exceptionMsg);
                 throw new ServiceException(exceptionMsg);
             }
         }

@@ -19,8 +19,8 @@
         <result column="quantity" property="quantity"/>
         <result column="status" property="status"/>
         <result column="cause" property="cause"/>
-        <result column="requestNo" property="requestNo"/>
-        <result column="lineNo" property="lineNo"/>
+        <result column="request_no" property="requestNo"/>
+        <result column="line_no" property="lineNo"/>
         <result column="sync_at" property="syncAt"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>

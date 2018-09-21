@@ -100,7 +100,7 @@ public class JitOpenApi {
             for(OpenFullOrderItem item:fullOrderInfo.getItem()){
                 ApiParamUtil.validateRequired(item,"outSkuorderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
             }
-            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","mobile","province","city","region","detail");
+            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","province","city","region","detail");
 
             response = handleRealTimeOrder(fullOrderInfo);
 
@@ -150,7 +150,7 @@ public class JitOpenApi {
                  ApiParamUtil.validateRequired(item,"outSkuorderId","vipsOrderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
              }
 
-            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","mobile","province","city","region","detail");
+            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","province","city","region","detail");
 
             //验证时效订单是否存在
             Response<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);

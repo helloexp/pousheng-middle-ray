@@ -266,8 +266,8 @@ public class JitOrderManager extends PsOrderReceiver {
 
         for (SkuOrder skuOrder : skuOrderMultimap.values()) {
             dto = InventoryTradeDTO.builder()
-                .bizSrcId(skuOrder.getOrderId().toString())
-                .subBizSrcId(Lists.newArrayList(skuOrder.getOrderId().toString()))
+                .bizSrcId("SAL"+skuOrder.getOrderId().toString())
+                .subBizSrcId(Lists.newArrayList("SAL"+skuOrder.getOrderId()))
                 .shopId(skuOrder.getShopId())
                 .quantity(skuOrder.getQuantity())
                 .skuCode(skuOrder.getSkuCode())

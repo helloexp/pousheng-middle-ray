@@ -192,6 +192,7 @@ public class OpenOrderConverter {
             if (order.getChannel().contains("yunju")) {
                 orderItem.setDiscount(itemInfo.getDiscount().intValue());
             }
+            orderItem.setOutOrderId(itemInfo.getVipsOrderId());
             orderItems.add(orderItem);
         }
         fullOrder.setItems(orderItems);

@@ -138,7 +138,7 @@ public class AdminOrderWriter {
             ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //同步到电商平台
             String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())){
+            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())){
                 //同步到云聚
                 syncOrderToEcpLogic.syncToYunJu(shopOrder);
 

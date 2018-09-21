@@ -107,7 +107,7 @@ public class EcpOrderLogic {
         //最后一个发货单发货完成之后需要将订单同步到电商
         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())){
-            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())){
+            if( Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())){
                 //同步到云聚
                 Response<Boolean> response = syncOrderToEcpLogic.syncToYunJu(shopOrder);
                 if (!response.isSuccess()){

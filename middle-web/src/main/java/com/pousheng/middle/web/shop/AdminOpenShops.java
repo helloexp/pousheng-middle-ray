@@ -184,7 +184,7 @@ public class AdminOpenShops {
     private void addExtraInfo (OpenShop openShop) {
         Map<String, String> jsonMap = openShop.getExtra();
         // 云聚类型订单
-        if(Objects.equals(MiddleChannel.YJ.getValue(), openShop.getChannel())) {
+        if(Objects.equals(MiddleChannel.YUNJUBBC.getValue(), openShop.getChannel())) {
             jsonMap.put("isCareStock","0");
             jsonMap.put("isOrderInsertMiddle","true");
         }
@@ -236,7 +236,7 @@ public class AdminOpenShops {
             }
         }
         // 云聚类型订单
-        if(Objects.equals(MiddleChannel.YJ.getValue(), openShop.getChannel())) {
+        if(Objects.equals(MiddleChannel.YUNJUBBC.getValue(), openShop.getChannel())) {
             jsonMap.put("isCareStock","0");
             jsonMap.put("isOrderInsertMiddle","true");
         }

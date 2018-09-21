@@ -105,6 +105,13 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     @JsonProperty(value = "ExpressType")
     private String ExpressType;
 
+
+    /**
+     *快递单号
+     */
+    @JsonProperty(value = "ExpressBillNo")
+    private String ExpressBillNo;
+
     /**
      *是否开票
      */
@@ -740,6 +747,14 @@ public class YYEdiShipmentInfo implements java.io.Serializable {
     @JsonIgnore
     public void setERPBillNo(String ERPBillNo) {
         this.ERPBillNo = ERPBillNo;
+    }
+    @JsonIgnore
+    public String getExpressBillNo() {
+        return ExpressBillNo;
+    }
+    @JsonIgnore
+    public void setExpressBillNo(String expressBillNo) {
+        ExpressBillNo = expressBillNo;
     }
 
     public List<YYEdiShipmentItem> getItems() {

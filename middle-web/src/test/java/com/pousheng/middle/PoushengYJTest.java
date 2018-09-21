@@ -322,7 +322,7 @@ public class PoushengYJTest {
         refundOrder.setStatus(1);
         refundOrder.setApplyAt("20180417 165101");
         refundOrder.setExpressCode("expresscode-002");
-        refundOrder.setChannel(MiddleChannel.YJ.getValue());
+        refundOrder.setChannel(MiddleChannel.YUNJUBBC.getValue());
         ArrayList<OutOrderRefundItem> items = Lists.newArrayList();
         OutOrderRefundItem item = new OutOrderRefundItem();
         item.setAfterSaleId("888888");

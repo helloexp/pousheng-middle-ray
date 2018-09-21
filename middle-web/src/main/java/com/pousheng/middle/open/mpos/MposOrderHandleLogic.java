@@ -147,12 +147,14 @@ public class MposOrderHandleLogic {
                     }
                 }
                 // 圆通回传的快递单号
-                if (Objects.nonNull(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
+                if (!StringUtils.isEmpty(extra)
+                        && !StringUtils.isEmpty(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
                     shipmentExtra.setCallbackMailNo(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
                     update.setShipmentSerialNo(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
                 }
                 // 物流单号
-                if (Objects.nonNull(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
+                if (!StringUtils.isEmpty(extra)
+                        && !StringUtils.isEmpty(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
                     shipmentExtra.setExpressOrderId(extra.get(TradeConstants.EXPRESS_ORDER_ID));
                 }
 

@@ -15,6 +15,9 @@ public class ShipmentExportEntity {
     @ExportTitle("店铺")
     private String shopName;
 
+    @ExportTitle("服务方区部")
+    private String serverArea;
+
     @ExportTitle("订单号")
     private String orderCode;
 
@@ -69,11 +72,17 @@ public class ShipmentExportEntity {
     @ExportTitle("发货状态")
     private String shipmentStatus;
 
+    @ExportTitle("拒绝原因")
+    private String rejectReason;
+
     @ExportTitle("发货方式")
     private String shipWay;
 
     @ExportTitle("发货方")
     private String warehouseName;
+
+    @ExportTitle("发货方区部")
+    private String shipArea;
 
     @ExportTitle("物流单号")
     private String expressOrderId;

@@ -36,6 +36,8 @@ import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
+import io.terminus.parana.shop.model.Shop;
+import io.terminus.parana.shop.service.ShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.model.Spu;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
@@ -82,6 +84,8 @@ public class ExportTradeBillListener {
     private ShopOrderReadService shopOrderReadService;
     @RpcConsumer
     private SkuTemplateReadService skuTemplateReadService;
+    @RpcConsumer
+    private ShopReadService shopReadService;
 
     @Autowired
     private RefundReadLogic refundReadLogic;
@@ -540,6 +544,10 @@ public class ExportTradeBillListener {
                         String shipWay="";
                         if (shipmentContext.getShipment().getShipWay()==1){
                             shipWay="店发";
+                            Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
+                            if (shopResponse.isSuccess()) {
+                                entity.setShipArea(shopResponse.getResult().getZoneName());
+                            }
                         }
                         if (shipmentContext.getShipment().getShipWay()==2){
                             shipWay="仓发";
@@ -549,7 +557,12 @@ public class ExportTradeBillListener {
                     }
                     //发货方
                     entity.setWarehouseName(shipmentExtra.getWarehouseName());
+
                     entity.setShopName(shipmentContext.getOrderShipment().getShopName());
+                    OpenShop serverShop = openShopCacher.findById(shipmentContext.getOrderShipment().getShopId());
+                    if (serverShop.getShopName().startsWith("mpos")) {
+                        entity.setServerArea(serverShop.getExtra().get("zoneName"));
+                    }
                     entity.setOrderCode(shipmentContext.getOrderShipment().getOrderCode());
                     entity.setMaterialCode(getMaterialCode(item.getSkuCode(),querySkuCodes));
                     entity.setShipmenCode(shipmentContext.getShipment().getShipmentCode());
@@ -576,6 +589,9 @@ public class ExportTradeBillListener {
                     entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
                     String shipmentStatus = convertStatus(shipmentContext.getShipment().getStatus(), shipmentContext.getShipment().getShipWay());
                     entity.setShipmentStatus(shipmentStatus);
+                    if (Objects.equals(shipmentContext.getShipment().getStatus(), MiddleShipmentsStatus.REJECTED.getValue())) {
+                        entity.setRejectReason(shipmentExtra.getRejectReason());
+                    }
                     shipmentExportEntities.add(entity);
 
                 });

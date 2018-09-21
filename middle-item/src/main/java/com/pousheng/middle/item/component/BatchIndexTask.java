@@ -9,6 +9,7 @@ import com.pousheng.middle.item.dto.IndexedStockLog;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.search.core.ESClient;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -57,6 +58,13 @@ public class BatchIndexTask {
         } catch (Exception e) {
             log.error("batch dump json:{} fail,cause:{}", dumpBodyJson, Throwables.getStackTraceAsString(e));
         }
+    }
+
+
+    public Boolean batchDelete(String index, String type, Integer days) {
+        DateTime today = new DateTime().dayOfWeek().roundFloorCopy();
+        String criteria = "{\"query\":{\"bool\":{\"must\":[{\"range\":{\"createdAt\":{\"lte\":\"" + today.minusDays(days).toDate().getTime() + "\"}}}]}}}";
+        return esClient.deleteByQuery(index, type, criteria);
     }
 
 

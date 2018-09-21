@@ -26,6 +26,15 @@ public interface SkuTemplateDumpService {
      */
     Response<Boolean> deltaDump(Integer interval);
 
+    /**
+     * 删除指定天数前的日志
+     * @param index
+     * @param type
+     * @param days 天数
+     * @return
+     */
+    Response<Boolean> batchDelete(String index, String type, Integer days);
+
 
     /**
      * 批量打标

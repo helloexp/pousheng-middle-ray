@@ -3,6 +3,7 @@ package com.pousheng.middle.warehouse.service;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import io.terminus.common.model.Response;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -42,4 +43,13 @@ public interface MiddleStockPushLogWriteService {
      * @return
      */
     public Response<Boolean> updateStatusByRequest(StockPushLog stockPushLog);
+
+
+    /**
+     * 删除指定日期前的所有日志
+     * @param date
+     * @return
+     */
+    Response<Boolean> deleteByBeforeDate(Date date);
+
 }

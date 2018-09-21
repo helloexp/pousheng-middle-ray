@@ -9,6 +9,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -88,6 +89,17 @@ public class MiddleStockPushLogWriteSeriveImpl implements MiddleStockPushLogWrit
         } catch (Exception e) {
             log.error("create stockPushLogDao failed, stockPushLogDao:{}, cause:{}", stockPushLogDao, Throwables.getStackTraceAsString(e));
             return Response.fail("stockPushLogDao.create.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> deleteByBeforeDate(Date date) {
+        try {
+            stockPushLogDao.deleteByBeforeDate(date);
+            return Response.ok(Boolean.TRUE);
+        } catch (Exception e) {
+            log.error("delete stock log before {} failed, cause:{}", date, Throwables.getStackTraceAsString(e));
+            return Response.fail("stockPushLogDao.delete.fail");
         }
     }
 

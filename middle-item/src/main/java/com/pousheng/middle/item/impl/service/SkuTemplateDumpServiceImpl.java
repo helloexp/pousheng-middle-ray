@@ -79,8 +79,6 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     private SkuTemplateReadService skuTemplateReadService;
 
 
-
-
     /**
      * 全量dump商品, 只dump x天有更新的商品
      */
@@ -96,7 +94,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
                     .withTimeAtStartOfDay()
                     .minusDays(fullDumpRange));
             Stopwatch watch = Stopwatch.createStarted();
-            int allIndexed = doIndex(since,Boolean.TRUE);
+            int allIndexed = doIndex(since, Boolean.TRUE);
             watch.stop();
             log.info("item full dump end, cost: {} ms, dumped {} items",
                     watch.elapsed(TimeUnit.MILLISECONDS), allIndexed);
@@ -121,7 +119,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             Stopwatch watch = Stopwatch.createStarted();
             // interval分钟前的时间
             String since = DATE_TIME_FORMAT.print(new DateTime().minusMinutes(interval));
-            int allIndexed = doIndex(since,Boolean.FALSE);
+            int allIndexed = doIndex(since, Boolean.FALSE);
 
             watch.stop();
             log.info("item delta dump end, cost: {} ms, dumped {} items",
@@ -134,16 +132,27 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     }
 
     @Override
-    public Response<Boolean> batchDump(List<SkuTemplate> skuTemplates,Integer type) {
+    public Response<Boolean> batchDelete(String index, String type, Integer days) {
         try {
-            if(CollectionUtils.isEmpty(skuTemplates)){
+            Boolean resp = batchIndexTask.batchDelete(index, type, days);
+            return Response.ok(resp);
+        } catch (Exception e) {
+            log.error("failed to execute items delta dump, cause: {}", Throwables.getStackTraceAsString(e));
+            return Response.fail("item.dump.fail");
+        }
+    }
+
+    @Override
+    public Response<Boolean> batchDump(List<SkuTemplate> skuTemplates, Integer type) {
+        try {
+            if (CollectionUtils.isEmpty(skuTemplates)) {
                 return Response.ok();
             }
-            toDump(skuTemplates,Boolean.TRUE,type);
+            toDump(skuTemplates, Boolean.TRUE, type);
 
             return Response.ok();
-        }catch (Exception e){
-            log.error("batch dump sku template:{} fail,cause:{}",skuTemplates,Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("batch dump sku template:{} fail,cause:{}", skuTemplates, Throwables.getStackTraceAsString(e));
             return Response.fail("batch.dump.fail");
         }
     }
@@ -151,18 +160,18 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
     @Override
     public Response<Boolean> batchGroupDump(List<SkuTemplate> skuTemplates) {
         try {
-            if(CollectionUtils.isEmpty(skuTemplates)){
+            if (CollectionUtils.isEmpty(skuTemplates)) {
                 return Response.ok();
             }
-            toDump(skuTemplates,Boolean.TRUE,0);
+            toDump(skuTemplates, Boolean.TRUE, 0);
             return Response.ok();
-        }catch (Exception e){
-            log.error("batch dump sku template:{} fail,cause:{}",skuTemplates,Throwables.getStackTraceAsString(e));
+        } catch (Exception e) {
+            log.error("batch dump sku template:{} fail,cause:{}", skuTemplates, Throwables.getStackTraceAsString(e));
             return Response.fail("batch.dump.fail");
         }
     }
 
-    private int doIndex(String since,Boolean isFullDump) {
+    private int doIndex(String since, Boolean isFullDump) {
         // 最大的商品id
         Long lastId = skuTemplateExtDao.maxId() + 1;
         // 计数本次full dump的商品数
@@ -172,7 +181,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             if (Iterables.isEmpty(skuTemplates)) {
                 break;
             }
-            toDump(skuTemplates,isFullDump,0);
+            toDump(skuTemplates, isFullDump, 0);
             allIndexed += skuTemplates.size();
             log.info("has indexed {} items,and last handled id is {}", allIndexed, lastId);
             lastId = Iterables.getLast(skuTemplates).getId();
@@ -184,7 +193,7 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
         return allIndexed;
     }
 
-    private void toDump(List<SkuTemplate> skuTemplates,Boolean isFullDump,Integer type){
+    private void toDump(List<SkuTemplate> skuTemplates, Boolean isFullDump, Integer type) {
 
 
         List<Long> spuIds = Lists.transform(skuTemplates, new Function<SkuTemplate, Long>() {
@@ -213,42 +222,42 @@ public class SkuTemplateDumpServiceImpl implements SkuTemplateDumpService {
             }
         });
 
-        if(isFullDump){
+        if (isFullDump) {
             List<IndexedSkuTemplate> indexedSkuTemplates = Lists.newArrayListWithCapacity(skuTemplates.size());
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
 
-                    if(!Objects.equal(skuTemplate.getStatus(),1)){
-                        log.warn("sku template(id:{}) status:{} invalid so skip create search index",skuTemplate.getId(),skuTemplate.getStatus());
+                    if (!Objects.equal(skuTemplate.getStatus(), 1)) {
+                        log.warn("sku template(id:{}) status:{} invalid so skip create search index", skuTemplate.getId(), skuTemplate.getStatus());
                         continue;
                     }
 
-                    Map<String,String> extra = skuTemplate.getExtra();
+                    Map<String, String> extra = skuTemplate.getExtra();
                     //当没找到sku对应的货号时跳过
-                    if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
-                        log.warn("sku template(id:{}) not find material id so skip create search index",skuTemplate.getId());
+                    if (Arguments.isNull(extra) || !extra.containsKey("materialId")) {
+                        log.warn("sku template(id:{}) not find material id so skip create search index", skuTemplate.getId());
                         continue;
                     }
-                    IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
+                    IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()), groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
                     indexedSkuTemplates.add(indexedItem);
                 } catch (Exception e) {
                     log.error("failed to index skuTemplate(id={}),cause:{}", skuTemplate.getId(), Throwables.getStackTraceAsString(e));
                 }
             }
-            batchIndexTask.batchDump(indexedSkuTemplates,type);
-        }else {
+            batchIndexTask.batchDump(indexedSkuTemplates, type);
+        } else {
             for (SkuTemplate skuTemplate : skuTemplates) {
                 try {
                     //更新
                     if (indexedSkuTemplateGuarder.indexable(skuTemplate)) {
-                        Map<String,String> extra = skuTemplate.getExtra();
+                        Map<String, String> extra = skuTemplate.getExtra();
                         //当没找到sku对应的货号时跳过
-                        if(Arguments.isNull(extra)||!extra.containsKey("materialId")){
-                            log.warn("sku template(id:{}) not find material id so skip create search index",skuTemplate.getId());
+                        if (Arguments.isNull(extra) || !extra.containsKey("materialId")) {
+                            log.warn("sku template(id:{}) not find material id so skip create search index", skuTemplate.getId());
                             continue;
                         }
-                        IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()),groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
-                        batchIndexTask.batchDump(Lists.newArrayList(indexedItem),type);
+                        IndexedSkuTemplate indexedItem = indexedItemFactory.create(skuTemplate, groupSpuById.get(skuTemplate.getSpuId()), groupSpuAttributebySpuId.get(skuTemplate.getSpuId()));
+                        batchIndexTask.batchDump(Lists.newArrayList(indexedItem), type);
                         /*IndexTask indexTask = indexedItemIndexAction.indexTask(indexedItem);
                         indexExecutor.submit(indexTask);*/
                     } else { //删除

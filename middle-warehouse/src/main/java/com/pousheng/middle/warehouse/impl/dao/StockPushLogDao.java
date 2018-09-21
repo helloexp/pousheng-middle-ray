@@ -5,6 +5,7 @@ import com.pousheng.middle.warehouse.model.StockPushLog;
 import io.terminus.common.mysql.dao.MyBatisDao;
 import org.springframework.stereotype.Repository;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -24,6 +25,10 @@ public class StockPushLogDao extends MyBatisDao<StockPushLog> {
 
     public int updateStatusByRequest(StockPushLog stockPushLog) {
         return getSqlSession().update(sqlId("updateStatusByRequest"), stockPushLog);
+    }
+
+    public int deleteByBeforeDate(Date date){
+        return getSqlSession().delete(sqlId("deleteByBeforeDate"), date);
     }
 
 }

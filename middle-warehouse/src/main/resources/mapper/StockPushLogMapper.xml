@@ -190,6 +190,12 @@
         WHERE id = #{id}
     </delete>
 
+    <delete id="deleteByBeforeDate" parameterType="date">
+        DELETE FROM
+        <include refid="tb"/>
+        WHERE created_at &lt; #{date}
+    </delete>
+
     <select id="paging" parameterType="list" resultMap="StockPushLogMap">
         select id,
         <include refid="cols_exclude_id"/>

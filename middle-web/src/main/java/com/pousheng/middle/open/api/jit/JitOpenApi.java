@@ -144,7 +144,7 @@ public class JitOpenApi {
             //参数验证
              validateBaiscParam(fullOrderInfo);
              ApiParamUtil.validateRequired(fullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
-                 "originShipFee","shipmentType","payType","type","status","channel","realtimeOrderIds","createdAt","stockId","interStockCode",
+                 "originShipFee","shipmentType","payType","type","status","channel","createdAt","stockId","interStockCode",
                  "preFinishBillo","batchNo","batchMark","channelCode","expectDate","transportMethodCode","transportMethodName","cardRemark","jitOrderId");
              for(OpenFullOrderItem item:fullOrderInfo.getItem()){
                  ApiParamUtil.validateRequired(item,"outSkuorderId","vipsOrderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
@@ -152,11 +152,13 @@ public class JitOpenApi {
 
             ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","province","city","region","detail");
 
-            //验证时效订单是否存在
-            Response<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);
-            if (!realOrderValidateResp.isSuccess()) {
-                log.error("valid jit order info:{} fail,error:{}",orderInfo,realOrderValidateResp.getError());
-                throw new OPServerException(200,realOrderValidateResp.getError());
+            if (StringUtils.isNotBlank(fullOrderInfo.getOrder().getRealtimeOrderIds())) {
+                //验证时效订单是否存在
+                Response<List<Long>> realOrderValidateResp = validateRealOrderIdsExist(fullOrderInfo);
+                if (!realOrderValidateResp.isSuccess()) {
+                    log.error("valid jit order info:{} fail,error:{}", orderInfo, realOrderValidateResp.getError());
+                    throw new OPServerException(200, realOrderValidateResp.getError());
+                }
             }
             //save to db
             Response<Long> response = saveDataToTask(orderInfo);
@@ -248,7 +250,7 @@ public class JitOpenApi {
      */
     protected Response<List<Long>> validateRealOrderIdsExist(OpenFullOrderInfo fullOrderInfo) {
         if (StringUtils.isBlank(fullOrderInfo.getOrder().getRealtimeOrderIds())) {
-            return Response.fail("realtimeOrderIds is required");
+            return Response.ok();
         }
         List<String> outIds = Splitter.on(SymbolConsts.COMMA).trimResults().
             splitToList(fullOrderInfo.getOrder().getRealtimeOrderIds());

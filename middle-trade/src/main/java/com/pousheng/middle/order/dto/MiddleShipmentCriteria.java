@@ -19,6 +19,12 @@ public class MiddleShipmentCriteria extends PagingCriteria implements Serializab
      */
     private List<Integer> statusList;
 
+    /**
+     * 店铺编号
+     */
+    private Long shopId;
+
+
 
 
 }

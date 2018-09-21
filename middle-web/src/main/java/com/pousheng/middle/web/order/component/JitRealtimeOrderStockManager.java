@@ -68,7 +68,13 @@ public class JitRealtimeOrderStockManager {
      * @param order jit订单
      */
     public void releaseRealtimeOrderInventory(ShopOrder order){
+        log.info("START-RELEASE-JIT-RT-STOCK.orderId:{}",order.getId());
         Map<String, String> extra=order.getExtra();
+        String orderIdsStr=extra.get(ExtraKeyConstant.REALTIME_ORDER_IDS);
+        if(StringUtils.isBlank(orderIdsStr)){
+            log.warn("realtime orderIds is blank.skip to unlock stock.orderId:{}",order.getId());
+            return;
+        }
         //查询订单列表
         List<ShopOrder> orderList = queryShopOrders(order);
 
@@ -112,11 +118,6 @@ public class JitRealtimeOrderStockManager {
         Map<String, String> extra=order.getExtra();
         String exceptionMsg;
         String orderIdsStr=extra.get(ExtraKeyConstant.REALTIME_ORDER_IDS);
-        if(StringUtils.isBlank(orderIdsStr)){
-            exceptionMsg= MessageFormat.format("realtime orderIds is blank,orderInfo:{0}",
-                mapper.toJson(order));
-            throw new BizException(exceptionMsg);
-        }
 
         List<String> outIds= Splitter.on(SymbolConsts.COMMA).trimResults().splitToList(orderIdsStr);
 

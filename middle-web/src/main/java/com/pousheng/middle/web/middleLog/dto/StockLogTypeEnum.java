@@ -14,7 +14,9 @@ public enum StockLogTypeEnum {
 
     MIDDLETOSHOP(1, "中台同步电商"),
 
-    TRADE(2, "库存交易变更");
+    TRADE(2, "库存交易变更"),
+
+    YUNJUTOMIDDLE(11,"云聚回执中台");
 
     private final Integer value;
 

@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Description: TODO
@@ -77,6 +76,15 @@ public class YjJitStockPusher{
             if(stockTable.contains(cell.getRowKey(),cell.getColumnKey())){
                 stockTable.put(cell.getRowKey(),cell.getColumnKey(),stockTable.get(cell.getRowKey(),cell.getColumnKey())+ cell.getValue());
             }
+        });
+
+        //没有库存数量的sku、仓库 推送0
+        skuWareshouseIds.forEach((skuCode,warehouseIds) -> {
+            warehouseIds.forEach(warehouseId -> {
+                if(!stockTable.contains(skuCode,warehouseId)){
+                    stockTable.put(skuCode,warehouseId,0L);
+                }
+            });
         });
 
         return stockTable;

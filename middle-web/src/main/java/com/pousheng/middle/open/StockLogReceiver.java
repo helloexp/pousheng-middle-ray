@@ -1,10 +1,16 @@
 package com.pousheng.middle.open;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.item.dto.IndexedStockLog;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.item.service.StockLogDumpService;
+import com.pousheng.middle.open.stock.yunju.YunjuErrorCodeEnum;
+import com.pousheng.middle.open.stock.yunju.dto.StockItem;
+import com.pousheng.middle.open.stock.yunju.dto.StockPushLogStatus;
+import com.pousheng.middle.open.stock.yunju.dto.YjStockReceiptRequest;
+import com.pousheng.middle.open.stock.yunju.dto.YjStockReceiptResponse;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.StockDto;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
@@ -13,13 +19,17 @@ import com.pousheng.middle.warehouse.service.MiddleStockPushLogWriteService;
 import com.pousheng.middle.web.middleLog.dto.InventoryTradeLog;
 import com.pousheng.middle.web.middleLog.dto.StockLogDto;
 import com.pousheng.middle.web.middleLog.dto.StockLogTypeEnum;
+import de.danielbechler.util.Objects;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,6 +70,9 @@ public class StockLogReceiver {
     @Autowired
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
+    @Autowired
+    private MiddleStockPushLogWriteService middleStockPushLogWriteService;
+
 
     @MQSubscribe(topic = "stockLogTopic", consumerGroup = "stockLogGroup",
             consumeMode = ConsumeMode.CONCURRENTLY)
@@ -83,11 +97,59 @@ public class StockLogReceiver {
                 logs = makeTradeLog(logs, dto.getLogJson());
                 stockLogDumpService.batchDump(logs);
                 break;
+            case YUNJUTOMIDDLE:
+                makeYunjuReceiverLog(dto.getLogJson());
             default:
                 log.error("incorrect stock log type");
 
         }
         return logs;
+    }
+
+    private void makeYunjuReceiverLog(String logJson) {
+        long startTime = System.currentTimeMillis();
+        YjStockReceiptRequest request = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(logJson,YjStockReceiptRequest.class);
+        List<StockPushLog> stockPushLogs = new ArrayList<>();
+        try {
+            String requestNo = request.getSerialNo();
+            String error = request.getError();
+            String errorInfo = request.getErrorInfo();
+
+            if(Objects.isEqual(error, YunjuErrorCodeEnum.PARTIAL_FAILURE.value())){
+                //部分失败
+                List<StockItem> items = request.getItems();
+                items.forEach(item -> {
+
+                    String lineNo = item.getLineNo();
+                    int status = YunjuErrorCodeEnum.SUCCESS.value().equals(item.getError()) ? StockPushLogStatus.DEAL_SUCESS.value() : StockPushLogStatus.DEAL_FAIL.value();
+                    String cause = item.getErrorInfo();
+                    StockPushLog pushLog = StockPushLog.builder()
+                            .requestNo(requestNo)
+                            .lineNo(lineNo)
+                            .status(status)
+                            .cause(cause)
+                            .build();
+                    stockPushLogs.add(pushLog);
+                });
+                middleStockPushLogWriteService.batchUpdateResultByRequestIdAndLineNo(stockPushLogs);
+            }else {
+                //全部成功/失败
+                StockPushLog pushLog = StockPushLog.builder()
+                        .requestNo(requestNo)
+                        .status(Objects.isEqual(error,YunjuErrorCodeEnum.SUCCESS.value())?StockPushLogStatus.DEAL_SUCESS.value():StockPushLogStatus.DEAL_FAIL.value())
+                        .cause(errorInfo)
+                        .build();
+                middleStockPushLogWriteService.updateStatusByRequest(pushLog);
+            }
+        }catch (JsonResponseException | ServiceException e) {
+            log.error("failed to update yunju stock receipt(json={}),error:{}", logJson, e.getMessage());
+        }catch (Exception e){
+            log.error("failed to update yunju stock receipt(json={}),cause:{} ", logJson, Throwables.getStackTraceAsString(e));
+        }
+        if(log.isDebugEnabled()) {
+            log.debug("YUN-JIT-STOCK-PUSH-RESULT-DEAL,param:{},cost:{}", logJson,  System.currentTimeMillis() - startTime);
+        }
+
     }
 
     /**

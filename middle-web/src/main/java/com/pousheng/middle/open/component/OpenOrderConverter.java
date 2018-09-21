@@ -103,6 +103,14 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.IS_CARESTOCK, StringUtils.isEmpty(order.getIsCareStock()) ? "N" : order.getIsCareStock());
             // 是否传hk
             extra.put(ExtraKeyConstant.IS_SYNCHK, StringUtils.isEmpty(order.getIsSyncHk()) ? "N" : order.getIsCareStock());
+
+            //bbc 物流公司代码
+            extra.put(ExtraKeyConstant.ORDER_EXPRESS_CODE,order.getOrderExpressCode());
+            //bbc 物流公司名称
+            extra.put(ExtraKeyConstant.ORDER_EXPRESS_NAME,order.getOrderHkExpressName());
+            //bbc 物流号
+            extra.put(ExtraKeyConstant.SHIPMENT_SERIAL_NO,order.getShipmentSerialNo());
+
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);
             }

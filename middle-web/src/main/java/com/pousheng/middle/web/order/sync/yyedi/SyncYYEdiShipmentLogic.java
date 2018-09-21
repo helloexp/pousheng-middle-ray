@@ -5,6 +5,7 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.hksyc.component.SycHkOrderCancelApi;
+import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.ShipmentDetail;
@@ -281,15 +282,23 @@ public class SyncYYEdiShipmentLogic {
             }
             shipmentInfo.setSourceBillNo(stringBuffer.toString());
         }
+        //快递方式
+        shipmentInfo.setExpressType("Exress");
         //网店交易单号
         // 对于云聚类型的订单特殊处理：
         // 云聚类型订单中接收的第三方平台订单的ID传的是outId,存储在订单信息的extra_json中
         shipmentInfo.setShopBillNo(shopOrder.getOutId());
-        if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
-            shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
-            shipmentInfo.setERPBillNo(shopOrder.getOutId());
-            log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopBillNo(), shipmentInfo.getERPBillNo());
+        if (Objects.equals(MiddleChannel.YUNJUBBC.getValue(), shopOrder.getOutFrom())) {
+            // 传物流单号
+            shipmentInfo.setExpressBillNo(shopOrder.getExtra().get(ExtraKeyConstant.SHIPMENT_SERIAL_NO));
+            shipmentInfo.setExpressType(shopOrder.getExtra().get(ExtraKeyConstant.ORDER_EXPRESS_CODE));
+            if (Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
+                shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
+                shipmentInfo.setERPBillNo(shopOrder.getOutId());
+                log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopBillNo(), shipmentInfo.getERPBillNo());
+            }
         }
+
         //恒康店铺码--传外码
         shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
         //恒康店铺名称
@@ -298,9 +307,8 @@ public class SyncYYEdiShipmentLogic {
         shipmentInfo.setRefundChangeType(shipmentType);
         //付款时间
         shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
-        //快递方式
-        shipmentInfo.setExpressType("Exress");
-        if (Objects.equals(MiddleChannel.YJ.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.SHIPMENT_TYPE_VALUE,shopOrder.getExtra().get(OrderInfoConstants.SHIPMENT_TYPE))) {
+
+        if (Objects.equals(MiddleChannel.YUNJUBBC.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.SHIPMENT_TYPE_VALUE,shopOrder.getExtra().get(OrderInfoConstants.SHIPMENT_TYPE))) {
             shipmentInfo.setExpressType("ZT");
             log.info("sync yun ju express type {} to yyedi", shipmentInfo.getExpressType());
         }

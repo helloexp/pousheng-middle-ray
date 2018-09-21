@@ -352,7 +352,7 @@ public class OrderReadLogic {
                 return expressCode.getSuningCode();
             case OFFICIAL:
                 return expressCode.getPoushengCode();
-            case YJ:
+            case YUNJUBBC:
                 return expressCode.getOfficalCode();
             case CODOON:
                 return expressCode.getCodoonCode();

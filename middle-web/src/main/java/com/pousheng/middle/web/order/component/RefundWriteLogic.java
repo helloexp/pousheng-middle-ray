@@ -662,7 +662,7 @@ public class RefundWriteLogic {
         Refund refund = new Refund();
         // 售后单关联单号 订单的订单编号
         refund.setReleOrderCode(shopOrder.getOrderCode());
-        refund.setOutId(MiddleChannel.YJ.getValue()+"_"+submitRefundInfo.getOutAfterSaleOrderId());//outId是 yunju_售后单号
+        refund.setOutId(MiddleChannel.YUNJUBBC.getValue()+"_"+submitRefundInfo.getOutAfterSaleOrderId());//outId是 yunju_售后单号
         refund.setBuyerId(shopOrder.getBuyerId());
         refund.setBuyerName(shopOrder.getBuyerName());
         refund.setBuyerNote(submitRefundInfo.getBuyerNote());
@@ -1453,7 +1453,7 @@ public class RefundWriteLogic {
         if (StringUtils.hasText(outId) && outId.contains("YJ")) {
             log.info(" refund={}",refund);
             String channel = refundReadLogic.getOutChannelSuning(outId);
-            if (Objects.equals(channel, MiddleChannel.YJ.getValue())
+            if (Objects.equals(channel, MiddleChannel.YUNJUBBC.getValue())
                     && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
                 Refund newRefund = refundReadLogic.findRefundById(refund.getId());
                 OrderRefund orderRefund = refundReadLogic.findOrderRefundByRefundId(refund.getId());

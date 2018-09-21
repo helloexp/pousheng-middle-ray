@@ -110,7 +110,7 @@ public class TaobaoConfirmRefundListener {
             }
         }
         //云聚渠道
-        if (Objects.equals(event.getChannel(),MiddleChannel.YJ.getValue())) {
+        if (Objects.equals(event.getChannel(),MiddleChannel.YUNJUBBC.getValue())) {
 
             Refund refund = refundReadLogic.findRefundById(event.getRefundId());
             YJExchangeReturnRequest request = new YJExchangeReturnRequest();

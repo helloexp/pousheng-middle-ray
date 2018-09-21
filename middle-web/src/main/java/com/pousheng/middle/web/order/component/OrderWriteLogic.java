@@ -254,7 +254,7 @@ public class OrderWriteLogic {
         //判断该订单是否有取消订单的权限
         if (!validateAutoCancelShopOrder(shopOrder)) {
             log.error("this shopOrder can not be canceled,because of error shopOrder status.shopOrderId is :{}", shopOrder.getId());
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YJ.getValue())) {
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUBBC.getValue())) {
                 throw new OPServerException(200, "shop.order.cancel.failed");
             }
             throw new JsonResponseException("invalid.order.status.can.not.cancel");

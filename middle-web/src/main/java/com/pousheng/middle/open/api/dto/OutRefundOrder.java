@@ -26,7 +26,7 @@ public class OutRefundOrder implements Serializable{
     private String expressCode;//寄回的快递单号
     private String applyAt; //申请时间 yyyyMMdd HHmmss
     private String returnStockid;//云聚传过来为空则默认退货仓规则， 非空则以云聚值覆盖
-    private String channel = MiddleChannel.YJ.getValue();
+    private String channel = MiddleChannel.YUNJUBBC.getValue();
 
 
 

@@ -5,6 +5,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import lombok.Data;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.Date;
@@ -126,12 +127,12 @@ public class MposShipmentExtra {
             map.put("shipmentDate",DFT.print(shipmentDate.getTime()));
         map.put("mposRejectReason",reason);
         // 圆通回传的快递单号
-        if (!StringUtils.isEmpty(extra)
+        if (!CollectionUtils.isEmpty(extra)
                 && !StringUtils.isEmpty(extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO))){
             map.put(TradeConstants.YTO_CALL_BACK_MAIL_NO,extra.get(TradeConstants.YTO_CALL_BACK_MAIL_NO));
         }
         // 物流单号
-        if (!StringUtils.isEmpty(extra)
+        if (!CollectionUtils.isEmpty(extra)
                 && !StringUtils.isEmpty(extra.get(TradeConstants.EXPRESS_ORDER_ID))){
             map.put(TradeConstants.EXPRESS_ORDER_ID,extra.get(TradeConstants.EXPRESS_ORDER_ID));
         }

@@ -8,6 +8,7 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.web.utils.ApiParamUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -81,6 +82,8 @@ public class OpenClientOrderApi {
             try{
                 //参数校验
                 this.validateParam(openFullOrderInfo);
+                ApiParamUtil.validateRequired(openFullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
+                        "originShipFee","shipmentType","payType","status","channel","createdAt","stockId","orderExpressCode","orderHkExpressName","shipmentSerialNo");
                 //查询该渠道的店铺信息
                 String shopCode = openFullOrderInfo.getOrder().getCompanyCode()+"-"+openFullOrderInfo.getOrder().getShopCode();
                 Long openShopId =  this.validateOpenShop(shopCode);

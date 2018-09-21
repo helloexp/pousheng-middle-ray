@@ -141,6 +141,12 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.REALTIME_ORDER_IDS,order.getRealtimeOrderIds());
             //订单来源
             extra.put(JitConsts.JIT_CHANNEL,order.getChannel());
+            //bbc 物流公司代码
+            extra.put(ExtraKeyConstant.ORDER_EXPRESS_CODE,order.getOrderExpressCode());
+            //bbc 物流公司名称
+            extra.put(ExtraKeyConstant.ORDER_EXPRESS_NAME,order.getOrderHkExpressName());
+            //bbc 物流号
+            extra.put(ExtraKeyConstant.SHIPMENT_SERIAL_NO,order.getShipmentSerialNo());
 
             if (Arguments.isNull(order.getType()) || Objects.equals(order.getType(), 1)) {
                 extra.put(ExtraKeyConstant.YJ_TYPE, ExtraKeyConstant.YJ_BBC);

@@ -44,5 +44,7 @@ public class SkuInventory implements Serializable {
     private Long safeQuantityWarehouse;
     @ApiModelProperty(value = "指定库存次数", position = 12)
     private Integer channelCount;
+    @ApiModelProperty(value = "尺码", position = 13)
+    private String size;
 
 }

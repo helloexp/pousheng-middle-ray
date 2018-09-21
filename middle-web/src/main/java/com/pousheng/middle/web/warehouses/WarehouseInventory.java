@@ -14,6 +14,7 @@ import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -34,7 +36,6 @@ import java.util.stream.Collectors;
  *
  * @author feisheng.ch
  * @date 2018-07-15
- *
  */
 @RestController
 @RequestMapping("/api/warehouse/inventory")
@@ -52,10 +53,10 @@ public class WarehouseInventory {
     /**
      * sku库存分页
      *
-     * @param pageNo   起始页码
-     * @param pageSize 每页返回条数
-     * @param materialCode  货号
-     * @param skuCode  sku码查询
+     * @param pageNo       起始页码
+     * @param pageSize     每页返回条数
+     * @param materialCode 货号
+     * @param skuCode      sku码查询
      * @return 查询结果
      */
     @ApiOperation("库存汇总分页列表")
@@ -64,7 +65,7 @@ public class WarehouseInventory {
                                        @RequestParam(required = false, value = "pageSize") Integer pageSize,
                                        @RequestParam(required = false, value = "materialCode") @ApiParam(value = "货号") String materialCode,
                                        @RequestParam(required = false, value = "skuCode") @ApiParam(value = "货品条码") String skuCode,
-                                       @RequestParam(required = false,value = "warehouseName") @ApiParam(value = "仓库名称") String warehouseName) {
+                                       @RequestParam(required = false, value = "warehouseName") @ApiParam(value = "仓库名称") String warehouseName) {
 
         // 检查，如果参数都是空，直接返回空页
         if (ObjectUtils.isEmpty(materialCode) && ObjectUtils.isEmpty(skuCode) && ObjectUtils.isEmpty(warehouseName)) {
@@ -110,19 +111,16 @@ public class WarehouseInventory {
         // 补充货号信息
         if (!ObjectUtils.isEmpty(retPage.getData())) {
 
-            Map<String, SkuTemplate> skuTemplateMap = Maps.newHashMap();
             // 一次性查出来所有skutemplate
-            if (ObjectUtils.isEmpty(materialCode)) {
-                List<String> skuCodeQuery = Lists.newArrayList();
-                retPage.getData().stream().forEach(input -> skuCodeQuery.add(input.getSkuCode()));
-                Response<List<SkuTemplate>> templateRes = skuTemplateReadService.findBySkuCodes(skuCodeQuery);
-                if (!templateRes.isSuccess() || ObjectUtils.isEmpty(templateRes.getResult())) {
-                    log.error("no template find by sku list: {}", JSON.toJSONString(retPage.getData()));
-                    return retPage;
-                }
-
-                skuTemplateMap = templateRes.getResult().stream().collect(Collectors.toMap(SkuTemplate::getSkuCode, input->input, (k1, k2)->k1));
+            List<String> skuCodeQuery = Lists.newArrayList();
+            retPage.getData().stream().forEach(input -> skuCodeQuery.add(input.getSkuCode()));
+            Response<List<SkuTemplate>> templateRes = skuTemplateReadService.findBySkuCodes(skuCodeQuery);
+            if (!templateRes.isSuccess() || ObjectUtils.isEmpty(templateRes.getResult())) {
+                log.error("no template find by sku list: {}", JSON.toJSONString(retPage.getData()));
+                return retPage;
             }
+
+            Map<String, SkuTemplate> skuTemplateMap = templateRes.getResult().stream().collect(Collectors.toMap(SkuTemplate::getSkuCode, input -> input, (k1, k2) -> k1));
 
             for (SkuInventory inventory : retPage.getData()) {
                 if (!ObjectUtils.isEmpty(materialCode)) {
@@ -136,6 +134,16 @@ public class WarehouseInventory {
                         }
                     }
                 }
+                // 添加尺码展示
+                if (skuTemplateMap.containsKey(inventory.getSkuCode())) {
+                    List<SkuAttribute> attrs = skuTemplateMap.get(inventory.getSkuCode()).getAttrs();
+                    for (SkuAttribute attr : attrs) {
+                        if (Objects.equals(attr.getAttrKey(), "尺码")) {
+                            inventory.setSize(attr.getAttrVal());
+                            break;
+                        }
+                    }
+                }
             }
         }
 
@@ -144,13 +152,14 @@ public class WarehouseInventory {
 
     /**
      * 根据warehouseId和skuCode查询库存情况
+     *
      * @param warehouseId
      * @param skuCode
      * @return
      */
     @RequestMapping(value = "/by/id-skucode", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<InventoryDTO> findByWarehouseIdAndSkuCode(@RequestParam Long warehouseId,@RequestParam String skuCode){
-        Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(warehouseId,skuCode);
+    public Response<InventoryDTO> findByWarehouseIdAndSkuCode(@RequestParam Long warehouseId, @RequestParam String skuCode) {
+        Response<InventoryDTO> response = inventoryClient.findByWarehouseIdAndSkuCode(warehouseId, skuCode);
         return response;
     }
 }

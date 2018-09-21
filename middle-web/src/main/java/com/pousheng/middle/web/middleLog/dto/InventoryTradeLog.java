@@ -14,7 +14,7 @@ public class InventoryTradeLog implements Serializable {
 
     private static final long serialVersionUID = -6217132169794432165L;
 
-    private Long shipmentId;
+    private String shipmentId;
 
     private String warehouseCode;
 
@@ -26,11 +26,11 @@ public class InventoryTradeLog implements Serializable {
 
     private Date createdAt;
 
-    public Long getShipmentId() {
+    public String getShipmentId() {
         return shipmentId;
     }
 
-    public InventoryTradeLog shipmentId(Long shipmentId) {
+    public InventoryTradeLog shipmentId(String shipmentId) {
         this.shipmentId = shipmentId;
         return this;
     }

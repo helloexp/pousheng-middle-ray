@@ -291,7 +291,6 @@ public class SyncYYEdiShipmentLogic {
         if (Objects.equals(MiddleChannel.YUNJUBBC.getValue(), shopOrder.getOutFrom())) {
             // 传物流单号
             shipmentInfo.setExpressBillNo(shopOrder.getExtra().get(ExtraKeyConstant.SHIPMENT_SERIAL_NO));
-            shipmentInfo.setExpressType(shopOrder.getExtra().get(ExtraKeyConstant.ORDER_EXPRESS_CODE));
             if (Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
                 shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
                 shipmentInfo.setERPBillNo(shopOrder.getOutId());

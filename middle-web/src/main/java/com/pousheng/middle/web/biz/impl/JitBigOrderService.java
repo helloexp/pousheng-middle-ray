@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.hksyc.component.JitOrderReceiptApi;
@@ -34,6 +35,7 @@ import org.springframework.stereotype.Service;
 import java.text.MessageFormat;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author tanlongjun
@@ -64,6 +66,9 @@ public class JitBigOrderService implements CompensateBizService {
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
+
+        log.info("DO-PROCESS-JIT-ORDER-BIZ START biz id: {}", poushengCompensateBiz.getId());
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
         if (null == poushengCompensateBiz) {
             log.warn("JITBigOrderService.doProcess params is null");
@@ -117,6 +122,9 @@ public class JitBigOrderService implements CompensateBizService {
             String task = JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(request);
             saveReceiptTask(task);
         }
+
+        stopwatch.stop();
+        log.info("DO-PROCESS-JIT-ORDER-BIZ START biz id: {},out order id:{}, cost {} ms", poushengCompensateBiz.getId(),fullOrderInfo.getOrder().getOutOrderId(),stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     /**

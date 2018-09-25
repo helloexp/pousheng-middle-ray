@@ -10,6 +10,8 @@
  */
 package com.pousheng.middle.web.biz.impl;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
@@ -35,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Description: 天猫订单脱敏信息事件触发生成发货单
@@ -62,6 +65,9 @@ public class ThirdCreateShipmentService implements CompensateBizService {
             return;
         }
 
+        log.info("DO-PROCESS-ORDER-CREATE-SHIPMENT-BIZ START biz id: {}", poushengCompensateBiz.getId());
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
             log.warn("TmallCreateShipmentService.doProcess context is null");
@@ -75,9 +81,13 @@ public class ThirdCreateShipmentService implements CompensateBizService {
 
         try {
             this.onShipment(shopOrderId);
-        }catch (Exception e){
+        } catch (Exception e){
+            log.error("auto create shipment fail for order id:{},caused by {}",shopOrderId, Throwables.getStackTraceAsString(e));
             throw new BizException("auto create shipment fail,caused by {}", e);
         }
+
+        stopwatch.stop();
+        log.info("DO-PROCESS-ORDER-CREATE-SHIPMENT-BIZ END biz id: {},order id:{}, cost {} ms", poushengCompensateBiz.getId(),shopOrderId,stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     /**

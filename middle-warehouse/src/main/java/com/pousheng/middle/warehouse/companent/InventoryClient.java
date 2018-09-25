@@ -73,8 +73,8 @@ public class InventoryClient {
             return Response.fail("inventory.trade.fail.parameter");
         }
         try {
-            return Response.ok((Boolean) inventoryBaseClient.post(apiPath,
-                    ImmutableMap.of("tradeDTO", JSON.toJSONString(inventoryTradeDTOList)), Boolean.class));
+            return Response.ok((Boolean) inventoryBaseClient.postJson(apiPath,
+                    JSON.toJSONString(inventoryTradeDTOList), Boolean.class));
         } catch (Exception e) {
             log.error("fail to trade inventory, cause:{}", Throwables.getStackTraceAsString(e));
 

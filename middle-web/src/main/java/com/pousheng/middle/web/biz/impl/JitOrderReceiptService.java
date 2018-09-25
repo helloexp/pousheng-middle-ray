@@ -48,8 +48,8 @@ public class JitOrderReceiptService implements CompensateBizService {
 
         YJRespone respone = jitOrderReceiptApi.sendReceipt(request);
         // 若回执发送失败 则创建补偿任务补发
-        if (respone != null ||
-            0 != respone.getError()) { //失败
+        if (respone == null
+                || (respone != null && 0 != respone.getError())) {
             throw new BizException("failed to send jit order receipt");
         }
     }

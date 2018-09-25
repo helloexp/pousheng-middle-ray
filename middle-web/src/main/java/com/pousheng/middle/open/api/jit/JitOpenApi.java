@@ -1,6 +1,7 @@
 package com.pousheng.middle.open.api.jit;
 
 import com.google.common.base.Splitter;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -45,6 +46,7 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -89,6 +91,7 @@ public class JitOpenApi {
     @OpenMethod(key = "push.out.rt.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public void saveRealTimeOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
         log.info("PUSH-OUT-RT-ORDER-API START orderInfo:{}", orderInfo);
+        Stopwatch stopwatch = Stopwatch.createStarted();
 
         OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
         //参数验证
@@ -109,12 +112,12 @@ public class JitOpenApi {
                 Throwables.getStackTraceAsString(juste));
             jitOrderManager.saveUnlockInventoryTask(juste.getData());
         } catch (ServiceException se) {
-            log.error("failed to save jit rt order.param:{},cause:{}", orderInfo,
-                Throwables.getStackTraceAsString(se));
+            log.error("failed to save jit rt order.param:{},error:{}", orderInfo,
+                se.getMessage());
             throw new OPServerException(200, se.getMessage());
         } catch (OPServerException oe) {
-            log.error("failed to save jit rt order.param:{},cause:{}", orderInfo,
-                Throwables.getStackTraceAsString(oe));
+            log.error("failed to save jit rt order.param:{},error:{}", orderInfo,
+                oe.getMessage());
             throw oe;
         } catch (Exception e) {
             log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo,
@@ -123,11 +126,12 @@ public class JitOpenApi {
         }
         if (response == null
             || !response.isSuccess()) {
-            log.error("failed to save jit realtime order.param:{},cause:{}", orderInfo,
-                JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(response));
+            log.error("failed to save jit realtime order.param:{},error:{}", orderInfo,
+                response.getError());
             throw new OPServerException(200, response.getError());
         }
-        log.info("PUSH-OUT-RT-ORDER-API END. success.{}",orderInfo);
+        stopwatch.stop();
+        log.info("PUSH-OUT-RT-ORDER-API END. success.{} cost {} ms",orderInfo,stopwatch.elapsed(TimeUnit.MILLISECONDS));
     }
 
     /**
@@ -139,6 +143,8 @@ public class JitOpenApi {
     @OpenMethod(key = "push.out.jit.order.api", paramNames = {"orderInfo"}, httpMethods = RequestMethod.POST)
     public void saveOrder(@NotNull(message = "order.info.is.null") String orderInfo) {
         log.info("PUSH-OUT-JIT-ORDER-API START.orderInfo: {}", orderInfo);
+        Stopwatch stopwatch = Stopwatch.createStarted();
+
         try {
             OpenFullOrderInfo fullOrderInfo = validateBaiscParam(orderInfo);
             //参数验证
@@ -170,22 +176,27 @@ public class JitOpenApi {
                 eventBus.post(event);
                 log.info("PUSH-OUT-JIT-ORDER-API END.success.{}",orderInfo);
             } else {
+                log.error("failed save jit big order:{}",orderInfo);
                 throw new OPServerException("failed.save.jit.big.order");
             }
 
         } catch (ServiceException se) {
-            log.error("failed to save jit order.param:{},cause:{}", orderInfo,
-                Throwables.getStackTraceAsString(se));
+            log.error("failed to save jit order.param:{},error:{}", orderInfo,
+                se.getMessage());
             throw new OPServerException(200, se.getMessage());
         } catch (OPServerException oe) {
-            log.error("failed to save jit order.param:{},cause:{}", orderInfo,
-                Throwables.getStackTraceAsString(oe));
+            log.error("failed to save jit order.param:{},error:{}", orderInfo,
+                oe.getMessage());
             throw oe;
         } catch (Exception e) {
             log.error("failed to save jit order.param:{},cause:{}", orderInfo,
                 Throwables.getStackTraceAsString(e));
             throw new OPServerException(200, "failed.save.jit.big.order");
         }
+
+        stopwatch.stop();
+        log.info("PUSH-OUT-JIT-ORDER-API END.orderInfo: {}  cost {} ms", orderInfo,stopwatch.elapsed(TimeUnit.MILLISECONDS));
+
 
     }
 

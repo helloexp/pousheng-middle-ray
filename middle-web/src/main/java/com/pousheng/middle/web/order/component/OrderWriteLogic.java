@@ -19,7 +19,6 @@ import com.pousheng.middle.order.service.ExpressCodeReadService;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -31,7 +30,6 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.order.service.OrderServiceCenter;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
-import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.utils.RespHelper;
@@ -1142,12 +1140,8 @@ public class OrderWriteLogic {
             MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
             MiddleOrderStatus.WAIT_SHIP.getValue());
 
-        Map<String,String> extra=shopOrder.getExtra();
-        //查询仓库信息
-        String warehouseCode=extra.get(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID);
-        WarehouseDTO warehouseDTO = warehouseCacher.findByCode(warehouseCode);
         //取消订单释放库存
-        jitRealtimeOrderStockManager.cancelJitOrderAndUnlockStock(shopOrder,skuOrders,warehouseDTO.getId());
+        jitRealtimeOrderStockManager.cancelJitOrderAndUnlockStock(shopOrder,skuOrders);
 
     }
 }

@@ -12,13 +12,11 @@ import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.constants.ParanaTradeConstants;
 import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.model.SkuOrder;
@@ -78,35 +76,26 @@ public class JitRealtimeOrderStockManager {
         //查询订单列表
         List<ShopOrder> orderList = queryShopOrders(order);
 
-        //查询仓库信息
-        String warehouseCode=extra.get(ParanaTradeConstants.ASSIGN_WAREHOUSE_ID);
-        WarehouseDTO warehouseDTO = warehouseCacher.findByCode(warehouseCode);
-        if(warehouseDTO==null){
-            String msg=MessageFormat.format("warehouse not found.warehouseCode:{0}",warehouseCode);
-            throw new BizException(msg);
-        }
-
         //批量查询sku订单
         List<Long> orderIds=orderList.stream().map(ShopOrder::getId).collect(Collectors.toList());
         List<SkuOrder> skuOrderList=querySkuOrders(orderIds);
 
         //更新状态并释放库存
-        handleReleaseLogic(warehouseDTO.getId(),orderIds,skuOrderList);
+        handleReleaseLogic(orderIds,skuOrderList);
     }
 
     /**
      * 更新状态并释放库存
-     * @param warehouseId
      * @param shopOrderList
      * @param skuOrderList
      */
     @Transactional
-    public void handleReleaseLogic(Long warehouseId,List<Long> shopOrderList,List<SkuOrder> skuOrderList){
+    public void handleReleaseLogic(List<Long> shopOrderList,List<SkuOrder> skuOrderList){
         List<Long> skuOrderIds=skuOrderList.stream().map(SkuOrder::getId).collect(Collectors.toList());
         middleOrderManager.updateOrderStatus(shopOrderList,skuOrderIds,
             MiddleOrderStatus.JIT_STOCK_RELEASED.getValue());
         //释放库存
-        unlock(warehouseId,skuOrderList);
+        unlock(skuOrderList);
     }
 
     /**
@@ -158,10 +147,9 @@ public class JitRealtimeOrderStockManager {
 
     /**
      * 释放库存
-     * @param warehouseId
      * @param skuOrders
      */
-    private void unlock(Long warehouseId,List<SkuOrder> skuOrders){
+    private void unlock(List<SkuOrder> skuOrders){
         List<InventoryTradeDTO> inventoryTradeDTOList = Lists.newArrayList();
         InventoryTradeDTO dto;
 
@@ -172,7 +160,7 @@ public class JitRealtimeOrderStockManager {
                 .shopId(skuOrder.getShopId())
                 .quantity(skuOrder.getQuantity())
                 .skuCode(skuOrder.getSkuCode())
-                .warehouseId(warehouseId)
+                .warehouseId(skuOrder.getCompanyId())
                 .build();
             inventoryTradeDTOList.add(dto);
         }
@@ -194,13 +182,12 @@ public class JitRealtimeOrderStockManager {
      * 取消时效订单并释放库存
      * @param shopOrder
      * @param skuOrders
-     * @param warehouseId
      */
     @Transactional
-    public void cancelJitOrderAndUnlockStock(ShopOrder shopOrder, List<SkuOrder> skuOrders,Long warehouseId) {
+    public void cancelJitOrderAndUnlockStock(ShopOrder shopOrder, List<SkuOrder> skuOrders) {
         middleOrderManager.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
         try {
-            unlock(warehouseId, skuOrders);
+            unlock(skuOrders);
         } catch (JitUnlockStockTimeoutException e) {
             String param=mapper.toJson(e.getData());
             log.warn("failed to unlock stock of order[{}].param:{}],",shopOrder.getId(),param);

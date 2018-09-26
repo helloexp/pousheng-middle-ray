@@ -163,7 +163,7 @@
         UPDATE
         <include refid="tb"/>
         <set>
-            `status` = 3,
+            `status` = 1,
             updated_at=now()
         </set>
         WHERE request_no = #{requestNo} and line_no not in

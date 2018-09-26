@@ -410,13 +410,13 @@ public class PoushengYJErpTest {
             order.setInterStockCode("VIP_SH");
             order.setIsCareStock("Y");
             order.setIsSyncHk("N");
-            order.setJitOrderId("PICK-40015001");
+            order.setJitOrderId("PICK-60015001");
             order.setOriginFee(1L);
             order.setOriginShipFee(0L);
-            order.setOutId("PICK-40025001");
-            order.setOutOrderId("4035000+100"+i);
+            order.setOutId("PICK-60025001");
+            order.setOutOrderId("6035000+100"+i);
             order.setPayType(1);
-            order.setPreFinishBillo("4015000_100");
+            order.setPreFinishBillo("6015000_100");
             StringBuffer sb = new StringBuffer();
 //            for(int j = 1; j <= 20; j++){
 //                String temp = "";
@@ -451,17 +451,17 @@ public class PoushengYJErpTest {
 
 
             List<OpenFullOrderItem> items = Lists.newArrayList();
-            for(int j = 1; j <= 500; j++) {
+            for(int j = 1; j <= 5000; j++) {
                 OpenFullOrderItem item = new OpenFullOrderItem();
                 item.setCleanFee(1L);
                 item.setCleanPrice(1L);
                 item.setDiscount(0L);
                 item.setItemType("01");
                 item.setOriginFee(1L);
-                item.setOutSkuorderId("4035000_000" + j);
+                item.setOutSkuorderId("6035000_000" + j);
                 item.setQuantity(1);
                 item.setSkuCode("4058031902707");
-                item.setVipsOrderId("4035000_000" + j);
+                item.setVipsOrderId("6035000_000" + j);
                 items.add(item);
 
 
@@ -478,10 +478,12 @@ public class PoushengYJErpTest {
                     .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
             params.put("sign", sign);
 
+            System.out.println(mapper.toJson(params));
+
             //post("http://127.0.0.1:8092/api/gateway",params);
 
             //post("http://middle-api-test.pousheng.com/api/gateway", params);
-            post("http://middle-api-prepub.pousheng.com/api/gateway", params);
+//            post("http://middle-api-prepub.pousheng.com/api/gateway", params);
         }
     }
 

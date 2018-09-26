@@ -118,7 +118,7 @@ public class AdminOrderReader {
             //如果是mpos订单，不允许有其他操作。
             if(!shopOrder.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
                 String ecpOrderStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS,shopOrder);
-                shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder.getId())
+                shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder)
                         ?flow.availableOperations(shopOrder.getStatus())
                         :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             }

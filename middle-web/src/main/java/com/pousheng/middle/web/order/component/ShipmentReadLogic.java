@@ -36,6 +36,7 @@ import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
@@ -77,6 +78,12 @@ public class ShipmentReadLogic {
     private ShopCacher shopCacher;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+
+    /**
+     * JIT店铺编号
+     */
+    @Value("${jit.open.shop.id}")
+    private String shopId;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -573,11 +580,17 @@ public class ShipmentReadLogic {
 
     /**
      *判断该订单下是否存在可以撤单的发货单
-     * @param shopOrderId 店铺订单id
+     * @param shopOrder 店铺订单
      * @return true 可以撤单， false 不可以撤单
      */
-    public boolean isShopOrderCanRevoke(Long shopOrderId){
-        List<OrderShipment> orderShipments = this.findByOrderIdAndType(shopOrderId);
+    public boolean isShopOrderCanRevoke(ShopOrder shopOrder){
+
+        //jit店铺订单不允许撤销
+        if (Objects.equals(shopOrder.getShopId(),Long.valueOf(shopId))){
+            return false;
+        }
+
+        List<OrderShipment> orderShipments = this.findByOrderIdAndType(shopOrder.getId());
         Optional<OrderShipment> orderShipmentOptional = orderShipments.stream().findAny();
         if (!orderShipmentOptional.isPresent()){
             return false;

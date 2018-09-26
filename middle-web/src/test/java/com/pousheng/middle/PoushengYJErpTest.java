@@ -14,6 +14,10 @@ import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.order.dto.OpenFullOrder;
+import io.terminus.open.client.order.dto.OpenFullOrderAddress;
+import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.open.client.order.dto.OpenFullOrderItem;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Throwables;
 import org.joda.time.DateTime;
@@ -329,7 +333,7 @@ public class PoushengYJErpTest {
 
         log.info(JsonMapper.nonDefaultMapper().toJson(params));
 
-       // post("http://127.0.0.1:8092/api/gateway", params);
+        // post("http://127.0.0.1:8092/api/gateway", params);
         post("http://middle-api-test.pousheng.com/api/gateway", params);
     }
 
@@ -360,44 +364,125 @@ public class PoushengYJErpTest {
         log.info("sync shipment to wms erp paramJson:{}",paramJson);
         String gateway ="https://esbt.pousheng.com/common/pserp/wms/wmsjitdeliver";
         String responseBody = HttpRequest.post(gateway)
-            .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
-            .header("serialNo",serialNo)
-            .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-            .contentType("application/json")
-            .trustAllHosts().trustAllCerts()
-            .send(paramJson)
-            .connectTimeout(10000).readTimeout(10000)
-            .body();
+                .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
+                .header("serialNo",serialNo)
+                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .contentType("application/json")
+                .trustAllHosts().trustAllCerts()
+                .send(paramJson)
+                .connectTimeout(10000).readTimeout(10000)
+                .body();
 
         log.info("sync shipment to wms erp result:{}",responseBody);
     }
 
     @Test
     public void aaa(){
-        Map<String, Object> params = Maps.newTreeMap();
-        params.put("appKey", "pousheng");
-        params.put("pampasCall", "push.out.rt.order.api");
-
-        String str="{\"address\":{\"city\":\"北京市\",\"detail\":\"银河soho\",\"mobile\":\"13700000000\","
-            + "\"province\":\"北京\",\"receiveUserName\":\"唯品会\",\"region\":\"东城区\"},\"invoice\":{},"
-            + "\"item\":[{\"cleanFee\":1,\"cleanPrice\":1,\"discount\":0,\"originFee\":1,"
-            + "\"outSkuorderId\":\"308971541_886736621999\",\"quantity\":\"1\",\"skuCode\":\"886736621999\"}],"
-            + "\"order\":{\"buyerName\":\"唯品会\",\"channel\":\"yunjurt\",\"companyCode\":\"300\","
-            + "\"createdAt\":\"20180915100838\",\"fee\":1,\"isCareStock\":\"N\",\"isSyncHk\":\"N\",\"originFee\":1,"
-            + "\"originShipFee\":0,\"outOrderId\":\"308971541+40\",\"payType\":1,\"shipFee\":0,\"shipmentType\":1,"
-            + "\"shopCode\":\"11310202\",\"status\":1,\"stockId\":\"300-300000325\"}}";
-        params.put("orderInfo", str);
 
 
-        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
-        String sign = Hashing.md5().newHasher()
-            .putString(toVerify, Charsets.UTF_8)
-            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
-        params.put("sign", sign);
+//        String str="{\"address\":{\"city\":\"北京市\",\"detail\":\"银河soho\",\"mobile\":\"13700000000\","
+//            + "\"province\":\"北京\",\"receiveUserName\":\"唯品会\",\"region\":\"东城区\"},\"invoice\":{},"
+//            + "\"item\":[{\"cleanFee\":1,\"cleanPrice\":1,\"discount\":0,\"originFee\":1,"
+//            + "\"outSkuorderId\":\"308971541_886736621999\",\"quantity\":\"1\",\"skuCode\":\"886736621999\"}],"
+//            + "\"order\":{\"buyerName\":\"唯品会\",\"channel\":\"yunjurt\",\"companyCode\":\"300\","
+//            + "\"createdAt\":\"20180915100838\",\"fee\":1,\"isCareStock\":\"N\",\"isSyncHk\":\"N\",\"originFee\":1,"
+//            + "\"originShipFee\":0,\"outOrderId\":\"308971541+40\",\"payType\":1,\"shipFee\":0,\"shipmentType\":1,"
+//            + "\"shopCode\":\"11310202\",\"status\":1,\"stockId\":\"300-300000325\"}}";
+//
 
-        //post("http://127.0.0.1:8092/api/gateway",params);
+        for(int i = 1; i < 2; i++) {
+            Map<String, Object> params = Maps.newTreeMap();
+            params.put("appKey", "pousheng");
+            params.put("pampasCall", "push.out.jit.order.api");
 
-        post("http://middle-api-test.pousheng.com/api/gateway", params);
+            OpenFullOrderInfo fullOrderInfo = new OpenFullOrderInfo();
+            OpenFullOrder order = new OpenFullOrder();
+            order.setBatchMark("第三批次");
+            order.setBatchNo("3");
+            order.setCardRemark("耐克");
+            order.setBuyerName("唯品会5000");
+            order.setChannel("yunjujit");
+            order.setChannelCode("yunjujit");
+            order.setCompanyCode("300");
+            order.setCreatedAt("20180925155435");
+            order.setExpectDate("2018-09-26 09:00:00");
+            order.setFee(1L);
+            order.setInterStockCode("VIP_SH");
+            order.setIsCareStock("Y");
+            order.setIsSyncHk("N");
+            order.setJitOrderId("PICK-40015001");
+            order.setOriginFee(1L);
+            order.setOriginShipFee(0L);
+            order.setOutId("PICK-40025001");
+            order.setOutOrderId("4035000+100"+i);
+            order.setPayType(1);
+            order.setPreFinishBillo("4015000_100");
+            StringBuffer sb = new StringBuffer();
+//            for(int j = 1; j <= 20; j++){
+//                String temp = "";
+//                if(j == 20) {
+//                    temp = "9950001+100" + j;
+//                }
+//                else{
+//                    temp = "9950001+100" + j +",";
+//                }
+//                sb.append(temp);
+//
+//            }
+            order.setRealtimeOrderIds(sb.toString());
+            order.setShipFee(0L);
+            order.setShipmentType(1);
+            order.setShopCode("11310202");
+            order.setStatus(1);
+            order.setStockId("301-301011164");
+            order.setType(2);
+            order.setTransportMethodCode("2");
+            order.setTransportMethodName("ss");
+            fullOrderInfo.setOrder(order);
+
+            OpenFullOrderAddress address = new OpenFullOrderAddress();
+            address.setCity("北京市");
+            address.setDetail("5000单测试数据");
+            address.setMobile("13700000000");
+            address.setProvince("province");
+            address.setReceiveUserName("唯品会5000");
+            address.setRegion("东城区");
+            fullOrderInfo.setAddress(address);
+
+
+            List<OpenFullOrderItem> items = Lists.newArrayList();
+            for(int j = 1; j <= 500; j++) {
+                OpenFullOrderItem item = new OpenFullOrderItem();
+                item.setCleanFee(1L);
+                item.setCleanPrice(1L);
+                item.setDiscount(0L);
+                item.setItemType("01");
+                item.setOriginFee(1L);
+                item.setOutSkuorderId("4035000_000" + j);
+                item.setQuantity(1);
+                item.setSkuCode("4058031902707");
+                item.setVipsOrderId("4035000_000" + j);
+                items.add(item);
+
+
+            }
+
+            fullOrderInfo.setItem(items);
+
+            params.put("orderInfo", mapper.toJson(fullOrderInfo));
+
+
+            String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+            String sign = Hashing.md5().newHasher()
+                    .putString(toVerify, Charsets.UTF_8)
+                    .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+            params.put("sign", sign);
+
+            //post("http://127.0.0.1:8092/api/gateway",params);
+
+            //post("http://middle-api-test.pousheng.com/api/gateway", params);
+            post("http://middle-api-prepub.pousheng.com/api/gateway", params);
+        }
     }
 
 
@@ -411,15 +496,15 @@ public class PoushengYJErpTest {
         log.info("send jit order receipt paramJson:{}",paramJson);
         String gateway ="https://esbt.pousheng.com/common-yjerp/yjerp/default/pushmgorderdealreturn";
         String responseBody = HttpRequest.post(gateway)
-            .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
-            .header("serialNo",serialNo)
-            .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-            .contentType("application/json")
-            .trustAllHosts()
-            .trustAllCerts()
-            .send(paramJson)
-            .connectTimeout(10000).readTimeout(10000)
-            .body();
+                .header("verifycode","b82d30f3f1fc4e43b3f427ba3d7b9a50")
+                .header("serialNo",serialNo)
+                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .contentType("application/json")
+                .trustAllHosts()
+                .trustAllCerts()
+                .send(paramJson)
+                .connectTimeout(10000).readTimeout(10000)
+                .body();
 
         log.info("send jit order receipt. result:{}",responseBody);
     }
@@ -435,20 +520,20 @@ public class PoushengYJErpTest {
         String responseBody = null;
         try {
             responseBody = HttpRequest.post(uri)
-                .header("verifycode", "b82d30f3f1fc4e43b3f427ba3d7b9a50")
-                .header("serialNo", serialNo)
-                .header("sendTime", DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
-                .contentType("application/json")
-                .trustAllHosts().trustAllCerts()
-                .send(paramJson)
-                .connectTimeout(1000000).readTimeout(1000000)
-                .body();
+                    .header("verifycode", "b82d30f3f1fc4e43b3f427ba3d7b9a50")
+                    .header("serialNo", serialNo)
+                    .header("sendTime", DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                    .contentType("application/json")
+                    .trustAllHosts().trustAllCerts()
+                    .send(paramJson)
+                    .connectTimeout(1000000).readTimeout(1000000)
+                    .body();
 
             log.info("rpc yunju jit mgorderout out order id:{}  responseBody={}",syncShipmentRequest.getOrder_sn(), responseBody);
 
         } catch (Exception e) {
             log.error("rpc yunju jit mgorderout out order id:{} exception happens,exception={}",syncShipmentRequest.getOrder_sn(), Throwables
-                .getStackTrace(e));
+                    .getStackTrace(e));
         }
 
     }
@@ -466,8 +551,8 @@ public class PoushengYJErpTest {
 
         String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
         String sign = Hashing.md5().newHasher()
-            .putString(toVerify, Charsets.UTF_8)
-            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+                .putString(toVerify, Charsets.UTF_8)
+                .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
         params.put("sign", sign);
 
         //post("http://127.0.0.1:8092/api/gateway",params);
@@ -482,16 +567,16 @@ public class PoushengYJErpTest {
         params.put("pampasCall", "jit.shipments.api");
 
         String shipInfo="[{\"cardRemark\":\"\",\"expectDate\":\"20180918235900\",\"itemInfos\":[],"
-            + "\"shipmentCorpCode\":\"品骏\",\"shipmentDate\":\"\",\"shipmentId\":\"SHP8659292\","
-            + "\"shipmentSerialNo\":\"\",\"transportMethodCode\":\"1\",\"transportMethodName\":\"汽运\",\"weight\":0.0,"
-            + "\"yyEDIShipmentId\":\"1809X0028\"}]";
+                + "\"shipmentCorpCode\":\"品骏\",\"shipmentDate\":\"\",\"shipmentId\":\"SHP8659292\","
+                + "\"shipmentSerialNo\":\"\",\"transportMethodCode\":\"1\",\"transportMethodName\":\"汽运\",\"weight\":0.0,"
+                + "\"yyEDIShipmentId\":\"1809X0028\"}]";
         params.put("shipInfo", shipInfo);
 
 
         String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
         String sign = Hashing.md5().newHasher()
-            .putString(toVerify, Charsets.UTF_8)
-            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+                .putString(toVerify, Charsets.UTF_8)
+                .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
         params.put("sign", sign);
 
         post("http://127.0.0.1:8092/api/gateway",params);

@@ -776,14 +776,14 @@ public class ShipmentWiteLogic {
         shipment.setShopId(shopOrder.getShopId());
         shipment.setShopName(shopOrder.getShopName());
 
-        // TODO
-        // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
-        convertShipmentItem(shopOrder, warehouseId, shipmentItems);
-
         //jit释放实效库存
         if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
             jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);
         }
+        // TODO
+        // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
+        convertShipmentItem(shopOrder, warehouseId, shipmentItems);
+
 
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));

@@ -13,6 +13,7 @@ logging:
 server:
   context-path: /
   port: 8082
+  jetty.max-http-post-size: 10000000
 
 spring:
   datasource:

@@ -91,9 +91,18 @@ public class YjJitStockPusher{
     }
 
     private void send(Long shopId,Table<String,Long,Long> stocks){
-        List<YjStockInfo> YjStockInfos = Lists.newArrayList();
-        stockPushLogic.appendYjRequest(YjStockInfos,stocks);
-        stockPushLogic.sendToYj(shopId,YjStockInfos);
+        List<YjStockInfo> yjStockInfos = Lists.newArrayList();
+        stockPushLogic.appendYjRequest(yjStockInfos,stocks);
+        //云聚Jit库存更新接口最大接受1000条
+        int size = yjStockInfos.size();
+        int singleMax = 1000;
+        int fromIdx = 0;
+        int toIdx = size < singleMax ? size : singleMax;
+        while(fromIdx < toIdx){
+            stockPushLogic.sendToYj(shopId,yjStockInfos.subList(fromIdx,toIdx));
+            fromIdx = toIdx;
+            toIdx = size-toIdx < singleMax ? toIdx+(size-toIdx)%singleMax : toIdx + singleMax;
+        }
     }
 
 }

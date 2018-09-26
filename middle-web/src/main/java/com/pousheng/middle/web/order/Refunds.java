@@ -464,7 +464,11 @@ public class Refunds {
             log.debug("API-REFUND-SYNCHKCANCELREFUND-START param: refundId [{}] ", refundId);
         }
         Refund refund = refundReadLogic.findRefundById(refundId);
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
+        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+        Shipment shipment =  shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+        //店发拒收单不能被取消
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())
+                &&(Objects.equals(shipment.getShipWay(),1))){
             throw new JsonResponseException("reject.goods.can.not.be.canceled");
         }
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){

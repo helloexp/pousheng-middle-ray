@@ -25,7 +25,7 @@ public class InventoryBaseClient {
 
     private final String host;
 
-    public static final int HttpTime = 20000;
+    public static final int HttpTime = 300000;
 
     @Autowired
     public InventoryBaseClient(@Value("${gateway.inventory.host}") String host) {
@@ -170,6 +170,8 @@ public class InventoryBaseClient {
                 .contentType("application/json")
                 .acceptJson()
                 .acceptCharset(HttpRequest.CHARSET_UTF8)
+                .connectTimeout(HttpTime)
+                .readTimeout(HttpTime)
                 .send(json);
 
         if(r.ok()){

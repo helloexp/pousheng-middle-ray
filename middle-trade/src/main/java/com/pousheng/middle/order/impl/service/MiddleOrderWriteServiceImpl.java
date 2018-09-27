@@ -71,6 +71,24 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
         }
     }
 
+
+    @Override
+    public Response<Boolean> updateOrderStatusForJit(ShopOrder shopOrder, OrderOperation operation) {
+        log.info("start update jit order status for order id:{}",shopOrder.getId());
+        try {
+            //更新订单状态逻辑,带事物
+            middleOrderManager.updateOrderStatusForJit(shopOrder, operation);
+            return Response.ok();
+
+        } catch (ServiceException e) {
+            log.error("failed to update order(id:{}) operation:{} error:{}", shopOrder.getOrderCode(), operation.getText(), e.getMessage());
+            return Response.fail(e.getMessage());
+        } catch (Exception e) {
+            log.error("failed to update order(id:{}) operation:{}, cause:{}", shopOrder.getOrderCode(), operation.getText(), Throwables.getStackTraceAsString(e));
+            return Response.fail("order.update.fail");
+        }
+    }
+
     @Override
     public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode) {
         try {

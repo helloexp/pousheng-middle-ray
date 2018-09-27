@@ -595,19 +595,7 @@ public class Shipments {
                 log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                 continue;
             }
-            //生成发货单之后需要将发货单id添加到子单中
-            for (SkuOrder skuOrder : skuOrders) {
-                try {
-                    Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                    skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + shipmentId);
-                    Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
-                    if (!response.isSuccess()) {
-                        log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
-                    }
-                } catch (Exception e) {
-                    log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, Throwables.getStackTraceAsString(e));
-                }
-            }
+
             try {
                 orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
             } catch (ServiceException e) {

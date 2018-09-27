@@ -400,7 +400,7 @@ public class PoushengYJErpTest {
             order.setBatchMark("第三批次");
             order.setBatchNo("3");
             order.setCardRemark("耐克");
-            order.setBuyerName("唯品会5000");
+            order.setBuyerName("宋仁飞");
             order.setChannel("yunjujit");
             order.setChannelCode("yunjujit");
             order.setCompanyCode("300");
@@ -413,8 +413,8 @@ public class PoushengYJErpTest {
             order.setJitOrderId("PICK-60015001");
             order.setOriginFee(1L);
             order.setOriginShipFee(0L);
-            order.setOutId("PICK-60025001");
-            order.setOutOrderId("6035000+100"+i);
+            order.setOutId("PICK-60025002");
+            order.setOutOrderId("6035000+200"+i);
             order.setPayType(1);
             order.setPreFinishBillo("6015000_100");
             StringBuffer sb = new StringBuffer();
@@ -483,7 +483,7 @@ public class PoushengYJErpTest {
             //post("http://127.0.0.1:8092/api/gateway",params);
 
             //post("http://middle-api-test.pousheng.com/api/gateway", params);
-//            post("http://middle-api-prepub.pousheng.com/api/gateway", params);
+            post("http://middle-api-prepub.pousheng.com/api/gateway", params);
         }
     }
 

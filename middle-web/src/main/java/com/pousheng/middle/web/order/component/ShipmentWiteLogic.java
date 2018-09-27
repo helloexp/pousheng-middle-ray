@@ -585,7 +585,7 @@ public class ShipmentWiteLogic {
             try {
                 if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
                     //jit大单 整单发货，所以讲所有子单合并处理即可
-                    middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                    middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
                 }else {
                     orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
                 }
@@ -807,19 +807,6 @@ public class ShipmentWiteLogic {
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
 
-        //生成发货单之后需要将发货单id添加到子单中
-        for (SkuOrder skuOrder : skuOrdersShipment) {
-            try {
-                Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + shipmentId);
-                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
-                if (!response.isSuccess()) {
-                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
-                }
-            } catch (Exception e) {
-                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId);
-            }
-        }
         if (log.isDebugEnabled()){
             log.debug("ShipmentWiteLogic createShipment,shopOrder {},skuOrders {},warehouseShipment {},result (shipmentId = {})",shopOrder,skuOrders,warehouseShipment,shipmentId);
         }
@@ -914,19 +901,6 @@ public class ShipmentWiteLogic {
         // 异步订阅 用于记录库存数量的日志
         eventBus.post(new StockRecordEvent(shipmentId, StockRecordType.MIDDLE_CREATE_SHIPMENT.toString()));
 
-        //生成发货单之后需要将发货单id添加到子单中
-        for (SkuOrder skuOrder : skuOrdersShipment) {
-            try {
-                Map<String, String> skuOrderExtra = skuOrder.getExtra();
-                skuOrderExtra.put(TradeConstants.SKU_ORDER_SHIPMENT_CODE, TradeConstants.SHIPMENT_PREFIX + shipmentId);
-                Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, skuOrderExtra);
-                if (!response.isSuccess()) {
-                    log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), skuOrderExtra, response.getError());
-                }
-            } catch (Exception e) {
-                log.error("update sku shipment id failed,skuOrder id is {},shipmentId is {},caused by {}", skuOrder.getId(), shipmentId, Throwables.getStackTraceAsString(e));
-            }
-        }
         if (log.isDebugEnabled()){
             log.debug("ShipmentWiteLogic createShipment,shopOrder {},skuOrders {},shopShipment {},result (shipmentId = {})",shopOrder,skuOrders,shopShipment,shipmentId);
         }
@@ -1557,8 +1531,8 @@ public class ShipmentWiteLogic {
                     if (isFirst){
                         if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
                             //jit大单 整单发货，所以讲所有子单合并处理即可
-                            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
-                        }else {
+                            middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                        } else {
                             orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                         }
                     }
@@ -1577,7 +1551,7 @@ public class ShipmentWiteLogic {
                     //占库发货单不同步第三方渠道履约
                     if (!Objects.equals(shipment.getIsOccupyShipment(),ShipmentOccupyType.SALE_Y.name())){
                         this.handleSyncShipment(shipment,1,shopOrder);
-                    }else{
+                    } else{
                         orderNoteCount++;
                     }
                 }
@@ -1599,7 +1573,7 @@ public class ShipmentWiteLogic {
 
                     if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
                         //jit大单 整单发货，所以讲所有子单合并处理即可
-                        middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                        middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
                     }else {
                         orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
                     }

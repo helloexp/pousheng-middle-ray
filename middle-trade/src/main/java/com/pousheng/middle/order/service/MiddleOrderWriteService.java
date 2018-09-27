@@ -24,6 +24,17 @@ public interface MiddleOrderWriteService {
      */
     public Response<Boolean> updateOrderStatusAndSkuQuantities(ShopOrder shopOrder, List<SkuOrder> skuOrders, OrderOperation operation);
 
+
+
+    /**
+     * 更新总单与子单的状态(事物操作) for jit
+     *
+     * @param shopOrder
+     * @param operation
+     */
+    public Response<Boolean> updateOrderStatusForJit(ShopOrder shopOrder,  OrderOperation operation);
+
+
     /**
      * 更新订单状态,回滚子单待处理数量,子单取消使用
      *

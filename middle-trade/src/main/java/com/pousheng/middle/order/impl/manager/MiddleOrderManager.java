@@ -91,6 +91,32 @@ public class MiddleOrderManager {
         }
     }
 
+
+
+    /**
+     * 更新总单与子单的状态
+     * @param shopOrder 总单
+     * @param orderOperation 传入的操作动作,用于下一步操作
+     */
+    @Transactional
+    public void updateOrderStatusForJit(ShopOrder shopOrder, OrderOperation orderOperation) {
+        Flow flow = this.pickOrder();
+        //更新总单记录
+        if (!flow.operationAllowed(shopOrder.getStatus(), orderOperation)) {
+            log.error("order (id:{}) current status:{} not allow operation:{}", shopOrder.getId(), shopOrder.getStatus(), orderOperation.getText());
+            throw new ServiceException("order.status.invalid");
+        }
+
+        Integer targetStatus = flow.target(shopOrder.getStatus(), orderOperation);
+
+        skuOrderDao.updateStatusByOrderId(shopOrder.getId(),shopOrder.getStatus(),targetStatus);
+
+        boolean success = shopOrderDao.updateStatus(shopOrder.getId(), targetStatus);
+        if (!success){
+            log.error("failed to update order(id={}, level={})'s status to : {}", new Object[]{shopOrder.getStatus(), OrderLevel.SHOP, targetStatus});
+            throw new ServiceException("update.shop.order.failed");
+        }
+    }
     /**
      * 子单取消流程,适用于子单的取消
      *

@@ -582,7 +582,14 @@ public class ShipmentWiteLogic {
                 return false;
             }
             try {
-                orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+                if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
+                    //jit大单 整单发货，所以讲所有子单合并处理即可
+                    middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                }else {
+                    orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
+                }
+
+
             } catch (ServiceException e) {
                 log.error("shipment id is {} update sku handle number failed.caused by {}", shipmentId, Throwables.getStackTraceAsString(e));
             }
@@ -1547,8 +1554,15 @@ public class ShipmentWiteLogic {
                         continue;
                     }
                     Shipment shipment = shipmentRes.getResult();
-                    if (isFirst)
-                        orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                    if (isFirst){
+                        if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
+                            //jit大单 整单发货，所以讲所有子单合并处理即可
+                            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                        }else {
+                            orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                        }
+                    }
+
 
                     //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
                     Map<String, String> extraMap = shopOrder.getExtra();
@@ -1581,8 +1595,17 @@ public class ShipmentWiteLogic {
                     log.error("failed to find shipment by id={}, error code:{}", shipmentId, shipmentRes.getError());
                 }
                 Shipment shipment = shipmentRes.getResult();
-                if (isFirst)
-                    orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                if (isFirst){
+
+                    if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
+                        //jit大单 整单发货，所以讲所有子单合并处理即可
+                        middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+                    }else {
+                        orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
+                    }
+
+                }
+
                 //占库发货单不同步第三方渠道履约
                 if (!Objects.equals(shipment.getIsOccupyShipment(),ShipmentOccupyType.SALE_Y.name())){
                     this.handleSyncShipment(shipment, 2, shopOrder);

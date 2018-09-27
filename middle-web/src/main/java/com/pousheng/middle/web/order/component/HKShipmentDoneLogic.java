@@ -11,8 +11,10 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Component;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -65,6 +68,8 @@ public class HKShipmentDoneLogic {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    @RpcConsumer
+    private MiddleOrderWriteService middleOrderWriteService;
 
     public void doneShipment(Shipment shipment) {
         log.info("HK SHIPMENT DONE LISTENER start, shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
@@ -75,20 +80,31 @@ public class HKShipmentDoneLogic {
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             Flow flow = flowPicker.pickOrder();
-            log.info("HK SHIPMENT DONE LISTENER shopOrderStatus is {}", shopOrder.getStatus());
-            //更新子订单中的信息
-            List<Long> skuOrderIds = Lists.newArrayList();
-            Map<Long, Integer> skuInfos = shipment.getSkuInfos();
-            skuOrderIds.addAll(skuInfos.keySet());
-            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
-            for (SkuOrder skuOrder : skuOrders) {
-                if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
-                    Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
-                    if (!updateRlt.getResult()) {
-                        log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
-                        throw new JsonResponseException("update.sku.order.status.error");
+            log.info("HK SHIPMENT id:{} DONE LISTENER shopOrderStatus is {}",shipment.getId(), shopOrder.getStatus());
+
+            if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
+                //jit大单 整单发货，所以将所有子单合并处理即可
+                Response<Boolean> response = middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
+                if (!response.isSuccess()){
+                    log.error("update order ship error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
+
+                }
+            } else {
+                //更新子订单中的信息
+                List<Long> skuOrderIds = Lists.newArrayList();
+                Map<Long, Integer> skuInfos = shipment.getSkuInfos();
+                skuOrderIds.addAll(skuInfos.keySet());
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+                for (SkuOrder skuOrder : skuOrders) {
+                    if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
+                        Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
+                        if (!updateRlt.getResult()) {
+                            log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
+                            throw new JsonResponseException("update.sku.order.status.error");
+                        }
                     }
                 }
+
             }
             log.info("wait to notify ecp,shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
             //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台

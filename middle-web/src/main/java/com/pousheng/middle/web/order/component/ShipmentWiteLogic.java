@@ -584,7 +584,7 @@ public class ShipmentWiteLogic {
             }
             try {
                 if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
-                    //jit大单 整单发货，所以讲所有子单合并处理即可
+                    //jit大单 整单发货，所以将所有子单合并处理即可
                     middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
                 }else {
                     orderWriteLogic.updateSkuHandleNumber(shipmentRes.getResult().getSkuInfos());
@@ -1530,7 +1530,7 @@ public class ShipmentWiteLogic {
                     Shipment shipment = shipmentRes.getResult();
                     if (isFirst){
                         if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
-                            //jit大单 整单发货，所以讲所有子单合并处理即可
+                            //jit大单 整单发货，所以将所有子单合并处理即可
                             middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
                         } else {
                             orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());
@@ -1572,7 +1572,7 @@ public class ShipmentWiteLogic {
                 if (isFirst){
 
                     if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
-                        //jit大单 整单发货，所以讲所有子单合并处理即可
+                        //jit大单 整单发货，所以将所有子单合并处理即可
                         middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
                     }else {
                         orderWriteLogic.updateSkuHandleNumber(shipment.getSkuInfos());

@@ -87,7 +87,7 @@ public class HKShipmentDoneLogic {
                 Response<Boolean> response = middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
                 if (!response.isSuccess()){
                     log.error("update order ship error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
-
+                    throw new JsonResponseException("update.order.status.error");
                 }
             } else {
                 //更新子订单中的信息

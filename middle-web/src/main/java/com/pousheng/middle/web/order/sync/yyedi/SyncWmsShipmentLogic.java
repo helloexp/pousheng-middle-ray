@@ -286,7 +286,10 @@ public class SyncWmsShipmentLogic {
             } else {
                 item.setExpectqty(shipmentItem.getQuantity());
             }
-            items.add(item);
+            //必须大于0
+            if(item.getExpectqty()>0) {
+                items.add(item);
+            }
         }
         return items;
     }

@@ -54,6 +54,7 @@ public class ShipmentWriteManger {
             throw new ServiceException(createResp.getError());
         }
         //2.子订单扣减数量
+        shipment.setShipmentCode("SHP"+ createResp.getResult());
         this.decreaseSkuOrderWaitHandleNumber(shipment);
         log.info("end to create shipment,shipmentId is {}", createResp.getResult());
 

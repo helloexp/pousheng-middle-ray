@@ -34,7 +34,10 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
-import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
+import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -254,6 +257,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
     private void assignShipmentQuantity(ShipmentItem item, Map<String, Integer> quantityMap, boolean fromJit,
                                         boolean partShip) {
         Integer shipmentQuantity = quantityMap.get(item.getSkuCode());
+        if (shipmentQuantity == null) {
+            return;
+        }
         //JIT发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
         if (fromJit) {
             if (item.getQuantity() > shipmentQuantity) {

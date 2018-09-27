@@ -15,35 +15,35 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ObjectUtils;
+
 import java.util.List;
 import java.util.Objects;
 
 /**
- * Created with IntelliJ IDEA
- * User: yujiacheng
- * Date: 2018/7/6
- * Time: 下午2:01
+ * @Description:对于释放失败的补偿
+ * @author: yjc
+ * @date: 2018/9/27下午12:40
  */
-@CompensateAnnotation(bizType = PoushengCompensateBizType.STOCK_API_TIME_OUT)
+@CompensateAnnotation(bizType = PoushengCompensateBizType.UNLOCK_STOCK_EVENT)
 @Service
 @Slf4j
-public class StockTimeOutService implements CompensateBizService {
+public class UnLockStockService implements CompensateBizService {
 
     @Autowired
     private InventoryClient inventoryClient;
 
-
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
+
         if (null == poushengCompensateBiz) {
-            log.warn("StockTimeOutService.doProcess params is null");
+            log.warn("UnLockStockService.doProcess params is null");
             return;
         }
 
         String context = poushengCompensateBiz.getContext();
         if (StringUtil.isBlank(context)) {
-            log.warn("StockTimeOutService.doProcess context is null");
-            throw new BizException("StockTimeOutService.doProcess context is null");
+            log.warn("UnLockStockService.doProcess context is null");
+            throw new BizException("UnLockStockService.doProcess context is null");
         }
 
         try {
@@ -51,8 +51,8 @@ public class StockTimeOutService implements CompensateBizService {
 
             log.info("start to unlock stock info {}", JsonMapper.nonEmptyMapper().toJson(tradeList));
             if (tradeList == null) {
-                log.warn("StockTimeOutService.doProcess unLockStock param is null");
-                throw new BizException("StockTimeOutService.doProcess unLockStock param is null");
+                log.warn("UnLockStockService.doProcess unLockStock param is null");
+                throw new BizException("UnLockStockService.doProcess unLockStock param is null");
             }
 
             if (!ObjectUtils.isEmpty(tradeList)) {
@@ -73,5 +73,4 @@ public class StockTimeOutService implements CompensateBizService {
             throw new BizException("try to unLockStock param for shipment fail,caused by {}", e);
         }
     }
-
 }

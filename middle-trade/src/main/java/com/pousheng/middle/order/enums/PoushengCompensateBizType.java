@@ -44,9 +44,14 @@ public enum PoushengCompensateBizType {
     SYNC_MPOS_CONFIRM_DONE,
 
     /**
-     * 库存中心超时异常
+     * UNLOCK事件补偿
      */
-    STOCK_API_TIME_OUT,
+    UNLOCK_STOCK_EVENT,
+
+    /**
+     * LOCK事件补偿
+     */
+    LOCK_STOCK_EVENT,
 
     /**
      * 扣减库存

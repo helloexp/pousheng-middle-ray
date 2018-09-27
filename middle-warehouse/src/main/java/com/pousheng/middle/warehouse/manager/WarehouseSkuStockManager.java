@@ -168,7 +168,7 @@ public class WarehouseSkuStockManager {
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to unLock inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, lockedShipments, tradeRet.getError());
                     // 超时的错误进入biz表给后面轮询,释放库存biz
-                createShipmentResultTask(mapper.toJson(tradeList));
+                createUnlockStockTask(mapper.toJson(tradeList));
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -204,12 +204,12 @@ public class WarehouseSkuStockManager {
 
 
     /**
-     * 对于超时这类异常进行后续补偿措施，biz业务轮询
+     * 对于unLock失败进行补偿
      * @param context
      */
-    private void createShipmentResultTask(String context){
+    private void createUnlockStockTask(String context){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
-        biz.setBizType(PoushengCompensateBizType.STOCK_API_TIME_OUT.toString());
+        biz.setBizType(PoushengCompensateBizType.UNLOCK_STOCK_EVENT.toString());
         biz.setContext(context);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         poushengCompensateBizWriteService.create(biz);

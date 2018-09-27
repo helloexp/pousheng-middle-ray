@@ -61,6 +61,18 @@ public class InventoryClient {
     }
 
     /**
+     * 取消占用补偿接口：
+     *  1. 如果没有占用事件，直接返回成功
+     *  2. 如果已经取消过，返回成功
+     *  3. 执行取消逻辑，返回结果
+     * @param inventoryTradeDTOList
+     * @return
+     */
+    public Response<Boolean> unLockForCompensate (List<InventoryTradeDTO> inventoryTradeDTOList) {
+        return trade(inventoryTradeDTOList, "api/inventory/trade/unOccupyForCompensate");
+    }
+
+    /**
      * 扣减（对应库存中心的扣减操作）
      * @return
      */

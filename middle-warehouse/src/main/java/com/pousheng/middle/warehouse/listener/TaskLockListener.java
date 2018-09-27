@@ -46,7 +46,7 @@ public class TaskLockListener {
     public void createShipmentResultTask(TaskLockEvent event) {
         log.info("create lock task shipment info is {}", event.getContext());
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
-        biz.setBizType(PoushengCompensateBizType.STOCK_API_TIME_OUT.toString());
+        biz.setBizType(PoushengCompensateBizType.LOCK_STOCK_EVENT.toString());
         biz.setContext(event.getContext());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         poushengCompensateBizWriteService.create(biz);

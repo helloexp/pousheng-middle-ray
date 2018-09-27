@@ -64,13 +64,9 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.lock(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to occupy inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
-                log.info("tradeRet getError is {}", tradeRet.getError());
-                if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
-                    log.info("begin to create lock task, shipment id is {}", Long.parseLong(inventoryTradeDTO.getBizSrcId()));
-                    // 超时的错误进入biz表给后面轮询
-//                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
-                    eventBus.post(new TaskLockEvent(Long.parseLong(inventoryTradeDTO.getBizSrcId())));
-                }
+                log.info("begin to create lock task, shipment id is {}", Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                // 超时的错误进入biz表给后面轮询
+                eventBus.post(new TaskLockEvent(mapper.toJson(tradeList)));
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -94,11 +90,8 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.lockUserDispatch(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to occupy inventory for user dispatch logic, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, warehouses, tradeRet.getError());
-                if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
-                    // 超时的错误进入biz表给后面轮询
-//                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
-                    eventBus.post(new TaskLockEvent(Long.parseLong(inventoryTradeDTO.getBizSrcId())));
-                }
+                log.info("begin to create lock task, shipment id is {}", Long.parseLong(inventoryTradeDTO.getBizSrcId()));
+                eventBus.post(new TaskLockEvent(mapper.toJson(tradeList)));
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -135,10 +128,8 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.decrease(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to decrease inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, actualShipment, tradeRet.getError());
-                // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
-                    // 超时的错误进入biz表给后面轮询,扣减库存biz
-                    createDecreaseStockTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
-                // }
+                // 超时的错误进入biz表给后面轮询,扣减库存biz
+                createDecreaseStockTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -176,10 +167,8 @@ public class WarehouseSkuStockManager {
             Response<Boolean> tradeRet = inventoryClient.unLock(tradeList);
             if (!tradeRet.isSuccess() || !tradeRet.getResult()) {
                 log.error("fail to unLock inventory, trade trade dto: {}, shipment:{}, cause:{}", inventoryTradeDTO, lockedShipments, tradeRet.getError());
-                // if (Objects.equals(tradeRet.getError(),"inventory.response.timeout")) {
                     // 超时的错误进入biz表给后面轮询,释放库存biz
-                    createShipmentResultTask(Long.parseLong(inventoryTradeDTO.getBizSrcId()));
-                // }
+                createShipmentResultTask(mapper.toJson(tradeList));
                 return Response.fail(tradeRet.getError());
             }
         }
@@ -216,12 +205,12 @@ public class WarehouseSkuStockManager {
 
     /**
      * 对于超时这类异常进行后续补偿措施，biz业务轮询
-     * @param shipmentId 发货单id
+     * @param context
      */
-    private void createShipmentResultTask(Long shipmentId){
+    private void createShipmentResultTask(String context){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.STOCK_API_TIME_OUT.toString());
-        biz.setContext(mapper.toJson(shipmentId));
+        biz.setContext(context);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         poushengCompensateBizWriteService.create(biz);
     }
@@ -229,7 +218,7 @@ public class WarehouseSkuStockManager {
 
     /**
      * 扣减失败补偿
-     * @param shipmentId
+     * @param context
      */
     private void createDecreaseStockTask(Long shipmentId){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();

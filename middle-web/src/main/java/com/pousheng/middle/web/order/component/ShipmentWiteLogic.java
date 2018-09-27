@@ -7,6 +7,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentItem;
 import com.pousheng.middle.hksyc.dto.trade.SycHkShipmentOrder;
@@ -659,16 +660,15 @@ public class ShipmentWiteLogic {
             shopOrder.getExtra().containsKey(ExtraKeyConstant.IS_CARESTOCK)
                 && Objects.equals("Y", shopOrder.getExtra().get(ExtraKeyConstant.IS_CARESTOCK))) {
 
-            List<String> skuCodes = Lists.transform(shipmentItems, new Function<ShipmentItem, String>() {
-                @Nullable
-                @Override
-                public String apply(@Nullable ShipmentItem input) {
-                    return input.getSkuCode();
-                }
+            Set<String> set = Sets.newHashSet();
+            shipmentItems.stream().forEach(item->{
+                set.add(item.getSkuCode());
             });
-            Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, skuCodes, shopOrder.getShopId());
+
+
+            Response<Map<String, Integer>> r = warehouseSkuStockLogic.findByWarehouseIdAndSkuCodes(warehouseId, Lists.newArrayList(set), shopOrder.getShopId());
             if (!r.isSuccess()) {
-                log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}", warehouseId, skuCodes, r.getError());
+                log.error("failed to find stock in warehouse(id={}) for skuCodes:{}, error code:{}", warehouseId, set, r.getError());
                 throw new JsonResponseException(r.getError());
             }
             Map<String, Integer> resultMap = r.getResult();

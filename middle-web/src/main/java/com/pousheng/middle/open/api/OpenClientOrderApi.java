@@ -82,8 +82,6 @@ public class OpenClientOrderApi {
             try{
                 //参数校验
                 this.validateParam(openFullOrderInfo);
-                ApiParamUtil.validateRequired(openFullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
-                        "originShipFee","shipmentType","payType","status","channel","createdAt","stockId","orderExpressCode","orderHkExpressName","shipmentSerialNo");
                 //查询该渠道的店铺信息
                 String shopCode = openFullOrderInfo.getOrder().getCompanyCode()+"-"+openFullOrderInfo.getOrder().getShopCode();
                 Long openShopId =  this.validateOpenShop(shopCode);

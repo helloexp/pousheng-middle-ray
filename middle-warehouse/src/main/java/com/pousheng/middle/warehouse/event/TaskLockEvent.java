@@ -13,9 +13,9 @@ public class TaskLockEvent implements Serializable {
     private static final long serialVersionUID = -2642344911815573344L;
 
     @Getter
-    private final Long shipmentId;
+    private final String context;
 
-    public TaskLockEvent(Long shipmentId) {
-        this.shipmentId = shipmentId;
+    public TaskLockEvent(String context) {
+        this.context = context;
     }
 }

@@ -982,8 +982,13 @@ public class ShipmentWiteLogic {
      * @param skuOrderId   sku order id
      * @return 返回经过过滤的skuOrder记录
      */
-    private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, Long skuOrderId) {
-        return skuOrders.stream().filter(Objects::nonNull).filter(it -> Objects.equals(it.getId(), skuOrderId)).collect(Collectors.toList()).get(0);
+    private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, Long skuOrderId, String skuCode) {
+        List<SkuOrder> result = skuOrders.stream().filter(Objects::nonNull).filter(it -> Objects.equals(it.getId(), skuOrderId)).collect(Collectors.toList());
+        if(!CollectionUtils.isEmpty(result)) {
+            return result.get(0);
+        }
+        return skuOrders.stream().filter(Objects::nonNull).filter(it -> Objects.equals(it.getSkuCode(), skuCode)).collect(Collectors.toList()).get(0);
+
     }
 
     /**
@@ -1601,7 +1606,7 @@ public class ShipmentWiteLogic {
                 log.info("mpos order(id:{}) can not be dispatched", shopOrder.getId());
                 //取消子单
                 for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantityList) {
-                    SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId());
+                    SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getSkuCode());
                     orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue());
                     //添加取消原因
                     Map<String, String> skuOrderExtra = skuOrder.getExtra();
@@ -1651,7 +1656,7 @@ public class ShipmentWiteLogic {
      */
     private void makeSkuOrderWaitHandle(List<SkuCodeAndQuantity> skuCodeAndQuantities, List<SkuOrder> skuOrders) {
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
-            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId());
+            SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getSkuCode());
             orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
             Map<String, String> extraMap = skuOrder.getExtra();
             Integer waitHandleNumber = skuOrder.getQuantity();

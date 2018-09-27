@@ -793,7 +793,7 @@ public class ShipmentWiteLogic {
         try {
             shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
         } catch (Exception e) {
-            log.error("create shipment fail and lock stock fail");
+            log.error("create shipment fail for shop order(id:{}) and lock stock fail,cause:{}",shopOrder.getOrderCode(),Throwables.getStackTraceAsString(e));
             throw new ServiceException(e.getMessage());
         }
 

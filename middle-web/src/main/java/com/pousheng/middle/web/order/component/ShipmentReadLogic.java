@@ -3,8 +3,10 @@ package com.pousheng.middle.web.order.component;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ConcurrentHashMultiset;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Multiset;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.dto.DispatchOrderItemInfo;
 import com.pousheng.middle.order.dto.*;
@@ -617,14 +619,19 @@ public class ShipmentReadLogic {
     public List<SkuCodeAndQuantity> findShipmentSkuDetail(Shipment shipment){
         List<ShipmentItem> shipmentItems = this.getShipmentItems(shipment);
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
-        shipmentItems.forEach(shipmentItem -> {
+        //skuCode及数量
+        Multiset<String> current = ConcurrentHashMultiset.create();
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            current.add(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
+        }
+
+        for (String skuCode : current.elementSet()){
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
-            skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
-            skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
-            skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
-            skuCodeAndQuantity.setShipmentItemId(shipmentItem.getId());
+            skuCodeAndQuantity.setSkuCode(skuCode);
+            skuCodeAndQuantity.setQuantity(current.count(skuCode));
             skuCodeAndQuantities.add(skuCodeAndQuantity);
-        });
+        }
+
         return skuCodeAndQuantities;
     }
 

@@ -136,7 +136,7 @@ public class MposShipmentLogic {
             shopOrderExtra.put(TradeConstants.REJECT_SHIPMENT_OCCUPY_LIST,JsonMapper.nonEmptyMapper().toJson(shipmentOccupies));
             orderWriteService.updateOrderExtra(shopOrder.getId(),OrderLevel.SHOP,shopOrderExtra);
 
-            List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetail(shipment);
+            List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetailForReject(shipment);
             shipmentWiteLogic.toDispatchOrder(shopOrder, skuCodeAndQuantities);
         }
         log.info("end to update order status,when mops shipped shipment id:{}",event.getShipmentId());

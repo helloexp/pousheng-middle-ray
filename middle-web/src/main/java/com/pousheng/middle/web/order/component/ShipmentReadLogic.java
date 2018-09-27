@@ -635,6 +635,26 @@ public class ShipmentReadLogic {
         return skuCodeAndQuantities;
     }
 
+
+    /**
+     * 根据发货单获取sku详情
+     * @param shipment 发货单
+     * @return
+     */
+    public List<SkuCodeAndQuantity> findShipmentSkuDetailForReject(Shipment shipment){
+        List<ShipmentItem> shipmentItems = this.getShipmentItems(shipment);
+        List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayList();
+        shipmentItems.forEach(shipmentItem -> {
+            SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
+            skuCodeAndQuantity.setSkuOrderId(shipmentItem.getSkuOrderId());
+            skuCodeAndQuantity.setSkuCode(shipmentItem.getSkuCode());
+            skuCodeAndQuantity.setQuantity(shipmentItem.getQuantity());
+            skuCodeAndQuantities.add(skuCodeAndQuantity);
+        });
+        return skuCodeAndQuantities;
+    }
+
+
     /**
      * 组装数据，用来处理库存
      * @param shipment 发货单

@@ -133,4 +133,18 @@ public class ShipmentExtra implements Serializable{
      * value为箱号
      */
     private Map<String,String> boxNoMap;
+
+    /**
+     * 物流公司Map
+     * key为skuCode
+     * value为物流公司编号
+     */
+    private Map<String,String> shipmentCorpCodeMap;
+
+    /**
+     * 物流单号Map
+     * key为skuCode
+     * value为物流单号
+     */
+    private Map<String,String> shipmentSerialNoMap;
 }

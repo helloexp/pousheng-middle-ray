@@ -140,6 +140,8 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
         Boolean partShip = Boolean.FALSE;
         Map<String,String> boxNoMap=null;
+        Map<String,String> shipmentCorpCodeMap=null;
+        Map<String,String> shipmentSerialNoMap=null;
         if (yyEdiShipInfo.getItemInfos() != null) {
             //构造箱号数据
             boxNoMap = yyEdiShipInfo.getItemInfos().stream().
@@ -153,6 +155,15 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 throw new BizException("failed to query shop order");
             }
             boolean fromJit = MiddleChannel.YUNJUJIT.getValue().equals(order.getOutFrom());
+            if (fromJit) {
+                //构造物流公司数据
+                shipmentCorpCodeMap = yyEdiShipInfo.getItemInfos().stream().
+                    collect(HashMap::new, (m, v) -> m.put(v.getSkuCode(), v.getShipmentCorpCode()), HashMap::putAll);
+                //构造物流单号数据
+                shipmentSerialNoMap = yyEdiShipInfo.getItemInfos().stream().
+                    collect(HashMap::new, (m, v) -> m.put(v.getSkuCode(), v.getShipmentSerialNo()), HashMap::putAll);
+
+            }
             for (ShipmentItem s : items) {
                 assignShipmentQuantity(s, itemMap, fromJit, partShip);
             }
@@ -193,6 +204,8 @@ public class YyediSyncShipmentService implements CompensateBizService {
         shipmentExtra.setTransportMethodName(yyEdiShipInfo.getTransportMethodName());
         shipmentExtra.setCardRemark(yyEdiShipInfo.getCardRemark());
         shipmentExtra.setBoxNoMap(boxNoMap);
+        shipmentExtra.setShipmentCorpCodeMap(shipmentCorpCodeMap);
+        shipmentExtra.setShipmentSerialNoMap(shipmentSerialNoMap);
 
         if (Objects.isNull(yyEdiShipInfo.getWeight())) {
             shipmentExtra.setWeight(0L);

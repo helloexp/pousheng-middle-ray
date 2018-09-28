@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order.sync.ecp;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.hksyc.component.SycYunJuShipmentOrderApi;
 import com.pousheng.middle.hksyc.component.SyncYunJuJitShipmentApi;
 import com.pousheng.middle.hksyc.dto.LogisticsInfo;
@@ -250,6 +251,7 @@ public class SyncOrderToEcpLogic {
     public Response<Boolean> syncToYunJu(ShopOrder shopOrder) {
 
         try {
+            boolean fromJit = MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom());
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
@@ -281,7 +283,8 @@ public class SyncOrderToEcpLogic {
                     //获取快递信息
                     ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                     String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-
+                    Map<String,String> expressMapping= Maps.newHashMap();
+                    expressMapping.put(shipmentExtra.getShipmentCorpCode(),expressCompanyCode);
 
                     List<LogisticsInfo> logisiticis = Lists.newArrayList();
                     boolean itemFailed = false;
@@ -294,15 +297,20 @@ public class SyncOrderToEcpLogic {
                             itemFailed = true;
                             break;
                         }else{
-
                             logisticsInfo.setOrder_product_id(skuOrderResponse.getResult().getOutId());//ERP的商品订单Id
 
                         }
                         // sku_order获取out_id
                         logisticsInfo.setBar_code(shipmentItem.getSkuCode());//sku条码
+                        //兼容物流公司取值
+                        expressCompanyCode=buildExpressCompanyCode(fromJit,shipmentExtra,shipmentItem,expressMapping,shopOrder.getShopId());
                         logisticsInfo.setLogistics_company_code(expressCompanyCode); //发货公司code
-                        String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? "" : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+
+                        //兼容物流单号取值
+                        String shipmentSerialNo = buildShipmentSerialNo(fromJit,shipmentExtra,shipmentItem);
+
                         logisticsInfo.setLogistics_order(shipmentSerialNo);//发货的快递公司单号
+
                         logisticsInfo.setDelivery_name(shipmentExtra.getWarehouseName());//发货人 经讨论是可以是发货仓
                         logisticsInfo.setDelivery_time(DateFormatUtils.format(shipmentExtra.getShipmentDate(),"yyyy-MM-dd HH:mm:ss"));
                         logisticsInfo.setAmount(shipmentItem.getShipQuantity()==null?shipmentItem.getQuantity():shipmentItem.getShipQuantity()); //实际发货数量
@@ -373,5 +381,34 @@ public class SyncOrderToEcpLogic {
     private static String convertDateFormat(String date){
         DateTime dateTime=DateTime.parse(date, DateTimeFormat.forPattern("yyyyMMddHHmmss"));
         return dateTime.toString("yyyy-MM-dd HH:mm:ss");
+    }
+
+    private String buildShipmentSerialNo(boolean fromJit,ShipmentExtra shipmentExtra,ShipmentItem shipmentItem){
+        if (fromJit && shipmentExtra.getShipmentSerialNoMap() != null) {
+            return shipmentExtra.getShipmentSerialNoMap().get(shipmentItem.getSkuCode());
+        } else {
+            return StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? ""
+                : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(
+                    shipmentExtra.getShipmentSerialNo()).get(0);
+        }
+    }
+
+    private String buildExpressCompanyCode(boolean fromJit,ShipmentExtra shipmentExtra,ShipmentItem shipmentItem,Map<String,String> expressMapping,Long shopId){
+        //非JIT逻辑
+        if (!fromJit) {
+            return expressMapping.get(shipmentExtra.getShipmentCorpCode());
+        }
+        String shipmentCorpCode = shipmentExtra.getShipmentCorpCodeMap().get(shipmentItem.getSkuCode());
+        if (org.apache.commons.lang3.StringUtils.isBlank(shipmentCorpCode)) {
+            return null;
+        }
+        if (expressMapping.containsKey(shipmentCorpCode)) {
+            return expressMapping.get(shipmentCorpCode);
+        }
+        //获取快递信息
+        ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentCorpCode);
+        String expressCompanyCode = orderReadLogic.getExpressCode(shopId, expressCode);
+        expressMapping.put(shipmentCorpCode, expressCompanyCode);
+        return expressCompanyCode;
     }
 }

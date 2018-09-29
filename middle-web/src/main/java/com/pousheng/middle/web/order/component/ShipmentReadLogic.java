@@ -427,16 +427,21 @@ public class ShipmentReadLogic {
             throw new JsonResponseException("shipment.extra.item.info.null");
         }
 
+        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
+
         if (StringUtils.isEmpty(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO))) {
-            return findByShipmentId(shipment.getId());
+            List<ShipmentItem> list = findByShipmentId(shipment.getId());
+            list.stream().forEach(it->{
+                it.setItemWarehouseName(shipmentExtra.getWarehouseName());
+            });
+            return list;
         }
 
         List<ShipmentItem> list = mapper.fromJson(extraMap.get(TradeConstants.SHIPMENT_ITEM_INFO),mapper.createCollectionType(List.class,ShipmentItem.class));
         //添加发货仓库
-        ShipmentExtra shipmentExtra = this.getShipmentExtra(shipment);
         for (ShipmentItem shipmentItem:list){
             shipmentItem.setWarehouseId(shipmentExtra.getWarehouseId());
-//                shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
+            shipmentItem.setItemWarehouseName(shipmentExtra.getWarehouseName());
         }
         return list;
     }

@@ -93,9 +93,9 @@ public class YjJitStockPusher{
     private void send(Long shopId,Table<String,Long,Long> stocks){
         List<YjStockInfo> yjStockInfos = Lists.newArrayList();
         stockPushLogic.appendYjRequest(yjStockInfos,stocks);
-        //云聚Jit库存更新接口最大接受1000条
+        //云聚Jit库存更新接口最大接受500条
         int size = yjStockInfos.size();
-        int singleMax = 1000;
+        int singleMax = 500;
         int fromIdx = 0;
         int toIdx = size < singleMax ? size : singleMax;
         while(fromIdx < toIdx){

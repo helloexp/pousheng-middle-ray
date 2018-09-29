@@ -99,11 +99,13 @@ public class JitBigOrderService implements CompensateBizService {
         try {
             boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
             if (!lock) {
-                String msg=MessageFormat.format("order {} is processing.",outOrderId);
+                String msg = MessageFormat.format("order {0} is processing.", outOrderId);
                 throw new ConcurrentSkipBizException(msg);
             }
             //handle jit big order
             handle(fullOrderInfo);
+        } catch (ConcurrentSkipBizException ce) {
+            throw ce;
         } catch (Exception e) {
             log.error("failed to handle JIT big order.param:{}", poushengCompensateBiz,e);
 //            throw new BizException("failed to handle JIT big order,cause by {}", e);

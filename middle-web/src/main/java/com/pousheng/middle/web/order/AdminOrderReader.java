@@ -10,7 +10,9 @@ import com.pousheng.middle.order.dto.ShopOrderWithReceiveInfo;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
@@ -121,6 +123,12 @@ public class AdminOrderReader {
                 shopOrderPagingInfo.setShopOrderOperations(shipmentReadLogic.isShopOrderCanRevoke(shopOrder)
                         ?flow.availableOperations(shopOrder.getStatus())
                         :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
+            }
+            //待处理的单子如果是派单失败的 允许出现 不包含有备注订单
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue()) && shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
+                if (shopOrder.getHandleStatus() != null && shopOrder.getHandleStatus() > OrderWaitHandleType.ORDER_HAS_NOTE.value()) {
+                    shopOrderPagingInfo.getShopOrderOperations().add(MiddleOrderEvent.NOTICE_VIP_UNDERCARRIAGE.toOrderOperation());
+                }
             }
             pagingInfos.add(shopOrderPagingInfo);
         });

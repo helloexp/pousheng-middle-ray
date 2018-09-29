@@ -22,6 +22,8 @@ import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -34,6 +36,7 @@ import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -49,11 +52,9 @@ import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.enums.ShipmentType;
-import io.terminus.parana.order.model.OrderBase;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderShipment;
-import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.shop.model.Shop;
@@ -145,6 +146,8 @@ public class FireCall {
     private InventoryChangeProducer inventoryChangeProducer;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -241,11 +244,11 @@ public class FireCall {
         return "ok";
     }
 
-    @RequestMapping(value="/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Boolean synchronizeWarehouse(@RequestParam(name = "start",required = false,defaultValue = "") String start,
-                                        @RequestParam(name = "end", required = false,defaultValue = "") String end){
-        Date from= DateTime.now().withTimeAtStartOfDay().toDate();
-        if (StringUtils.hasText(start)){
+    @RequestMapping(value = "/warehouse", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Boolean synchronizeWarehouse(@RequestParam(name = "start", required = false, defaultValue = "") String start,
+                                        @RequestParam(name = "end", required = false, defaultValue = "") String end) {
+        Date from = DateTime.now().withTimeAtStartOfDay().toDate();
+        if (StringUtils.hasText(start)) {
             from = dft.parseDateTime(start).toDate();
         }
         Date to = DateTime.now().withTimeAtStartOfDay().plusDays(1).minusSeconds(1).toDate();
@@ -258,7 +261,6 @@ public class FireCall {
         return Boolean.TRUE;
 
     }
-
 
 
     @RequestMapping(value = "/spu/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -408,8 +410,8 @@ public class FireCall {
      * @param materialId 货号
      * @param attr       指定属性
      * @param companyId  公司编号
-     * @outerId outerId  外码
      * @return 商品信息
+     * @outerId outerId  外码
      */
     @ApiOperation("根据货号查询")
     @GetMapping(value = "/search/for/mpos", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -417,7 +419,7 @@ public class FireCall {
                                                 @RequestParam(required = false) String attr,
                                                 @RequestParam Long companyId, @RequestParam String outerId) {
         if (log.isDebugEnabled()) {
-            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-START param: materialId [{}] attr [{}] companyId [{}] outerId [{}]", materialId, attr,companyId,outerId);
+            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-START param: materialId [{}] attr [{}] companyId [{}] outerId [{}]", materialId, attr, companyId, outerId);
         }
         Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
         ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
@@ -462,7 +464,7 @@ public class FireCall {
         Paging<SearchSkuTemplate> paging = response.getResult().getEntities();
 
         if (log.isDebugEnabled()) {
-            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-END param: materialId [{}] attr [{}] companyId [{}] outerId [{}] result:{}", materialId, attr,companyId,outerId,paging.getData());
+            log.debug("API-MIDDLE-TASK-SEARCH-SKU-TEMPLATE-END param: materialId [{}] attr [{}] companyId [{}] outerId [{}] result:{}", materialId, attr, companyId, outerId, paging.getData());
         }
         return paging;
     }
@@ -480,15 +482,15 @@ public class FireCall {
                                        @RequestParam Long companyId, @RequestParam String outerId) {
 
         if (log.isDebugEnabled()) {
-            log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-START param: materialId [{}] size [{}] companyId [{}] outerId [{}]", materialId, size,companyId,outerId);
+            log.debug("API-MIDDLE-TASK-COUNT-STOCK-FOR-MPOS-START param: materialId [{}] size [{}] companyId [{}] outerId [{}]", materialId, size, companyId, outerId);
         }
 
         //1、查询店铺是否存在
-        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId,companyId);
+        Shop currentShop = middleShopCacher.findByOuterIdAndBusinessId(outerId, companyId);
         ShopExtraInfo currentShopExtraInfo = ShopExtraInfo.fromJson(currentShop.getExtra());
         Long openShopId = currentShopExtraInfo.getOpenShopId();
-        if(Arguments.isNull(openShopId)){
-            log.error("shop(id:{}) not mapping open shop",currentShop.getId());
+        if (Arguments.isNull(openShopId)) {
+            log.error("shop(id:{}) not mapping open shop", currentShop.getId());
             throw new JsonResponseException("shop.not.mapping.open.shop");
         }
 
@@ -499,7 +501,7 @@ public class FireCall {
             log.error("middle not find group ids by openShopId:{}", openShopId);
             return new ItemNameAndStock();
         }
-        Map<String,String> params = Maps.newHashMap();
+        Map<String, String> params = Maps.newHashMap();
         params.put("spuCode", materialId);
         params.put("attrs", "尺码:" + size);
         Response<? extends SearchedItemWithAggs<SearchSkuTemplate>> response = skuTemplateSearchReadService.searchWithAggs(1, 20, templateName, params, SearchSkuTemplate.class);
@@ -508,7 +510,7 @@ public class FireCall {
             throw new JsonResponseException(response.getError());
         }
         List<SearchSkuTemplate> searchSkuTemplates = response.getResult().getEntities().getData();
-        if(CollectionUtils.isEmpty(searchSkuTemplates)){
+        if (CollectionUtils.isEmpty(searchSkuTemplates)) {
             log.error("middle not find sku template by materialId:{} and size:{} and shopIds:{}", materialId, size, groupIds);
             return new ItemNameAndStock();
         }
@@ -587,7 +589,6 @@ public class FireCall {
     }
 
 
-
     /**
      * 根据店铺id拉取基础货品信息
      *
@@ -601,8 +602,8 @@ public class FireCall {
         }
         int pageNo = 0;
         int pageSize = 40;
-        while(true){
-            Response<Paging<ItemMapping>> r =  mappingReadService.findByOpenShopId(openShopId,null,pageNo,pageSize);
+        while (true) {
+            Response<Paging<ItemMapping>> r = mappingReadService.findByOpenShopId(openShopId, null, pageNo, pageSize);
             Paging<ItemMapping> itemMappingPaging = r.getResult();
             List<ItemMapping> itemMappingList = itemMappingPaging.getData();
             if (itemMappingList.isEmpty()) {
@@ -812,7 +813,6 @@ public class FireCall {
     }
 
 
-
     /**
      * 修复shutemplate中extra为空或者缺少货号的数据
      */
@@ -862,7 +862,7 @@ public class FireCall {
             }
 
             Shipment shipment = shipmentRes.getResult();
-            if (Objects.equals(shipment.getStatus(),-7) && Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())){
+            if (Objects.equals(shipment.getStatus(), -7) && Objects.equals(shipment.getType(), ShipmentType.EXCHANGE_SHIP.value())) {
                 mposOrderHandleLogic.handleExchangeShipReject(shipment);
             } else {
                 log.info("ERROR-END-HANDLE-SHIPMENT-REJECT-CODE:{} status invalid", shipmentCode);
@@ -967,24 +967,23 @@ public class FireCall {
     }
 
 
-
     /**
      * 同步mpos映射关系到恒康
      */
     @RequestMapping(value = "/sync/item/mapping", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void autoSyncMposMapping(@RequestParam String fileName){
+    public void autoSyncMposMapping(@RequestParam String fileName) {
 
-        String url = "/pousheng/file/"+ fileName + ".csv";
+        String url = "/pousheng/file/" + fileName + ".csv";
 
         File file1 = new File(url);
 
-        List<String> itemIdStrs =  readShipmentCode(file1);
+        List<String> itemIdStrs = readShipmentCode(file1);
 
-        log.info("START-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
+        log.info("START-HANDLE-SYNC-ITEM-MAPPING-API for:{}", url);
 
         List<Long> itemIds = Lists.newArrayList();
 
-        int i =0;
+        int i = 0;
         for (String itemIdStr : itemIdStrs) {
             i++;
             itemIds.add(Long.valueOf(itemIdStr));
@@ -1003,7 +1002,7 @@ public class FireCall {
         }
 
         //非1000条的更新下
-        if (!CollectionUtils.isEmpty(itemIds)){
+        if (!CollectionUtils.isEmpty(itemIds)) {
             try {
                 //向库存那边推送这个信息, 表示要关注这个商品对应的单据
                 materialPusher.addSpus(itemIds);
@@ -1012,22 +1011,65 @@ public class FireCall {
             }
         }
 
-        log.info("END-HANDLE-SYNC-ITEM-MAPPING-API for:{}",url);
+        log.info("END-HANDLE-SYNC-ITEM-MAPPING-API for:{}", url);
+
+    }
+
+    /**
+     * 电商呼叫接单和呼叫快递
+     *
+     * @param shipmentId
+     */
+    @RequestMapping(value = "/confirm/vip/delivery", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void confirmStoreDelivery(@RequestParam Long shipmentId) {
+        Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+        Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+        if (!response.isSuccess()) {
+            throw new JsonResponseException(response.getError());
+        }
 
     }
 
 
     /**
+     * 通知oxo下架
+     *
+     * @param orderId 订单好
+     */
+    @RequestMapping(value = "/confirm/vip/undercarriage", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void confirmUnderStore(@RequestParam Long orderId) {
+        Long userId = UserUtil.getUserId();
+
+        /*if (userId == null) {
+            throw new JsonResponseException("permission.check.current.user.empty");
+        }*/
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
+        /*if (!shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
+            throw new JsonResponseException("current.status.is.not.wait.handle");
+        }*/
+        if (!shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+            throw new JsonResponseException("this.order.channel.is.not.vip");
+        }
+        log.info("begin to undercarriage to oxo, outId is {} user is {}", shopOrder.getOutId(), userId);
+        Response<Boolean> response = syncVIPLogic.confirmUndercarriage(shopOrder.getShopId(), shopOrder.getOutId());
+        if (!response.isSuccess()) {
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
+
+    /**
      * 修复未扣减库存发货单
+     *
      * @param fileName
      */
     @RequestMapping(value = "/fix/decrease/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void fixDecreaseStock(@RequestParam String fileName){
-        String url = "/pousheng/file/"+ fileName + ".csv";
+    public void fixDecreaseStock(@RequestParam String fileName) {
+        String url = "/pousheng/file/" + fileName + ".csv";
         File file1 = new File(url);
         List<String> codes = readShipmentCode(file1);
 
-        log.info("START-HANDLE-FIX-DECREASE-STOCK-API for:{} COUNT:{}",url,codes.size());
+        log.info("START-HANDLE-FIX-DECREASE-STOCK-API for:{} COUNT:{}", url, codes.size());
         int count = 0;
         for (String shipmentCode : codes) {
             Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(shipmentCode);
@@ -1041,12 +1083,11 @@ public class FireCall {
             if (!resp.isSuccess()) {
                 log.error("decrease stock by shipment code {} fail,error:{}", shipmentCode, shipmentRes.getError());
                 continue;
-            }
-            else {
+            } else {
                 count++;
             }
         }
 
-        log.info("END-HANDLE-FIX-DECREASE-STOCK-API for:{}, SUCCESS RESULT:{}",url, count);
+        log.info("END-HANDLE-FIX-DECREASE-STOCK-API for:{}, SUCCESS RESULT:{}", url, count);
     }
 }

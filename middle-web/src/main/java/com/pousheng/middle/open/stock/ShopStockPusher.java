@@ -66,7 +66,10 @@ public class ShopStockPusher {
             log.debug("STOCK-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}", skuCodes, System.currentTimeMillis());
         }
         log.info("start to push skus: {}", skuCodes);
-        Table<Long, String, Integer> shopSkuStock = HashBasedTable.create();
+
+        Table<Long, String, Integer> paranaSkuStock = HashBasedTable.create();
+        Table<Long, String, Integer> vipSkuStock = HashBasedTable.create();
+
         //库存推送日志记录
         final List<StockPushLog> thirdStockPushLogs = new CopyOnWriteArrayList<>();
         List<StockPushLog> logs = Lists.newArrayList();
@@ -174,7 +177,10 @@ public class ShopStockPusher {
                         //判断店铺是否是官网的
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
-                            shopSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
+                            paranaSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
+                        } else if(Objects.equals(openShop.getChannel(), MiddleChannel.VIP.getValue())){
+                            log.info("start to push to vip shop: {}, with quantity: {}", openShop, stock);
+                            vipSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                         } else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
@@ -204,7 +210,13 @@ public class ShopStockPusher {
         }
 
         //官网批量推送
-        stockPushLogic.sendToParana(shopSkuStock);
+        if(!paranaSkuStock.isEmpty()) {
+            stockPushLogic.sendToParana(paranaSkuStock);
+        }
+        //唯品会支持批量推送
+        if(!vipSkuStock.isEmpty()){
+            stockPushLogic.sendToParana(vipSkuStock);
+        }
 
         if (log.isDebugEnabled()) {
             log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}", skuCodes, System.currentTimeMillis());

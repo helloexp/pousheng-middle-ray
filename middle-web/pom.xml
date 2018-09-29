@@ -121,6 +121,11 @@
         </dependency>
         <dependency>
             <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-vip</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.terminus.open</groupId>
             <artifactId>open-client-taobao</artifactId>
             <version>${open-client.version}</version>
         </dependency>

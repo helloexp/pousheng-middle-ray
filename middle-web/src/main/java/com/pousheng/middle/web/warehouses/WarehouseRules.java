@@ -3,9 +3,14 @@ package com.pousheng.middle.web.warehouses;
 import com.google.common.base.Objects;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.dto.ThinShop;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.model.WarehouseRuleItem;
 import com.pousheng.middle.warehouse.model.WarehouseShopGroup;
+import com.pousheng.middle.web.item.cacher.VipWarehouseMappingProxy;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
@@ -24,12 +29,17 @@ import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.cache.ShopCacher;
+import io.terminus.parana.common.exception.InvalidException;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -57,6 +67,10 @@ public class WarehouseRules {
     private ShopCacher shopCacher;
     @Autowired
     private WarehouseRulesClient warehouseRulesClient;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+    @Autowired
+    private VipWarehouseMappingProxy vipWarehouseMappingProxy;
 
 
     /**
@@ -139,6 +153,9 @@ public class WarehouseRules {
         shopChannelGroupCacher.refreshShopChannelGroupCache();
         return r.getResult();
     }
+
+
+
 
     /**
      * 删除单条规则
@@ -233,6 +250,33 @@ public class WarehouseRules {
             throw new JsonResponseException("rule.shop.company.code.invalid");
         }
         return companyCode;
+    }
+
+    /**
+     * 根据ruleId获取第一个店铺的渠道 如果是vip的话 检查映射
+     * @param ruleId
+     * @return
+     */
+    @RequestMapping(value = "/{ruleId}/check", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<String> checkChannel(@PathVariable Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems) {
+        List<WarehouseShopGroup> shopGroups = warehouseRuleComponent.findWarehouseShopGropsByRuleId(ruleId);
+        WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
+        OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
+        if (Objects.equal(MiddleChannel.VIP.getValue(), openShop.getChannel())) {
+            ArrayList<WarehouseRuleItem> ruleItemArrayList = Lists.newArrayList(warehouseRuleItems);
+            List<String> invalidWarehouse = Lists.newArrayList();
+            for (WarehouseRuleItem it : ruleItemArrayList) {
+                WarehouseDTO warehouseDTO = warehouseCacher.findById(it.getWarehouseId());
+                if (vipWarehouseMappingProxy.findByWarehouseId(warehouseDTO.getId()) == null){
+                    invalidWarehouse.add(warehouseDTO.getWarehouseName() + "(" + warehouseDTO.getOutCode() + ")");
+                }
+            }
+            if (!ObjectUtils.isEmpty(invalidWarehouse)) {
+                log.error("find shop by invalidWarehouse:{} fail", invalidWarehouse);
+                throw new InvalidException(500, "not.vip.warehouse(outCode={0})", invalidWarehouse.toString());
+            }
+        }
+        return Response.ok(openShop.getChannel());
     }
 
     private List<ThinShop> findAllCandidateShops() {

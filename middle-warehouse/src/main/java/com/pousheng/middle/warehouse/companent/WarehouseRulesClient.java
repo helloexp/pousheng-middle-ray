@@ -12,8 +12,9 @@ import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -31,6 +32,7 @@ public class WarehouseRulesClient {
 
     /**
      * 创建新的派单规则
+     *
      * @param shops
      * @return
      */
@@ -53,6 +55,7 @@ public class WarehouseRulesClient {
 
     /**
      * 更新派单规则
+     *
      * @param ruleId
      * @param shops
      * @return
@@ -63,7 +66,7 @@ public class WarehouseRulesClient {
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.putJson("api/inventory/rule/"+ruleId,
+            return Response.ok((Boolean) inventoryBaseClient.putJson("api/inventory/rule/" + ruleId,
                     JSON.toJSONString(shops), Boolean.class));
 
         } catch (Exception e) {
@@ -75,6 +78,7 @@ public class WarehouseRulesClient {
 
     /**
      * 删除派单规则
+     *
      * @param ruleId
      * @return
      */
@@ -84,7 +88,7 @@ public class WarehouseRulesClient {
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.delete("api/inventory/rule/"+ruleId,
+            return Response.ok((Boolean) inventoryBaseClient.delete("api/inventory/rule/" + ruleId,
                     Maps.newHashMap(), Boolean.class));
 
         } catch (Exception e) {
@@ -96,6 +100,7 @@ public class WarehouseRulesClient {
 
     /**
      * 删除派单规则店铺组
+     *
      * @param groupId
      * @return
      */
@@ -105,7 +110,7 @@ public class WarehouseRulesClient {
         }
 
         try {
-            return Response.ok((Boolean) inventoryBaseClient.delete("api/inventory/rule/group/"+groupId,
+            return Response.ok((Boolean) inventoryBaseClient.delete("api/inventory/rule/group/" + groupId,
                     Maps.newHashMap(), Boolean.class));
 
         } catch (Exception e) {
@@ -117,9 +122,10 @@ public class WarehouseRulesClient {
 
     /**
      * 查询所有配置过的店铺ID列表
+     *
      * @return
      */
-    public Set<Long> findAllConfigShopIds () {
+    public Set<Long> findAllConfigShopIds() {
         try {
             List<Long> ret = (List<Long>) inventoryBaseClient.get("api/inventory/rule/allConfigShopIds",
                     null, null, Maps.newHashMap(), Long.class, true);
@@ -139,12 +145,13 @@ public class WarehouseRulesClient {
 
     /**
      * 根据ID获取规则
+     *
      * @param ruleId
      * @return
      */
-    public WarehouseRule findRuleById (Long ruleId) {
+    public WarehouseRule findRuleById(Long ruleId) {
         try {
-            return (WarehouseRule) inventoryBaseClient.get("api/inventory/rule/"+ruleId,
+            return (WarehouseRule) inventoryBaseClient.get("api/inventory/rule/" + ruleId,
                     null, null, Maps.newHashMap(), WarehouseRule.class, false);
         } catch (Exception e) {
             log.error("find shop rule by id fail, ruleId:{}, cause:{}", ruleId, Throwables.getStackTraceAsString(e));
@@ -155,12 +162,13 @@ public class WarehouseRulesClient {
 
     /**
      * 根据组ID获取shop列表
+     *
      * @param shopGroupId
      * @return
      */
-    public List<WarehouseShopGroup> findShopGroupById (Long shopGroupId) {
+    public List<WarehouseShopGroup> findShopGroupById(Long shopGroupId) {
         try {
-            return (List<WarehouseShopGroup>) inventoryBaseClient.get("api/inventory/rule/findShopGroupsById/"+shopGroupId,
+            return (List<WarehouseShopGroup>) inventoryBaseClient.get("api/inventory/rule/findShopGroupsById/" + shopGroupId,
                     null, null, Maps.newHashMap(), WarehouseShopGroup.class, true);
         } catch (Exception e) {
             log.error("find shop group by id fail, shopGroupId:{}, cause:{}", shopGroupId, Throwables.getStackTraceAsString(e));
@@ -171,22 +179,44 @@ public class WarehouseRulesClient {
 
     /**
      * 根据组ID获取所属店铺列表
+     *
      * @param groupId
      * @return
      */
-    public List<WarehouseShopGroup> findShopListByGroup (Long groupId) {
+    public List<WarehouseShopGroup> findShopListByGroup(Long groupId) {
         try {
             if (null == groupId) {
                 return Lists.newArrayList();
             }
 
-            return (List<WarehouseShopGroup>) inventoryBaseClient.get("api/inventory/rule/findShopListByGroup/"+groupId,
+            return (List<WarehouseShopGroup>) inventoryBaseClient.get("api/inventory/rule/findShopListByGroup/" + groupId,
                     null, null, Maps.newHashMap(), WarehouseShopGroup.class, true);
         } catch (Exception e) {
             log.error("find shop list by group id fail, groupId:{}, cause:{}", groupId, Throwables.getStackTraceAsString(e));
         }
 
         return Lists.newArrayList();
+    }
+
+
+    /**
+     * 根据店铺id和仓库id删除对应默认规则，仅用于vip店铺
+     * @param shopId
+     * @param warehouseId
+     * @return
+     */
+    public Boolean deleteByShopIdAndWarehosueId(Long shopId, Long warehouseId) {
+        try {
+            Map<String, Object> params = new HashMap<>(4);
+            params.put("openShopId", shopId);
+            params.put("warehouseId", warehouseId);
+            return (Boolean) inventoryBaseClient.delete("api/inventory/rule/deleteByShopIdAndWarehouseId",
+                    params, Boolean.class);
+        } catch (Exception e) {
+            log.error("fail to auto remove warehouse rule item, shopId:{} warehouseId:{}, cause:{}", shopId, warehouseId, Throwables.getStackTraceAsString(e));
+        }
+
+        return false;
     }
 
     /**
@@ -196,13 +226,13 @@ public class WarehouseRulesClient {
      * @return
      */
 
-    public Response<List<Long>> findWarehouseIdsByShopId (Long openShopId) {
+    public Response<List<Long>> findWarehouseIdsByShopId(Long openShopId) {
         try {
             if (null == openShopId) {
                 return Response.ok(Lists.newArrayList());
             }
 
-            return Response.ok((List<Long>) inventoryBaseClient.get("api/inventory/rule/findWarehouseIdsByShopId/"+openShopId,
+            return Response.ok((List<Long>) inventoryBaseClient.get("api/inventory/rule/findWarehouseIdsByShopId/" + openShopId,
                     null, null, Maps.newHashMap(), Long.class, true));
         } catch (Exception e) {
             log.error("failed to find warehouseIds By ShopId, openShopId:{}, cause:{}", openShopId, Throwables.getStackTraceAsString(e));

@@ -1052,3 +1052,6 @@ ALTER TABLE parana_item_mappings ADD ratio TINYINT(4) DEFAULT NULL COMMENT '商�
 # 2018-09-07 售后单校验快递唯一性
 alter table parana_refunds add `shipment_corp_code`  varchar(32)  default null  comment '快递公司代码' after seller_note ;
 alter table parana_refunds add `shipment_serial_no`  varchar(32)  default null  comment '快递单号' after shipment_corp_code ;
+
+# 2018-10-09 新增唯品会快递代码列
+alter table pousheng_trade_express_code add column vip_code varchar(64)  COMMENT '唯品会快递代码' after `kaola_code`;

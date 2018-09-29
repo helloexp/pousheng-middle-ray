@@ -8,9 +8,12 @@ import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
+import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
+import com.pousheng.middle.warehouse.model.VipWarehouseMapping;
+import com.pousheng.middle.web.item.cacher.VipWarehouseMappingProxy;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -20,6 +23,7 @@ import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
@@ -59,6 +63,10 @@ public class CreateShipments {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private MiddleShopCacher middleShopCacher;
+    @Autowired
+    private WarehouseCacher warehouseCacher;
+    @Autowired
+    private VipWarehouseMappingProxy vipWarehouseMappingProxy;
 
 
     /**
@@ -176,7 +184,18 @@ public class CreateShipments {
                     log.info("data json :{} invalid", dataList);
                     throw new JsonResponseException("jingdong.delivery.cannot.dispatch");
                 }
-
+            }
+            //唯品会的单子不允许拆单 且必须用唯品会的仓库
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+                if (requestDataList.size() > 1 || requestDataList.get(0).getData().size() != skuOrders.size()) {
+                    log.info("data json :{} invalid", dataList);
+                    throw new JsonResponseException("vip.delivery.cannot.dispatch");
+                }
+                WarehouseDTO warehouseDTO = warehouseCacher.findById(requestDataList.get(0).getWarehouseId());
+                if (vipWarehouseMappingProxy.findByWarehouseId(warehouseDTO.getId()) == null){
+                    log.error("warehouse is not vip warehouse:{} fail", warehouseDTO.getId());
+                    throw new InvalidException(500, "not.vip.warehouse(outCode={0})", warehouseDTO.getOutCode());
+                }
             }
         }
         //用于判断运费是否计算

@@ -85,6 +85,9 @@ public class WarehouseChooser {
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
             needSingle = true;
         }
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+            needSingle = true;
+        }
         Response<List<Warehouses4Address>> r = warehouseAddressRuleClient.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);
         if (!r.isSuccess()) {
             log.error("failed to find warehouses for addressIds:{} of shop(id={}), error code:{}",

@@ -8,7 +8,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
-import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -16,23 +16,22 @@ import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShipmentItem;
+import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传退货信息业务处理〉
@@ -57,6 +56,10 @@ public class YyediSyncRefundService implements CompensateBizService {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private ShipmentWiteLogic shipmentWiteLogic;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
 
 
     @Override
@@ -163,8 +166,27 @@ public class YyediSyncRefundService implements CompensateBizService {
         shipment.setExtra(shipmentExtra);
         shipmentWiteLogic.update(shipment);*/
 
+        //vip 需要通知vip
+        ShopOrder shopOrder= orderReadLogic.findShopOrderByCode(refund.getReleOrderCode());
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+            Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
+            if (!response.isSuccess()) {
+                log.error("fail to notice vip refund order  (id:{})  ", refund.getId());
+                Map<String, Object> param1 = Maps.newHashMap();
+                param1.put("refundId", shipment.getId());
+                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_REFUND_TO_VIP, response.getError());
+                return;
+            }
+        }
+
         //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
         refundWriteLogic.getThirdRefundResult(refund);
+
+
+
+
+
+
 
     }
 

@@ -20,9 +20,9 @@ import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposShipmentLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import com.pousheng.middle.web.shop.event.UpdateShopEvent;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
@@ -104,6 +104,10 @@ public class MposJob {
 
     @Autowired
     private RefundReadLogic refundReadLogic;
+
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
+
     @RpcConsumer
     private ShopReadService shopReadService;
 
@@ -375,6 +379,42 @@ public class MposJob {
                             Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
                             Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
                             Response<Boolean> response = syncRefundPosLogic.syncSaleRefuseToHK(refund);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_ORDER_STORE_TO_VIP)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
+                            Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+                            if (response.isSuccess()) {
+                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
+                                //同步pos单到恒康
+                                Response<Boolean> posResp = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+                                if (!posResp.isSuccess()) {
+                                    log.error("syncShipmentPosToHk shipment (id:{}) is error ", shipment.getId());
+                                    Map<String, Object> param1 = Maps.newHashMap();
+                                    param1.put("shipmentId", shipment.getId());
+                                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
+                                }
+                            } else {
+                                autoCompensation.getExtra().put("error", response.getError());
+                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
+                            }
+                        }
+                    }
+                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_REFUND_TO_VIP)) {
+                        Map<String, String> extra = autoCompensation.getExtra();
+                        if (Objects.nonNull(extra.get("param"))) {
+                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
+                            Refund refund = refundReadLogic.findRefundById(param.get("refundId"));
+                            Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
                             } else {

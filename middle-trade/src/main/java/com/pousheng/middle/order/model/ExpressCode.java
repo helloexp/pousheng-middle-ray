@@ -59,6 +59,10 @@ public class ExpressCode implements Serializable {
      * 咕咚快递代码
      */
     private String codoonCode;
+    /**
+     * 唯品会快递代码
+     */
+    private String vipCode;
 
 
     private Date createdAt;

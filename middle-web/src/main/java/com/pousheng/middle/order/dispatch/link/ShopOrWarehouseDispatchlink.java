@@ -22,7 +22,6 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
-import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -63,7 +62,12 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
 
     @Override
     public boolean dispatch(DispatchOrderItemInfo dispatchOrderItemInfo, ShopOrder shopOrder, ReceiverInfo receiverInfo, List<SkuCodeAndQuantity> skuCodeAndQuantities, Map<String, Serializable> context) throws Exception {
-        log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...", shopOrder.getId());
+        log.info("DISPATCH-ShopOrWarehouseDispatchlink-7  order(id:{}) start...",shopOrder.getId());
+        //如果是vip的单子 则不走拆单 直接返回失败
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+            dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
+            return Boolean.TRUE;
+        }
         //如果是京东货到付款订单，则不走拆单逻辑 直接返回
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {

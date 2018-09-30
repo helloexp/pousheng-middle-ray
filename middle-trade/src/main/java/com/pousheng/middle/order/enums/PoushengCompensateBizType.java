@@ -99,7 +99,7 @@ public enum PoushengCompensateBizType {
     JIT_ORDER_RECEIPT,
 
     /**
-     *
+     * JIT拣货单
      */
     JIT_BIG_ORDER,
 

@@ -28,10 +28,12 @@ import io.terminus.parana.order.service.SkuOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.time.DateFormatUtils;
 import org.assertj.core.util.Lists;
+import org.assertj.core.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -318,7 +320,7 @@ public class SyncOrderToEcpLogic {
                         //增加jit新增字段
                         logisticsInfo.setArrival_time(convertDateFormat(shipmentExtra.getExpectDate()));
                         logisticsInfo.setDelivery_method(shipmentExtra.getTransportMethodCode());
-                        if (shipmentExtra.getBoxNoMap() != null) {
+                        if (!CollectionUtils.isEmpty(shipmentExtra.getBoxNoMap())) {
                             logisticsInfo.setBox_no(shipmentExtra.getBoxNoMap().get(shipmentItem.getSkuCode()));
                         }
 
@@ -353,7 +355,7 @@ public class SyncOrderToEcpLogic {
                             shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                         }
                 } catch (Exception e) {
-                    log.error("sync shipment to yunju failed,shipmentId is {},caused by {}", shipment.getId(), Throwables.getStackTraceAsString(e));
+                    log.error("sync shipment to yunju failed,shipmentId is {}", shipment.getId(), e);
                     shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     throw new ServiceException(e.getMessage());
                 }
@@ -379,6 +381,9 @@ public class SyncOrderToEcpLogic {
     }
 
     private static String convertDateFormat(String date){
+        if (Strings.isNullOrEmpty(date)){
+            return "";
+        }
         DateTime dateTime=DateTime.parse(date, DateTimeFormat.forPattern("yyyyMMddHHmmss"));
         return dateTime.toString("yyyy-MM-dd HH:mm:ss");
     }

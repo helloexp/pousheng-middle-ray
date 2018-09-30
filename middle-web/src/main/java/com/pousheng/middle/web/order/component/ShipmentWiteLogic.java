@@ -1403,7 +1403,7 @@ public class ShipmentWiteLogic {
         Flow flow = flowPicker.pickSyncTaobao();
         //判断当前状态是否可以操作
         if (!flow.operationAllowed(shipmentExtra.getSyncChannelStatus(), orderOperation)) {
-            log.error("shipment(id:{}) current status:{} not allow operation:{}", shipment.getId(), shipmentExtra.getSyncTaobaoStatus(), orderOperation.getText());
+            log.error("shipment(id:{}) current shipment extra channel status:{} not allow operation:{}", shipment.getId(), shipmentExtra.getSyncChannelStatus(), orderOperation.getText());
             return Response.fail("sync.taobao.status.not.allow.current.operation");
         }
         //获取下一步状态

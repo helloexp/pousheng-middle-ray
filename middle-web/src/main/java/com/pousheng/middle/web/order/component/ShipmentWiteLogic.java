@@ -401,6 +401,39 @@ public class ShipmentWiteLogic {
         }
     }
 
+    /**
+     * 中台直接取消skx订单并释放库存
+     * @param shipment
+     * @return
+     */
+    public Response<Boolean> cancelSkxOccupyShipment(Shipment shipment){
+        try {
+            log.info("try to auto cancel shipment,shipment id is {}", shipment.getId());
+            Flow flow = flowPicker.pickShipments();
+            //未同步恒康,现在只需要将发货单状态置为已取消即可
+            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
+                Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(),
+                        MiddleShipmentsStatus.CANCELED.getValue());
+                if (!updateRes.isSuccess()) {
+                    log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),
+                            MiddleShipmentsStatus.CANCELED.getValue(), shipment.getStatus(), updateRes.getError());
+                    return Response.fail(updateRes.getError());
+                }
+            }
+            //解锁库存
+            mposSkuStockLogic.unLockStock(shipment);
+            log.info("try to auto cancel shipment,shipment id is {} success", shipment.getId());
+
+            return Response.ok(Boolean.TRUE);
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("cancel shipment failed,shipment id is :{},error{}", shipment.getId(), e.getMessage());
+            return Response.fail(e.getMessage());
+        } catch (Exception e) {
+            log.error("cancel shipment failed,shipment id is :{},cause{}", shipment.getId(), Throwables.getStackTraceAsString(e));
+            return Response.fail("cancel.shipment.fail");
+        }
+    }
+
 
     /**
      * 自动创建发货单
@@ -2005,7 +2038,7 @@ public class ShipmentWiteLogic {
                 //获取发货单详情
                 ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
                 //获取发货单信息
-                SycHkShipmentOrder tradeOrder = syncShipmentLogic.getSycHkShipmentOrder(shipmentDetail.getShipment(), shipmentDetail);
+                SycHkShipmentOrder tradeOrder = syncShipmentLogic.getSycHkShipmentOrder(shipmentDetail.getShipment(), shipmentDetail,null);
                 List<SycHkShipmentItem> items = tradeOrder.getItems();
                 for (SycHkShipmentItem item : items) {
                     try {

@@ -302,4 +302,10 @@ public class TradeConstants {
      * 云聚JIT单据类型
      */
     public static final String YUN_JU_JIT_BILL_TYPE="Sal_Ship";
+
+    /**
+     * skx售后发货单挂起标识
+     */
+    public static final String SKX_REFUND_FREEZE_FLAG = "skxFreeze";
+
 }

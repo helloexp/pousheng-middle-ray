@@ -9,6 +9,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
@@ -375,6 +376,55 @@ public class OrderOpenApi {
                     refundOrderId,erpRefundOrderId,itemInfo,receivedDate);
         }
     }
+
+
+    /**
+     * skx取消中台售后发货单
+     * @param shipmentCode
+     * @param refundCode
+     */
+    @OpenMethod(key = "hk.cancel.refund.shipment", paramNames = {"shipmentCode", "refundCode"}, httpMethods = RequestMethod.POST)
+    public void cancelAfterSaleSkxShipments( String shipmentCode, String refundCode){
+        if(log.isDebugEnabled()){
+            log.debug("HK-CANCEL-REFUND-SHIPMENT-START param: shipmentId [{}] refundId [{}]",shipmentCode,refundCode);
+        }
+        Refund refund = refundReadLogic.findRefundByRefundCode(refundCode);
+        //占库发货单整体取消
+        refundWriteLogic.cancelSkxAfterSaleOccupyShipments(refund.getId());
+        //此时判断换货单的状态
+        if (Objects.equals(refund.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue())){
+            //状态节点为【退货完成待确认发货】将售后单状态回滚到同步成功待创建发货单
+            log.info("hk-cancel-refund-shipment,refundCode {},currentStatus{}",refundCode,refund.getStatus());
+            refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
+
+        }else if (Objects.equals(refund.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue())) {
+            //状态节点为【退货完成待生成发货单】
+            log.info("hk-cancel-refund-shipment,refundCode {},currentStatus{}",refundCode,refund.getStatus());
+            return;
+        }else{
+            //状态节点为【待退货完成】
+            log.info("hk-cancel-refund-shipment,refundCode {},currentStatus{}",refundCode,refund.getStatus());
+        }
+        //售后单已经申请售后的数量设置为0
+        List<RefundItem> exchangeItems = refundReadLogic.findRefundChangeItems(refund);
+        List<RefundItem> newExchangeItems = com.google.common.collect.Lists.newArrayList();
+        for (RefundItem refundItem :exchangeItems){
+            refundItem.setAlreadyHandleNumber(0);
+            newExchangeItems.add(refundItem);
+        }
+        Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+        Map<String,String> refundExtra = newRefund.getExtra();
+        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newExchangeItems));
+        newRefund.setExtra(refundExtra);
+        refundWriteLogic.update(newRefund);
+
+        if(log.isDebugEnabled()){
+            log.debug("HK-CANCEL-REFUND-SHIPMENT-END param: shipmentId [{}] refundId [{}]",shipmentCode,refundCode);
+        }
+
+    }
+
+
     /**
      * 恒康将售后单售后结果通知给中台
      *

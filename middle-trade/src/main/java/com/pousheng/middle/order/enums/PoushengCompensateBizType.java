@@ -101,6 +101,19 @@ public enum PoushengCompensateBizType {
     /**
      * 批量导入商品供货规则
      */
-    IMPORT_ITEM_SUPPLY_RULE
+    IMPORT_ITEM_SUPPLY_RULE,
 
+    /**
+     * skx挂起失败重试服务
+     */
+    SKX_SHIPMENT_FREEZE,
+    /**
+     * skx解挂失败重试服务
+     */
+    SKX_SHIPMENT_UNFREEZE,
+
+    /**
+     * skx发货单取消失败重试服务
+     */
+    SKX_SHIPMENT_CANCEL;
 }

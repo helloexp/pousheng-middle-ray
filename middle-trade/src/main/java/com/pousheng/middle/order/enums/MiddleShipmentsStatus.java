@@ -21,6 +21,7 @@ public enum MiddleShipmentsStatus {
     SHIPPED(5, "已发货"),      //已发货
     CONFIRMD_SUCCESS(6, "订单派发中心确认收货"),     //确认收货成功
     WAIT_MPOS_RECEIVE(7, "待接单"),   //待接单
+    SKX_FREEZE(8,"已挂起"),//已挂起
     SYNC_HK_ACCEPT_FAILED(-1,"订单派发中心/MPOS受理失败"),//发货单恒康（mpos）受理失败
     SYNC_HK_FAIL(-2, "同步订单派发中心/MPOS失败"),   //同步恒康失败
     SYNC_HK_CANCEL_ING(-3, "同步订单派发中心取消中"),       //同步恒康（mpos）取消中（此状态前端可不用关心，只是为了后端flow通顺）

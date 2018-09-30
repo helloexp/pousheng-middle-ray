@@ -38,5 +38,4 @@ public class ReceiveSkxResultLogic {
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         return poushengCompensateBizWriteService.create(biz);
     }
-
 }

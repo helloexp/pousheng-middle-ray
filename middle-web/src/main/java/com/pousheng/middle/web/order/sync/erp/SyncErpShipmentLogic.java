@@ -91,7 +91,7 @@ public class SyncErpShipmentLogic {
         String erpSyncType = openShopExtra.get(TradeConstants.ERP_SYNC_TYPE) == null ? "hk" : openShopExtra.get(TradeConstants.ERP_SYNC_TYPE);
         switch (erpSyncType) {
             case "hk":
-                return syncShipmentLogic.syncShipmentToHk(shipment);
+                return syncShipmentLogic.syncShipmentToHk(shipment,null);
             case "yyEdi":
                 if (MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom())) {
                     return syncWmsShipmentLogic.syncShipmentToWms(shipment);

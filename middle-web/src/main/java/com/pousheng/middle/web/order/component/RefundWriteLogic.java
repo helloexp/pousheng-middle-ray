@@ -32,6 +32,7 @@ import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.web.events.trade.TaobaoConfirmRefundEvent;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -60,6 +61,7 @@ import io.terminus.parana.spu.service.SkuTemplateReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -127,6 +129,10 @@ public class RefundWriteLogic {
     private MiddleShopCacher middleShopCacher;
     @Autowired
     private ShipmentWriteManger shipmentWriteManger;
+    @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
+    @Value("${skx.open.shop.id}")
+    private Long skxOpenShopId;
     /**
      * 更新换货商品处理数量
      * 判断是否商品已全部处理，如果是则更新状态为 WAIT_SHIP:待发货
@@ -530,6 +536,10 @@ public class RefundWriteLogic {
                     if (!syncRes.isSuccess()) {
                         log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(),
                                 syncRes.getError());
+                    }else{
+                        if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+                            this.syncFreezeSkxShipment(rRefundRes.getResult());
+                        }
                     }
                 }
             }
@@ -539,6 +549,55 @@ public class RefundWriteLogic {
         return rRefundRes.getResult();
     }
 
+    /**
+     * skx发货单挂起
+     * @param refundId
+     */
+    public void syncFreezeSkxShipment(Long refundId) {
+        //如果售后单是skx的，则同步售后单到skx挂起
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        for (OrderShipment orderShipment:orderShipments){
+            Shipment freezeShipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            Response<Boolean> response = syncShipmentLogic.syncShipmentToHk(freezeShipment,TradeConstants.SKX_REFUND_FREEZE_FLAG);
+            if (!response.isSuccess()){
+                PoushengCompensateBiz compensateBiz = new PoushengCompensateBiz();
+                compensateBiz.setBizType(PoushengCompensateBizType.SKX_SHIPMENT_FREEZE.name());
+                compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBiz.setBizId(String.valueOf(freezeShipment.getId()));
+                compensateBiz.setCnt(0);
+                poushengCompensateBizWriteService.create(compensateBiz);
+            }
+        }
+    }
+
+    public void syncUnFreezeSkxShipment(Long refundId,String refundCode){
+        //skx解挂
+        Response<Boolean> response = syncShipmentLogic.syncUnFreezeSkxShipment(refundCode);
+        if (!response.isSuccess()){
+            PoushengCompensateBiz compensateBiz = new PoushengCompensateBiz();
+            compensateBiz.setBizType(PoushengCompensateBizType.SKX_SHIPMENT_UNFREEZE.name());
+            compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+            compensateBiz.setBizId(String.valueOf(refundId));
+            compensateBiz.setCnt(0);
+            poushengCompensateBizWriteService.create(compensateBiz);
+        }
+    }
+
+    public void syncCancelSkxShipment(Long refundId){
+        List<OrderShipment>  orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        for (OrderShipment orderShipment:orderShipments){
+            Shipment shipment  = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            Response<Boolean> response = shipmentWiteLogic.cancelShipment(shipment);
+            if (!response.isSuccess()){
+                PoushengCompensateBiz compensateBiz = new PoushengCompensateBiz();
+                compensateBiz.setBizType(PoushengCompensateBizType.SKX_SHIPMENT_CANCEL.name());
+                compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBiz.setBizId(String.valueOf(shipment.getId()));
+                compensateBiz.setCnt(0);
+                poushengCompensateBizWriteService.create(compensateBiz);
+            }
+        }
+    }
     /**
      * 完善售后单
      * 完善售后单（仅退款，退货退款，换货）
@@ -1856,6 +1915,19 @@ public class RefundWriteLogic {
             //修改发货单类型，并且同步订单派发中心或者mpos
             Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
             shipmentWiteLogic.cancelOccupyShipment(shipment);
+        }
+    }
+
+    public void cancelSkxAfterSaleOccupyShipments(Long refundId){
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        //占库发货单没有拒绝状态，只有取消状态
+        List<OrderShipment> orderShipmentList = orderShipments.stream().filter(Objects::nonNull)
+                .filter(orderShipment -> !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getName()))
+                .collect(Collectors.toList());
+        for (OrderShipment orderShipment:orderShipmentList){
+            //修改发货单类型，并且同步订单派发中心或者mpos
+            Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+            shipmentWiteLogic.cancelSkxOccupyShipment(shipment);
         }
     }
     /**

@@ -7,10 +7,8 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleAfterSaleInfo;
-import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
+import com.pousheng.middle.order.enums.*;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
@@ -18,6 +16,7 @@ import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.ecp.SyncRefundToEcpLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
@@ -49,6 +48,7 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
+import org.omg.CORBA.OBJ_ADAPTER;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -80,6 +80,8 @@ public class Refunds {
     @Autowired
     private SyncErpReturnLogic syncErpReturnLogic;
     @Autowired
+    private SyncShipmentLogic syncShipmentLogic;
+    @Autowired
     private SyncRefundToEcpLogic syncRefundToEcpLogic;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
@@ -91,7 +93,8 @@ public class Refunds {
     private ShipmentWiteLogic shipmentWiteLogic;
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
-
+    @org.springframework.beans.factory.annotation.Value("${skx.open.shop.id}")
+    private Long skxOpenShopId;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
 
@@ -217,6 +220,11 @@ public class Refunds {
                         Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                         if (!syncRes.isSuccess()) {
                             log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
+                        }else{
+                            //挂起操作
+                            if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+                                refundWriteLogic.syncFreezeSkxShipment(refundId);
+                            }
                         }
                     }else{
                         throw new JsonResponseException("complete.refund.failed");
@@ -307,7 +315,13 @@ public class Refunds {
                             Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                             if (!syncRes.isSuccess()) {
                                 log.error("sync refund(id:{}) to hk fail,error:{}", refund.getId(), syncRes.getError());
-                                syncFailedRefundCodes.add(refund.getRefundCode());                            }
+                                syncFailedRefundCodes.add(refund.getRefundCode());
+                            }else{
+                                //挂起操作
+                                if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+                                    refundWriteLogic.syncFreezeSkxShipment(refund.getId());
+                                }
+                            }
                         }
                     }else {
                         Flow flow = flowPicker.pickAfterSales();
@@ -417,6 +431,11 @@ public class Refunds {
         if (!syncRes.isSuccess()) {
             log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());
             throw new JsonResponseException(syncRes.getError());
+        }else{
+            //挂起操作
+            if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+                refundWriteLogic.syncFreezeSkxShipment(refundId);
+            }
         }
         //取消成功之后，换货售后单需要取消占用库存发货单(异步操作即可)
 
@@ -490,7 +509,13 @@ public class Refunds {
             //回滚发货单的数量
             refundWriteLogic.rollbackRefundQuantities(refund);
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
-                refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
+                //非skx占库单取消使用原来占库单取消的逻辑
+                //skx占库单取消需要到skx取消一把
+                if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
+                    refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
+                }else{
+                    refundWriteLogic.cancelSkxAfterSaleOccupyShipments(refundId);
+                }
             }
         }else{
             //拒收单取消
@@ -815,10 +840,18 @@ public class Refunds {
         if (orderShipments.isEmpty()){
             throw new JsonResponseException("no.exist.occupy.shipments");
         }
+
         for (OrderShipment orderShipment:orderShipments){
             //修改发货单类型，并且同步订单派发中心或者mpos
             shipmentWiteLogic.updateOccupyShipmentTypeByShipmentId(orderShipment.getShipmentId(),ShipmentOccupyType.CHANGE_N.name());
-            shipmentWiteLogic.syncExchangeShipment(orderShipment.getShipmentId());
+
+            if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
+                //订单派发中心直接同步过去
+                shipmentWiteLogic.syncExchangeShipment(orderShipment.getShipmentId());
+            }else{
+                //skx挂起即可
+                refundWriteLogic.syncUnFreezeSkxShipment(refundId,refund.getRefundCode());
+            }
         }
         //修改售后单状态为待发货
         refundWriteLogic.updateStatus(refund, MiddleOrderEvent.CONFIRM_OCCUPY_SHIPMENT.toOrderOperation());
@@ -833,10 +866,15 @@ public class Refunds {
     @RequestMapping(value = "/api/refund/{refundId}/occupy/shipment/cancel",method = RequestMethod.PUT)
     @OperationLogType("售后单占库发货单取消")
     public Response<Boolean> cancelAfterSaleOccupyShipments(@PathVariable("refundId") @OperationLogParam Long refundId){
-        //占库发货单整体取消
-        refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
-        //修改售后单状态为待发货
         Refund refund = refundReadLogic.findRefundById(refundId);
+        //非skx占库单取消使用原来占库单取消的逻辑
+        //skx占库单取消需要到skx取消一把
+        if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
+            refundWriteLogic.cancelAfterSaleOccupyShipments(refundId);
+        }else{
+            refundWriteLogic.syncCancelSkxShipment(refundId);
+        }
+
         refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
         //售后单已经申请售后的数量设置为0
         List<RefundItem> exchangeItems = refundReadLogic.findRefundChangeItems(refund);

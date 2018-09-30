@@ -23,6 +23,7 @@ public class SycHkShipmentOrder implements Serializable {
     private String buyerRemark;
     private String paymentSerialNo;
     private String orderStatus;
+    private String relateRefundNo;
     private String createdDate;
     private String updatedDate;
     private String PaymentType;
@@ -216,4 +217,11 @@ public class SycHkShipmentOrder implements Serializable {
         this.onlineType = onlineType;
     }
 
+    public String getRelateRefundNo() {
+        return relateRefundNo;
+    }
+
+    public void setRelateRefundNo(String relateRefundNo) {
+        this.relateRefundNo = relateRefundNo;
+    }
 }

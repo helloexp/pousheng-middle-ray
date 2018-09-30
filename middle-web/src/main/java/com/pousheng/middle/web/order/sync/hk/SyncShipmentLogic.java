@@ -33,6 +33,7 @@ import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -74,7 +75,7 @@ public class SyncShipmentLogic {
      * @param shipment 发货单
      * @return 同步成功true, 同步失败false
      */
-    public Response<Boolean> syncShipmentToHk(Shipment shipment) {
+    public Response<Boolean> syncShipmentToHk(Shipment shipment,String freezeFlag) {
         try {
             //更新状态为同步中
             OrderOperation orderOperation = MiddleOrderEvent.SYNC_HK.toOrderOperation();
@@ -87,7 +88,7 @@ public class SyncShipmentLogic {
             Flow flow = flowPicker.pickShipments();
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);//塞入最新的状态
-            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment);
+            List<SycHkShipmentOrderDto> list = this.makeShipmentOrderDtoList(shipment,freezeFlag);
             SycErpShipmentOrderResponse response  = JsonMapper.nonDefaultMapper().fromJson(sycHkShipmentOrderApi.doSyncShipmentOrder(list,shipment.getShipmentCode()),SycErpShipmentOrderResponse.class);
             Integer errorCode = response.getErrorCode();
             String description = response.getDescription();
@@ -196,6 +197,30 @@ public class SyncShipmentLogic {
     }
 
 
+    /**
+     * 发货单解挂
+     * @param refundCode
+     * @return
+     */
+    public Response<Boolean> syncUnFreezeSkxShipment(String refundCode){
+        try {
+            String response = sycHkShipmentOrderApi.syncUnfreezeShipment(refundCode);
+            SycRefundResponse sycRefundResponse = JsonMapper.nonEmptyMapper().fromJson(response, SycRefundResponse.class);
+            HkResponseHead head = sycRefundResponse.getHead();
+            if (Objects.equals(head.getCode(), "0")) {
+                log.info("sync skx unfreeze response  {}",response);
+                return Response.ok(Boolean.TRUE);
+            }else{
+                log.error("sync unfreeze skx shipment failed,refundCode {},result {}",refundCode,response);
+                return Response.fail("sync.skx.unfreeze.failed");
+            }
+
+        }catch (Exception e){
+            log.error("sync unfreeze skx shipment failed,refundCode {},error {}",refundCode,Throwables.getStackTraceAsString(e));
+            return Response.fail("sync.skx.unfreeze.failed");
+        }
+    }
+
 
     /**
      * 自动同步发货单收货信息到恒康
@@ -240,11 +265,11 @@ public class SyncShipmentLogic {
      * @param shipment
      * @return
      */
-    public List<SycHkShipmentOrderDto> makeShipmentOrderDtoList(Shipment shipment) {
+    public List<SycHkShipmentOrderDto> makeShipmentOrderDtoList(Shipment shipment,String freezeFlag) {
         //获取发货单详情
         ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
         //获取发货单信息
-        SycHkShipmentOrder tradeOrder = this.getSycHkShipmentOrder(shipment, shipmentDetail);
+        SycHkShipmentOrder tradeOrder = this.getSycHkShipmentOrder(shipment, shipmentDetail,freezeFlag);
         //获取发货单地址信息
         SycHkUserAddress userAddress = this.getSycHkUserAddress(shipmentDetail);
 
@@ -263,7 +288,7 @@ public class SyncShipmentLogic {
      * @param shipmentDetail
      * @return
      */
-    public SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail) {
+    public SycHkShipmentOrder getSycHkShipmentOrder(Shipment shipment, ShipmentDetail shipmentDetail,String freezeFlag) {
         SycHkShipmentOrder tradeOrder = new SycHkShipmentOrder();
         //中台主订单-发货单id
         tradeOrder.setOrderNo(shipment.getShipmentCode());
@@ -282,7 +307,14 @@ public class SyncShipmentLogic {
         OpenClientPaymentInfo paymentInfo = orderReadLogic.getOpenClientPaymentInfo(shopOrder);
         tradeOrder.setPaymentSerialNo(paymentInfo!=null?paymentInfo.getPaySerialNo():"");
         // 订单状态默认为处理中
-        tradeOrder.setOrderStatus(String.valueOf(2));
+        if (!StringUtils.isEmpty(freezeFlag)&&Objects.equals(freezeFlag,TradeConstants.SKX_REFUND_FREEZE_FLAG)){
+            //状态是5
+            tradeOrder.setOrderStatus(String.valueOf(5));
+            //售后单号
+            tradeOrder.setRelateRefundNo(shipmentDetail.getOrderShipment().getAfterSaleOrderCode());
+        }else{
+            tradeOrder.setOrderStatus(String.valueOf(2));
+        }
         //订单创建时间
         tradeOrder.setCreatedDate(formatter.print(shipment.getCreatedAt().getTime()));
         //订单修改时间

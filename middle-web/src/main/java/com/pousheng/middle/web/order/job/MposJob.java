@@ -159,6 +159,9 @@ public class MposJob {
                 break;
             }
             //异步处理
+            for (MposShipmentExtra mposShipmentExtra : mposShipmentExtras){
+                log.info("start to handle mpos shipment for middle shipment id:{}",mposShipmentExtra.getOuterShipmentId());
+            }
             executorService.submit(new OrderHandleTask(mposShipmentExtras));
             if (!Objects.equals(mposShipmentExtras.size(), shipmentFetchSize)) {
                 break;

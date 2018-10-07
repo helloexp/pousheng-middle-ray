@@ -22,6 +22,7 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Strings;
@@ -278,11 +279,18 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
 
     private void packageShipmentInfo(DispatchOrderItemInfo dispatchOrderItemInfo,Table<String, String, Integer> allSkuCodeQuantityTable,List<SkuCodeAndQuantity> skuCodeAndQuantities,List<DispatchWithPriority> dispatchWithPriorities){
 
+
+        Map<String, Long> skuOrderCodeMap = Maps.newHashMap();
+
         //skuCode及数量
         Multiset<String> current = ConcurrentHashMultiset.create();
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
+            if (Arguments.notNull(skuCodeAndQuantity.getSkuOrderId())){
+                skuOrderCodeMap.put(skuCodeAndQuantity.getSkuCode(),skuCodeAndQuantity.getSkuOrderId());
+            }
         }
+
         //仓库发货单
         List<WarehouseShipment> warehouseShipmentResult = Lists.newArrayList();
         //店铺发货单
@@ -316,6 +324,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                 for (String skuCode : current.elementSet()) {
                     log.warn("insufficient sku(skuCode={}) stock: ", skuCode);
                     SkuCodeAndQuantity adq = new SkuCodeAndQuantity();
+                    adq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
                     adq.setSkuCode(skuCode);
                     adq.setQuantity(current.count(skuCode));
                     skuAndQuantity.add(adq);
@@ -334,6 +343,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink{
                     int actual = stock >= required ? required : 0;
 
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
+                    scaq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
                     scaq.setSkuCode(skuCode);
                     scaq.setQuantity(actual);
                     if (actual!=0){

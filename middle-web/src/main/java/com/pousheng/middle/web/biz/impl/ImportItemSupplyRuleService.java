@@ -133,7 +133,7 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
                 failReason = "店铺id不是数字";
             } catch (Exception e) {
                 log.error("failed to import item supply rule url:{}", url, e);
-                failReason = "系统异常";
+                failReason = "系统异常" ;
             } finally {
                 if (!StringUtils.isEmpty(failReason)) {
                     ItemSupplyRuleAbnormalRecord record = new ItemSupplyRuleAbnormalRecord();

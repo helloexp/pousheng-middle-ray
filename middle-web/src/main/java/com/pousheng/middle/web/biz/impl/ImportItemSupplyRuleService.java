@@ -129,8 +129,10 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
                     continue;
                 }
             } catch (NumberFormatException nfe) {
+                log.error("failed to convert shop id while importing item supply rule.url:{}", url, nfe);
                 failReason = "店铺id不是数字";
             } catch (Exception e) {
+                log.error("failed to import item supply rule.url:{}", url, e);
                 failReason = "系统异常";
             } finally {
                 if (!StringUtils.isEmpty(failReason)) {

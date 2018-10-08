@@ -253,6 +253,12 @@ open.client.sync.after.sale.duration.in.minute: ${PULL_AFTER_SALE_ORDER_DURATION
 open.client.sync.item.duration.in.minute: ${PULL_ITEM_MAPPING_DURATION}
 #中台拉取映射关系的频率(几分钟拉取一次)
 open.client.fetch.item.cron: ${PULL_ITEM_MAPPING_CRON}
+
+#中台拉取前3天的映射关系时间范围(前3天的数据)
+open.client.sync.item.ThreeDays.in.minute: ${PULL_ITEM_MAPPING_DURATION_BEFORETHREEDAYS}
+#中台定时任务凌晨拉取映射关系(每天凌晨3:20同步一次)
+open.client.fetch.item.threeTime.cron: ${PULL_ITEM_MAPPING_CRON_THREETIME}
+
 #获取宿主机ip
 order.current.ip: ${TERMINUS_HOST:localhost}
 

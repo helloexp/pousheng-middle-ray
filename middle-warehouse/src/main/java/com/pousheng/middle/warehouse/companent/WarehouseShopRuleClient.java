@@ -117,7 +117,7 @@ public class WarehouseShopRuleClient {
     public Response<ShopStockRuleDto> findByShopIdAndSku(Long shopId, String skuCode) {
         try {
             return Response.ok((ShopStockRuleDto) inventoryBaseClient.get("api/inventory/shop-rule/findByShopIdAndSku/" + shopId + "/" + skuCode,
-                    null, null, Maps.newHashMap(), ShopStockRule.class, false));
+                    null, null, Maps.newHashMap(), ShopStockRuleDto.class, false));
         } catch (Exception e) {
             log.info("find shop rule by shop and skuCode fail, shopId:{}, skuCode:{}, cause:{}", shopId, skuCode, e.getMessage());
 

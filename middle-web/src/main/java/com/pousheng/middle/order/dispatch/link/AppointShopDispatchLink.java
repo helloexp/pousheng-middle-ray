@@ -33,9 +33,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import java.io.Serializable;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -118,8 +116,8 @@ public class AppointShopDispatchLink implements DispatchOrderLink {
     private Warehouses4Address fillPriorityInfo(Warehouses4Address warehouses4Address) {
         RulePriorityCriteria criteria = new RulePriorityCriteria().ruleId(warehouses4Address.getWarehouseRule().getId()).searchDate(new Date()).status(1);
         Response<Paging<WarehouseRulePriority>> priorityResp = warehouseRulePriorityReadService.findByCriteria(criteria);
-        List<Long> priorityWarehouseIds = Lists.newArrayList();
-        List<Long> priorityShopIds = Lists.newArrayList();
+        Map<Integer, List<Long>> priorityWarehouseIds = new LinkedHashMap<>();
+        Map<Integer, List<Long>> priorityShopIds = new LinkedHashMap<>();
         try {
             if (!priorityResp.isSuccess()) {
                 throw new ServiceException(priorityResp.getError());
@@ -134,9 +132,15 @@ public class AppointShopDispatchLink implements DispatchOrderLink {
                 for (WarehouseRulePriorityItem item : items) {
                     WarehouseDTO dto = warehouseCacher.findById(item.getWarehouseId());
                     if (dto.getWarehouseSubType().equals(WarehouseType.TOTAL_WAREHOUSE.value())) {
-                        priorityWarehouseIds.add(item.getWarehouseId());
+                        if (priorityWarehouseIds.get(item.getPriority()) == null) {
+                            priorityWarehouseIds.put(item.getPriority(), Lists.newArrayList());
+                        }
+                        priorityWarehouseIds.get(item.getPriority()).add(dto.getId());
                     } else {
-                        priorityShopIds.add(middleShopCacher.findByOuterIdAndBusinessId(dto.getOutCode(), Long.parseLong(dto.getCompanyId())).getId());
+                        if (priorityShopIds.get(item.getPriority()) == null) {
+                            priorityShopIds.put(item.getPriority(), Lists.newArrayList());
+                        }
+                        priorityShopIds.get(item.getPriority()).add(middleShopCacher.findByOuterIdAndBusinessId(dto.getOutCode(), Long.parseLong(dto.getCompanyId())).getId());
                     }
                 }
             }
@@ -150,4 +154,5 @@ public class AppointShopDispatchLink implements DispatchOrderLink {
         log.info("this rule {} priorityShopIds is {} ", warehouses4Address.getWarehouseRule().getId(), priorityShopIds.toString());
         return warehouses4Address;
     }
+
 }

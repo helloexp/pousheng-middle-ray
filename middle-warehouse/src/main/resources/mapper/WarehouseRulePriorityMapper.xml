@@ -119,7 +119,7 @@
         <where>
             <include refid="queryCondition"/>
         </where>
-        order by status, start_date desc limit #{offset},#{limit}
+        order by status desc , start_date desc limit #{offset},#{limit}
     </select>
 
     <select id="count" parameterType="list" resultType="long">
@@ -135,7 +135,7 @@
         select count(1)
         from
         <include refid="tb"/>
-        WHERE name=#{name}
+        WHERE name=#{name} AND rule_id = #{ruleId}
         <if test="id != null">AND id != #{id}</if>
     </select>
 

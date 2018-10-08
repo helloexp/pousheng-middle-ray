@@ -204,7 +204,7 @@ public class WarehouseRulePriorities {
         criteria.setPageSize(pageSize);
         criteria.setBizId(priorityId.toString());
         criteria.setBizType(PoushengCompensateBizType.IMPORT_WAREHOUSE_RULE_PRIORITY_ITEM.name());
-        Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.paging(criteria);
+        Response<Paging<PoushengCompensateBiz>> response = poushengCompensateBizReadService.pagingForShow(criteria);
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }

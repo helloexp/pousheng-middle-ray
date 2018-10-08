@@ -384,7 +384,7 @@ public class StockPusherLogic {
 
     /**
      * @param yunjuStockInfoList
-     * @param skuCode
+     * @param stocks
      * @return
      * @Description 构造同步云聚请求
      * @Date 2018/7/4
@@ -548,19 +548,25 @@ public class StockPusherLogic {
     public Long calculateStock(Long shopId, String skuCode, List<Long> warehouseIds, ShopStockRuleDto shopStockRuleDto) {
         Long stockSum = 0L;
         long start1 = System.currentTimeMillis();
-        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailInvRetNoWarehouse(Lists.newArrayList(
+        Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailableInventory(Lists.newArrayList(
                 Lists.transform(warehouseIds, input -> AvailableInventoryRequest.builder().skuCode(skuCode).warehouseId(input).build())
         ), shopId);
         long end1 = System.currentTimeMillis();
         log.info("get available inventory cost: {}", (end1 - start1));
         if (!getRes.isSuccess()) {
-            log.error("error to find available inventory quantity: shopId: {}, caused: {]", shopId, getRes.getError());
+            log.error("error to find available inventory quantity: shopId: {}, caused: {}", shopId, getRes.getError());
             return null;
         }
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
+            log.info("AvailableInventoryDTO size {}", getRes.getResult().size());
             for (AvailableInventoryDTO dto : getRes.getResult()) {
+                log.info("AvailableInventoryDTO dto: {} {} {} ",dto.getWarehouseId(),dto.getSkuCode(),dto.getChannelRealQuantity(),dto.getInventoryUnAllocQuantity());
                 stockSum = stockSum + calculateWarehouseStock(dto, shopStockRuleDto);
             }
+        }
+
+        if (shopStockRuleDto.getShopRule().getJitStock() != null) {
+            stockSum = stockSum + shopStockRuleDto.getShopRule().getJitStock();
         }
 
         log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
@@ -593,7 +599,6 @@ public class StockPusherLogic {
         Long stock = Math.max(0,
                 channelStock
                         + shareStock * shopStockRule.getRatio() / 100
-                        + (null == shopStockRule.getJitStock() ? 0 : shopStockRule.getJitStock())
         );
         log.info("search sku stock by skuCode is {},shopId is {}, warehouseId is {},channelStock is {},shareStock is {}",
                 dto.getSkuCode(), shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), channelStock, shareStock);

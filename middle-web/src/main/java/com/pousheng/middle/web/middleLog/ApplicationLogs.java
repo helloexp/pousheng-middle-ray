@@ -92,7 +92,7 @@ public class ApplicationLogs {
             if (!userResp.isSuccess() || userResp.getResult() == null) {
                 return new Paging<>();
             }
-            criteria.setOperatorId(userResp.getResult().getId().toString());
+            criteria.setOperatorId(userResp.getResult().getOutId().toString());
         }
         if (criteria.getCreatedEndAt() != null) {
             if (criteria.getCreatedEndAt() != null) {

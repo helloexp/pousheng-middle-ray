@@ -16,11 +16,11 @@ public class WarehouseRulePriorityDao extends MyBatisDao<WarehouseRulePriority> 
     public Boolean checkByName(WarehouseRulePriority warehouseRulePriority) {
         if (warehouseRulePriority.getId() == null) {
             return (long) getSqlSession().selectOne(sqlId("checkByName"),
-                    ImmutableMap.of("name", warehouseRulePriority.getName())) == 0L;
+                    ImmutableMap.of("name", warehouseRulePriority.getName(), "ruleId", warehouseRulePriority.getRuleId())) == 0L;
 
         }
         return (long) getSqlSession().selectOne(sqlId("checkByName"),
-                ImmutableMap.of("id", warehouseRulePriority.getId(), "name", warehouseRulePriority.getName())) == 0L;
+                ImmutableMap.of("id", warehouseRulePriority.getId(), "name", warehouseRulePriority.getName(), "ruleId", warehouseRulePriority.getRuleId())) == 0L;
 
     }
 

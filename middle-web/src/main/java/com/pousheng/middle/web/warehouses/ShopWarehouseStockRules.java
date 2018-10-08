@@ -104,6 +104,7 @@ public class ShopWarehouseStockRules {
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.IMPORT_WAREHOUSE_SKU_RULE.toString());
         biz.setContext(mapper.toJson(info));
+        biz.setBizId(info.getOpenShopId().toString());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         return poushengCompensateBizWriteService.create(biz);
     }

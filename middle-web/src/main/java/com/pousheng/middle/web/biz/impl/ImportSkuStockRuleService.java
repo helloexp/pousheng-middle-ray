@@ -106,10 +106,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
             abnormalSkuStockRuleRecord.setRatio(strs[2].replace("\"", ""));
         }
         if (!StringUtils.isEmpty(strs[3])) {
-            abnormalSkuStockRuleRecord.setJitStock(strs[3].replace("\"", ""));
-        }
-        if (!StringUtils.isEmpty(strs[4])) {
-            abnormalSkuStockRuleRecord.setStatus(strs[4].replace("\"", ""));
+            abnormalSkuStockRuleRecord.setStatus(strs[3].replace("\"", ""));
         }
         abnormalSkuStockRuleRecord.setReason(error);
         helper.appendToExcel(abnormalSkuStockRuleRecord);
@@ -120,8 +117,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         strs[0] = rule.getSkuCode();
         strs[1] = rule.getSafeStock().toString();
         strs[2] = rule.getRatio().toString();
-        strs[3] = rule.getJitStock() == null ? null : rule.getJitStock().toString();
-        strs[4] = rule.getStatus().toString();
+        strs[3] = rule.getStatus().toString();
         return strs;
     }
 
@@ -152,12 +148,8 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                 appendErrorToExcel(helper, strs, "请输入正确的推送比例");
                 continue;
             }
-            if (!Strings.isNullOrEmpty(strs[3]) && !"\"\"".equals(strs[3]) && !strs[3].matches("[0-9]+")) {
-                appendErrorToExcel(helper, strs, "请输入正确的虚拟库存");
-                continue;
-            }
-            if (Strings.isNullOrEmpty(strs[4]) || "\"\"".equals(strs[4]) ||
-                    !strs[4].matches("^-?\\d+$") || (Integer.valueOf(strs[4]) != -1 && Integer.valueOf(strs[4]) != 1)) {
+            if (Strings.isNullOrEmpty(strs[3]) || "\"\"".equals(strs[3]) ||
+                    !strs[3].matches("^-?\\d+$") || (Integer.valueOf(strs[3]) != -1 && Integer.valueOf(strs[3]) != 1)) {
                 appendErrorToExcel(helper, strs, "请输入正确的状态");
                 continue;
             }
@@ -196,8 +188,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
                 rule.setSkuCode(skuCode);
                 rule.setSafeStock(Long.valueOf(strs[1]));
                 rule.setRatio(Integer.valueOf(strs[2]));
-                rule.setJitStock(StringUtils.isEmpty(strs[3]) ? null : Long.valueOf(strs[3]));
-                rule.setStatus(Integer.valueOf(strs[4]));
+                rule.setStatus(Integer.valueOf(strs[3]));
                 rules.add(rule);
 
             } catch (Exception jre) {

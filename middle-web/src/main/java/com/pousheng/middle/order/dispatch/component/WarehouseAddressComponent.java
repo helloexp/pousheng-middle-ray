@@ -50,23 +50,22 @@ public class WarehouseAddressComponent {
     private WarehouseCacher warehouseCacher;
 
 
-
-    public List<AddressGps> findWarehouseAddressGps(Long provinceId){
+    public List<AddressGps> findWarehouseAddressGps(Long provinceId) {
 
         Response<List<AddressGps>> addressGpsListRes = addressGpsReadService.findByProvinceIdAndBusinessType(provinceId, AddressBusinessType.WAREHOUSE);
-        if(!addressGpsListRes.isSuccess()){
-            log.error("find addressGps by province id :{} for warehouse failed,  error:{}", provinceId,addressGpsListRes.getError());
+        if (!addressGpsListRes.isSuccess()) {
+            log.error("find addressGps by province id :{} for warehouse failed,  error:{}", provinceId, addressGpsListRes.getError());
             throw new ServiceException(addressGpsListRes.getError());
         }
         return addressGpsListRes.getResult();
 
     }
 
-    public List<WarehouseDTO> findWarehouseByIds(List<Long> ids){
+    public List<WarehouseDTO> findWarehouseByIds(List<Long> ids) {
 
         Response<List<WarehouseDTO>> warehouseListRes = warehouseClient.findByIds(ids);
-        if(!warehouseListRes.isSuccess()){
-            log.error("find warehouse by ids:{} failed,  error:{}", ids,warehouseListRes.getError());
+        if (!warehouseListRes.isSuccess()) {
+            log.error("find warehouse by ids:{} failed,  error:{}", ids, warehouseListRes.getError());
             throw new ServiceException(warehouseListRes.getError());
         }
         return warehouseListRes.getResult();
@@ -75,17 +74,18 @@ public class WarehouseAddressComponent {
 
     /**
      * 获取优先级最高的总仓
+     *
      * @param warehouseWithPriorities 按优先级排序后的仓列表(换有多个可以整单发的仓)
-     * @param warehouseShipments 可以整单发的仓
+     * @param warehouseShipments      可以整单发的仓
      * @return 仓发信息
      */
     public WarehouseShipment priorityWarehouse(List<WarehouseWithPriority> warehouseWithPriorities,
-                                               List<WarehouseShipment> warehouseShipments){
+                                               List<WarehouseShipment> warehouseShipments) {
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         //优先级最高的总仓
         Long warehouseId = warehouseWithPriorities.get(0).getWarehouseId();
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
-            if (Objects.equals(warehouseShipment.getWarehouseId(),warehouseId)) {
+            if (Objects.equals(warehouseShipment.getWarehouseId(), warehouseId)) {
                 return warehouseShipment;
             }
         }
@@ -95,18 +95,19 @@ public class WarehouseAddressComponent {
 
     /**
      * 获取优先级最高的店仓
+     *
      * @param warehouseWithPriorities 按优先级排序后的仓列表(换有多个可以整单发的仓)
-     * @param shopShipments 店仓发货商品信息
+     * @param shopShipments           店仓发货商品信息
      * @return 仓发信息
      */
     public ShopShipment priorityShop(List<WarehouseWithPriority> warehouseWithPriorities,
-                                     List<ShopShipment> shopShipments){
+                                     List<ShopShipment> shopShipments) {
         //首先根据优先级检查仓库, 如果可以有整仓发货, 则就从那个仓发货
         //优先级最高的店ID
-        for(WarehouseWithPriority w:warehouseWithPriorities){
+        for (WarehouseWithPriority w : warehouseWithPriorities) {
             Long shopId = w.getShopId();
             for (ShopShipment shopShipment : shopShipments) {
-                if (Objects.equals(shopShipment.getShopId(),shopId)) {
+                if (Objects.equals(shopShipment.getShopId(), shopId)) {
                     return shopShipment;
                 }
             }
@@ -116,44 +117,35 @@ public class WarehouseAddressComponent {
     }
 
 
-
     /**
      * 获取距离用户收货地址最近的仓
+     *
      * @param warehouseShipments 发货仓集合
-     * @param address 用户收货地址
+     * @param address            用户收货地址
      * @return 距离最近的发货仓
      */
-    public WarehouseShipment nearestWarehouse(List<Long> priorityWarehouseIds, List<WarehouseShipment> warehouseShipments, String address){
-        if (!CollectionUtils.isEmpty(priorityWarehouseIds)) {
-            for (Long id : priorityWarehouseIds) {
-                for (WarehouseShipment warehouseShipment : warehouseShipments) {
-                    if (warehouseShipment.getWarehouseId().equals(id)) {
-                        return warehouseShipment;
-                    }
-                }
-            }
-        }
+    public WarehouseShipment getNearest(List<WarehouseShipment> warehouseShipments, String address) {
         //1、调用高德地图查询地址坐标
         Optional<Location> locationOp = dispatchComponent.getLocation(address);
-        if(!locationOp.isPresent()){
-            log.error("not find location by address:{}",address);
+        if (!locationOp.isPresent()) {
+            log.error("not find location by address:{}", address);
             throw new ServiceException("buyer.receive.info.address.invalid");
         }
         Location location = locationOp.get();
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
-        for (WarehouseShipment warehouseShipment : warehouseShipments){
+        for (WarehouseShipment warehouseShipment : warehouseShipments) {
             try {
-                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue());
-                distanceDtos.add(dispatchComponent.getDistance(addressGps,location.getLon(),location.getLat()));
-            }catch (Exception e){
-                log.error("find address gps by business id:{} and type:{} fail,cause:{}",warehouseShipment.getWarehouseId(),AddressBusinessType.WAREHOUSE.getValue(), Throwables.getStackTraceAsString(e));
+                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseShipment.getWarehouseId(), AddressBusinessType.WAREHOUSE.getValue());
+                distanceDtos.add(dispatchComponent.getDistance(addressGps, location.getLon(), location.getLat()));
+            } catch (Exception e) {
+                log.error("find address gps by business id:{} and type:{} fail,cause:{}", warehouseShipment.getWarehouseId(), AddressBusinessType.WAREHOUSE.getValue(), Throwables.getStackTraceAsString(e));
                 throw new ServiceException("address.gps.not.found");
             }
         }
 
         //增序
-        List<DistanceDto> sortDistance= dispatchComponent.sortDistanceDto(distanceDtos);
+        List<DistanceDto> sortDistance = dispatchComponent.sortDistanceDto(distanceDtos);
 
         Map<Long, WarehouseShipment> warehouseShipmentMap = warehouseShipments.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(WarehouseShipment::getWarehouseId, it -> it));
@@ -161,6 +153,41 @@ public class WarehouseAddressComponent {
 
         return warehouseShipmentMap.get(sortDistance.get(0).getId());
 
+    }
+
+
+    /**
+     * 获取距离用户收货地址最近的仓
+     *
+     * @param warehouseShipments 发货仓集合
+     * @param address            用户收货地址
+     * @return 距离最近的发货仓
+     */
+    public WarehouseShipment nearestWarehouse(Map<Integer, List<Long>> priorityWarehouseMap, List<WarehouseShipment> warehouseShipments, String address) {
+        for (Map.Entry<Integer, List<Long>> entry : priorityWarehouseMap.entrySet()) {
+            List<Long> priorityWarehouseIds = entry.getValue();
+            List<WarehouseShipment> avail = Lists.newArrayList();
+            if (!CollectionUtils.isEmpty(priorityWarehouseIds)) {
+                for (Long id : priorityWarehouseIds) {
+                    for (WarehouseShipment warehouseShipment : warehouseShipments) {
+                        if (warehouseShipment.getWarehouseId().equals(id)) {
+                            avail.add(warehouseShipment);
+                            warehouseShipments.remove(warehouseShipment);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (avail.size() <= 0) {
+                continue;
+            } else if (avail.size() == 1) {
+                return avail.get(0);
+            } else {
+                return getNearest(avail, address);
+            }
+
+        }
+        return getNearest(warehouseShipments, address);
     }
 
 

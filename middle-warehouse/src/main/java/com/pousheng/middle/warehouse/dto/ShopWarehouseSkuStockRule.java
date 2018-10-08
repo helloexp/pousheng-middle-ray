@@ -33,6 +33,12 @@ public class ShopWarehouseSkuStockRule implements Serializable {
      */
     private String warehouseCode;
 
+
+    /**
+     * 仓库编码
+     */
+    private Long availStock;
+
     /**
      * 店铺id
      */

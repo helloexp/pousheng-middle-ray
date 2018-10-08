@@ -10,6 +10,7 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesItemClient;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseRuleDto;
 import com.pousheng.middle.warehouse.dto.WarehouseRuleItemDto;
 import com.pousheng.middle.warehouse.model.WarehouseRulePriority;
@@ -23,6 +24,7 @@ import com.pousheng.middle.web.export.UploadFileComponent;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
@@ -112,23 +114,35 @@ public class ImportPriorityItemService implements CompensateBizService {
         for (int i = 1; i < list.size(); i++) {
             String[] strs = list.get(i);
             if (Strings.isNullOrEmpty(strs[0]) || "\"\"".equals(strs[0])) {
-                appendErrorToExcel(helper, strs, "请输入正确的仓库编码");
+                appendErrorToExcel(helper, strs, "请输入正确的公司编码");
                 continue;
             }
-            if (!Strings.isNullOrEmpty(strs[1]) && !"\"\"".equals(strs[1]) && !strs[1].matches("[0-9]+")) {
+            if (Strings.isNullOrEmpty(strs[1]) || "\"\"".equals(strs[1])) {
+                appendErrorToExcel(helper, strs, "请输入正确的仓库外码");
+                continue;
+            }
+            Long warehouseId;
+            try {
+                //检查仓库存不存在
+                warehouseId = warehouseCacher.findByOutCodeAndBizId(strs[1], strs[0]).getId();
+            } catch (ServiceException e) {
+                appendErrorToExcel(helper, strs, "仓库不存在，请输入正确的仓库编码");
+                continue;
+            }
+            if (!Strings.isNullOrEmpty(strs[2]) && !"\"\"".equals(strs[2]) && !strs[2].matches("[0-9]+")) {
                 appendErrorToExcel(helper, strs, "请输入正确的优先级");
                 continue;
             }
             try {
-                if (!warehouseIds.contains(warehouseCacher.findByCode(strs[0]).getId())) {
+                if (!warehouseIds.contains(warehouseId)) {
                     appendErrorToExcel(helper, strs, "该仓库不在发货仓规则内");
                     continue;
                 }
                 WarehouseRulePriorityItem item = new WarehouseRulePriorityItem();
                 item.setPriorityId(info.getPriorityId());
-                item.setWarehouseId(warehouseCacher.findByCode(strs[0]).getId());
-                if (!StringUtils.isEmpty(strs[1])) {
-                    item.setPriority(Integer.parseInt(strs[1]));
+                item.setWarehouseId(warehouseId);
+                if (!StringUtils.isEmpty(strs[2])) {
+                    item.setPriority(Integer.parseInt(strs[2]));
                 }
                 Response<WarehouseRulePriorityItem> warehouseRulePriorityItemResponse = warehouseRulePriorityItemReadService.findByEntity(item);
                 if (!warehouseRulePriorityItemResponse.isSuccess()) {

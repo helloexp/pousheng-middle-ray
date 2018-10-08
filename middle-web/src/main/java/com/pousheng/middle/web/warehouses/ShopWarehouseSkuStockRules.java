@@ -13,8 +13,10 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.ShopWarehouseSkuRuleClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
+import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.warehouse.dto.ShopWarehouseSkuStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
@@ -88,6 +90,8 @@ public class ShopWarehouseSkuStockRules {
     private OpenShopCacher openShopCacher;
     @Autowired
     private GroupRuleCacherProxy groupRuleCacherProxy;
+    @Autowired
+    private InventoryClient inventoryClient;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -181,6 +185,9 @@ public class ShopWarehouseSkuStockRules {
                 return new Paging<>(0L, Lists.newArrayList());
             }
             criteria.setSkuCodes(result.getData().stream().map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList()));
+            if (criteria.getSkuCode() != null && !criteria.getSkuCodes().contains(criteria.getSkuCode())) {
+                return new Paging<>(0L, Lists.newArrayList());
+            }
         }
         criteria.setStatus(1);
         Response<Paging<ItemMapping>> mappingRes = mappingReadService.paging(criteria);
@@ -236,6 +243,26 @@ public class ShopWarehouseSkuStockRules {
             rules.put(itemMapping.getSkuCode(), stockRule);
         }
 
+        Response<List<InventoryDTO>> listRes = inventoryClient.findSkuStocks(warehouseId,skuCodes);
+        if (!listRes.isSuccess()) {
+            log.error("call inventory to find inventory list fail, warehouseId:{} sku code:{}, caused: {}",
+                    warehouseId, skuCodes, listRes.getError());
+
+            throw new JsonResponseException(listRes.getError());
+        }
+        List<InventoryDTO> stocks = listRes.getResult();
+
+        List<ShopWarehouseSkuStockRule> list = rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList());
+
+        Map<String, InventoryDTO> skuCodeMap = stocks.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(InventoryDTO::getSkuCode, it -> it));
+
+        for (ShopWarehouseSkuStockRule rule : list) {
+            if (skuCodeMap.get(rule.getSkuCode()) != null) {
+                rule.setAvailStock(skuCodeMap.get(rule.getSkuCode()).getAvailStock());
+            }
+
+        }
         Paging<ShopWarehouseSkuStockRule> ret = new Paging<>();
         ret.setTotal(mappingRes.getResult().getTotal());
         ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));

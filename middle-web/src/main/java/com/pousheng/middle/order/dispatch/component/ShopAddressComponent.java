@@ -79,16 +79,8 @@ public class ShopAddressComponent {
      * @param addressRegion 用户收货地址到区
      * @return 距离最近的发货门店
      */
-    public ShopShipment nearestShop(List<Long> priorityShopIds,List<ShopShipment> shopShipments, String address,String addressRegion){
-        if (!CollectionUtils.isEmpty(priorityShopIds)) {
-            for (Long id : priorityShopIds) {
-                for (ShopShipment shopShipment : shopShipments) {
-                    if (shopShipment.getShopId().equals(id)) {
-                        return shopShipment;
-                    }
-                }
-            }
-        }
+    public ShopShipment getNearest(List<ShopShipment> shopShipments, String address,String addressRegion){
+
         Location location = dispatchComponent.getLocation(address,addressRegion);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(shopShipments.size());
@@ -111,6 +103,40 @@ public class ShopAddressComponent {
 
         return shopShipmentMap.get(sortDistance.get(0).getId());
 
+    }
+
+
+    /**
+     * 获取距离用户收货地址最近的仓
+     *
+     * @param shopShipments 店仓集合
+     * @param address       用户收货地址
+     * @return 距离最近的发货仓
+     */
+    public ShopShipment nearestShop(Map<Integer, List<Long>> priorityShopMap, List<ShopShipment> shopShipments, String address, String addressRegion) {
+        for (Map.Entry<Integer, List<Long>> entry : priorityShopMap.entrySet()) {
+            List<Long> priorityWarehouseIds = entry.getValue();
+            List<ShopShipment> avail = Lists.newArrayList();
+            if (!CollectionUtils.isEmpty(priorityWarehouseIds)) {
+                for (Long id : priorityWarehouseIds) {
+                    for (ShopShipment shopShipment : shopShipments) {
+                        if (shopShipment.getShopId().equals(id)) {
+                            avail.add(shopShipment);
+                            shopShipments.remove(shopShipment);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (avail.size() <= 0) {
+                continue;
+            } else if (avail.size() == 1) {
+                return avail.get(0);
+            } else {
+                return getNearest(avail, address, addressRegion);
+            }
+        }
+        return getNearest(shopShipments, address, addressRegion);
     }
 
 

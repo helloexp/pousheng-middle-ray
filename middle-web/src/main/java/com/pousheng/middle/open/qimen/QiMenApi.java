@@ -189,6 +189,63 @@ public class QiMenApi {
         return "ok";
     }
 
+
+
+    /**
+     * 根据外部订单shopId以及外部订单号获取收货人地址
+     * @param shopId 店铺标识
+     * @param outerOrderId 外部订单号
+     * @return
+     */
+    @GetMapping(value = "/sync-order-receiver-common")
+    public String syncOrderReceiverByOuterOrderId(@RequestParam("shopId") Long shopId, @RequestParam("outerOrderId") String outerOrderId) {
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-COMMON-START param: shopId [{}],outerOrderId [{}]", shopId,outerOrderId);
+        }
+        try {
+            erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId));
+              /*terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
+                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId,"redirectUrl",poushengPagodaCommonRedirectUrl));*/
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                    outerOrderId, shopId, Throwables.getStackTraceAsString(e));
+            return "fail";
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-COMMON-END param: shopId [{}] outerOrderId [{}] resp: [{}]", shopId,outerOrderId, "ok");
+        }
+        return "ok";
+    }
+
+
+    /**
+     * 根据外部分销订单shopId以及外部订单号获取收货人地址
+     * @param shopId 店铺标识
+     * @param outerOrderId 外部订单号
+     * @return
+     */
+    @GetMapping(value = "/sync-order-receiver-fenxiao")
+    public String syncFenxiaoOrderReceiver(@RequestParam("shopId") Long shopId, @RequestParam("outerOrderId") String outerOrderId) {
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-FENXIAO-START param: shopId [{}],outerOrderId [{}]", shopId,outerOrderId);
+        }
+        try {
+            erpOpenApiClient.doPost("fenxiao.order.receiver.sync",
+                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId));
+            /*terminusErpOpenApiClient.doPost("sync.taobao.fenxiao.order.recever.info.api",
+                    ImmutableMap.of("shopId",shopId, "orderId", outerOrderId,"redirectUrl",poushengPagodaFenxiaoRedirectUrl));*/
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                    outerOrderId, shopId, Throwables.getStackTraceAsString(e));
+            return "fail";
+        }
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-FENXIAO-END param: shopId [{}] outerOrderId [{}] resp: [{}]", shopId,outerOrderId, "ok");
+        }
+        return "ok";
+    }
+
     private String retrievePayload(HttpServletRequest request) {
         StringBuilder sb = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(request.getInputStream()))) {

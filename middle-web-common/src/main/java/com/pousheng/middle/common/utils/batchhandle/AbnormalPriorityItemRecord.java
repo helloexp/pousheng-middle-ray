@@ -9,7 +9,10 @@ import lombok.Data;
 @ExportEditable(true)
 public class AbnormalPriorityItemRecord {
 
-    @ExportTitle("仓库编码")
+    @ExportTitle("公司编码")
+    private String companyCode;
+
+    @ExportTitle("仓库外码")
     private String watrehouseCode;
 
     @ExportTitle("优先级")

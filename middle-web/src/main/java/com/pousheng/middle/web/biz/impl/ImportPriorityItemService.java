@@ -85,10 +85,13 @@ public class ImportPriorityItemService implements CompensateBizService {
     private void appendErrorToExcel(ExcelExportHelper<AbnormalPriorityItemRecord> helper, String[] strs, String error) {
         AbnormalPriorityItemRecord AbnormalPriorityItemRecord = new AbnormalPriorityItemRecord();
         if (!StringUtils.isEmpty(strs[0])) {
-            AbnormalPriorityItemRecord.setWatrehouseCode(strs[0].replace("\"", ""));
+            AbnormalPriorityItemRecord.setCompanyCode(strs[0].replace("\"", ""));
         }
         if (!StringUtils.isEmpty(strs[1])) {
-            AbnormalPriorityItemRecord.setPriority(strs[1].replace("\"", ""));
+            AbnormalPriorityItemRecord.setWatrehouseCode(strs[1].replace("\"", ""));
+        }
+        if (!StringUtils.isEmpty(strs[2])) {
+            AbnormalPriorityItemRecord.setPriority(strs[2].replace("\"", ""));
         }
         AbnormalPriorityItemRecord.setReason(error);
         helper.appendToExcel(AbnormalPriorityItemRecord);

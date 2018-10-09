@@ -7,6 +7,7 @@ import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.common.protocol.heartbeat.MessageModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -24,13 +25,13 @@ public class CacherChangeConsumer {
     private ItemGroupCacher itemGroupCacher;
 
     @Autowired
-    private ShopGroupRuleCacher  shopGroupRuleCacher;
+    private ShopGroupRuleCacher shopGroupRuleCacher;
 
     @Autowired
     private WarehouseGroupRuleCacher warehouseGroupRuleCacher;
 
     @MQSubscribe(topic = "cacherClearTopic", consumerGroup = "cacherGroup",
-            consumeMode = ConsumeMode.CONCURRENTLY)
+            consumeMode = ConsumeMode.CONCURRENTLY, messageMode = MessageModel.BROADCASTING)
     public void clear(Integer carcherId) {
         CacherName cacher = CacherName.from(carcherId);
         switch (cacher) {

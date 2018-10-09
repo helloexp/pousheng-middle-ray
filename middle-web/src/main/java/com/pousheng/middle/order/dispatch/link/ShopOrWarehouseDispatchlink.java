@@ -138,7 +138,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
                     dispatchWithPriority.setDistance(getDistance(warehouseId, AddressBusinessType.WAREHOUSE, location));
                     priorityWarehouse.add(dispatchWithPriority);
 
-                    fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+                    fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseId, warehouseOrShopId, allSkuCodeQuantityTable);
                     for (String skuCode : current.elementSet()) {
                         warehouseSkuCodeQuantityTable.remove(warehouseId, skuCode);
                     }
@@ -159,7 +159,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
             //根据距离优先级派单
             dispatchWithPriority.setDistance(getDistance(warehouseId, AddressBusinessType.WAREHOUSE, location));
             warehouseDispatchWithPriorities.add(dispatchWithPriority);
-            fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+            fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseId, warehouseOrShopId, allSkuCodeQuantityTable);
         }
 
         List<DispatchWithPriority> warehouseDispatchWithPriority = dispatchComponent.sortDispatchWithDistance(warehouseDispatchWithPriorities);
@@ -192,7 +192,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
                     //店铺的距离永远按比仓的距离远，实现 先仓后店
                     dispatchWithPriority.setDistance(getDistance(shopId, AddressBusinessType.SHOP, location) + farthestWarehouseDistance);
                     priorityShop.add(dispatchWithPriority);
-                    fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+                    fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, shopId, warehouseOrShopId, allSkuCodeQuantityTable);
                     for (String skuCode : current.elementSet()) {
                         shopSkuCodeQuantityTable.remove(shopId, skuCode);
                     }
@@ -212,7 +212,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
             //店铺的距离永远按比仓的距离远，实现 先仓后店
             dispatchWithPriority.setDistance(getDistance(shopId, AddressBusinessType.SHOP, location) + farthestWarehouseDistance);
             shopDispatchWithPriorities.add(dispatchWithPriority);
-            fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+            fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, shopId, warehouseOrShopId, allSkuCodeQuantityTable);
 
 
         }
@@ -230,8 +230,8 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
         log.info("this priorityShopDispatchs  is {}", priorityShopDispatchs.toString());
         log.info("this shopDispatchWithPriority  is {}", shopDispatchWithPriority.toString());
         log.info("this allDispatchWithPriorities  is {}", allDispatchWithPriorities.toString());
-
-
+        log.info("allSkuCodeQuantityTable is {}", allSkuCodeQuantityTable.toString());
+        log.info("skuCodeAndQuantities is {}", allSkuCodeQuantityTable.toString());
         packageShipmentInfo(dispatchOrderItemInfo, allSkuCodeQuantityTable, skuCodeAndQuantities, allDispatchWithPriorities);
 
     }
@@ -239,9 +239,9 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
     /**
      * 添加到 allSkuCodeQuantityTable
      */
-    private void fillAllSkuCodeQuantityTable(Multiset<String> current, Table<Long, String, Integer> skuCodeQuantityTable, String warehouseOrShopId, Table<String, String, Integer> allSkuCodeQuantityTable) {
+    private void fillAllSkuCodeQuantityTable(Multiset<String> current, Table<Long, String, Integer> skuCodeQuantityTable, Long id, String warehouseOrShopId, Table<String, String, Integer> allSkuCodeQuantityTable) {
         for (String skuCode : current.elementSet()) {
-            Object stockObject = skuCodeQuantityTable.get(warehouseOrShopId, skuCode);
+            Object stockObject = skuCodeQuantityTable.get(id, skuCode);
             Integer stock = 0;
             if (!Arguments.isNull(stockObject)) {
                 stock = (Integer) stockObject;
@@ -287,7 +287,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
             WarehouseWithPriority withPriority = warehouseIdMap.get(warehouseId);
             dispatchWithPriority.setPriority(withPriority.getPriority());
             allDispatchWithPriorities.add(dispatchWithPriority);
-            fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+            fillAllSkuCodeQuantityTable(current, warehouseSkuCodeQuantityTable, warehouseId, warehouseOrShopId, allSkuCodeQuantityTable);
 
 
         }
@@ -316,7 +316,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
             dispatchWithPriority.setPriority(leastWarehousePriority + withPriority.getPriority());
             allDispatchWithPriorities.add(dispatchWithPriority);
             //添加到 allSkuCodeQuantityTable
-            fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, warehouseOrShopId, allSkuCodeQuantityTable);
+            fillAllSkuCodeQuantityTable(current, shopSkuCodeQuantityTable, shopId, warehouseOrShopId, allSkuCodeQuantityTable);
 
         }
 

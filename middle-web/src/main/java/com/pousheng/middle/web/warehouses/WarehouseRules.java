@@ -79,7 +79,12 @@ public class WarehouseRules {
                 }
             }
         }
-
+        Set<Long> shopIds = warehouseRulesClient.findAllConfigShopIds();
+        for (ThinShop thinShop : thinShops) {
+            if (shopIds.contains(thinShop.getShopId())) {
+                throw new JsonResponseException("shop.may.conflict");
+            }
+        }
         Response<Long> r = warehouseRulesClient.createRule(thinShops);
         if (!r.isSuccess()) {
             log.error("failed to batchCreate warehouse rule with shops:{}, error code:{}", shops, r.getError());

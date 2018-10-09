@@ -22,10 +22,6 @@ public class AbnormalSkuStockRuleRecord {
     @ExportTitle("推送比例")
     private String ratio;
 
-    //虚拟库存
-    @ExportTitle("虚拟库存")
-    private String jitStock;
-
     //状态
     @ExportTitle("状态")
     private String status;

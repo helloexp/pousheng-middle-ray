@@ -185,8 +185,13 @@ public class ShopWarehouseSkuStockRules {
                 return new Paging<>(0L, Lists.newArrayList());
             }
             criteria.setSkuCodes(result.getData().stream().map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList()));
-            if (criteria.getSkuCode() != null && !criteria.getSkuCodes().contains(criteria.getSkuCode())) {
-                return new Paging<>(0L, Lists.newArrayList());
+            if (criteria.getSkuCode() != null) {
+                if (!criteria.getSkuCodes().contains(criteria.getSkuCode())) {
+                    return new Paging<>(0L, Lists.newArrayList());
+                } else {
+                    criteria.setSkuCodes(null);
+                }
+
             }
         }
         criteria.setStatus(1);
@@ -265,7 +270,7 @@ public class ShopWarehouseSkuStockRules {
         }
         Paging<ShopWarehouseSkuStockRule> ret = new Paging<>();
         ret.setTotal(mappingRes.getResult().getTotal());
-        ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+        ret.setData(list);
 
         return ret;
     }
@@ -311,9 +316,31 @@ public class ShopWarehouseSkuStockRules {
             stockRule.setShopId(criteria.getOpenShopId());
             rules.put(itemMapping.getSkuCode(), stockRule);
         }
+        List<ShopWarehouseSkuStockRule> list = rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList());
+
+        List<String> skuCodes = result.getData().stream().filter(e -> e.getSkuCode() != null).map(SearchSkuTemplate::getSkuCode).collect(Collectors.toList());
+
+        Response<List<InventoryDTO>> listRes = inventoryClient.findSkuStocks(warehouseId,skuCodes);
+        if (!listRes.isSuccess()) {
+            log.error("call inventory to find inventory list fail, warehouseId:{} sku code:{}, caused: {}",
+                    warehouseId, skuCodes, listRes.getError());
+
+            throw new JsonResponseException(listRes.getError());
+        }
+        List<InventoryDTO> stocks = listRes.getResult();
+
+        Map<String, InventoryDTO> skuCodeMap = stocks.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(InventoryDTO::getSkuCode, it -> it));
+
+        for (ShopWarehouseSkuStockRule rule : list) {
+            if (skuCodeMap.get(rule.getSkuCode()) != null) {
+                rule.setAvailStock(skuCodeMap.get(rule.getSkuCode()).getAvailStock());
+            }
+
+        }
         Paging<ShopWarehouseSkuStockRule> ret = new Paging<>();
         ret.setTotal(result.getTotal());
-        ret.setData(rules.values().stream().filter(Objects::nonNull).collect(Collectors.toList()));
+        ret.setData(list);
         return ret;
     }
 

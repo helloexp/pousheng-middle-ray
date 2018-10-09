@@ -621,11 +621,10 @@ public class Refunds {
 
             Refund refund = refundReadLogic.findRefundById(id);
             //如果允许取消，则将占库发货单取消即可
-            List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refund.getId());
-            for (OrderShipment orderShipment:orderShipments){
-                //修改发货单类型，并且同步订单派发中心或者mpos
-                Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-                shipmentWiteLogic.cancelOccupyShipment(shipment);
+            if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
+                refundWriteLogic.cancelAfterSaleOccupyShipments(id);
+            }else{
+                refundWriteLogic.cancelSkxAfterSaleOccupyShipments(id);
             }
             refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             Flow flow = flowPicker.pickAfterSales();

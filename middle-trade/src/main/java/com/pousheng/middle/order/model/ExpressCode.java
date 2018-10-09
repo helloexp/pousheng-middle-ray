@@ -60,6 +60,10 @@ public class ExpressCode implements Serializable {
      */
     private String codoonCode;
     /**
+     * 考拉快递代码
+     */
+    private String kaolaCode;
+    /**
      * 唯品会快递代码
      */
     private String vipCode;

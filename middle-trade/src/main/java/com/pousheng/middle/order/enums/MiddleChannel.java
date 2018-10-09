@@ -19,7 +19,8 @@ public enum MiddleChannel {
     CODOON("codoon","咕咚"),
     YUNJUJIT("yunjujit", "云聚JIT"),
     YUNJURT("yunjurt", "云聚rt"),
-    VIP("vip","唯品会");
+    VIP("vip","唯品会"),
+    KAOLA("kaola","网易考拉");
 
     private final String value;
 

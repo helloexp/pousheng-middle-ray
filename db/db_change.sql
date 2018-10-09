@@ -1,3 +1,8 @@
+-- 增大parana_sku_orders表buyer_name字段长度
+alter table `parana_sku_orders` modify column `buyer_name` varchar(64);
+-- 添加网易考拉快递代码
+alter table `pousheng_trade_express_code` add `kaola_code` VARCHAR(64) NULL COMMENT '网易考拉快递代码' after `codoon_code`;
+
 ALTER TABLE `parana_shops` change  `user_id` `user_id` bigint(20)  NULL COMMENT '商家id';
 ALTER TABLE `parana_shops` change  `user_name` `user_name` VARCHAR(32)  NULL COMMENT '商家名称';
 

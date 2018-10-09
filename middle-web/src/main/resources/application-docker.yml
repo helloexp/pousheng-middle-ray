@@ -285,3 +285,6 @@ jit.order.warning.job.cron: ${JIT_ORDER_WARNING_JOB_CRON}
 
 # jit店铺OpenShopId
 jit.open.shop.id: ${JIT_OPEN_SHOP_ID}
+
+# 调用淘宝api统计地址
+open.client.statistics.center.gate.way: ${STATISTICS_CENTER_GATEWAY}

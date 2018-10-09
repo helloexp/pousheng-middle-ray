@@ -81,10 +81,10 @@ public class EcpOrderLogic {
             }
             //同步订单信息到电商平台
             int count = 0;
-            String error = "";
+            StringBuffer error = new StringBuffer();
             count = this.syncEcpShipmentInfos(shopOrder.getId(),count,error);
             if (count>0){
-                throw new BizException(error);
+                throw new BizException(error.toString());
             }
         } catch (ServiceException e) {
             log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
@@ -97,7 +97,7 @@ public class EcpOrderLogic {
     }
 
 
-    private int syncEcpShipmentInfos(Long shopOrderId,int count,String error){
+    private int syncEcpShipmentInfos(Long shopOrderId,int count,StringBuffer error){
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
         //获取第一个返货单生成时冗余的发货单id
         String shipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID,shopOrder);
@@ -114,21 +114,21 @@ public class EcpOrderLogic {
                 Response<Boolean> response = syncOrderToEcpLogic.syncToYunJu(shopOrder);
                 if (!response.isSuccess()){
                     count++;
-                    error = response.getError();
+                    error.append(response.getError());
                 }
 
             }else{
                 Response<Boolean> response = syncOrderToEcpLogic.syncOrderToECP(shopOrder, expressCompanyCode, shipment.getId());
                 if (!response.isSuccess()){
                     count++;
-                    error = response.getError();
+                    error.append(response.getError());
                 }
             }
         }else{
             Response<Boolean> response = syncOrderToEcpLogic.syncShipmentsToEcp(shopOrder);
             if (!response.isSuccess()){
                 count++;
-                error = response.getError();
+                error.append(response.getError());
             }
         }
         return count;

@@ -172,8 +172,10 @@ public class SyncWmsShipmentLogic {
         shipmentInfo.setStockcode(warehouse.getOutCode());
         //仓库编码
         shipmentInfo.setInterstockcode(shopOrderExtra.get(ExtraKeyConstant.INTER_STOCK_CODE));
-        ////仓库名称
-        shipmentInfo.setInterstockname(warehouse.getWarehouseName());
+        //仓库名称
+        shipmentInfo.setInterstockname(shopOrderExtra.get(ExtraKeyConstant.INTER_STOCK_NAME));
+        //承运商
+        shipmentInfo.setFreightcompany(shopOrderExtra.get(ExtraKeyConstant.FREIGHT_COMPANY));
         //erp单号，中台发货单代码
         shipmentInfo.setBillno(String.valueOf(shipment.getShipmentCode()));
         //单据类型

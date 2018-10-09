@@ -411,15 +411,14 @@ public class ShipmentWiteLogic {
             log.info("try to auto cancel shipment,shipment id is {}", shipment.getId());
             Flow flow = flowPicker.pickShipments();
             //未同步恒康,现在只需要将发货单状态置为已取消即可
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(),
-                        MiddleShipmentsStatus.CANCELED.getValue());
-                if (!updateRes.isSuccess()) {
-                    log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),
-                            MiddleShipmentsStatus.CANCELED.getValue(), shipment.getStatus(), updateRes.getError());
-                    return Response.fail(updateRes.getError());
-                }
+            Response<Boolean> updateRes = shipmentWriteService.updateStatusByShipmentIdAndCurrentStatus(shipment.getId(), shipment.getStatus(),
+                    MiddleShipmentsStatus.CANCELED.getValue());
+            if (!updateRes.isSuccess()) {
+                log.error("update shipment(id:{}) status to:{} fail,currentStatus is {},error:{}", shipment.getId(),
+                        MiddleShipmentsStatus.CANCELED.getValue(), shipment.getStatus(), updateRes.getError());
+                return Response.fail(updateRes.getError());
             }
+
             //解锁库存
             mposSkuStockLogic.unLockStock(shipment);
             log.info("try to auto cancel shipment,shipment id is {} success", shipment.getId());

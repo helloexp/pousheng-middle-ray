@@ -46,9 +46,20 @@ public class ExtraKeyConstant {
     public final static String INTER_STOCK_CODE = "interStockCode";
 
     /**
+     * 目的仓名称
+     */
+    public final static String INTER_STOCK_NAME = "interStockName";
+
+    /**
      * 下游单号
      */
     public final static String PRE_FINISH_BILLO = "preFinishBillo";
+
+
+    /**
+     * 承运商
+     */
+    public final static String FREIGHT_COMPANY = "freightCompany";
 
     /**
      * 批次号

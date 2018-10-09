@@ -150,7 +150,7 @@ public class JitOpenApi {
             //参数验证
              validateBaiscParam(fullOrderInfo);
              ApiParamUtil.validateRequired(fullOrderInfo.getOrder(),"outOrderId","buyerName","companyCode","shopCode","fee","originFee","shipFee",
-                 "originShipFee","shipmentType","payType","type","status","channel","createdAt","stockId","interStockCode",
+                 "originShipFee","shipmentType","payType","type","status","channel","createdAt","stockId","interStockCode","interStockName","freightCompany",
                  "preFinishBillo","batchNo","batchMark","channelCode","expectDate","transportMethodCode","transportMethodName","cardRemark","jitOrderId");
              for(OpenFullOrderItem item:fullOrderInfo.getItem()){
                  ApiParamUtil.validateRequired(item,"outSkuorderId","vipsOrderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");

@@ -120,8 +120,12 @@ public class OpenOrderConverter {
             extra.put(ExtraKeyConstant.VEND_CUST_Code, order.getVendCustCode());
             // 目的仓编码
             extra.put(ExtraKeyConstant.INTER_STOCK_CODE, order.getInterStockCode());
+            // 目的仓名称
+            extra.put(ExtraKeyConstant.INTER_STOCK_NAME, order.getInterStockName());
             // 下游单号
             extra.put(ExtraKeyConstant.PRE_FINISH_BILLO, order.getPreFinishBillo());
+            // 承运商
+            extra.put(ExtraKeyConstant.FREIGHT_COMPANY, order.getFreightCompany());
             // 批次号
             extra.put(ExtraKeyConstant.BATCH_NO, order.getBatchNo());
             // 批次描述

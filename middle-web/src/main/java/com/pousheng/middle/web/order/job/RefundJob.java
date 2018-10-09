@@ -17,11 +17,13 @@ import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,7 +65,10 @@ public class RefundJob {
         }
 
         log.info("START JOB RefundJob.doneRefund");
-        Response<List<Refund>> response = refundReadService.findByTradeNo(TradeConstants.REFUND_WAIT_CANCEL);
+        //当前时间减去6小时
+        Date createStartAt = DateTime.now().minusHours(6).toDate();
+        //查询6小时内未处理的退款单
+        Response<List<Refund>> response = refundReadService.findByTradeNoAndCreatedAt(TradeConstants.REFUND_WAIT_CANCEL,createStartAt);
         if (!response.isSuccess()) {
             log.error("find  refund paging failed,caused by {}", response.getError());
             return;

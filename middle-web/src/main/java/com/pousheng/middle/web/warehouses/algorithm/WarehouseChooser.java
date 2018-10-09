@@ -17,6 +17,7 @@ import com.pousheng.middle.warehouse.model.WarehouseAddress;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +27,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -138,10 +140,17 @@ public class WarehouseChooser {
         if (needSingle) {
             return Collections.emptyList();
         }
+
+        Map<String, Long> skuOrderCodeMap = Maps.newHashMap();
+
+
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();
         for (SkuCodeAndQuantity skuCodeAndQuantity : skuCodeAndQuantities) {
             current.add(skuCodeAndQuantity.getSkuCode(), skuCodeAndQuantity.getQuantity());
+            if (Arguments.notNull(skuCodeAndQuantity.getSkuOrderId())){
+                skuOrderCodeMap.put(skuCodeAndQuantity.getSkuCode(),skuCodeAndQuantity.getSkuOrderId());
+            }
         }
 
         List<WarehouseShipment> result = Lists.newArrayList();
@@ -190,6 +199,7 @@ public class WarehouseChooser {
                     int actual = stock >= required ? required : 0;
 
                     SkuCodeAndQuantity scaq = new SkuCodeAndQuantity();
+                    scaq.setSkuOrderId(skuOrderCodeMap.get(skuCode));
                     scaq.setSkuCode(skuCode);
                     scaq.setQuantity(actual);
                     if (actual!=0){

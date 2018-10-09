@@ -1464,10 +1464,10 @@ public class Shipments {
      * @param shopOrderId
      */
     private void validateIsCreateOrderImportOrder(List<Long> warehouseIds, Long shopOrderId) {
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        if (orderReadLogic.isCreateOrderImportOrder(shopOrder)) {
+        //ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        //if (orderReadLogic.isCreateOrderImportOrder(shopOrder)) {
             validateOrderAllChannelWarehouse(warehouseIds, shopOrderId);
-        }
+        //}
 
     }
 

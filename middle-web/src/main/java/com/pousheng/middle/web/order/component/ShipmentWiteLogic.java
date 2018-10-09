@@ -525,7 +525,7 @@ public class ShipmentWiteLogic {
      */
     private boolean autoCreateShipmentLogic(ShopOrder shopOrder, List<SkuOrder> skuOrders) {
         if (log.isDebugEnabled()){
-            log.debug("ShipmentWiteLogic autoCreateShipmentLogic,shopOrder {},skuOrders",shopOrder,skuOrders);
+            log.debug("ShipmentWiteLogic autoCreateShipmentLogic,shopOrder id:{}",shopOrder.getOrderCode());
         }
         //获取skuCode,数量的集合
         List<SkuCodeAndQuantity> skuCodeAndQuantities = Lists.newArrayListWithCapacity(skuOrders.size());

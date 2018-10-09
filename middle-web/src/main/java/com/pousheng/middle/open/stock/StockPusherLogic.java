@@ -29,12 +29,8 @@ import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
-import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
-import com.pousheng.middle.warehouse.dto.ShopStockRule;
-import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.warehouse.model.StockPushLog;
 import com.pousheng.middle.web.item.cacher.ItemGroupCacher;
 import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
@@ -779,5 +775,33 @@ public class StockPusherLogic {
                     occupyTable.toString());
         }
         return occupyTable;
+    }
+
+    /**
+     * 过滤仓库商品分组里的skuCode
+     * @param companyCode 公司编号
+     * @param skuCodes skuCode列表
+     * @param warehouseId 仓库编号
+     * @return
+     */
+    public List<String> filterSkuListInWarehouseItemGroup(String companyCode, List<String> skuCodes, Long warehouseId) {
+        //查询商品分组
+        List<String> result = Lists.newArrayList();
+        List<Long> warehouseIds = Lists.newArrayListWithExpectedSize(1);
+        warehouseIds.add(warehouseId);
+        skuCodes.forEach(skuCode -> {
+            try {
+                List<Long> list = queryHkWarhouseOrShopStockApi.validateVendibleWarehouse(skuCode, warehouseIds,
+                    companyCode);
+                if (list.size() > 0) {
+                    result.add(skuCode);
+                }
+            } catch (Exception e) {
+                log.warn("failed to filter skuCode in warehouse.skuCode:{},warehouseId:{},companyCode:{}", skuCode,
+                    warehouseId, companyCode);
+            }
+        });
+
+        return result;
     }
 }

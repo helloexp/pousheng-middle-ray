@@ -2,8 +2,10 @@ package com.pousheng.middle.web.events.warehouse;
 
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.open.stock.StockPusherLogic;
 import com.pousheng.middle.web.mq.warehouse.InventoryChangeProducer;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
+import com.pousheng.middle.web.warehouses.ShopSkuStockPushHandler;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -43,6 +45,13 @@ public class ShopSkuStockPushListener {
     @Autowired
     private InventoryChangeProducer inventoryChangeProducer;
 
+    @Autowired
+    private StockPusherLogic stockPusherLogic;
+
+    @Autowired
+    private ShopSkuStockPushHandler shopSkuStockPushHandler;
+
+
     @Subscribe
     public void onPushEvent(PushEvent event){
         if (null != event && StringUtils.isNotBlank(event.getSkuCode())) {
@@ -73,10 +82,9 @@ public class ShopSkuStockPushListener {
                 }
             }
             //stockPusher.submit(skuCodes);
-            List<InventoryChangeDTO> inventoryChanges = com.google.common.collect.Lists.newArrayList();
-            skuCodes.forEach(skuCode ->{
-                inventoryChanges.add(InventoryChangeDTO.builder().skuCode(skuCode).warehouseId(null).build());
-            });
+
+            List<InventoryChangeDTO> inventoryChanges = shopSkuStockPushHandler.buildChangeList(skuCodes,shopId);
+
             inventoryChangeProducer.handleInventoryChange(inventoryChanges);
 
             log.info("push stock pageNo is {}",pageNo);

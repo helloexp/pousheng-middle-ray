@@ -10,7 +10,6 @@ import com.pousheng.auth.dto.LoginTokenInfo;
 import com.pousheng.auth.dto.UcUserInfo;
 import com.pousheng.erp.component.MposWarehousePusher;
 import com.pousheng.middle.constants.Constants;
-import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.AddressGps;
@@ -24,6 +23,7 @@ import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import com.pousheng.middle.web.order.sync.mpos.MiddleParanaClient;
 import com.pousheng.middle.web.shop.cache.ShopChannelGroupCacher;
 import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
@@ -58,7 +58,6 @@ import io.terminus.parana.common.model.ParanaUser;
 import io.terminus.parana.common.utils.Iters;
 import io.terminus.parana.common.utils.RespHelper;
 import io.terminus.parana.common.utils.UserUtil;
-import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.AdminShopWriteService;
 import io.terminus.parana.shop.service.ShopReadService;
@@ -75,10 +74,13 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.*;
 
 import static com.pousheng.middle.constants.Constants.MANAGE_ZONE_IDS;
-import java.time.*;
 
 /**
  * Author:cp
@@ -149,6 +151,8 @@ public class AdminShops {
     private OrderShipmentReadService orderShipmentReadService;
     @Autowired
     private MiddleParanaClient paranaClient;
+    @Autowired
+    private ShopMaxOrderLogic shopMaxOrderLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -1113,6 +1117,11 @@ public class AdminShops {
         //刷新缓存
         shopCacher.refreshShopById(shopId);
         middleShopCacher.refreshByOuterIdAndBusinessId(toUpdate.getOuterId(),toUpdate.getBusinessId());
+
+        //更新缓存中的超过最大接单量的标志位
+        if (shopBusinessTime != null) {
+            shopMaxOrderLogic.changeMaxOrderAcceptQtyFlag(shopBusinessTime.getOrderAcceptQtyMax(), toUpdate);
+        }
         return resp;
 
     }
@@ -1442,6 +1451,36 @@ public class AdminShops {
             shopBusinessTime.setOrderAcceptQtyMax(1000);
             shopBusinessTime.setOrderTimeout(90);
             shopBusinessTime.setOrderTimeout(120);
+    }
+
+    /**
+     * 手动修复最大接单库存同步
+     *
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/max/order/fix/{shopId}")
+    public Response<String> fixShopMaxOrderAsync(@PathVariable Long shopId) {
+        try {
+            //店铺是否存在
+            Response<Shop> response = shopReadService.findById(shopId);
+            if (!response.isSuccess()) {
+                log.error("find shop by id:{} fail,error:{}", shopId, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(response.getResult().getExtra());
+            ShopBusinessTime shopBusinessTime = shopExtraInfo.getShopBusinessTime();
+            //更新缓存中的超过最大接单量的标志位
+            if (shopBusinessTime != null) {
+                shopMaxOrderLogic.changeMaxOrderAcceptQtyFlag(shopBusinessTime.getOrderAcceptQtyMax(),
+                    response.getResult());
+            }
+            return Response.ok("ok");
+
+        } catch (Exception e) {
+            log.error("failed to fix shop max order check", e);
+            return Response.fail(e.getMessage());
+        }
     }
 
 }

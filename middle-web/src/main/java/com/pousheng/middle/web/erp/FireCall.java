@@ -37,6 +37,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
+import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -148,6 +149,9 @@ public class FireCall {
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
     private SyncVIPLogic syncVIPLogic;
+
+    @Autowired
+    private ShopMaxOrderLogic shopMaxOrderLogic;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -526,6 +530,9 @@ public class FireCall {
         }
 
         List<Long> warehouseIds = warehouseIdsRes.getResult();
+
+        //过滤超过最大接单量的店仓
+        warehouseIds=shopMaxOrderLogic.filterWarehouse(warehouseIds);
 
         if (CollectionUtils.isEmpty(warehouseIds)) {
             log.info("there is no warehouse to dispatch for openShopId: {} which get from shop:{}", openShopId, JSON.toJSONString(currentShop));
@@ -1089,5 +1096,51 @@ public class FireCall {
         }
 
         log.info("END-HANDLE-FIX-DECREASE-STOCK-API for:{}, SUCCESS RESULT:{}", url, count);
+    }
+
+    /**
+     * 手工推送库存变化
+     * @param skuCode
+     * @param warehouseId
+     * @param shopId
+     * @return
+     */
+    @RequestMapping(value = "/fix/inventory/change", method = RequestMethod.GET,
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    public String pushInventoryChange(@RequestParam String skuCode, @RequestParam(name = "warehouseId", required = false) Long warehouseId,
+                                      @RequestParam(name = "shopId", required = false) Long shopId) {
+        log.debug("API-MIDDLE-TASK-FIX-INVENTORY-CHANGE-START param: skuCode [{}] warehouseId:{},shopId:{}", skuCode,
+            warehouseId, shopId);
+        inventoryChangeProducer.handleInventoryChange(InventoryChangeDTO.builder()
+            .skuCode(skuCode)
+            .warehouseId(warehouseId)
+            .shopId(shopId)
+            .build());
+        log.debug("API-MIDDLE-TASK-FIX-INVENTORY-CHANGE-END skuCode [{}] warehouseId:{},shopId:{}", skuCode,
+            warehouseId, shopId);
+        return "ok";
+    }
+
+    /**
+     * 手工检查发货单里的店铺最大接单量
+     * @param shipmentCode
+     * @return
+     */
+    @RequestMapping(value = "/check/shop/max/order/qty", method = RequestMethod.GET,
+        produces = MediaType.APPLICATION_JSON_VALUE)
+    public String checkShopMaxAcceptOrderQtyByShipment(@RequestParam String shipmentCode) {
+        log.debug("API-MIDDLE-TASK-CHECK-SHOP-MAX-ORDER-QTY-START param: shipmentCode:{}", shipmentCode);
+        Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(shipmentCode);
+        if (!shipmentRes.isSuccess()) {
+            log.error("find shipment by code :{} fail,error:{}", shipmentCode, shipmentRes.getError());
+            return "find shipment error";
+        }
+
+        Shipment shipment = shipmentRes.getResult();
+        if (!Objects.isNull(shipment)) {
+            shopMaxOrderLogic.checkMaxOrderAcceptQty(shipment);
+        }
+        log.debug("API-MIDDLE-TASK-CHECK-SHOP-MAX-ORDER-QTY-END.");
+        return "ok";
     }
 }

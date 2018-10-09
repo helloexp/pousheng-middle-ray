@@ -286,6 +286,9 @@ public class QueryHkWarhouseOrShopStockApi {
         if (CollectionUtils.isEmpty(groupIds)) {
             return false;
         }
+        if (CollectionUtils.isEmpty(skuTemplate.getGroupIds())) {
+            return false;
+        }
         //查询商品和店铺的交集，查看是否存在，
         Set<Long> result = Sets.newHashSet();
         result.addAll(groupIds);
@@ -467,6 +470,54 @@ public class QueryHkWarhouseOrShopStockApi {
         }
         if (response.getResult().getTotal() == 0) {
             throw new JsonResponseException("sku.template.find.fail");
+        }
+        return response.getResult();
+    }
+
+    /**
+     * 验证可售仓库
+     * @param skuCode
+     * @param warehouseIds
+     * @param companyCode
+     * @return
+     */
+    public List<Long> validateVendibleWarehouse(String skuCode, List<Long> warehouseIds, String companyCode) {
+        List<Long> vendible = Lists.newArrayList();
+        WithAggregations<SearchSkuTemplate> result = validateSkuTemplate(skuCode);
+        if (result.getTotal() == 0) {
+            return vendible;
+        }
+        for (Long warehouseId : warehouseIds) {
+            try {
+                WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
+                if (null == warehouse) {
+                    log.warn("find warehouse by id {} is null", warehouseId);
+                    continue;
+                }
+                if (StringUtils.isEmpty(warehouse.getOutCode())) {
+                    log.warn("find warehouse by id {} outCode  is null", warehouseId);
+                    continue;
+                }
+                if (canDeliveryForStock(result.getData().get(0), warehouse, companyCode, Boolean.FALSE)) {
+                    vendible.add(warehouseId);
+                }
+            } catch (Exception e) {
+                log.error("failed to find shop type and businessInfo for warehouse (id:{}),case:{}",
+                    warehouseId, Throwables.getStackTraceAsString(e));
+                continue;
+            }
+        }
+        return vendible;
+    }
+
+    private WithAggregations<SearchSkuTemplate> validateSkuTemplate(String skuCode) {
+        String templateName = "ps_search.mustache";
+        Map<String, String> params = Maps.newHashMap();
+        params.put("skuCode", skuCode);
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(1, 30, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by skuCode:{} fail,error:{}", skuCode, response.getError());
+            throw new JsonResponseException(response.getError());
         }
         return response.getResult();
     }

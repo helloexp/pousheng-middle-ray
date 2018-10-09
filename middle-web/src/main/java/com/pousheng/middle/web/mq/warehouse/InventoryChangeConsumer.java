@@ -3,6 +3,7 @@ package com.pousheng.middle.web.mq.warehouse;
 import com.alibaba.fastjson.JSON;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.open.stock.InventoryPusherClient;
 import com.pousheng.middle.open.stock.StockPusherClient;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;
@@ -19,6 +20,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 库存发生变动，接收mq消息
@@ -37,6 +39,9 @@ public class InventoryChangeConsumer {
     private StockPusherClient stockPusherClient;
     @Autowired
     private InventoryClient inventoryClient;
+
+    @Autowired
+    private InventoryPusherClient inventoryPusherClient;
 
     /**
      * 有库存发生变动的消息过来，开始推送库存
@@ -57,24 +62,33 @@ public class InventoryChangeConsumer {
             List<String> skuCodes = Lists.newArrayList();
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);
             if (!ObjectUtils.isEmpty(changeDTOS)) {
-                for (InventoryChangeDTO dto : changeDTOS) {
-                    try {
-                        if (StringUtils.isNotBlank(dto.getSkuCode())) {
-                            skuCodes.add(dto.getSkuCode());
-                        } else {
-                            if (null != dto.getWarehouseId()) {
-                                Response<List<InventoryDTO>> inventoryList = inventoryClient.findSkuStocks(dto.getWarehouseId(), null);
-                                if (inventoryList.isSuccess() && !ObjectUtils.isEmpty(inventoryList.getResult())) {
-                                    skuCodes.addAll(Lists.transform(inventoryList.getResult(), input -> input.getSkuCode()));
+                boolean flag = validateParam(changeDTOS);
+                //若存在仓库和店铺都为空则沿用原有逻辑按skuCode推送 modified by longjun.tlj
+                if (!flag) {
+                    for (InventoryChangeDTO dto : changeDTOS) {
+                        try {
+                            if (StringUtils.isNotBlank(dto.getSkuCode())) {
+                                skuCodes.add(dto.getSkuCode());
+                            } else {
+                                if (null != dto.getWarehouseId()) {
+                                    Response<List<InventoryDTO>> inventoryList = inventoryClient.findSkuStocks(
+                                        dto.getWarehouseId(), null);
+                                    if (inventoryList.isSuccess() && !ObjectUtils.isEmpty(inventoryList.getResult())) {
+                                        skuCodes.addAll(
+                                            Lists.transform(inventoryList.getResult(), input -> input.getSkuCode()));
+                                    }
                                 }
                             }
+                        } catch (Exception e) {
+                            log.error("fail to handle inventory change, because: {}",
+                                Throwables.getStackTraceAsString(e));
                         }
-                    }catch (Exception e){
-                        log.error("fail to handle inventory change, because: {}", Throwables.getStackTraceAsString(e));
                     }
-                }
 
-                stockPusherClient.submit(skuCodes);
+                    stockPusherClient.submit(skuCodes);
+                } else {
+                    inventoryPusherClient.submit(changeDTOS);
+                }
             }
 
         } catch (Exception e) {
@@ -85,6 +99,21 @@ public class InventoryChangeConsumer {
         log.info("inventory changed: success to consume mq message");
 
         return Response.ok(Boolean.TRUE);
+    }
+
+    /**
+     * 验证参数
+     * @param list
+     * @return 若存在仓库和店铺都为空的情况则返回false
+     */
+    protected boolean validateParam(List<InventoryChangeDTO> list){
+        for(InventoryChangeDTO dto:list){
+            if(Objects.isNull(dto.getWarehouseId())
+                && Objects.isNull(dto.getShopId())){
+                return false;
+            }
+        }
+        return true;
     }
 
 }

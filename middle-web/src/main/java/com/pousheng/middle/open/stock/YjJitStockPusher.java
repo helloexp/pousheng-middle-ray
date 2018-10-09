@@ -65,7 +65,7 @@ public class YjJitStockPusher {
         });
     }
 
-    private Table<String, Long, Long> calculate(Long shopId, Map<String, List<Long>> skuWareshouseIds, Map<String, ShopStockRuleDto> warehouseShopStockRules) {
+    public Table<String, Long, Long> calculate(Long shopId, Map<String, List<Long>> skuWareshouseIds, Map<String, ShopStockRuleDto> warehouseShopStockRules) {
         //查询Jit占用库存 包括 查询Jit失效订单占用 和 查询Jit拣货单发货单占用
         //Table<String,Long,Long> occupyTable = stockPushLogic.getYjJitOccupyQty(shopId,skuWareshouseIds);
 
@@ -92,7 +92,7 @@ public class YjJitStockPusher {
         return stockTable;
     }
 
-    private void send(Long shopId, Table<String, Long, Long> stocks) {
+    public void send(Long shopId, Table<String, Long, Long> stocks) {
         List<YjStockInfo> yjStockInfos = Lists.newArrayList();
         stockPushLogic.appendYjRequest(yjStockInfos, stocks);
         //云聚Jit库存更新接口最大接受500条

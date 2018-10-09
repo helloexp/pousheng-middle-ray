@@ -323,4 +323,24 @@ public class InventoryClient {
         return Response.ok(result);
     }
 
+    /**
+     * 查询仓库所有sku的真实库存大于0的库存信息
+     *
+     * @param warehouseCode
+     * @return
+     */
+    public Response<List<AvailableInventoryDTO>> queryAvailableRealQtyByWarehouse(String warehouseCode) {
+        try {
+            String path = "api/inventory/query/inventory/list/" + warehouseCode;
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>)inventoryBaseClient
+                .postJsonRetList(path, "", AvailableInventoryDTO.class);
+            if (ObjectUtils.isEmpty(availableInvList)) {
+                return Response.ok(Lists.newArrayList());
+            }
+            return Response.ok(availableInvList);
+        } catch (Exception e) {
+            log.error("query available inventory fail, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail(e.getMessage());
+        }
+    }
 }

@@ -6,6 +6,7 @@ import com.pousheng.middle.common.utils.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.open.stock.StockPusherLogic;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
@@ -24,11 +25,11 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -59,6 +60,9 @@ public class ShopSkuStockPushHandler {
 
     @Autowired
     private SkutemplateScrollSearcher skutemplateScrollSearcher;
+
+    @Autowired
+    private StockPusherLogic stockPusherLogic;
 
     public void onPushEvent(PushEvent event){
 
@@ -121,10 +125,8 @@ public class ShopSkuStockPushHandler {
                 log.debug("stock skuCodes({}) for yunju jit shop ", skuCodes.toString());
             }
 
-            List<InventoryChangeDTO> inventoryChanges = com.google.common.collect.Lists.newArrayList();
-            skuCodes.forEach(skuCode ->{
-                inventoryChanges.add(InventoryChangeDTO.builder().skuCode(skuCode).warehouseId(null).build());
-            });
+            List<InventoryChangeDTO> inventoryChanges = buildChangeList(skuCodes,shopId);
+
             inventoryChangeProducer.handleInventoryChange(inventoryChanges);
 
             log.info("push stock pageNo is {}",pageNo);
@@ -153,10 +155,8 @@ public class ShopSkuStockPushHandler {
                 }
             }
             //stockPusher.submit(skuCodes);
-            List<InventoryChangeDTO> inventoryChanges = com.google.common.collect.Lists.newArrayList();
-            skuCodes.forEach(skuCode ->{
-                inventoryChanges.add(InventoryChangeDTO.builder().skuCode(skuCode).warehouseId(null).build());
-            });
+
+            List<InventoryChangeDTO> inventoryChanges = buildChangeList(skuCodes,shopId);
             inventoryChangeProducer.handleInventoryChange(inventoryChanges);
 
             log.info("push stock pageNo is {}",pageNo);
@@ -166,6 +166,34 @@ public class ShopSkuStockPushHandler {
                 return;
             }
         }
+    }
+
+    /**
+     * 构造库存变动列表
+     * @param skuCodes
+     * @param shopId
+     * @return
+     */
+    public List<InventoryChangeDTO> buildChangeList(List<String> skuCodes,Long shopId){
+        List<InventoryChangeDTO> result = com.google.common.collect.Lists.newArrayList();
+        if (CollectionUtils.isEmpty(skuCodes)) {
+            return result;
+        }
+        skuCodes.forEach(skuCode -> {
+            if (Objects.isNull(shopId)) {
+                result.add(InventoryChangeDTO.builder()
+                    .skuCode(skuCode)
+                    .warehouseId(null)
+                    .build());
+            } else {
+                result.add(InventoryChangeDTO.builder()
+                    .skuCode(skuCode)
+                    .warehouseId(null)
+                    .shopId(shopId)
+                    .build());
+            }
+        });
+        return result;
     }
 
 }

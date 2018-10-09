@@ -14,10 +14,7 @@ import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
-import com.pousheng.middle.web.order.component.AutoCompensateLogic;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
@@ -80,6 +77,9 @@ public class SyncMposShipmentLogic{
     private EventBus eventBus;
     @Autowired
     private OpenShopReadService openShopReadService;
+
+    @Autowired
+    private ShopMaxOrderLogic shopMaxOrderLogic;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -178,6 +178,9 @@ public class SyncMposShipmentLogic{
         update.setId(shipment.getId());
         update.setExtra(extraMap);
         shipmentWiteLogic.update(update);
+
+        //验证店铺最大接单量是否超过阀值
+        shopMaxOrderLogic.checkMaxOrderAcceptQty(shipment);
         return Response.ok(true);
     }
 

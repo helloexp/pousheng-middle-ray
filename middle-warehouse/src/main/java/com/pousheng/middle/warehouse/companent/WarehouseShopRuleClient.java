@@ -152,4 +152,20 @@ public class WarehouseShopRuleClient {
         return new Paging<ShopStockRule>(0L, Lists.newArrayList());
     }
 
+    /**
+     * 根据仓库编号查询涉及的店铺编号列表
+     * @param warehouseId
+     * @return
+     */
+    public Response<List<Long>> findShopIdsByWarehouseId(Long warehouseId) {
+        try {
+            return Response.ok(
+                (List<Long>)inventoryBaseClient.get("api/inventory/rule/findShopIdsByWarehouseId/" + warehouseId,
+                    null, null, Maps.newHashMap(), Long.class, true));
+        } catch (Exception e) {
+            log.info("find shop rule by warehouse id fail, warehouseId:{}", warehouseId, e);
+            return Response.fail(e.getMessage());
+        }
+    }
+
 }

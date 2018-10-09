@@ -23,4 +23,9 @@ public class InventoryChangeDTO implements Serializable {
 
     private String skuCode;
 
+    /**
+     * 店铺编号
+     */
+    private Long shopId;
+
 }

@@ -624,7 +624,7 @@ public class Refunds {
             if (!Objects.equals(refund.getShopId(),skxOpenShopId)){
                 refundWriteLogic.cancelAfterSaleOccupyShipments(id);
             }else{
-                refundWriteLogic.cancelSkxAfterSaleOccupyShipments(id);
+                refundWriteLogic.syncCancelSkxShipment(id);
             }
             refundWriteLogic.updateStatusLocking(refund,MiddleOrderEvent.AFTER_SALE_CANCEL_SHIP.toOrderOperation());
             Flow flow = flowPicker.pickAfterSales();

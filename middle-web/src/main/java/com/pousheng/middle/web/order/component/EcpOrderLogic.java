@@ -84,6 +84,7 @@ public class EcpOrderLogic {
             StringBuffer error = new StringBuffer();
             count = this.syncEcpShipmentInfos(shopOrder.getId(),count,error);
             if (count>0){
+                log.error("sync ecp failed,shopOrderId {},error{}",shopOrder.getId(),error.toString());
                 throw new BizException(error.toString());
             }
         } catch (ServiceException e) {

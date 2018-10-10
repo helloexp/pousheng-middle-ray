@@ -66,17 +66,18 @@ public class YjJitStockPusher{
 
     private Table<String,Long,Long> calculate(Long shopId, Map<String,List<Long>> skuWareshouseIds, Map<String,WarehouseShopStockRule> warehouseShopStockRules){
         //查询Jit占用库存 包括 查询Jit失效订单占用 和 查询Jit拣货单发货单占用
-        Table<String,Long,Long> occupyTable = stockPushLogic.getYjJitOccupyQty(shopId,skuWareshouseIds);
+        //Table<String,Long,Long> occupyTable = stockPushLogic.getYjJitOccupyQty(shopId,skuWareshouseIds);
 
         //查询可用库存
         Table<String,Long,Long> stockTable = stockPushLogic.calculateYjStock(shopId,skuWareshouseIds, warehouseShopStockRules);
 
+        //todo 2018-10-10 Jit库存推送数量原来是需要累加Jit占用库存的，现在去掉此逻辑，不需要再累加
         //累加可用库存和占用库存
-        occupyTable.cellSet().forEach(cell -> {
-            if(stockTable.contains(cell.getRowKey(),cell.getColumnKey())){
-                stockTable.put(cell.getRowKey(),cell.getColumnKey(),stockTable.get(cell.getRowKey(),cell.getColumnKey())+ cell.getValue());
-            }
-        });
+        //occupyTable.cellSet().forEach(cell -> {
+        //    if(stockTable.contains(cell.getRowKey(),cell.getColumnKey())){
+        //        stockTable.put(cell.getRowKey(),cell.getColumnKey(),stockTable.get(cell.getRowKey(),cell.getColumnKey())+ cell.getValue());
+        //    }
+        //});
 
         //没有库存数量的sku、仓库 推送0
         skuWareshouseIds.forEach((skuCode,warehouseIds) -> {

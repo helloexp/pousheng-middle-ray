@@ -1930,6 +1930,25 @@ public class RefundWriteLogic {
             shipmentWiteLogic.cancelSkxOccupyShipment(shipment);
         }
     }
+
+    /**
+     * true表示skx没有回调处理结果，发货单是已受理状态
+     * @param refundId
+     * @return
+     */
+    public boolean validateSkxAfterSaleShipmentStatus(Long refundId){
+        List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
+        List<OrderShipment> orderShipmentList = orderShipments.stream().filter(Objects::nonNull)
+                .filter(orderShipment -> !Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getName()))
+                .collect(Collectors.toList());
+        int  count = 0;
+        for (OrderShipment orderShipment:orderShipmentList){
+            if (Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.ACCEPTED.getValue())){
+             count++;
+            }
+        }
+        return count > 0;
+    }
     /**
      * 对仓库信息进行分组，用于生成不同的仓库的售后发货单
      * @param editSubmitChangeItems

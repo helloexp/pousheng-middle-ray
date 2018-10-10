@@ -491,6 +491,12 @@ public class Refunds {
                 &&(Objects.equals(shipment.getShipWay(),1))){
             throw new JsonResponseException("reject.goods.can.not.be.canceled");
         }
+        if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+            boolean result = refundWriteLogic.validateSkxAfterSaleShipmentStatus(refundId);
+            if (result){
+                throw new JsonResponseException("skx.refund.shipment.handling");
+            }
+        }
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
             //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
             if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){

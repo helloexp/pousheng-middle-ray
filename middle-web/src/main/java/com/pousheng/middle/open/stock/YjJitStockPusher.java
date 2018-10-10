@@ -58,7 +58,7 @@ public class YjJitStockPusher {
             //计算可用可用库存
             Table<String, Long, Long> stocks = this.calculate(shopId, skuWareshouseIds, warehouseShopStockRules);
             if (log.isDebugEnabled()) {
-                log.debug("yunju jit stock push stocks:{}", stocks == null ? null : stocks.toString());
+                log.debug( "yunju jit stock push stocks:{}", stocks == null ? null : stocks.toString());
             }
             //调用云聚接口推送库存
             this.send(shopId, stocks);

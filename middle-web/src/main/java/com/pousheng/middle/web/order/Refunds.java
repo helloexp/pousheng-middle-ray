@@ -7,6 +7,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
@@ -838,6 +839,17 @@ public class Refunds {
         List<OrderShipment> orderShipments = shipmentReadLogic.findByAfterOrderIdAndType(refundId);
         if (orderShipments.isEmpty()){
             throw new JsonResponseException("no.exist.occupy.shipments");
+        }else{
+            //判断是否存在有效的发货单
+            int count = 0;
+            for (OrderShipment orderShipment:orderShipments){
+                if (Objects.equals(orderShipment.getStatus(),MiddleShipmentsStatus.CANCELED.getValue())) {
+                    count++;
+                }
+            }
+            if (count==orderShipments.size()){
+                throw new JsonResponseException("no.exist.occupy.shipments");
+            }
         }
 
         for (OrderShipment orderShipment:orderShipments){

@@ -15,15 +15,19 @@ import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
 import com.pousheng.middle.web.item.component.ShopSkuSupplyRuleComponent;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.center.shop.OpenShopCacher;
-import io.terminus.open.client.common.shop.model.OpenShop;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
+import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -44,6 +48,9 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
     private ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent;
     private OpenShopCacher openShopCacher;
     private PoushengMiddleSpuService poushengMiddleSpuService;
+
+    @RpcConsumer
+    private OpenShopReadService openShopReadService;
 
 
     @Autowired
@@ -104,8 +111,9 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
                     failReason = "状态必须为ENABLE/DISABLE";
                     continue;
                 }
-                Long shopId = Long.valueOf(str[0].replace("\"", ""));
-                OpenShop openShop = openShopCacher.findById(shopId);
+                String shopCode = str[0].replace("\"", "");
+
+                OpenClientShop openShop  =findOpenShop(shopCode);
                 if (Objects.isNull(openShop)) {
                     failReason = "该店铺不存在";
                     continue;
@@ -117,7 +125,7 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
                     continue;
                 }
                 SkuTemplate skuTemplate = skuTemplateResponse.getResult().get();
-                if (!shopSkuSupplyRuleComponent.isSkuInShop(Lists.newArrayList(skuTemplate.getSkuCode()), openShop.getId())) {
+                if (!shopSkuSupplyRuleComponent.isSkuInShop(Lists.newArrayList(skuTemplate.getSkuCode()), openShop.getOpenShopId())) {
                     failReason = "商品不在店铺中";
                     continue;
                 }
@@ -164,6 +172,26 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
             poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         }
         return poushengCompensateBiz;
+    }
+
+    /**
+     * 查询店铺信息
+     * @param shopCode 店铺appCode
+     * @return
+     */
+    protected OpenClientShop findOpenShop(String shopCode){
+        Response<List<OpenClientShop>> openShopResponse=openShopReadService.search(null,null,shopCode);
+        if(!openShopResponse.isSuccess()){
+            log.error("find open shop failed,shopCode is {},caused by {}",shopCode,openShopResponse.getError());
+            throw new ServiceException("find.open.shop.failed");
+        }
+        List<OpenClientShop> openClientShops = openShopResponse.getResult();
+        if(CollectionUtils.isEmpty(openClientShops)) {
+            return null;
+        }
+        java.util.Optional<OpenClientShop> openClientShopOptional =  openClientShops.stream().findAny();
+        OpenClientShop openClientShop =   openClientShopOptional.get();
+        return openClientShop;
     }
 
 

@@ -11,6 +11,7 @@ import com.pousheng.middle.warehouse.dto.ShopSkuSupplyRuleCreateRequest;
 import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Joiners;
+import io.terminus.open.client.common.shop.dto.OpenClientShop;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.spu.model.SkuTemplate;
 import io.terminus.search.api.model.WithAggregations;
@@ -76,9 +77,9 @@ public class ShopSkuSupplyRuleComponent {
         return inventoryClient.saveShopSkuSupplyRule(request);
     }
 
-    public Response<Boolean> save(OpenShop openShop, SkuTemplate skuTemplate, String type, List<String> warehouseCodes, String status) {
+    public Response<Boolean> save(OpenClientShop openShop, SkuTemplate skuTemplate, String type, List<String> warehouseCodes, String status) {
         ShopSkuSupplyRuleBatchCreateRequest request = ShopSkuSupplyRuleBatchCreateRequest.builder()
-                .shopId(openShop.getId())
+                .shopId(openShop.getOpenShopId())
                 .shopName(openShop.getShopName())
                 .skuCode(skuTemplate.getSkuCode())
                 .skuName(skuTemplate.getName())

@@ -17,15 +17,12 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
-import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Objects;
 
 
 /**
@@ -111,7 +108,7 @@ public class ShopSkuSupplyRules {
        Response<Optional<SkuTemplate>> skuTemplateResponse = poushengMiddleSpuService.findBySkuCode(skuCode);
        if (!skuTemplateResponse.isSuccess() || !skuTemplateResponse.getResult().isPresent()) {
            log.error("fail to find sku template by skuCode:{}, cause:{}", skuCode, skuTemplateResponse.getError());
-           throw new JsonResponseException(skuTemplateResponse.getError());
+           throw new JsonResponseException("no.exist.skuCode");
        }
        SkuTemplate skuTemplate = skuTemplateResponse.getResult().get();
        Response<Boolean> response = shopSkuSupplyRuleComponent.save(openShop, skuTemplate, type);
@@ -123,7 +120,7 @@ public class ShopSkuSupplyRules {
     }
 
     /**
-     * 创建供货规则
+     * 更新供货规则
      */
     @RequestMapping(value = "/update/{id}", method = RequestMethod.POST)
     public Boolean update(@PathVariable Long id, Long shopId, String skuCode, String type) {
@@ -131,7 +128,7 @@ public class ShopSkuSupplyRules {
         Response<Optional<SkuTemplate>> skuTemplateResponse = poushengMiddleSpuService.findBySkuCode(skuCode);
         if (!skuTemplateResponse.isSuccess() || !skuTemplateResponse.getResult().isPresent()) {
             log.error("fail to find sku template by skuCode:{}, cause:{}", skuCode, skuTemplateResponse.getError());
-            throw new JsonResponseException(skuTemplateResponse.getError());
+            throw new JsonResponseException("no.exist.skuCode");
         }
         SkuTemplate skuTemplate = skuTemplateResponse.getResult().get();
         Response<Boolean> response = shopSkuSupplyRuleComponent.update(openShop, skuTemplate, type, id);

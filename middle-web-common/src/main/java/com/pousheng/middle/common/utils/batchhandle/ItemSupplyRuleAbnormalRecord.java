@@ -15,7 +15,7 @@ import lombok.*;
 @ExportEditable(true)
 public class ItemSupplyRuleAbnormalRecord {
 
-    @ExportTitle("店铺")
+    @ExportTitle("店铺标识(账套-外码)")
     private String shop;
 
     @ExportTitle("货品条码")

@@ -2,6 +2,7 @@ package com.pousheng.middle.web.warehouses;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.common.utils.component.SkutemplateScrollSearcher;
 import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
@@ -20,6 +21,7 @@ import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.search.api.model.Pagination;
 import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -56,7 +58,7 @@ public class ShopSkuStockPushHandler {
     private GroupRuleCacherProxy groupRuleCacherProxy;
 
     @Autowired
-    private SkuTemplateSearchReadService skuTemplateSearchReadService;
+    private SkutemplateScrollSearcher skutemplateScrollSearcher;
 
     public void onPushEvent(PushEvent event){
 
@@ -94,7 +96,8 @@ public class ShopSkuStockPushHandler {
         Map<String, String> params = Maps.newHashMap();
         params.put("groupIds", Joiners.COMMA.join(groupIds));
         while(true) {
-            Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
+            Response<? extends Pagination<SearchSkuTemplate>> response = skutemplateScrollSearcher.searchWithScroll (
+                    String.valueOf(System.currentTimeMillis()),pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
             if (!response.isSuccess()) {
                 log.error("query sku template by groupIds:{} fail,error:{}", groupIds, response.getError());
                 throw new JsonResponseException(response.getError());

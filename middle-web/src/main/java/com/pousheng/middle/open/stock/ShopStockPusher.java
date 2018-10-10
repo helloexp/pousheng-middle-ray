@@ -156,16 +156,7 @@ public class ShopStockPusher {
                                 stock = stockPushLogic.calculateStock(shopId, skuCode, warehouseIds, rShopStockRule.getResult());
                             }
 
-                            //校验缓存中是否有推送记录且推送数量一致，则本次不推送
-                            if (StockPusherCacheEnable) {
-                                Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode);
-                                if (log.isDebugEnabled()) {
-                                    log.debug("compare current stock({}) with cacheStock({}),result is {}", stock, cacheStock, (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()));
-                                }
-                                if (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()) {
-                                    continue;
-                                }
-                            }
+
                         }
                         if (stock == null) {
                             continue;

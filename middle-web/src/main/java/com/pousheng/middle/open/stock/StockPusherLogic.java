@@ -467,6 +467,18 @@ public class StockPusherLogic {
                 log.debug("start to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
                         stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
             }
+
+            //校验缓存中是否有推送记录且推送数量一致，则本次不推送
+            if (stockPusherCacheEnable) {
+                Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getChannelSkuId());
+                if (log.isDebugEnabled()) {
+                    log.debug("compare current stock({}) with cacheStock({}),result is {}", stock, cacheStock, (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()));
+                }
+                if (!Objects.isNull(cacheStock) && stock.intValue() == cacheStock.intValue()) {
+                    return;
+                }
+            }
+
             List<StockPushLog> stockPushLogs = Lists.newArrayList();
             OpenShop openShop = openShopCacher.getUnchecked(itemMapping.getOpenShopId());
             Map<String, String> extra = openShop.getExtra();
@@ -490,13 +502,12 @@ public class StockPusherLogic {
             createAndPushLogs(stockPushLogs, itemMapping.getSkuCode(), itemMapping.getOpenShopId(), itemMapping.getChannelSkuId(), (long) stock.intValue(), rP.isSuccess(), rP.getError());
             pushLogs(stockPushLogs);
 
-            //如果推送成功则将本次推送记录写入缓存
+            //如果推送成功则将本次推送记录写入缓存,第三方店铺key值写入channelSkuId
             if (stockPusherCacheEnable && rP.isSuccess()) {
-                stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getSkuCode(), stock.intValue());
+                stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getChannelSkuId(), stock.intValue());
             }
         });
     }
-
 
     public void sendToParana(Table<Long, String, Integer> shopSkuStock) {
         executorService.submit(() -> {
@@ -506,6 +517,19 @@ public class StockPusherLogic {
                     List<ParanaSkuStock> paranaSkuStocks = Lists.newArrayList();
                     Map<String, Integer> skuStockMap = shopSkuStockMap.get(shopId);
                     for (String skuCode : skuStockMap.keySet()) {
+                        //校验缓存中是否有推送记录且推送数量一致，则本次不推送
+                        if (stockPusherCacheEnable) {
+                            Integer cacheStock = stockPushCacher.getFromRedis(StockPushCacher.ORG_TYPE_SHOP, shopId.toString(), skuCode);
+                            if (log.isDebugEnabled()) {
+                                log.debug("compare current stock({}) with cacheStock({}),result is {}",
+                                        skuStockMap.get(skuCode),
+                                        cacheStock,
+                                        (!Objects.isNull(cacheStock) && skuStockMap.get(skuCode).intValue() == cacheStock.intValue()));
+                            }
+                            if (!Objects.isNull(cacheStock) && skuStockMap.get(skuCode).intValue() == cacheStock.intValue()) {
+                                continue;
+                            }
+                        }
                         ParanaSkuStock paranaSkuStock = new ParanaSkuStock();
                         paranaSkuStock.setSkuCode(skuCode);
                         paranaSkuStock.setStock(skuStockMap.get(skuCode));

@@ -2,10 +2,9 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
-import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.open.OPMessageSources;
 import com.pousheng.middle.open.component.OpenClientOrderLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
-import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ExpressCodeCriteria;
 import com.pousheng.middle.order.dto.MiddleOrderInfo;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -40,7 +39,6 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.RefundReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
@@ -96,16 +94,13 @@ public class AdminOrderWriter {
     @RpcConsumer
     private RefundReadService refundReadService;
     @Autowired
-    private EventBus eventBus;
-    @Autowired
     private OpenClientOrderLogic openClientOrderLogic;
+    @Autowired
+    private OPMessageSources opMessageSources;
 
     @Autowired
-    private OrderReadService orderReadService;
-    @Autowired
     private ShopOrderReadService shopOrderReadService;
-    @Autowired
-    private MposSkuStockLogic mposSkuStockLogic;
+
 
     @Value("${logging.path}")
     private String filePath;
@@ -437,7 +432,7 @@ public class AdminOrderWriter {
         Response<String> response = shipmentWiteLogic.autoHandleOrder(shopOrder);
         if (!response.isSuccess()) {
             log.error("auto handle shop order failed, order id is {}", shopOrderId);
-            throw new JsonResponseException("生成发货单失败，原因:" + response.getError());
+            throw new JsonResponseException("生成发货单失败，原因:" + opMessageSources.get(response.getError()));
         }
         if(log.isDebugEnabled()){
             log.debug("API-AUTOHANDLESINGLESHOPORDER-END param: shopOrderId [{}] ",shopOrderId);

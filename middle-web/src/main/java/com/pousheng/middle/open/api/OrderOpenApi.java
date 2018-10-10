@@ -397,7 +397,7 @@ public class OrderOpenApi {
             log.info("hk-cancel-refund-shipment,refundCode {},currentStatus{}",refundCode,refund.getStatus());
             refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
 
-        }else if (Objects.equals(refund.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue())) {
+        }else if (Objects.equals(refund.getStatus(),MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue())) {
             //状态节点为【退货完成待生成发货单】
             log.info("hk-cancel-refund-shipment,refundCode {},currentStatus{}",refundCode,refund.getStatus());
             return;

@@ -53,9 +53,9 @@ public class RefundJob {
     private OrderWriteService orderWriteService;
 
     /**
-     * 每隔5分钟执行一次,拉取中台售中退款的退款单
+     * 每隔20分钟执行一次,拉取中台售中退款的退款单
      */
-    @Scheduled(cron = "0 0/5 * * * ? ")
+    @Scheduled(cron = "0 0/20 * * * ? ")
     public void doneRefund() {
 
 

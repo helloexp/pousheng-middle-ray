@@ -8,6 +8,7 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
+import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -25,6 +26,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
@@ -70,6 +72,13 @@ public class QiMenApi {
         this.eventBus = eventBus;
         this.erpOpenApiClient = erpOpenApiClient;
     }
+
+    @Autowired
+    private TerminusErpOpenApiClient terminusErpOpenApiClient;
+
+    @Value("${redirect.erp.gateway: https://yymiddle.pousheng.com/api/qm/pousheng/wms-order}")
+    private String poushengPagodaCommonRedirectUrl;
+
 
     @PostMapping(value = "/wms")
     public String gatewayOfWms(HttpServletRequest request) {
@@ -130,6 +139,61 @@ public class QiMenApi {
         }
         return XmlUtils.toXml(QimenResponse.ok());
     }
+
+
+    /**
+     * 端点统一接入层回调地址，用于新的脱敏(普通订单)
+     * @param deliveryOrder
+     * @return
+     */
+    @PostMapping(value = "/pousheng/wms-order")
+    public String gatewayOfWmsOrder(@RequestParam("deliveryOrder") String deliveryOrder){
+        if (log.isDebugEnabled()) {
+            log.debug("POUSHENG-WMS-ORDER-START param: deliveryOrder [{}]", deliveryOrder);
+        }
+        DeliveryOrderCreateRequest.DeliveryOrder receiverOrderInfo =
+                JsonMapper.nonDefaultMapper().fromJson(deliveryOrder, DeliveryOrderCreateRequest.DeliveryOrder.class);
+
+        final String outerOrderId =receiverOrderInfo.getDeliveryOrderCode();
+
+        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId, OpenClientChannel.TAOBAO.name());
+        if (!findShopOrder.isSuccess()) {
+            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
+                    outerOrderId, OpenClientChannel.TAOBAO, findShopOrder.getError());
+            return XmlUtils.toXml(QimenResponse.fail("order.find.fail"));
+        }
+        Optional<ShopOrder> shopOrderOptional = findShopOrder.getResult();
+
+        if (!shopOrderOptional.isPresent()) {
+            log.error("shop order not found where outId={},outFrom=taobao when sync receiver info", outerOrderId);
+            return XmlUtils.toXml(QimenResponse.fail("order.not.found"));
+        }
+        ShopOrder shopOrder = shopOrderOptional.get();
+        ReceiverInfo receiverInfo = toParanaReceiverInfo(receiverOrderInfo.getReceiverInfo());
+        Response<Boolean> updateR = middleOrderWriteService.updateReceiveInfo(shopOrder.getId(), receiverInfo);
+        if (!updateR.isSuccess()) {
+            log.error("fail to update order(shopOrderId={}) receiverInfo to {},cause:{}",
+                    shopOrder.getId(), receiverInfo, updateR.getError());
+            return XmlUtils.toXml(QimenResponse.fail(updateR.getError()));
+        }
+        String buyerName = receiverOrderInfo.getBuyerNick();
+        String outBuyerId = receiverInfo.getMobile();
+        if (StringUtils.hasText(buyerName) || StringUtils.hasText(outBuyerId)) {
+            Response<Boolean> updateBuyerInfoR = middleOrderWriteService.updateBuyerInfoOfOrder(shopOrder.getId(), buyerName, outBuyerId);
+            if (!updateBuyerInfoR.isSuccess()) {
+                log.error("fail to update name to {} and outOrderId to {} for shopOrder(id={}),cause:{}",
+                        buyerName, outBuyerId, shopOrder.getId(), updateBuyerInfoR.getError());
+                return XmlUtils.toXml(QimenResponse.fail(updateBuyerInfoR.getError()));
+            }
+        }
+        this.createShipmentResultTask(shopOrder.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("POUSHENG-WMS-ORDER-END resp: [{}]", XmlUtils.toXml(QimenResponse.ok()));
+        }
+        return XmlUtils.toXml(QimenResponse.ok());
+    }
+
+
 
     /**
      * @Description TODO
@@ -203,10 +267,10 @@ public class QiMenApi {
             log.debug("SYNC-ORDER-RECEIVER-COMMON-START param: shopId [{}],outerOrderId [{}]", shopId,outerOrderId);
         }
         try {
-            erpOpenApiClient.doPost("order.receiver.sync",
-                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId));
-              /*terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
-                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId,"redirectUrl",poushengPagodaCommonRedirectUrl));*/
+          /*  erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId));*/
+              terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
+                    ImmutableMap.of("shopId", shopId, "orderId", outerOrderId,"redirectUrl",poushengPagodaCommonRedirectUrl));
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                     outerOrderId, shopId, Throwables.getStackTraceAsString(e));

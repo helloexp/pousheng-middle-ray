@@ -8,6 +8,7 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.open.component.NotifyHkOrderDoneLogic;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
+import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.GiftItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
@@ -56,6 +57,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -131,6 +133,12 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+    @Autowired
+    private TerminusErpOpenApiClient terminusErpOpenApiClient;
+
+    @Value("${redirect.erp.gateway: https://yymiddle.pousheng.com/api/qm/pousheng/wms-order}")
+    private String poushengPagodaCommonRedirectUrl;
 
     /**
      * 天猫加密字段占位符
@@ -562,8 +570,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     private void syncReceiverInfo(RichSkusByShop richSkusByShop) {
         try {
-            erpOpenApiClient.doPost("order.receiver.sync",
-                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));
+            /*erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));*/
+            terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId(),"redirectUrl",poushengPagodaCommonRedirectUrl));
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                     richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));

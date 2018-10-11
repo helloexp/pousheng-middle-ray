@@ -21,13 +21,13 @@ import java.util.Map;
 @Component
 @Slf4j
 public class TerminusErpOpenApiClient {
-    @Value("${terminus.erp.app.key: pousheng}")
+    @Value("${terminus.erp.app.key:pousheng}")
     private String erpAppKey;
 
-    @Value("${terminus.erp.secret: 6a0e@93204aefe45d47f6e488}")
+    @Value("${terminus.erp.secret:6a0e@93204aefe45d47f6e488}")
     private String erpSecret;
 
-    @Value("${terminus.erp.gateway: http://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}")
+    @Value("${terminus.erp.gateway:http://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}")
     private String erpGateWay;
 
     public String doPost(String method, Map<String, Object> params) {

@@ -34,7 +34,7 @@ public enum ApplogTypeEnum {
 
     BATCH_WAREHOUSE_SKU_PUSH_RULE("批量编辑商品级推送规则", "BATCH_WAREHOUSE_SKU_PUSH_RULE"),
 
-    BATCH_WAREHOUSE_USH_RULE("批量编辑仓库级库存推送规则", "BATCH_WAREHOUSE_USH_RULE");
+    BATCH_WAREHOUSE_PUSH_RULE("批量编辑仓库级库存推送规则", "BATCH_WAREHOUSE_USH_RULE");
 
 
     private final String value;

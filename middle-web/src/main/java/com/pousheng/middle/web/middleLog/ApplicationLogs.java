@@ -2,8 +2,11 @@ package com.pousheng.middle.web.middleLog;
 
 import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Maps;
 import com.pousheng.auth.model.MiddleUser;
 import com.pousheng.auth.service.PsUserReadService;
+import com.pousheng.middle.item.dto.SearchSkuTemplate;
+import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
@@ -23,7 +26,10 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Joiners;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
+import io.terminus.search.api.model.WithAggregations;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.joda.time.DateTime;
@@ -66,6 +72,9 @@ public class ApplicationLogs {
 
     @Autowired
     private InventoryClient inventoryClient;
+
+    @Autowired
+    private SkuTemplateSearchReadService skuTemplateSearchReadService;
 
     @ApiOperation("操作日志key")
     @RequestMapping(value = "/keys", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
@@ -164,12 +173,18 @@ public class ApplicationLogs {
                     shopWarehouseSkuStockRule.setOutId(middleShopCacher.findById(shopWarehouseSkuStockRule.getShopId()).getExtra().get("hkPerformanceShopCode"));
                     shopWarehouseSkuStockRule.setWarehouseName(warehouseCacher.findById(shopWarehouseSkuStockRule.getWarehouseId()).getWarehouseName());
                     shopWarehouseSkuStockRule.setWarehouseCode(warehouseCacher.findById(shopWarehouseSkuStockRule.getWarehouseId()).getOutCode());
+                    Map<String, String> params = Maps.newHashMap();
+                    params.put("skuCode", shopWarehouseSkuStockRule.getSkuCode());
+                    WithAggregations<SearchSkuTemplate> searchResult = searchByParams(params, 10, 1);
+                    if (searchResult.getTotal() > 0) {
+                        shopWarehouseSkuStockRule.setMaterialId(searchResult.getData().get(0).getSpuCode());
+                    }
                     result.put("warehouse_sku_rules", JSON.toJSONString(Lists.newArrayList(shopWarehouseSkuStockRule)));
 
                     break;
                 case CREATE_WAREHOUSE_PUSH_RULE:
                 case UPDATE_WAREHOUSE_PUSH_RULE:
-                case BATCH_WAREHOUSE_USH_RULE:
+                case BATCH_WAREHOUSE_PUSH_RULE:
                     ShopWarehouseStockRule shopWarehouseStockRule = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), ShopWarehouseStockRule.class);
                     shopWarehouseStockRule.setShopName(middleShopCacher.findById(shopWarehouseStockRule.getShopId()).getShopName());
                     shopWarehouseStockRule.setOutId(middleShopCacher.findById(shopWarehouseStockRule.getShopId()).getExtra().get("hkPerformanceShopCode"));
@@ -189,12 +204,18 @@ public class ApplicationLogs {
                 case BATCH_WAREHOUSE_SKU_PUSH_RULE:
                     List<ShopWarehouseSkuStockRule> rules = JsonMapper.JSON_NON_EMPTY_MAPPER.getMapper().readValue(list.get(list.size() - 1).toString(), new TypeReference<List<ShopWarehouseSkuStockRule>>() {
                     });
+                    List<String> skuCodes = rules.stream().filter(e -> e.getSkuCode() != null).map(ShopWarehouseSkuStockRule::getSkuCode).collect(Collectors.toList());
+                    Map<String, String> params1 = Maps.newHashMap();
+                    params1.put("skuCodes", Joiners.COMMA.join(skuCodes));
+                    WithAggregations<SearchSkuTemplate> searchResult1 = searchByParams(params1, skuCodes.size(), 1);
+                    Map<String, String> skuCodesMaterailMap = searchResult1.getData().stream().collect(Collectors.toMap(SearchSkuTemplate::getSkuCode, SearchSkuTemplate::getSpuCode));
+
                     for (ShopWarehouseSkuStockRule d : rules) {
                         d.setShopName(middleShopCacher.findById(d.getShopId()).getShopName());
                         d.setOutId(middleShopCacher.findById(d.getShopId()).getExtra().get("hkPerformanceShopCode"));
                         d.setWarehouseName(warehouseCacher.findById(d.getWarehouseId()).getWarehouseName());
                         d.setWarehouseCode(warehouseCacher.findById(d.getWarehouseId()).getOutCode());
-
+                        d.setMaterialId(skuCodesMaterailMap.get(d.getSkuCode()));
                         result.put("warehouse_sku_rules", JSON.toJSONString(rules));
                     }
                     break;
@@ -209,6 +230,16 @@ public class ApplicationLogs {
         }
         dto.setDetail(result);
         return dto;
+    }
+
+    private WithAggregations<SearchSkuTemplate> searchByParams(Map<String, String> params, Integer pageSize, Integer pageNo) {
+        String templateName = "ps_search.mustache";
+        Response<WithAggregations<SearchSkuTemplate>> response = skuTemplateSearchReadService.doSearchWithAggs(pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
+        if (!response.isSuccess()) {
+            log.error("query sku template by params:{}  fail,error:{}", params, response.getError());
+            throw new JsonResponseException(response.getError());
+        }
+        return response.getResult();
     }
 
 

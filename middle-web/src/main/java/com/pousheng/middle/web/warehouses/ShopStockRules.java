@@ -50,7 +50,7 @@ public class ShopStockRules {
      * @return 新创建的规则id
      */
     @ApiOperation("创建店铺库存推送规则")
-    @LogMe(description = "创建店铺库存发货规则", compareTo = "warehousePushRuleClient#findById")
+    @LogMe(description = "创建店铺库存推送规则", compareTo = "warehousePushRuleClient#findById")
     @RequestMapping(method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Long create(@RequestBody @LogMeContext ShopStockRule warehouseShopStockRule){
         userManageShopReader.authCheck(warehouseShopStockRule.getShopId());
@@ -101,8 +101,8 @@ public class ShopStockRules {
      * @param warehouseShopStockRule 店铺推送规则
      * @return 是否成功
      */
-    @ApiOperation("更新店铺库存发货规则")
-    @LogMe(description = "更新店铺库存发货规则", ignore = true)
+    @ApiOperation("更新店铺库存推送规则")
+    @LogMe(description = "更新店铺库存推送规则", ignore = true)
     @RequestMapping(value = "/{id}", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     @OperationLogType("更新")
     public Boolean update(@PathVariable @LogMeContext Long id,

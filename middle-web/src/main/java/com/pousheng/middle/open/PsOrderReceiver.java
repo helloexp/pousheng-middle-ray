@@ -572,6 +572,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         try {
             /*erpOpenApiClient.doPost("order.receiver.sync",
                     ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));*/
+            log.info("start to pull taobao.order.receiver.info,shopId {},orderId {},redirectUrl {}"
+                    ,richSkusByShop.getShop().getId(),richSkusByShop.getOuterOrderId(),poushengPagodaCommonRedirectUrl);
             terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
                     ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId(),"redirectUrl",poushengPagodaCommonRedirectUrl));
         } catch (Exception e) {

@@ -68,7 +68,7 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
             dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            return false;
+            return Boolean.TRUE;
         }
         Warehouses4Address warehouses4Address = (Warehouses4Address) context.get(DispatchContants.WAREHOUSE_FOR_ADDRESS);
         Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);

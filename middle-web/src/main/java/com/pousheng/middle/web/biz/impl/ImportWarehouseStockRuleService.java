@@ -122,7 +122,7 @@ public class ImportWarehouseStockRuleService implements CompensateBizService {
                 appendErrorToExcel(helper, strs, "请输入正确的保障库存");
                 continue;
             }
-            if (Strings.isNullOrEmpty(strs[2]) || "\"\"".equals(strs[2]) || !strs[2].matches("[0-9]+") || Integer.valueOf(strs[2]) < 0 || Integer.valueOf(strs[2]) > 100) {
+            if (Strings.isNullOrEmpty(strs[2]) || "\"\"".equals(strs[2]) || !strs[2].matches("[0-9]+") || Integer.valueOf(strs[2]) < 1 || Integer.valueOf(strs[2]) > 100) {
                 appendErrorToExcel(helper, strs, "请输入正确的推送比例");
                 continue;
             }

@@ -76,7 +76,7 @@ public class QiMenApi {
     @Autowired
     private TerminusErpOpenApiClient terminusErpOpenApiClient;
 
-    @Value("${redirect.erp.gateway: https://yymiddle.pousheng.com/api/qm/pousheng/wms-order}")
+    @Value("${redirect.erp.gateway}")
     private String poushengPagodaCommonRedirectUrl;
 
 

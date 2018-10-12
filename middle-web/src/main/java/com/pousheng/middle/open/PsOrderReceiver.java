@@ -8,13 +8,13 @@ import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.open.component.NotifyHkOrderDoneLogic;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
-import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.GiftItem;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.dto.fsm.PoushengGiftActivityStatus;
 import com.pousheng.middle.order.enums.EcpOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -24,6 +24,7 @@ import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.job.JdRedisHandler;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -57,7 +58,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -131,14 +131,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
+    @Autowired
+    private JdRedisHandler redisHandler;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-
-    @Autowired
-    private TerminusErpOpenApiClient terminusErpOpenApiClient;
-
-    @Value("${redirect.erp.gateway}")
-    private String poushengPagodaCommonRedirectUrl;
 
     /**
      * 天猫加密字段占位符
@@ -148,7 +144,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected Item findItemById(Long paranaItemId) {
         //TODO use cache
-       if (Objects.isNull(paranaItemId)){
+        if (Objects.isNull(paranaItemId)){
             Item item = new Item();
             item.setId(0L);
             item.setName("默认商品(缺映射关系)");
@@ -230,7 +226,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Integer toParanaOrderStatusForSkuOrder(OpenClientOrderStatus clientOrderStatus) {
-        return OpenClientOrderStatus.PAID.getValue();
+        //return OpenClientOrderStatus.PAID.getValue();
+        return toParanaOrderStatusForShopOrder(clientOrderStatus);
     }
 
     @Override
@@ -274,7 +271,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             } else {
                 //更新同步电商状态为已确认收货
                 OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
-                    Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
                 if (response.isSuccess()) {
                     //通知恒康发货单收货时间
                     Response<Long> result =notifyHkOrderDoneLogic.ctreateNotifyHkOrderDoneTask(shopOrder.getId());
@@ -291,20 +288,34 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
         //如果是预售订单且订单没有发货，预售订单已经支付尾款，则通知订单将发货单发往恒康
         if (Objects.nonNull(openClientFullOrder.getIsStepOrder())&&openClientFullOrder.getIsStepOrder()){
-          if (Objects.nonNull(openClientFullOrder.getStepStatus())&&openClientFullOrder.getStepStatus().getValue()== OpenClientStepOrderStatus.PAID.getValue()){
-              Map<String, String> extraMap = shopOrder.getExtra();
-              String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-              String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-              //判断订单是否是预售订单，并且判断预售订单是否已经付完尾款
-              if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                  if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus,
-                          String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue()))) {
-                      //抛出一个事件更新预售订单状态
-                      StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
-                      event.setShopOrderId(shopOrder.getId());
-                  }
-              }
-          }
+            if (Objects.nonNull(openClientFullOrder.getStepStatus())&&openClientFullOrder.getStepStatus().getValue()== OpenClientStepOrderStatus.PAID.getValue()){
+                Map<String, String> extraMap = shopOrder.getExtra();
+                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+                //判断订单是否是预售订单，并且判断预售订单是否已经付完尾款
+                if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                    if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus,
+                            String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue()))) {
+                        //抛出一个事件更新预售订单状态
+                        StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+                        event.setShopOrderId(shopOrder.getId());
+                        eventBus.post(event);
+                    }
+                }
+            }
+        }
+
+        // 京东预售单处理
+        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom()) && Objects.isNull(openClientFullOrder.getIsStepOrder())) {
+            Map<String, String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                //抛出一个事件更新预售订单状态
+                StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+                event.setShopOrderId(shopOrder.getId());
+                eventBus.post(event);
+            }
         }
     }
 
@@ -313,6 +324,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
+
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
 
         if (OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO
@@ -328,6 +340,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
         //初始化店铺订单的extra
         if(richSkusByShop.getExtra() != null && richSkusByShop.getExtra().containsKey(TradeConstants.IS_ASSIGN_SHOP)){
+
             Map<String,String> tempExtra = richSkusByShop.getExtra();
             tempExtra.put(TradeConstants.IS_ASSIGN_SHOP,richSkusByShop.getExtra().get(TradeConstants.IS_ASSIGN_SHOP));
             if(Objects.equals(tempExtra.get(TradeConstants.IS_ASSIGN_SHOP),"1")){
@@ -358,6 +371,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
             richSkusByShop.setExtra(tempExtra);
         }
+
         Map<String, String> shopOrderExtra = richSkusByShop.getExtra() == null ? Maps.newHashMap() : richSkusByShop.getExtra();
         shopOrderExtra.put(TradeConstants.ECP_ORDER_STATUS, String.valueOf(EcpOrderStatus.WAIT_SHIP.getValue()));
 
@@ -371,6 +385,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             if (Objects.nonNull(openClientFullOrder.getStepStatus())){
                 shopOrderExtra.put(TradeConstants.STEP_ORDER_STATUS,String.valueOf(openClientFullOrder.getStepStatus().getValue()));
             }
+
         }
         richSkusByShop.setExtra(shopOrderExtra);
 
@@ -386,6 +401,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         }
         List<RichSku> richSkus = richSkusByShop.getRichSkus();
         if (!Objects.isNull(giftItems) && giftItems.size()>0){
+
             for (GiftItem giftItem : giftItems){
                 richOrder.setCompanyId(1L);//没有多余的字段了，companyId=1标记为这个订单中含有赠品
                 RichSku richSku = new RichSku();
@@ -446,6 +462,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         this.calculatePlatformDiscountForSkus(richSkusByShop);
 
         return richOrder;
+
+
     }
 
     private Long addInvoice(OpenClientOrderInvoice openClientOrderInvoice) {
@@ -509,8 +527,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Override
     protected void saveParanaOrder(RichOrder richOrder) {
         RichSkusByShop orginRichSkusByShop = richOrder.getRichSkusByShops().get(0);
-        if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())){
-
+        if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())
+                || (Objects.equals(MiddleChannel.JD.getValue(), orginRichSkusByShop.getOutFrom())
+                    && Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.NOT_PAID.getValue()))){
             //super.saveParanaOrder(richOrder);
             //重新实现父类saveParanaOrder逻辑，将eventBus修改为定时任务批处理方式
             if (richOrder == null) {
@@ -528,6 +547,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                     log.error("find shop order failed,shop order id is {},caused by {}",shopOrderId,r.getError());
                 }else{
                     ShopOrder shopOrder = r.getResult();
+
+                    redisHandler.saveOrderId(shopOrder);
                     //只有非淘宝的订单可以抛出事件
                     if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
                         //eventBus.post(new OpenClientOrderSyncEvent(shopOrderId));
@@ -570,12 +591,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     private void syncReceiverInfo(RichSkusByShop richSkusByShop) {
         try {
-            /*erpOpenApiClient.doPost("order.receiver.sync",
-                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));*/
-            log.info("start to pull taobao.order.receiver.info,shopId {},orderId {},redirectUrl {}"
-                    ,richSkusByShop.getShop().getId(),richSkusByShop.getOuterOrderId(),poushengPagodaCommonRedirectUrl);
-            terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
-                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId(),"redirectUrl",poushengPagodaCommonRedirectUrl));
+            erpOpenApiClient.doPost("order.receiver.sync",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                     richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));

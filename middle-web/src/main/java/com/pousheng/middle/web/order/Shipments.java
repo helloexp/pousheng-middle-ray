@@ -609,6 +609,9 @@ public class Shipments {
                 if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
                     continue;
                 }
+                if (!org.apache.commons.lang3.StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                    continue;
+                }
             }
 
             //手动生成销售发货单可以支持同步到店铺

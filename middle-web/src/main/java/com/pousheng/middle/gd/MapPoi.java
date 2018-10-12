@@ -28,4 +28,10 @@ public class MapPoi implements Serializable {
 
     private String location;
 
+    private String pname;
+
+    private String cityname;
+
+    private String adname;
+
 }

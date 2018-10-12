@@ -35,6 +35,7 @@ import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
+import com.pousheng.middle.web.order.job.JdRedisHandler;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentLogic;
 import com.pousheng.middle.web.order.sync.mpos.SyncMposOrderLogic;
@@ -167,6 +168,8 @@ public class ShipmentWiteLogic {
 
     @Autowired
     private ShopCacher shopCacher;
+    @Autowired
+    private JdRedisHandler jdRedisHandler;
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
@@ -640,11 +643,14 @@ public class ShipmentWiteLogic {
             String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
             String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
             if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(),
-                        Integer.valueOf(stepOrderStatus))) {
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                    continue;
+                }
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
                     continue;
                 }
             }
+
             Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipmentRes.getResult());
             if (!syncRes.isSuccess()) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", shipmentId, syncRes.getError());
@@ -1583,6 +1589,9 @@ public class ShipmentWiteLogic {
                     String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
                     if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
                         if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                            continue;
+                        }
+                        if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
                             continue;
                         }
                     }

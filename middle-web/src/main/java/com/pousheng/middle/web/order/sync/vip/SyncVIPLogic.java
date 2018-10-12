@@ -26,7 +26,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.vip.dto.StoreMapping;
-import io.terminus.open.client.vip.dto.TransportCodeEnum;
+import io.terminus.open.client.vip.enums.TransportCodeEnum;
 import io.terminus.open.client.vip.extra.service.VipOrderReturnService;
 import io.terminus.open.client.vip.extra.service.VipOrderStoreService;
 import io.terminus.open.client.vip.extra.service.VipStoreService;

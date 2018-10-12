@@ -130,7 +130,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             SkuOrder skuOrder = null;
             if (StringUtils.hasText(skuOfRefund.getChannelSkuId())){
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndOutSkuId(shopOrder.getId(), skuOfRefund.getChannelSkuId());
-            } else {
+            }else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())){
+                skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(),skuOfRefund.getChannelSkuOrderId());
+            } else{
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
             }
             //查询需要售后的发货单

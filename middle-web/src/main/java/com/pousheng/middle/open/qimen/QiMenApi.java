@@ -52,8 +52,11 @@ public class QiMenApi {
     private MiddleOrderWriteService middleOrderWriteService;
 
     private final ReceiverInfoCompleter receiverInfoCompleter;
-    private final EventBus eventBus;
+
+    private final TerminusErpOpenApiClient terminusErpOpenApiClient;
+
     private final ErpOpenApiClient erpOpenApiClient;
+
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
@@ -66,26 +69,33 @@ public class QiMenApi {
 
     @Autowired
     public QiMenApi(ReceiverInfoCompleter receiverInfoCompleter,
-                    EventBus eventBus,
+                    TerminusErpOpenApiClient terminusErpOpenApiClient,
                     ErpOpenApiClient erpOpenApiClient) {
         this.receiverInfoCompleter = receiverInfoCompleter;
-        this.eventBus = eventBus;
+        this.terminusErpOpenApiClient = terminusErpOpenApiClient;
         this.erpOpenApiClient = erpOpenApiClient;
     }
-
-    @Autowired
-    private TerminusErpOpenApiClient terminusErpOpenApiClient;
 
     @Value("${redirect.erp.gateway}")
     private String poushengPagodaCommonRedirectUrl;
 
 
+    @Value("${redirect.fenxiao.erp.gateway:https://yymiddle.pousheng.com/api/qm/pousheng/wms-fenxiao}")
+    private String poushengPagodaFenxiaoRedirectUrl;
+
+
+    /**
+     * 端点统一接入层接入之后需要删除
+     * @param request
+     * @return
+     */
+    @Deprecated
     @PostMapping(value = "/wms")
     public String gatewayOfWms(HttpServletRequest request) {
         String method = request.getParameter("method");
         String body = retrievePayload(request);
-        if(log.isDebugEnabled()){
-            log.debug("WMS-START param: method [{}] body [{}]",method , body);
+        if (log.isDebugEnabled()) {
+            log.debug("WMS-START param: method [{}] body [{}]", method, body);
         }
         DeliveryOrderCreateRequest deliveryOrderCreateRequest = XmlUtils.toPojo(body, DeliveryOrderCreateRequest.class);
 
@@ -121,11 +131,11 @@ public class QiMenApi {
 
         String buyerName = deliveryOrderCreateRequest.getDeliveryOrder().getBuyerNick();
         String outBuyerId = receiverInfo.getMobile();
-        if (StringUtils.hasText(buyerName)||StringUtils.hasText(outBuyerId)) {
-            Response<Boolean> updateBuyerInfoR = middleOrderWriteService.updateBuyerInfoOfOrder(shopOrder.getId(), buyerName,outBuyerId);
+        if (StringUtils.hasText(buyerName) || StringUtils.hasText(outBuyerId)) {
+            Response<Boolean> updateBuyerInfoR = middleOrderWriteService.updateBuyerInfoOfOrder(shopOrder.getId(), buyerName, outBuyerId);
             if (!updateBuyerInfoR.isSuccess()) {
                 log.error("fail to update buyerName to {} and outOrderId to {} for shopOrder(id={}),cause:{}",
-                        buyerName,outBuyerId, shopOrder.getId(), updateBuyerInfoR.getError());
+                        buyerName, outBuyerId, shopOrder.getId(), updateBuyerInfoR.getError());
                 return XmlUtils.toXml(QimenResponse.fail(updateBuyerInfoR.getError()));
             }
         }
@@ -134,8 +144,8 @@ public class QiMenApi {
         //eventBus存在队列阻塞和数据丢失风险，改通过定时任务执行的方式
         //eventBus.post(event);
         this.createShipmentResultTask(shopOrder.getId());
-        if(log.isDebugEnabled()){
-            log.debug("WMS-END param: method [{}] body [{}] resp: [{}]",method , body,XmlUtils.toXml(QimenResponse.ok()));
+        if (log.isDebugEnabled()) {
+            log.debug("WMS-END param: method [{}] body [{}] resp: [{}]", method, body, XmlUtils.toXml(QimenResponse.ok()));
         }
         return XmlUtils.toXml(QimenResponse.ok());
     }
@@ -195,13 +205,65 @@ public class QiMenApi {
 
 
 
+
     /**
-     * @Description TODO
-     * @Date        2018/5/31
-     * @param       shopOrderId
+     * 端点统一接入层回调地址，用于新的脱敏(分销订单)
+     * @param deliveryOrder
      * @return
      */
-    private void createShipmentResultTask(Long shopOrderId){
+    @PostMapping(value = "/pousheng/wms-fenxiao")
+    public String gatewayOfWmsFenxiao(@RequestParam("deliveryOrder") String deliveryOrder){
+        if (log.isDebugEnabled()) {
+            log.debug("POUSHENG-WMS-FENXIAO-START param: deliveryOrder [{}]", deliveryOrder);
+        }
+        DeliveryOrderCreateRequest.DeliveryOrder receiverOrderInfo =
+                JsonMapper.nonDefaultMapper().fromJson(deliveryOrder, DeliveryOrderCreateRequest.DeliveryOrder.class);
+
+        final String outerOrderId =receiverOrderInfo.getDeliveryOrderCode();
+
+        Response<Optional<ShopOrder>> findShopOrder = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId, OpenClientChannel.TFENXIAO.name());
+        if (!findShopOrder.isSuccess()) {
+            log.error("fail to find shop order by outId={},outFrom={} when sync receiver info,cause:{}",
+                    outerOrderId, OpenClientChannel.TAOBAO, findShopOrder.getError());
+            return XmlUtils.toXml(QimenResponse.fail("order.find.fail"));
+        }
+        Optional<ShopOrder> shopOrderOptional = findShopOrder.getResult();
+
+        if (!shopOrderOptional.isPresent()) {
+            log.error("shop order not found where outId={},outFrom=taobao when sync receiver info", outerOrderId);
+            return XmlUtils.toXml(QimenResponse.fail("order.not.found"));
+        }
+        ShopOrder shopOrder = shopOrderOptional.get();
+        ReceiverInfo receiverInfo = toParanaReceiverInfo(receiverOrderInfo.getReceiverInfo());
+        Response<Boolean> updateR = middleOrderWriteService.updateReceiveInfo(shopOrder.getId(), receiverInfo);
+        if (!updateR.isSuccess()) {
+            log.error("fail to update order(shopOrderId={}) receiverInfo to {},cause:{}",
+                    shopOrder.getId(), receiverInfo, updateR.getError());
+            return XmlUtils.toXml(QimenResponse.fail(updateR.getError()));
+        }
+        String buyerName = receiverOrderInfo.getBuyerNick();
+        String outBuyerId = receiverInfo.getMobile();
+        if (StringUtils.hasText(buyerName) || StringUtils.hasText(outBuyerId)) {
+            Response<Boolean> updateBuyerInfoR = middleOrderWriteService.updateBuyerInfoOfOrder(shopOrder.getId(), buyerName, outBuyerId);
+            if (!updateBuyerInfoR.isSuccess()) {
+                log.error("fail to update name to {} and outOrderId to {} for shopOrder(id={}),cause:{}",
+                        buyerName, outBuyerId, shopOrder.getId(), updateBuyerInfoR.getError());
+                return XmlUtils.toXml(QimenResponse.fail(updateBuyerInfoR.getError()));
+            }
+        }
+        this.createShipmentResultTask(shopOrder.getId());
+        if (log.isDebugEnabled()) {
+            log.debug("POUSHENG-WMS-FENXIAO-END resp: [{}]", XmlUtils.toXml(QimenResponse.ok()));
+        }
+        return XmlUtils.toXml(QimenResponse.ok());
+    }
+    /**
+     * @param shopOrderId
+     * @return
+     * @Description TODO
+     * @Date 2018/5/31
+     */
+    private void createShipmentResultTask(Long shopOrderId) {
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
         biz.setContext(mapper.toJson(shopOrderId));
@@ -223,8 +285,8 @@ public class QiMenApi {
      */
     @GetMapping(value = "/sync-order-receiver")
     public String syncOrderReceiver(@RequestParam("orderId") Long shopOrderId) {
-        if(log.isDebugEnabled()){
-            log.debug("SYNC-ORDER-RECEIVER-START param: shopOrderId [{}]",shopOrderId);
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-START param: shopOrderId [{}]", shopOrderId);
         }
         Response<ShopOrder> findR = shopOrderReadService.findById(shopOrderId);
         if (!findR.isSuccess()) {
@@ -247,11 +309,12 @@ public class QiMenApi {
                     shopOrder.getOutId(), shopOrder.getShopId(), Throwables.getStackTraceAsString(e));
             return "fail";
         }
-        if(log.isDebugEnabled()){
-            log.debug("SYNC-ORDER-RECEIVER-END param: shopOrderId [{}] resp: [{}]",shopOrderId,"ok");
+        if (log.isDebugEnabled()) {
+            log.debug("SYNC-ORDER-RECEIVER-END param: shopOrderId [{}] resp: [{}]", shopOrderId, "ok");
         }
         return "ok";
     }
+
 
 
 

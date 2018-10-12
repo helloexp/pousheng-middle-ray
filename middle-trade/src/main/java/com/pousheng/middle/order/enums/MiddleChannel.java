@@ -10,6 +10,7 @@ import com.google.common.base.Objects;
 public enum MiddleChannel {
     JD("jingdong", "京东"),
     TAOBAO("taobao", "淘宝"),
+    TFENXIAO("tfenxiao", "天猫分销"),
     SUNING("suning", "苏宁"),
     FENQILE("fenqile", "分期乐"),
     OFFICIAL("official", "官网"),

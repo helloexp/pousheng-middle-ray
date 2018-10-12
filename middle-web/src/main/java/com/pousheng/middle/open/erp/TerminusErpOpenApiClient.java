@@ -28,6 +28,7 @@ public class TerminusErpOpenApiClient {
     private String erpSecret;
 
     @Value("${terminus.erp.gateway:http://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}")
+
     private String erpGateWay;
 
     public String doPost(String method, Map<String, Object> params) {

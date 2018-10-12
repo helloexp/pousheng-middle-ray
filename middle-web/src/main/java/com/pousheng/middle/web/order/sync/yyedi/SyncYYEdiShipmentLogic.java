@@ -461,6 +461,8 @@ public class SyncYYEdiShipmentLogic {
         }else{
             if (Objects.equals("suning-sale",shopOrder.getOutFrom())){
                 shipmentInfo.setChannel("suning");
+            }else if (Objects.equals("tfenxiao",shopOrder.getOutFrom())){
+                shipmentInfo.setChannel("taobao");
             }else{
                 shipmentInfo.setChannel(shopOrder.getOutFrom());
             }

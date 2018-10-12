@@ -344,6 +344,7 @@ public class OrderReadLogic {
             case JD:
                 return expressCode.getJdCode();
             case TAOBAO:
+            case TFENXIAO:
                 return expressCode.getTaobaoCode();
             case FENQILE:
                 return expressCode.getFenqileCode();
@@ -677,6 +678,21 @@ public class OrderReadLogic {
         return skuOrderFilters.get(0);
     }
 
+    /**
+     * 根据订单号以及外部子订单号查询相关子订单
+     * @param shopOrderId
+     * @param outSkuOrderId
+     * @return
+     */
+    public SkuOrder findSkuOrderByShopOrderIfAndIOutSkuOrderId(Long shopOrderId,String outSkuOrderId){
+        List<SkuOrder> skuOrders = this.findSkuOrdersByShopOrderId(shopOrderId);
+        List<SkuOrder> skuOrderFilters = skuOrders.stream().filter(Objects::nonNull).
+                filter(skuOrder -> Objects.equals(outSkuOrderId, skuOrder.getOutId())).collect(Collectors.toList());
+        if (skuOrderFilters.size() == 0) {
+            throw new ServiceException("find.skuOrder.failed");
+        }
+        return skuOrderFilters.get(0);
+    }
     /**
      * 查看发货单占用信息
      * @param shopOrder

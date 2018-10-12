@@ -127,6 +127,12 @@
 
         <dependency>
             <groupId>io.terminus.open</groupId>
+            <artifactId>open-client-taobao-fenxiao</artifactId>
+            <version>${open-client.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.terminus.open</groupId>
             <artifactId>open-client-parana</artifactId>
             <version>${open-client.version}</version>
             <exclusions>

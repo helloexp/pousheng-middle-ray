@@ -103,7 +103,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private ErpOpenApiClient erpOpenApiClient;
-
     @Autowired
     private EventBus eventBus;
 
@@ -136,6 +135,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Autowired
     private JdRedisHandler redisHandler;
+
+    @Value("${redirect.fenxiao.erp.gateway:https://yymiddle.pousheng.com/api/qm/pousheng/wms-fenxiao}")
+    private String poushengPagodaFenxiaoRedirectUrl;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
     @Autowired
@@ -335,7 +337,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
 
-        if (OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO
+        if ((OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TAOBAO
+                ||OpenClientChannel.from(openClientShop.getChannel()) == OpenClientChannel.TFENXIAO)
                 &&richSkusByShop.getExtra() != null && !richSkusByShop.getExtra().containsKey("importOrder")) {
             //这里先把buyer和mobile改为占位符，因为数据加密后长度很长，会导致数据库长度不够
             richOrder.getBuyer().setName(ENCRYPTED_FIELD_PLACE_HOLDER);
@@ -583,6 +586,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
                     syncReceiverInfo(richSkusByShop);
                 }
+                //如果是天猫分销订单，则发请求到端点erp，把收货地址同步过来
+                if(OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TFENXIAO){
+                    syncFenxiaoReceiverInfo(richSkusByShop);
+                }
             }
         }
     }
@@ -602,6 +609,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     }
 
 
+    /**
+     * 收货人地址组装
+     * @param consignee
+     * @return
+     */
     @Override
     protected ReceiverInfo toReceiverInfo(OpenClientOrderConsignee consignee) {
         ReceiverInfo receiverInfo = super.toReceiverInfo(consignee);
@@ -609,10 +621,34 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         return receiverInfo;
     }
 
+    /**
+     * 天猫订单请求聚石塔
+     * @param richSkusByShop
+     */
     private void syncReceiverInfo(RichSkusByShop richSkusByShop) {
         try {
             terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
                     ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId(),"redirectUrl",poushengPagodaCommonRedirectUrl));
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                    richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));
+        }
+
+    }
+
+    /**
+     * 天猫分销订单请求聚石塔
+     * @param richSkusByShop 订单信息
+     */
+    private void syncFenxiaoReceiverInfo(RichSkusByShop richSkusByShop){
+        try {
+            if (log.isDebugEnabled()){
+                log.debug("sync fenxiao receiver info start,shopId {},orderId {}",richSkusByShop.getShop().getId(),richSkusByShop.getOuterOrderId());
+            }
+           /* erpOpenApiClient.doPost("fenxiao.order.receiver.sync",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId()));*/
+           terminusErpOpenApiClient.doPost("sync.taobao.fenxiao.order.recever.info.api",
+                    ImmutableMap.of("shopId", richSkusByShop.getShop().getId(), "orderId", richSkusByShop.getOuterOrderId(),"redirectUrl",poushengPagodaFenxiaoRedirectUrl));
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                     richSkusByShop.getOuterOrderId(), richSkusByShop.getShop().getId(), Throwables.getStackTraceAsString(e));

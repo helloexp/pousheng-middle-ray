@@ -327,6 +327,18 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 eventBus.post(event);
             }
         }
+
+        // 京东预售单处理
+        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom()) && Objects.isNull(openClientFullOrder.getIsStepOrder())) {
+            Map<String, String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                //抛出一个事件更新预售订单状态
+                StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
+                event.setShopOrderId(shopOrder.getId());
+            }
+        }
     }
 
 
@@ -613,6 +625,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
      * 收货人地址组装
      * @param consignee
      * @return
+     *
      */
     @Override
     protected ReceiverInfo toReceiverInfo(OpenClientOrderConsignee consignee) {

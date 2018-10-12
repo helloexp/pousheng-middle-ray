@@ -2229,4 +2229,20 @@ public class ShipmentWiteLogic {
 
     }
 
+    /**
+     * 处理预售单
+     */
+    public void dealNotPaidOrder(ShopOrder shopOrder) {
+        Map<String, String> extraMap = shopOrder.getExtra();
+        String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+        String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+        if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+            if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                jdRedisHandler.saveOrderId(shopOrder);
+            }
+            if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                jdRedisHandler.saveOrderId(shopOrder);
+            }
+        }
+    }
 }

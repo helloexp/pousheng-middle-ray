@@ -31,12 +31,14 @@ import io.terminus.parana.common.constants.JitConsts;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.mockito.internal.util.collections.Sets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.util.CollectionUtils;
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -127,7 +130,10 @@ public class AdminOrderReader {
             //待处理的单子如果是派单失败的 允许出现 不包含有备注订单
             if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue()) && shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
                 if (shopOrder.getHandleStatus() != null && shopOrder.getHandleStatus() > OrderWaitHandleType.ORDER_HAS_NOTE.value()) {
-                    shopOrderPagingInfo.getShopOrderOperations().add(MiddleOrderEvent.NOTICE_VIP_UNDERCARRIAGE.toOrderOperation());
+                    Set<OrderOperation> orderOperations = Sets.newSet();
+                    orderOperations.addAll(shopOrderPagingInfo.getShopOrderOperations());
+                    orderOperations.add(MiddleOrderEvent.NOTICE_VIP_UNDERCARRIAGE.toOrderOperation());
+                    shopOrderPagingInfo.setShopOrderOperations(orderOperations);
                 }
             }
             pagingInfos.add(shopOrderPagingInfo);

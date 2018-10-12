@@ -34,6 +34,8 @@ import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
 import io.swagger.annotations.ApiOperation;
+import io.terminus.applog.annotation.LogMe;
+import io.terminus.applog.annotation.LogMeContext;
 import io.terminus.applog.annotation.LogMeId;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -486,8 +488,9 @@ public class Shipments {
      */
     @RequestMapping(value = "/api/order/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "生成销售发货单")
-    public List<Long> createSalesShipment(@PathVariable("id") Long shopOrderId,
-                                          @RequestParam(value = "dataList") String dataList) {
+    @LogMe(description = "手工生成发货单", ignore = true)
+    public List<Long> createSalesShipment(@PathVariable("id") @LogMeContext @OperationLogParam Long shopOrderId,
+                                          @RequestParam(value = "dataList") @LogMeContext String dataList) {
         if (log.isDebugEnabled()) {
             log.debug("API-ORDER-SHIP-START param: shopOrderId [{}] dataList [{}]", shopOrderId, dataList);
         }

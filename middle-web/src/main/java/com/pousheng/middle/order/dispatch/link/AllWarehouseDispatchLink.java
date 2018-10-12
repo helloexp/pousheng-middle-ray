@@ -131,8 +131,9 @@ public class AllWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(),warehouseShipments,address);
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(), warehouseShipments, address, addressRegion);
         dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
 
         return Boolean.FALSE;

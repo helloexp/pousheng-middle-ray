@@ -134,7 +134,7 @@ public class OnlineSaleWarehouseDispatchLink implements DispatchOrderLink{
         }
 
         //如果有多个要选择最近的
-        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(),warehouseShipments,address);
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(), warehouseShipments, address, addressRegion);
         dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
 
         return Boolean.FALSE;

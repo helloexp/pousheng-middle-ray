@@ -124,14 +124,9 @@ public class WarehouseAddressComponent {
      * @param address            用户收货地址
      * @return 距离最近的发货仓
      */
-    public WarehouseShipment getNearest(List<WarehouseShipment> warehouseShipments, String address) {
+    public WarehouseShipment getNearest(List<WarehouseShipment> warehouseShipments, String address, String addressRegion) {
         //1、调用高德地图查询地址坐标
-        Optional<Location> locationOp = dispatchComponent.getLocation(address);
-        if (!locationOp.isPresent()) {
-            log.error("not find location by address:{}", address);
-            throw new ServiceException("buyer.receive.info.address.invalid");
-        }
-        Location location = locationOp.get();
+        Location location = dispatchComponent.getLocation(address, addressRegion);
 
         List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseShipments.size());
         for (WarehouseShipment warehouseShipment : warehouseShipments) {
@@ -163,7 +158,7 @@ public class WarehouseAddressComponent {
      * @param address            用户收货地址
      * @return 距离最近的发货仓
      */
-    public WarehouseShipment nearestWarehouse(Map<Integer, List<Long>> priorityWarehouseMap, List<WarehouseShipment> warehouseShipments, String address) {
+    public WarehouseShipment nearestWarehouse(Map<Integer, List<Long>> priorityWarehouseMap, List<WarehouseShipment> warehouseShipments, String address, String addressRegion) {
         for (Map.Entry<Integer, List<Long>> entry : priorityWarehouseMap.entrySet()) {
             List<Long> priorityWarehouseIds = entry.getValue();
             List<WarehouseShipment> avail = Lists.newArrayList();
@@ -183,11 +178,11 @@ public class WarehouseAddressComponent {
             } else if (avail.size() == 1) {
                 return avail.get(0);
             } else {
-                return getNearest(avail, address);
+                return getNearest(avail, address, addressRegion);
             }
 
         }
-        return getNearest(warehouseShipments, address);
+        return getNearest(warehouseShipments, address, addressRegion);
     }
 
 

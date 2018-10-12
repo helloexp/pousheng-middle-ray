@@ -3,14 +3,17 @@ package com.pousheng.middle.web.biz.impl;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.common.utils.batchhandle.ItemSupplyRuleAbnormalRecord;
+import com.pousheng.middle.open.stock.StockPusherLogic;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.export.UploadFileComponent;
@@ -34,6 +37,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -60,6 +64,11 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
 
     @Autowired
     private OpenShopLogic openShopLogic;
+
+    @Autowired
+    private StockPusherLogic stockPusherLogic;
+
+    public static final int COLUMN_COUNT=5;
 
 
     @Autowired
@@ -101,7 +110,7 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
             String failReason = "";
             Boolean notNull = true;
             try {
-                for (int j = 0; j < str.length; j++) {
+                for (int j = 0; j < COLUMN_COUNT; j++) {
                     if (StringUtils.isEmpty(str[j])) {
                         notNull = false;
                     }
@@ -139,8 +148,10 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
                     continue;
                 }
                 List<String> warerehouseCodes = Splitter.on(",").trimResults().splitToList(str[3].replace("\"", ""));
-                if(CollectionUtils.isEmpty(warerehouseCodes)){
-                    failReason = "仓库不能为空";
+                //验证仓库
+                failReason=validateWarehouse(warerehouseCodes,openShop.getOpenShopId());
+                //若失败原因不为空
+                if (!StringUtils.isEmpty(failReason)) {
                     continue;
                 }
 
@@ -218,5 +229,34 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
         return OpenClientShop.from(shopList.get(0));
     }
 
-
+    /**
+     * 验证仓库
+     * @param warerehouseCodes
+     * @param shopId
+     * @return
+     */
+    protected String validateWarehouse(List<String> warerehouseCodes, Long shopId) {
+        if (CollectionUtils.isEmpty(warerehouseCodes)) {
+            return "仓库不能为空";
+        }
+        //验证店铺默认发货仓
+        List<Long> warehouseIds = stockPusherLogic.getWarehouseIdsByShopId(shopId);
+        if (CollectionUtils.isEmpty(warehouseIds)) {
+            return "该店铺无可用仓库";
+        }
+        Map<String, WarehouseDTO> existMap = Maps.newHashMap();
+        warehouseIds.forEach(warehouseId -> {
+            WarehouseDTO warehouseDTO = warehouseCacher.findById(warehouseId);
+            if (!Objects.isNull(warehouseDTO)) {
+                String key = warehouseDTO.getCompanyId() + "-" + warehouseDTO.getOutCode();
+                existMap.put(key, warehouseDTO);
+            }
+        });
+        for (String warerehouseCode : warerehouseCodes) {
+            if (!existMap.containsKey(warerehouseCode)) {
+                return "该店铺未配置仓库" + warerehouseCode;
+            }
+        }
+        return null;
+    }
 }

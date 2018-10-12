@@ -18,7 +18,7 @@ public class ImportItemSupplyRuleServiceTest {
         try {
             PoushengCompensateBiz biz = new PoushengCompensateBiz();
             biz.setContext(
-                "https://e1xossfilehdd.blob.core.chinacloudapi.cn/fileserver01/2018/10/11/40f487eb-d515-4671-ba43-e6ebacb7d822.xlsx");
+                "https://e1xossfilehdd.blob.core.chinacloudapi.cn/fileserver01/2018/10/12/fd63f6a9-0e4a-4ef3-9977-fe73da5449b6.xlsx");
 
             importItemSupplyRuleService.handle(biz);
         }catch (Exception e){

@@ -133,8 +133,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Autowired
     private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
-    @Autowired
-    private JdRedisHandler redisHandler;
 
     @Value("${redirect.fenxiao.erp.gateway:https://yymiddle.pousheng.com/api/qm/pousheng/wms-fenxiao}")
     private String poushengPagodaFenxiaoRedirectUrl;

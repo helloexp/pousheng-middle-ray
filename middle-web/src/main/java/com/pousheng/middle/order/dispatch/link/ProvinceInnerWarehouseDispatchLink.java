@@ -114,14 +114,15 @@ public class ProvinceInnerWarehouseDispatchLink implements DispatchOrderLink{
 
 
         //如果只有一个
-        if(Objects.equal(warehouseShipments.size(),1)){
+        if (Objects.equal(warehouseShipments.size(), 1)) {
             dispatchOrderItemInfo.setWarehouseShipments(warehouseShipments);
             return Boolean.FALSE;
         }
 
         String address = (String) context.get(DispatchContants.BUYER_ADDRESS);
+        String addressRegion = (String) context.get(DispatchContants.BUYER_ADDRESS_REGION);
         //如果有多个要选择最近的
-        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(),warehouseShipments,address);
+        WarehouseShipment warehouseShipment = warehouseAddressComponent.nearestWarehouse(warehouses4Address.getPriorityWarehouseIds(), warehouseShipments, address, addressRegion);
         dispatchOrderItemInfo.setWarehouseShipments(Lists.newArrayList(warehouseShipment));
 
         return Boolean.FALSE;

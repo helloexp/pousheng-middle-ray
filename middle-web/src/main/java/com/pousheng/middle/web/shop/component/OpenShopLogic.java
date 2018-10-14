@@ -3,6 +3,7 @@ package com.pousheng.middle.web.shop.component;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.shop.impl.dao.OpenShopExtDao;
 import com.pousheng.middle.web.shop.dto.ShopChannel;
 import com.pousheng.middle.web.shop.dto.ShopChannelGroup;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -35,6 +36,9 @@ public class OpenShopLogic {
     private OpenShopReadService openShopReadService;
     @Autowired
     private OpenShopCacher openShopCacher;
+
+    @Autowired
+    private OpenShopExtDao openShopExtDao;
 
 
     public List<ShopChannelGroup> findShopChannelGroup(){
@@ -125,4 +129,15 @@ public class OpenShopLogic {
         }
         return openClientShops;
     }
+
+    /**
+     * 根据帐套和外码模糊搜索
+     * @param outerId
+     * @param businessId
+     * @return
+     */
+    public List<OpenShop> searchByOuterIdAndBusinessId(String outerId, String businessId){
+        return openShopExtDao.searchByOuterIdAndBusinessId(outerId, businessId);
+    }
+
 }

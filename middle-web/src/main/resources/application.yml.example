@@ -175,3 +175,6 @@ terminus.rocketmq.cacherClearTopic: cacherClearTopic
 
 # 端点统一接入层回调中台获取收货人信息url
 redirect.erp.gateway: http://middle-test.pousheng.com/api/qm/pousheng/wms-order
+
+# 拉取映射关系默认30条
+open.client.sync.item.fetch.size: 30

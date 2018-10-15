@@ -359,6 +359,10 @@ public class OrderReadLogic {
                 return expressCode.getOfficalCode();
             case CODOON:
                 return expressCode.getCodoonCode();
+            case KAOLA:
+                return expressCode.getKaolaCode();
+            case VIP:
+                return expressCode.getVipCode();
             default:
                 log.error("find express code failed");
                 throw new JsonResponseException("find.expressCode.failed");

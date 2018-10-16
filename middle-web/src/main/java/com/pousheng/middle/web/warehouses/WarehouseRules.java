@@ -257,7 +257,7 @@ public class WarehouseRules {
      * @param ruleId
      * @return
      */
-    @RequestMapping(value = "/{ruleId}/check", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    @RequestMapping(value = "/{ruleId}/check", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response<String> checkChannel(@PathVariable Long ruleId, @RequestBody WarehouseRuleItem[] warehouseRuleItems) {
         List<WarehouseShopGroup> shopGroups = warehouseRuleComponent.findWarehouseShopGropsByRuleId(ruleId);
         WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);

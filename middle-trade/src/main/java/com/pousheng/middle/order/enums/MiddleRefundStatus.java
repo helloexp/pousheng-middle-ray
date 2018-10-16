@@ -86,6 +86,10 @@ public enum MiddleRefundStatus {
      */
     RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT(18,"退货完成待确认发货"),
     /**
+     * 部分退货完成待确认发货
+     */
+    PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT(19,"部分退货完成待确认发货"),
+    /**
      * 同步恒康失败
      */
     SYNC_HK_FAIL(-1, "同步恒康失败"),

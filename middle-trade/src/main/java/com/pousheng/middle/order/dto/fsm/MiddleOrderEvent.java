@@ -84,6 +84,7 @@ public enum MiddleOrderEvent {
     AFTER_SALE_CANCEL_SHIP(-18,"afterSaleCancelShip","seller"),
     CANCEL_ALL_CHANNEL_SHIPMENT(-19,"cancelAllChannel","seller"),
     AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT(-20,"afterSaleReCreateShipment","admin"),
+    AFTER_SALE_ECHANGE_PART_DONE_RETURN(-21,"afterSalePartDone","admin"),
     NOTICE_VIP_UNDERCARRIAGE(70,"noticeUndercarriage","admin");
 
 

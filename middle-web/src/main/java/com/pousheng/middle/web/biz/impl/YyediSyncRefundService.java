@@ -4,12 +4,15 @@
 package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
+import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
@@ -25,6 +28,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.model.Shipment;
+import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
@@ -35,6 +39,7 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 〈yyedi回传退货信息业务处理〉
@@ -139,30 +144,8 @@ public class YyediSyncRefundService implements CompensateBizService {
             compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
         }
 
-     /*   //将实际入库数量更新为发货单的refundQuantity
-        //实际退货sku-quantity集合
-        Map<String,String> refundConfirmItemAndQuantity = items.stream().
-                filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
-        //售后申请sku-quantity的集合
-        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-        Map<String,Integer> refundApplyItemAndQuantity = refundItems.stream().filter(Objects::nonNull)
-                .collect(Collectors.toMap(RefundItem::getSkuCode,RefundItem::getApplyQuantity));
-        //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
-        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
-        for (ShipmentItem shipmentItem:shipmentItems){
-            if (refundConfirmItemAndQuantity.containsKey(shipmentItem.getSkuCode())){
-                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
-                        (refundApplyItemAndQuantity.get(shipmentItem.getSkuCode())-
-                                Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode()))));
-            }
-            newShipmentItems.add(shipmentItem);
-        }
+        this.partRefundDoneProcess(refund, shipment, items);
 
-        Map<String,String> shipmentExtra = shipment.getExtra();
-        shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
-        shipment.setExtra(shipmentExtra);
-        shipmentWiteLogic.update(shipment);*/
 
         //vip 需要通知vip
         ShopOrder shopOrder= orderReadLogic.findShopOrderByCode(refund.getReleOrderCode());
@@ -186,6 +169,70 @@ public class YyediSyncRefundService implements CompensateBizService {
 
 
 
+    }
+
+    /**
+     * 部分退货业务处理
+     * @param refund
+     * @param shipment
+     * @param items
+     */
+    private void partRefundDoneProcess(Refund refund, Shipment shipment, List<YYEdiRefundConfirmItem> items) {
+        //将实际入库数量更新为发货单的refundQuantity
+        //实际退货sku-quantity集合
+        Map<String,String> refundConfirmItemAndQuantity = items.stream().
+                filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
+        //售后申请sku-quantity的集合
+        List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+        Map<String,Integer> refundApplyItemAndQuantity = refundItems.stream().filter(Objects::nonNull)
+                .collect(Collectors.toMap(RefundItem::getSkuCode,RefundItem::getApplyQuantity));
+        //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
+        List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
+        for (ShipmentItem shipmentItem:shipmentItems){
+            if (refundConfirmItemAndQuantity.containsKey(shipmentItem.getSkuCode())){
+                shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
+                        (refundApplyItemAndQuantity.get(shipmentItem.getSkuCode())-
+                                Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode()))));
+            }
+            newShipmentItems.add(shipmentItem);
+        }
+
+        Map<String,String> shipmentExtra = shipment.getExtra();
+        shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
+        shipment.setExtra(shipmentExtra);
+        shipmentWiteLogic.update(shipment);
+
+        //判断申请数量与实际入库数量是否一致
+        int count = 0;
+        for (RefundItem refundItem:refundItems){
+            if (refundConfirmItemAndQuantity.containsKey(refundItem.getSkuCode())){
+                //判断申请数量是否一致
+                if (!Objects.equals(refundConfirmItemAndQuantity.get(refundItem.getSkuCode()),refundItem.getApplyQuantity())){
+                    log.warn("refund item apply quantity not equals confirmed quantity,refundId {},skuCode {},applyQuantity{},confirmedQuantity {}",
+                            refund.getId(),refundItem.getSkuCode(),refundItem.getApplyQuantity(),refundConfirmItemAndQuantity.get(refundItem.getSkuCode()));
+                    count++;
+                }
+            }
+        }
+
+        if (count>0){
+            //refundChangeItemInfo里面参数alreadyHandleNumber=0，状态变更为部分退货完成待确认发货
+            refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
+            //售后单已经申请售后的数量设置为0
+            List<RefundItem> exchangeItems = refundReadLogic.findRefundChangeItems(refund);
+            List<RefundItem> newExchangeItems = Lists.newArrayList();
+            for (RefundItem refundItem :exchangeItems){
+                refundItem.setAlreadyHandleNumber(0);
+                newExchangeItems.add(refundItem);
+            }
+            Refund newRefund = refundReadLogic.findRefundById(refund.getId());
+            Map<String,String> newRefundExtra = newRefund.getExtra();
+            newRefundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newExchangeItems));
+            newRefund.setExtra(newRefundExtra);
+            refundWriteLogic.update(newRefund);
+
+        }
     }
 
     private boolean validateYYConfirmedItems(List<YYEdiRefundConfirmItem> items) {

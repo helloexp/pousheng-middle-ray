@@ -6,6 +6,8 @@ import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.PoushengSettlementPosCriteria;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.events.trade.ExportTradeBillEvent;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
@@ -40,6 +42,11 @@ public class ExportController {
     @Autowired
     private EventBus eventBus;
 
+    private static final JsonMapper MAPPER = JsonMapper.JSON_NON_EMPTY_MAPPER;
+
+    @Autowired
+    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+
 
     /**
      * 导出订单
@@ -64,7 +71,10 @@ public class ExportController {
         event.setType(TradeConstants.EXPORT_ORDER);
         event.setCriteria(middleOrderCriteria);
         event.setUserId(UserUtil.getUserId());
-        eventBus.post(event);
+        //换成Biz任务形式 modified by longjun.tlj
+        String context=MAPPER.toJson(event);
+        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
+            context,TradeConstants.EXPORT_ORDER);
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-EXPORT-END param: middleOrderCriteria [{}] ]",criteriaStr);
         }
@@ -92,7 +102,10 @@ public class ExportController {
         event.setType(TradeConstants.EXPORT_REFUND);
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
-        eventBus.post(event);
+        //换成Biz任务形式 modified by longjun.tlj
+        String context=MAPPER.toJson(event);
+        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
+            context,TradeConstants.EXPORT_REFUND);
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }
@@ -122,7 +135,10 @@ public class ExportController {
         event.setType(TradeConstants.EXPORT_SHIPMENT);
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
-        eventBus.post(event);
+        //换成Biz任务形式 modified by longjun.tlj
+        String context=MAPPER.toJson(event);
+        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
+            context,TradeConstants.EXPORT_SHIPMENT);
         if(log.isDebugEnabled()){
             log.debug("API-SHIPMENT-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }
@@ -149,7 +165,10 @@ public class ExportController {
         event.setType(TradeConstants.EXPORT_POS);
         event.setCriteria(criteria);
         event.setUserId(UserUtil.getUserId());
-        eventBus.post(event);
+        //换成Biz任务形式 modified by longjun.tlj
+        String context=MAPPER.toJson(event);
+        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
+            context,TradeConstants.EXPORT_POS);
         if(log.isDebugEnabled()){
             log.debug("API-SETTLEMENT-POS-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }

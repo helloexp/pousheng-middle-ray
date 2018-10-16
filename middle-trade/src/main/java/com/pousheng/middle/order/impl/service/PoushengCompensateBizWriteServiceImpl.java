@@ -1,6 +1,7 @@
 package com.pousheng.middle.order.impl.service;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.impl.dao.PoushengCompensateBizDao;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
@@ -117,6 +118,23 @@ public class PoushengCompensateBizWriteServiceImpl implements PoushengCompensate
         } catch (Exception e) {
             log.error("reset biz compensation task failed,cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("reset.compensation.status.fail");
+        }
+    }
+
+    @Override
+    public Response<Long> create(String bizType, String context,String bizId) {
+        PoushengCompensateBiz poushengCompensateBiz = new PoushengCompensateBiz();
+        try {
+            poushengCompensateBiz.setContext(context);
+            poushengCompensateBiz.setBizType(bizType);
+            poushengCompensateBiz.setBizId(bizId);
+            poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+            poushengCompensateBiz.setCnt(0);
+            poushengCompensateBizDao.create(poushengCompensateBiz);
+            return Response.ok(poushengCompensateBiz.getId());
+        } catch (Exception e) {
+            log.error("failed to create poushengCompensateBiz. bizType:{},context:{}", bizType, context, e);
+            return Response.fail("poushengCompensateBiz.create.fail");
         }
     }
 }

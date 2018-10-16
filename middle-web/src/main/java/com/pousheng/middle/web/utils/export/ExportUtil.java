@@ -11,7 +11,7 @@ import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.joda.time.DateTime;
 
 import java.io.ByteArrayOutputStream;
@@ -36,13 +36,13 @@ public class ExportUtil {
     }
 
     public static void export(ExportExecutor executor) {
-
-        try (Workbook wb = new XSSFWorkbook()) {
+        try (SXSSFWorkbook wb = new SXSSFWorkbook(100)) {
 
             Sheet sheet = wb.createSheet();
 
             executor.execute(wb, sheet);
-
+            //清除生成的临时文件
+            wb.dispose();
         } catch (Exception e) {
             log.error("export to excel file fail,cause:{}", Throwables.getStackTraceAsString(e));
             throw new ServiceException("export.excel.fail");

@@ -21,6 +21,15 @@ public interface PoushengCompensateBizWriteService {
     Response<Long> create(PoushengCompensateBiz poushengCompensateBiz);
 
     /**
+     * 创建待处理的Biz任务
+     * @param bizType
+     * @param context
+     * @param bizId
+     * @return
+     */
+    Response<Long> create(String bizType,String context,String bizId);
+
+    /**
      * 更新poushengCompensateBiz
      *
      * @param poushengCompensateBiz

@@ -143,6 +143,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     @Autowired
     private TerminusErpOpenApiClient terminusErpOpenApiClient;
 
+    @Autowired
+    private JdRedisHandler redisHandler;
+
     @Value("${redirect.erp.gateway}")
     private String poushengPagodaCommonRedirectUrl;
 

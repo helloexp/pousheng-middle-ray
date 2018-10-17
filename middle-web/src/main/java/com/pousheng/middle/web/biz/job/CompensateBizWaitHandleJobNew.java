@@ -60,9 +60,9 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
 
     private static final Integer DEFAULT_PAGE_SIZE = 20;
 
-    public CompensateBizWaitHandleJobNew(@Value("${biz.task.queue.size:50}") int queueSize,
-                                         @Value("${biz.task.pool.core.size:10}")int corePoolSize,
-                                         @Value("${biz.task.pool.max.size:10}")int maxPoolSize) {
+    public CompensateBizWaitHandleJobNew(@Value("${biz.task.queue.size:10000}") int queueSize,
+                                         @Value("${biz.task.pool.core.size:4}")int corePoolSize,
+                                         @Value("${biz.task.pool.max.size:8}")int maxPoolSize) {
         this.queueSize = queueSize;
         this.blockingQueue = new ArrayBlockingQueue<>(queueSize);
         this.executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.MINUTES,

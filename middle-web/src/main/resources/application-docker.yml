@@ -315,3 +315,11 @@ redirect.erp.gateway: ${REDIRECT_ERP_GATEWAY}
 
 # 拉取映射关系默认30条
 open.client.sync.item.fetch.size: 30
+
+
+# 线程池核心线程默认数目
+thread.executor.core.pool.size: 2
+# 线程池最大线程默认数目
+thread.executor.max.pool.size: 4
+#线程池默认队列默认最大数量
+thread.executor.queue.capacity: 5000

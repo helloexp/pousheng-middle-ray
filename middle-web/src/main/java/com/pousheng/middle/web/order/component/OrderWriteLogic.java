@@ -171,7 +171,6 @@ public class OrderWriteLogic {
             updateSkuOrder.setExtra(skuOrder.getExtra());
             updateSkuOrder.setOrderId(skuOrder.getOrderId());
             updateSkuOrders.add(updateSkuOrder);
-            log.info("make updateStatusAndExtraJsonBatch data for order id:{} sku order:{} status to:{} extra:{}",skuOrder.getOrderId(),skuOrder.getId(),targetStatus,skuOrder.getExtra());
             //如果剩余数量为0则更新子单状态为待发货
             if (handleRes.getResult() == 0) {
                 updateSkuOrder.setStatus(flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE_DONE.toOrderOperation()));

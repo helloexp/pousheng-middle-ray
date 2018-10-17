@@ -35,7 +35,7 @@ import java.util.Objects;
 /**
  * 1.同步发货单信息到erp
  * 2.将已经同步到erp的发货单取消
- * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
+ * Author: <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/1/15
  * pousheng-middle
  */

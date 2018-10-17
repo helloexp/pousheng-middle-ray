@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -64,6 +65,9 @@ import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.shop.service.ShopReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -72,6 +76,7 @@ import org.springframework.util.CollectionUtils;
 import javax.annotation.Nullable;
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 /**
@@ -171,6 +176,7 @@ public class ShipmentWiteLogic {
     @Autowired
     private JdRedisHandler jdRedisHandler;
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
+    private static final DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 
     public Response<Boolean> updateStatus(Shipment shipment, OrderOperation orderOperation) {
         if (log.isDebugEnabled()){
@@ -1516,6 +1522,9 @@ public class ShipmentWiteLogic {
      * @param shopOrder            订单
      */
     public void toDispatchOrder(ShopOrder shopOrder, List<SkuCodeAndQuantity> skuCodeAndQuantities) {
+
+        log.info("TO-DISPATCH-ORDER-START for id:{} begin {}",shopOrder.getOrderCode(), DFT.print(DateTime.now()));
+        Stopwatch stopwatch = Stopwatch.createStarted();
         Response<List<SkuOrder>> skuOrdersRes = skuOrderReadService.findByShopOrderId(shopOrder.getId());
         if (!skuOrdersRes.isSuccess()) {
             throw new JsonResponseException(skuOrdersRes.getError());
@@ -1541,8 +1550,10 @@ public class ShipmentWiteLogic {
             }
         }
         Response<DispatchOrderItemInfo> response = dispatchOrderEngine.toDispatchOrder(shopOrder, receiveInfosRes.getResult().get(0), skuCodeAndQuantities);
+        stopwatch.stop();
+        log.info("TO-DISPATCH-ORDER-END for id:{} done at {} cost {} ms",shopOrder.getOrderCode(), DFT.print(DateTime.now()), stopwatch.elapsed(TimeUnit.MILLISECONDS));
         if (!response.isSuccess()) {
-            log.error("dispatch fail,error:{}", response.getError());
+            log.error("dispatch order id:{} fail,error:{}", shopOrder.getOrderCode(),response.getError());
             //记录未处理原因
             this.updateShipmentNote(shopOrder, error2Type(response.getError()));
             //如果自动处理处理失败直接设置为DONE
@@ -1558,7 +1569,7 @@ public class ShipmentWiteLogic {
             throw new JsonResponseException(response.getError());
         }
         DispatchOrderItemInfo dispatchOrderItemInfo = response.getResult();
-        log.info("MPOS DISPATCH SUCCESS result:{}", dispatchOrderItemInfo);
+        log.info("MPOS DISPATCH ORDER:{} SUCCESS result:{}",shopOrder.getOrderCode(), dispatchOrderItemInfo);
 
         List<SkuCodeAndQuantity> skuCodeAndQuantityList = dispatchOrderItemInfo.getSkuCodeAndQuantities();
 

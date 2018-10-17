@@ -74,6 +74,7 @@ public class SyncErpShipmentLogic {
      * @return
      */
     public Response<Boolean> syncShipment(Shipment shipment) {
+
         log.info("sync shipment start,shipment is {}", shipment);
 
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());

@@ -532,7 +532,7 @@ public class Shipments {
             //检查库存是否充足
             checkStockIsEnough(warehouseId, skuCodeAndQuantityMap, shopOrder.getShopId());
             //检查商品是不是一次发货还是拆成数次发货,如果不是一次发货抛出异常
-            checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
+            //checkSkuCodeAndQuantityLegal(skuOrderIdAndQuantity);
             //封装发货信息
             List<ShipmentItem> shipmentItems = makeShipmentItems(skuOrders, skuOrderIdAndQuantity, warehouseId, shopOrder);
             //发货单商品金额

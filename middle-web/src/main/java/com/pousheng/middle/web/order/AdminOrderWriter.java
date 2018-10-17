@@ -582,6 +582,9 @@ public class AdminOrderWriter {
         if (!Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("error.status.can.not.cancel");
         }
+        if (skuOrder.getShipping() > 0 || skuOrder.getShipped() > 0) {
+            throw new JsonResponseException("sku.order.exist.part.shipping");
+        }
         Map<String, String> skuOrderExtra = skuOrder.getExtra();
         skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON, skuOrderCancelReason);
         try {

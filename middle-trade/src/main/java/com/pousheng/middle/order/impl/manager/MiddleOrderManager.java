@@ -67,7 +67,7 @@ public class MiddleOrderManager {
             Integer targetStatus = flow.target(skuOrder.getStatus(), orderOperation);
 
             Map<String, String> extraMap = skuOrder.getExtra();
-            extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(skuOrder.getQuantity()));
+            extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(skuOrder.getWithHold()));
             SkuOrder newSkuOrder = new SkuOrder();
             newSkuOrder.setId(skuOrder.getId());
             newSkuOrder.setExtra(extraMap);
@@ -138,7 +138,7 @@ public class MiddleOrderManager {
         Integer targetStatus = flow.target(skuOrder.getStatus(), cancelOperation);
 
         Map<String, String> extraMap = skuOrder.getExtra();
-        extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(skuOrder.getQuantity()));
+        extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(skuOrder.getWithHold()));
         SkuOrder newSkuOrder = new SkuOrder();
         newSkuOrder.setId(skuOrder.getId());
         newSkuOrder.setExtra(extraMap);

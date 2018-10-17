@@ -292,7 +292,7 @@ public class ShipmentWiteLogic {
         this.update(updateShipment);
     }
 
-    /**
+    /**T
      * 取消/删除发货单逻辑(撤销订单的时候通知恒康删除发货单,电商取消订单的时候取消发货单)
      *
      * @param shipment 发货单
@@ -302,6 +302,9 @@ public class ShipmentWiteLogic {
         try {
             log.info("try to auto cancel shipment,shipment id is {}", shipment.getId());
             Flow flow = flowPicker.pickShipments();
+            if(Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())){
+                throw new JsonResponseException("shipment.status.not.allow.current.operation");
+            }
             //没有同步到任何第三方渠道进行履约的发货单直接取消，不需要和第三方进行交互
             if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
                 Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
@@ -1556,7 +1559,7 @@ public class ShipmentWiteLogic {
                 SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
                 skuCodeAndQuantity.setSkuOrderId(skuOrder.getId());
                 skuCodeAndQuantity.setSkuCode(skuOrder.getSkuCode());
-                skuCodeAndQuantity.setQuantity(skuOrder.getQuantity());
+                skuCodeAndQuantity.setQuantity(skuOrder.getWithHold());
                 skuCodeAndQuantities.add(skuCodeAndQuantity);
             }
         }
@@ -1888,12 +1891,13 @@ public class ShipmentWiteLogic {
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<String> skuCodes = shipmentItems.stream().map(ShipmentItem::getSkuCode).collect(Collectors.toList());
-            List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes, shopOrder.getId());
             int count = 0;//计数器用来记录是否有发货单取消失败的
             Response<Boolean> cancelShipmentResponse = this.cancelShipment(shipment);
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
+            //由于在cancelshipment的时候数据会更新，所以查询放到后面
+            List<SkuOrder> skuOrders = this.getSkuOrders(skuCodes, shopOrder.getId());
             //获取该订单下所有的子单和发货单
             if (count > 0) {
                 middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());

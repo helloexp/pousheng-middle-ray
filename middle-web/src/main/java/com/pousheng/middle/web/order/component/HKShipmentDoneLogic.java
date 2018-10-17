@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order.component;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
@@ -97,7 +98,18 @@ public class HKShipmentDoneLogic {
                 skuOrderIds.addAll(skuInfos.keySet());
                 List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
                 for (SkuOrder skuOrder : skuOrders) {
+                    Response<SkuOrder> updateShippedRlt = orderWriteService.updateShippedNum(skuOrder.getId(),skuInfos.get(skuOrder.getId()));
+                    if (!updateShippedRlt.isSuccess()) {
+                        log.error("fail to update sku order shipped quantity by skuOrderId={},quantity={}, cause:{}",
+                                skuOrder.getId(), skuInfos.get(skuOrder.getId()), updateShippedRlt.getError());
+                        throw new JsonResponseException(updateShippedRlt.getError());
+                    }
                     if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
+                        skuOrder=updateShippedRlt.getResult();
+                        //如果未达到全部发货，则不更新子单状态
+                        if(skuOrder.getQuantity()>skuOrder.getShipped()){
+                           continue;
+                        }
                         Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                         if (!updateRlt.getResult()) {
                             log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
@@ -109,7 +121,6 @@ public class HKShipmentDoneLogic {
             }
             log.info("wait to notify ecp,shipmentId is {},shipmentType is {}", shipment.getId(), shipment.getType());
             //尝试同步发货信息到电商平台,如果有多个发货单，需要等到所有的发货单发货完成之后才会通知电商平台
-            //ecpOrderLogic.shipToEcp(shipment.getId());
             PoushengCompensateBiz biz = new PoushengCompensateBiz();
             biz.setBizType(PoushengCompensateBizType.SYNC_ECP.name());
             biz.setBizId(String.valueOf(shipment.getId()));

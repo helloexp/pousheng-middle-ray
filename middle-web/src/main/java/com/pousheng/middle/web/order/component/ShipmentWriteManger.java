@@ -86,7 +86,7 @@ public class ShipmentWriteManger {
         List<Long> skuOrderIds = Lists.newArrayListWithCapacity(skuOrderIdAndQuantity.size());
         skuOrderIds.addAll(skuOrderIdAndQuantity.keySet());
         for (Long skuOrderId : skuOrderIds) {
-            Response<Boolean> response = orderWriteService.rollbackWaitHandleNumber(skuOrderId, skuOrderIdAndQuantity.get(skuOrderId));
+            Response<Boolean> response = orderWriteService.rollbackWaitHandleNumber(skuOrderId, skuOrderIdAndQuantity.get(skuOrderId), shipment.getShipmentCode());
             if (!response.isSuccess()) {
                 log.error("decrease sku order with hold failed,skuOrderId is {},caused by {}", skuOrderId, response.getError());
                 throw new ServiceException(response.getError());

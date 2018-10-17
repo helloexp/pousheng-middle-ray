@@ -69,10 +69,10 @@ public class EcpOrderLogic {
         //获取ecpOrderStatus
         String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
         try {
-            log.info("try to notify ecp to ship ,shipemntId is{}",shipmentId);
+            log.info("try to notify ecp to ship ,shipmentId is{}",shipmentId);
             //判断ecpOrder的状态是否是初始的待发货状态,如果不是,跳过
             if (Objects.equals(Integer.valueOf(status), EcpOrderStatus.WAIT_SHIP.getValue())) {
-                log.info("try to notify ecp to ship step one ,shipemntId is{}",shipmentId);
+                log.info("try to notify ecp to ship step one ,shipmentId is{}",shipmentId);
                 Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
                 if (!response.isSuccess()) {
                     log.error("update shopOrder(id:{}) failed, error:{}", orderShopId, response.getError());
@@ -132,7 +132,7 @@ public class EcpOrderLogic {
         Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(shipmentId));
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
-        //最后一个发货单发货完成之后需要将订单同步到电商
+        //第一个发货单发货完成之后需要将订单同步到电商
         String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
         if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.OFFICIAL.getValue())
             &&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNINGSALE.getValue())&&!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())){

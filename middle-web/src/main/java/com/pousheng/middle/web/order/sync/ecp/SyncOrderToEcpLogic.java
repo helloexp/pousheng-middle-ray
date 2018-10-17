@@ -94,7 +94,7 @@ public class SyncOrderToEcpLogic {
                 orderShipment.setOuterOrderId(shopOrder.getOutId());
                 orderShipment.setLogisticsCompany(expressCompayCode);
                 //填写运单号
-                String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo())?"":Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+                String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? "" : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
                 orderShipment.setWaybill(shipmentSerialNo);
                 //目前苏宁需要传入商品编码
                 List<String> outSkuCodes = Lists.newArrayList();
@@ -119,7 +119,7 @@ public class SyncOrderToEcpLogic {
                     return Response.fail(response.getError());
                 }
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
@@ -132,6 +132,7 @@ public class SyncOrderToEcpLogic {
 
     /**
      * 同步发货单到电商，需要上传所有发货单到电商，天猫是子单发货，如果一个发货单中只有赠品，该发货单不会被同步到电商平台，就算已经同步成功
+     *
      * @param shopOrder 店铺订单
      * @return
      */
@@ -189,12 +190,12 @@ public class SyncOrderToEcpLogic {
                     openClientOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
                     openClientOrderShipment.setOuterSkuCodes(outerSkuCodes);
                     //填写运单号
-                    String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo())?"":Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
+                    String shipmentSerialNo = StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? "" : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(shipmentExtra.getShipmentSerialNo()).get(0);
                     openClientOrderShipment.setWaybill(shipmentSerialNo);
-                    log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
-                    Response<Boolean> response = null;
+                    log.info("ship to ecp,shopOrderId is {},openClientOrderShipment is {}", shopOrder.getId(), openClientOrderShipment);
+                    Response<Boolean> response;
                     if (!isTaobaoGiftShipmentOnly(shopOrder, shipmentItems)) {
-                        log.info("try ship to ecp,shopOrderId is {},openClientOrderShipment is {}",shopOrder.getId(),openClientOrderShipment);
+                        log.info("try ship to ecp,shopOrderId is {},openClientOrderShipment is {}", shopOrder.getId(), openClientOrderShipment);
                         response = orderServiceCenter.ship(shopOrder.getShopId(), openClientOrderShipment);
                     } else {
                         response = Response.ok(Boolean.TRUE);
@@ -210,9 +211,9 @@ public class SyncOrderToEcpLogic {
                         count++;
                         shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     }
-                }catch (Exception e){
-                    log.error("sync shipment to taobao failed,shipmentId is {},caused by {}",shipment.getId(),Throwables.getStackTraceAsString(e));
-                    shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment,MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
+                } catch (Exception e) {
+                    log.error("sync shipment to taobao failed,shipmentId is {},caused by {}", shipment.getId(), Throwables.getStackTraceAsString(e));
+                    shipmentWiteLogic.updateShipmentSyncTaobaoStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
                     throw new ServiceException(e.getMessage());
                 }
             }
@@ -227,7 +228,7 @@ public class SyncOrderToEcpLogic {
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
                 return Response.fail("sync.ecp.fail");
             }
-        }catch (Exception e) {
+        } catch (Exception e) {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
@@ -291,8 +292,8 @@ public class SyncOrderToEcpLogic {
                     //获取快递信息
                     ExpressCode expressCode = orderReadLogic.makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
                     String expressCompanyCode = orderReadLogic.getExpressCode(shopOrder.getShopId(), expressCode);
-                    Map<String,String> expressMapping= Maps.newHashMap();
-                    expressMapping.put(shipmentExtra.getShipmentCorpCode(),expressCompanyCode);
+                    Map<String, String> expressMapping = Maps.newHashMap();
+                    expressMapping.put(shipmentExtra.getShipmentCorpCode(), expressCompanyCode);
 
                     List<LogisticsInfo> logisiticis = Lists.newArrayList();
                     boolean itemFailed = false;
@@ -300,28 +301,28 @@ public class SyncOrderToEcpLogic {
                     for (ShipmentItem shipmentItem : shipmentItems) {
 
                         LogisticsInfo logisticsInfo = new LogisticsInfo();
-                            Response<SkuOrder> skuOrderResponse = skuOrderReadService.findById(shipmentItem.getSkuOrderId());
+                        Response<SkuOrder> skuOrderResponse = skuOrderReadService.findById(shipmentItem.getSkuOrderId());
                         if (!skuOrderResponse.isSuccess()) {
                             itemFailed = true;
                             break;
-                        }else{
+                        } else {
                             logisticsInfo.setOrder_product_id(skuOrderResponse.getResult().getOutId());//ERP的商品订单Id
 
                         }
                         // sku_order获取out_id
                         logisticsInfo.setBar_code(shipmentItem.getSkuCode());//sku条码
                         //兼容物流公司取值
-                        expressCompanyCode=buildExpressCompanyCode(fromJit,shipmentExtra,shipmentItem,expressMapping,shopOrder.getShopId());
+                        expressCompanyCode = buildExpressCompanyCode(fromJit, shipmentExtra, shipmentItem, expressMapping, shopOrder.getShopId());
                         logisticsInfo.setLogistics_company_code(expressCompanyCode); //发货公司code
 
                         //兼容物流单号取值
-                        String shipmentSerialNo = buildShipmentSerialNo(fromJit,shipmentExtra,shipmentItem);
+                        String shipmentSerialNo = buildShipmentSerialNo(fromJit, shipmentExtra, shipmentItem);
 
                         logisticsInfo.setLogistics_order(shipmentSerialNo);//发货的快递公司单号
 
                         logisticsInfo.setDelivery_name(shipmentExtra.getWarehouseName());//发货人 经讨论是可以是发货仓
-                        logisticsInfo.setDelivery_time(DateFormatUtils.format(shipmentExtra.getShipmentDate(),"yyyy-MM-dd HH:mm:ss"));
-                        logisticsInfo.setAmount(shipmentItem.getShipQuantity()==null?shipmentItem.getQuantity():shipmentItem.getShipQuantity()); //实际发货数量
+                        logisticsInfo.setDelivery_time(DateFormatUtils.format(shipmentExtra.getShipmentDate(), "yyyy-MM-dd HH:mm:ss"));
+                        logisticsInfo.setAmount(shipmentItem.getShipQuantity() == null ? shipmentItem.getQuantity() : shipmentItem.getShipQuantity()); //实际发货数量
 
                         //增加jit新增字段
                         logisticsInfo.setArrival_time(convertDateFormat(shipmentExtra.getExpectDate()));
@@ -365,13 +366,13 @@ public class SyncOrderToEcpLogic {
                     } else {
                         yjRespone = sycYunJuShipmentOrderApi.doSyncShipmentOrder(syncShipmentRequest);
                     }
-                        // 去调用云聚接口
-                        if (yjRespone != null&&0==yjRespone.getError()) { //成功
-                            shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());
-                        } else {
-                            count++;
-                            shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
-                        }
+                    // 去调用云聚接口
+                    if (yjRespone != null && 0 == yjRespone.getError()) { //成功
+                        shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_SUCCESS.toOrderOperation());
+                    } else {
+                        count++;
+                        shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
+                    }
                 } catch (Exception e) {
                     log.error("sync shipment to yunju failed,shipmentId is {}", shipment.getId(), e);
                     shipmentWiteLogic.updateShipmentSyncChannelStatus(shipment, MiddleOrderEvent.SYNC_TAOBAO_FAIL.toOrderOperation());
@@ -398,25 +399,25 @@ public class SyncOrderToEcpLogic {
 
     }
 
-    private static String convertDateFormat(String date){
-        if (Strings.isNullOrEmpty(date)){
+    private static String convertDateFormat(String date) {
+        if (Strings.isNullOrEmpty(date)) {
             return "";
         }
-        DateTime dateTime=DateTime.parse(date, DateTimeFormat.forPattern("yyyyMMddHHmmss"));
+        DateTime dateTime = DateTime.parse(date, DateTimeFormat.forPattern("yyyyMMddHHmmss"));
         return dateTime.toString("yyyy-MM-dd HH:mm:ss");
     }
 
-    private String buildShipmentSerialNo(boolean fromJit,ShipmentExtra shipmentExtra,ShipmentItem shipmentItem){
+    private String buildShipmentSerialNo(boolean fromJit, ShipmentExtra shipmentExtra, ShipmentItem shipmentItem) {
         if (fromJit && shipmentExtra.getShipmentSerialNoMap() != null) {
             return shipmentExtra.getShipmentSerialNoMap().get(shipmentItem.getSkuCode());
         } else {
             return StringUtils.isEmpty(shipmentExtra.getShipmentSerialNo()) ? ""
-                : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(
+                    : Splitter.on(",").omitEmptyStrings().trimResults().splitToList(
                     shipmentExtra.getShipmentSerialNo()).get(0);
         }
     }
 
-    private String buildExpressCompanyCode(boolean fromJit,ShipmentExtra shipmentExtra,ShipmentItem shipmentItem,Map<String,String> expressMapping,Long shopId){
+    private String buildExpressCompanyCode(boolean fromJit, ShipmentExtra shipmentExtra, ShipmentItem shipmentItem, Map<String, String> expressMapping, Long shopId) {
         //非JIT逻辑
         if (!fromJit) {
             return expressMapping.get(shipmentExtra.getShipmentCorpCode());

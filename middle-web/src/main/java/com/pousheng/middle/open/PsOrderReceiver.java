@@ -243,6 +243,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected void updateParanaOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
+        log.info("openClientFullOrder info {}", mapper.toJson(openClientFullOrder));
         if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CONFIRMED) {
 
             //如果是mpos订单并且是自提,将待发货状态改为待收货
@@ -326,18 +327,6 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
                 event.setShopOrderId(shopOrder.getId());
                 eventBus.post(event);
-            }
-        }
-
-        // 京东预售单处理
-        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom()) && Objects.isNull(openClientFullOrder.getIsStepOrder())) {
-            Map<String, String> extraMap = shopOrder.getExtra();
-            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
-            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
-            if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                //抛出一个事件更新预售订单状态
-                StepOrderNotifyHkEvent event = new StepOrderNotifyHkEvent();
-                event.setShopOrderId(shopOrder.getId());
             }
         }
     }

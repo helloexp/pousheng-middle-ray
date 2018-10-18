@@ -19,9 +19,12 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.annotation.PostConstruct;
@@ -80,10 +83,19 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         }
     }
 
-    @PostConstruct
+    //@PostConstruct
     public void consumer() {
         log.info("[BIZ CONSUMER START...]");
         super.consumer();
+    }
+
+
+    //手动拉取
+    @GetMapping(value = "/api/biz/consumer", produces = MediaType.APPLICATION_JSON_VALUE)
+    public String consumerOrder() {
+        log.info("[BIZ CONSUMER START...]");
+        super.consumer();
+
     }
 
     @Override

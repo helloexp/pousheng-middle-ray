@@ -152,11 +152,12 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndOutSkuId(shopOrder.getId(), skuOfRefund.getChannelSkuId());
                 }else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())){
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(),skuOfRefund.getChannelSkuOrderId());
+                    skuOfRefund.setSkuCode(skuOrder.getSkuCode());
                 } else {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
                 }
                 //查询需要售后的发货单
-                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
+                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOrder.getSkuCode(), skuOrder.getQuantity());
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());
@@ -301,6 +302,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             case SELLER_AGREE_BUYER:
                 return MiddleRefundStatus.WAIT_HANDLE.getValue();
             case WAIT_BUYER_RETURN_GOODS:
+                return MiddleRefundStatus.WAIT_HANDLE.getValue();
+            case WAIT_SELLER_CONFIRM_GOODS:
                 return MiddleRefundStatus.WAIT_HANDLE.getValue();
             case SUCCESS:
                 return MiddleRefundStatus.REFUND.getValue();

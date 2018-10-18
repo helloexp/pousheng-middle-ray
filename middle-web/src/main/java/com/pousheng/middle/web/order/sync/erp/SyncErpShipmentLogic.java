@@ -27,6 +27,7 @@ import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -66,6 +67,8 @@ public class SyncErpShipmentLogic {
     @Autowired
     private SyncWmsShipmentLogic syncWmsShipmentLogic;
 
+    @Value("${is.open.test: 0}")
+    private Integer isTest;
 
     /**
      * 根据配置渠道确定将发货单同步到hk还是订单派发中心
@@ -79,6 +82,13 @@ public class SyncErpShipmentLogic {
 
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+
+        if (Objects.equals(isTest,1)){
+            if (Objects.equals(shopOrder.getShopId(),7L)){
+                log.info("for test yysport so skip shipment id:{}",shipment.getId());
+                return Response.ok();
+            }
+        }
 
         //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
         Map<String, String> extraMap = shopOrder.getExtra();

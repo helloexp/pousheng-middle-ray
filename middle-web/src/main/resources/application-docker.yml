@@ -323,3 +323,6 @@ thread.executor.core.pool.size: 2
 thread.executor.max.pool.size: 4
 #线程池默认队列默认最大数量
 thread.executor.queue.capacity: 5000
+
+
+is.open.test: ${IS_TEST}

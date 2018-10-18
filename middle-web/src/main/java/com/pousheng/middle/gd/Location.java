@@ -24,4 +24,10 @@ public class Location implements Serializable {
 
     private String regionId; // 区id
 
+    private String pname;
+
+    private String cityname;
+
+    private String adname;
+
 }

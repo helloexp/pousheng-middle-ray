@@ -3,10 +3,13 @@ package com.pousheng.middle.open;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.gd.GDMapSearchService;
+import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
 import com.pousheng.middle.order.enums.Municipality;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
+import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderAddress;
@@ -29,6 +32,8 @@ public class ReceiverInfoCompleter {
 
     @Autowired
     private WarehouseAddressCacher warehouseAddressCacher;
+    @Autowired
+    private GDMapSearchService gdMapSearchService;
 
     public void complete(ReceiverInfo receiverInfo){
         ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
@@ -41,6 +46,21 @@ public class ReceiverInfoCompleter {
             if (!municipalities.contains(receiverInfo.getCity())){
                 receiverInfo.setRegion(receiverInfo.getCity());
                 receiverInfo.setCity(receiverInfo.getProvince());
+            }
+        }
+
+        if(Arguments.isNull(receiverInfo.getProvince()) && Arguments.isNull(receiverInfo.getCity()) && Arguments.isNull(receiverInfo.getRegion())) {
+            // 调用高德api
+            Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(receiverInfo.getDetail());
+            if(!locationRes.isSuccess()){
+                log.error("find location by address:{} fail,error:{}",receiverInfo.getDetail(),locationRes.getError());
+            }
+            if(locationRes.getResult().isPresent()) {
+                Location location =  locationRes.getResult().get();
+                log.info("api from gd location info {}", location);
+                receiverInfo.setCity(location.getCityname());
+                receiverInfo.setProvince(location.getPname());
+                receiverInfo.setRegion(location.getAdname());
             }
         }
 
@@ -79,7 +99,9 @@ public class ReceiverInfoCompleter {
         Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
         receiverInfo.setExtra(extraMap);
+
     }
+
     public void completePushOrderAddress(OpenFullOrderAddress address){
         ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
         handleResult.setSuccess(Boolean.TRUE);

@@ -157,7 +157,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
                 }
                 //查询需要售后的发货单
-                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOrder.getSkuCode(), skuOrder.getQuantity());
+                Shipment shipment = this.findShipmentByOrderInfo(shopOrder.getId(), skuOfRefund.getSkuCode(), skuOrder.getQuantity());
 
                 if (!Objects.isNull(shipment)) {
                     refundExtra.setShipmentId(shipment.getShipmentCode());

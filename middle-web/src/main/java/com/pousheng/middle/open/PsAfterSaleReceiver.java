@@ -112,7 +112,8 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         }
 
         //判断售后单对应的是否是天猫订单
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue()) && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())
+                && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
             //如果天猫拉取过来的仅退款的售后单就是success,这个时候中台做一下特殊处理
             if (Objects.equals(refund.getStatus(), MiddleRefundStatus.REFUND.getValue())) {
                 //判断此时的订单以及发货单的状态
@@ -124,12 +125,21 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 }
             }
         }
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue()) && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
+        //天猫分销售后单
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TFENXIAO.getValue())
+                &&(Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())
+                ||Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value()))) {
+            refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
+        }
+
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())
+                && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_RETURN.value())) {
             //如果天猫拉取过来的退货退款的售后单就是success,这个时候中台做一下特殊处理
             refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }
         //苏宁售后近退款单子到中台订单状态做初始化
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue()) && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())
+                && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
             refund.setStatus(MiddleRefundStatus.WAIT_HANDLE.getValue());
         }
         try {

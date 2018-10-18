@@ -212,7 +212,7 @@ public abstract class AbstractAsyncJob {
 
         @Override
         public void run() {
-            Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
+           // Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
             try {
                 while (true) {
                     int groupSize = getPopSize();

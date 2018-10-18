@@ -67,8 +67,8 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
                                          @Value("${biz.task.pool.core.size:4}")int corePoolSize,
                                          @Value("${biz.task.pool.max.size:8}")int maxPoolSize) {
         this.queueSize = queueSize;
-        this.blockingQueue = new ArrayBlockingQueue<>(queueSize);
-        this.executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, 60L, TimeUnit.MINUTES,
+        this.blockingQueue = new LinkedBlockingQueue<>(queueSize);
+        this.executorService = new ThreadPoolExecutor(corePoolSize, maxPoolSize, 10L, TimeUnit.MINUTES,
                 blockingQueue,
                 new ThreadFactoryBuilder().setNameFormat("biz-handle-%d").build(),
                 (r, executor) -> log.error("task {} is rejected", r));

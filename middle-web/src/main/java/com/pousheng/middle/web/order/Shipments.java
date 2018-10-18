@@ -1173,6 +1173,7 @@ public class Shipments {
                     shipmentItem.setCareStock(0);
                 }
             }
+            shipmentItem.setSkuOrderId(refundItem.getSkuOrderId());
             shipmentItem.setWarehouseId(warehouseId);
             shipmentItem.setShopId(shopOrder.getShopId());
             shipmentItem.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());

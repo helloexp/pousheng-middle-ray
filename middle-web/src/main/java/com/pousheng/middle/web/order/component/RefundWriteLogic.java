@@ -2123,6 +2123,7 @@ public class RefundWriteLogic {
                     shipmentItem.setCareStock(0);
                 }
             }
+            shipmentItem.setSkuOrderId(refundItem.getSkuOrderId());
             shipmentItem.setQuantity(skuCodeAndQuantity.get(skuCode));
             //退货数量,因为丢件补发或者是换货是允许继续售后的，所以这里面的数量为0
             shipmentItem.setRefundQuantity(0);

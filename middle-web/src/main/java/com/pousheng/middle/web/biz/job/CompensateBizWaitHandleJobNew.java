@@ -96,6 +96,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         log.info("[BIZ CONSUMER START...]");
         super.consumer();
 
+        return "success";
     }
 
     @Override

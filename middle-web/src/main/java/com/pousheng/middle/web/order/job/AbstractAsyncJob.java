@@ -97,7 +97,9 @@ public abstract class AbstractAsyncJob {
      * 多消费
      */
     public void consumer() {
-        new Thread(new ConsumerTask()).start();
+        Thread consumer = new Thread(new ConsumerTask());
+        consumer.setName("biz-consumer");
+        consumer.start();
     }
 
     /**

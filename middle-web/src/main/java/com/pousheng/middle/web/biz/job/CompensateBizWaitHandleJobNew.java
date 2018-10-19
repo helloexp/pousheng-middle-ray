@@ -83,7 +83,7 @@ public class CompensateBizWaitHandleJobNew extends AbstractAsyncJob {
         }
     }
 
-    //@PostConstruct
+    @PostConstruct
     public void consumer() {
         log.info("[BIZ CONSUMER START...]");
         super.consumer();

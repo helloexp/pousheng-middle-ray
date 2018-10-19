@@ -215,40 +215,42 @@ public abstract class AbstractAsyncJob {
         @Override
         public void run() {
            // Thread.currentThread().setPriority(Thread.MIN_PRIORITY);
-            try {
+
                 while (true) {
-                    int groupSize = getPopSize();
-                    if (log.isDebugEnabled()) {
-                        log.debug("[CONSUMER CURRENT THREAD POOL REMAIN SIZE : {}]", groupSize);
-                    }
-                    if (groupSize == 0) {
-                        try {
-                            Thread.sleep(10000);
-                        } catch (InterruptedException e) {
-                            log.error("thread sleep failed");
-                            Thread.currentThread().interrupt();
+                    try {
+                        int groupSize = getPopSize();
+                        if (log.isDebugEnabled()) {
+                            log.debug("[CONSUMER CURRENT THREAD POOL REMAIN SIZE : {}]", groupSize);
                         }
-                    }
-                    for (int i = 0; i < groupSize; i++) {
-                        String idStr = jedisTemplate.execute(jedis -> {
-                            return jedis.rpop(getQueueKey());
-                        });
-                        if (StringUtils.isEmpty(idStr)) {
+                        if (groupSize == 0) {
                             try {
-                                Thread.sleep(30000);
+                                Thread.sleep(10000);
                             } catch (InterruptedException e) {
                                 log.error("thread sleep failed");
                                 Thread.currentThread().interrupt();
                             }
-                            continue;
                         }
-                        List<Long> ids = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(idStr, JsonMapper.nonEmptyMapper().createCollectionType(List.class, Long.class));
-                        consume(ids);
+                        for (int i = 0; i < groupSize; i++) {
+                            String idStr = jedisTemplate.execute(jedis -> {
+                                return jedis.rpop(getQueueKey());
+                            });
+                            if (StringUtils.isEmpty(idStr)) {
+                                try {
+                                    Thread.sleep(30000);
+                                } catch (InterruptedException e) {
+                                    log.error("thread sleep failed");
+                                    Thread.currentThread().interrupt();
+                                }
+                                continue;
+                            }
+                            List<Long> ids = JsonMapper.JSON_NON_EMPTY_MAPPER.fromJson(idStr, JsonMapper.nonEmptyMapper().createCollectionType(List.class, Long.class));
+                            consume(ids);
+                        }
+                    } catch (Exception e) {
+                        log.error("fail to consumer queue:{} cause:{}", getQueueKey(),Throwables.getStackTraceAsString(e));
                     }
                 }
-            } catch (Exception e) {
-                log.warn("fail to consumer queue:{}", getQueueKey());
-            }
+
         }
     }
 }

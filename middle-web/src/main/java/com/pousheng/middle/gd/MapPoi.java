@@ -32,6 +32,6 @@ public class MapPoi implements Serializable {
 
     private String cityname;
 
-    private String adname;
+    //private String adname;
 
 }

@@ -79,7 +79,7 @@ public class GDMapSearchService {
                     location.setLat(locations.get(1));
                     location.setPname(response.getPois().get(0).getPname());
                     location.setCityname(response.getPois().get(0).getCityname());
-                    location.setAdname(response.getPois().get(0).getAdname());
+                    //location.setAdname(response.getPois().get(0).getAdname());
                     //location.setProvinceId(response.getPois().get(0).getPcode());
                     //location.setRegionId(response.getPois().get(0).getAdcode());
                 }

@@ -40,7 +40,7 @@ public class SycYYEdiOrderCancelApi {
         YYEdiCancelRequest request = new YYEdiCancelRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("start do cancel yyedi order paramJson:{}",paramJson);
+        log.info("start do cancel yyedi order paramJson:{}, serialNo:{}",paramJson,serialNo);
         String gateway = hkGateway+"/common/yyedi/default/cancelorder";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -52,7 +52,7 @@ public class SycYYEdiOrderCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("end do cancel yyedi order paramJson:{},result:{}",paramJson,responseBody);
+        log.info("end do cancel yyedi order paramJson:{},result:{}, serialNo:{}",paramJson,responseBody,serialNo);
         return responseBody;
     }
 
@@ -60,7 +60,7 @@ public class SycYYEdiOrderCancelApi {
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
-        log.info("sync cancel shipment to yj erp paramJson :{}",paramJson);
+        log.info("sync cancel shipment to yj erp paramJson :{}, serialNo:{}",paramJson,serialNo);
         String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgordercancel";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -71,7 +71,7 @@ public class SycYYEdiOrderCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync cancel shipment to yj erp result:{}",responseBody);
+        log.info("sync cancel shipment to yj erp result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 }

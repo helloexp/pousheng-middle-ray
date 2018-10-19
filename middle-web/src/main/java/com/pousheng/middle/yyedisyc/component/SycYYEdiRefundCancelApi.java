@@ -42,7 +42,7 @@ public class SycYYEdiRefundCancelApi {
         YYEdiCancelRequest request = new YYEdiCancelRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("yyedi-cancel-refund paramJson:{}",paramJson);
+        log.info("yyedi-cancel-refund paramJson:{}, serialNo{}",paramJson,serialNo);
         String gateway = hkGateway+"/common/yyedi/default/getcancelrefund";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -54,7 +54,7 @@ public class SycYYEdiRefundCancelApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync cancel refund to yyedi result:{}",responseBody);
+        log.info("sync cancel refund to yyedi result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 }

@@ -29,21 +29,24 @@ public class SycHkShipmentPosApi {
 
     public String doSyncShipmentPos(HkShipmentPosRequestData requestData,String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
-        log.info("paramJson:{}",paramJson);
+        //log.info("paramJson:{}",paramJson);
+        log.info("doSyncShipmentPos paramJson:{}",paramJson);
 
         return doRequest(paramJson,url);
     }
 
     public String doSyncRefundPos(HkShipmentPosRequestData requestData,String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
-        log.info("paramJson:{}",paramJson);
+        //log.info("paramJson:{}",paramJson);
+        log.info("doSyncRefundPos paramJson:{}",paramJson);
 
         return doRequest(paramJson,url);
     }
 
     public String doSyncSaleRefuse(HkSaleRefuseRequestData requestData,String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
-        log.info("paramJson:{}",paramJson);
+        //log.info("paramJson:{}",paramJson);
+        log.info("doSyncSaleRefuse paramJson:{}",paramJson);
         return doRequest(paramJson,url);
     }
 
@@ -51,7 +54,8 @@ public class SycHkShipmentPosApi {
 
     public String doSyncShipmentDone(HkShimentDoneRequestData requestData, String url){
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData);
-        log.info("paramJson:{}",paramJson);
+        //log.info("paramJson:{}",paramJson);
+        log.info("doSyncShipmentDone paramJson:{}",paramJson);
 
         return doRequest(paramJson,url);
     }
@@ -69,7 +73,7 @@ public class SycHkShipmentPosApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("result:{}",responseBody);
+        log.info("doRequest for paramJson:{},result:{}",paramJson,responseBody);
         return responseBody;
     }
 }

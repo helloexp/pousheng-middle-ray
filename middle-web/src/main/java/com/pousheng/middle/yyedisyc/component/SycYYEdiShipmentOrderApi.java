@@ -36,7 +36,7 @@ public class SycYYEdiShipmentOrderApi {
         YYediShipmentInfoRequest request = new YYediShipmentInfoRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("sync shipment to yyedi erp paramJson:{}",paramJson);
+        log.info("sync shipment to yyedi erp paramJson:{},serialNo:{}",paramJson,serialNo);
         String gateway =hkGateway + "/common/yyedi/default/pushorders";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -48,7 +48,7 @@ public class SycYYEdiShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync shipment to yyedi erp result:{}",responseBody);
+        log.info("sync shipment to yyedi erp result:{},serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 
@@ -56,7 +56,7 @@ public class SycYYEdiShipmentOrderApi {
     public String doSyncYJErpShipmentOrder(List<YJErpShipmentInfo> requestData) {
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
-        log.info("sync shipment to yj erp paramJson:{}",paramJson);
+        log.info("sync shipment to yj erp paramJson:{}, serialNo:{}",paramJson,serialNo);
         String gateway =hkGateway + "/common-yjerp/yjerp/default/pushmgorderset";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -67,7 +67,7 @@ public class SycYYEdiShipmentOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync shipment to yj erp result:{}",responseBody);
+        log.info("sync shipment to yj erp result:{} ,serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 }

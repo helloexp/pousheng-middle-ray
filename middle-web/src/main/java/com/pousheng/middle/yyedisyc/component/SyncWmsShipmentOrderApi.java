@@ -38,7 +38,7 @@ public class SyncWmsShipmentOrderApi {
         request.setTranReqDate(now);
         request.setBizContent(requestData);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("sync shipment to wms erp paramJson:{}", paramJson);
+        log.info("sync shipment to wms erp paramJson:{}, serialNo{}", paramJson,serialNo);
         String gateway = hkGateway + "/common/pserp/wms/wmsjitdeliver";
         String responseBody = HttpRequest.post(gateway)
             .header("verifycode", accessKey)
@@ -50,7 +50,7 @@ public class SyncWmsShipmentOrderApi {
             .connectTimeout(10000).readTimeout(10000)
             .body();
 
-        log.info("sync shipment to wms erp result:{}", responseBody);
+        log.info("sync shipment to wms erp result:{}, serialNo:{}", responseBody,serialNo);
         return responseBody;
     }
 }

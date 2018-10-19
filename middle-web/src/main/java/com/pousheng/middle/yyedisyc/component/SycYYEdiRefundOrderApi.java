@@ -36,7 +36,7 @@ public class SycYYEdiRefundOrderApi {
         YYEditReturnInfoRequest request = new YYEditReturnInfoRequest();
         request.setBody(body);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("sync refund to yyedi erp paramJson:{}",paramJson);
+        log.info("sync refund to yyedi erp paramJson:{}, serialNo:{}",paramJson,serialNo);
         String gateway =hkGateway+"/common/yyedi/default/pushrefunds";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -48,7 +48,7 @@ public class SycYYEdiRefundOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync refund to yyedi erp result:{}",responseBody);
+        log.info("sync refund to yyedi erp result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 
@@ -57,7 +57,7 @@ public class SycYYEdiRefundOrderApi {
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
-        log.info("sync refund to yj erp paramJson:{}",paramJson);
+        log.info("sync refund to yj erp paramJson:{} serialNo:{}",paramJson,serialNo);
         String gateway =hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
         String responseBody = HttpRequest.post(gateway)
                 .header("verifycode",accessKey)
@@ -68,7 +68,7 @@ public class SycYYEdiRefundOrderApi {
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync refund to yj erp result:{}",responseBody);
+        log.info("sync refund to yj erp result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }
 }

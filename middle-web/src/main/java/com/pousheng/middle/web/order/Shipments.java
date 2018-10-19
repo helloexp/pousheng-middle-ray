@@ -781,8 +781,20 @@ public class Shipments {
     @RequestMapping(value = "api/shipment/{id}/sync/hk", method = RequestMethod.PUT)
     public void syncHkShipment(@PathVariable(value = "id") Long shipmentId) {
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
+        // 京东预售单未支付尾款的不允许同步派发中心
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom())) {
+            Map<String, String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))) {
+                    throw new JsonResponseException("jd.order.not.paid");
+                }
+            }
+        }
+
         if (Objects.equals(orderShipment.getType(), 1)) {
-            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             Map<String, String> extraMap = shopOrder.getExtra();
             String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
             String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
@@ -803,7 +815,7 @@ public class Shipments {
         //发货仓库是mpos仓且是店仓则同步到门店
         if (Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
             log.info("sync shipment to mpos,shipmentId is {}", shipment.getId());
-            ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+            shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
             shipmentWiteLogic.handleSyncShipment(shipment, 2, shopOrder);
             ;
         } else {

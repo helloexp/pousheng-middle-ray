@@ -9,6 +9,7 @@ import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.web.events.trade.StepOrderNotifyHkEvent;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.erp.SyncErpShipmentLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -46,6 +47,8 @@ public class StepOrderNotifyHkListener {
     private SyncErpShipmentLogic syncErpShipmentLogic;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private ShipmentWiteLogic shipmentWiteLogic;
 
 
     @PostConstruct
@@ -75,10 +78,13 @@ public class StepOrderNotifyHkListener {
         for (OrderShipment orderShipment : orderShipmentFilter) {
             try {
                 Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipment(shipment);
-                log.info("auto create shipment,step xxx");
-                if (!syncRes.isSuccess()) {
-                    log.error("sync shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                // 仓发同步恒康
+                if(shipment.getType() == 2) {
+                    shipmentWiteLogic.handleSyncShipment(shipment, 1, shopOrder);
+                }
+                // 店发同步门店
+                else{
+                    shipmentWiteLogic.handleSyncShipment(shipment, 2, shopOrder);
                 }
             } catch (Exception e) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", orderShipment.getShipmentId(), Throwables.getStackTraceAsString(e));

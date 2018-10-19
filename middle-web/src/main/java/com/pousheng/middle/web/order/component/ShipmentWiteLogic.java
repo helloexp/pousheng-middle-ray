@@ -1628,6 +1628,19 @@ public class ShipmentWiteLogic {
 
                 }
 
+                //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
+                Map<String, String> extraMap = shopOrder.getExtra();
+                String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+                String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+                if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                    if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                        continue;
+                    }
+                    if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                        continue;
+                    }
+                }
+
                 //占库发货单不同步第三方渠道履约
                 if (!Objects.equals(shipment.getIsOccupyShipment(),ShipmentOccupyType.SALE_Y.name())){
                     this.handleSyncShipment(shipment, 2, shopOrder);

@@ -9,6 +9,7 @@ import com.pousheng.middle.web.utils.export.ExportTitleContext;
 import com.pousheng.middle.web.utils.export.ExportUtil;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.common.utils.AESEncryptUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 
@@ -50,6 +51,38 @@ public class ExportUtilTest {
 
 
     }
+
+
+
+    @Test
+    public void test3() throws Exception {
+
+            String encrypted="/2iolKPHf6GwgH9F5QGq8auAEK32gIViIN7QqgGQB2LhVBfl6GHol+miThOwuoT0uuABZ/w1bbh3\n" +
+                    "lQkuElHoVlHpFI15Z+FQz7apN9vIMOdrCgiUhMJDjt80As0HWjAch3vOAVkNVYHSKNT5I8oVi+DQ\n" +
+                    "nnYo69sdYALM9eUqMUctPboVfj58x4sUhXwgTLOkYXgYQN9kPn+tiiZhIXNNyueCx1SPPU3CoS/S\n" +
+                    "67fxtiUbwjKSGetmtQaBkmJUpsuuuY7vr2/wAud9JEGjne+IQ3Ypy1oxpuofos5RYkAEqdjPnVPs\n" +
+                    "dgiNCTPl7J9677p5stzJEbGvUFuQTu6ZwLSFKQ==";
+            String decrypted= AESEncryptUtil.aesDecrypt(encrypted, AESEncryptUtil.RECEIVER_INFO_ENCRYPT_KEY);
+            System.out.println("解密结果:");
+            System.out.println(decrypted);
+
+    }
+
+
+
+
+    @Test
+    public void test4() throws Exception {
+
+        String str="{\"mobile\":\"15027815507\",\"province\":\"北京\",\"provinceId\":110000,\"city\":\"北京市\",\"cityId\":110100,\"region\":\"东城区\",\"regionId\":110101,\"detail\":\"北京东城区内环到三环里东直门北小街11号张记焖窰\",\"extra\":{\"handleResult\":\"{\\\"success\\\":true}\"}}";
+        String encrypted= AESEncryptUtil.aesEncrypt(str, AESEncryptUtil.RECEIVER_INFO_ENCRYPT_KEY);
+        System.out.println("加密结果:");
+        System.out.println(encrypted);
+
+    }
+
+
+
 
     @Test
     public void orderExportTest() {

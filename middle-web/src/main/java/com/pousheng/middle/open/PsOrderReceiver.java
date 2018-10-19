@@ -535,8 +535,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected void saveParanaOrder(RichOrder richOrder) {
         RichSkusByShop orginRichSkusByShop = richOrder.getRichSkusByShops().get(0);
         if (Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.PAID.getValue())
-                || ((Objects.equals(MiddleChannel.JD.getValue(), orginRichSkusByShop.getOutFrom())
-                        || Objects.equals(MiddleChannel.TAOBAO.getValue(), orginRichSkusByShop.getOutFrom()))
+                || ((Objects.equals(MiddleChannel.JD.getValue(), orginRichSkusByShop.getOutFrom()))
                     && Objects.equals(orginRichSkusByShop.getOrderStatus(),OpenClientOrderStatus.NOT_PAID.getValue()))){
             //super.saveParanaOrder(richOrder);
             //重新实现父类saveParanaOrder逻辑，将eventBus修改为定时任务批处理方式

@@ -783,12 +783,14 @@ public class Shipments {
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         // 京东预售单未支付尾款的不允许同步派发中心
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom())) {
+        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom()) || Objects.equals(MiddleChannel.TAOBAO.getValue(), shopOrder.getOutFrom())) {
             Map<String, String> extraMap = shopOrder.getExtra();
             String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
             String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
             if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))) {
+                if (!StringUtils.isEmpty(stepOrderStatus)
+                        && (Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))
+                        || Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue())))) {
                     throw new JsonResponseException("jd.order.not.paid");
                 }
             }
@@ -1390,12 +1392,14 @@ public class Shipments {
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipmentId);
         // 京东预售单未支付尾款的不允许同步派发中心
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
-        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom())) {
+        if(Objects.equals(MiddleChannel.JD.getValue(), shopOrder.getOutFrom()) || Objects.equals(MiddleChannel.TAOBAO.getValue(), shopOrder.getOutFrom())) {
             Map<String, String> extraMap = shopOrder.getExtra();
             String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
             String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
             if(!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
-                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))) {
+                if (!StringUtils.isEmpty(stepOrderStatus)
+                        && (Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_PAID.getValue()))
+                                || Objects.equals(stepOrderStatus, String.valueOf(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue())))) {
                     throw new JsonResponseException("jd.order.not.paid");
                 }
             }

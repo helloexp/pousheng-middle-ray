@@ -19,11 +19,13 @@ import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
+import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -73,8 +75,24 @@ public class SyncErpShipmentLogic {
      */
     public Response<Boolean> syncShipment(Shipment shipment) {
         log.info("sync shipment start,shipment is {}", shipment);
+
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
+
+        //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
+        Map<String, String> extraMap = shopOrder.getExtra();
+        String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+        String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+        if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+            if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                log.info("this order is not all paid skit it order id is {}", shopOrder.getId());
+                return Response.fail("this.order.is.not.all.paid");
+            }
+            if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                log.info("this order is not  paid skit it order id is {}", shopOrder.getId());
+                return Response.fail("this.order.is.not.all.paid");
+            }
+        }
 
         // 云聚共享仓同步云聚erp
         if (shipment.getShipWay() == 2 && syncYJErp(shipment.getShipId())) {

@@ -1734,6 +1734,22 @@ public class ShipmentWiteLogic {
      */
     public void handleSyncShipment(Shipment shipment, Integer type, ShopOrder shopOrder) {
         try {
+
+            //如果存在预售类型的订单，且预售类型的订单没有支付尾款，此时不能同步恒康
+            Map<String, String> extraMap = shopOrder.getExtra();
+            String isStepOrder = extraMap.get(TradeConstants.IS_STEP_ORDER);
+            String stepOrderStatus = extraMap.get(TradeConstants.STEP_ORDER_STATUS);
+            if (!StringUtils.isEmpty(isStepOrder) && Objects.equals(isStepOrder, "true")) {
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_ALL_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                    log.info("this order is not all paid skit it order id is {}", shopOrder.getId());
+                    return;
+                }
+                if (!StringUtils.isEmpty(stepOrderStatus) && Objects.equals(OpenClientStepOrderStatus.NOT_PAID.getValue(), Integer.valueOf(stepOrderStatus))) {
+                    log.info("this order is not  paid skit it order id is {}", shopOrder.getId());
+                    return;
+                }
+            }
+
             if (Objects.equals(type, 1)) {
                 //发货单同步恒康
                 log.info("sync shipment(id:{}) to hk", shipment.getId());

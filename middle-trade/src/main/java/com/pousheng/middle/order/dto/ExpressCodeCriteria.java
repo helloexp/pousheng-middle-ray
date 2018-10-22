@@ -59,5 +59,10 @@ public class ExpressCodeCriteria extends PagingCriteria implements java.io.Seria
      */
     private String vipCode;
 
+    /**
+     * 官网快递代码
+     */
+    private String officalCode;
+
 
 }

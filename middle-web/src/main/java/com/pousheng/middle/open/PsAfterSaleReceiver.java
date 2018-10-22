@@ -258,7 +258,39 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         refundExtra.setShipmentSerialNo(shipmentSerialNo);
         //转换为中台的物流信息
         ExpressCodeCriteria criteria = new ExpressCodeCriteria();
-        criteria.setPoushengCode(shipmentCorpCode);
+        if(!Objects.isNull(shipmentCorpCode) && !Objects.equals(shipmentCorpCode,"")) {
+            MiddleChannel channel = MiddleChannel.from(refund.getChannel());
+            switch (channel) {
+                case JD:
+                    criteria.setJdCode(shipmentCorpCode);
+                case TAOBAO:
+                case TFENXIAO:
+                    criteria.setTaobaoCode(shipmentCorpCode);
+                case FENQILE:
+                    criteria.setFenqileCode(shipmentCorpCode);
+                case SUNING:
+                case SUNINGSALE:
+                    criteria.setSuningCode(shipmentCorpCode);
+                case OFFICIAL:
+                    criteria.setPoushengCode(shipmentCorpCode);
+                case YUNJUBBC:
+                    criteria.setOfficalCode(shipmentCorpCode);
+                case YUNJUJIT:
+                    criteria.setOfficalCode(shipmentCorpCode);
+                case CODOON:
+                    criteria.setCodoonCode(shipmentCorpCode);
+                case KAOLA:
+                    criteria.setKaolaCode(shipmentCorpCode);
+                case VIP:
+                    criteria.setVipCode(shipmentCorpCode);
+                default:
+                    log.error("there is not any express info by channel:{} and poushengCode:{}", channel.getValue(), shipmentCorpCode);
+                    throw new JsonResponseException("find.expressCode.failed");
+            }
+        }else if(!Objects.isNull(shipmentCorpName) && !Objects.equals(shipmentCorpName,"")) {
+            criteria.setName(shipmentCorpName);
+        }
+
         Response<Paging<ExpressCode>> response = expressCodeReadService.pagingExpressCode(criteria);
         if (!response.isSuccess()) {
             log.error("failed to pagination expressCode with criteria:{}, error code:{}", criteria, response.getError());

@@ -19,6 +19,7 @@ import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -67,7 +68,8 @@ public class TotalWarehouseDispatchLink implements DispatchOrderLink{
         Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         //收货地址明细
         String address = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion() + receiverInfo.getDetail();
-        String addressRegion = receiverInfo.getProvince() + receiverInfo.getCity() + receiverInfo.getRegion();
+        String region = Strings.isNullOrEmpty(receiverInfo.getRegion()) ? "" : receiverInfo.getRegion();
+        String addressRegion = receiverInfo.getProvince() + receiverInfo.getCity() + region;
         context.put(DispatchContants.BUYER_ADDRESS,address);
         context.put(DispatchContants.BUYER_ADDRESS_REGION,addressRegion);
 

@@ -108,18 +108,37 @@ public class WarehouseSkuStockManager {
         List<InventoryTradeDTO> tradeList = Lists.newArrayList();
         List<InventoryTradeDTO> releaseList = Lists.newArrayList();
         List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
-        Map<Long, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
-                .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getShipQuantity));
-        for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
-            if (itemMap.get(sq.getSkuOrderId()) == null) {
-                continue;
+        //兼容售后单
+        if (items.get(0).getSkuOrderId() != null) {
+            Map<Long, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
+                    .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getShipQuantity));
+
+            for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
+                if (itemMap.get(sq.getSkuOrderId()) == null) {
+                    continue;
+                }
+                if (itemMap.get(sq.getSkuOrderId()) < sq.getQuantity()) {
+                    unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
+                            .quantity(sq.getQuantity() - itemMap.get(sq.getSkuOrderId())));
+                }
+                sq.setQuantity(itemMap.get(sq.getSkuOrderId()));
             }
-            if (itemMap.get(sq.getSkuOrderId()) < sq.getQuantity()) {
-                unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
-                        .quantity(sq.getQuantity() - itemMap.get(sq.getSkuOrderId())));
+        } else {
+            Map<String, Integer> itemMap = items.stream().filter(e -> e.getSkuCode() != null)
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
+
+            for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
+                if (itemMap.get(sq.getSkuCode()) == null) {
+                    continue;
+                }
+                if (itemMap.get(sq.getSkuCode()) < sq.getQuantity()) {
+                    unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
+                            .quantity(sq.getQuantity() - itemMap.get(sq.getSkuCode())));
+                }
+                sq.setQuantity(itemMap.get(sq.getSkuCode()));
             }
-            sq.setQuantity(itemMap.get(sq.getSkuOrderId()));
         }
+
         tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),
                 inventoryTradeDTO, actualShipment.getSkuCodeAndQuantities()));
 
@@ -218,7 +237,7 @@ public class WarehouseSkuStockManager {
 
     /**
      * 扣减失败补偿
-     * @param context
+     * @param shipmentId
      */
     private void createDecreaseStockTask(Long shipmentId){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();

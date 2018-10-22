@@ -178,9 +178,6 @@ public class ShopStockPusher {
                         if (Objects.equals(openShop.getChannel(), MiddleChannel.OFFICIAL.getValue())) {
                             log.info("start to push to official shop: {}, with quantity: {}", openShop, stock);
                             paranaSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
-                        } else if(Objects.equals(openShop.getChannel(), MiddleChannel.VIP.getValue())){
-                            log.info("start to push to vip shop: {}, with quantity: {}", openShop, stock);
-                            vipSkuStock.put(shopId, skuCode, Math.toIntExact(stock));
                         } else {
                             log.info("start to push to third part shop: {}, with quantity: {}", openShop, stock);
                             //库存推送-----第三方只支持单笔更新库存,使用线程池并行处理
@@ -213,11 +210,6 @@ public class ShopStockPusher {
         if(!paranaSkuStock.isEmpty()) {
             stockPushLogic.sendToParana(paranaSkuStock);
         }
-        //唯品会支持批量推送
-        if(!vipSkuStock.isEmpty()){
-            stockPushLogic.sendToParana(vipSkuStock);
-        }
-
         if (log.isDebugEnabled()) {
             log.debug("STOCK-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}", skuCodes, System.currentTimeMillis());
         }

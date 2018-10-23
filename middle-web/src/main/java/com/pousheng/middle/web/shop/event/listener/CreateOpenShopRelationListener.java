@@ -68,6 +68,7 @@ public class CreateOpenShopRelationListener {
         openShop.setShopName("mpos-"+exist.getName());
         openShop.setAccessToken("xxx");
         openShop.setAppKey(exist.getBusinessId()+"-"+exist.getOuterId());
+        openShop.setStatus(1);
         openShop.setGateway(gateway);
         openShop.setSecret(exist.getOuterId()+"93204aefe45d47f6e488");
         Map<String,String> openExtra = Maps.newHashMap();

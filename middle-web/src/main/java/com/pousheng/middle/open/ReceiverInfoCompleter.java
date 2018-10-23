@@ -6,6 +6,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.middle.gd.GDMapSearchService;
 import com.pousheng.middle.gd.Location;
 import com.pousheng.middle.hksyc.dto.trade.ReceiverInfoHandleResult;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.Municipality;
 import com.pousheng.middle.warehouse.cache.WarehouseAddressCacher;
 import com.pousheng.middle.warehouse.model.WarehouseAddress;
@@ -35,10 +36,16 @@ public class ReceiverInfoCompleter {
     @Autowired
     private GDMapSearchService gdMapSearchService;
 
+    /**
+     * 当地址无法解析是 截取前n位解析
+     */
+    private static final Integer INTERCEPT_LENGTH = 9;
+
     public void complete(ReceiverInfo receiverInfo){
         ReceiverInfoHandleResult handleResult = new ReceiverInfoHandleResult();
         handleResult.setSuccess(Boolean.TRUE);
         List<String> errors = Lists.newArrayList();
+        Map<String,String> extraMap = Maps.newHashMap();
         //特殊处理直辖市,京东市一级的地址是区，用省的字段填充市
         List<String> municipalities = Lists.newArrayList(Municipality.SHANGHAI.getName(),Municipality.SHANGHAI.getDesc(),Municipality.BEIJING.getName(),Municipality.BEIJING.getDesc()
                 ,Municipality.TIANJIN.getName(),Municipality.TIANJIN.getDesc(),Municipality.CHONGQING.getName(),Municipality.CHONGQING.getDesc());
@@ -51,16 +58,21 @@ public class ReceiverInfoCompleter {
 
         if(Arguments.isNull(receiverInfo.getProvince()) && Arguments.isNull(receiverInfo.getCity()) && Arguments.isNull(receiverInfo.getRegion())) {
             // 调用高德api
-            Response<Optional<Location>>  locationRes = gdMapSearchService.searchByAddress(receiverInfo.getDetail());
-            if(!locationRes.isSuccess()){
-                log.error("find location by address:{} fail,error:{}",receiverInfo.getDetail(),locationRes.getError());
-            }
-            if(locationRes.getResult().isPresent()) {
-                Location location =  locationRes.getResult().get();
+            Optional<Location> result = queryAddress(receiverInfo.getDetail());
+            if (result != null && result.isPresent()) {
+                Location location = result.get();
                 log.info("api from gd location info {}", location);
                 receiverInfo.setCity(location.getCityname());
                 receiverInfo.setProvince(location.getPname());
-                receiverInfo.setRegion(location.getAdname());
+            } else {
+                Optional<Location> vagueResult = queryAddress(receiverInfo.getDetail().substring(0, receiverInfo.getDetail().length() > INTERCEPT_LENGTH ? INTERCEPT_LENGTH : receiverInfo.getDetail().length()));
+                if (vagueResult != null && vagueResult.isPresent()) {
+                    Location location = vagueResult.get();
+                    log.info("api from gd vague location info {}", location);
+                    receiverInfo.setCity(location.getCityname());
+                    receiverInfo.setProvince(location.getPname());
+                    extraMap.put(TradeConstants.VAUGE_ADDRESS, Boolean.TRUE.toString());
+                }
             }
         }
 
@@ -84,19 +96,6 @@ public class ReceiverInfoCompleter {
             handleResult.setSuccess(Boolean.FALSE);
             errors.add("第三方渠道市："+ receiverInfo.getCity()+ "未匹配到中台的市");
         }
-//
-//        if (StringUtils.hasText(receiverInfo.getRegion())){
-//            Long regionId = queryAddressId(cityId,receiverInfo.getRegion());
-//            if(Arguments.notNull(regionId)){
-//                receiverInfo.setRegionId(Integer.valueOf(regionId.toString()));
-//            }else {
-//                handleResult.setSuccess(Boolean.FALSE);
-//                errors.add("第三方渠道区："+receiverInfo.getRegion()+"未匹配到中台的区");
-//            }
-//        }
-//
-//        handleResult.setErrors(errors);
-        Map<String,String> extraMap = Maps.newHashMap();
         extraMap.put("handleResult", JsonMapper.JSON_NON_EMPTY_MAPPER.toJson(handleResult));
         receiverInfo.setExtra(extraMap);
 
@@ -125,26 +124,6 @@ public class ReceiverInfoCompleter {
         if(Arguments.notNull(cityId)){
             address.setCityId(cityId);
         }
-//
-//        if (StringUtils.hasText(address.getRegion())){
-//            List<String> specialRegions = Lists.newArrayList(SpecialRegion.YUANQU.getName(),SpecialRegion.YUANQU.getDesc());
-//            if (specialRegions.contains(address.getRegion())){
-//                Long regionId = queryAddressId(cityId,SpecialRegion.YUANQU.getName());
-//                if(Arguments.notNull(regionId)){
-//                    address.setRegionId(regionId);
-//                }else{
-//                    regionId = queryAddressId(cityId,SpecialRegion.YUANQU.getDesc());
-//                    if(Arguments.notNull(regionId)) {
-//                        address.setRegionId(regionId);
-//                    }
-//                }
-//            }else{
-//                Long regionId = queryAddressId(cityId,address.getRegion());
-//                if(Arguments.notNull(regionId)){
-//                    address.setRegionId(regionId);
-//                }
-//            }
-//        }
     }
 
     private Long queryAddressId(Long pid,String name){
@@ -169,5 +148,12 @@ public class ReceiverInfoCompleter {
         return null;
     }
 
+    private Optional<Location> queryAddress(String detail) {
+        Response<Optional<Location>> locationRes = gdMapSearchService.searchByAddress(detail);
+        if (!locationRes.isSuccess()) {
+            log.error("find location by address:{} fail,error:{}", detail, locationRes.getError());
+        }
+        return locationRes.getResult();
+    }
 
 }

@@ -62,6 +62,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -541,6 +542,11 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             //重新实现父类saveParanaOrder逻辑，将eventBus修改为定时任务批处理方式
             if (richOrder == null) {
                 return;
+            }
+            if (richOrder.getReceiverInfo().getExtra().containsKey(TradeConstants.VAUGE_ADDRESS)) {
+                for (RichSkusByShop order : richOrder.getRichSkusByShops()) {
+                    order.getExtra().put(TradeConstants.VAUGE_ADDRESS, richOrder.getReceiverInfo().getExtra().get(TradeConstants.VAUGE_ADDRESS));
+                }
             }
             Response<List<Long>> createR = orderWriteService.create(richOrder);
             if (!createR.isSuccess()) {

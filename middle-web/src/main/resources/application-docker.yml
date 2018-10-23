@@ -29,6 +29,7 @@ spring:
       max-lifetime: 30000
       connection-timeout: 30000
       validation-timeout: 15000
+  #用户登陆和分布式缓存使用的redis
   redis:
     host: ${POUSHENG_REDIS_HOST}
     port: ${POUSHENG_REDIS_PORT}
@@ -80,6 +81,7 @@ session:
   redis-max-idle: 0
   redis-prefix: afsession
 
+# 代码中redis操作使用的redis
 redis:
   host: ${POUSHENG_REDIS_HOST}
   port: ${POUSHENG_REDIS_PORT}
@@ -147,11 +149,12 @@ curator:
 open.client.import.enable: true
 
 
-
+# es基础配置
 search:
   host: ${POUSHENG_ES_HOST}
   port: ${POUSHENG_ES_PORT}
 
+# 商品信息的es配置
 skutemplate:
   search:
     index-name: skutemplates
@@ -160,6 +163,7 @@ skutemplate:
     full-dump-range: -1
     batch-size: 10000
 
+# 库存日志es的配置
 stocklog:
   search:
     index-name: stocklogs
@@ -222,17 +226,24 @@ jd.yunding.app.key: pousheng
 jd.yunding.secret: 6a0e@93204aefe45d47f6e488
 jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 
-
+#middle的订单商品库存等job开关
 trade.job.enable: ${TRADE_JOB_ENABLE}
 
 open.client.sync.after.sale.job.enable: ${TRADE_JOB_ENABLE}
 open.client.sync.after.sale.exchange.job.enable: ${TRADE_JOB_ENABLE}
+
+#拉取商品映射job开关
 open.client.sync.item.mapping.job.enable: ${TRADE_JOB_ENABLE}
+
 open.client.sync.item.open.id.job.enable: ${TRADE_JOB_ENABLE}
+
+#同步订单job开关
 open.client.sync.order.job.enable: ${TRADE_JOB_ENABLE}
 
 #中台拉取订单时间范围（拉取前多少分钟）
 open.client.sync.paid.order.duration.in.minute: ${PULL_PAID_ORDER_DUARATION}
+
+#中台拉取确认收货时间范围（拉取前多少分钟）
 open.client.sync.confirmed.order.duration.in.minute: ${PULL_CONFIRMED_ORDER_DUARATION}
 
 #中台拉取售后单时间范围(拉取前多少分钟)
@@ -245,6 +256,7 @@ open.client.fetch.item.cron: ${PULL_ITEM_MAPPING_CRON}
 #获取宿主机ip
 order.current.ip: ${TERMINUS_HOST:localhost}
 
+# mq的基础信息配置
 terminus:
   rocketmq:
     nameServerAddress: ${MQ_NAME_ADDR}
@@ -269,8 +281,10 @@ failed.order.warning.email.receives: ${FAILED_ORDER_WARNING_EMAIL_RECEIVES}
 # 失败订单和发货单邮件通知JOB的触发器表达式
 failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
 
+# job开关 用于商品分组和自动归组job和库存日志接受
 is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
 
+# 库存日志mq消息的topic
 terminus.rocketmq.stockLogTopic: stockLogTopic
 
 #最后库存推送记录缓存开关

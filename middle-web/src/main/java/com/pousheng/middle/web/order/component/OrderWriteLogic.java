@@ -157,30 +157,41 @@ public class OrderWriteLogic {
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
         Flow flow = flowPicker.pickOrder();
 
+        List<SkuOrder> updateSkuOrders = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders) {
-            //1. 更新extra中剩余待处理数量
-            Response<Integer> handleRes = updateSkuOrderExtra(skuOrder, skuOrderIdAndQuantity);
+            SkuOrder updateSkuOrder = new SkuOrder();
+            updateSkuOrder.setId(skuOrder.getId());
+            //1. 封装extra中剩余待处理数量
+            Response<Integer> handleRes = makeSkuOrderExtra(skuOrder, skuOrderIdAndQuantity);
             //2. 判断是否需要更新子单状态
-            if (handleRes.isSuccess()) {
-                Integer targetStatus;
-                //如果剩余数量为0则更新子单状态为待发货
-                if (handleRes.getResult() == 0) {
-                    targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
-                } else {
-                    targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation());
-                }
-
-                Response<Boolean> updateSkuOrderResp = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), targetStatus);
-                if (!updateSkuOrderResp.isSuccess()) {
-                    log.error("fail to update sku shop order(id={}) from current status:{} to target:{},cause:{}",
-                            skuOrder.getId(), skuOrder.getStatus(), targetStatus);
-                    throw new ServiceException(updateSkuOrderResp.getError());
-                }
+            if (!handleRes.isSuccess()) {
+                log.error("makeSkuOrderExtra for skuorder:{} skuOrderIdAndQuantity:{} fail,error:{}",skuOrder,skuOrderIdAndQuantity);
+                throw new JsonResponseException(handleRes.getError());
             }
+
+            Integer targetStatus;
+            //如果剩余数量为0则更新子单状态为待发货
+            if (handleRes.getResult() == 0) {
+                targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE_DONE.toOrderOperation());
+            } else {
+                targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation());
+            }
+
+            updateSkuOrder.setStatus(targetStatus);
+            updateSkuOrder.setExtra(skuOrder.getExtra());
+            updateSkuOrders.add(updateSkuOrder);
+
+        }
+
+        Response<Boolean> updateSkuOrderResp = orderWriteService.updateStatusAndExtraJsonBatch(updateSkuOrders);
+        if (!updateSkuOrderResp.isSuccess()) {
+            log.error("fail to update updateSkuOrders:{},error:{}",
+                    updateSkuOrders, updateSkuOrderResp.getError());
+            throw new ServiceException(updateSkuOrderResp.getError());
         }
     }
 
-    private Response<Integer> updateSkuOrderExtra(SkuOrder skuOrder, Map<Long, Integer> skuOrderIdAndQuantity) {
+    private Response<Integer> makeSkuOrderExtra(SkuOrder skuOrder, Map<Long, Integer> skuOrderIdAndQuantity) {
         Map<String, String> extraMap = skuOrder.getExtra();
         if (CollectionUtils.isEmpty(extraMap)) {
             log.error("sku order(id:{}) extra is null,can not update wait handle number reduce：{}", skuOrder.getId(), skuOrderIdAndQuantity.get(skuOrder.getId()));
@@ -202,11 +213,12 @@ public class OrderWriteLogic {
             return Response.fail("handle.number.get.wait.handle.number");
         }
         extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(remainNumber));
-        Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
+        skuOrder.setExtra(extraMap);
+    /*    Response<Boolean> response = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
         if (!response.isSuccess()) {
             log.error("update sku order：{} extra map to:{} fail,error:{}", skuOrder.getId(), extraMap, response.getError());
             return Response.fail(response.getError());
-        }
+        }*/
 
         return Response.ok(remainNumber);
     }

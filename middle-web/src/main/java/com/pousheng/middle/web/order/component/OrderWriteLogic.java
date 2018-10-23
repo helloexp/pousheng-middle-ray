@@ -159,8 +159,6 @@ public class OrderWriteLogic {
 
         List<SkuOrder> updateSkuOrders = Lists.newArrayListWithCapacity(skuOrders.size());
         for (SkuOrder skuOrder : skuOrders) {
-            SkuOrder updateSkuOrder = new SkuOrder();
-            updateSkuOrder.setId(skuOrder.getId());
             //1. 封装extra中剩余待处理数量
             Response<Integer> handleRes = makeSkuOrderExtra(skuOrder, skuOrderIdAndQuantity);
             //2. 判断是否需要更新子单状态
@@ -177,8 +175,11 @@ public class OrderWriteLogic {
                 targetStatus = flow.target(skuOrder.getStatus(), MiddleOrderEvent.HANDLE.toOrderOperation());
             }
 
+            SkuOrder updateSkuOrder = new SkuOrder();
+            updateSkuOrder.setId(skuOrder.getId());
             updateSkuOrder.setStatus(targetStatus);
             updateSkuOrder.setExtra(skuOrder.getExtra());
+            updateSkuOrder.setOrderId(skuOrder.getOrderId());
             updateSkuOrders.add(updateSkuOrder);
 
         }

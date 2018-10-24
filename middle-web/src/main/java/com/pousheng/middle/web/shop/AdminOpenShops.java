@@ -62,9 +62,7 @@ public class AdminOpenShops {
                                    @RequestParam(required = false) Integer status,
                                    @RequestParam(required = false) Integer pageNo,
                                    @RequestParam(required = false) Integer pageSize) {
-        if (Arguments.isNull(status)) {
-            status = OpenShopEnum.enable_open_shop_enum.getIndex();
-        }
+
         Response<Paging<OpenShop>> resp = openShopReadService.pagination(shopName, channel, status, pageNo, pageSize);
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
@@ -112,7 +110,9 @@ public class AdminOpenShops {
     @RequestMapping(value = "/create", method = RequestMethod.POST,
             produces = MediaType.APPLICATION_JSON_VALUE)
     public Long createOpenShop(@RequestBody OpenShop openShop) {
-        openShop.setStatus(OpenShopEnum.enable_open_shop_enum.getIndex());
+        if (!openShop.getChannel().startsWith("yunju")) {
+            openShop.setStatus(OpenShopEnum.enable_open_shop_enum.getIndex());
+        }
         // 渠道对应的json信息特殊处理下
         addExtraInfo(openShop);
         Response<Long> response = openShopWriteService.create(openShop);

@@ -308,4 +308,9 @@ public class TradeConstants {
      */
     public static final String SKX_REFUND_FREEZE_FLAG = "skxFreeze";
 
+    /**
+     * 解析失败，模糊地址
+     */
+    public static final String VAUGE_ADDRESS = "vagueAddress";
+
 }

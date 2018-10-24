@@ -22,6 +22,9 @@ public class ShipmentExtra implements Serializable{
 
     //发货仓名称
     private String warehouseName;
+    
+    //发货仓电话号码
+    private String warehouseTelephone;
 
     //绩效店铺名称
     private String erpPerformanceShopName;
@@ -35,6 +38,8 @@ public class ShipmentExtra implements Serializable{
     private String erpOrderShopCode;
     //下单店铺外码
     private String erpOrderShopOutCode;
+    //下单店铺电话号码
+    private String erpOrderShopTelephone;
     //发货单商品金额
     private Long shipmentItemFee;
     //发货单运费金额

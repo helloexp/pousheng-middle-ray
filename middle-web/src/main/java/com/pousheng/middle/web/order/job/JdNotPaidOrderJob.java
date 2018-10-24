@@ -15,6 +15,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
@@ -24,8 +27,8 @@ import java.util.List;
  * @date: 2018/10/12下午1:26
  */
 @ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
-@Component
 @Slf4j
+@RestController
 public class JdNotPaidOrderJob{
 
 
@@ -45,7 +48,8 @@ public class JdNotPaidOrderJob{
      * 对京东渠道待发货的单据，
      * 判断上游有取消动作来进行逆向取消
      */
-    @Scheduled(cron = "0 0/20 * * * ? ")
+    @RequestMapping(value = "/jd/order/job", method = RequestMethod.GET)
+    @Scheduled(cron = "0 0 23 * * ?")
     public void doJdNotPaidOrder() {
         if(!hostLeader.isLeader()) {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
@@ -84,10 +88,8 @@ public class JdNotPaidOrderJob{
                 log.error("auto cancel jd shop order {} fail, error {} ", shopOrder.getId(), Throwables.getStackTraceAsString(e));
                 return;
             }
+            log.info("cancel shop order success by out id {}", outerOrderId);
             log.info("END JOB JdNotPaidOrderJob.doJdNotPaidOrder");
-
-            jdRedisHandler.consume();
-            log.info("redis current content is {}", jdRedisHandler.getRedisValue());
         });
     }
 

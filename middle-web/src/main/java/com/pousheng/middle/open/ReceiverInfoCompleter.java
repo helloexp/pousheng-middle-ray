@@ -56,7 +56,7 @@ public class ReceiverInfoCompleter {
             }
         }
 
-        if(Arguments.isNull(receiverInfo.getProvince()) && Arguments.isNull(receiverInfo.getCity()) && Arguments.isNull(receiverInfo.getRegion())) {
+        if (Arguments.isNull(receiverInfo.getProvince()) || Arguments.isNull(receiverInfo.getCity())) {
             // 调用高德api
             Optional<Location> result = queryAddress(receiverInfo.getDetail());
             if (result != null && result.isPresent()) {

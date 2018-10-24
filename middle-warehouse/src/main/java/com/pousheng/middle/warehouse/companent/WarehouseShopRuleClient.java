@@ -116,8 +116,11 @@ public class WarehouseShopRuleClient {
      */
     public Response<ShopStockRuleDto> findByShopIdAndSku(Long shopId, String skuCode) {
         try {
-            return Response.ok((ShopStockRuleDto) inventoryBaseClient.get("api/inventory/shop-rule/findByShopIdAndSku/" + shopId + "/" + skuCode,
-                    null, null, Maps.newHashMap(), ShopStockRuleDto.class, false));
+            Map<String, Object> params = Maps.newHashMap();
+            params.put("shopId", shopId);
+            params.put("skuCode", skuCode);
+            return Response.ok((ShopStockRuleDto) inventoryBaseClient.get("api/inventory/shop-rule/findByShopIdAndSku",
+                    null, null, params, ShopStockRuleDto.class, false));
         } catch (Exception e) {
             log.info("find shop rule by shop and skuCode fail, shopId:{}, skuCode:{}, cause:{}", shopId, skuCode, e.getMessage());
 

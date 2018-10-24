@@ -543,7 +543,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             if (richOrder == null) {
                 return;
             }
-            if (richOrder.getReceiverInfo().getExtra().containsKey(TradeConstants.VAUGE_ADDRESS)) {
+            if (Arguments.notNull(richOrder.getReceiverInfo().getExtra()) && richOrder.getReceiverInfo().getExtra().containsKey(TradeConstants.VAUGE_ADDRESS)) {
                 for (RichSkusByShop order : richOrder.getRichSkusByShops()) {
                     order.getExtra().put(TradeConstants.VAUGE_ADDRESS, richOrder.getReceiverInfo().getExtra().get(TradeConstants.VAUGE_ADDRESS));
                 }

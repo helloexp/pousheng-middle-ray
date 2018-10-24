@@ -152,6 +152,7 @@ public class ReceiverInfoCompleter {
         Response<Optional<Location>> locationRes = gdMapSearchService.searchByAddress(detail);
         if (!locationRes.isSuccess()) {
             log.error("find location by address:{} fail,error:{}", detail, locationRes.getError());
+            return Optional.absent();
         }
         return locationRes.getResult();
     }

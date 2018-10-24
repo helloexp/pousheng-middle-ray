@@ -543,11 +543,18 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             if (richOrder == null) {
                 return;
             }
-            if (Arguments.notNull(richOrder.getReceiverInfo().getExtra()) && richOrder.getReceiverInfo().getExtra().containsKey(TradeConstants.VAUGE_ADDRESS)) {
-                for (RichSkusByShop order : richOrder.getRichSkusByShops()) {
-                    order.getExtra().put(TradeConstants.VAUGE_ADDRESS, richOrder.getReceiverInfo().getExtra().get(TradeConstants.VAUGE_ADDRESS));
+            try {
+                if (Arguments.notNull(orginRichSkusByShop.getReceiverInfo().getExtra()) && orginRichSkusByShop.getReceiverInfo().getExtra().containsKey(TradeConstants.VAUGE_ADDRESS)) {
+                    for (RichSkusByShop order : richOrder.getRichSkusByShops()) {
+                        order.getExtra().put(TradeConstants.VAUGE_ADDRESS, richOrder.getReceiverInfo().getExtra().get(TradeConstants.VAUGE_ADDRESS));
+                    }
                 }
+
+            } catch (Exception e){
+                log.error("set address flag error for richorder:{} cause:{}",richOrder,Throwables.getStackTraceAsString(e));
+
             }
+
             Response<List<Long>> createR = orderWriteService.create(richOrder);
             if (!createR.isSuccess()) {
                 log.error("fail to save order:{},cause:{}", richOrder, createR.getError());

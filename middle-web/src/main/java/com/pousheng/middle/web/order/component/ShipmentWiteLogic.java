@@ -2208,10 +2208,10 @@ public class ShipmentWiteLogic {
         //判断发货单是仓发还是店发
         if (Objects.equals(shipment.getShipWay(),1)){
             log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
-            this.handleSyncShipment(shipment,2,shopOrder);;
+            this.handleSyncShipment(shipment,2,shopOrder);
         }else{
             log.info("sync shipment to ecp,shipmentId is {}",shipment.getId());
-            this.handleSyncShipment(shipment,1,shopOrder);;
+            this.handleSyncShipment(shipment,1,shopOrder);
         }
 
     }

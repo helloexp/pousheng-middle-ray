@@ -78,14 +78,15 @@ public class StepOrderNotifyHkListener {
         for (OrderShipment orderShipment : orderShipmentFilter) {
             try {
                 Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
-                // 仓发同步恒康
-                if(shipment.getType() == 2) {
+                //判断发货单是仓发还是店发
+                if (Objects.equals(shipment.getShipWay(),1)){
+                    log.info("sync shipment to mpos,shipmentId is {}",shipment.getId());
+                    shipmentWiteLogic.handleSyncShipment(shipment, 2, shopOrder);
+                } else{
+                    log.info("sync shipment to erp,shipmentId is {}",shipment.getId());
                     shipmentWiteLogic.handleSyncShipment(shipment, 1, shopOrder);
                 }
-                // 店发同步门店
-                else{
-                    shipmentWiteLogic.handleSyncShipment(shipment, 2, shopOrder);
-                }
+
             } catch (Exception e) {
                 log.error("sync shipment(id:{}) to hk fail,error:{}", orderShipment.getShipmentId(), Throwables.getStackTraceAsString(e));
             }

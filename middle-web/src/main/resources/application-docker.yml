@@ -262,6 +262,13 @@ open.client.fetch.item.threeTime.cron: ${PULL_ITEM_MAPPING_CRON_THREETIME}
 #获取宿主机ip
 order.current.ip: ${TERMINUS_HOST:localhost}
 
+# 官网订单可以拉取订单的服务器地址，具体由业务配置
+official.order.ip: ${OFFICIAL_ORDER_IP:localhost}
+
+#大促模式开关,平时可以关闭，在paas中设置为false；大促期间设置为true
+is.pousheng.activity.mode:${IS_POUSHENG_ACTIVITY_MODE: false}
+
+
 # mq的基础信息配置
 terminus:
   rocketmq:

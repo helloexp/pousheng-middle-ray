@@ -31,10 +31,23 @@ public class SkuCodeAndQuantity implements Serializable {
     private Integer quantity;
 
     /**
+     * 发货数量
+     */
+    private Integer shipQuantity;
+
+    /**
      * 发货明细Id
      */
     private Long shipmentItemId;
 
+    public Integer getShipQuantity() {
+        return shipQuantity;
+    }
+
+    public SkuCodeAndQuantity shipQuantity(Integer shipQuantity) {
+        this.shipQuantity = shipQuantity;
+        return this;
+    }
 
     public Long getSkuOrderId() {
         return skuOrderId;

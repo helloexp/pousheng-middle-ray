@@ -92,6 +92,7 @@ public class ImportSkuStockRuleService implements CompensateBizService {
         }
         poushengCompensateBiz = makeRules(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
+        log.info("import sku stock rule end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalSkuStockRuleRecord> helper, String[] strs, String error) {

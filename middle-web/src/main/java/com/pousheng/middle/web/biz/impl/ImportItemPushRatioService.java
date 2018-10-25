@@ -70,6 +70,8 @@ public class ImportItemPushRatioService implements CompensateBizService {
         }
         poushengCompensateBiz = handle(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
+
+        log.info("import item push ratio end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }
 
     private PoushengCompensateBiz handle(PoushengCompensateBiz poushengCompensateBiz) {

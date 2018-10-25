@@ -15,6 +15,8 @@ public class SkuStockRuleImportInfo implements Serializable{
 
     private String filePath;
 
+    private String fileName;
+
     private Long openShopId;
 
     private Long warehouseId;
@@ -27,6 +29,15 @@ public class SkuStockRuleImportInfo implements Serializable{
 
     public SkuStockRuleImportInfo filePath(String filePath) {
         this.filePath = filePath;
+        return this;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public SkuStockRuleImportInfo fileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 

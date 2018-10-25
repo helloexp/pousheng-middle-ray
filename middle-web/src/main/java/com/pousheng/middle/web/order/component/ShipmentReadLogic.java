@@ -629,11 +629,16 @@ public class ShipmentReadLogic {
         for (ShipmentItem shipmentItem : shipmentItems) {
             current.add(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
         }
+        Multiset<String> shipCurrent = ConcurrentHashMultiset.create();
+        for (ShipmentItem shipmentItem : shipmentItems) {
+            shipCurrent.add(shipmentItem.getSkuCode(), shipmentItem.getShipQuantity());
+        }
 
         for (String skuCode : current.elementSet()){
             SkuCodeAndQuantity skuCodeAndQuantity = new SkuCodeAndQuantity();
             skuCodeAndQuantity.setSkuCode(skuCode);
             skuCodeAndQuantity.setQuantity(current.count(skuCode));
+            skuCodeAndQuantity.setShipQuantity(shipCurrent.count(skuCode));
             skuCodeAndQuantities.add(skuCodeAndQuantity);
         }
 

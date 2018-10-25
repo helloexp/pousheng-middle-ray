@@ -109,34 +109,13 @@ public class WarehouseSkuStockManager {
         List<InventoryTradeDTO> releaseList = Lists.newArrayList();
         List<SkuCodeAndQuantity> unlockList = Lists.newArrayList();
         //兼容售后单
-        if (items.get(0).getSkuOrderId() != null) {
-            Map<Long, Integer> itemMap = items.stream().filter(e -> e.getShipQuantity() != null)
-                    .collect(Collectors.toMap(ShipmentItem::getSkuOrderId, ShipmentItem::getShipQuantity));
 
-            for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
-                if (itemMap.get(sq.getSkuOrderId()) == null) {
-                    continue;
-                }
-                if (itemMap.get(sq.getSkuOrderId()) < sq.getQuantity()) {
-                    unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
-                            .quantity(sq.getQuantity() - itemMap.get(sq.getSkuOrderId())));
-                }
-                sq.setQuantity(itemMap.get(sq.getSkuOrderId()));
+        for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
+            if (sq.getShipQuantity() < sq.getQuantity()) {
+                unlockList.add(new SkuCodeAndQuantity().skuCode(sq.getSkuCode())
+                        .quantity(sq.getQuantity() - sq.getShipQuantity()));
             }
-        } else {
-            Map<String, Integer> itemMap = items.stream().filter(e -> e.getSkuCode() != null)
-                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, ShipmentItem::getShipQuantity));
-
-            for (SkuCodeAndQuantity sq : actualShipment.getSkuCodeAndQuantities()) {
-                if (itemMap.get(sq.getSkuCode()) == null) {
-                    continue;
-                }
-                if (itemMap.get(sq.getSkuCode()) < sq.getQuantity()) {
-                    unlockList.add(new SkuCodeAndQuantity().skuOrderId(sq.getSkuOrderId()).skuCode(sq.getSkuCode())
-                            .quantity(sq.getQuantity() - itemMap.get(sq.getSkuCode())));
-                }
-                sq.setQuantity(itemMap.get(sq.getSkuCode()));
-            }
+            sq.setQuantity(sq.getShipQuantity());
         }
 
         tradeList.addAll(genTradeContextList(actualShipment.getWarehouseId(),

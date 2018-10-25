@@ -7,6 +7,7 @@ import com.google.common.collect.Maps;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
 import com.pousheng.middle.common.utils.batchhandle.ExcelExportHelper;
 import com.pousheng.middle.common.utils.batchhandle.ItemSupplyRuleAbnormalRecord;
+import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.open.stock.StockPusherLogic;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -23,6 +24,7 @@ import com.pousheng.middle.web.utils.HandlerFileUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.dto.OpenClientShop;
@@ -99,10 +101,13 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
         }
         poushengCompensateBiz = handle(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
+
+        log.info("import item supply rule end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }
 
     protected PoushengCompensateBiz handle(PoushengCompensateBiz poushengCompensateBiz) {
-        String url = poushengCompensateBiz.getContext();
+        SkuStockRuleImportInfo info = JsonMapper.nonEmptyMapper().fromJson(poushengCompensateBiz.getContext(), SkuStockRuleImportInfo.class);
+        String url = info.getFilePath();
         ExcelExportHelper<ItemSupplyRuleAbnormalRecord> helper = ExcelExportHelper.newExportHelper(ItemSupplyRuleAbnormalRecord.class);
         List<String[]> list = HandlerFileUtil.getInstance().handlerExcel(url);
         for (int i = 1; i < list.size(); i++) {

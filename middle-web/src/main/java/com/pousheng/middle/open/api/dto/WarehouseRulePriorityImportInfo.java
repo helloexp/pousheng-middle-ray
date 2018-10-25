@@ -15,9 +15,20 @@ public class WarehouseRulePriorityImportInfo implements Serializable{
 
     private String filePath;
 
+    private String fileName;
+
     private Long priorityId;
 
     private Long userId;
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public WarehouseRulePriorityImportInfo fileName(String fileName) {
+        this.fileName = fileName;
+        return this;
+    }
 
     public String getFilePath() {
         return filePath;

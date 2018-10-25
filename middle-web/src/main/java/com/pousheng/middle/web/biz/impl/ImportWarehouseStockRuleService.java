@@ -76,6 +76,8 @@ public class ImportWarehouseStockRuleService implements CompensateBizService {
         }
         poushengCompensateBiz = makeRules(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
+
+        log.info("import warehouse stock rule end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalWarehouseStockRuleRecord> helper, String[] strs, String error) {

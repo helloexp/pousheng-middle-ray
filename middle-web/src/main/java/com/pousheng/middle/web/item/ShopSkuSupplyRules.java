@@ -2,6 +2,7 @@ package com.pousheng.middle.web.item;
 
 import com.google.common.base.Optional;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -15,6 +16,7 @@ import io.swagger.annotations.ApiOperation;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -42,6 +44,9 @@ public class ShopSkuSupplyRules {
     private PoushengMiddleSpuService poushengMiddleSpuService;
     private ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent;
 
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
+
+
     @Autowired
     public ShopSkuSupplyRules(PoushengCompensateBizWriteService poushengCompensateBizWriteService,
                               PoushengCompensateBizReadService poushengCompensateBizReadService,
@@ -58,15 +63,11 @@ public class ShopSkuSupplyRules {
     /**
      * 导入模板
      */
-    @RequestMapping(value = "/import", method = RequestMethod.GET)
-    public void importExcel(String url) {
-        if (StringUtils.isEmpty(url)) {
-            log.error("faild import file(path:{}) ,cause: file path is empty", url);
-            throw new JsonResponseException("file.path.is.empty");
-        }
+    @RequestMapping(value = "/import", method = RequestMethod.POST)
+    public void importExcel(@RequestBody SkuStockRuleImportInfo info) {
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_SUPPLY_RULE.toString());
-        biz.setContext(url);
+        biz.setContext(mapper.toJson(info));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         Response<Long> response = poushengCompensateBizWriteService.create(biz);
         if (!response.isSuccess()) {

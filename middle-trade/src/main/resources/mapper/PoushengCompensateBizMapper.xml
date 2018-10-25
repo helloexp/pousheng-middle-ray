@@ -15,7 +15,7 @@
         <result column="last_failed_reason" property="lastFailedReason"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-        
+
     </resultMap>
 
     <sql id="tb">
@@ -35,13 +35,13 @@
     </sql>
 
     <sql id="queryCondition">
-        
+
         <if test="bizId != null">and `biz_id` = #{bizId}</if>
-        
+
         <if test="bizType != null">and `biz_type` = #{bizType}</if>
-        
+
         <if test="context != null">and `context` = #{context}</if>
-        
+
         <if test="status != null">and `status` = #{status}</if>
 
         <if test="cnt != null">and `cnt` = #{cnt}</if>
@@ -49,11 +49,11 @@
         <if test="ignoreCnt != null">and <![CDATA[ cnt < #{ignoreCnt} ]]></if>
 
         <if test="lastFailedReason != null">and `last_failed_reason` = #{lastFailedReason}</if>
-        
+
         <if test="createdAt != null">and `created_at` = #{createdAt}</if>
-        
+
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
-        
+
         <if test="startAt != null">and created_at &gt; #{startAt}</if>
         <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
@@ -175,7 +175,7 @@
             status = 'WAIT_HANDLE',
             updated_at=now()
         </set>
-        where status = 'PROCESSING' and <![CDATA[ updated_at < date_add(now(),interval - 10 minute) ]]>
+        where status = 'PROCESSING' and <![CDATA[ updated_at < date_add(now(),interval - 30 minute) ]]>
     </update>
 
 

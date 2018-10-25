@@ -80,6 +80,8 @@ public class ImportPriorityItemService implements CompensateBizService {
         }
         poushengCompensateBiz = makeRules(poushengCompensateBiz);
         poushengCompensateBizWriteService.update(poushengCompensateBiz);
+        log.info("import warehouse rule priority item  end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
+
     }
 
     private void appendErrorToExcel(ExcelExportHelper<AbnormalPriorityItemRecord> helper, String[] strs, String error) {

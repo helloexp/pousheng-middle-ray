@@ -320,8 +320,15 @@ public class ShopMaxOrderLogic {
                 return;
             }
 
-            //若设置的值大一些则重新触发库存同步
-            if (orderAcceptQtyMax.compareTo(flag) > 0) {
+            Response<Integer> countResp = orderShipmentReadService.countByShopId(shopExtraInfo.getOpenShopId());
+            if (!countResp.isSuccess()) {
+                log.error("max order flag exist.failed to query shipment count of shop.shopId:{}", shopExtraInfo.getOpenShopId());
+                return;
+            }
+            //若设置的值大于实际接单量则重新触发库存同步
+            //由于redis标志位存在的情况下先改小 再改成比实际接单量C小的值会删除标志位 影响业务。
+            // 故此处由跟redis值比较改成实际接单量比较
+            if (orderAcceptQtyMax.compareTo(countResp.getResult()) > 0) {
                 //删除key
                 jedisTemplate.execute(jedis -> {
                     jedis.del(key);

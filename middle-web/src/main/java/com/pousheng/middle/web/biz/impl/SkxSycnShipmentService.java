@@ -152,14 +152,14 @@ public class SkxSycnShipmentService implements CompensateBizService {
         //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
         hkShipmentDoneLogic.doneShipment(shipment);
 
-        //同步pos单到恒康
-        Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-        if (!response.isSuccess()) {
-            Map<String, Object> param1 = Maps.newHashMap();
-            param1.put("shipmentId", shipment.getId());
-            autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
-
-        }
-
+        //等待整单到齐后再呼叫
+//        //同步pos单到恒康
+//        Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
+//        if (!response.isSuccess()) {
+//            Map<String, Object> param1 = Maps.newHashMap();
+//            param1.put("shipmentId", shipment.getId());
+//            autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
+//
+//        }
     }
 }

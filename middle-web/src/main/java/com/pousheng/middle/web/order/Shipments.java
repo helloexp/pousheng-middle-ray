@@ -42,6 +42,7 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -2026,40 +2027,55 @@ public class Shipments {
      * @return
      */
     @ApiOperation("更新实际发货数量")
-    @RequestMapping(value = "api/shipment/{id}/update/shipqty", method = RequestMethod.PUT)
+    @RequestMapping(value = "api/shipment/{id}/update/ship/qty", method = RequestMethod.PUT)
     public Response<Boolean> updateShipQty(@PathVariable(value = "id") @LogMeId Long shipmentId,
                                       @RequestParam(value = "dataList") @LogMeContext String dataList) {
         try {
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
-            String[] items = dataList.split(",");
-            for (String item : items) {
-                String[] data = item.split(":");
-                if (data.length != 2) continue;
+            List<ShipmentItem> updateList = Lists.newArrayListWithCapacity(shipmentItems.size());
 
-                String skuCode = data[0];
-                int quantity;
 
-                try {
-                    quantity = Integer.parseInt(data[1]);
-                } catch (NumberFormatException e) {
-                    continue;
-                }
+            List<String> skuCodeAndQuantities = Splitters.COMMA.splitToList(dataList);
 
-                for (ShipmentItem shipmentItem : shipmentItems) {
-                    if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
-                        shipmentItem.setShipQuantity(quantity);
-                    }
-                }
+            if (!Objects.equals(skuCodeAndQuantities.size(),shipmentItems.size())){
+                log.error("update ship qty for shipment id:{} data:{} fail,because param invalid",shipmentId,dataList);
+                return Response.fail("request.sku.not.matching");
             }
 
-            shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
-            return Response.ok(true);
-        }
-        catch (Exception e) {
-            log.error("failed to batch update shipqty, cause:{}", Throwables.getStackTraceAsString(e));
-            return Response.fail("shipment.shipqty.update.fail");
+            Map<String, ShipmentItem> skuCodeMap = shipmentItems.stream().filter(Objects::nonNull)
+                    .collect(Collectors.toMap(ShipmentItem::getSkuCode, it -> it));
+
+            for (String codeAndQuantity: skuCodeAndQuantities) {
+                String[] data = codeAndQuantity.split(":");
+                if (data.length != 2){
+                    log.error("update ship qty for shipment id:{} data:{} fail,because param invalid",shipmentId,dataList);
+                    return Response.fail("request.param.invalid");
+                }
+
+                String skuCode = data[0];
+                int quantity = Integer.parseInt(data[1]);
+
+                ShipmentItem shipmentItem = skuCodeMap.get(skuCode);
+                if (Arguments.isNull(shipmentItem)){
+                    log.error("update ship qty for shipment id:{} data:{} fail,sku code:{} invalid",shipmentId,dataList,skuCode);
+                    return Response.fail("sku.code.not.exist");
+                }
+                ShipmentItem update = new ShipmentItem();
+                update.setId(shipmentItem.getId());
+                update.setShipQuantity(quantity);
+                updateList.add(update);
+            }
+
+            shipmentWiteLogic.updateShipmentItem(shipment, updateList);
+            return Response.ok();
+        }catch (JsonResponseException e) {
+            log.error("failed to batch update ship qty for shipment id:{} data list:{}, error:{}",shipmentId,dataList, e.getMessage());
+            return Response.fail(e.getMessage());
+        }catch (Exception e) {
+            log.error("failed to batch update ship qty for shipment id:{} data list:{}, cause:{}",shipmentId,dataList, Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.ship.qty.update.fail");
         }
     }
 }

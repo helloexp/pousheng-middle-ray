@@ -188,9 +188,9 @@ public class ImportPriorityItemService implements CompensateBizService {
         if (helper.size() > 0) {
             String url = uploadFileComponent.exportAbnormalRecord(helper.transformToFile());
             poushengCompensateBiz.setLastFailedReason(url);
-            poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
             log.error("import warehouse rule item detail abnormality");
         }
+        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         return poushengCompensateBiz;
     }
 }

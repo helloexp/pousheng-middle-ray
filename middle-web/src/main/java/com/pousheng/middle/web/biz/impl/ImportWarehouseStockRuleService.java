@@ -185,9 +185,9 @@ public class ImportWarehouseStockRuleService implements CompensateBizService {
         if (helper.size() > 0) {
             String url = uploadFileComponent.exportAbnormalRecord(helper.transformToFile());
             poushengCompensateBiz.setLastFailedReason(url);
-            poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
             log.error("import shop  warehouse rule abnormality");
         }
+        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         return poushengCompensateBiz;
     }
 

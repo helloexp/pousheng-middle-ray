@@ -199,8 +199,8 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
             String abnormalUrl = uploadFileComponent.exportAbnormalRecord(helper.transformToFile());
             poushengCompensateBiz.setLastFailedReason(abnormalUrl);
             poushengCompensateBiz.setUpdatedAt(DateTime.now().toDate());
-            poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         }
+        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         return poushengCompensateBiz;
     }
 

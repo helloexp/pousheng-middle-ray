@@ -167,9 +167,9 @@ public class ImportItemPushRatioService implements CompensateBizService {
         if (helper.size() > 0) {
             String abnormalUrl = uploadFileComponent.exportAbnormalRecord(helper.transformToFile());
             poushengCompensateBiz.setLastFailedReason(abnormalUrl);
-            poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
             poushengCompensateBiz.setUpdatedAt(DateTime.now().toDate());
         }
+        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
         return poushengCompensateBiz;
     }
 

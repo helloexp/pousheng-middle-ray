@@ -1,6 +1,8 @@
 package com.pousheng.middle.open.api;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import io.terminus.common.model.Response;
@@ -20,9 +22,11 @@ import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.hibernate.validator.constraints.NotEmpty;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -44,6 +48,7 @@ public class JdYundingPushOrderApi {
     private OrderReadLogic orderReadLogic;
     @Autowired
     private OpenShopReadService openShopReadService;
+
     /**
      * 京东云鼎订单拉取服务
      */
@@ -88,17 +93,43 @@ public class JdYundingPushOrderApi {
                 continue;
             }
             ShopOrder shopOrder = shopOrderResponse.getResult().get();
+
             ShopOrder newShopOrder = new ShopOrder();
             newShopOrder.setId(shopOrder.getId());
             newShopOrder.setFee(openClientFullOrder.getFee());
             newShopOrder.setDiscount(openClientFullOrder.getDiscount());
             newShopOrder.setShipFee(openClientFullOrder.getShipFee());
             newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
+            Map<String,String> fullOrderExtra = openClientFullOrder.getExtra();
+            String platformDiscount = fullOrderExtra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP);
+            if (!StringUtils.isEmpty(platformDiscount)){
+                Map<String,String> shopOrderExtra = shopOrder.getExtra();
+                shopOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP,platformDiscount);
+                newShopOrder.setExtra(shopOrderExtra);
+            }
+
             Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
             if (!shopOrderR.isSuccess()) {
                 log.error("shopOrder failed,id is {}", shopOrder.getId());
             } else {
                 List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+
+                Map<String,Long> skuIdAndShareDiscount = Maps.newHashMap();
+                Long fees = 0L;
+                for (OpenClientOrderItem openClientOrderItem:items){
+                    fees += (openClientOrderItem.getPrice()*openClientOrderItem.getQuantity()-openClientOrderItem.getDiscount());
+                }
+                Long alreadyShareDiscout = 0L;
+                for (int i = 0;i<items.size()-1;i++){
+                    Long itemShareDiscount =  (((items.get(i).getPrice()*items.get(i).getQuantity()
+                            -items.get(i).getDiscount()))*Long.valueOf(platformDiscount))/fees;
+                    alreadyShareDiscout += itemShareDiscount;
+                    skuIdAndShareDiscount.put(items.get(i).getSkuId(),itemShareDiscount);
+                }
+                //计算剩余没有分配的平台优惠
+                Long remainShareDiscount = Long.valueOf(platformDiscount)-alreadyShareDiscout;
+
+
                 List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
                 for (SkuOrder skuOrder : skuOrders) {
                     for (OpenClientOrderItem item : items) {
@@ -109,6 +140,17 @@ public class JdYundingPushOrderApi {
                             newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
                             newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
                             newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
+
+                            Long shareDiscount = skuIdAndShareDiscount.get(skuOrder.getOutSkuId());
+                            Map<String, String> skuOrderExtra = skuOrder.getExtra();
+                            //子订单插入平台优惠金额
+                            if (shareDiscount==null){
+                                skuOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(remainShareDiscount));
+                            }else{
+                                skuOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(shareDiscount));
+                            }
+                            newSkuOrder.setExtra(skuOrderExtra);
+
                             Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
                             if (!skuOrderR.isSuccess()) {
                                 log.error("skuOrder failed,id is", newSkuOrder.getId());
@@ -123,5 +165,6 @@ public class JdYundingPushOrderApi {
 
         log.info("JD-YUNDING-SYNC-UPDATE-ORDER-AMOUNT-END param: shopId is {}, openClientFullOrders is:{} ", shopId, openClientFullOrders);
     }
+
 }
 

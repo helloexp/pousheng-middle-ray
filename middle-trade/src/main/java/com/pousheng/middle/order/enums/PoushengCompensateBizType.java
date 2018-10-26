@@ -125,5 +125,11 @@ public enum PoushengCompensateBizType {
     /**
      * skx发货单取消失败重试服务
      */
-    SKX_SHIPMENT_CANCEL;
+    SKX_SHIPMENT_CANCEL,
+
+
+    /**
+     * 预售订单支付尾款之后后续处理流程
+     */
+    STEP_ORDER_NOTIFY_ERP;
 }

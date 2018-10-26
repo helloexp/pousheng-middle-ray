@@ -956,7 +956,7 @@ public class AdminOrderWriter {
      */
     @RequestMapping(value = "/api/order/{shopId}/update/amount/by/order/id",method = RequestMethod.GET)
     public void updateOrderAmountByOrderId(@PathVariable("shopId") Long shopId,@RequestParam("shopOrderId")Long shopOrderId){
-        orderWriteLogic.updateOrderAmountByOrderId(shopId,shopOrderId);
+        orderWriteLogic.updateOrderAmountByOrderId(shopId,shopOrderId,null);
     }
 
     /**

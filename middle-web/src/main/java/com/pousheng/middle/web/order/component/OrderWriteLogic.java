@@ -33,6 +33,7 @@ import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.*;
 import io.terminus.pampas.openplatform.exceptions.OPServerException;
 import io.terminus.parana.common.utils.RespHelper;
+import io.terminus.parana.order.dto.RichSku;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.*;
@@ -1015,47 +1016,84 @@ public class OrderWriteLogic {
      *
      * @param shopId
      */
-    public void updateOrderAmountByOrderId(Long shopId, Long shopOrderId) {
+    public void updateOrderAmountByOrderId(Long shopId, Long shopOrderId,OpenClientFullOrder openClientFullOrder) {
         log.info("order amount recover ,shopOrderId={},shopId={}",shopOrderId,shopId);
+        log.info("find open client full order,openClientFullOrder={}",openClientFullOrder);
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
-        Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId, shopOrder.getOutId());
-        if (orderResponse.isSuccess()) {
-            OpenClientFullOrder openClientFullOrder = orderResponse.getResult();
-            log.info("find open client full order,openClientFullOrder={}",openClientFullOrder);
-            ShopOrder newShopOrder = new ShopOrder();
-            newShopOrder.setId(shopOrder.getId());
-            newShopOrder.setFee(openClientFullOrder.getFee());
-            newShopOrder.setDiscount(openClientFullOrder.getDiscount());
-            newShopOrder.setShipFee(openClientFullOrder.getShipFee());
-            newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
-            Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
-            if (!shopOrderR.isSuccess()) {
-                log.error("shopOrder failed,id is {}", shopOrder.getId());
-            } else {
-                List<OpenClientOrderItem> items = openClientFullOrder.getItems();
-                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
-                for (SkuOrder skuOrder : skuOrders) {
-                    for (OpenClientOrderItem item : items) {
-                        if (Objects.equals(skuOrder.getOutSkuId(), item.getSkuId())) {
-                            log.info("update skuOrder");
-                            SkuOrder newSkuOrder = new SkuOrder();
-                            newSkuOrder.setId(skuOrder.getId());
-                            newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
-                            newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
-                            newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
-                            Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
-                            if (!skuOrderR.isSuccess()) {
-                                log.error("skuOrder failed,id is", newSkuOrder.getId());
-                            }
-                        } else {
-                            log.info("do not update skuOrder");
+        if (Objects.isNull(openClientFullOrder)){
+            Response<OpenClientFullOrder> orderResponse = orderServiceCenter.findById(shopId, shopOrder.getOutId());
+            if (!orderResponse.isSuccess()){
+                return;
+            }
+            openClientFullOrder = orderResponse.getResult();
+        }
+        ShopOrder newShopOrder = new ShopOrder();
+        newShopOrder.setId(shopOrder.getId());
+        newShopOrder.setFee(openClientFullOrder.getFee());
+        newShopOrder.setDiscount(openClientFullOrder.getDiscount());
+        newShopOrder.setShipFee(openClientFullOrder.getShipFee());
+        newShopOrder.setOriginShipFee(openClientFullOrder.getShipFee());
+
+        Map<String,String> fullOrderExtra = openClientFullOrder.getExtra();
+        String platformDiscount = fullOrderExtra.get(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP);
+        if (!StringUtils.isEmpty(platformDiscount)){
+            Map<String,String> shopOrderExtra = shopOrder.getExtra();
+            shopOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP,platformDiscount);
+            newShopOrder.setExtra(shopOrderExtra);
+        }
+        Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
+        if (!shopOrderR.isSuccess()) {
+            log.error("shopOrder failed,id is {}", shopOrder.getId());
+        } else {
+            List<OpenClientOrderItem> items = openClientFullOrder.getItems();
+
+            Map<String,Long> skuIdAndShareDiscount = Maps.newHashMap();
+            Long fees = 0L;
+            for (OpenClientOrderItem openClientOrderItem:items){
+                fees += (openClientOrderItem.getPrice()*openClientOrderItem.getQuantity()-openClientOrderItem.getDiscount());
+            }
+            Long alreadyShareDiscout = 0L;
+            for (int i = 0;i<items.size()-1;i++){
+                Long itemShareDiscount =  (((items.get(i).getPrice()*items.get(i).getQuantity()
+                        -items.get(i).getDiscount()))*Long.valueOf(platformDiscount))/fees;
+                alreadyShareDiscout += itemShareDiscount;
+                skuIdAndShareDiscount.put(items.get(i).getSkuId(),itemShareDiscount);
+            }
+            //计算剩余没有分配的平台优惠
+            Long remainShareDiscount = Long.valueOf(platformDiscount)-alreadyShareDiscout;
+
+
+
+            List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+            for (SkuOrder skuOrder : skuOrders) {
+                for (OpenClientOrderItem item : items) {
+                    if (Objects.equals(skuOrder.getOutSkuId(), item.getSkuId())) {
+                        log.info("update skuOrder");
+                        SkuOrder newSkuOrder = new SkuOrder();
+                        newSkuOrder.setId(skuOrder.getId());
+                        newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
+                        newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                        newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
+                        Long shareDiscount = skuIdAndShareDiscount.get(skuOrder.getOutSkuId());
+                        Map<String, String> skuOrderExtra = skuOrder.getExtra();
+                        //子订单插入平台优惠金额
+                        if (shareDiscount==null){
+                            skuOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(remainShareDiscount));
+                        }else{
+                            skuOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SKU, String.valueOf(shareDiscount));
                         }
+                        newSkuOrder.setExtra(skuOrderExtra);
+                        Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                        if (!skuOrderR.isSuccess()) {
+                            log.error("skuOrder failed,id is", newSkuOrder.getId());
+                        }
+                    } else {
+                        log.info("do not update skuOrder");
                     }
                 }
             }
-        } else {
-            log.info("shop order failed");
         }
+
     }
 
 

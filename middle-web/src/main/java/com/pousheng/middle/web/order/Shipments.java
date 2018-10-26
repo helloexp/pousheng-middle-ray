@@ -2018,4 +2018,48 @@ public class Shipments {
             pageNo++;
         }
     }
+
+
+    /**
+     * 更新实际发货数量
+     *
+     * @return
+     */
+    @ApiOperation("更新实际发货数量")
+    @RequestMapping(value = "api/shipment/{id}/update/shipqty", method = RequestMethod.PUT)
+    public Response<Boolean> updateShipQty(@PathVariable(value = "id") @LogMeId Long shipmentId,
+                                      @RequestParam(value = "dataList") @LogMeContext String dataList) {
+        try {
+            Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
+            List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
+
+            String[] items = dataList.split(",");
+            for (String item : items) {
+                String[] data = item.split(":");
+                if (data.length != 2) continue;
+
+                String skuCode = data[0];
+                int quantity;
+
+                try {
+                    quantity = Integer.parseInt(data[1]);
+                } catch (NumberFormatException e) {
+                    continue;
+                }
+
+                for (ShipmentItem shipmentItem : shipmentItems) {
+                    if (Objects.equals(skuCode, shipmentItem.getSkuCode())) {
+                        shipmentItem.setShipQuantity(quantity);
+                    }
+                }
+            }
+
+            shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
+            return Response.ok(true);
+        }
+        catch (Exception e) {
+            log.error("failed to batch update shipqty, cause:{}", Throwables.getStackTraceAsString(e));
+            return Response.fail("shipment.shipqty.update.fail");
+        }
+    }
 }

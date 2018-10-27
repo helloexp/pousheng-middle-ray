@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.biz.impl;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Throwables;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -55,6 +56,8 @@ public class StepOrderNotifyErpService implements CompensateBizService {
     private ShipmentReadLogic shipmentReadLogic;
     @Autowired
     private OrderReceiverInfoDao orderReceiverInfoDao;
+
+    private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -155,6 +158,18 @@ public class StepOrderNotifyErpService implements CompensateBizService {
             if (!recevierInfoResult){
                 log.error("failed to update orderReceiveInfo failed,(shopOrderId={}))",shopOrder.getId());
             }
+            // 发货单信息更新
+            List<OrderShipment> orderShipments = shipmentReadLogic.findByOrderIdAndType(shopOrder.getId());
+            for (OrderShipment orderShipment : orderShipments) {
+                try {
+                    Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
+                    shipment.setReceiverInfos(objectMapper.writeValueAsString(receiverInfo));
+                    shipmentWiteLogic.update(shipment);
+                } catch (Exception e) {
+                    log.error("update shipment(id:{}) receive info fail,error:{}", orderShipment.getShipmentId(), Throwables.getStackTraceAsString(e));
+                }
+            }
         }
+
     }
 }

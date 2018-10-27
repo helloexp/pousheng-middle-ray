@@ -103,7 +103,7 @@ public class StepOrderNotifyErpService implements CompensateBizService {
                 Shipment shipment = shipmentReadLogic.findShipmentById(orderShipment.getShipmentId());
                 //更新发货单金额
 
-                if (!Objects.equals(shipment.getShipWay(), TradeConstants.MPOS_SHOP_DELIVER)) {
+                if (!Objects.equals(shipment.getShipWay(), Integer.valueOf(TradeConstants.MPOS_SHOP_DELIVER))) {
                     //仓库
                     shipmentWiteLogic.handleSyncShipment(shipment, 1, shopOrder);
                 } else {

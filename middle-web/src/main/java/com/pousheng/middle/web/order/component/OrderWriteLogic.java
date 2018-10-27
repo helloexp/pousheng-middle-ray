@@ -1040,6 +1040,11 @@ public class OrderWriteLogic {
             Map<String,String> shopOrderExtra = shopOrder.getExtra();
             shopOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP,platformDiscount);
             newShopOrder.setExtra(shopOrderExtra);
+        }else{
+            platformDiscount="0";
+            Map<String,String> shopOrderExtra = shopOrder.getExtra();
+            shopOrderExtra.put(TradeConstants.PLATFORM_DISCOUNT_FOR_SHOP,platformDiscount);
+            newShopOrder.setExtra(shopOrderExtra);
         }
         Response<Boolean> shopOrderR = middleOrderWriteService.updateShopOrder(newShopOrder);
         if (!shopOrderR.isSuccess()) {
@@ -1050,12 +1055,14 @@ public class OrderWriteLogic {
             Map<String,Long> skuIdAndShareDiscount = Maps.newHashMap();
             Long fees = 0L;
             for (OpenClientOrderItem openClientOrderItem:items){
-                fees += (openClientOrderItem.getPrice()*openClientOrderItem.getQuantity()-openClientOrderItem.getDiscount());
+                fees += (openClientOrderItem.getPrice()*openClientOrderItem.getQuantity()-
+                        (Objects.isNull(openClientOrderItem.getDiscount())?0:openClientOrderItem.getDiscount()));
             }
             Long alreadyShareDiscout = 0L;
             for (int i = 0;i<items.size()-1;i++){
                 Long itemShareDiscount =  (((items.get(i).getPrice()*items.get(i).getQuantity()
-                        -items.get(i).getDiscount()))*Long.valueOf(platformDiscount))/fees;
+                        -(Objects.isNull(items.get(i).getDiscount())?0:items.get(i).getDiscount())))
+                        *Long.valueOf(platformDiscount))/fees;
                 alreadyShareDiscout += itemShareDiscount;
                 skuIdAndShareDiscount.put(items.get(i).getSkuId(),itemShareDiscount);
             }
@@ -1072,7 +1079,7 @@ public class OrderWriteLogic {
                         SkuOrder newSkuOrder = new SkuOrder();
                         newSkuOrder.setId(skuOrder.getId());
                         newSkuOrder.setOriginFee(Long.valueOf(item.getPrice() * item.getQuantity()));
-                        newSkuOrder.setDiscount(Long.valueOf(item.getDiscount()));
+                        newSkuOrder.setDiscount(Objects.isNull(item.getDiscount())?0L:Long.valueOf(item.getDiscount()));
                         newSkuOrder.setFee(newSkuOrder.getOriginFee() - newSkuOrder.getDiscount());
                         Long shareDiscount = skuIdAndShareDiscount.get(skuOrder.getOutSkuId());
                         Map<String, String> skuOrderExtra = skuOrder.getExtra();

@@ -573,7 +573,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                 }else{
                     ShopOrder shopOrder = r.getResult();
 
-                    redisHandler.saveOrderId(shopOrder);
+//                    redisHandler.saveOrderId(shopOrder);
                     //只有非淘宝的订单可以抛出事件
                     if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
                         //eventBus.post(new OpenClientOrderSyncEvent(shopOrderId));

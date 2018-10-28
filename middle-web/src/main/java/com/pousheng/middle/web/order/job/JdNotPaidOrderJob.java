@@ -61,7 +61,7 @@ public class JdNotPaidOrderJob{
     /**
      * 定时轮询取消04:00 16:00
      */
-    @Scheduled(cron = "0 0 4,16 * * ? *")
+    @Scheduled(cron = "0 0 4,16 * * ?")
     public void orderCancelJob() {
 
         if (!hostLeader.isLeader()) {

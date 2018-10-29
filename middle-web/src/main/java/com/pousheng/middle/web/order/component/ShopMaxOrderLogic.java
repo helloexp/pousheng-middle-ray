@@ -197,6 +197,7 @@ public class ShopMaxOrderLogic {
      * 异步推送库存
      */
     public void asyncPushStock(String companyCode, Long warehouseId, String warehouseCode) {
+        log.debug("start to push stock.warehouseId:{},warehouseCode:{}", warehouseId, warehouseCode);
         CompletableFuture.runAsync(() -> {
             //查询店铺的所有sku
             Response<List<AvailableInventoryDTO>> response = inventoryClient.queryAvailableRealQtyByWarehouse(
@@ -294,6 +295,10 @@ public class ShopMaxOrderLogic {
             //若标志位不存在
             if (StringUtils.isBlank(result)
                 || CacheConsts.NIL.equals(result)) {
+                if (Objects.isNull(orderAcceptQtyMax)) {
+                    log.warn("shop max order accept is unlimit.shopId:{} ", shop.getId());
+                    return;
+                }
                 Response<Integer> countResp = orderShipmentReadService.countByShopId(shopExtraInfo.getOpenShopId());
                 if (!countResp.isSuccess()) {
                     log.error("failed to query shipment count of shop.shopId:{}", shopExtraInfo.getOpenShopId());
@@ -315,7 +320,8 @@ public class ShopMaxOrderLogic {
             //若存在 则对比标志位中的阀值
             Integer flag = Integer.valueOf(result);
             //若相等 则忽略不处理
-            if (orderAcceptQtyMax.compareTo(flag) == 0) {
+            if (!Objects.isNull(orderAcceptQtyMax)
+                && orderAcceptQtyMax.compareTo(flag) == 0) {
                 log.warn("order max accept qty not changed.skip.shop info:{}", shop.toString());
                 return;
             }
@@ -328,7 +334,9 @@ public class ShopMaxOrderLogic {
             //若设置的值大于实际接单量则重新触发库存同步
             //由于redis标志位存在的情况下先改小 再改成比实际接单量C小的值会删除标志位 影响业务。
             // 故此处由跟redis值比较改成实际接单量比较
-            if (orderAcceptQtyMax.compareTo(countResp.getResult()) > 0) {
+            // orderAcceptQtyMax由已达到上限改成空(不限制) 同样需要触发同步
+            if (Objects.isNull(orderAcceptQtyMax)
+                || orderAcceptQtyMax.compareTo(countResp.getResult()) > 0) {
                 //删除key
                 jedisTemplate.execute(jedis -> {
                     jedis.del(key);

@@ -851,20 +851,24 @@ public class FireCall {
     }
 
     @RequestMapping(value = "/fix/order/need/cancel", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void fixOrdersNeedCancel(@RequestParam String fileName,@RequestParam String shopId){
+    public void fixOrdersNeedCancel(@RequestParam String fileName,@RequestParam String outfrom){
         String url = "/pousheng/file/" + fileName + ".csv";
         log.info("START-HANDLE-ORDER-NEED-CANCEL-API for:{}", url);
         File file1 = new File(url);
         List<String> outerOrderIds = readOrderIds(file1);
         for (String outerOrderId:outerOrderIds){
             log.info("try cancel shop order from file,outerOrderId {}",outerOrderId);
-            Response<Optional<ShopOrder>> optionalResponse = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId,shopId);
+            Response<Optional<ShopOrder>> optionalResponse = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId,outfrom);
             if (!optionalResponse.isSuccess()){
-                log.error("find order failed,outerId {},shopId {},caused by {}",outerOrderId,shopId,optionalResponse.getError());
+                log.error("find order failed,outerId {},outfrom {},caused by {}",outerOrderId,outfrom,optionalResponse.getError());
             }
             Optional<ShopOrder> shopOrderOptional = optionalResponse.getResult();
             if (shopOrderOptional.isPresent()){
-                orderWriteLogic.cancelShopOrder(shopOrderOptional.get().getId());
+                try{
+                    orderWriteLogic.cancelShopOrder(shopOrderOptional.get().getId());
+                }catch (Exception e){
+                    log.error("cancel shop order from file failed,outerId {},caused by {}",outerOrderId,Throwables.getStackTraceAsString(e));
+                }
             }
         }
     }

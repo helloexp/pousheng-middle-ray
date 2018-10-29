@@ -159,14 +159,46 @@ public class OrderOpenApi {
             log.debug("ERP-SHIPMENTS-API-START param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",
                     shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
         }
-        SkxShipInfo skxShipInfo = new SkxShipInfo();
-        skxShipInfo.setShipmentId(shipmentId);
-        skxShipInfo.setErpShipmentId(erpShipmentId);
-        skxShipInfo.setShipmentCorpCode(shipmentCorpCode);
-        skxShipInfo.setShipmentSerialNo(shipmentSerialNo);
-        skxShipInfo.setShipmentDate(shipmentDate);
-        receiveSkxResultLogic.createShipmentResultTask(skxShipInfo);
 
+        try {
+            DateTime dt = DateTime.parse(shipmentDate, DFT);
+            Shipment shipment = null;
+            try {
+                shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentId);
+            } catch (Exception e) {
+                log.error("find shipment failed,shipment id is {} ,caused by {}", shipmentId, Throwables.getStackTraceAsString(e));
+                throw new ServiceException("shipment.id.not.matching");
+            }
+            //判断状态及获取接下来的状态
+            Flow flow = flowPicker.pickShipments();
+            OrderOperation orderOperation = MiddleOrderEvent.SHIP.toOrderOperation();
+            if (!flow.operationAllowed(shipment.getStatus(), orderOperation)) {
+                log.error("shipment(id={})'s status({}) not fit for ship",
+                        shipment.getId(), shipment.getStatus());
+                throw new ServiceException("shipment.current.status.not.allow.ship");
+            }
+            ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
+            if (!Objects.equals(erpShipmentId, shipmentExtra.getOutShipmentId())) {
+                log.error("hk shipment id:{} not equal middle shipment(id:{} ) out shipment id:{}", erpShipmentId, shipment.getId(), shipmentExtra.getOutShipmentId());
+                throw new ServiceException("hk.shipment.id.not.matching");
+            }
+
+            SkxShipInfo skxShipInfo = new SkxShipInfo();
+            skxShipInfo.setShipmentId(shipmentId);
+            skxShipInfo.setErpShipmentId(erpShipmentId);
+            skxShipInfo.setShipmentCorpCode(shipmentCorpCode);
+            skxShipInfo.setShipmentSerialNo(shipmentSerialNo);
+            skxShipInfo.setShipmentDate(shipmentDate);
+            receiveSkxResultLogic.createShipmentResultTask(skxShipInfo);
+
+        } catch (JsonResponseException | ServiceException e) {
+            log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200,e.getMessage());
+        } catch (Exception e) {
+            log.error("hk sync shipment(id:{}) fail,cause:{}", shipmentId, Throwables.getStackTraceAsString(e));
+            throw new OPServerException(200, "sync.fail");
+        }
         //this.syncHkShipmentStatus(shipmentId,erpShipmentId,shipmentCorpCode,shipmentSerialNo,shipmentDate);
         if(log.isDebugEnabled()){
             log.debug("ERP-SHIPMENTS-API-END param: shipmentId [{}] erpShipmentId [{}] shipmentCorpCode [{}] shipmentSerialNo [{}] shipmentDate [{}]",

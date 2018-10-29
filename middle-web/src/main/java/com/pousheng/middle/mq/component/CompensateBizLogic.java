@@ -7,6 +7,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -40,12 +41,19 @@ public class CompensateBizLogic {
         if (log.isDebugEnabled()){
             log.debug("CompensateBizLogic createBizAndSendMq,compensateBiz {}",compensateBiz);
         }
-        Response<Long> result =  poushengCompensateBizWriteService.create(compensateBiz);
-        if (result.isSuccess()){
-            rocketMqProducerService.sendMessage(topic, JsonMapper.nonEmptyMapper().toJson(result.getResult()));
+        Response<Long> resultRes =  poushengCompensateBizWriteService.create(compensateBiz);
+        if (resultRes.isSuccess()){
+            log.info("create biz success and send mq topic:{} message:{}",topic,resultRes.getResult());
+            rocketMqProducerService.sendMessage(topic, JsonMapper.nonEmptyMapper().toJson(resultRes.getResult()));
+        } else {
+            log.error("create biz:{} fail,error:{}",compensateBiz,resultRes.getError());
+            throw new JsonResponseException(resultRes.getError());
         }
-        return result.getResult();
+        return resultRes.getResult();
     }
+
+
+
 
 
     public void consumeMqMessage(String message){

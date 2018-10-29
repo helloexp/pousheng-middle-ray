@@ -25,6 +25,7 @@ import org.apache.poi.xssf.streaming.SXSSFWorkbook;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -36,6 +37,7 @@ import java.util.List;
  * 定时拉取失败的订单上传到微软云并发送邮件通知
  * @author tanlongjun
  */
+@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @RestController
 public class FailedOrderEmailWarningJobs {

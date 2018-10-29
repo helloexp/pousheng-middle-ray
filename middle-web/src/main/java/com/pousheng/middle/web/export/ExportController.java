@@ -1,13 +1,16 @@
 package com.pousheng.middle.web.export;
 
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.MiddleOrderCriteria;
 import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.PoushengSettlementPosCriteria;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.events.trade.ExportTradeBillEvent;
 import com.pousheng.middle.web.utils.export.FileRecord;
 import com.pousheng.middle.web.utils.permission.PermissionUtil;
@@ -43,9 +46,8 @@ public class ExportController {
     private EventBus eventBus;
 
     private static final JsonMapper MAPPER = JsonMapper.JSON_NON_EMPTY_MAPPER;
-
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
 
     /**
@@ -73,8 +75,12 @@ public class ExportController {
         event.setUserId(UserUtil.getUserId());
         //换成Biz任务形式 modified by longjun.tlj
         String context=MAPPER.toJson(event);
-        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
-            context,TradeConstants.EXPORT_ORDER);
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.EXPORT_TRADE_BILL.name());
+        biz.setContext(context);
+        biz.setBizId(TradeConstants.EXPORT_ORDER);
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC);
         if(log.isDebugEnabled()){
             log.debug("API-ORDER-EXPORT-END param: middleOrderCriteria [{}] ]",criteriaStr);
         }
@@ -104,8 +110,12 @@ public class ExportController {
         event.setUserId(UserUtil.getUserId());
         //换成Biz任务形式 modified by longjun.tlj
         String context=MAPPER.toJson(event);
-        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
-            context,TradeConstants.EXPORT_REFUND);
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.EXPORT_TRADE_BILL.name());
+        biz.setContext(context);
+        biz.setBizId(TradeConstants.EXPORT_REFUND);
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC);
         if(log.isDebugEnabled()){
             log.debug("API-REFUND-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }
@@ -137,8 +147,12 @@ public class ExportController {
         event.setUserId(UserUtil.getUserId());
         //换成Biz任务形式 modified by longjun.tlj
         String context=MAPPER.toJson(event);
-        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
-            context,TradeConstants.EXPORT_SHIPMENT);
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.EXPORT_TRADE_BILL.name());
+        biz.setContext(context);
+        biz.setBizId(TradeConstants.EXPORT_SHIPMENT);
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC);
         if(log.isDebugEnabled()){
             log.debug("API-SHIPMENT-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }
@@ -167,8 +181,12 @@ public class ExportController {
         event.setUserId(UserUtil.getUserId());
         //换成Biz任务形式 modified by longjun.tlj
         String context=MAPPER.toJson(event);
-        poushengCompensateBizWriteService.create(PoushengCompensateBizType.EXPORT_TRADE_BILL.name(),
-            context,TradeConstants.EXPORT_POS);
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.EXPORT_TRADE_BILL.name());
+        biz.setContext(context);
+        biz.setBizId(TradeConstants.EXPORT_POS);
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC);
         if(log.isDebugEnabled()){
             log.debug("API-SETTLEMENT-POS-EXPORT-END param: criteria [{}] ]",criteriaStr);
         }

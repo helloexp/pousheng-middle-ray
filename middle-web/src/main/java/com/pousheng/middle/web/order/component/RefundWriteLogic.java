@@ -10,6 +10,8 @@ import com.google.common.collect.Sets.SetView;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefund;
 import com.pousheng.middle.hksyc.dto.trade.SycHkRefundItem;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
@@ -109,8 +111,6 @@ public class RefundWriteLogic {
     @Autowired
     private SyncRefundLogic syncRefundLogic;
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
-    @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
 
     @Autowired
     private WarehouseCacher warehouseCacher;
@@ -133,6 +133,9 @@ public class RefundWriteLogic {
     private SyncShipmentLogic syncShipmentLogic;
     @Value("${skx.open.shop.id}")
     private Long skxOpenShopId;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
     /**
      * 更新换货商品处理数量
      * 判断是否商品已全部处理，如果是则更新状态为 WAIT_SHIP:待发货
@@ -565,7 +568,7 @@ public class RefundWriteLogic {
                 compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
                 compensateBiz.setBizId(String.valueOf(freezeShipment.getId()));
                 compensateBiz.setCnt(0);
-                poushengCompensateBizWriteService.create(compensateBiz);
+                compensateBizLogic.createBizAndSendMq(compensateBiz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
         }
     }
@@ -579,7 +582,7 @@ public class RefundWriteLogic {
             compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
             compensateBiz.setBizId(String.valueOf(refundId));
             compensateBiz.setCnt(0);
-            poushengCompensateBizWriteService.create(compensateBiz);
+            compensateBizLogic.createBizAndSendMq(compensateBiz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
         }
     }
 
@@ -594,7 +597,7 @@ public class RefundWriteLogic {
                 compensateBiz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
                 compensateBiz.setBizId(String.valueOf(shipment.getId()));
                 compensateBiz.setCnt(0);
-                poushengCompensateBizWriteService.create(compensateBiz);
+                compensateBizLogic.createBizAndSendMq(compensateBiz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
         }
     }
@@ -1555,7 +1558,7 @@ public class RefundWriteLogic {
         biz.setBizType(PoushengCompensateBizType.THIRD_REFUND_RESULT.toString());
         biz.setContext(mapper.toJson(event));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -94,7 +96,7 @@ public class MposShipmentLogic {
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
     /**
      * 判断是否所有发货单都更新了 更新订单状态
@@ -184,7 +186,7 @@ public class MposShipmentLogic {
                 biz.setBizType(PoushengCompensateBizType.SYNC_ECP.name());
                 biz.setBizId(String.valueOf(shipment.getId()));
                 biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-                poushengCompensateBizWriteService.create(biz);
+                compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
         }
 

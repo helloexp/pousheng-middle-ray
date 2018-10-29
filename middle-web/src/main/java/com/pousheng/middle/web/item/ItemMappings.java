@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.item;
 
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -35,18 +37,17 @@ import java.util.Objects;
 public class ItemMappings {
 
     private MappingWriteService mappingWriteService;
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
 
     @Autowired
     public ItemMappings(MappingWriteService mappingWriteService,
-                        PoushengCompensateBizWriteService poushengCompensateBizWriteService,
                         PoushengCompensateBizReadService poushengCompensateBizReadService) {
         this.mappingWriteService = mappingWriteService;
         this.poushengCompensateBizReadService = poushengCompensateBizReadService;
-        this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
 
     }
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     @ApiOperation("设置商品推送比例")
     @PostMapping(value = "/item-mapping/{id}/ratio", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -92,11 +93,7 @@ public class ItemMappings {
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_PUSH_RATIO.toString());
         biz.setContext(url);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        Response<Long> response = poushengCompensateBizWriteService.create(biz);
-        if (!response.isSuccess()) {
-            log.error("fail to create biz,cause:{}", response.getError());
-            throw new JsonResponseException(response.getError());
-        }
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**

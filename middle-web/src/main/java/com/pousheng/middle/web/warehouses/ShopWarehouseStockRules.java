@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.warehouses;
 
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
@@ -55,8 +57,6 @@ public class ShopWarehouseStockRules {
     @Autowired
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-    @Autowired
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
     @Autowired
     private UserManageShopReader userManageShopReader;
@@ -66,6 +66,8 @@ public class ShopWarehouseStockRules {
     private WarehouseShopRuleClient warehousePushRuleClient;
     @Autowired
     private WarehouseCacher warehouseCacher;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -106,7 +108,7 @@ public class ShopWarehouseStockRules {
         biz.setContext(mapper.toJson(info));
         biz.setBizId(info.getOpenShopId().toString());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
 

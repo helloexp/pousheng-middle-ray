@@ -176,7 +176,6 @@
                 <artifactId>applog-boot-starter</artifactId>
                 <version>${log.version}</version>
             </dependency>
-
         </dependencies>
     </dependencyManagement>
 

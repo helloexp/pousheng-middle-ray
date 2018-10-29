@@ -6,6 +6,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.ReceiverInfoCompleter;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
@@ -58,7 +60,7 @@ public class QiMenApi {
     private final ErpOpenApiClient erpOpenApiClient;
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -268,7 +270,7 @@ public class QiMenApi {
         biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
         biz.setContext(mapper.toJson(shopOrderId));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
 

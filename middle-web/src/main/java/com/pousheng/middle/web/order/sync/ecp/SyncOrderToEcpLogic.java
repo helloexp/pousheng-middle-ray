@@ -123,7 +123,7 @@ public class SyncOrderToEcpLogic {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-            return Response.fail("sync.ecp.failed");
+            return Response.fail(e.getMessage());
         }
 
         return Response.ok(Boolean.TRUE);
@@ -226,7 +226,7 @@ public class SyncOrderToEcpLogic {
             log.error("sync ecp failed,shopOrderId is({}),cause by {}", shopOrder.getId(), Throwables.getStackTraceAsString(e));
             OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
             orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
-            return Response.fail("sync.ecp.fail");
+            return Response.fail(e.getMessage());
         }
 
         return Response.ok(Boolean.TRUE);

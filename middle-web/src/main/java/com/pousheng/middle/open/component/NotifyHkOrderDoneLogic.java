@@ -11,6 +11,8 @@
 package com.pousheng.middle.open.component;
 
 import com.google.common.base.Throwables;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -38,9 +40,9 @@ import java.util.stream.Collectors;
 public class NotifyHkOrderDoneLogic {
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-    @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
 
     /**
@@ -56,7 +58,7 @@ public class NotifyHkOrderDoneLogic {
         biz.setBizType(PoushengCompensateBizType.NOTIFY_HK_ORDER_DOWN.toString());
         biz.setContext(String.valueOf(shopOrderId));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
     /**
@@ -77,7 +79,7 @@ public class NotifyHkOrderDoneLogic {
                 biz.setBizType(PoushengCompensateBizType.SYNC_MPOS_CONFIRM_DONE.name());
                 biz.setBizId(String.valueOf(orderShipment.getShipmentId()));
                 biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-                poushengCompensateBizWriteService.create(biz);
+                compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
             return Response.ok(Boolean.TRUE);
         }catch (Exception e){

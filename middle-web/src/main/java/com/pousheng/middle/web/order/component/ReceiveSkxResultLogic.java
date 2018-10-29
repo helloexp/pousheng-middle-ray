@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.CancelOutOrderInfo;
 import com.pousheng.middle.open.api.dto.SkxShipInfo;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
@@ -22,7 +24,7 @@ import org.springframework.stereotype.Component;
 public class ReceiveSkxResultLogic {
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -36,6 +38,6 @@ public class ReceiveSkxResultLogic {
         biz.setBizType(PoushengCompensateBizType.SKX_SYNC_SHIPMENT_RESULT.toString());
         biz.setContext(mapper.toJson(skxShipInfo));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 }

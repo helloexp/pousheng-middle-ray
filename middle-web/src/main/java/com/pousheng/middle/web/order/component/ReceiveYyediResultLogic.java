@@ -10,6 +10,8 @@
  */
 package com.pousheng.middle.web.order.component;
 
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -36,8 +38,7 @@ public class ReceiveYyediResultLogic {
 
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -54,7 +55,7 @@ public class ReceiveYyediResultLogic {
         biz.setBizType(PoushengCompensateBizType.YYEDI_SYNC_SHIPMENT_RESULT.toString());
         biz.setContext(mapper.toJson(okShipInfos));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
 
@@ -72,7 +73,7 @@ public class ReceiveYyediResultLogic {
         biz.setBizType(PoushengCompensateBizType.YYEDI_SYNC_REFUND_RESULT.toString());
         biz.setContext(mapper.toJson(refunds));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
 
     }
 

@@ -1,5 +1,7 @@
 package com.pousheng.middle.web.warehouses;
 
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.WarehouseRulePriorityImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
@@ -56,9 +58,6 @@ public class WarehouseRulePriorities {
     private WarehouseRulePriorityItemWriteService warehouseRulePriorityItemWriteService;
 
     @RpcConsumer
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-
-    @RpcConsumer
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
 
     @RpcConsumer
@@ -66,6 +65,9 @@ public class WarehouseRulePriorities {
 
     @Autowired
     private WarehouseCacher warehouseCacher;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -182,7 +184,7 @@ public class WarehouseRulePriorities {
         biz.setContext(mapper.toJson(info));
         biz.setBizId(info.getPriorityId().toString());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
 

@@ -4,12 +4,13 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.PsOrderReceiver;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryDTO;
 import com.pousheng.middle.warehouse.dto.AvailableInventoryRequest;
@@ -37,6 +38,7 @@ import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShopOrderReadService;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,8 +70,8 @@ public class JitOrderManager extends PsOrderReceiver {
     @RpcConsumer
     private OrderWriteService orderWriteService;
 
-    @RpcConsumer
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     public static final JsonMapper mapper=JsonMapper.JSON_NON_EMPTY_MAPPER;
 
@@ -303,7 +305,7 @@ public class JitOrderManager extends PsOrderReceiver {
         biz.setBizType(PoushengCompensateBizType.JIT_UNLOCK_STOCK_API.toString());
         biz.setContext(data);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
 }

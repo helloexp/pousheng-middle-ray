@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -13,7 +15,6 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
@@ -67,7 +68,7 @@ public class HKShipmentDoneLogic {
     @Autowired
     private MposSkuStockLogic mposSkuStockLogic;
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
 
@@ -113,7 +114,7 @@ public class HKShipmentDoneLogic {
             biz.setBizType(PoushengCompensateBizType.SYNC_ECP.name());
             biz.setBizId(String.valueOf(shipment.getId()));
             biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-            poushengCompensateBizWriteService.create(biz);
+            compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类

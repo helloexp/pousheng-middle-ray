@@ -3,6 +3,8 @@ package com.pousheng.middle.open.api;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -60,7 +62,7 @@ public class OpenClientOrderApi {
     private OpenOrderConverter openOrderConverter;
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -197,7 +199,7 @@ public class OpenClientOrderApi {
         biz.setBizType(PoushengCompensateBizType.OUT_OPEN_ORDER.toString());
         biz.setContext(mapper.toJson(openFullOrderInfo));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
 }

@@ -45,6 +45,11 @@ spring:
   batch:
     job:
       enabled: false
+  rocketmq:
+    name-server: ${MQ_NAME_ADDR}
+    producer:
+      group: pousheng-middle-producer-group
+      retry-another-broker-when-not-store-ok: true
 
 
 mybatis:
@@ -333,3 +338,15 @@ thread.executor.queue.capacity: 5000
 
 
 is.open.test: ${IS_TEST}
+
+# 通用biz的mq处理类的开关
+biz.common.topic.enable: ${BIZ_COMMON_TOPIC_ENABLE:true}
+
+# 导出biz的mq处理类的开关
+biz.export.topic.enable: ${BIZ_EXPORT_TOPIC_ENABLE:true}
+
+# 通用biz的补偿任务开关
+biz.common.wait.handle.job.enable: ${BIZ_COMMON_WAIT_HANDLE_JOB_ENABLE:true}
+
+# 导出biz的补偿任务开关
+biz.export.wait.handle.job.enable: ${BIZ_COMMON_WAIT_HANDLE_JOB_ENABLE:true}

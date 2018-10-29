@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.component.NotifyHkOrderDoneLogic;
 import com.pousheng.middle.open.erp.ErpOpenApiClient;
 import com.pousheng.middle.open.erp.TerminusErpOpenApiClient;
@@ -130,7 +132,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     private ShopOrderReadService shopOrderReadService;
 
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    private CompensateBizLogic compensateBizLogic;
 
 
     @Value("${redirect.fenxiao.erp.gateway:https://yymiddle.pousheng.com/api/qm/pousheng/wms-fenxiao}")
@@ -622,7 +624,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         biz.setBizType(PoushengCompensateBizType.THIRD_ORDER_CREATE_SHIP.toString());
         biz.setContext(mapper.toJson(shopOrderId));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**
@@ -635,7 +637,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         biz.setBizId(String.valueOf(shopOrderId));
         biz.setContext(JsonMapper.nonDefaultMapper().toJson(openClientFullOrder));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**

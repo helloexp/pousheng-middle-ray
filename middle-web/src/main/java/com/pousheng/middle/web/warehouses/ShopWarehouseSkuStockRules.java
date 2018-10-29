@@ -5,6 +5,8 @@ import com.google.common.collect.Maps;
 import com.pousheng.erp.cache.SpuMaterialCacher;
 import com.pousheng.middle.item.dto.SearchSkuTemplate;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.MiddleChannel;
@@ -12,7 +14,6 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.companent.ShopWarehouseSkuRuleClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
@@ -83,8 +84,6 @@ public class ShopWarehouseSkuStockRules {
     @Autowired
     private SkuTemplateSearchReadService skuTemplateSearchReadService;
     @Autowired
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-    @Autowired
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
     @Autowired
     private OpenShopCacher openShopCacher;
@@ -92,7 +91,8 @@ public class ShopWarehouseSkuStockRules {
     private GroupRuleCacherProxy groupRuleCacherProxy;
     @Autowired
     private InventoryClient inventoryClient;
-
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
@@ -133,7 +133,7 @@ public class ShopWarehouseSkuStockRules {
         biz.setContext(mapper.toJson(info));
         biz.setBizId(info.getOpenShopId() + "-" + info.getWarehouseId());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
 

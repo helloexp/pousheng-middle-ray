@@ -6,6 +6,8 @@ import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.hksyc.component.JitOrderReceiptApi;
 import com.pousheng.middle.hksyc.dto.JitOrderReceiptRequest;
 import com.pousheng.middle.hksyc.dto.YJRespone;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.open.manager.RedisLockClient;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
@@ -61,8 +63,8 @@ public class JitBigOrderService implements CompensateBizService {
     @Autowired
     private JitOrderReceiptApi jitOrderReceiptApi;
 
-    @RpcConsumer
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -160,7 +162,7 @@ public class JitBigOrderService implements CompensateBizService {
         biz.setBizType(PoushengCompensateBizType.JIT_ORDER_RECEIPT.toString());
         biz.setContext(data);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        poushengCompensateBizWriteService.create(biz);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
 }

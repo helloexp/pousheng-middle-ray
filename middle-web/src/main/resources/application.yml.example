@@ -8,6 +8,13 @@ spring:
     username: root
     password: anywhere
 
+  rocketmq:
+        name-server: 127.0.0.1:9876
+        producer:
+          group: pousheng-middle-producer-group
+          retry-another-broker-when-not-store-ok: true
+
+
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
@@ -191,3 +198,16 @@ thread.executor.core.pool.size: 2
 thread.executor.max.pool.size: 4
 #线程池默认队列默认最大数量
 thread.executor.queue.capacity: 5000
+
+
+# 通用biz的mq处理类的开关
+biz.common.topic.enable: true
+
+# 导出biz的mq处理类的开关
+biz.export.topic.enable: true
+
+# 通用biz的补偿任务开关
+biz.common.wait.handle.job.enable: true
+
+# 导出biz的补偿任务开关
+biz.export.wait.handle.job.enable: true

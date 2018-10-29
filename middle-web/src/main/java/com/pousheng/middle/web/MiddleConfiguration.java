@@ -1,5 +1,7 @@
 package com.pousheng.middle.web;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Charsets;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
@@ -49,10 +51,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.boot.web.servlet.MultipartConfigFactory;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.*;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.format.FormatterRegistry;
 import org.springframework.format.datetime.DateFormatter;
@@ -103,6 +102,7 @@ import java.util.concurrent.TimeUnit;
                 "com.pousheng.middle.common.utils.component",
                 "com.pousheng.middle.warehouse",
                 "com.pousheng.middle.open",
+                "com.pousheng.middle.mq",
                 "com.pousheng.middle.advices",
                 "com.pousheng.middle.auth",
                 "com.pousheng.middle.erpsyc",
@@ -286,6 +286,13 @@ public class MiddleConfiguration extends WebMvcConfigurerAdapter {
         return new DefaultUserTypeBean();
     }
 
+    @Bean
+    @Primary
+    public ObjectMapper nonNullObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        return objectMapper;
+    }
 
 
 }

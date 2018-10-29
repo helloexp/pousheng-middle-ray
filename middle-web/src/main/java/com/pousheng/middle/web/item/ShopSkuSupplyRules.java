@@ -2,13 +2,14 @@ package com.pousheng.middle.web.item;
 
 import com.google.common.base.Optional;
 import com.pousheng.erp.service.PoushengMiddleSpuService;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.SkuStockRuleImportInfo;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.item.component.ShopSkuSupplyRuleComponent;
 import com.pousheng.middle.web.utils.operationlog.OperationLogType;
 import io.swagger.annotations.Api;
@@ -23,7 +24,6 @@ import io.terminus.parana.spu.model.SkuTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -38,7 +38,6 @@ import org.springframework.web.bind.annotation.*;
 @Api(description = "店铺商品供货规则")
 public class ShopSkuSupplyRules {
 
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
     private PoushengCompensateBizReadService poushengCompensateBizReadService;
     private OpenShopCacher openShopCacher;
     private PoushengMiddleSpuService poushengMiddleSpuService;
@@ -48,17 +47,17 @@ public class ShopSkuSupplyRules {
 
 
     @Autowired
-    public ShopSkuSupplyRules(PoushengCompensateBizWriteService poushengCompensateBizWriteService,
-                              PoushengCompensateBizReadService poushengCompensateBizReadService,
+    public ShopSkuSupplyRules(PoushengCompensateBizReadService poushengCompensateBizReadService,
                               OpenShopCacher openShopCacher,
                               PoushengMiddleSpuService poushengMiddleSpuService,
                               ShopSkuSupplyRuleComponent shopSkuSupplyRuleComponent) {
         this.poushengCompensateBizReadService = poushengCompensateBizReadService;
-        this.poushengCompensateBizWriteService = poushengCompensateBizWriteService;
         this.openShopCacher = openShopCacher;
         this.poushengMiddleSpuService = poushengMiddleSpuService;
         this.shopSkuSupplyRuleComponent = shopSkuSupplyRuleComponent;
     }
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     /**
      * 导入模板
@@ -69,11 +68,7 @@ public class ShopSkuSupplyRules {
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_SUPPLY_RULE.toString());
         biz.setContext(mapper.toJson(info));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        Response<Long> response = poushengCompensateBizWriteService.create(biz);
-        if (!response.isSuccess()) {
-            log.error("fail to create biz,cause:{}", response.getError());
-            throw new JsonResponseException(response.getError());
-        }
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**

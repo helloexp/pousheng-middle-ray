@@ -7,6 +7,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.constants.SymbolConsts;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.OpenClientOrderApi;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.open.manager.JitOrderManager;
@@ -58,9 +60,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class JitOpenApi {
 
-    @RpcConsumer
-    private PoushengCompensateBizWriteService poushengCompensateBizWriteService;
-
     @Autowired
     private EventBus eventBus;
 
@@ -82,6 +81,9 @@ public class JitOpenApi {
 
     @Autowired
     private OpenClientOrderApi openClientOrderApi;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
     /**
      * 保存时效的订单
      *
@@ -168,14 +170,7 @@ public class JitOpenApi {
             }
             //save to db
             Response<Long> response = saveDataToTask(orderInfo);
-            if (response.isSuccess()) {
-                // publish event
-                // 主动消费则时效性更好
-                HandleJITBigOrderEvent event = new HandleJITBigOrderEvent();
-                event.setId(response.getResult());
-                eventBus.post(event);
-                log.info("PUSH-OUT-JIT-ORDER-API END.success.{}",orderInfo);
-            } else {
+            if (!response.isSuccess()) {
                 log.error("failed save jit big order:{}",orderInfo);
                 throw new OPServerException("failed.save.jit.big.order");
             }
@@ -211,7 +206,7 @@ public class JitOpenApi {
         biz.setBizType(PoushengCompensateBizType.OUT_OPEN_ORDER.toString());
         biz.setContext(data);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return poushengCompensateBizWriteService.create(biz);
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
     protected OpenFullOrderInfo validateBaiscParam(String orderInfo) {

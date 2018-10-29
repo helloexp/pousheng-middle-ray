@@ -865,7 +865,7 @@ public class FireCall {
             Optional<ShopOrder> shopOrderOptional = optionalResponse.getResult();
             if (shopOrderOptional.isPresent()){
                 try{
-                    orderWriteLogic.cancelShopOrder(shopOrderOptional.get().getId());
+                    orderWriteLogic.autoCancelShopOrder(shopOrderOptional.get().getId());
                 }catch (Exception e){
                     log.error("cancel shop order from file failed,outerId {},caused by {}",outerOrderId,Throwables.getStackTraceAsString(e));
                 }

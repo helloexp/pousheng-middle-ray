@@ -2069,7 +2069,7 @@ public class Shipments {
             }
 
             shipmentWiteLogic.updateShipmentItem(shipment, updateList);
-            return Response.ok();
+            return Response.ok(Boolean.TRUE);
         }catch (JsonResponseException e) {
             log.error("failed to batch update ship qty for shipment id:{} data list:{}, error:{}",shipmentId,dataList, e.getMessage());
             return Response.fail(e.getMessage());

@@ -65,7 +65,11 @@ public class CompensateBizCommonWaitHandleJob {
                     continue;
                 }
                 //导出交易job单独处理
-                if (Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.EXPORT_TRADE_BILL.name())){
+                if (Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.EXPORT_TRADE_BILL.name())
+                        ||Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.name())
+                        ||Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_WAREHOUSE_SKU_RULE.name())
+                        ||Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_ITEM_PUSH_RATIO.name())){
+                    log.warn("common compensate biz not right ,id {},bizType {}",compensateBiz.getId(),compensateBiz.getBizType());
                     continue;
                 }
                 //乐观锁控制更新为处理中

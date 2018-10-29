@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * 中台业务处理-处理从未处理过的任务的job
+ * 中台业务处理-处理从未处理过的任务的job,导入导出
  * Author:  <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
  * Date: 2018/5/28
  * pousheng-middle
@@ -50,7 +50,6 @@ public class CompensateBizExportWaitHandleJob {
             criteria.setPageNo(pageNo);
             criteria.setPageSize(pageSize);
             criteria.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
-            criteria.setBizType(PoushengCompensateBizType.EXPORT_TRADE_BILL.name());
             Response<Paging<PoushengCompensateBiz>> response = compensateBizReadService.paging(criteria);
             if (!response.isSuccess()) {
                 pageNo++;
@@ -63,6 +62,13 @@ public class CompensateBizExportWaitHandleJob {
             log.info("wait handle compensateBizs size is {}",compensateBizs.size());
             for (PoushengCompensateBiz compensateBiz:compensateBizs){
                 if (compensateBiz.getCnt()>3){
+                    continue;
+                }
+                if (!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.EXPORT_TRADE_BILL.name())
+                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.name())
+                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_WAREHOUSE_SKU_RULE.name())
+                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_ITEM_PUSH_RATIO.name())){
+                    log.warn("file compensate biz not right ,id {},bizType {}",compensateBiz.getId(),compensateBiz.getBizType());
                     continue;
                 }
                 //乐观锁控制更新为处理中

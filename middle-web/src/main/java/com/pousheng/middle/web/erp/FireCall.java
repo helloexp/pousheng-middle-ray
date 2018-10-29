@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -24,6 +25,7 @@ import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.service.MiddleOrderReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -33,11 +35,8 @@ import com.pousheng.middle.web.item.cacher.GroupRuleCacherProxy;
 import com.pousheng.middle.web.item.component.PushMposItemComponent;
 import com.pousheng.middle.web.mq.warehouse.InventoryChangeProducer;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
-import com.pousheng.middle.web.order.component.OrderReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentReadLogic;
-import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
-import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import com.pousheng.middle.web.warehouses.component.WarehouseImporter;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -56,7 +55,9 @@ import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.UserUtil;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.OrderReadService;
 import io.terminus.parana.order.service.ShipmentReadService;
+import io.terminus.parana.order.service.ShopOrderReadService;
 import io.terminus.parana.search.dto.SearchedItemWithAggs;
 import io.terminus.parana.shop.model.Shop;
 import io.terminus.parana.spu.model.SkuTemplate;
@@ -152,6 +153,10 @@ public class FireCall {
 
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
+    @Autowired
+    private ShopOrderReadService shopOrderReadService;
+    @Autowired
+    private OrderWriteLogic orderWriteLogic;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -845,6 +850,23 @@ public class FireCall {
 
     }
 
+    @RequestMapping(value = "/fix/order/need/cancel", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixOrdersNeedCancel(@RequestParam String fileName,@RequestParam String shopId){
+        String url = "/pousheng/file/" + fileName + ".csv";
+        log.info("START-HANDLE-ORDER-NEED-CANCEL-API for:{}", url);
+        File file1 = new File(url);
+        List<String> outerOrderIds = readOrderIds(file1);
+        for (String outerOrderId:outerOrderIds){
+            Response<Optional<ShopOrder>> optionalResponse = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId,shopId);
+            if (!optionalResponse.isSuccess()){
+                log.error("find order failed,outerId {},shopId {},caused by {}",outerOrderId,shopId,optionalResponse.getError());
+            }
+            Optional<ShopOrder> shopOrderOptional = optionalResponse.getResult();
+            if (shopOrderOptional.isPresent()){
+                orderWriteLogic.cancelShopOrder(shopOrderOptional.get().getId());
+            }
+        }
+    }
 
     /**
      * 修复门店拒单后为更新售后单的数据
@@ -902,6 +924,21 @@ public class FireCall {
     }
 
     private List<String> readShipmentCode(File file) {
+        List<String> result = Lists.newArrayList();
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件
+            String s = null;
+            while ((s = br.readLine()) != null) { //使用readLine方法，一次读一行
+                result.add(s);
+            }
+            br.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+
+    private List<String> readOrderIds(File file) {
         List<String> result = Lists.newArrayList();
         try {
             BufferedReader br = new BufferedReader(new FileReader(file));//构造一个BufferedReader类来读取文件

@@ -181,6 +181,13 @@ public class SyncOrderToEcpLogic {
                         //官网会用到skuCode
                         outerSkuCodes.add(shipmentItem.getSkuCode());
                     }
+                    
+                    if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.SUNING.getValue())) {
+                        for (ShipmentItem shipmentItem : shipmentItems) {
+                            outerSkuCodes.add(shipmentItem.getOutSkuCode());
+                        }
+                    }
+                    
                     openClientOrderShipment.setOuterItemOrderIds(outerItemOrderIds);
                     openClientOrderShipment.setOuterSkuCodes(outerSkuCodes);
                     //填写运单号

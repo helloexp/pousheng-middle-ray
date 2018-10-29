@@ -857,6 +857,7 @@ public class FireCall {
         File file1 = new File(url);
         List<String> outerOrderIds = readOrderIds(file1);
         for (String outerOrderId:outerOrderIds){
+            log.info("try cancel shop order from file,outerOrderId {}",outerOrderId);
             Response<Optional<ShopOrder>> optionalResponse = shopOrderReadService.findByOutIdAndOutFrom(outerOrderId,shopId);
             if (!optionalResponse.isSuccess()){
                 log.error("find order failed,outerId {},shopId {},caused by {}",outerOrderId,shopId,optionalResponse.getError());

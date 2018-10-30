@@ -11,14 +11,14 @@ import org.springframework.stereotype.Service;
 
 
 /**
- * 通用业务处理，12个线程
+ * 通用业务处理，16个线程
  * CompenSateBiz mq处理
  */
 @ConditionalOnProperty(name = "biz.export.topic.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @Service
 @RocketMQMessageListener(topic = MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC,
-        consumerGroup = MqConstants.POUSHENG_MIDDLE_MQ_EXPORT_CONSUMER_GROUP,consumeThreadMax = 12)
+        consumerGroup = MqConstants.POUSHENG_MIDDLE_MQ_EXPORT_CONSUMER_GROUP,consumeThreadMax = 16)
 public class CompensateExportBizConsumerMessageListener implements RocketMQListener<String> {
 
     @Autowired
@@ -27,7 +27,7 @@ public class CompensateExportBizConsumerMessageListener implements RocketMQListe
     public void onMessage(String message) {
 
         if (log.isDebugEnabled()){
-            log.debug("CompensateBizConsumerMessageListener onMessage,message {}",message);
+            log.debug("CompensateExportBizConsumerMessageListener onMessage,message {}",message);
         }
 
         compensateBizLogic.consumeMqMessage(message);

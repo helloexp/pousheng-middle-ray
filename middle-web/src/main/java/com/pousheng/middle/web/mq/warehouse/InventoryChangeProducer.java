@@ -13,8 +13,6 @@ import org.apache.rocketmq.client.producer.SendResult;
 import org.apache.rocketmq.client.producer.SendStatus;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.ObjectUtils;
 
@@ -26,7 +24,6 @@ import java.util.List;
  * @auther feisheng.ch
  * @time 2018/7/18
  */
-@ConditionalOnProperty(name = "trade.job.enable", havingValue = "true", matchIfMissing = true)
 @Component
 @Slf4j
 @MQConsumer
@@ -142,7 +139,7 @@ public class InventoryChangeProducer {
     /**
      * 定期去重新发送失败任务
      */
-    @Scheduled(cron = "0 0/1 * * * *")
+    //@Scheduled(cron = "0 0/1 * * * *")
     public void reSend() {
         log.info("START JOB InventoryChangeProducer.reSend");
         // 处理库存变动

@@ -76,7 +76,7 @@ public class ShopMaxOrderLogic {
     @Autowired
     private MiddleShopCacher middleShopCacher;
 
-    @Autowired(required = false)
+    @Autowired
     private InventoryChangeProducer inventoryChangeProducer;
 
     /**

@@ -49,6 +49,7 @@ public class CompensateBizExportWaitHandleJob {
             PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
             criteria.setPageNo(pageNo);
             criteria.setPageSize(pageSize);
+            criteria.setIgnoreCnt(3);
             criteria.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
             Response<Paging<PoushengCompensateBiz>> response = compensateBizReadService.paging(criteria);
             if (!response.isSuccess()) {

@@ -48,6 +48,7 @@ public class CompensateBizFailedJob {
             criteria.setPageNo(pageNo);
             criteria.setPageSize(pageSize);
             criteria.setStatus(PoushengCompensateBizStatus.FAILED.name());
+            criteria.setIgnoreCnt(3);
             Response<Paging<PoushengCompensateBiz>> response = compensateBizReadService.paging(criteria);
             if (!response.isSuccess()) {
                 pageNo++;

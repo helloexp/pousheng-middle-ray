@@ -125,7 +125,7 @@ public class Warehouses {
         if (CollectionUtils.isEmpty(skuCodeList)) {
             return map;
         }
-        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), skuCodeList, shopId);
+        List<HkSkuStockInfo> skuStockInfos = queryHkWarhouseOrShopStockApi.doQueryStockInfo(Lists.newArrayList(warehouseId), skuCodeList, shopId, Boolean.TRUE);
         if (skuStockInfos.size() == 0) {
             return Collections.emptyMap();
         }

@@ -1214,12 +1214,7 @@ public class AdminShops {
         try{
 
             //查询通过outerId,businessId获取门店信息
-            val rExist = psShopReadService.findByOuterIdAndBusinessId(outerId, businessId);
-            if (!rExist.isSuccess()) {
-                log.error("find shop by outerId({}) and businessId({}) fail,error:{}", outerId, businessId, rExist.getError());
-                throw new JsonResponseException(rExist.getError());
-            }
-            Shop shop = rExist.getResult().get();
+            Shop shop = middleShopCacher.findByOuterIdAndBusinessId(outerId, businessId);
             ShopExtraInfo existShopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
             ShopBusinessTime shopBusinessTime = existShopExtraInfo.getShopBusinessTime();
 

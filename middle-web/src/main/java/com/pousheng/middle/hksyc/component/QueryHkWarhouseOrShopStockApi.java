@@ -336,11 +336,12 @@ public class QueryHkWarhouseOrShopStockApi {
      *
      * @param warehouseIds 仓库ID
      * @param skuCodes sku
+     * @param withSafe 是否使用安全库存，如果不使用的话 直接忽略库存为0的记录
      * @return: 商品库存信息集合
      * Author:xiehong
      * Date: 2018/6/20 下午5:48
      */
-    public List<HkSkuStockInfo> doQueryStockInfo(List<Long> warehouseIds, List<String> skuCodes, Long shopId){
+    public List<HkSkuStockInfo> doQueryStockInfo(List<Long> warehouseIds, List<String> skuCodes, Long shopId, Object... withSafe) {
         if (CollectionUtils.isEmpty(warehouseIds) || CollectionUtils.isEmpty(skuCodes)){
             log.error("warehouseIds or skuCodes is null");
             return Lists.newArrayList();
@@ -369,28 +370,32 @@ public class QueryHkWarhouseOrShopStockApi {
             log.warn("not skuStockInfos so skip");
             return Lists.newArrayList();
         }
-        OpenShop openShop= openShopCacher.findById(shopId);
+        List<AvailableInventoryDTO> availableInvList = availableInvRes.getResult();
+        if (withSafe.length == 0) {
+            availableInvList = availableInvRes.getResult().stream().filter(e -> e.getTotalAvailQuantity() > 0).collect(Collectors.toList());
+        }
+        OpenShop openShop = openShopCacher.findById(shopId);
         String companyCode = openShop.getExtra().get(COMPANY_CODE);
         if (StringUtils.isEmpty(companyCode)) {
             companyCode = Splitter.on("-").splitToList(openShop.getAppKey()).get(0);
         }
         //TODO 单测
         List<HkSkuStockInfo> hkSkuStockInfos = Lists.newArrayListWithExpectedSize(warehouseIds.size());
-        for (final Long warehouseId : warehouseIds){
+        for (final Long warehouseId : warehouseIds) {
             WarehouseDTO warehouse = warehouseCacher.findById(warehouseId);
-            if (null == warehouse){
-                log.warn("find warehouse by id {} is null",warehouseId);
+            if (null == warehouse) {
+                log.warn("find warehouse by id {} is null", warehouseId);
                 continue;
             }
-            if (StringUtils.isEmpty(warehouse.getOutCode())){
-                log.warn("find warehouse by id {} outCode  is null",warehouseId);
+            if (StringUtils.isEmpty(warehouse.getOutCode())) {
+                log.warn("find warehouse by id {} outCode  is null", warehouseId);
                 continue;
             }
 
-            List<AvailableInventoryDTO> availableInv = availableInvRes.getResult().stream()
+            List<AvailableInventoryDTO> availableInv = availableInvList.stream()
                     .filter(dto -> warehouseId.equals(dto.getWarehouseId())).collect(Collectors.toList());
             if (ObjectUtils.isEmpty(availableInv)) {
-                log.warn("no inventory available for warehouse: {}",warehouseId);
+                log.warn("no inventory available for warehouse: {}", warehouseId);
                 continue;
             }
 

@@ -79,7 +79,14 @@ public class ImportPriorityItemService implements CompensateBizService {
             return;
         }
         poushengCompensateBiz = makeRules(poushengCompensateBiz);
-        poushengCompensateBizWriteService.update(poushengCompensateBiz);
+
+        if (!StringUtils.isEmpty(poushengCompensateBiz.getLastFailedReason())) {
+            PoushengCompensateBiz update = new PoushengCompensateBiz();
+            update.setId(poushengCompensateBiz.getId());
+            update.setLastFailedReason(poushengCompensateBiz.getLastFailedReason());
+            poushengCompensateBizWriteService.update(update);
+        }
+
         log.info("import warehouse rule priority item  end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
 
     }

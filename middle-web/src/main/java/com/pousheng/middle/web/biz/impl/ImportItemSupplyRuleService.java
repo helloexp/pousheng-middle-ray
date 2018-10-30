@@ -100,7 +100,13 @@ public class ImportItemSupplyRuleService implements CompensateBizService {
             return;
         }
         poushengCompensateBiz = handle(poushengCompensateBiz);
-        poushengCompensateBizWriteService.update(poushengCompensateBiz);
+
+        if (!StringUtils.isEmpty(poushengCompensateBiz.getLastFailedReason())) {
+            PoushengCompensateBiz update = new PoushengCompensateBiz();
+            update.setId(poushengCompensateBiz.getId());
+            update.setLastFailedReason(poushengCompensateBiz.getLastFailedReason());
+            poushengCompensateBizWriteService.update(update);
+        }
 
         log.info("import item supply rule end ....,poushengCompensateBiz is {}", poushengCompensateBiz);
     }

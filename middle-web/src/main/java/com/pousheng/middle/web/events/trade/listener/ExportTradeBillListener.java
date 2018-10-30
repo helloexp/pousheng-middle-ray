@@ -579,7 +579,20 @@ public class ExportTradeBillListener {
 //                entity.setSaleType(shipmentContext.getOrderShipment().getType());
                     entity.setPayType("在线支付");
 //                    entity.setInvoice("");
+                    entity.setOutCreatedDate(shopOrderResponse.getResult().getOutCreatedAt());
                     entity.setPaymentDate(shopOrderResponse.getResult().getOutCreatedAt());
+                    entity.setOutId(shopOrderResponse.getResult().getOutId());
+                    if(CollectionUtils.isEmpty(shopOrderResponse.getResult().getExtra())){
+                        entity.setOrderType("");
+                    }else{
+                        String stepOrder = shopOrderResponse.getResult().getExtra().get("isStepOrder");
+                        if(StringUtils.isNotBlank(stepOrder) && Objects.equals(stepOrder,"true")){
+                            entity.setOrderType("预售订单");
+                        }else{
+                            entity.setOrderType("普通订单");
+                        }
+                    }
+                    
                     entity.setSkuQuantity(item.getQuantity());
                     if (null == item.getCleanFee())
                         entity.setFee(0D);

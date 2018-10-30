@@ -169,7 +169,7 @@ public class ImportItemPushRatioService implements CompensateBizService {
             poushengCompensateBiz.setLastFailedReason(abnormalUrl);
             poushengCompensateBiz.setUpdatedAt(DateTime.now().toDate());
         }
-        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
+
         return poushengCompensateBiz;
     }
 

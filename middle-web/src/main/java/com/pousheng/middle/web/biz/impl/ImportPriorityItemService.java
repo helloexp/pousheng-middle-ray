@@ -190,7 +190,7 @@ public class ImportPriorityItemService implements CompensateBizService {
             poushengCompensateBiz.setLastFailedReason(url);
             log.error("import warehouse rule item detail abnormality");
         }
-        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
+
         return poushengCompensateBiz;
     }
 }

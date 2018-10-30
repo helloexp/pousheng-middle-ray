@@ -178,7 +178,6 @@ public class ImportWarehouseStockRuleService implements CompensateBizService {
             } catch (Exception e) {
                 log.error("import warehouse shop sku rule abnormalty cause by {}", e);
                 poushengCompensateBiz.setLastFailedReason(e.getMessage());
-                poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
             }
 
         }
@@ -187,7 +186,7 @@ public class ImportWarehouseStockRuleService implements CompensateBizService {
             poushengCompensateBiz.setLastFailedReason(url);
             log.error("import shop  warehouse rule abnormality");
         }
-        poushengCompensateBiz.setStatus(PoushengCompensateBizStatus.SUCCESS.name());
+
         return poushengCompensateBiz;
     }
 

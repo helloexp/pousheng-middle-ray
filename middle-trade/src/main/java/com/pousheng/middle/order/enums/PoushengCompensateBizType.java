@@ -136,5 +136,15 @@ public enum PoushengCompensateBizType {
     /**
      * 预售订单支付尾款之后后续处理流程
      */
-    STEP_ORDER_NOTIFY_ERP;
+    STEP_ORDER_NOTIFY_ERP,
+
+    /**
+     * 外部订单插入中台
+     */
+    OPEN_ORDER_IMPORT,
+
+    /**
+     * 不进入中台的单据推送到电商
+     */
+    OPEN_ORDER_PUSH;
 }

@@ -90,17 +90,23 @@ public class OpenClientOrderApi {
                 OpenShop openShop = openShopCacher.findById(openShopId);
                 Map<String, String> openShopExtra = openShop.getExtra();
                 String isOrderInsertMiddle = openShopExtra.get(IS_ORDER_INSERT_MIDDLE);
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+                biz.setBizId(openShopId.toString());
                 //判断该订单是否需要存放到中台
-                if (StringUtils.isEmpty(isOrderInsertMiddle)||Objects.equals(isOrderInsertMiddle,"true")){
+                if (StringUtils.isEmpty(isOrderInsertMiddle) || Objects.equals(isOrderInsertMiddle, "true")) {
                     //业务参数校验
                     this.validateBusiParam(openFullOrderInfo);
                     //组装参数
                     OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
-                    orderExecutor.importOrder(openShop, Lists.newArrayList(openClientFullOrder));
-                }else{
+                    biz.setBizType(PoushengCompensateBizType.OPEN_ORDER_IMPORT.toString());
+                    biz.setContext(mapper.toJson(openClientFullOrder));
+                } else {
                     //订单不插入中台
-                    orderExecutor.pushOrder(openShop,Lists.newArrayList(openFullOrderInfo));
+                    biz.setBizType(PoushengCompensateBizType.OPEN_ORDER_PUSH.toString());
+                    biz.setContext(mapper.toJson(openFullOrderInfo));
                 }
+                compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }catch (Exception e){
                 log.error("create open  order:{} failed,caused by {}",orderInfo, Throwables.getStackTraceAsString(e));
                 throw new OPServerException(200,"create.middle.order.fail");

@@ -30,12 +30,14 @@ import io.terminus.open.client.vip.enums.TransportCodeEnum;
 import io.terminus.open.client.vip.extra.service.VipOrderReturnService;
 import io.terminus.open.client.vip.extra.service.VipOrderStoreService;
 import io.terminus.open.client.vip.extra.service.VipStoreService;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.ExpressDetails;
 import io.terminus.parana.order.enums.ShipmentExpressStatus;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import io.terminus.parana.order.service.ShopOrderReadService;
+import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +48,7 @@ import vipapis.delivery.ReturnGoods;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -105,6 +108,8 @@ public class SyncVIPLogic {
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
 
+    @Autowired
+    private ShopCacher shopCacher;
 
     /**
      * 通知vip接单并呼叫快递
@@ -115,16 +120,24 @@ public class SyncVIPLogic {
     public Response<Boolean> syncOrderStoreToVIP(Shipment shipment) {
         try {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+            Long warehouseId;
+            //判断发货单是仓发还是店发
+            if (Objects.equals(shipment.getShipWay(), 2)) {
+                warehouseId = shipment.getShipId();
+            } else {
+                Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString()).getId();
+            }
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             Response<ShopOrder> orderResp = shopOrderReadService.findById(orderShipment.getOrderId());
             ShopOrder shopOrder = orderResp.getResult();
-            Response<Boolean> response = vipOrderStoreService.responseOrderStore(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(shipmentExtra.getWarehouseId()));
+            Response<Boolean> response = vipOrderStoreService.responseOrderStore(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId));
             if (!response.isSuccess()) {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), response.getError());
                 return Response.fail(response.getError());
             }
-            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(shipmentExtra.getWarehouseId()), null, null);
+            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId), null, null);
             if (!deliveryResp.isSuccess()) {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());
@@ -155,7 +168,15 @@ public class SyncVIPLogic {
         try {
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
-            WarehouseDTO warehouseDTO = warehouseCacher.findById(shipmentExtra.getWarehouseId());
+            Long warehouseId;
+            //判断发货单是仓发还是店发
+            if (Objects.equals(shipment.getShipWay(), 2)) {
+                warehouseId = shipment.getShipId();
+            } else {
+                Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+                warehouseId = warehouseCacher.findByOutCodeAndBizId(shop.getOuterId(), shop.getBusinessId().toString()).getId();
+            }
+            WarehouseDTO warehouseDTO = warehouseCacher.findById(warehouseId);
             Response<OrderShipment> orderShipmentResponse = orderShipmentReadService.findByShipmentId(shipment.getId());
             OrderShipment orderShipment = orderShipmentResponse.getResult();
             Response<ShopOrder> orderResp = shopOrderReadService.findById(orderShipment.getOrderId());

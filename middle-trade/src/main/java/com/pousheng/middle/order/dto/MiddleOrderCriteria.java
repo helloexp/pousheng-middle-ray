@@ -103,6 +103,11 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
      * 排除订单类型
      */
     private Integer excludeType;
+
+    /**
+     *  排除买家备注信息（模糊查询）
+     */
+    private String buyerNote;
     /**
      * 如果Start的时间和End的时间一致, 则End+1day
      */
@@ -119,6 +124,13 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
         this.statusStr = statusStr;
         if (StringUtils.hasText(statusStr)) {
             this.status = Splitters.splitToInteger(statusStr, Splitters.COMMA);
+        }
+    }
+    
+    public void setBuyerNote(String buyerNote){
+        this.buyerNote = buyerNote;
+        if (StringUtils.hasText(buyerNote)){
+            this.buyerNote = buyerNote.replaceAll(",|，","|");
         }
     }
 

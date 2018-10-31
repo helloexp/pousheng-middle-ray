@@ -2322,10 +2322,11 @@ public class ShipmentWiteLogic {
 
                 shipmentExtra.setShipmentTotalPrice(shipmentTotalPrice);
                 Map<String, String> extraMap = shipment.getExtra();
-                extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(newShipmentItems));
+                //extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(newShipmentItems));
                 extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
                 shipment.setExtra(extraMap);
                 shipmentWiteLogic.update(shipment);
+                shipmentWiteLogic.updateShipmentItem(shipment,newShipmentItems);
             } catch (Exception e) {
                 log.error("update shipment amount failed, caused by {}", Throwables.getStackTraceAsString(e));
             }

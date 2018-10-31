@@ -3,6 +3,7 @@ package com.pousheng.middle.mq.consumer;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import io.terminus.common.rocketmq.annotation.ConsumeMode;
+import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +19,7 @@ import org.springframework.stereotype.Service;
 @ConditionalOnProperty(name = "biz.export.topic.enable", havingValue = "true", matchIfMissing = true)
 @Slf4j
 @Service
-
+@MQConsumer
 public class CompensateExportBizConsumerMessageListener{
 
     @Autowired

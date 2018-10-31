@@ -45,11 +45,7 @@ spring:
   batch:
     job:
       enabled: false
-  rocketmq:
-    name-server: ${MQ_NAME_ADDR}
-    producer:
-      group: pousheng-middle-producer-group
-      retry-another-broker-when-not-store-ok: true
+
 
 
 mybatis:

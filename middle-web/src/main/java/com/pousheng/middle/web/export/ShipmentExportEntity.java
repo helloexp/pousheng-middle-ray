@@ -86,5 +86,15 @@ public class ShipmentExportEntity {
 
     @ExportTitle("物流单号")
     private String expressOrderId;
+    
+    @ExportTitle("外部交易单号")
+    private String outId;
+    
+    @ExportTitle("订单类型")
+    private String orderType;
+    
+    @ExportTitle("下单时间")
+    @ExportDateFormat("yyyy-MM-dd HH:mm:ss")
+    private Date outCreatedDate;
 
 }

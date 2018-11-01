@@ -102,7 +102,9 @@ public class ShipmentReadLogic {
         shipmentDetail.setShipment(shipment);
         shipmentDetail.setShopOrder(shopOrder);
         shipmentDetail.setShipmentItems(getShipmentItems(shipment));
-        shipmentDetail.setShipmentExtra(getShipmentExtra(shipment));
+        ShipmentExtra shipmentExtra = getShipmentExtra(shipment);
+        setShopTelInfo(shipment,shipmentExtra);
+        shipmentDetail.setShipmentExtra(shipmentExtra);
         setInvoiceInfo(shipmentDetail,orderShipment.getOrderId());
         setReceiverInfo(shipmentDetail,shipment);
         List<Payment> payments = orderReadLogic.findOrderPaymentInfo(orderShipment.getOrderId());
@@ -396,6 +398,19 @@ public class ShipmentReadLogic {
         return Response.ok(companyRule);
     }
 
+    /**
+     * 设置下单店铺，发货仓店铺手机号信息
+     */
+    private void setShopTelInfo(Shipment shipment,ShipmentExtra shipmentExtra) {
+        WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
+        if(null == warehouse){
+            shipmentExtra.setWarehouseTelephone("");
+        }
+        //设置发货仓的手机号
+        shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
+        
+    }
+    
 
     /**
      * 商品详情返回发票信息

@@ -208,6 +208,8 @@ public class SyncWmsShipmentLogic {
         shipmentInfo.setArea(receiverInfo.getRegion());
         //地址
         shipmentInfo.setAddress(receiverInfo.getDetail());
+        //电话
+        shipmentInfo.setPhone(receiverInfo.getPhone());
         shipmentInfo.setChannelcode(shopOrderExtra.get(ExtraKeyConstant.CHANNEL_CODE));
         //获取发货单中对应的sku列表
         List<WmsShipmentItem> items = getSyncWmsShipmentItem(shipment, shipmentDetail);

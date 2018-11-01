@@ -17,11 +17,9 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.biz.Exception.JitUnlockStockTimeoutException;
-import com.pousheng.middle.web.events.trade.HandleJITBigOrderEvent;
 import com.pousheng.middle.web.utils.ApiParamUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
@@ -158,7 +156,7 @@ public class JitOpenApi {
                  ApiParamUtil.validateRequired(item,"outSkuorderId","vipsOrderId","skuCode","itemType","quantity","originFee","discount","cleanPrice","cleanFee");
              }
 
-            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","province","city","region","detail");
+            ApiParamUtil.validateRequired(fullOrderInfo.getAddress(),"receiveUserName","province","city","region","detail","phone");
 
             if (StringUtils.isNotBlank(fullOrderInfo.getOrder().getRealtimeOrderIds())) {
                 //验证时效订单是否存在

@@ -128,9 +128,20 @@ public class MiddleOrderCriteria extends PagingCriteria implements Serializable 
     }
     
     public void setBuyerNote(String buyerNote){
-        this.buyerNote = buyerNote;
+        this.buyerNote = buyerNote.trim();
         if (StringUtils.hasText(buyerNote)){
-            this.buyerNote = buyerNote.replaceAll(",|，","|");
+            String[] sd = buyerNote.split(",|，");
+            StringBuilder sb = new StringBuilder();
+            for(String remark:sd){
+                if(StringUtils.hasText(remark)){
+                   sb = sb.append(remark).append("|"); 
+                }
+            }
+            if(StringUtils.hasText(sb)){
+                this.buyerNote = sb.substring(0,sb.length()-1); 
+            }else{
+                this.buyerNote = "";
+            }
         }
     }
 

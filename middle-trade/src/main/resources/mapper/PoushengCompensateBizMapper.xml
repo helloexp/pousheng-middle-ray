@@ -54,8 +54,9 @@
 
         <if test="updatedAt != null">and `updated_at` = #{updatedAt}</if>
 
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
+        <if test="startCreatedAt != null">AND <![CDATA[created_at >= #{startCreatedAt}]]></if>
+
+        <if test="endCreatedAt != null">AND <![CDATA[created_at <= #{endCreatedAt}]]></if>
     </sql>
 
     <sql id="order">
@@ -127,6 +128,15 @@
         </where>
         limit #{offset},#{limit}
     </select>
+
+    <select id="pagingIds" parameterType="map" resultType="long">
+        SELECT <include refid="cols_all"/> FROM <include refid="tb"/>
+        <where>
+            <include refid="queryCondition"/>
+        </where>
+        limit #{offset}, #{limit}
+    </select>
+
 
     <select id="pagingForShow" parameterType="list" resultMap="PoushengCompensateBizMap">
         select id, <include refid="cols_exclude_id"/>

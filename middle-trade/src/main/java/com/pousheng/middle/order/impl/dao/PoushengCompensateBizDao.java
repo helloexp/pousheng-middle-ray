@@ -75,4 +75,18 @@ public class PoushengCompensateBizDao extends MyBatisDao<PoushengCompensateBiz> 
             return new Paging(total, datas);
         }
     }
+
+    public Paging<Long> pagingIds(Map<String, Object> criteria) {
+        if (criteria == null) {
+            criteria = Maps.newHashMap();
+        }
+
+        Long total = (Long)this.sqlSession.selectOne(this.sqlId("count"), criteria);
+        if (total <= 0L) {
+            return new Paging(0L, Collections.emptyList());
+        } else {
+            List<Long> datas = getSqlSession().selectList(this.sqlId("pagingIds"), criteria);
+            return new Paging(total, datas);
+        }
+    }
 }

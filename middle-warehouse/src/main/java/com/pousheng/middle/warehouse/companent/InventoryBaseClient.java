@@ -43,7 +43,9 @@ public class InventoryBaseClient {
         log.info("start request to {} with params: {}", host + "/" + path, params);
         HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .acceptJson()
-                .acceptCharset(HttpRequest.CHARSET_UTF8);
+                .acceptCharset(HttpRequest.CHARSET_UTF8)
+                .connectTimeout(HttpTime)
+                .readTimeout(HttpTime);
         if (r.ok()) {
             log.info("request success!");
             return r.body();
@@ -66,7 +68,9 @@ public class InventoryBaseClient {
         log.info("start request to {} with params: {}", host + "/" + path, params);
         HttpRequest r = HttpRequest.get(host + "/" + path, params, true)
                 .acceptJson()
-                .acceptCharset(HttpRequest.CHARSET_UTF8);
+                .acceptCharset(HttpRequest.CHARSET_UTF8)
+                .connectTimeout(HttpTime)
+                .readTimeout(HttpTime);
         if (r.ok()) {
             log.info("request success!");
             return handleNormalResponse(path, params, r.body(), clazz, isList);

@@ -50,6 +50,8 @@ spring:
 
 mybatis:
   mapper-locations: classpath*:mapper/*Mapper.xml
+  configuration:
+    default-statement-timeout: 60
   type-aliases-package: >
         com.pousheng.(erp|auth).model,
         com.pousheng.middle.(group|task).model,
@@ -281,6 +283,9 @@ terminus:
     producerGroup: ${MQ_PRODUCER_GROUP}
     poushengInventoryTopic: ${MQ_TOPIC_POUSHENG_INVENTORY}
     cacherClearTopic: cacherClearTopic
+    consumeMaxTpsConfig:
+      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS}
+
 
 # outlook邮箱,exchange服务器
 outlook.mail.server: 10.0.0.101

@@ -32,9 +32,6 @@ import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.dto.*;
 import com.pousheng.middle.warehouse.enums.WarehouseType;
 import com.pousheng.middle.warehouse.model.StockPushLog;
-import com.pousheng.middle.web.item.cacher.ItemGroupCacher;
-import com.pousheng.middle.web.item.cacher.ShopGroupRuleCacher;
-import com.pousheng.middle.web.item.cacher.WarehouseGroupRuleCacher;
 import com.pousheng.middle.web.middleLog.dto.StockLogDto;
 import com.pousheng.middle.web.middleLog.dto.StockLogTypeEnum;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
@@ -133,12 +130,6 @@ public class StockPusherLogic {
     @Autowired
     private MiddleShopCacher middleShopCacher;
     @Autowired
-    private ShopGroupRuleCacher shopGroupRuleCacher;
-    @Autowired
-    private WarehouseGroupRuleCacher warehouseGroupRuleCacher;
-    @Autowired
-    private ItemGroupCacher itemGroupCacher;
-    @Autowired
     private ShipmentReadLogic shipmentReadLogic;
 
 
@@ -156,7 +147,7 @@ public class StockPusherLogic {
     public StockPusherLogic(@Value("${index.queue.size: 120000}") int queueSize,
                             @Value("${cache.duration.in.minutes: 60}") int duration) {
         this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 3, 60L, TimeUnit.MINUTES,
-                new ArrayBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
+                new LinkedBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     @Override
                     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
@@ -164,9 +155,9 @@ public class StockPusherLogic {
                     }
                 });
 
-        this.skuCodeCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration * 24, TimeUnit.MINUTES)
-                .maximumSize(200000)
+        this.skuCodeCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
+                .expireAfterWrite(duration * 2, TimeUnit.SECONDS)
+                .maximumSize(1000)
                 .build(new CacheLoader<String, Long>() {
                     @Override
                     public Long load(String skuCode) throws Exception {
@@ -183,9 +174,9 @@ public class StockPusherLogic {
                         return skuTemplates.get(0).getSpuId();
                     }
                 });
-        this.openShopCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration * 24, TimeUnit.MINUTES)
-                .maximumSize(2000)
+        this.openShopCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
+                .expireAfterWrite(duration * 2, TimeUnit.SECONDS)
+                .maximumSize(1000)
                 .build(new CacheLoader<Long, OpenShop>() {
                     @Override
                     public OpenShop load(Long shopId) throws Exception {
@@ -328,7 +319,7 @@ public class StockPusherLogic {
         if (log.isDebugEnabled()) {
             log.debug("send request({}) to yunju jit", yunjuStockInfoList.toString());
         }
-        this.executorService.submit(() -> {
+        CompletableFuture.runAsync(() -> {
             //List<StockPushLogEs> stockPushLogs = Lists.newArrayList();
             String traceId = UUID.randomUUID().toString().replace("-", "");
             if (!yunjuStockInfoList.isEmpty()) {
@@ -375,7 +366,7 @@ public class StockPusherLogic {
                 });
                 this.pushLogs(stockPushLogs);
             }
-        });
+        },executorService);
     }
 
     /**
@@ -458,7 +449,7 @@ public class StockPusherLogic {
 
 
     public void prallelUpdateStock(ItemMapping itemMapping, Long stock) {
-        executorService.submit(() -> {
+        CompletableFuture.runAsync(() -> {
             if (log.isDebugEnabled()) {
                 log.debug("start to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
                         stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
@@ -502,11 +493,11 @@ public class StockPusherLogic {
             if (stockPusherCacheEnable && rP.isSuccess()) {
                 stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getChannelSkuId(), stock.intValue());
             }
-        });
+        },executorService);
     }
 
     public void sendToParana(Table<Long, String, Integer> shopSkuStock) {
-        executorService.submit(() -> {
+        CompletableFuture.runAsync(() -> {
             Map<Long, Map<String, Integer>> shopSkuStockMap = shopSkuStock.rowMap();
             for (Long shopId : shopSkuStockMap.keySet()) {
                 try {
@@ -553,7 +544,7 @@ public class StockPusherLogic {
                     log.error("sync offical stock failed,caused by {}", Throwables.getStackTraceAsString(e));
                 }
             }
-        });
+        },executorService);
     }
 
     /**

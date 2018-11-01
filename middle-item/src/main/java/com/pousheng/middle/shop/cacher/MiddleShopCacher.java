@@ -43,14 +43,14 @@ public class MiddleShopCacher {
     @RpcConsumer
     private OpenShopReadService openShopReadService;
 
-    @Value("${cache.duration.in.minutes: 30}")
+    @Value("${cache.duration.in.minutes: 60}")
     private Integer duration;
 
     @PostConstruct
     public void init() {
         this.shopCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration, TimeUnit.MINUTES)
-                .maximumSize(10000)
+                .expireAfterWrite(duration*5, TimeUnit.SECONDS).weakKeys().weakValues()
+                .maximumSize(1000)
                 .build(new CacheLoader<String, Shop>() {
                     @Override
                     public Shop load(String joinStr) throws Exception {
@@ -72,9 +72,9 @@ public class MiddleShopCacher {
                         return rShop.getResult().get();
                     }
                 });
-        this.openShopCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration, TimeUnit.MINUTES)
-                .maximumSize(10000)
+        this.openShopCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
+                .expireAfterWrite(duration*5, TimeUnit.SECONDS)
+                .maximumSize(1000)
                 .build(new CacheLoader<Long, OpenShop>() {
                     @Override
                     public OpenShop load(Long id) {

@@ -10,6 +10,7 @@ import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -35,11 +36,17 @@ public class CompensateBizFailedJob {
     private PoushengCompensateBizWriteService compensateBizWriteService;
     @Autowired
     private CompensateBizProcessor compensateBizProcessor;
+    @Autowired
+    private HostLeader hostLeader;
 
     @Scheduled(cron = "0 */3 * * * ?")
     @GetMapping("/api/compensate/biz/failed/job")
     public void processFailedJob() {
         log.info("[pousheng-middle-compensate-biz-failed-job] start...");
+        if(!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
         Stopwatch stopwatch = Stopwatch.createStarted();
         Integer pageNo = 1;
         Integer pageSize = 100;

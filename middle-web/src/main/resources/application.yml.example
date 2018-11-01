@@ -181,7 +181,7 @@ jit.order.warning.job.cron: 0 0/30 * * * ?
 # jit店铺OpenShopId
 jit.open.shop.id: 1008
 
-# 调用淘宝api统计地址
+#调用淘宝api统计地址
 open.client.statistics.center.gate.way: ${STATISTICS.CENTER.GATEWAY}
 terminus.rocketmq.cacherClearTopic: cacherClearTopic
 

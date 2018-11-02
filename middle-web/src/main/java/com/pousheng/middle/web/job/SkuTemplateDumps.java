@@ -54,4 +54,16 @@ public class SkuTemplateDumps {
         skuTemplateDumpService.deltaDump(15);
         log.info("START JOB SkuTemplateDumps.deltaDump");
     }
+
+    @RequestMapping(value = "oneday", produces = MediaType.APPLICATION_JSON_VALUE)
+    @Scheduled(cron = "0 0 5 * * ?")
+    public void oneDayDump() {  //每天凌晨一点执行一次
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        log.info("sku template full dump fired");
+        skuTemplateDumpService.deltaDump(1440);
+        log.info("sku template full dump end");
+    }
 }

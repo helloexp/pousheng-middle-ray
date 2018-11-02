@@ -31,9 +31,9 @@ public class HandleSkuTemplateDumps {
     }
 
     @RequestMapping(value = "delta", produces = MediaType.APPLICATION_JSON_VALUE)
-    public void deltaDump(){
+    public void deltaDump(Integer time){
         log.info("START JOB SkuTemplateDumps.deltaDump");
-        skuTemplateDumpService.deltaDump(1440);
+        skuTemplateDumpService.deltaDump(time);
         log.info("START JOB SkuTemplateDumps.deltaDump");
     }
 }

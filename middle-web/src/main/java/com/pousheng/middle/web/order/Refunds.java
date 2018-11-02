@@ -283,6 +283,7 @@ public class Refunds {
         }).collect(Collectors.toList());
 
         refunds.forEach(refund -> {
+            log.info("refund extra extra info is {}, id is {}", refund.getExtraJson(), refund.getId());
             if (Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
                 OrderOperation orderOperation = MiddleOrderEvent.LOST_HANDLE.toOrderOperation();
                 Response<Boolean> response = refundWriteLogic.updateStatusLocking(refund, orderOperation);
@@ -315,6 +316,8 @@ public class Refunds {
                         if (result){
                             Flow flow = flowPicker.pickAfterSales();
                             Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                            refund = refundReadLogic.findRefundById(refund.getId());
+                            log.info("sync refund extra extra info is {}, id is {}", refund.getExtraJson(), refund.getId());
                             refund.setStatus(targetStatus);
                             Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                             if (!syncRes.isSuccess()) {

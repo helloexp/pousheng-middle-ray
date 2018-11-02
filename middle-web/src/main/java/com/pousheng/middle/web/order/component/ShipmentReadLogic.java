@@ -402,12 +402,24 @@ public class ShipmentReadLogic {
      * 设置下单店铺，发货仓店铺手机号信息
      */
     private void setShopTelInfo(Shipment shipment,ShipmentExtra shipmentExtra) {
-        WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
-        if(null == warehouse){
-            shipmentExtra.setWarehouseTelephone("");
+        //1:店发，2：仓发
+        if(Objects.equals(shipment.getShipWay(),1)){
+            Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+            if(null == shop){
+                shipmentExtra.setWarehouseTelephone("");
+            }
+            //设置发货仓的手机号
+            shipmentExtra.setWarehouseTelephone(shop.getPhone());
         }
-        //设置发货仓的手机号
-        shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
+        if(Objects.equals(shipment.getShipWay(),2)){
+            WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
+            if(null == warehouse){
+                shipmentExtra.setWarehouseTelephone("");
+            }
+            //设置发货仓的手机号
+            shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
+        }
+       
         
     }
     

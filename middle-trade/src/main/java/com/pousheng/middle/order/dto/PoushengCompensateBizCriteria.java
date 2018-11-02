@@ -4,6 +4,7 @@ import io.terminus.parana.common.model.PagingCriteria;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  *
@@ -44,5 +45,15 @@ public class PoushengCompensateBizCriteria  extends PagingCriteria implements Se
      * 忽略失败次数
      */
     private Integer ignoreCnt;
+
+    /**
+     * 创建日期的开始时间
+     */
+    private Date startCreatedAt;
+
+    /**
+     * 创建日期的结束时间
+     */
+    private Date endCreatedAt;
 
 }

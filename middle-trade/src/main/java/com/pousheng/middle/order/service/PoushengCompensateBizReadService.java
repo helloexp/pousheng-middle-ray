@@ -48,4 +48,14 @@ public interface PoushengCompensateBizReadService {
      */
     Response<List<PoushengCompensateBiz>> findByIdsAndStatus(List<Long> ids, String status);
 
+
+
+    /**
+     * 分页查询
+     *
+     * @param criteria 查询条件
+     * @return 券信息
+     */
+    Response<Paging<Long>> pagingIds(PoushengCompensateBizCriteria criteria);
+
 }

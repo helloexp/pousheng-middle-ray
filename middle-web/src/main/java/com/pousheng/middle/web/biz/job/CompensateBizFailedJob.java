@@ -10,7 +10,9 @@ import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -35,37 +37,52 @@ public class CompensateBizFailedJob {
     private PoushengCompensateBizWriteService compensateBizWriteService;
     @Autowired
     private CompensateBizProcessor compensateBizProcessor;
+    @Autowired
+    private HostLeader hostLeader;
 
-    @Scheduled(cron = "0 */3 * * * ?")
+    @Scheduled(cron = "0 */7 * * * ?")
     @GetMapping("/api/compensate/biz/failed/job")
     public void processFailedJob() {
         log.info("[pousheng-middle-compensate-biz-failed-job] start...");
+        if(!hostLeader.isLeader()) {
+            log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
+            return;
+        }
         Stopwatch stopwatch = Stopwatch.createStarted();
         Integer pageNo = 1;
         Integer pageSize = 100;
         while (true) {
+
             PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
             criteria.setPageNo(pageNo);
             criteria.setPageSize(pageSize);
             criteria.setStatus(PoushengCompensateBizStatus.FAILED.name());
             criteria.setIgnoreCnt(3);
-            Response<Paging<PoushengCompensateBiz>> response = compensateBizReadService.paging(criteria);
+            //开始时间为当前时间减去1天
+            criteria.setStartCreatedAt(DateTime.now().minusDays(1).toDate());
+            //结束时间为当前时间
+            criteria.setEndCreatedAt(DateTime.now().toDate());
+
+            Response<Paging<Long>> response = compensateBizReadService.pagingIds(criteria);
             if (!response.isSuccess()) {
                 pageNo++;
                 continue;
             }
-            List<PoushengCompensateBiz> compensateBizs = response.getResult().getData();
-            if (compensateBizs.isEmpty()) {
+            List<Long> compensateBizIds = response.getResult().getData();
+            if (compensateBizIds.isEmpty()) {
                 break;
             }
-            log.info("wait handle compensateBizs size is {}",compensateBizs.size());
+            log.info("wait handle compensateBizIds size is {}",compensateBizIds.size());
             //轮询业务处理
-            for (PoushengCompensateBiz compensateBiz : compensateBizs) {
-                if (compensateBiz.getCnt()>3){
+            for (Long compensateBizId : compensateBizIds) {
+
+                Response<PoushengCompensateBiz> result = compensateBizReadService.findById(compensateBizId);
+                if (!result.isSuccess()){
                     continue;
                 }
+                PoushengCompensateBiz compensateBiz = result.getResult();
                 //乐观锁控制更新为处理中
-                Response<Boolean> rU = compensateBizWriteService.updateStatus(compensateBiz.getId(), compensateBiz.getStatus(), PoushengCompensateBizStatus.PROCESSING.name());
+                Response<Boolean> rU = compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.FAILED.name(), PoushengCompensateBizStatus.PROCESSING.name());
                 if (!rU.isSuccess()) {
                     continue;
                 }

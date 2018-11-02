@@ -66,16 +66,20 @@ public class ExportTradeBillService implements CompensateBizService {
         TypeReference typeReference = null;
         switch (data.getBizId()) {
             case TradeConstants.EXPORT_ORDER:
-                typeReference = new TypeReference<ExportTradeBillDTO<MiddleOrderCriteria>>() {};
+                typeReference = new TypeReference<ExportTradeBillDTO<MiddleOrderCriteria>>() {
+                };
                 break;
             case TradeConstants.EXPORT_REFUND:
-                typeReference = new TypeReference<ExportTradeBillDTO<MiddleRefundCriteria>>() {};
+                typeReference = new TypeReference<ExportTradeBillDTO<MiddleRefundCriteria>>() {
+                };
                 break;
             case TradeConstants.EXPORT_SHIPMENT:
-                typeReference = new TypeReference<ExportTradeBillDTO<OrderShipmentCriteria>>() {};
+                typeReference = new TypeReference<ExportTradeBillDTO<OrderShipmentCriteria>>() {
+                };
                 break;
             case TradeConstants.EXPORT_POS:
-                typeReference = new TypeReference<ExportTradeBillDTO<PoushengSettlementPosCriteria>>() {};
+                typeReference = new TypeReference<ExportTradeBillDTO<PoushengSettlementPosCriteria>>() {
+                };
                 break;
             default:
                 break;
@@ -88,7 +92,7 @@ public class ExportTradeBillService implements CompensateBizService {
         ExportTradeBillDTO dto = null;
         try {
             dto = MAPPER.getMapper().readValue(data.getContext(),
-                new TypeReference<ExportTradeBillDTO<MiddleOrderCriteria>>() {});
+                    typeReference);
         } catch (IOException e) {
             log.error("failed to read json of export trade bill.param:{}", data.getContext(), e);
             return null;

@@ -3,9 +3,13 @@ package com.pousheng.middle.order.impl.dao;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
+import io.terminus.common.model.Paging;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.*;
@@ -63,6 +67,20 @@ public class PoushengCompensateBizDaoTest extends BaseDaoTest {
         boolean result = poushengCompensateBizDao.update(poushengCompensateBiz);
         assertTrue(result);
     }
+
+    /**
+     * 分页查询
+     */
+    @Test
+    public void paging() {
+        Map<String, Object> params = new HashMap<String, Object>();
+        params.put("bizType", poushengCompensateBiz.getBizType());
+        Paging<PoushengCompensateBiz> expressCodePaging = poushengCompensateBizDao.paging(0, 20, params);
+
+        assertThat(expressCodePaging.getTotal(), is(1L));
+        assertEquals(expressCodePaging.getData().get(0).getId(), poushengCompensateBiz.getId());
+    }
+
 
     /**
      *

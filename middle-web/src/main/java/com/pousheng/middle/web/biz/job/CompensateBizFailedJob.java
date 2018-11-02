@@ -22,6 +22,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
@@ -52,6 +54,22 @@ public class CompensateBizFailedJob {
     // 邮件发送开关
     @Value("${pousheng.msg.send}")
     private Boolean sendLock;
+
+
+    @RequestMapping(value = "/async/job/reset", method = RequestMethod.GET)
+    @Scheduled(cron = "0 */30 * * * ?")
+    public void reset() {
+        log.info("start to reset long time handling task....");
+        if (!hostLeader.isLeader()) {
+            log.info("current leader is {}, skip", hostLeader.currentLeaderId());
+            return;
+        }
+        Response<Boolean> response1 = compensateBizWriteService.resetStatus();
+        if (!response1.isSuccess()) {
+            log.error("reset long time handling task failed,cause:{}", response1.getError());
+        }
+        log.info("end to reset long time handling task....");
+    }
 
 
     @Scheduled(cron = "0 */7 * * * ?")

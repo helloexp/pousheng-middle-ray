@@ -8,7 +8,12 @@ import com.google.common.collect.Maps;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.order.component.AutoCompensateLogic;
 import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
 import com.pousheng.middle.web.order.event.ShipmentPosToHkEvent;
@@ -43,6 +48,8 @@ public class ShipmentPosToHkListener {
 
     @Autowired
     private EventBus eventBus;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     @PostConstruct
     public void init() {
@@ -59,12 +66,12 @@ public class ShipmentPosToHkListener {
         hkShipmentDoneLogic.doneShipment(shipment);
 
         //同步pos单到恒康
-        Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-        if (!response.isSuccess()) {
-            Map<String, Object> param1 = Maps.newHashMap();
-            param1.put("shipmentId", shipment.getId());
-            autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-        }
+        //生成发货单同步恒康生成pos的任务
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizId(String.valueOf(shipment.getId()));
+        biz.setBizType(PoushengCompensateBizType.SYNC_ORDER_POS_TO_HK.name());
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
 
     }
 

@@ -6,6 +6,8 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.mpos.dto.MposPaginationResponse;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.open.mpos.dto.MposShipmentExtra;
@@ -14,6 +16,9 @@ import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
 import io.terminus.common.exception.ServiceException;
@@ -80,6 +85,9 @@ public class SyncMposShipmentLogic{
 
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
 
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -166,12 +174,12 @@ public class SyncMposShipmentLogic{
                 //扣减库存
                 mposSkuStockLogic.decreaseStock(shipment);
                 // 发货推送pos信息给恒康
-                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                if(!response.isSuccess()){
-                    Map<String,Object> param1 = Maps.newHashMap();
-                    param1.put("shipmentId",shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1,TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-                }
+                //生成发货单同步恒康生成pos的任务
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setBizId(String.valueOf(shipment.getId()));
+                biz.setBizType(PoushengCompensateBizType.SYNC_ORDER_POS_TO_HK.name());
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
         }
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));

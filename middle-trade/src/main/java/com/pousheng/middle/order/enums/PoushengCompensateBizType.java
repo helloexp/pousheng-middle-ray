@@ -146,5 +146,14 @@ public enum PoushengCompensateBizType {
     /**
      * 不进入中台的单据推送到电商
      */
-    OPEN_ORDER_PUSH;
+    OPEN_ORDER_PUSH,
+
+    /**
+     * 同步正向订单pos到恒康
+     */
+    SYNC_ORDER_POS_TO_HK,
+    /**
+     * 同步售后单pos到恒康
+     */
+    SYNC_AFTERSALE_POS_TO_HK;
 }

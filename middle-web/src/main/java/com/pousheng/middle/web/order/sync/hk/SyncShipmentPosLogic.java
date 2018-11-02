@@ -126,7 +126,7 @@ public class SyncShipmentPosLogic {
             return Response.ok();
         } catch (Exception e) {
             log.error("sync hk pos shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
-            return Response.fail("sync.hk.pos.shipment.fail");
+            return Response.fail(Throwables.getStackTraceAsString(e));
         }
 
     }

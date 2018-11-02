@@ -3,16 +3,16 @@ package com.pousheng.middle.open.api;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.*;
 import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
-import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddleRefundStatus;
-import com.pousheng.middle.order.enums.MiddleRefundType;
-import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
+import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
@@ -101,7 +101,8 @@ public class OrderOpenApi {
     private ReceiveSkxResultLogic receiveSkxResultLogic;
     @Autowired
     private SyncMposApi syncMposApi;
-
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
@@ -363,13 +364,12 @@ public class OrderOpenApi {
             hkShipmentDoneLogic.doneShipment(shipment);
 
             //同步pos单到恒康
-            Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-            if (!response.isSuccess()) {
-                Map<String, Object> param1 = Maps.newHashMap();
-                param1.put("shipmentId", shipment.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-
-            }
+            //生成发货单同步恒康生成pos的任务
+            PoushengCompensateBiz biz = new PoushengCompensateBiz();
+            biz.setBizId(String.valueOf(shipment.getId()));
+            biz.setBizType(PoushengCompensateBizType.SYNC_ORDER_POS_TO_HK.name());
+            biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+            compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
 
         } catch (JsonResponseException | ServiceException e) {
             log.error("hk sync shipment(id:{}) to pousheng fail,error:{}", shipmentId, Throwables.getStackTraceAsString(e));
@@ -531,18 +531,12 @@ public class OrderOpenApi {
                     autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK, r.getError());
                 }
             } else {
-                try {
-                    Response<Boolean> r = syncRefundPosLogic.syncRefundPosToHk(refund);
-                    if (!r.isSuccess()) {
-                        Map<String, Object> param1 = Maps.newHashMap();
-                        param1.put("refundId", refund.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, r.getError());
-                    }
-                } catch (Exception e) {
-                    Map<String, Object> param1 = Maps.newHashMap();
-                    param1.put("refundId", refund.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_REFUND_POS_TO_HK, Throwables.getStackTraceAsString(e));
-                }
+                //售后单的pos任务
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setBizId(String.valueOf(refund.getId()));
+                biz.setBizType(PoushengCompensateBizType.SYNC_AFTERSALE_POS_TO_HK.name());
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
 
             }
             //如果是淘宝的退货退款单，会将主动查询更新售后单的状态

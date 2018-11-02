@@ -47,8 +47,8 @@ public class CompensateBizFailedJob {
     private HostLeader hostLeader;
     @Autowired
     private MailLogic mailLogic;
-    @Value("${pousheng.order.email.remind.group}")
-    private String[] mposEmailGroup;
+    @Value("${pousheng.middle.email.remind.group}")
+    private String[] middleBizEmailGroup;
     // 邮件发送开关
     @Value("${pousheng.msg.send}")
     private Boolean sendLock;
@@ -130,7 +130,7 @@ public class CompensateBizFailedJob {
 
     private void sendWarnEmails(PoushengCompensateBiz poushengCompensateBiz){
         List<String> list = Lists.newArrayList();
-        list.addAll(Arrays.asList(mposEmailGroup));
+        list.addAll(Arrays.asList(middleBizEmailGroup));
         log.info("send biz process failed email to : {}", JsonMapper.nonEmptyMapper().toJson(list));
         mailLogic.sendMail(String.join(",", list),"中台biz任务处理失败",
                 "中台biz任务处理异常:有一个类型为:"+poushengCompensateBiz.getBizType()+",任务id为:"+poushengCompensateBiz.getId()+"的任务处理异常,异常原因为:"

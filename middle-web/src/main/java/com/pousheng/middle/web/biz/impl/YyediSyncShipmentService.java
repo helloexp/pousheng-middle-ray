@@ -13,11 +13,14 @@ package com.pousheng.middle.web.biz.impl;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -95,6 +98,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     @RpcConsumer
     private OrderShipmentReadService orderShipmentReadService;
+
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -259,16 +265,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
         //后续更新订单状态,扣减库存，通知电商发货（销售发货）等等
         hKShipmentDoneLogic.doneShipment(shipment);
 
-
-
-        //同步pos单到恒康
-        Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-        if (!response.isSuccess()) {
-            log.error("syncShipmentPosToHk shipment (id:{}) is error ", shipmentId);
-            Map<String, Object> param1 = Maps.newHashMap();
-            param1.put("shipmentId", shipment.getId());
-            autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK,response.getError());
-        }
+        //生成发货单同步恒康生成pos的任务
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizId(String.valueOf(shipment.getId()));
+        biz.setBizType(PoushengCompensateBizType.SYNC_ORDER_POS_TO_HK.name());
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
 
     }
 

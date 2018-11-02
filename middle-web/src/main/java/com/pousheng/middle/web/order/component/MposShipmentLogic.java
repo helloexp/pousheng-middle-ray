@@ -112,12 +112,12 @@ public class MposShipmentLogic {
                 //扣减库存
                 mposSkuStockLogic.decreaseStock(shipment);
                 // 发货推送pos信息给恒康
-                Response<Boolean> response = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                if (!response.isSuccess()) {
-                    Map<String, Object> param = Maps.newHashMap();
-                    param.put("shipmentId", shipment.getId());
-                    autoCompensateLogic.createAutoCompensationTask(param, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
-                }
+                //生成发货单同步恒康生成pos的任务
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setBizId(String.valueOf(shipment.getId()));
+                biz.setBizType(PoushengCompensateBizType.SYNC_ORDER_POS_TO_HK.name());
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
             }
             this.syncOrderStatus(shipment, MiddleOrderStatus.SHIPPED.getValue());
         }

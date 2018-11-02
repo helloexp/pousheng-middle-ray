@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.biz.job;
 
 import com.google.common.base.Stopwatch;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -8,17 +9,22 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.utils.mail.MailLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
 import io.terminus.zookeeper.leader.HostLeader;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -39,6 +45,14 @@ public class CompensateBizFailedJob {
     private CompensateBizProcessor compensateBizProcessor;
     @Autowired
     private HostLeader hostLeader;
+    @Autowired
+    private MailLogic mailLogic;
+    @Value("${pousheng.order.email.remind.group}")
+    private String[] mposEmailGroup;
+    // 邮件发送开关
+    @Value("${pousheng.msg.send}")
+    private Boolean sendLock;
+
 
     @Scheduled(cron = "0 */7 * * * ?")
     @GetMapping("/api/compensate/biz/failed/job")
@@ -94,16 +108,33 @@ public class CompensateBizFailedJob {
                     log.error("process pousheng biz failed,id is {},bizType is {},caused by {}", compensateBiz.getId(), compensateBiz.getBizType(), e0.getMessage());
                     compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.FAILED.name());
                     compensateBizWriteService.updateLastFailedReason(compensateBiz.getId(),e0.getMessage(),(compensateBiz.getCnt()+1));
+                    //失败超过三次添加预警邮件
+                    if (compensateBiz.getCnt()+1>=3&&sendLock){
+                        sendWarnEmails(compensateBiz);
+                    }
                 }catch (Exception e1){
                     log.error("process pousheng biz failed,id is {},bizType is {},caused by {}", compensateBiz.getId(), compensateBiz.getBizType(), e1.getMessage());
                     compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.PROCESSING.name(), PoushengCompensateBizStatus.FAILED.name());
                     compensateBizWriteService.updateLastFailedReason(compensateBiz.getId(),e1.getMessage(),(compensateBiz.getCnt()+1));
+                    //失败超过三次添加预警邮件
+                    if (compensateBiz.getCnt()+1>=3&&sendLock){
+                        sendWarnEmails(compensateBiz);
+                    }
                 }
             }
             pageNo++;
-
         }
         stopwatch.stop();
         log.info("[pousheng-middle-compensate-biz-failed-job] end");
+    }
+
+    private void sendWarnEmails(PoushengCompensateBiz poushengCompensateBiz){
+        List<String> list = Lists.newArrayList();
+        list.addAll(Arrays.asList(mposEmailGroup));
+        log.info("send biz process failed email to : {}", JsonMapper.nonEmptyMapper().toJson(list));
+        mailLogic.sendMail(String.join(",", list),
+                "任务中台biz任务处理异常:有一个类型为:"+poushengCompensateBiz.getBizType()+",任务id为:"+poushengCompensateBiz.getId()+"的任务处理异常,异常原因为:"
+                        +poushengCompensateBiz.getLastFailedReason() + "，请立即处理");
+        log.info("send email success");
     }
 }

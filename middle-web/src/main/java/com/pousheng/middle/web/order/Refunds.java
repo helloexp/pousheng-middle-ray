@@ -216,6 +216,7 @@ public class Refunds {
                     if (result){
                         //完善之后同步售后单到订单派发中心
                         Flow flow = flowPicker.pickAfterSales();
+                        refund = refundReadLogic.findRefundById(refundId);
                         Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
                         refund.setStatus(targetStatus);
                         Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);

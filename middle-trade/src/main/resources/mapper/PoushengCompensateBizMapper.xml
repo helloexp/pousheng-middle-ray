@@ -185,7 +185,7 @@
             status = 'WAIT_HANDLE',
             updated_at=now()
         </set>
-        where status = 'PROCESSING' and <![CDATA[ updated_at < date_add(now(),interval - 30 minute) ]]>
+        where status = 'PROCESSING' and biz_type !='EXPORT_TRADE_BILL' and <![CDATA[ updated_at < date_add(now(),interval - 120 minute) ]]>
     </update>
 
 

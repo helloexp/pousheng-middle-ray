@@ -132,8 +132,8 @@ public class CompensateBizFailedJob {
         List<String> list = Lists.newArrayList();
         list.addAll(Arrays.asList(mposEmailGroup));
         log.info("send biz process failed email to : {}", JsonMapper.nonEmptyMapper().toJson(list));
-        mailLogic.sendMail(String.join(",", list),
-                "任务中台biz任务处理异常:有一个类型为:"+poushengCompensateBiz.getBizType()+",任务id为:"+poushengCompensateBiz.getId()+"的任务处理异常,异常原因为:"
+        mailLogic.sendMail(String.join(",", list),"中台biz任务处理失败",
+                "中台biz任务处理异常:有一个类型为:"+poushengCompensateBiz.getBizType()+",任务id为:"+poushengCompensateBiz.getId()+"的任务处理异常,异常原因为:"
                         +poushengCompensateBiz.getLastFailedReason() + "，请立即处理");
         log.info("send email success");
     }

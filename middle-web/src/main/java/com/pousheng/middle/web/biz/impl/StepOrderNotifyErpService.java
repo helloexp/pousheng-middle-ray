@@ -153,6 +153,10 @@ public class StepOrderNotifyErpService implements CompensateBizService {
             OrderReceiverInfo orderReceiverInfo = receiverInfos.get(0);
             ReceiverInfo receiverInfo = orderReceiverInfo.getReceiverInfo();
             receiverInfo.setReceiveUserName(openClientOrderConsignee.getName());
+            receiverInfo.setProvince(openClientOrderConsignee.getProvince());
+            receiverInfo.setCity(openClientOrderConsignee.getCity());
+            receiverInfo.setRegion(openClientOrderConsignee.getRegion());
+            receiverInfo.setDetail(openClientOrderConsignee.getDetail());
             orderReceiverInfo.setReceiverInfo(receiverInfo);
             boolean recevierInfoResult = orderReceiverInfoDao.update(orderReceiverInfo);
             if (!recevierInfoResult){

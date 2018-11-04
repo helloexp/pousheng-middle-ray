@@ -124,7 +124,7 @@ public class SyncVIPLogic {
     private ShopCacher shopCacher;
 
     /**
-     * 通知vip接单并呼叫快递
+     *  通知vip接单并呼叫快递
      *
      * @param shipment
      * @return

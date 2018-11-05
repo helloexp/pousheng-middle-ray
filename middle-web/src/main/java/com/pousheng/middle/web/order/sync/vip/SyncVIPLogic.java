@@ -118,7 +118,7 @@ public class SyncVIPLogic {
      * @return
      */
     public Response<Boolean> syncOrderStoreToVIP(Shipment shipment) {
-        log.debug("VIP-OXO-syncOrderStoreToVIP,params:?", shipment.toString());
+        log.debug("VIP-OXO-syncOrderStoreToVIP,params:shipment={}", shipment.toString());
         try {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             Long warehouseId;
@@ -166,7 +166,7 @@ public class SyncVIPLogic {
      * @return
      */
     public Response<Boolean> confirmStoreDelivery(Long shipmentId, String mailNo) {
-        log.debug("VIP-OXO-confirmStoreDelivery,params:shipmentId=?,mailNo=?", shipmentId, mailNo);
+        log.debug("VIP-OXO-confirmStoreDelivery,params:shipmentId={},mailNo={}", shipmentId, mailNo);
         try {
             Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -206,7 +206,7 @@ public class SyncVIPLogic {
      * @return
      */
     public Response<Boolean> confirmUndercarriage(Long shopId, String outId) {
-        log.debug("VIP-OXO-confirmUndercarriage,params:shopId=?,outId=?", shopId, outId);
+        log.debug("VIP-OXO-confirmUndercarriage,params:shopId={},outId={}", shopId, outId);
         try {
             Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shopId, outId, UNDERCARRIAGE_CODE, null, null);
             if (!deliveryResp.isSuccess()) {
@@ -222,7 +222,7 @@ public class SyncVIPLogic {
 
 
     public Response<Boolean> confirmReturnResult(Refund refund) {
-        log.debug("VIP-OXO-confirmReturnResult,params:?", refund.toString());
+        log.debug("VIP-OXO-confirmReturnResult,params:{}", refund.toString());
         try {
             Response<ShopOrder> orderResp = shopOrderReadService.findByOrderCode(refund.getReleOrderCode());
             ShopOrder shopOrder = orderResp.getResult();
@@ -251,7 +251,7 @@ public class SyncVIPLogic {
 
 
     public Response<Boolean> getOrderLogisticsTrack(Long shopId, List<ShopOrder> shopOrders) {
-        log.debug("VIP-OXO-getOrderLogisticsTrack,params:shopId=?,shopOrders=?", shopId, shopOrders);
+        log.debug("VIP-OXO-getOrderLogisticsTrack,params:shopId={},shopOrders={}", shopId, shopOrders);
         List<String> orderIds = shopOrders.stream().map(e -> e.getOutId()).collect(Collectors.toList());
         try {
             Map<String, Long> idMap = shopOrders.stream().collect(Collectors.toMap(ShopOrder::getOutId, ShopOrder::getId));
@@ -260,7 +260,7 @@ public class SyncVIPLogic {
                 log.error("fail to query order logistic track , shopId:{} ,orderIds:{} fail,error:{}", shopId, orderIds, trackResp.getError());
                 return Response.fail(trackResp.getError());
             }
-            log.debug("VIP-OXO-getOrderLogisticsTrack,resp:?", trackResp.toString());
+            log.debug("VIP-OXO-getOrderLogisticsTrack,resp:{}", trackResp.toString());
             List<Order> orders = trackResp.getResult().getOrders();
             for (Order order : orders) {
                 if (CollectionUtils.isEmpty(order.getPackages())) {

@@ -294,6 +294,7 @@ public class SyncShipmentPosLogic {
         List<Invoice> invoices = shipmentDetail.getInvoices();
 
         HkShipmentPosInfo posInfo = new HkShipmentPosInfo();
+        posInfo.setManualbillno(shopOrder.getOutId()); //第三方平台单号
         posInfo.setBuyeralipayno(""); //支付宝账号
         posInfo.setAlipaybillno(""); //支付交易号
         posInfo.setSourceremark(""); //订单来源说明
@@ -389,6 +390,19 @@ public class SyncShipmentPosLogic {
             posInfo.setWeight(String.valueOf(shipmentExtra.getWeight()));
             posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
         }
+
+        if (!CollectionUtils.isEmpty(shopOrder.getExtra()) && shopOrder.getExtra().containsKey("usedIntegralForOrder")) {
+            posInfo.setDischargeintegral(shopOrder.getExtra().get("usedIntegralForOrder")); //会员抵现积分
+        } else {
+            posInfo.setDischargeintegral("0"); //会员抵现积分
+        }
+
+        if (!CollectionUtils.isEmpty(shopOrder.getExtra()) && shopOrder.getExtra().containsKey("paymentIntegralForShopOrder")) {
+            posInfo.setDischargeamount(shopOrder.getExtra().get("paymentIntegralForShopOrder")); //会员抵现金额
+        } else {
+            posInfo.setDischargeamount("0"); //会员抵现金额
+        }
+
         return posInfo;
     }
 

@@ -632,7 +632,7 @@ public class MiddleFlowBook {
             //已退货待确认发货-->重新生成-->已退货等待重新生成发货单
             addTransition(MiddleRefundStatus.RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),
                     MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation(),
-                    MiddleRefundStatus.RETURN_DONE_WAIT_CREATE_SHIPMENT.getValue());
+                    MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue());
 
             //部分已退货待确认发货-->重新生成-->已退货等待重新生成发货单
             addTransition(MiddleRefundStatus.PART_RETURN_DONE_WAIT_CONFIRM_OCCUPY_SHIPMENT.getValue(),

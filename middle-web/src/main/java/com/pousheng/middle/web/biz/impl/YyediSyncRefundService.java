@@ -93,7 +93,16 @@ public class YyediSyncRefundService implements CompensateBizService {
             //退货单编码
             String refundCode = a.getRefundCode();
             try {
-                this.refundBiz(a);
+                //更新扩展信息，主要是yyedi返回的参数
+                Map<String,String> extra = a.getExtra();
+                Refund update = new Refund();
+                update.setId(a.getId());
+                update.setExtra(extra);
+                Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
+                if (!updateExtraRes.isSuccess()) {
+                    log.error("update rMatrixRequestHeadefund(refundCode:{}) fail,error:{}", a.getRefundCode(),updateExtraRes.getError());
+                }
+                this.refundBiz(a.getId());
 
             } catch (Exception e) {
                 log.error("YyediSyncRefundService. forEach refunds ({}) is error: {}", refundCode, Throwables.getStackTraceAsString(e));
@@ -105,18 +114,11 @@ public class YyediSyncRefundService implements CompensateBizService {
     }
 
 
-    private void refundBiz(Refund refund) {
+    private void refundBiz(Long refundId) {
         //更新扩展信息
+
+        Refund refund = refundReadLogic.findRefundById(refundId);
         Map<String, String> extra = refund.getExtra();
-        if (MapUtils.isEmpty(extra))
-            return;
-        Refund update = new Refund();
-        update.setId(refund.getId());
-        update.setExtra(extra);
-        Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
-        if (!updateExtraRes.isSuccess()) {
-            log.error("update rMatrixRequestHeadefund(refundCode:{}) fail,error:{}", refund.getRefundCode(), updateExtraRes.getError());
-        }
         //店发发货单对应的拒收单不能同步恒康生成pos单
         RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
@@ -188,7 +190,6 @@ public class YyediSyncRefundService implements CompensateBizService {
                 .collect(Collectors.toMap(RefundItem::getSkuCode,RefundItem::getApplyQuantity));
         //校准后发货单售后实际申请数量=当前发货单售后申请数量-(退货单申请数量-售后实际入库数量)
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
-        List<ShipmentItem> newShipmentItems = Lists.newArrayList();
         for (ShipmentItem shipmentItem:shipmentItems){
             if (refundConfirmItemAndQuantity.containsKey(shipmentItem.getSkuCode())){
                 shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
@@ -196,7 +197,6 @@ public class YyediSyncRefundService implements CompensateBizService {
                                 Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode()))));
                 shipmentItem.setShipmentId(shipment.getId());
             }
-            newShipmentItems.add(shipmentItem);
         }
 
         shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
@@ -206,7 +206,7 @@ public class YyediSyncRefundService implements CompensateBizService {
         for (RefundItem refundItem:refundItems){
             if (refundConfirmItemAndQuantity.containsKey(refundItem.getSkuCode())){
                 //判断申请数量是否一致
-                if (!Objects.equals(refundConfirmItemAndQuantity.get(refundItem.getSkuCode()),refundItem.getApplyQuantity())){
+                if (!Objects.equals(Integer.valueOf(refundConfirmItemAndQuantity.get(refundItem.getSkuCode())),refundItem.getApplyQuantity())){
                     log.warn("refund item apply quantity not equals confirmed quantity,refundId {},skuCode {},applyQuantity{},confirmedQuantity {}",
                             refund.getId(),refundItem.getSkuCode(),refundItem.getApplyQuantity(),refundConfirmItemAndQuantity.get(refundItem.getSkuCode()));
                     count++;
@@ -217,19 +217,6 @@ public class YyediSyncRefundService implements CompensateBizService {
         if (count>0){
             //refundChangeItemInfo里面参数alreadyHandleNumber=0，状态变更为部分退货完成待确认发货
             refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
-            //售后单已经申请售后的数量设置为0
-            List<RefundItem> exchangeItems = refundReadLogic.findRefundChangeItems(refund);
-            List<RefundItem> newExchangeItems = Lists.newArrayList();
-            for (RefundItem refundItem :exchangeItems){
-                refundItem.setAlreadyHandleNumber(0);
-                newExchangeItems.add(refundItem);
-            }
-            Refund newRefund = refundReadLogic.findRefundById(refund.getId());
-            Map<String,String> newRefundExtra = newRefund.getExtra();
-            newRefundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newExchangeItems));
-            newRefund.setExtra(newRefundExtra);
-            refundWriteLogic.update(newRefund);
-
         }
     }
 

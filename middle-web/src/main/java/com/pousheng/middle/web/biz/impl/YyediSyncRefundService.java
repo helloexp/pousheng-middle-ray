@@ -194,14 +194,12 @@ public class YyediSyncRefundService implements CompensateBizService {
                 shipmentItem.setRefundQuantity(shipmentItem.getRefundQuantity()-
                         (refundApplyItemAndQuantity.get(shipmentItem.getSkuCode())-
                                 Integer.valueOf(refundConfirmItemAndQuantity.get(shipmentItem.getSkuCode()))));
+                shipmentItem.setShipmentId(shipment.getId());
             }
             newShipmentItems.add(shipmentItem);
         }
 
-        Map<String,String> shipmentExtra = shipment.getExtra();
-        shipmentExtra.put(TradeConstants.SHIPMENT_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(newShipmentItems));
-        shipment.setExtra(shipmentExtra);
-        shipmentWiteLogic.update(shipment);
+        shipmentWiteLogic.updateShipmentItem(shipment, shipmentItems);
 
         //判断申请数量与实际入库数量是否一致
         int count = 0;

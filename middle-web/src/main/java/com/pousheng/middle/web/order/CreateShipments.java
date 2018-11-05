@@ -18,6 +18,7 @@ import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
+import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
@@ -25,6 +26,7 @@ import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.common.exception.InvalidException;
 import io.terminus.parana.order.model.*;
+import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
@@ -67,6 +69,8 @@ public class CreateShipments {
     private WarehouseCacher warehouseCacher;
     @Autowired
     private VipWarehouseMappingProxy vipWarehouseMappingProxy;
+    @RpcConsumer
+    private ReceiverInfoReadService receiverInfoReadService;
 
 
     /**
@@ -176,6 +180,14 @@ public class CreateShipments {
         }
         if (Objects.equals(type,1)){
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(id);
+            Response<List<ReceiverInfo>> receiveInfosRes = receiverInfoReadService.findByOrderId(shopOrder.getId(), OrderLevel.SHOP);
+            if (!receiveInfosRes.isSuccess()) {
+                throw new JsonResponseException(receiveInfosRes.getError());
+            }
+            ReceiverInfo receiverInfo = receiveInfosRes.getResult().get(0);
+            if (Arguments.isNull(receiverInfo.getProvince()) || Arguments.isNull(receiverInfo.getCity())) {
+                throw new JsonResponseException("order.receiver.address.is.not.complete");
+            }
             List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(id);
             //京东货到付款订单不允许拆分
             if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())

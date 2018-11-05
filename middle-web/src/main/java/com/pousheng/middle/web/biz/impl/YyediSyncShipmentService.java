@@ -90,12 +90,6 @@ public class YyediSyncShipmentService implements CompensateBizService {
     @RpcConsumer
     private OrderShipmentWriteService orderShipmentWriteService;
 
-    @Autowired
-    private AutoCompensateLogic autoCompensateLogic;
-
-    @Autowired
-    private SyncVIPLogic syncVIPLogic;
-
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     @RpcConsumer
@@ -258,27 +252,6 @@ public class YyediSyncShipmentService implements CompensateBizService {
         if (!updateRes.isSuccess()) {
             log.error("update shipment(id:{}) extraMap to :{} fail,error:{}", shipmentId, extraMap, updateRes.getError());
             return;
-        }
-
-        //todo
-        OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
-        long orderShopId = orderShipment.getOrderId();
-        ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
-        //如果是oxo的单子 需要通知接单和呼叫快递 如果失败就抛出个biz事件
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
-            Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
-            if (!response.isSuccess()) {
-                log.error("fail to notice oxo store order  shipment (id:{})  ", shipmentId);
-                //如果呼叫唯品会失败,则在备注上打上标记
-                shipmentExtra.setRemark("通知唯品会接单及呼叫快递失败");
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
-                update.setExtra(extraMap);
-                shipmentWriteService.update(update);
-                Map<String, Object> param1 = Maps.newHashMap();
-                param1.put("shipmentId", shipment.getId());
-                autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_ORDER_STORE_TO_VIP, response.getError());
-                return;
-            }
         }
 
         log.info("try to sync shipment(id:{}) to hk", shipmentId);

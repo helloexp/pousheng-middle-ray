@@ -3,6 +3,7 @@ package com.pousheng.middle.warehouse.model;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.util.Date;
 
 /**
  * Author: zhaoxiaowei
@@ -25,6 +26,16 @@ public class VipWarehouseMapping implements Serializable {
      * 唯品会仓库编码
      */
     private String vipStoreSn;
+
+    /**
+     * 创建时间
+     */
+    private Date createdAt;
+
+    /**
+     * 更新时间
+     */
+    private Date updatedAt;
 
     public Long getWarehouseId() {
         return warehouseId;

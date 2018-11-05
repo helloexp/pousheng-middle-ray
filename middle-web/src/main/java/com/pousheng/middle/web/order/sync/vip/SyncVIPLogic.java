@@ -6,6 +6,7 @@ import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -14,9 +15,12 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.model.VipWarehouseMapping;
 import com.pousheng.middle.warehouse.service.VipWarehouseMappingReadService;
 import com.pousheng.middle.warehouse.service.VipWarehouseMappingWriteService;
+import com.pousheng.middle.web.events.warehouse.PushEvent;
 import com.pousheng.middle.web.item.cacher.VipWarehouseMappingProxy;
+import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
+import com.pousheng.middle.web.warehouses.ShopSkuStockPushHandler;
 import com.vip.vop.omni.logistics.LogisticsTrackResponse;
 import com.vip.vop.omni.logistics.Order;
 import com.vip.vop.omni.logistics.Package;
@@ -32,6 +36,7 @@ import io.terminus.open.client.vip.extra.service.VipOrderStoreService;
 import io.terminus.open.client.vip.extra.service.VipStoreService;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.ExpressDetails;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentExpressStatus;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -102,6 +107,12 @@ public class SyncVIPLogic {
     private VipWarehouseMappingWriteService vipWarehouseMappingWriteService;
 
     @Autowired
+    private OrderWriteLogic orderWriteLogic;
+
+    @Autowired
+    private ShopSkuStockPushHandler shopSkuStockPushHandler;
+
+    @Autowired
     private VipWarehouseMappingProxy vipWarehouseMappingProxy;
 
     private final static String UNDERCARRIAGE_CODE = "111111111111";
@@ -143,13 +154,10 @@ public class SyncVIPLogic {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());
             }
-            //如果重试呼叫成功 则清理备注
-            if (!StringUtils.isEmpty(shipmentExtra.getRemark())) {
-                Map<String, String> extraMap = shipment.getExtra();
-                shipmentExtra.setRemark(null);
-                extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, JSON_MAPPER.toJson(shipmentExtra));
-                shipment.setExtra(extraMap);
-                shipmentWriteService.update(shipment);
+            //如果是仓发，呼叫成功更新为同步成功
+            if (shipment.getShipWay() == 2) {
+                OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
             }
         } catch (Exception e) {
             log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), Throwables.getStackTraceAsString(e));
@@ -351,11 +359,11 @@ public class SyncVIPLogic {
                 VipWarehouseMapping vipWarehouseMapping = new VipWarehouseMapping().vipStoreSn(storeMapping.getStoreSn()).warehouseId(warehouseDTO.getId());
                 Response<Long> createResp = vipWarehouseMappingWriteService.create(vipWarehouseMapping);
                 if (!createResp.isSuccess()) {
-                    log.error("fail to create vip warehouse mapping");
+                    log.error("fail to create vip warehouse mapping {}", storeMapping);
                 }
             }
         }
-
+        Boolean needRefresh = Boolean.FALSE;
         //删除vip中已经没有了的仓库信息
         for (Long warehouseId : response.getResult()) {
             if (!storeList.contains(warehouseId)) {
@@ -363,17 +371,23 @@ public class SyncVIPLogic {
                 if (!delResp.isSuccess()) {
                     log.error("fail to delete vip warehouse mapping");
                 }
-
+                needRefresh = Boolean.TRUE;
             }
         }
-
+        //是否需要重新推送库存，如果有仓库被移除了默认发货仓规则，则重新推送
+        Boolean needPushStock = Boolean.FALSE;
         //检查默认发货仓规则里面是否存在无映射仓库 有的话 删除
         for (Long warehouseId : rWarehouseIds.getResult()) {
             if (!storeList.contains(warehouseId)) {
                 warehouseRulesClient.deleteByShopIdAndWarehosueId(shopId, warehouseId);
+                needPushStock = Boolean.TRUE;
             }
         }
-
-
+        if (needPushStock) {
+            shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, null));
+        }
+        if (needRefresh) {
+            vipWarehouseMappingProxy.refreshAll();
+        }
     }
 }

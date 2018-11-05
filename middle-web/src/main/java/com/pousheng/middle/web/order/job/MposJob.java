@@ -395,14 +395,6 @@ public class MposJob {
                             Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
                             if (response.isSuccess()) {
                                 autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                                //同步pos单到恒康
-                                Response<Boolean> posResp = syncShipmentPosLogic.syncShipmentPosToHk(shipment);
-                                if (!posResp.isSuccess()) {
-                                    log.error("syncShipmentPosToHk shipment (id:{}) is error ", shipment.getId());
-                                    Map<String, Object> param1 = Maps.newHashMap();
-                                    param1.put("shipmentId", shipment.getId());
-                                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_POS_TO_HK, response.getError());
-                                }
                             } else {
                                 autoCompensation.getExtra().put("error", response.getError());
                                 autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);

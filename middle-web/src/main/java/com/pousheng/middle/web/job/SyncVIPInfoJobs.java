@@ -3,7 +3,6 @@ package com.pousheng.middle.web.job;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
@@ -11,7 +10,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
-import io.terminus.open.client.vip.dto.StoreMapping;
 import io.terminus.parana.order.dto.OrderCriteria;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.ShopOrderReadService;
@@ -26,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author zhaoxw

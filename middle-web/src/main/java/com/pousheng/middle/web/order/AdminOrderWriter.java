@@ -21,6 +21,7 @@ import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import com.pousheng.middle.web.utils.HandlerFileUtil;
 import com.pousheng.middle.web.utils.operationlog.OperationLogModule;
 import com.pousheng.middle.web.utils.operationlog.OperationLogParam;
@@ -37,6 +38,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
@@ -97,7 +99,8 @@ public class AdminOrderWriter {
     private OpenClientOrderLogic openClientOrderLogic;
     @Autowired
     private OPMessageSources opMessageSources;
-
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
     @Autowired
     private ShopOrderReadService shopOrderReadService;
 
@@ -126,6 +129,20 @@ public class AdminOrderWriter {
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
+            //如果是唯品会的渠道
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+                if (shipment.getShipWay() == 2) {
+                    Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+                    if (!response.isSuccess()) {
+                        log.error("fail to notice oxo store order  shipment (id:{})  ", ecpShipmentId);
+                        throw new JsonResponseException(response.getError());
+                    }
+                } else {
+                    OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                }
+                return;
+            }
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             ExpressCode expressCode = makeExpressNameByhkCode(shipmentExtra.getShipmentCorpCode());
             //同步到电商平台

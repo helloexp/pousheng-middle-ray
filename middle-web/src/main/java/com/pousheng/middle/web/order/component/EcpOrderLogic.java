@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.ShipmentExtra;
@@ -10,9 +11,12 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.order.sync.ecp.SyncOrderToEcpLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
+import io.terminus.common.utils.JsonMapper;
+import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
 import io.terminus.parana.order.model.Shipment;
@@ -48,6 +52,12 @@ public class EcpOrderLogic {
     private SyncOrderToEcpLogic syncOrderToEcpLogic;
     @Autowired
     private MiddleOrderFlowPicker flowPicker;
+    @Autowired
+    private AutoCompensateLogic autoCompensateLogic;
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
+
+    private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
     public void shipToEcp(Long shipmentId) {
 
@@ -58,8 +68,6 @@ public class EcpOrderLogic {
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
         //获取ecpOrderStatus
         String status = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-        //获取shipment的Extra信息
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         try {
             log.info("try to notify ecp to ship ,shipemntId is{}",shipmentId);
             //判断ecpOrder的状态是否是初始的待发货状态,如果不是,跳过
@@ -78,6 +86,24 @@ public class EcpOrderLogic {
                     log.error("update shopOrder：{}  failed,error:{}", shopOrder.getId(), response1.getError());
                     throw new ServiceException(response1.getError());
                 }
+            }
+            //如果是唯品会的渠道
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+                //如果是仓发的单子 需要呼叫快递 呼叫失败则抛出重试任务
+                if (shipment.getShipWay() == 2) {
+                    Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+                    if (!response.isSuccess()) {
+                        log.error("fail to notice oxo store order  shipment (id:{})  ", shipmentId);
+                        Map<String, Object> param1 = Maps.newHashMap();
+                        param1.put("shipmentId", shipment.getId());
+                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_ORDER_STORE_TO_VIP, response.getError());
+
+                    }
+                } else {
+                    OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
+                    orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+                }
+                return;
             }
             //同步订单信息到电商平台
             int count = 0;

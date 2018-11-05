@@ -9,6 +9,8 @@
         <id column="id" property="id"/>
         <result column="warehouse_id" property="warehouseId"/>
         <result column="vip_store_sn" property="vipStoreSn"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
 
     </resultMap>
 
@@ -22,11 +24,12 @@
     </sql>
 
     <sql id="cols_exclude_id">
-        warehouse_id, vip_store_sn
+        warehouse_id, vip_store_sn, created_at, updated_at
+
     </sql>
 
     <sql id="vals">
-        #{warehouseId}, #{vipStoreSn}
+        #{warehouseId}, #{vipStoreSn}, now(), now()
     </sql>
 
     <sql id="queryCondition">
@@ -35,8 +38,6 @@
 
         <if test="vipStoreSn != null">and `vip_store_sn` = #{vipStoreSn}</if>
 
-        <if test="startAt != null">and created_at &gt; #{startAt}</if>
-        <if test="endAt != null">and created_at &lt; #{endAt}</if>
     </sql>
 
     <sql id="order">

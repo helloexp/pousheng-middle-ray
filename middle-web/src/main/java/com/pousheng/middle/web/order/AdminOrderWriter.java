@@ -438,7 +438,7 @@ public class AdminOrderWriter {
     }
 
     /**
-     * 单个订单生成发货单自动处理逻辑
+     *单个订单生成发货单自动处理逻辑
      *
      * @param shopOrderId
      * @return

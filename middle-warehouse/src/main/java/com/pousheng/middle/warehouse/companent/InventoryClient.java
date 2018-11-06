@@ -136,6 +136,37 @@ public class InventoryClient {
         }
     }
 
+
+    /**
+     * 获取可用库存数量
+     *
+     * @param requests
+     * @param shopId
+     * @return
+     */
+    public Response<List<AvailableInventoryDTO>> getAvailableInventoryWithoutSupply(List<AvailableInventoryRequest> requests, Long shopId) {
+        if (ObjectUtils.isEmpty(requests)) {
+            return Response.fail("inventory.available.fail.parameter");
+        }
+        if (null == shopId) {
+            shopId = -1L;
+        }
+
+        try {
+            List<AvailableInventoryDTO> availableInvList = (List<AvailableInventoryDTO>) inventoryBaseClient.postJsonRetList("api/inventory/query/available/" + shopId,
+                    JSON.toJSONString(requests), AvailableInventoryDTO.class);
+            if (ObjectUtils.isEmpty(availableInvList)) {
+                return Response.ok(Lists.newArrayList());
+            }
+            return Response.ok(availableInvList);
+        } catch (Exception e) {
+            log.error("get available inventory fail, cause:{}", Throwables.getStackTraceAsString(e));
+
+            return Response.fail(e.getMessage());
+        }
+    }
+
+
     /**
      * 获取可用库存数量，忽略仓库，返回列表中也没有仓库ID信息
      * @param requests

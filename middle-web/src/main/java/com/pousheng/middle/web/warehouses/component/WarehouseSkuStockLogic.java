@@ -81,7 +81,7 @@ public class WarehouseSkuStockLogic {
         }
 
         // 直接查询库存中心可用库存接口
-        Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventory(
+        Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventoryWithoutSupply(
                 Lists.transform(skuCodes, input -> AvailableInventoryRequest.builder().skuCode(input).warehouseId(warehouseId).build()), shopId);
         if (!availableInvRes.isSuccess() || ObjectUtils.isEmpty(availableInvRes.getResult())) {
             log.error("not query inventory where warehouseId:{} sku code:{}",warehouseId,skuCodes);

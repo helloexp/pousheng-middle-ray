@@ -364,15 +364,23 @@ public class QueryHkWarhouseOrShopStockApi {
         Map<String, SkuTemplate> skuTemplateMap = skuTemplates.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(SkuTemplate::getSkuCode, it -> it));
 
-        Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventory(
-                dispatchComponent.getAvailInvReq(warehouseIds, skuCodes), shopId);
-        if(!availableInvRes.isSuccess() || CollectionUtils.isEmpty(availableInvRes.getResult())){
-            log.warn("not skuStockInfos so skip");
-            return Lists.newArrayList();
-        }
-        List<AvailableInventoryDTO> availableInvList = availableInvRes.getResult();
+        List<AvailableInventoryDTO> availableInvList;
         if (withSafe.length == 0) {
+            Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventory(
+                    dispatchComponent.getAvailInvReq(warehouseIds, skuCodes), shopId);
+            if (!availableInvRes.isSuccess() || CollectionUtils.isEmpty(availableInvRes.getResult())) {
+                log.warn("not skuStockInfos so skip");
+                return Lists.newArrayList();
+            }
             availableInvList = availableInvRes.getResult().stream().filter(e -> e.getTotalAvailQuantity() > 0).collect(Collectors.toList());
+        } else {
+            Response<List<AvailableInventoryDTO>> availableInvRes = inventoryClient.getAvailableInventoryWithoutSupply(
+                    dispatchComponent.getAvailInvReq(warehouseIds, skuCodes), shopId);
+            if (!availableInvRes.isSuccess() || CollectionUtils.isEmpty(availableInvRes.getResult())) {
+                log.warn("not skuStockInfos so skip");
+                return Lists.newArrayList();
+            }
+            availableInvList = availableInvRes.getResult();
         }
         OpenShop openShop = openShopCacher.findById(shopId);
         String companyCode = openShop.getExtra().get(COMPANY_CODE);
@@ -434,8 +442,8 @@ public class QueryHkWarhouseOrShopStockApi {
                 AvailableInventoryDTO stock = skuStockMap.get(c);
                 SkuTemplate temp = skuTemplateMap.get(c);
                 if (null != stock && null != temp){
-                    //无论是什么类型的仓库 都要去检查能否发货
-                    if (!canDeliveryForStock(searchSkuTemplateMap.get(c), warehouse, companyCode, Boolean.TRUE)) {
+                    //当是自动派单时间 无论是什么类型的仓库 都要去检查能否发货 手工派单则忽略
+                    if (withSafe.length == 0 && !canDeliveryForStock(searchSkuTemplateMap.get(c), warehouse, companyCode, Boolean.TRUE)) {
                         continue;
                     }
                     Map<String,String> tempExtra = temp.getExtra();

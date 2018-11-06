@@ -90,14 +90,15 @@ public class EcpOrderLogic {
             //如果是唯品会的渠道
             if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
                 //如果是仓发的单子 需要呼叫快递 呼叫失败则抛出重试任务
+                OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
                 if (shipment.getShipWay() == 2) {
                     Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
                     if (!response.isSuccess()) {
                         log.error("fail to notice oxo store order  shipment (id:{})  ", shipmentId);
-                        Map<String, Object> param1 = Maps.newHashMap();
-                        param1.put("shipmentId", shipment.getId());
-                        autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_ORDER_STORE_TO_VIP, response.getError());
-
+                        OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                        orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
+                        throw new BizException(response.getError());
                     }
                 } else {
                     OrderOperation successOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();

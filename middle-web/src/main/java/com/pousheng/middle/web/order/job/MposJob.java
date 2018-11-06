@@ -387,20 +387,6 @@ public class MposJob {
                             }
                         }
                     }
-                    if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_ORDER_STORE_TO_VIP)) {
-                        Map<String, String> extra = autoCompensation.getExtra();
-                        if (Objects.nonNull(extra.get("param"))) {
-                            Map<String, Long> param = mapper.fromJson(extra.get("param"), mapper.createCollectionType(HashMap.class, String.class, Long.class));
-                            Shipment shipment = shipmentReadLogic.findShipmentById(param.get("shipmentId"));
-                            Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
-                            if (response.isSuccess()) {
-                                autoCompensateLogic.updateAutoCompensationTask(autoCompensation.getId());
-                            } else {
-                                autoCompensation.getExtra().put("error", response.getError());
-                                autoCompensateLogic.autoCompensationTaskExecuteFail(autoCompensation);
-                            }
-                        }
-                    }
                     if (Objects.equals(autoCompensation.getType(), TradeConstants.FAIL_REFUND_TO_VIP)) {
                         Map<String, String> extra = autoCompensation.getExtra();
                         if (Objects.nonNull(extra.get("param"))) {

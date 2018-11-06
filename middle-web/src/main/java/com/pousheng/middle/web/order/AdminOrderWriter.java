@@ -129,12 +129,16 @@ public class AdminOrderWriter {
             //获取发货单id
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
-            //如果是唯品会的渠道
+            //如果是唯品会的渠道 仓发需要同步订单并呼叫快递
             if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+                OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
+                orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
                 if (shipment.getShipWay() == 2) {
                     Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
                     if (!response.isSuccess()) {
                         log.error("fail to notice oxo store order  shipment (id:{})  ", ecpShipmentId);
+                        OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();
+                        orderWriteLogic.updateEcpOrderStatus(shopOrder, failOperation);
                         throw new JsonResponseException(response.getError());
                     }
                 } else {

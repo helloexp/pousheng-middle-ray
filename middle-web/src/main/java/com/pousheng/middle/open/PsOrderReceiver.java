@@ -220,6 +220,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Override
     protected Integer toParanaOrderStatusForShopOrder(OpenClientOrderStatus clientOrderStatus) {
+
+        if (Arguments.isNull(clientOrderStatus)){
+            throw new ServiceException("client.order.status.invalid");
+        }
         switch (clientOrderStatus){
             case PAID:
                 return OpenClientOrderStatus.PAID.getValue();

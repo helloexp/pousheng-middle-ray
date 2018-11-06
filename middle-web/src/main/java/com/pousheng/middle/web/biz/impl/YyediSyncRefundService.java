@@ -156,7 +156,7 @@ public class YyediSyncRefundService implements CompensateBizService {
             if (!response.isSuccess()) {
                 log.error("fail to notice vip refund order  (id:{})  ", refund.getId());
                 Map<String, Object> param1 = Maps.newHashMap();
-                param1.put("refundId", shipment.getId());
+                param1.put("refundId", refund.getId());
                 autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_REFUND_TO_VIP, response.getError());
                 return;
             }

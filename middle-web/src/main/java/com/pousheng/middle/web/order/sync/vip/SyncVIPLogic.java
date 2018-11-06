@@ -7,6 +7,7 @@ import com.pousheng.middle.order.dto.RefundExtra;
 import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentExtra;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -234,6 +235,10 @@ public class SyncVIPLogic {
         try {
             Response<ShopOrder> orderResp = shopOrderReadService.findByOrderCode(refund.getReleOrderCode());
             ShopOrder shopOrder = orderResp.getResult();
+            if (!Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+                log.error("this order is not from vip :{} ", refund.getId());
+                return Response.fail("order.is.not.from.vip");
+            }
             List<ReturnGoods> goodsList = Lists.newArrayList();
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
@@ -251,7 +256,7 @@ public class SyncVIPLogic {
                 vipOrderReturnService.confirmReturnResult(refund.getShopId(), shopOrder.getOutId(), refund.getShipmentCorpCode(), refundExtra.getShipmentCorpName(), refund.getShipmentSerialNo(), refund.getBuyerNote(), goodsList);
             }
         } catch (Exception e) {
-            log.error("fail to confirm refund , shipmentId:{} fail,error:{}", refund.getId(), Throwables.getStackTraceAsString(e));
+            log.error("fail to confirm refund , refundId:{} fail,error:{}", refund.getId(), Throwables.getStackTraceAsString(e));
             return Response.fail("sync.order.store.to.vip.fail");
         }
         return Response.ok(Boolean.TRUE);

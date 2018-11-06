@@ -172,12 +172,15 @@ public class FireCall {
     private PoushengCompensateBizReadService compensateBizReadService;
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+    @Autowired
+    private RefundReadLogic refundReadLogic;
 
 
     private ExecutorService fixTmallFeeService =new ThreadPoolExecutor(16, 20, 60L, TimeUnit.MINUTES,
             new LinkedBlockingQueue<>(500000),
             new ThreadFactoryBuilder().setNameFormat("tmall-presale-fee-executor-%d").build(),
             (r, executor) -> log.error("fixTmallFee task {} is rejected", r));
+
 
 
     @Autowired
@@ -1111,13 +1114,13 @@ public class FireCall {
     public void confirmUnderStore(@RequestParam Long orderId) {
         Long userId = UserUtil.getUserId();
 
-        /*if (userId == null) {
+        if (userId == null) {
             throw new JsonResponseException("permission.check.current.user.empty");
-        }*/
+        }
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderId);
-        /*if (!shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
+        if (!shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("current.status.is.not.wait.handle");
-        }*/
+        }
         if (!shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
             throw new JsonResponseException("this.order.channel.is.not.vip");
         }
@@ -1127,6 +1130,22 @@ public class FireCall {
             throw new JsonResponseException(response.getError());
         }
     }
+
+
+    /**
+     * 售后单通知oxo
+     *
+     * @param refundId 售后单号
+     */
+    @RequestMapping(value = "/confirm/vip/refund", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void confirmRefund(@RequestParam Long refundId) {
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
+        if (!response.isSuccess()) {
+            throw new JsonResponseException(response.getError());
+        }
+    }
+
 
 
     /**

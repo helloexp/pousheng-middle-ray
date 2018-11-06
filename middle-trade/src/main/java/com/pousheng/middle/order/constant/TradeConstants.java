@@ -314,12 +314,6 @@ public class TradeConstants {
     public static final String VAUGE_ADDRESS = "vagueAddress";
 
     /**
-     * 通知vip接单失败
-     */
-    public static final Integer FAIL_ORDER_STORE_TO_VIP = 70;
-
-
-    /**
      * 通知vip退货单信息失败
      */
     public static final Integer FAIL_REFUND_TO_VIP= 71;

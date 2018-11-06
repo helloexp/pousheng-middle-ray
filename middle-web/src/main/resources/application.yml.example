@@ -164,7 +164,7 @@ terminus:
     nameServerAddress: localhost:9876
     producerGroup: testGroup
     consumeMaxTpsConfig:
-      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS}
+      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS:20}
 
 # 失败订单和发货单邮件通知的接受邮箱 多个账号以逗号分隔
 failed.order.warning.email.receives: longjun.tlj@alibaba-inc.com

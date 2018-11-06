@@ -284,7 +284,7 @@ terminus:
     poushengInventoryTopic: ${MQ_TOPIC_POUSHENG_INVENTORY}
     cacherClearTopic: cacherClearTopic
     consumeMaxTpsConfig:
-      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS}
+      poushengInventoryTopic: ${MQ_TOPIC_INVENTORY_CONSUME_MAX_TPS:20}
 
 
 # outlook邮箱,exchange服务器

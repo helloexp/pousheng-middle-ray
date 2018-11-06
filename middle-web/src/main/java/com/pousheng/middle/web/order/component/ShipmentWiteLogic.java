@@ -56,6 +56,7 @@ import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.fsm.Flow;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
+import io.terminus.parana.order.enums.ShipmentDispatchType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -826,7 +827,8 @@ public class ShipmentWiteLogic {
         shipment.setType(ShipmentType.SALES_SHIP.value());
         shipment.setShopId(shopOrder.getShopId());
         shipment.setShopName(shopOrder.getShopName());
-
+        //自动派单
+        shipment.setDispatchType(ShipmentDispatchType.AUTO.value());
         //jit释放实效库存
         if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
             jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);

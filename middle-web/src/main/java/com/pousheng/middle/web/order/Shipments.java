@@ -49,6 +49,7 @@ import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.fsm.Flow;
+import io.terminus.parana.order.enums.ShipmentDispatchType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -491,7 +492,8 @@ public class Shipments {
     @ApiOperation(value = "生成销售发货单")
     @LogMe(description = "手工生成发货单", ignore = true)
     public List<Long> createSalesShipment(@PathVariable("id") @LogMeContext @OperationLogParam Long shopOrderId,
-                                          @RequestParam(value = "dataList") @LogMeContext String dataList) {
+                                          @RequestParam(value = "dataList") @LogMeContext String dataList,
+                                          @RequestParam(value = "mustShip",required = false) @LogMeContext Integer mustShip ) {
         if (log.isDebugEnabled()) {
             log.debug("API-ORDER-SHIP-START param: shopOrderId [{}] dataList [{}]", shopOrderId, dataList);
         }
@@ -559,10 +561,12 @@ public class Shipments {
             Long shipmentTotalPrice = shipmentTotalFee + shipmentShipFee - shipmentShipDiscountFee;
 
             Shipment shipment = makeShipment(shopOrderId, warehouseId, shipmentItemFee, shipmentDiscountFee, shipmentTotalFee
-                    , shipmentShipFee, ShipmentType.SALES_SHIP.value(), shipmentShipDiscountFee, shipmentTotalPrice, shopOrder.getShopId());
+                    , shipmentShipFee, ShipmentType.SALES_SHIP.value(), shipmentShipDiscountFee, shipmentTotalPrice,
+                shopOrder.getShopId(),mustShip);
             shipment.setSkuInfos(skuOrderIdAndQuantity);
             shipment.setShopId(shopOrder.getShopId());
             shipment.setShopName(shopOrder.getShopName());
+
 
             //jit释放实效库存
             if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
@@ -648,13 +652,15 @@ public class Shipments {
      * @param refundId 换货单id
      * @param dataList skuCode-quantity 以及仓库id的集合
      * @param shipType 2.换货，3.丢件补发
+     * @param mustShip 是否必须发货
      * @return 发货单id
      */
     @RequestMapping(value = "/api/refund/{id}/ship", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "生成换货发货单")
     public List<Long> createAfterShipment(@PathVariable("id") Long refundId,
                                           @RequestParam(value = "dataList") String dataList,
-                                          @RequestParam(required = false, defaultValue = "2") Integer shipType) {
+                                          @RequestParam(required = false, defaultValue = "2") Integer shipType,
+                                          @RequestParam(value = "mustShip",required = false) Integer mustShip ) {
 
         log.info("Shipments.createAfterShipment start refundId:{}, dataList:{}, shipType:{}",
                 refundId, dataList, shipType);
@@ -735,7 +741,7 @@ public class Shipments {
                 ;
                 Shipment shipment = makeShipment(orderRefund.getOrderId(), warehouseId, shipmentItemFee,
                         shipmentDiscountFee, shipmentTotalFee, shipmentShipFee, shipType,
-                        shipmentShipDiscountFee, shipmentTotalPrice, refund.getShopId());
+                        shipmentShipDiscountFee, shipmentTotalPrice, refund.getShopId(),mustShip);
                 //换货
                 shipment.setReceiverInfos(findRefundReceiverInfo(refundId));
                 Map<String, String> extraMap = shipment.getExtra();
@@ -1013,7 +1019,7 @@ public class Shipments {
     private Shipment makeShipment(Long shopOrderId, Long warehouseId, Long shipmentItemFee
             , Long shipmentDiscountFee, Long shipmentTotalFee, Long shipmentShipFee, Integer shipType,
                                   Long shipmentShipDiscountFee,
-                                  Long shipmentTotalPrice, Long shopId) {
+                                  Long shipmentTotalPrice, Long shopId,Integer mustShip) {
         Shipment shipment = new Shipment();
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrderId, OrderLevel.SHOP));
@@ -1028,6 +1034,8 @@ public class Shipments {
             shipment.setShipId(warehouse.getId());
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_WAREHOUSE_DELIVER);
             shipmentExtra.setWarehouseId(warehouse.getId());
+            //总仓是必须发货的
+            shipment.setMustShip(1);
         } else {
             shipment.setShipWay(Integer.valueOf(TradeConstants.MPOS_SHOP_DELIVER));
             shipmentExtra.setShipmentWay(TradeConstants.MPOS_SHOP_DELIVER);
@@ -1038,7 +1046,12 @@ public class Shipments {
             Shop shop = middleShopCacher.findByOuterIdAndBusinessId(warehouse.getOutCode(), Long.valueOf(warehouse.getCompanyId()));
             shipmentExtra.setWarehouseId(shop.getId());
             shipment.setShipId(getShipIdByDeliverId(shop.getId()));
+            //增加是否必须发货
+            shipment.setMustShip(mustShip);
         }
+
+        //手动派单
+        shipment.setDispatchType(ShipmentDispatchType.MANUAL.value());
 
         shipmentExtra.setWarehouseName(warehouse.getWarehouseName());
 

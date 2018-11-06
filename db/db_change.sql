@@ -1061,3 +1061,7 @@ alter table parana_refunds add `shipment_serial_no`  varchar(32)  default null  
 # 2018-10-09 新增考拉和唯品会快递代码列
 alter table pousheng_trade_express_code add column kaola_code varchar(64)  COMMENT '考拉快递代码' after `codoon_code`;
 alter table pousheng_trade_express_code add column vip_code varchar(64)  COMMENT '唯品会快递代码' after `kaola_code`;
+
+
+alter table parana_shipments add `dispatch_type` tinyint DEFAULT NULL comment '派单类型 1为自动派单 2为手动派单' after is_occupy_shipment;
+alter table parana_shipments add `must_ship` tinyint DEFAULT 0 comment '是否必发货 0为否 1为是' after is_occupy_shipment;

@@ -240,6 +240,7 @@ public class SyncMposShipmentLogic{
         param.put("shopName",shipmentExtra.getWarehouseName());
         param.put("outerShipmentId",shipment.getId());
         param.put("outOrderId",shopOrder.getId());
+        param.put("mustShip",shipment.getMustShip());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
         List<String> skuCodes = Lists.transform(shipmentItems, new Function<ShipmentItem, String>() {
             @Nullable

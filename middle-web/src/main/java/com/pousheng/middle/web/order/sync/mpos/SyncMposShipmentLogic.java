@@ -360,6 +360,8 @@ public class SyncMposShipmentLogic{
         param.put("receiverInfoJson",mapper.toJson(receiverInfo));
         //是否指定门店:1:指定门店,2.不指定门店
         param.put("isAssignShop",2);
+        //是否必须发货
+        param.put("mustShip",shipment.getMustShip());
         return param;
     }
 

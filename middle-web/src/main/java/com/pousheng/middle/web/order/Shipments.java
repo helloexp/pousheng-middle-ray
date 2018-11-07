@@ -1047,7 +1047,12 @@ public class Shipments {
             shipmentExtra.setWarehouseId(shop.getId());
             shipment.setShipId(getShipIdByDeliverId(shop.getId()));
             //增加是否必须发货
-            shipment.setMustShip(mustShip);
+            if (Objects.isNull(mustShip)) {
+                //默认否
+                shipment.setMustShip(0);
+            } else {
+                shipment.setMustShip(mustShip);
+            }
         }
 
         //手动派单

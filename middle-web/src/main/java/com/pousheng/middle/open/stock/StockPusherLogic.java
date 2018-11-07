@@ -579,10 +579,16 @@ public class StockPusherLogic {
         }
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
             log.info("AvailableInventoryDTO size {}", getRes.getResult().size());
+            //先计算不包含仓库和商品级别的库存
+            stockSum = calculateWarehouseStockForShop(getRes.getResult(), shopStockRuleDto);
+            //再累加仓库商品级别的库存
             for (AvailableInventoryDTO dto : getRes.getResult()) {
-                log.info("AvailableInventoryDTO dto: {} {} {} ",dto.getWarehouseId(),dto.getSkuCode(),dto.getChannelRealQuantity(),dto.getInventoryUnAllocQuantity());
-                stockSum = stockSum + calculateWarehouseStock(dto, shopStockRuleDto);
+                if (shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())) {
+                    log.info("AvailableInventoryDTO dto: {} {} {} ", dto.getWarehouseId(), dto.getSkuCode(), dto.getChannelRealQuantity(), dto.getInventoryUnAllocQuantity());
+                    stockSum = stockSum + calculateWarehouseStock(dto, shopStockRuleDto);
+                }
             }
+
         }
 
         if (shopStockRuleDto.getShopRule().getJitStock() != null) {
@@ -622,6 +628,32 @@ public class StockPusherLogic {
         );
         log.info("search sku stock by skuCode is {},shopId is {}, warehouseId is {},channelStock is {},shareStock is {}",
                 dto.getSkuCode(), shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), channelStock, shareStock);
+        return stock;
+    }
+
+
+    private Long calculateWarehouseStockForShop(List<AvailableInventoryDTO> dtos, ShopStockRuleDto shopStockRuleDto) {
+        Long channelStock;
+        Long shareStock;
+        channelStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())).mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
+        shareStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())).mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
+        //如果库存数量小于0则推送0
+        ShopStockRule shopRule = shopStockRuleDto.getShopRule();
+        if (channelStock < 0L) {
+            log.warn("shop(id={}) channelStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                    shopRule.getShopId(), dtos.get(0).getSkuCode(), channelStock, shareStock);
+            channelStock = 0L;
+        }
+        if (null != shopRule.getSafeStock()) {
+            shareStock = shareStock - shopRule.getSafeStock();
+        }
+        //按照设定的比例确定推送数量
+        Long stock = Math.max(0,
+                channelStock
+                        + shareStock * shopRule.getRatio() / 100
+        );
+        log.info("after calculate, push stock quantity (skuCode is {},shopId is {}), is {}",
+                dtos.get(0).getSkuCode(), shopRule.getShopId(), stock);
         return stock;
     }
 

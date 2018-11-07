@@ -1372,7 +1372,11 @@ public class RefundWriteLogic {
         List<RefundItem> refundItems = Lists.newArrayList();
         Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
         lostItems.forEach(shipmentItem -> {
-            skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
+            if (!skuCodesAndQuantity.containsKey(shipmentItem.getSkuCode())) {
+                skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
+            } else {
+                skuCodesAndQuantity.put(shipmentItem.getSkuCode(), skuCodesAndQuantity.get(shipmentItem.getSkuCode()) + shipmentItem.getQuantity());
+            }
         });
         shipmentItems.forEach(shipmentItem -> {
             //获取所有需要补发的RefundItem

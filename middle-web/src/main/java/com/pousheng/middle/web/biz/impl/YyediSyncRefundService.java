@@ -35,6 +35,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Map;
@@ -93,11 +94,14 @@ public class YyediSyncRefundService implements CompensateBizService {
             //退货单编码
             String refundCode = a.getRefundCode();
             try {
-                //更新扩展信息，主要是yyedi返回的参数
-                Map<String,String> extra = a.getExtra();
+                //更新扩展信息，以及将实际退货数量更新到RefundItem表中
+                Refund refund = this.addFinalRefundItems(a);
+
+                Map<String,String> extra = refund.getExtra();
                 Refund update = new Refund();
-                update.setId(a.getId());
+                update.setId(refund.getId());
                 update.setExtra(extra);
+
                 Response<Boolean> updateExtraRes = refundWriteLogic.update(update);
                 if (!updateExtraRes.isSuccess()) {
                     log.error("update rMatrixRequestHeadefund(refundCode:{}) fail,error:{}", a.getRefundCode(),updateExtraRes.getError());
@@ -219,6 +223,35 @@ public class YyediSyncRefundService implements CompensateBizService {
             refundWriteLogic.updateStatus(refund, MiddleOrderEvent.AFTER_SALE_CHANGE_RE_CREATE_SHIPMENT.toOrderOperation());
         }
     }
+
+    /**
+     * 最终退货的数量记录
+     * @param refund
+     */
+    private Refund addFinalRefundItems(Refund refund){
+        Map<String, String> extra = refund.getExtra();
+        String itemInfo = extra.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
+        if (!StringUtils.isEmpty(itemInfo)){
+
+            List<YYEdiRefundConfirmItem> yyEdiRefundConfirmItems = JsonMapper.nonEmptyMapper().fromJson(itemInfo,
+                    JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
+
+            Map<String,String> refundConfirmItemAndQuantity = yyEdiRefundConfirmItems.stream().
+                    filter(Objects::nonNull).collect(Collectors.toMap(YYEdiRefundConfirmItem::getItemCode,YYEdiRefundConfirmItem::getQuantity));
+            List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+            for (RefundItem refundItem:refundItems){
+                if (refundConfirmItemAndQuantity.containsKey(refundItem.getSkuCode())){
+                    String finalRefundQuantity = refundConfirmItemAndQuantity.get(refundItem.getSkuCode());
+                    refundItem.setFinalRefundQuantity(Integer.valueOf(finalRefundQuantity));
+                }
+            }
+            extra.put(TradeConstants.REFUND_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundItems));
+            refund.setExtra(extra);
+        }
+        return refund;
+    }
+
+
 
     private boolean validateYYConfirmedItems(List<YYEdiRefundConfirmItem> items) {
         if (items == null || items.isEmpty()) {

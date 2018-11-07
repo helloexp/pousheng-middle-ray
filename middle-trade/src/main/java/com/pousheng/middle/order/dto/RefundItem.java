@@ -45,4 +45,9 @@ public class RefundItem extends BasicItemInfo implements Serializable{
     //发货单上对应的平台分摊优惠
     private Integer sharePlatformDiscount;
 
+    /**
+     * 最终退货数量
+     */
+    private Integer finalRefundQuantity;
+
 }

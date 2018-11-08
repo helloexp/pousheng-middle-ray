@@ -1054,8 +1054,8 @@ public class ShipmentWiteLogic {
         shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_WAREHOUSE_DELIVER));
         //设置发货仓id
         shipment.setShipId(warehouseId);
-        //是否必须发货 默认为否
-        shipment.setMustShip(0);
+        //是否必须发货 仓发默认为是
+        shipment.setMustShip(1);
         //发货仓库信息
         WarehouseDTO warehouse = findWarehouseById(warehouseId);
         Map<String, String> extraMap = Maps.newHashMap();
@@ -1127,8 +1127,15 @@ public class ShipmentWiteLogic {
         shipment.setStatus(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue());
         shipment.setReceiverInfos(findReceiverInfos(shopOrder.getId(), OrderLevel.SHOP));
         shipment.setShipWay(Integer.parseInt(TradeConstants.MPOS_SHOP_DELIVER));
-        //是否必须发货 默认为否
+
+        //是否必须发货 店发默认为否
         shipment.setMustShip(0);
+        Shop shop=shopCacher.findShopById(deliverShopId);
+        //若店铺是必须接单的 也按照必须发货处理
+        if (!Objects.isNull(shop.getExtra())
+            && Objects.equals(shop.getExtra().get("canNotReject"), "true")) {
+            shipment.setMustShip(1);
+        }
         //店发设置仓库对应的店铺id
         Long shipId = getShipIdByDeliverId(deliverShopId);
         shipment.setShipId(shipId);

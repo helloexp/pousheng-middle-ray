@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.pousheng.middle.item.enums.ShopType;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.dto.ShipmentPreview;
 import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
@@ -37,7 +38,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 销售发货  和 换货发货 合并api
@@ -205,6 +209,29 @@ public class CreateShipments {
                 if (vipWarehouseMappingProxy.findByWarehouseId(warehouseDTO.getId()) == null){
                     log.error("warehouse is not vip warehouse:{} fail", warehouseDTO.getId());
                     throw new InvalidException(500, "not.vip.warehouse(outCode={0})", warehouseDTO.getOutCode());
+                }
+            }
+        }else{
+            //售后单的发货单不允许数量级拆单
+            Refund refund = refundReadLogic.findRefundById(id);
+            List<RefundItem> list = Lists.newArrayList();
+            if (type == 2) {
+                list = refundReadLogic.findRefundChangeItems(refund);
+            }
+            if (type == 3) {
+                list = refundReadLogic.findRefundLostItems(refund);
+            }
+            Map<String, Integer> refundItemMap = list.stream().collect(Collectors.toMap(RefundItem::getSkuCode, RefundItem::getApplyQuantity));
+            for (ShipmentRequest request : requestDataList) {
+                Set<Object> skuCodes = request.getData().keySet();
+                for (Object o : skuCodes) {
+                    if (refundItemMap.get(o.toString()) == null) {
+                        throw new InvalidException(500, "refund.item.not.contain.sku.code");
+                    }
+                    if (request.getData().get(o) != 0 && request.getData().get(o) < refundItemMap.get(o.toString())) {
+                        log.error("refund shipment  not allow part shopping  {} ,{}", request.getData().get(o), refundItemMap.get(o.toString()));
+                        throw new InvalidException(500, "refund.can,not.part.shipping");
+                    }
                 }
             }
         }

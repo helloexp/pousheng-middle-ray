@@ -1140,6 +1140,42 @@ public class FireCall {
         log.info("END-HANDLE-FIX-DECREASE-STOCK-API for:{}, SUCCESS RESULT:{}", url, count);
     }
 
+
+
+
+    /**
+     * 修复未占库存发货单
+     *
+     * @param fileName
+     */
+    @RequestMapping(value = "/fix/lock/stock", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public void fixLockStock(@RequestParam String fileName) {
+        String url = "/pousheng/file/" + fileName + ".csv";
+        File file1 = new File(url);
+        List<String> codes = readShipmentCode(file1);
+
+        log.info("START-HANDLE-FIX-LOCK-STOCK-API for:{} COUNT:{}", url, codes.size());
+        int count = 0;
+        for (String shipmentCode : codes) {
+            Response<Shipment> shipmentRes = shipmentReadService.findShipmentCode(shipmentCode);
+            if (!shipmentRes.isSuccess()) {
+                log.error("find shipment by code :{} fail,error:{}", shipmentCode, shipmentRes.getError());
+                continue;
+            }
+            Shipment shipment = shipmentRes.getResult();
+
+            Response<Boolean> resp = mposSkuStockLogic.lockStock(shipment,Boolean.FALSE);
+            if (!resp.isSuccess()) {
+                log.error("lock stock by shipment code {} fail,error:{}", shipmentCode, shipmentRes.getError());
+                continue;
+            } else {
+                count++;
+            }
+        }
+
+        log.info("END-HANDLE-FIX-LOCK-STOCK-API for:{}, SUCCESS RESULT:{}", url, count);
+    }
+
     /**
      * 手工推送库存变化
      * @param skuCode

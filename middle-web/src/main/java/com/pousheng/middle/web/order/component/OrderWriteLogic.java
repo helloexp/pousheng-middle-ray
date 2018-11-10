@@ -182,7 +182,7 @@ public class OrderWriteLogic {
             updateSkuOrder.setExtra(skuOrder.getExtra());
             updateSkuOrder.setOrderId(skuOrder.getOrderId());
             updateSkuOrders.add(updateSkuOrder);
-
+            log.info("make updateStatusAndExtraJsonBatch data for order id:{} sku order:{} status to:{} extra:{}",skuOrder.getOrderId(),skuOrder.getId(),targetStatus,skuOrder.getExtra());
         }
 
         Response<Boolean> updateSkuOrderResp = orderWriteService.updateStatusAndExtraJsonBatch(updateSkuOrders);

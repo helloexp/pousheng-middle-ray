@@ -2308,8 +2308,22 @@ public class ShipmentWiteLogic {
                     shipmentShipFee = Long.valueOf(shopOrder.getOriginShipFee() == null ? 0 : shopOrder.getOriginShipFee());
                     shipmentShipDiscountFee = shipmentShipFee - Long.valueOf(shopOrder.getShipFee() == null ? 0 : shopOrder.getShipFee());
                 }
-
+                List<ShipmentItem> shipmentItems = shipmentReadLogic.findByShipmentId(shipment.getId());
+                //默认发货数量是
+                Map<String,Integer> itemSkuCodeAndShipQuantityMap = shipmentItems.stream().collect(Collectors.toMap(ShipmentItem::getSkuCode,ShipmentItem::getShipQuantity));
                 List<ShipmentItem> newShipmentItems = shipmentWiteLogic.makeShipmentItems(skuOrders, skuInfos, shipmentExtra.getWarehouseId(), shopOrder);
+
+                newShipmentItems.forEach(shipmentItem -> {
+                    if (itemSkuCodeAndShipQuantityMap.containsKey(shipmentItem.getSkuCode())){
+                        Integer shipQuantity = itemSkuCodeAndShipQuantityMap.get(shipmentItem.getSkuCode());
+                        if (Objects.isNull(shipQuantity)){
+                            shipmentItem.setShipQuantity(0);
+                        }else{
+                            shipmentItem.setShipQuantity(itemSkuCodeAndShipQuantityMap.get(shipmentItem.getSkuCode()));
+                        }
+                    }
+                });
+
                 //发货单商品金额
                 Long shipmentItemFee = 0L;
                 //发货单总的优惠

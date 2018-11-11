@@ -8,6 +8,8 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.pousheng.erp.cache.ErpBrandCacher;
 import com.pousheng.erp.component.BrandImporter;
 import com.pousheng.erp.component.MaterialPusher;
@@ -87,10 +89,11 @@ import org.springframework.web.bind.annotation.*;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Author:  <a href="mailto:i@terminus.io">jlchen</a>
@@ -169,6 +172,13 @@ public class FireCall {
     private PoushengCompensateBizReadService compensateBizReadService;
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+
+
+    private ExecutorService fixTmallFeeService =new ThreadPoolExecutor(6, 10, 60L, TimeUnit.MINUTES,
+            new LinkedBlockingQueue<>(500000),
+            new ThreadFactoryBuilder().setNameFormat("tmall-presale-fee-executor-%d").build(),
+            (r, executor) -> log.error("fixTmallFee task {} is rejected", r));
+
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -1243,7 +1253,7 @@ public class FireCall {
     public String fixTmallPresaleOrderPrice(){
         log.info("start fix presale orders");
         Integer pageNo = 1;
-        Integer pageSize = 100;
+        Integer pageSize = 500;
         while (true) {
             log.info("start to fix presale order ,pageNo =====> {}",pageNo);
             PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
@@ -1262,44 +1272,55 @@ public class FireCall {
             log.info("wait handle compensateBizIds size is {}",compensateBizIds.size());
             //轮询业务处理
             for (Long compensateBizId : compensateBizIds) {
-                try{
-                    Response<PoushengCompensateBiz> result = compensateBizReadService.findById(compensateBizId);
-                    if (!result.isSuccess()){
-                        continue;
-                    }
-                    PoushengCompensateBiz compensateBiz = result.getResult();
-                    String shopOrderId = compensateBiz.getBizId();
-                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(Long.valueOf(shopOrderId));
-                    //如果不是淘宝渠道的预售单，那么直接过滤掉
-                    if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
-                        log.warn("this is jd presale order ,orderCode {}",shopOrder.getOrderCode());
-                        continue;
-                    }
-                    log.info("start to fix sku order amt ,shopOrderCode is {}",shopOrder.getOrderCode());
-                    //更新子订单的discount
-                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
-                    for (SkuOrder skuOrder : skuOrders) {
-                        if (skuOrder.getOriginFee()>0){
-                            SkuOrder newSkuOrder = new SkuOrder();
-                            newSkuOrder.setId(skuOrder.getId());
-                            newSkuOrder.setDiscount(Long.valueOf(shopOrder.getDiscount()));
-                            Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
-                            if (!skuOrderR.isSuccess()) {
-                                log.error("skuOrder failed,id is", newSkuOrder.getId());
-                            }
-
-                        }
-                    }
-                    //更新发货单金额
-                    shipmentWiteLogic.updateShipmentFee(shopOrder.getId());
-
-                }catch (Exception e){
-                    log.error("fix tmall presale amt failed,caused by {}",Throwables.getStackTraceAsString(e));
+                Response<PoushengCompensateBiz> result = compensateBizReadService.findById(compensateBizId);
+                if (!result.isSuccess()){
+                    continue;
                 }
+                PoushengCompensateBiz compensateBiz = result.getResult();
+                String shopOrderId = compensateBiz.getBizId();
+                //多线程处理
+                this.fixTmallPresaleFee(shopOrderId);
             }
             pageNo++;
         }
         log.info("end fix presale orders");
         return "ok";
+    }
+
+    /**
+     * 多线程处理，加快速度
+     * @param shopOrderId
+     */
+    private void fixTmallPresaleFee(final String shopOrderId){
+        fixTmallFeeService.submit(()->{
+            try{
+                ShopOrder shopOrder = orderReadLogic.findShopOrderById(Long.valueOf(shopOrderId));
+                //如果不是淘宝渠道的预售单，那么直接过滤掉
+                if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
+                    log.warn("this is jd presale order ,orderCode {}",shopOrder.getOrderCode());
+                    return;
+                }
+                log.info("start to fix sku order amt ,shopOrderCode is {}",shopOrder.getOrderCode());
+                //更新子订单的discount
+                List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                for (SkuOrder skuOrder : skuOrders) {
+                    if (skuOrder.getOriginFee()>0){
+                        SkuOrder newSkuOrder = new SkuOrder();
+                        newSkuOrder.setId(skuOrder.getId());
+                        newSkuOrder.setDiscount(Long.valueOf(shopOrder.getDiscount()));
+                        Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                        if (!skuOrderR.isSuccess()) {
+                            log.error("skuOrder failed,id is", newSkuOrder.getId());
+                        }
+
+                    }
+                }
+                //更新发货单金额
+                shipmentWiteLogic.updateShipmentFee(shopOrder.getId());
+
+            }catch (Exception e){
+                log.error("fix tmall presale amt failed,caused by {}",Throwables.getStackTraceAsString(e));
+            }
+        });
     }
 }

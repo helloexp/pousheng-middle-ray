@@ -22,10 +22,17 @@ import com.pousheng.middle.item.enums.PsSpuType;
 import com.pousheng.middle.item.service.SkuTemplateDumpService;
 import com.pousheng.middle.item.service.SkuTemplateSearchReadService;
 import com.pousheng.middle.open.mpos.MposOrderHandleLogic;
+import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
+import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderReadService;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
+import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
@@ -50,6 +57,7 @@ import io.terminus.common.utils.Splitters;
 import io.terminus.open.client.center.event.OpenClientOrderSyncEvent;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
+import io.terminus.open.client.order.dto.OpenClientOrderItem;
 import io.terminus.parana.attribute.dto.SkuAttribute;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.utils.UserUtil;
@@ -157,6 +165,10 @@ public class FireCall {
     private ShopOrderReadService shopOrderReadService;
     @Autowired
     private OrderWriteLogic orderWriteLogic;
+    @Autowired
+    private PoushengCompensateBizReadService compensateBizReadService;
+    @RpcConsumer
+    private MiddleOrderWriteService middleOrderWriteService;
 
     @Autowired
     public FireCall(SpuImporter spuImporter, BrandImporter brandImporter,
@@ -1219,6 +1231,75 @@ public class FireCall {
             shopMaxOrderLogic.checkMaxOrderAcceptQty(shipment);
         }
         log.debug("API-MIDDLE-TASK-CHECK-SHOP-MAX-ORDER-QTY-END.");
+        return "ok";
+    }
+
+    /**
+     * 天猫预售订单尾款金额修正
+     * @return
+     */
+    @RequestMapping(value = "/fix/tmall/presale/fee", method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE)
+    public String fixTmallPresaleOrderPrice(){
+        log.info("start fix presale orders");
+        Integer pageNo = 1;
+        Integer pageSize = 100;
+        while (true) {
+            log.info("start to fix presale order ,pageNo =====> {}",pageNo);
+            PoushengCompensateBizCriteria criteria = new PoushengCompensateBizCriteria();
+            criteria.setPageNo(pageNo);
+            criteria.setPageSize(pageSize);
+            criteria.setBizType(PoushengCompensateBizType.STEP_ORDER_NOTIFY_ERP.name());
+            Response<Paging<Long>> response = compensateBizReadService.pagingIds(criteria);
+            if (!response.isSuccess()) {
+                pageNo++;
+                continue;
+            }
+            List<Long> compensateBizIds = response.getResult().getData();
+            if (compensateBizIds.isEmpty()) {
+                break;
+            }
+            log.info("wait handle compensateBizIds size is {}",compensateBizIds.size());
+            //轮询业务处理
+            for (Long compensateBizId : compensateBizIds) {
+                try{
+                    Response<PoushengCompensateBiz> result = compensateBizReadService.findById(compensateBizId);
+                    if (!result.isSuccess()){
+                        continue;
+                    }
+                    PoushengCompensateBiz compensateBiz = result.getResult();
+                    String shopOrderId = compensateBiz.getBizId();
+                    ShopOrder shopOrder = orderReadLogic.findShopOrderById(Long.valueOf(shopOrderId));
+                    //如果不是淘宝渠道的预售单，那么直接过滤掉
+                    if (!Objects.equals(shopOrder.getOutFrom(),"taobao")){
+                        log.warn("this is jd presale order ,orderCode {}",shopOrder.getOrderCode());
+                        continue;
+                    }
+                    log.info("start to fix sku order amt ,shopOrderCode is {}",shopOrder.getOrderCode());
+                    //更新子订单的discount
+                    List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId());
+                    for (SkuOrder skuOrder : skuOrders) {
+                        if (skuOrder.getOriginFee()>0){
+                            SkuOrder newSkuOrder = new SkuOrder();
+                            newSkuOrder.setId(skuOrder.getId());
+                            newSkuOrder.setDiscount(Long.valueOf(shopOrder.getDiscount()));
+                            Response<Boolean> skuOrderR = middleOrderWriteService.updateSkuOrder(newSkuOrder);
+                            if (!skuOrderR.isSuccess()) {
+                                log.error("skuOrder failed,id is", newSkuOrder.getId());
+                            }
+
+                        }
+                    }
+                    //更新发货单金额
+                    shipmentWiteLogic.updateShipmentFee(shopOrder.getId());
+
+                }catch (Exception e){
+                    log.error("fix tmall presale amt failed,caused by {}",Throwables.getStackTraceAsString(e));
+                }
+            }
+            pageNo++;
+        }
+        log.info("end fix presale orders");
         return "ok";
     }
 }

@@ -707,7 +707,10 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
             Long alreadyShareDiscout = 0L;
             for (int i = 0;i<richSkus.size()-1;i++){
-                Long itemShareDiscount =  (richSkus.get(i).getFee()*Long.valueOf(platformDiscount))/fees;
+                Long itemShareDiscount=0L;
+                if (fees>0){
+                    itemShareDiscount =  (richSkus.get(i).getFee()*Long.valueOf(platformDiscount))/fees;
+                }
                 alreadyShareDiscout += itemShareDiscount;
                 skuIdAndShareDiscount.put(richSkus.get(i).getOuterSkuId(),itemShareDiscount);
             }

@@ -174,7 +174,7 @@ public class FireCall {
     private MiddleOrderWriteService middleOrderWriteService;
 
 
-    private ExecutorService fixTmallFeeService =new ThreadPoolExecutor(6, 10, 60L, TimeUnit.MINUTES,
+    private ExecutorService fixTmallFeeService =new ThreadPoolExecutor(16, 20, 60L, TimeUnit.MINUTES,
             new LinkedBlockingQueue<>(500000),
             new ThreadFactoryBuilder().setNameFormat("tmall-presale-fee-executor-%d").build(),
             (r, executor) -> log.error("fixTmallFee task {} is rejected", r));

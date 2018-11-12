@@ -12,7 +12,9 @@ package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Throwables;
+import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Table;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.YyEdiShipInfo;
@@ -152,20 +154,24 @@ public class YyediSyncShipmentService implements CompensateBizService {
         Map<String,String> boxNoMap=null;
         Map<String,String> shipmentCorpCodeMap=null;
         Map<String,String> shipmentSerialNoMap=null;
+        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+        Map<Long, Map<String, Integer>> assignBoxTable = shipmentExtra.getAssignBoxDetail();
+        boolean fromJit=false;
         if (yyEdiShipInfo.getItemInfos() != null) {
             //构造箱号数据
             boxNoMap = yyEdiShipInfo.getItemInfos().stream().
                 collect(HashMap::new,(m,v)->m.put(v.getSkuCode(),v.getBoxNo()),HashMap::putAll);
 
-            Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
-                    .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity));
             //查询订单来源 以区分是否是JIT渠道的大订单
             ShopOrder order = queryShopOrder(shipmentId);
             if (order == null) {
                 throw new BizException("failed to query shop order");
             }
-            boolean fromJit = MiddleChannel.YUNJUJIT.getValue().equals(order.getOutFrom());
+            fromJit = MiddleChannel.YUNJUJIT.getValue().equals(order.getOutFrom());
             if (fromJit) {
+                if (assignBoxTable == null) {
+                    assignBoxTable = Maps.newHashMap();
+                }
                 //构造物流公司数据
                 shipmentCorpCodeMap = yyEdiShipInfo.getItemInfos().stream().
                     collect(HashMap::new, (m, v) -> m.put(v.getSkuCode(), v.getShipmentCorpCode()), HashMap::putAll);
@@ -173,9 +179,21 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 shipmentSerialNoMap = yyEdiShipInfo.getItemInfos().stream().
                     collect(HashMap::new, (m, v) -> m.put(v.getSkuCode(), v.getShipmentSerialNo()), HashMap::putAll);
 
-            }
-            for (ShipmentItem s : items) {
-                assignShipmentQuantity(s, itemMap, fromJit, partShip);
+
+                //先排序list 发货数量倒序
+                sortShipInfoList(items);
+                //构造(skuCode-箱号-数量)的表格
+                Table<String, String, Integer> quantityTable = buildTable(yyEdiShipInfo.getItemInfos());
+                for (ShipmentItem s : items) {
+                    assignJitShipmentQuantity(s, quantityTable, partShip, assignBoxTable);
+                }
+            } else {
+                Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
+                    .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity,
+                        (v1, v2) -> v1 + v2));
+                for (ShipmentItem s : items) {
+                    assignShipmentQuantity(s, itemMap, fromJit, partShip);
+                }
             }
         }else{
             for (ShipmentItem s : items) {
@@ -196,7 +214,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 return;
             }
         }
-        ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
+
         //封装更新信息
         Shipment update = new Shipment();
         update.setId(shipmentId);
@@ -213,9 +231,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
         shipmentExtra.setTransportMethodCode(yyEdiShipInfo.getTransportMethodCode());
         shipmentExtra.setTransportMethodName(yyEdiShipInfo.getTransportMethodName());
         shipmentExtra.setCardRemark(yyEdiShipInfo.getCardRemark());
-        shipmentExtra.setBoxNoMap(boxNoMap);
         shipmentExtra.setShipmentCorpCodeMap(shipmentCorpCodeMap);
         shipmentExtra.setShipmentSerialNoMap(shipmentSerialNoMap);
+        if (fromJit) {
+            shipmentExtra.setWmsShipInfoListJson(mapper.toJson(yyEdiShipInfo.getItemInfos()));
+            shipmentExtra.setAssignBoxDetail(assignBoxTable);
+        }
 
         if (Objects.isNull(yyEdiShipInfo.getWeight())) {
             shipmentExtra.setWeight(0L);
@@ -302,24 +323,108 @@ public class YyediSyncShipmentService implements CompensateBizService {
         if (shipmentQuantity == null) {
             return;
         }
-        //JIT发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
-        if (fromJit) {
-            if (item.getQuantity() > shipmentQuantity) {
-                partShip = Boolean.TRUE;
-                item.setShipQuantity(shipmentQuantity);
-                //设置剩下的总数为0
-                quantityMap.put(item.getSkuCode(), 0);
-            } else {
-                item.setShipQuantity(item.getQuantity());
-                //设置总数为减去已分配过的数量
-                quantityMap.put(item.getSkuCode(), shipmentQuantity - item.getQuantity());
-            }
+        //发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
+        if (item.getQuantity() > shipmentQuantity) {
+            partShip = Boolean.TRUE;
+            item.setShipQuantity(shipmentQuantity);
+            //设置剩下的总数为0
+            quantityMap.put(item.getSkuCode(), 0);
         } else {
-            if (item.getQuantity() > quantityMap.get(item.getSkuCode())) {
-                partShip = Boolean.TRUE;
-            }
-            item.setShipQuantity(quantityMap.get(item.getSkuCode()));
+            item.setShipQuantity(item.getQuantity());
+            //设置总数为减去已分配过的数量
+            quantityMap.put(item.getSkuCode(), shipmentQuantity - item.getQuantity());
         }
+    }
+
+    private Table<String,String, Integer> buildTable(List<YyEdiShipInfo.ItemInfo> list){
+        Table<String,String, Integer> result= HashBasedTable.create();
+        for(YyEdiShipInfo.ItemInfo itemInfo:list){
+            result.put(itemInfo.getSkuCode(),itemInfo.getBoxNo(),itemInfo.getQuantity());
+        }
+        return result;
+    }
+
+    /**
+     * 分配JIT发货数量给sku
+     */
+    protected void assignJitShipmentQuantity(ShipmentItem item, Table<String,String, Integer> quantityTable,
+                                           boolean partShip, Map<Long, Map<String, Integer>> assignBoxTable) {
+        Map<String,Integer> qtyMap = quantityTable.row(item.getSkuCode());
+        if (qtyMap == null || qtyMap.isEmpty()) {
+            return;
+        }
+        Integer total =sumTotalQtyOfItem(qtyMap);
+        //是否是部分发货
+        if (item.getQuantity().compareTo(total) > 0) {
+            partShip = true;
+        }
+        Map<String, Integer> assignBoxMap=assignBoxTable.get(item.getId());
+        if (assignBoxMap == null) {
+            assignBoxMap = Maps.newHashMap();
+        }
+        Integer targetQty = item.getQuantity() - item.getShipQuantity();
+        if (targetQty <= 0) {
+            return;
+        }
+        //JIT发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
+        //先遍历一遍 看有没有一个箱号就能发完的
+        for(Map.Entry<String,Integer> entry:qtyMap.entrySet()){
+            if (item.getQuantity() > entry.getValue()) {
+                continue;
+            } else {
+                item.setShipQuantity(item.getShipQuantity()+targetQty);
+                entry.setValue(entry.getValue()-targetQty);
+                assignBoxMap.put(entry.getKey(),targetQty);
+                assignBoxTable.put(item.getId(),assignBoxMap);
+                return;
+            }
+        }
+
+        //如果没有一个箱号一次发完的就多个箱号发
+        for(Map.Entry<String,Integer> entry:qtyMap.entrySet()){
+            if (item.getQuantity().compareTo(item.getShipQuantity()) == 0) {
+                assignBoxTable.put(item.getId(),assignBoxMap);
+                return;
+            }
+            targetQty = item.getQuantity() - item.getShipQuantity();
+            if (entry.getValue().compareTo(targetQty) >= 0) {
+                item.setShipQuantity(item.getShipQuantity() + targetQty);
+                entry.setValue(entry.getValue() - targetQty);
+                assignBoxMap.put(entry.getKey(),targetQty);
+                assignBoxTable.put(item.getId(),assignBoxMap);
+                return;
+            } else {
+                item.setShipQuantity(item.getShipQuantity() + entry.getValue());
+                assignBoxMap.put(entry.getKey(),entry.getValue());
+                entry.setValue(0);
+            }
+        }
+
+    }
+
+    /**
+     * 排序
+     * @param list
+     */
+    private void sortShipInfoList(List<ShipmentItem> list){
+        try {
+            list.sort((o1, o2) -> o2.getQuantity() - o1.getQuantity());
+        } catch (Exception e) {
+            log.warn("failed to sort YyEdiShipInfo,param:{}", mapper.toJson(list), e);
+        }
+    }
+
+    /**
+     * 计算本次发货各个箱号数量的总数
+     * @param map
+     * @return
+     */
+    private Integer sumTotalQtyOfItem(Map<String, Integer> map) {
+        Integer result = 0;
+        for (Map.Entry<String, Integer> entry : map.entrySet()) {
+            result = result + entry.getValue();
+        }
+        return result;
     }
 
 }

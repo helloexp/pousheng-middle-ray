@@ -1367,10 +1367,11 @@ public class RefundWriteLogic {
         //传输过来的需要丢件补发的商品集合
         List<ShipmentItem> lostItems = submitRefundInfo.getLostItems();
         //获取需要丢件补发的skuCode的集合
-        List<String> changeSkuCodes = lostItems.stream().filter(Objects::nonNull).map(ShipmentItem::getSkuCode).collect(Collectors.toList());
+        Set<String> changeSkuCodes = lostItems.stream().filter(Objects::nonNull).map(ShipmentItem::getSkuCode).collect(Collectors.toSet());
         //获取sku以及丢件补发数量的集合
         List<RefundItem> refundItems = Lists.newArrayList();
         Map<String, Integer> skuCodesAndQuantity = Maps.newHashMap();
+        Map<String, Integer> originSkuCodesAndQuantity = Maps.newHashMap();
         lostItems.forEach(shipmentItem -> {
             if (!skuCodesAndQuantity.containsKey(shipmentItem.getSkuCode())) {
                 skuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
@@ -1380,21 +1381,31 @@ public class RefundWriteLogic {
         });
         shipmentItems.forEach(shipmentItem -> {
             //获取所有需要补发的RefundItem
+            if (!originSkuCodesAndQuantity.containsKey(shipmentItem.getSkuCode())) {
+                originSkuCodesAndQuantity.put(shipmentItem.getSkuCode(), shipmentItem.getQuantity());
+            } else {
+                originSkuCodesAndQuantity.put(shipmentItem.getSkuCode(), originSkuCodesAndQuantity.get(shipmentItem.getSkuCode()) + shipmentItem.getQuantity());
+            }
+        });
+        shipmentItems.forEach(shipmentItem -> {
             if (changeSkuCodes.contains(shipmentItem.getSkuCode())) {
                 //要限制丢件补发的数量，获取丢件补发传入的数量
                 int lostQuantity = skuCodesAndQuantity.get(shipmentItem.getSkuCode()) == null ? 0 : skuCodesAndQuantity.get(shipmentItem.getSkuCode());
-                if (lostQuantity > shipmentItem.getQuantity()) {
+                if (lostQuantity > originSkuCodesAndQuantity.get(shipmentItem.getSkuCode())) {
                     throw new JsonResponseException("lost.refund.quantity.can.not.larger.than.shipment.quanity");
                 }
                 RefundItem refundItem = new RefundItem();
+                shipmentItem.setQuantity(originSkuCodesAndQuantity.get(shipmentItem.getSkuCode()));
                 BeanMapper.copy(shipmentItem, refundItem);
                 //填入售后申请数量
                 refundItem.setApplyQuantity(skuCodesAndQuantity.get(shipmentItem.getSkuCode()));
                 //填入货品条码
                 refundItem.setSkuCode(shipmentItem.getSkuCode());
                 refundItems.add(refundItem);
+                changeSkuCodes.remove(shipmentItem.getSkuCode());
             }
         });
+
         return refundItems;
     }
 

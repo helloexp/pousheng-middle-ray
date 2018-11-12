@@ -160,8 +160,20 @@ public class MposShipmentLogic {
             List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
             List<Long> skuOrderIds = shipmentItems.stream().map(ShipmentItem::getSkuOrderId).collect(Collectors.toList());
             List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+            Map<Long, Integer> skuInfos = shipment.getSkuInfos();
             for (SkuOrder skuOrder : skuOrderList) {
-                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), expectOrderStatus);
+                Response<SkuOrder> updateShippedRlt = orderWriteService.updateShippedNum(skuOrder.getId(), skuInfos.get(skuOrder.getId()));
+                if (!updateShippedRlt.isSuccess()) {
+                    log.error("fail to update sku order shipped quantity by skuOrderId={},quantity={}, cause:{}",
+                            skuOrder.getId(), skuInfos.get(skuOrder.getId()), updateShippedRlt.getError());
+                    throw new JsonResponseException(updateShippedRlt.getError());
+                }
+                skuOrder = updateShippedRlt.getResult();
+                //如果未达到全部发货，则不更新子单状态
+                if (skuOrder.getQuantity() > skuOrder.getShipped()) {
+                    continue;
+                }
+                Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                 if (!updateRlt.getResult()) {
                     log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                     throw new JsonResponseException("update.sku.order.status.error");

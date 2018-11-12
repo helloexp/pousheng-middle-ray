@@ -490,20 +490,20 @@ public class Refunds {
             log.debug("API-REFUND-SYNCHKCANCELREFUND-START param: refundId [{}] ", refundId);
         }
         Refund refund = refundReadLogic.findRefundById(refundId);
-        RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
-        Shipment shipment =  shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-        //店发拒收单不能被取消
-        if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())
-                &&(Objects.equals(shipment.getShipWay(),1))){
-            throw new JsonResponseException("reject.goods.can.not.be.canceled");
-        }
-        if (Objects.equals(refund.getShopId(),skxOpenShopId)){
-            boolean result = refundWriteLogic.validateSkxAfterSaleShipmentStatus(refundId);
-            if (result){
-                throw new JsonResponseException("skx.refund.shipment.handling");
-            }
-        }
         if (!Objects.equals(refund.getRefundType(),MiddleRefundType.LOST_ORDER_RE_SHIPMENT.value())){
+            RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
+            Shipment shipment =  shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
+            //店发拒收单不能被取消
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())
+                    &&(Objects.equals(shipment.getShipWay(),1))){
+                throw new JsonResponseException("reject.goods.can.not.be.canceled");
+            }
+            if (Objects.equals(refund.getShopId(),skxOpenShopId)){
+                boolean result = refundWriteLogic.validateSkxAfterSaleShipmentStatus(refundId);
+                if (result){
+                    throw new JsonResponseException("skx.refund.shipment.handling");
+                }
+            }
             //如果是之前同步恒康失败的，不用和恒康连接直接取消失败
             if (Objects.equals(refund.getStatus(),MiddleRefundStatus.SYNC_HK_FAIL.getValue())){
                 OrderOperation syncSuccessOrderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();

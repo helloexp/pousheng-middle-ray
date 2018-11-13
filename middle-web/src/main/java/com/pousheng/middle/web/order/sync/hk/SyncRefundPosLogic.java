@@ -428,18 +428,6 @@ public class SyncRefundPosLogic {
 
         }
 
-        if (!CollectionUtils.isEmpty(shopOrder.getExtra()) && shopOrder.getExtra().containsKey("usedIntegralForOrder")) {
-            posInfo.setDischargeintegral(shopOrder.getExtra().get("usedIntegralForOrder")); //会员抵现积分
-        } else {
-            posInfo.setDischargeintegral("0"); //会员抵现积分
-        }
-
-        if (!CollectionUtils.isEmpty(shopOrder.getExtra()) && shopOrder.getExtra().containsKey("paymentIntegralForShopOrder")) {
-            posInfo.setDischargeamount(shopOrder.getExtra().get("paymentIntegralForShopOrder")); //会员抵现金额
-        } else {
-            posInfo.setDischargeamount("0"); //会员抵现金额
-        }
-
         return posInfo;
     }
 

@@ -91,35 +91,6 @@ public class CreateShipments {
         if (Objects.equals(1, type)) {
             return adminOrderReader.orderWaitHandleSku(id);
         }
-        if (Objects.equals(2,type)){
-            //如果是换货售后单，判断实际退货数量*价格是否等于换货数量*价格
-            Refund refund = refundReadLogic.findRefundById(id);
-            if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
-                List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
-                Integer refundFee = 0;
-                //count计数器对于历史单据做兼容，因为历史单据可能不会存在finalRefundQuantity这个字段,此时就不需要校验实际退货金额与换货金额是否相等
-                int count = 0;
-                for (RefundItem refundItem:refundItems){
-                    if (Objects.isNull(refundItem.getFinalRefundQuantity())){
-                        count++;
-                        continue;
-                    }
-                    refundFee += refundItem.getFinalRefundQuantity()*refundItem.getCleanPrice();
-                }
-                if (count==0){
-                    List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
-                    Integer changeFee = 0;
-                    for (RefundItem refundItem:refundChangeItems){
-                        changeFee += refundItem.getApplyQuantity()*refundItem.getCleanPrice();
-                    }
-                    if (!Objects.equals(refundFee,changeFee)){
-                        throw new JsonResponseException("refund.fee.not.equals.change.fee");
-                    }
-                }
-
-            }
-
-        }
         List<WaitShipItemInfo> waitShipItemInfos = refunds.refundWaitHandleSku(id);
         if(log.isDebugEnabled()){
             log.debug("API-WAIT-HANDLE-SKU-END param: id [{}] type [{}] ,resp: [{}]",id,type,JsonMapper.nonEmptyMapper().toJson(waitShipItemInfos));

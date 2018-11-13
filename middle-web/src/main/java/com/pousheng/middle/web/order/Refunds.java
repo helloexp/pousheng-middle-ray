@@ -1079,7 +1079,40 @@ public class Refunds {
         return refundWriteLogic.update(refund);
     }
 
-
+    /**
+     * 校验换货退货金额与换货金额是否相等，为了兼容历史数据，有可能历史数据不存在finalRefundQuantity，这个时候
+     * @param refundId
+     * @return true表示金额一致，false表示金额不一致
+     */
+    @RequestMapping(value = "/api/refund/validate/fee/for/change", method = RequestMethod.GET, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> validateRefundFeeAndExchangeFee(@RequestParam Long refundId){
+        //如果是换货售后单，判断实际退货数量*价格是否等于换货数量*价格
+        Refund refund = refundReadLogic.findRefundById(refundId);
+        if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+            List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+            Integer refundFee = 0;
+            //count计数器对于历史单据做兼容，因为历史单据可能不会存在finalRefundQuantity这个字段,此时就不需要校验实际退货金额与换货金额是否相等
+            int count = 0;
+            for (RefundItem refundItem:refundItems){
+                if (Objects.isNull(refundItem.getFinalRefundQuantity())){
+                    count++;
+                    continue;
+                }
+                refundFee += refundItem.getFinalRefundQuantity()*refundItem.getCleanPrice();
+            }
+            if (count==0){
+                List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+                Integer changeFee = 0;
+                for (RefundItem refundItem:refundChangeItems){
+                    changeFee += refundItem.getApplyQuantity()*refundItem.getCleanPrice();
+                }
+                if (!Objects.equals(refundFee,changeFee)){
+                    return Response.ok(Boolean.FALSE);
+                }
+            }
+        }
+        return Response.ok(Boolean.TRUE);
+    }
     @RequestMapping(value = "/api/refund/express/fix", method = RequestMethod.GET)
     @ApiOperation(value = "检查退货物流信息修复")
     public void expressFix () {

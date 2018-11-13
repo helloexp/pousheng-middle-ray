@@ -31,9 +31,9 @@ import org.assertj.core.util.Lists;
 import org.assertj.core.util.Strings;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -279,6 +279,7 @@ public class SyncOrderToEcpLogic {
                 List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);
 
                 try {
+                    Map<Long, Map<String, Integer>> assignBoxTable = shipmentExtra.getAssignBoxDetail();
                     //获取当前同步渠道的状态
                     Integer syncStatus = shipmentExtra.getSyncChannelStatus() == null ? SyncChannelStatus.WAIT_SYNC_CHANNEL.getValue()
                             : shipmentExtra.getSyncChannelStatus();
@@ -325,11 +326,23 @@ public class SyncOrderToEcpLogic {
                         //增加jit新增字段
                         logisticsInfo.setArrival_time(convertDateFormat(shipmentExtra.getExpectDate()));
                         logisticsInfo.setDelivery_method(shipmentExtra.getTransportMethodCode());
-                        if (!CollectionUtils.isEmpty(shipmentExtra.getBoxNoMap())) {
-                            logisticsInfo.setBox_no(shipmentExtra.getBoxNoMap().get(shipmentItem.getSkuCode()));
-                        }
 
-                        logisiticis.add(logisticsInfo);
+                        if (fromJit) {
+                            Map<String, Integer> assignMap = assignBoxTable.get(shipmentItem.getId());
+                            if (assignMap == null) {
+                                log.warn("no shipment assign info of box and qty.shipmentId:{},shipment_item_id:{}", shipment.getId(),shipmentItem.getId());
+                                continue;
+                            }
+                            for (Map.Entry<String, Integer> entry : assignMap.entrySet()) {
+                                LogisticsInfo info = new LogisticsInfo();
+                                BeanUtils.copyProperties(logisticsInfo, info);
+                                info.setBox_no(entry.getKey());
+                                info.setAmount(entry.getValue());
+                                logisiticis.add(info);
+                            }
+                        } else {
+                            logisiticis.add(logisticsInfo);
+                        }
                     }
                     if (itemFailed) {
                         count++;

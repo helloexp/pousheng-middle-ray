@@ -152,4 +152,16 @@ public class ShipmentExtra implements Serializable{
      * value为物流单号
      */
     private Map<String,String> shipmentSerialNoMap;
+
+    /**
+     * 箱号分配信息
+     * shipment_item_id,box_no,quantity
+     */
+    private Map<Long, Map<String, Integer>> assignBoxDetail;
+
+    /**
+     * wms回传的发货信息json
+     */
+    private String wmsShipInfoListJson;
+
 }

@@ -216,11 +216,11 @@ public class Refunds {
                     }
                     if (result){
                         //完善之后同步售后单到订单派发中心
-                        Flow flow = flowPicker.pickAfterSales();
+                        //Flow flow = flowPicker.pickAfterSales();
                         refund = refundReadLogic.findRefundById(refundId);
                         log.info("sync refund extra extra info is {}, id is {}", refund.getExtraJson(), refund.getId());
-                        Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
-                        refund.setStatus(targetStatus);
+                        //Integer targetStatus = flow.target(refund.getStatus(),MiddleOrderEvent.HANDLE.toOrderOperation());
+                        //refund.setStatus(targetStatus);
                         Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(refund);
                         if (!syncRes.isSuccess()) {
                             log.error("sync refund(id:{}) to hk fail,error:{}", refundId, syncRes.getError());

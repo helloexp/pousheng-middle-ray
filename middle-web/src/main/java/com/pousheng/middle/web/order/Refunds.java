@@ -1050,6 +1050,36 @@ public class Refunds {
         return Response.ok(result);
     }
 
+    /**
+     * 修改换货数量
+     * @param editRefundShipmentItemsInfo 请求参数
+     * @return true修改成功
+     */
+    @RequestMapping(value = "/api/refund/edit/change/items/quantity", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
+    public Response<Boolean> editRefundExchangeItems(@RequestBody EditRefundShipmentItemsInfo editRefundShipmentItemsInfo){
+        Refund refund = refundReadLogic.findRefundById(editRefundShipmentItemsInfo.getRefundId());
+        //获取当前的售后换货列表集合
+        List<RefundItem>  existRefundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+        //获取前端传过来的skuCode以及applyQuantity
+        List<RefundItem> editRefundChangeItems = editRefundShipmentItemsInfo.getChangeItems();
+        //组装成map
+        Map<String,Integer> editSkuCodeAndApplyQuantityMap = editRefundChangeItems.stream().
+                filter(Objects::nonNull).collect(Collectors.toMap(RefundItem::getSkuCode,RefundItem::getApplyQuantity));
+        //将申请数量修改
+        List<RefundItem> newRefundChangeItems = Lists.newArrayList();
+        for (RefundItem refundItem :existRefundChangeItems){
+            if (editSkuCodeAndApplyQuantityMap.containsKey(refundItem.getSkuCode())){
+                refundItem.setApplyQuantity(editSkuCodeAndApplyQuantityMap.get(refundItem.getSkuCode()));
+            }
+            newRefundChangeItems.add(refundItem);
+        }
+        Map<String, String> refundExtra = refund.getExtra();
+        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,JsonMapper.nonDefaultMapper().toJson(newRefundChangeItems));
+        refund.setExtra(refundExtra);
+        return refundWriteLogic.update(refund);
+    }
+
+
     @RequestMapping(value = "/api/refund/express/fix", method = RequestMethod.GET)
     @ApiOperation(value = "检查退货物流信息修复")
     public void expressFix () {

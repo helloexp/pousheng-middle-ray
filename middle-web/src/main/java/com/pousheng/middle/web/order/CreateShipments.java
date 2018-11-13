@@ -8,6 +8,7 @@ import com.pousheng.middle.order.dto.ShipmentRequest;
 import com.pousheng.middle.order.dto.WaitShipItemInfo;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
+import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
@@ -89,6 +90,28 @@ public class CreateShipments {
         }
         if (Objects.equals(1, type)) {
             return adminOrderReader.orderWaitHandleSku(id);
+        }
+        if (Objects.equals(2,type)){
+            //如果是换货售后单，判断实际退货数量*价格是否等于换货数量*价格
+            Refund refund = refundReadLogic.findRefundById(id);
+            if (Objects.equals(refund.getRefundType(),MiddleRefundType.AFTER_SALES_CHANGE.value())){
+                List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
+                Integer refundFee = 0;
+                for (RefundItem refundItem:refundItems){
+                    refundFee += refundItem.getFinalRefundQuantity()*refundItem.getCleanPrice();
+                }
+
+                List<RefundItem> refundChangeItems = refundReadLogic.findRefundChangeItems(refund);
+                Integer changeFee = 0;
+                for (RefundItem refundItem:refundChangeItems){
+                    changeFee += refundItem.getFinalRefundQuantity()*refundItem.getCleanPrice();
+                }
+                if (!Objects.equals(refundFee,changeFee)){
+                    throw new JsonResponseException("refund.fee.not.equals.change.fee");
+                }
+
+            }
+
         }
         List<WaitShipItemInfo> waitShipItemInfos = refunds.refundWaitHandleSku(id);
         if(log.isDebugEnabled()){

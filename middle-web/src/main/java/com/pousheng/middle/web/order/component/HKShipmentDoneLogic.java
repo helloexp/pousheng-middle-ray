@@ -82,12 +82,12 @@ public class HKShipmentDoneLogic {
             long orderShopId = orderShipment.getOrderId();
             ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShopId);
             Flow flow = flowPicker.pickOrder();
-            log.info("HK SHIPMENT id:{} DONE LISTENER shopOrderStatus is {}",shipment.getId(), shopOrder.getStatus());
+            log.info("HK SHIPMENT id:{} DONE LISTENER shopOrderStatus is {}", shipment.getId(), shopOrder.getStatus());
 
-            if (Objects.equals(shopOrder.getOutFrom(),"yunjujit")){
+            if (Objects.equals(shopOrder.getOutFrom(), "yunjujit")) {
                 //jit大单 整单发货，所以将所有子单合并处理即可
                 Response<Boolean> response = middleOrderWriteService.updateOrderStatusForJit(shopOrder, MiddleOrderEvent.SHIP.toOrderOperation());
-                if (!response.isSuccess()){
+                if (!response.isSuccess()) {
                     log.error("update order ship error (id:{}),original status is {}", shopOrder.getId(), shopOrder.getStatus());
                     throw new JsonResponseException("update.order.status.error");
                 }
@@ -98,17 +98,17 @@ public class HKShipmentDoneLogic {
                 skuOrderIds.addAll(skuInfos.keySet());
                 List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
                 for (SkuOrder skuOrder : skuOrders) {
-                    Response<SkuOrder> updateShippedRlt = orderWriteService.updateShippedNum(skuOrder.getId(),skuInfos.get(skuOrder.getId()));
+                    Response<SkuOrder> updateShippedRlt = orderWriteService.updateShippedNum(skuOrder.getId(), skuInfos.get(skuOrder.getId()));
                     if (!updateShippedRlt.isSuccess()) {
                         log.error("fail to update sku order shipped quantity by skuOrderId={},quantity={}, cause:{}",
                                 skuOrder.getId(), skuInfos.get(skuOrder.getId()), updateShippedRlt.getError());
                         throw new JsonResponseException(updateShippedRlt.getError());
                     }
                     if (flow.operationAllowed(skuOrder.getStatus(), MiddleOrderEvent.SHIP.toOrderOperation())) {
-                        skuOrder=updateShippedRlt.getResult();
+                        skuOrder = updateShippedRlt.getResult();
                         //如果未达到全部发货，则不更新子单状态
-                        if(skuOrder.getQuantity()>skuOrder.getShipped()){
-                           continue;
+                        if (skuOrder.getQuantity() > skuOrder.getShipped()) {
+                            continue;
                         }
                         Response<Boolean> updateRlt = orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.SHIPPED.getValue());
                         if (!updateRlt.getResult()) {
@@ -125,7 +125,7 @@ public class HKShipmentDoneLogic {
             biz.setBizType(PoushengCompensateBizType.SYNC_ECP.name());
             biz.setBizId(String.valueOf(shipment.getId()));
             biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-            compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+            compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
         }
 
         //丢件补发类型的发货单的类型是3，中台没有相应的枚举类
@@ -145,7 +145,8 @@ public class HKShipmentDoneLogic {
                 Response<List<OrderShipment>> listResponse = orderShipmentReadService.findByAfterSaleOrderIdAndOrderLevel(afterSaleOrderId, OrderLevel.SHOP);
                 List<Integer> orderShipMentStatusList = listResponse.getResult().stream().map(OrderShipment::getStatus).collect(Collectors.toList());
                 log.info("HK SHIPMENT DONE LISTENER for change,orderShipMentStatusList is {}", orderShipMentStatusList);
-                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue())
+                if (!orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SHIP.getValue()) &&
+                        !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_MPOS_RECEIVE.getValue())
                         && !orderShipMentStatusList.contains(MiddleShipmentsStatus.SYNC_HK_ING.getValue()) &&
                         !orderShipMentStatusList.contains(MiddleShipmentsStatus.WAIT_SYNC_HK.getValue())) {
                     Response<Boolean> resRlt = refundWriteLogic.updateStatusLocking(refund, MiddleOrderEvent.SHIP.toOrderOperation());

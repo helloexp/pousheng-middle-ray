@@ -45,7 +45,7 @@ public class BizOperationClient {
                 .acceptCharset(HttpRequest.CHARSET_UTF8).connectTimeout(HttpTime).readTimeout(HttpTime);
         String body = r.body();
         if (r.ok()){
-            log.info("request to middle api {} with params: {} success response body", host + "/" + path, params,body);
+            log.info("request to middle api {} with params: {} success response body:{}", host + "/" + path, params,body);
             Boolean isSuccess = Boolean.parseBoolean(body);
             if (isSuccess){
                 return Response.ok();
@@ -54,7 +54,7 @@ public class BizOperationClient {
             }
 
         } else{
-            log.info("request to middle api {} with params: {} fail response body", host + "/" + path, params,body);
+            log.info("request to middle api {} with params: {} fail response body:{}", host + "/" + path, params,body);
             return Response.fail("request.middle.fail");
         }
     }

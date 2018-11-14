@@ -1070,6 +1070,8 @@ public class Refunds {
         for (RefundItem refundItem :existRefundChangeItems){
             if (editSkuCodeAndApplyQuantityMap.containsKey(refundItem.getSkuCode())){
                 refundItem.setApplyQuantity(editSkuCodeAndApplyQuantityMap.get(refundItem.getSkuCode()));
+                //重新计算商品总净价，商品总进价等于商品净价*数量
+                refundItem.setCleanFee(editSkuCodeAndApplyQuantityMap.get(refundItem.getSkuCode())*refundItem.getCleanPrice());
             }
             newRefundChangeItems.add(refundItem);
         }

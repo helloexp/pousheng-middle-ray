@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
+import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
@@ -28,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 中台业务处理---处理失败失败的任务job
@@ -113,6 +115,13 @@ public class CompensateBizFailedJob {
                     continue;
                 }
                 PoushengCompensateBiz compensateBiz = result.getResult();
+
+                //导出的失败不重试
+                if (Objects.equals(compensateBiz.getBizType(), PoushengCompensateBizType.EXPORT_TRADE_BILL.name())){
+                    log.warn("fail compensate biz is export ,id {} so skip",compensateBiz.getId());
+                    continue;
+                }
+
                 //乐观锁控制更新为处理中
                 Response<Boolean> rU = compensateBizWriteService.updateStatus(compensateBiz.getId(), PoushengCompensateBizStatus.FAILED.name(), PoushengCompensateBizStatus.PROCESSING.name());
                 if (!rU.isSuccess()) {

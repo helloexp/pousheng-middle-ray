@@ -93,7 +93,7 @@ public class ItemMappings {
         biz.setBizType(PoushengCompensateBizType.IMPORT_ITEM_PUSH_RATIO.toString());
         biz.setContext(url);
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC);
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.pousheng.middle.web.biz.job;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.order.dto.PoushengCompensateBizCriteria;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -9,6 +11,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.biz.controller.BizOperationClient;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.zookeeper.leader.HostLeader;
@@ -20,6 +23,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -35,11 +39,14 @@ public class CompensateBizExportWaitHandleJob {
     @Autowired
     private PoushengCompensateBizReadService compensateBizReadService;
     @Autowired
-    private PoushengCompensateBizWriteService compensateBizWriteService;
-    @Autowired
     private CompensateBizProcessor compensateBizProcessor;
     @Autowired
     private HostLeader hostLeader;
+    @Autowired
+    private CompensateBizLogic compensateBizLogic;
+    @Autowired
+    private BizOperationClient operationClient;
+
 
 
     @Scheduled(cron = "0 */7 * * * ?")
@@ -74,20 +81,21 @@ public class CompensateBizExportWaitHandleJob {
                 if (compensateBiz.getCnt()>3){
                     continue;
                 }
-                if (!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.EXPORT_TRADE_BILL.name())
-                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_SHOP_SKU_RULE.name())
-                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_WAREHOUSE_SKU_RULE.name())
-                        &&!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.IMPORT_ITEM_PUSH_RATIO.name())){
+                if (!Objects.equals(compensateBiz.getBizType(),PoushengCompensateBizType.EXPORT_TRADE_BILL.name())){
                     log.warn("file compensate biz not right ,id {},bizType {}",compensateBiz.getId(),compensateBiz.getBizType());
                     continue;
                 }
+                Map<String,Object> params = Maps.newHashMap();
+                params.put("id",compensateBiz.getId());
+                params.put("currentStatus",compensateBiz.getStatus());
+                params.put("newStatus",PoushengCompensateBizStatus.PROCESSING.name());
                 //乐观锁控制更新为处理中
-                Response<Boolean> rU=  compensateBizWriteService.updateStatus(compensateBiz.getId(),compensateBiz.getStatus(),PoushengCompensateBizStatus.PROCESSING.name());
+                Response<Boolean> rU=  operationClient.put("api/biz/update/status",params);
                 if (!rU.isSuccess()){
                     continue;
                 }
                 //业务处理
-                this.process(compensateBiz);
+                compensateBizLogic.process(compensateBiz);
 
             }
             pageNo++;
@@ -99,18 +107,6 @@ public class CompensateBizExportWaitHandleJob {
 
 
 
-    private void process(PoushengCompensateBiz compensateBiz) {
-        try{
-            compensateBizProcessor.doProcess(compensateBiz);
-            compensateBizWriteService.updateStatus(compensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
-        }catch (BizException e0){
-            log.error("process pousheng  biz failed,id is {},bizType is {},caused by {}",compensateBiz.getId(),compensateBiz.getBizType(),e0);
-            compensateBizWriteService.updateStatus(compensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
-            compensateBizWriteService.updateLastFailedReason(compensateBiz.getId(),e0.getMessage(),(compensateBiz.getCnt()+1));
-        }catch (Exception e1){
-            log.error("process pousheng  biz failed,id is {},bizType is {},caused by {}",compensateBiz.getId(),compensateBiz.getBizType(),e1);
-            compensateBizWriteService.updateStatus(compensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
-            compensateBizWriteService.updateLastFailedReason(compensateBiz.getId(),e1.getMessage(),(compensateBiz.getCnt()+1));
-        }
-    }
+
+
 }

@@ -118,6 +118,7 @@ gateway:
 open.api.app.key: ${OPEN_API_APP_KEY}
 open.api.secret: ${OPEN_API_SECRET}
 open.api.gateway: ${OPEN_API_GATEWAY}
+middle.api.gateway: ${MIDDLE_API_GATEWAY}
 
 
 azure:

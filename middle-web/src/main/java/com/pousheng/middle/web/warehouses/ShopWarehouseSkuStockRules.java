@@ -133,7 +133,7 @@ public class ShopWarehouseSkuStockRules {
         biz.setContext(mapper.toJson(info));
         biz.setBizId(info.getOpenShopId() + "-" + info.getWarehouseId());
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
-        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_EXPORT_COMPENSATE_BIZ_TOPIC));
+        return Response.ok(compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC));
     }
 
 

@@ -33,7 +33,7 @@ public class CompensateExportBizConsumerMessageListener{
             log.debug("CompensateExportBizConsumerMessageListener onMessage,message {}",message);
         }
 
-        compensateBizLogic.consumeMqMessage(message);
+        compensateBizLogic.consumeExportMqMessage(message);
 
     }
 }

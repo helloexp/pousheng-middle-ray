@@ -1076,7 +1076,7 @@ public class Refunds {
             newRefundChangeItems.add(refundItem);
         }
         Map<String, String> refundExtra = refund.getExtra();
-        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,JsonMapper.nonDefaultMapper().toJson(newRefundChangeItems));
+        refundExtra.put(TradeConstants.REFUND_CHANGE_ITEM_INFO,JsonMapper.nonEmptyMapper().toJson(newRefundChangeItems));
         refund.setExtra(refundExtra);
         return refundWriteLogic.update(refund);
     }

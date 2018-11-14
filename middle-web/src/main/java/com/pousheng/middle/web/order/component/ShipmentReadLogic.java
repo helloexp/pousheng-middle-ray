@@ -14,6 +14,7 @@ import com.pousheng.middle.order.enums.MiddleRefundType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.impl.service.PsShipmentItemReadServiceImpl;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
+import com.pousheng.middle.shop.dto.MemberShop;
 import com.pousheng.middle.warehouse.cache.WarehouseCacher;
 import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.SkuCodeAndQuantity;
@@ -21,6 +22,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.model.WarehouseCompanyRule;
 import com.pousheng.middle.warehouse.service.WarehouseCompanyRuleReadService;
+import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
@@ -80,6 +82,8 @@ public class ShipmentReadLogic {
     private ShopCacher shopCacher;
     @Autowired
     private ShipmentReadLogic shipmentReadLogic;
+    @Autowired
+    private MemberShopOperationLogic memberShopOperationLogic;
 
     /**
      * JIT店铺编号
@@ -403,24 +407,24 @@ public class ShipmentReadLogic {
      */
     private void setShopTelInfo(Shipment shipment,ShipmentExtra shipmentExtra) {
         //1:店发，2：仓发
-        if(Objects.equals(shipment.getShipWay(),1)){
+        if(Objects.equals(shipment.getShipWay(),1)) {
             Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-            if(null == shop){
-                shipmentExtra.setWarehouseTelephone("");
+            if (null != shop) {
+                //设置店发的手机号,关联会员中心获取
+                com.google.common.base.Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(), 1, shop.getBusinessId().toString());
+                if (memberShopOptional.isPresent()) {
+                    MemberShop memberShop = memberShopOptional.get();
+                    shipmentExtra.setWarehouseTelephone(memberShop.getTelphone());
+                }
             }
-            //设置发货仓的手机号
-            shipmentExtra.setWarehouseTelephone(shop.getPhone());
         }
-        if(Objects.equals(shipment.getShipWay(),2)){
-            WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
-            if(null == warehouse){
-                shipmentExtra.setWarehouseTelephone("");
-            }
-            //设置发货仓的手机号
-            shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
-        }
-       
-        
+        if (Objects.equals(shipment.getShipWay(), 2)) {
+                WarehouseDTO warehouse = warehouseCacher.findById(shipmentExtra.getWarehouseId());
+                if (null != warehouse) {
+                    //设置发货仓的手机号
+                    shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
+                }
+         }
     }
     
 

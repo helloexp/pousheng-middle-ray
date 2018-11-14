@@ -1740,7 +1740,8 @@ public class ShipmentWiteLogic {
             SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCodeAndQuantity.getSkuOrderId(), skuCodeAndQuantity.getSkuCode());
             orderWriteService.skuOrderStatusChanged(skuOrder.getId(), skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue());
             Map<String, String> extraMap = skuOrder.getExtra();
-            Integer waitHandleNumber = skuOrder.getQuantity();
+            //存在数量级拆单 所以不能直接用skuorder的数量 需要回滚对应的子单数量
+            Integer waitHandleNumber = Integer.parseInt(extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER) == null ? "0" : extraMap.get(TradeConstants.WAIT_HANDLE_NUMBER)) + skuCodeAndQuantity.getQuantity();
             extraMap.put(TradeConstants.WAIT_HANDLE_NUMBER, String.valueOf(waitHandleNumber));
             Response<Boolean> response1 = orderWriteService.updateOrderExtra(skuOrder.getId(), OrderLevel.SKU, extraMap);
             if (!response1.isSuccess()) {

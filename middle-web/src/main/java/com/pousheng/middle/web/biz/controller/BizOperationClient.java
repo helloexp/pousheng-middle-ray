@@ -46,7 +46,13 @@ public class BizOperationClient {
         String body = r.body();
         if (r.ok()){
             log.info("request to middle api {} with params: {} success response body", host + "/" + path, params,body);
-            return (Response<Boolean>)mapper.fromJson(body, Response.class);
+            Boolean isSuccess = Boolean.parseBoolean(body);
+            if (isSuccess){
+                return Response.ok();
+            } else {
+                return Response.fail("update.biz.fail");
+            }
+
         } else{
             log.info("request to middle api {} with params: {} fail response body", host + "/" + path, params,body);
             return Response.fail("request.middle.fail");

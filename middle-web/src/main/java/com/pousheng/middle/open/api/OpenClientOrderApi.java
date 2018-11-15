@@ -2,15 +2,12 @@ package com.pousheng.middle.open.api;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.component.OpenOrderConverter;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
-import com.pousheng.middle.web.utils.ApiParamUtil;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
@@ -107,7 +104,11 @@ public class OpenClientOrderApi {
                     biz.setContext(mapper.toJson(openFullOrderInfo));
                 }
                 compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
-            }catch (Exception e){
+            } catch (ServiceException se) {
+                if (!"shop.order.is.exist".equals(se.getMessage())) {
+                    throw new OPServerException(200, se.getMessage());
+                }
+            } catch (Exception e) {
                 log.error("create open  order:{} failed,caused by {}",orderInfo, Throwables.getStackTraceAsString(e));
                 throw new OPServerException(200,"create.middle.order.fail");
             }

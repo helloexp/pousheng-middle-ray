@@ -65,6 +65,8 @@ public class yyEDIOpenApi {
     private ReceiveYyediResultLogic receiveYyediResultLogic;
     @RpcConsumer
     private ShipmentWriteService shipmentWriteService;
+    @Autowired
+    private OrderReadLogic orderReadLogic;
 
 
     private final static DateTimeFormatter DFT = DateTimeFormat.forPattern("yyyyMMddHHmmss");
@@ -182,6 +184,11 @@ public class yyEDIOpenApi {
                         count++;
                         continue;
                     }
+
+                    //校验物流公司是否正确
+                    orderReadLogic.makeExpressNameByhkCode(yyEdiShipInfo.getShipmentCorpCode());
+
+
                     //校验成功，直接转存至okShipInfos
                     okShipInfos.add(yyEdiShipInfo);
                 } catch (Exception e) {

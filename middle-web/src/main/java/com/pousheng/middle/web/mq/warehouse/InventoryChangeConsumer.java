@@ -52,15 +52,16 @@ public class InventoryChangeConsumer {
      * @return
      */
     @MQSubscribe(topic = "poushengInventoryTopic", consumerGroup = "inventoryChangeGroup",
-            consumeMode = ConsumeMode.CONCURRENTLY,consumeTimeout = 3L)
+            consumeMode = ConsumeMode.CONCURRENTLY,consumeTimeout = 5L)
     public Response<Boolean> handleInventoryChange(String skuCodeJson) {
+        Stopwatch stopwatch = Stopwatch.createStarted();
         if (ObjectUtils.isEmpty(skuCodeJson)) {
             log.error("fail to handle inventory change, because the skuCode is empty");
             return Response.fail("inventory.change.handle.fail");
         }
 
         try {
-            log.info("inventory changed: start to consume mq message, msg:{}",skuCodeJson);
+            log.info("[STOCK-PUSH-CONSUME-START], msg:{}",skuCodeJson);
 
             List<String> skuCodes = Lists.newArrayList();
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);
@@ -87,15 +88,10 @@ public class InventoryChangeConsumer {
                                 Throwables.getStackTraceAsString(e));
                         }
                     }
-                    Stopwatch stopwatch = Stopwatch.createStarted();
+
                     stockPusherClient.submit(skuCodes);
-                    stopwatch.stop();
-                    log.info("[STOCK-PUSH-CONSUME-END] cost {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 } else {
-                    Stopwatch stopwatch = Stopwatch.createStarted();
                     inventoryPusherClient.submit(changeDTOS);
-                    stopwatch.stop();
-                    log.info("[STOCK-PUSH-CONSUME-END] cost {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 }
             }
 
@@ -103,9 +99,7 @@ public class InventoryChangeConsumer {
             log.error("fail to handle inventory change, because: {}", Throwables.getStackTraceAsString(e));
             return Response.fail("inventory.change.handle.fail");
         }
-
-        log.info("inventory changed: success to consume mq message");
-
+        log.info("[STOCK-PUSH-CONSUME-END] cost {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
         return Response.ok(Boolean.TRUE);
     }
 

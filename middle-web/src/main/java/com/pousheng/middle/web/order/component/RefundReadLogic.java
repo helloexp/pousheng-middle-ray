@@ -325,6 +325,10 @@ public class RefundReadLogic {
         //获取已经退款的金额
         Long alreadyRefundFee = 0L;
         for (Refund refund : refunds) {
+            RefundExtra refundExtra =this.findRefundExtra(refund);
+            if (!Objects.equals(refundExtra.getShipmentId(), shipmentCode)) {
+                continue;
+            }
             List<RefundItem> refundItems = this.findRefundItems(refund);
             List<String> skuCodes = refundItems.stream().map(RefundItem::getSkuCode).collect(Collectors.toList());
             for (String skuCode : editSkuCodes) {

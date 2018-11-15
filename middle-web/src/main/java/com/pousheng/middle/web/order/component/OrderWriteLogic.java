@@ -170,6 +170,7 @@ public class OrderWriteLogic {
             updateSkuOrder.setId(skuOrder.getId());
             updateSkuOrder.setExtra(skuOrder.getExtra());
             updateSkuOrder.setOrderId(skuOrder.getOrderId());
+            updateSkuOrder.setStatus(skuOrder.getStatus());
             updateSkuOrders.add(updateSkuOrder);
             //如果剩余数量为0则更新子单状态为待发货
             if (handleRes.getResult() == 0) {

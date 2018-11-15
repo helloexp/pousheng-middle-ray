@@ -153,6 +153,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
         } else {
             refundList = fillRefundItem(shopOrder, refund, skuOfRefundList.get(0), refundExtra);
         }
+        log.info("refundList {} ,size{}", refundList.toString(), refundList.size());
         return refundList;
 
 
@@ -173,6 +174,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 SkuOrder skuOrder;
                 if (StringUtils.hasText(skuOfRefund.getChannelSkuId())) {
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndOutSkuId(shopOrder.getId(), skuOfRefund.getChannelSkuId());
+                    skuOfRefund.setSkuCode(skuOrder.getSkuCode());
                 }else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())){
                     skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(),skuOfRefund.getChannelSkuOrderId());
                     skuOfRefund.setSkuCode(skuOrder.getSkuCode());
@@ -252,7 +254,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
             extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItemList));
-            Map<String, String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();
+            Map<String, String> tagMap = Maps.newHashMap();
             tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
 
             refund.setExtra(extraMap);
@@ -276,6 +278,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             SkuOrder skuOrder;
             if (StringUtils.hasText(skuOfRefund.getChannelSkuId())) {
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndOutSkuId(shopOrder.getId(), skuOfRefund.getChannelSkuId());
+                skuOfRefund.setSkuCode(skuOrder.getSkuCode());
+            }else if (StringUtils.hasText(skuOfRefund.getChannelSkuOrderId())){
+                skuOrder = orderReadLogic.findSkuOrderByShopOrderIfAndIOutSkuOrderId(shopOrder.getId(),skuOfRefund.getChannelSkuOrderId());
+                skuOfRefund.setSkuCode(skuOrder.getSkuCode());
             } else {
                 skuOrder = orderReadLogic.findSkuOrderByShopOrderIdAndSkuCode(shopOrder.getId(), skuOfRefund.getSkuCode());
             }
@@ -284,6 +290,10 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
             if (!CollectionUtils.isEmpty(shipments)) {
                 for (Shipment shipment : shipments) {
+                    if (!Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue()) && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())) {
+                        log.info("shipment is not shipped shipmentCode {} ,status {}", shipment.getShipmentCode(), shipment.getStatus());
+                        continue;
+                    }
                     List<RefundItem> refundItemList = Lists.newArrayList();
                     Map<String, String> extraMap = originRefund.getExtra() != null ? originRefund.getExtra() : Maps.newHashMap();
                     Refund refund = new Refund();
@@ -336,7 +346,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     }
 
                     refundItem.setSkuCode(skuOrder.getSkuCode());
-                    refundItem.setSkuOrderId(skuOrder.getId());
+                    refundItem.setSkuOrderId(shipmentItem.getSkuOrderId());
                     refundItem.setOutSkuCode(skuOrder.getOutSkuId());
                     //获取skuCode
                     try {
@@ -349,8 +359,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     refundItemList.add(refundItem);
                     extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
                     extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItemList));
-                    Map<String, String> tagMap = refund.getTags() != null ? refund.getTags() : Maps.newHashMap();
+                    Map<String, String> tagMap = Maps.newHashMap();
                     tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
+                    refund.setFee(refundItem.getFee());
                     refund.setExtra(extraMap);
                     refund.setTags(tagMap);
                     refundList.add(refund);
@@ -367,7 +378,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
     @Override
     protected void fillLogisticsInfo(Refund refund, String shipmentSerialNo, String shipmentCorpCode, String shipmentCorpName) {
-
+        log.info("fill address {} ,size{}", refund.toString());
         if (Strings.isNullOrEmpty(shipmentSerialNo)) {
             return;
         }

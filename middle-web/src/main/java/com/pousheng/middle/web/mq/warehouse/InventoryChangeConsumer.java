@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.mq.warehouse;
 
 import com.alibaba.fastjson.JSON;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.open.stock.InventoryPusherClient;
@@ -14,6 +15,7 @@ import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -21,6 +23,7 @@ import org.springframework.util.ObjectUtils;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 库存发生变动，接收mq消息
@@ -84,10 +87,15 @@ public class InventoryChangeConsumer {
                                 Throwables.getStackTraceAsString(e));
                         }
                     }
-
+                    Stopwatch stopwatch = Stopwatch.createStarted();
                     stockPusherClient.submit(skuCodes);
+                    stopwatch.stop();
+                    log.info("[STOCK-PUSH-CONSUME-END] cost {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 } else {
+                    Stopwatch stopwatch = Stopwatch.createStarted();
                     inventoryPusherClient.submit(changeDTOS);
+                    stopwatch.stop();
+                    log.info("[STOCK-PUSH-CONSUME-END] cost {} ms", stopwatch.elapsed(TimeUnit.MILLISECONDS));
                 }
             }
 

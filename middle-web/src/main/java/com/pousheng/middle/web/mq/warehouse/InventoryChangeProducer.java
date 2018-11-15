@@ -54,7 +54,7 @@ public class InventoryChangeProducer {
         try {
             log.info("inventory changed: start to send mq message out");
 
-            List<List<InventoryChangeDTO>> parts = Lists.partition(skuCodeList, 1);
+            List<List<InventoryChangeDTO>> parts = Lists.partition(skuCodeList, 20);
             for (List<InventoryChangeDTO> part : parts) {
                 SendResult sendResult = sendData(poushengInventoryTopic, JSON.toJSONString(part), INVENTORY_CHANGE_SEND_ERROR_KEY);
                 if (SendStatus.SEND_OK != sendResult.getSendStatus()) {

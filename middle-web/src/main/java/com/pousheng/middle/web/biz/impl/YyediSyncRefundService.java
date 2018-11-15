@@ -215,6 +215,9 @@ public class YyediSyncRefundService implements CompensateBizService {
                             refund.getId(),refundItem.getSkuCode(),refundItem.getApplyQuantity(),refundConfirmItemAndQuantity.get(refundItem.getSkuCode()));
                     count++;
                 }
+            }else{
+                //如果有申请记录，因为申请记录不为0，实际退货又没有这个条码，默认申请数量与实际入库数量不一致
+                count++;
             }
         }
 
@@ -243,6 +246,9 @@ public class YyediSyncRefundService implements CompensateBizService {
                 if (refundConfirmItemAndQuantity.containsKey(refundItem.getSkuCode())){
                     String finalRefundQuantity = refundConfirmItemAndQuantity.get(refundItem.getSkuCode());
                     refundItem.setFinalRefundQuantity(Integer.valueOf(finalRefundQuantity));
+                }else{
+                    //如果没有返回记录，则说明实际退货数量为0
+                    refundItem.setFinalRefundQuantity(0);
                 }
             }
             extra.put(TradeConstants.REFUND_ITEM_INFO, JsonMapper.nonEmptyMapper().toJson(refundItems));

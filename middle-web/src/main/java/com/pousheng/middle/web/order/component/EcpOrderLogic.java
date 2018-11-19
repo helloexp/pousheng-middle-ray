@@ -93,7 +93,7 @@ public class EcpOrderLogic {
                 OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
                 if (shipment.getShipWay() == 2) {
-                    Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+                    Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment, null);
                     if (!response.isSuccess()) {
                         log.error("fail to notice oxo store order  shipment (id:{})  ", shipmentId);
                         OrderOperation failOperation = MiddleOrderEvent.SYNC_FAIL.toOrderOperation();

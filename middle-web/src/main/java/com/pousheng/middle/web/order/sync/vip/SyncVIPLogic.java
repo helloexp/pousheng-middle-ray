@@ -129,7 +129,7 @@ public class SyncVIPLogic {
      * @param shipment
      * @return
      */
-    public Response<Boolean> syncOrderStoreToVIP(Shipment shipment) {
+    public Response<Boolean> syncOrderStoreToVIP(Shipment shipment, String mailNo) {
         log.debug("VIP-OXO-syncOrderStoreToVIP,params:shipment={}", shipment.toString());
         try {
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
@@ -150,7 +150,7 @@ public class SyncVIPLogic {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), response.getError());
                 return Response.fail(response.getError());
             }
-            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId), null, null);
+            Response<Boolean> deliveryResp = vipOrderStoreService.confirmStoreDelivery(shipment.getShopId(), shopOrder.getOutId(), vipWarehouseMappingProxy.findByWarehouseId(warehouseId), mailNo, null);
             if (!deliveryResp.isSuccess()) {
                 log.error("fail to order store , shipmentId:{} fail,error:{}", shipment.getId(), deliveryResp.getError());
                 return Response.fail(deliveryResp.getError());

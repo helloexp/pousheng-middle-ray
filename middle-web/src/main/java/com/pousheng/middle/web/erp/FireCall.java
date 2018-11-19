@@ -1095,13 +1095,12 @@ public class FireCall {
      * @param shipmentId
      */
     @RequestMapping(value = "/confirm/vip/delivery", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void confirmStoreDelivery(@RequestParam Long shipmentId) {
+    public void confirmStoreDelivery(@RequestParam Long shipmentId, @RequestParam(required = false) String mailNo) {
         Shipment shipment = shipmentReadLogic.findShipmentById(shipmentId);
-        Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment);
+        Response<Boolean> response = syncVIPLogic.syncOrderStoreToVIP(shipment, mailNo);
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }
-
     }
 
 

@@ -247,6 +247,10 @@ public class YyediSyncShipmentService implements CompensateBizService {
         extraMap.put(TradeConstants.SHIPMENT_EXTRA_INFO, mapper.toJson(shipmentExtra));
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, mapper.toJson(items));
         update.setExtra(extraMap);
+
+
+        log.info("start to update shipment(id:{}) extraMap to :{} ", shipmentId, extraMap);
+
         //更新基本信息
         Response<Boolean> updateRes = shipmentWriteService.update(update);
         if (!updateRes.isSuccess()) {

@@ -134,28 +134,30 @@ public class YyediSyncRefundService implements CompensateBizService {
                 param1.put("refundId", refund.getId());
                 autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_SYNC_SALE_REFUSE_TO_HK, r.getError());
             }
-            return;
+        } else {
+            //同步pos单到恒康
+            //判断pos单是否需要同步恒康,如果退货仓数量全是0
+            String itemInfo = extra.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
+
+            List<YYEdiRefundConfirmItem> items = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
+            if (validateYYConfirmedItems(items)) {
+                //生成售后单同步恒康生成pos的任务
+                PoushengCompensateBiz biz = new PoushengCompensateBiz();
+                biz.setBizId(String.valueOf(refund.getId()));
+                biz.setBizType(PoushengCompensateBizType.SYNC_AFTERSALE_POS_TO_HK.name());
+                biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
+                compensateBizLogic.createBizAndSendMq(biz, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+            }
+
+            this.partRefundDoneProcess(refund, shipment, items);
+
+            //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
+            refundWriteLogic.getThirdRefundResult(refund);
+
         }
-        //同步pos单到恒康
-        //判断pos单是否需要同步恒康,如果退货仓数量全是0
-        String itemInfo = extra.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO);
-
-        List<YYEdiRefundConfirmItem> items = JsonMapper.nonEmptyMapper().fromJson(itemInfo, JsonMapper.nonEmptyMapper().createCollectionType(List.class, YYEdiRefundConfirmItem.class));
-        if (validateYYConfirmedItems(items)) {
-            //生成售后单同步恒康生成pos的任务
-            PoushengCompensateBiz biz = new PoushengCompensateBiz();
-            biz.setBizId(String.valueOf(refund.getId()));
-            biz.setBizType(PoushengCompensateBizType.SYNC_AFTERSALE_POS_TO_HK.name());
-            biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.name());
-            compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
-        }
-
-        this.partRefundDoneProcess(refund, shipment, items);
-
-
         //vip 需要通知vip
-        ShopOrder shopOrder= orderReadLogic.findShopOrderByCode(refund.getReleOrderCode());
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+        ShopOrder shopOrder = orderReadLogic.findShopOrderByCode(refund.getReleOrderCode());
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())) {
             Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
             if (!response.isSuccess()) {
                 log.error("fail to notice vip refund order  (id:{})  ", refund.getId());
@@ -165,16 +167,6 @@ public class YyediSyncRefundService implements CompensateBizService {
                 return;
             }
         }
-
-        //如果是淘宝的退货退款单，会将主动查询更新售后单的状态
-        refundWriteLogic.getThirdRefundResult(refund);
-
-
-
-
-
-
-
     }
 
     /**

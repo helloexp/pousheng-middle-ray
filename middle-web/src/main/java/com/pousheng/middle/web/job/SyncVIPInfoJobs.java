@@ -30,7 +30,7 @@ import java.util.List;
  * @date 2018/9/28
  */
 @Slf4j
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.vip.task.consume", havingValue = "true", matchIfMissing = false)
 @RestController
 public class SyncVIPInfoJobs {
 
@@ -54,6 +54,7 @@ public class SyncVIPInfoJobs {
     /**
      * 每1小时触发一次 同步唯品会物流
      */
+    @RequestMapping("api/my/test")
     @Scheduled(cron = "0 0 0/1 * * ?")
     public void synchronizeTrack() {
         if (!hostLeader.isLeader()) {
@@ -61,7 +62,7 @@ public class SyncVIPInfoJobs {
             return;
         }
         log.info("START JOB VipOrderLogisticsTrackJobs.synchronizeTrack");
-        Response<List<OpenShop>> response = openShopReadService.findByChannel(MiddleChannel.VIP.getValue());
+        Response<List<OpenShop>> response = openShopReadService.findByChannel(MiddleChannel.VIPOXO.getValue());
         if (!response.isSuccess()) {
             throw new JsonResponseException(response.getError());
         }
@@ -77,7 +78,6 @@ public class SyncVIPInfoJobs {
 
     }
 
-    @RequestMapping("api/my/test")
     @Scheduled(cron = "0 0/5 * * * ?")
     public void syncWarehouseMapping() {
         if (!hostLeader.isLeader()) {
@@ -86,7 +86,7 @@ public class SyncVIPInfoJobs {
         }
         log.info("START JOB VipOrderLogisticsTrackJobs.syncWarehouseMapping");
 
-        Response<List<OpenShop>> resp = openShopReadService.findByChannel(MiddleChannel.VIP.getValue());
+        Response<List<OpenShop>> resp = openShopReadService.findByChannel(MiddleChannel.VIPOXO.getValue());
         if (!resp.isSuccess()) {
             throw new JsonResponseException(resp.getError());
         }

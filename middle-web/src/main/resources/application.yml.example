@@ -147,8 +147,6 @@ jd.yunding.app.key:pousheng
 jd.yunding.secret: 6a0e@93204aefe45d47f6e488
 jd.yunding.gateway: http://114.67.68.158:8008/api/gateway
 
-is.stock.task.consume:  false
-
 trade.job.enable: true
 
 order.current.ip: ${TERMINUS_HOST:localhost}
@@ -198,6 +196,20 @@ thread.executor.max.pool.size: 4
 #线程池默认队列默认最大数量
 thread.executor.queue.capacity: 5000
 
+# job开关 用于商品分组
+is.item.group.task.consume: true
+
+# job开关 用于商品分组创建任务
+is.item.group.task.create: true
+
+is.stock.task.consume: true
+
+# 用于接受日志信息
+is.stock.log.consume: true
+
+# 用于唯品会定时任务
+is.vip.task.consume: true
+
 
 # 通用biz的mq处理类的开关
 biz.common.topic.enable: true
@@ -216,3 +228,6 @@ biz.failed.job.enable: false
 
 
 middle.api.gateway: http://api-middle-test.pousheng.com
+
+# 定时刷新Token开关
+open.client.refresh.token.job.enable: false

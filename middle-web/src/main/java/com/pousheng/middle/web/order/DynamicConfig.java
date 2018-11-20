@@ -1,5 +1,6 @@
 package com.pousheng.middle.web.order;
 
+import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.redis.utils.JedisTemplate;
@@ -24,6 +25,8 @@ public class DynamicConfig {
 
     @Autowired
     private JedisTemplate jedisTemplate;
+    @Autowired
+    private ServerSwitchOnOperationLogic serverSwitchOnOperationLogic;
 
     @ApiOperation("设置每组push数量")
     @RequestMapping(value = "/group/push/size", method = RequestMethod.PUT)
@@ -62,5 +65,28 @@ public class DynamicConfig {
             jedis.set(key, swit);
         });
     }
+
+
+    @ApiOperation("开启中台服务")
+    @RequestMapping(value = "/server/open", method = RequestMethod.PUT)
+    public String openServer() {
+        serverSwitchOnOperationLogic.openServer();
+        return "success";
+    }
+
+    @ApiOperation("关闭中台服务")
+    @RequestMapping(value = "/server/close", method = RequestMethod.PUT)
+    public String closeServer() {
+        serverSwitchOnOperationLogic.closeServer();
+        return "success";
+    }
+
+
+    @ApiOperation("查询中台服务")
+    @RequestMapping(value = "/server/get", method = RequestMethod.GET)
+    public Boolean getServer() {
+        return serverSwitchOnOperationLogic.serverIsOpen();
+    }
+
 
 }

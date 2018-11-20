@@ -262,7 +262,7 @@ public class WarehouseRules {
         List<WarehouseShopGroup> shopGroups = warehouseRuleComponent.findWarehouseShopGropsByRuleId(ruleId);
         WarehouseShopGroup warehouseShopGroup = shopGroups.get(0);
         OpenShop openShop = orderReadLogic.findOpenShopByShopId(warehouseShopGroup.getShopId());
-        if (Objects.equal(MiddleChannel.VIP.getValue(), openShop.getChannel())) {
+        if (Objects.equal(MiddleChannel.VIPOXO.getValue(), openShop.getChannel())) {
             ArrayList<WarehouseRuleItem> ruleItemArrayList = Lists.newArrayList(warehouseRuleItems);
             List<String> invalidWarehouse = Lists.newArrayList();
             for (WarehouseRuleItem it : ruleItemArrayList) {

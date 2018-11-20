@@ -85,7 +85,7 @@ public class WarehouseChooser {
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
             needSingle = true;
         }
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())) {
             needSingle = true;
         }
         Response<List<Warehouses4Address>> r = warehouseAddressRuleClient.findByReceiverAddressIds(shopOrder.getShopId(), addressIds);

@@ -1,15 +1,23 @@
 package com.pousheng.middle.web.order.job;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.MiddleRefundCriteria;
 import com.pousheng.middle.order.dto.RefundItem;
+import com.pousheng.middle.order.dto.RefundPaging;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
+import com.pousheng.middle.order.enums.MiddleChannel;
+import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.OrderWriteLogic;
 import com.pousheng.middle.web.order.component.RefundReadLogic;
 import com.pousheng.middle.web.order.component.RefundWriteLogic;
+import com.pousheng.middle.web.order.sync.erp.SyncErpReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
+import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.parana.order.model.*;
@@ -51,6 +59,9 @@ public class RefundJob {
     private RefundReadService refundReadService;
     @RpcConsumer
     private OrderWriteService orderWriteService;
+    @Autowired
+    private SyncErpReturnLogic syncErpReturnLogic;
+
 
     /**
      * 每隔20分钟执行一次,拉取中台售中退款的退款单
@@ -145,4 +156,45 @@ public class RefundJob {
         log.info("END JOB RefundJob.doneRefund");
     }
 
+    /**
+     * @Description 定时同步VIP OXO 待同步的售后单
+     * @Date        2018/11/22
+     * @param
+     * @return
+     */
+    //@Scheduled(cron = "0 0/5 * * * ? ")
+    //todo VIP OXO售后单暂不进行自动审核和同步EDI
+    public void syncVipOxoRefundToYYedi(){
+        log.debug("VIP-OXO-REFUND-SYNC-YYEDI");
+        int pageNo = 1;
+        while(true){
+            //查询待同步HK VIPOXO的售后单
+            MiddleRefundCriteria criteria = new MiddleRefundCriteria();
+            criteria.setStatus(Lists.newArrayList(MiddleRefundStatus.WAIT_SYNC_HK.getValue()));
+            criteria.setChannels(Lists.newArrayList(MiddleChannel.VIPOXO.getValue()));
+            Response<Paging<RefundPaging>> response = refundReadLogic.refundPaging(criteria);
+            if (!response.isSuccess()) {
+                log.error("find refund by criteria:{} fail,error:{}", criteria, response.getError());
+                throw new JsonResponseException(response.getError());
+            }
+            List<RefundPaging> refundPagings = response.getResult().getData();
+
+            if (refundPagings.isEmpty()){
+                log.info("all refunds done pageNo is {}",pageNo);
+                break;
+            }
+            for (RefundPaging refundPaging:refundPagings) {
+                log.debug("VIP-OXO-REFUND-SYNC-YYEDI, refundId:{}",refundPaging.getRefund().getId());
+                //同步售后单
+                Refund refund = refundPaging.getRefund();
+                Refund syncRefund = refundReadLogic.findRefundById(refund.getId());
+                Response<Boolean> syncRes = syncErpReturnLogic.syncReturn(syncRefund);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync VIP OXO refund(id:{}) to hk fail,error:{}", refund.getId(),
+                            syncRes.getError());
+                }
+            }
+            pageNo++;
+        }
+    }
 }

@@ -130,7 +130,7 @@ public class AdminOrderWriter {
             String ecpShipmentId = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_SHIPMENT_ID, shopOrder);
             Shipment shipment = shipmentReadLogic.findShipmentById(Long.valueOf(ecpShipmentId));
             //如果是唯品会的渠道 仓发需要同步订单并呼叫快递
-            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIPOXO.getValue())) {
                 OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);
                 if (shipment.getShipWay() == 2) {

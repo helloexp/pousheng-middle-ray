@@ -9,5 +9,7 @@ package com.pousheng.middle.web.redis;
 public class RedisConstants {
 
     public final static String PUSH_STOCK_LOG_KEY = "push:log:list:key";
+    //中台服务开关
+    public final static String SERVER_SWITCH_ON = "server-switch-no";
 
 }

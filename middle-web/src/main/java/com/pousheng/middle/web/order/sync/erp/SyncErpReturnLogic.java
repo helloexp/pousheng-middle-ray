@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.sync.erp;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.RefundExtra;
@@ -12,6 +13,7 @@ import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncRefundPosLogic;
+import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import com.pousheng.middle.web.order.sync.yjerp.SyncYJErpReturnLogic;
 import com.pousheng.middle.web.order.sync.yyedi.SyncYYEdiReturnLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -73,6 +75,8 @@ public class SyncErpReturnLogic {
     private SyncYJErpReturnLogic syncYJErpReturnLogic;
     @Autowired
     private WarehouseClient warehouseClient;
+    @Autowired
+    private SyncVIPLogic syncVIPLogic;
 
     /**
      * 对于退货退款和换货的售后单需要同步到yyedi，对于仅退款的售后单需要直接同步到恒康
@@ -108,11 +112,22 @@ public class SyncErpReturnLogic {
             }
         }
         //如果是店发的拒收单直接同步恒康不用管渠道
-        if (Objects.equals(shipment.getShipWay(),1)
-                && Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
-            return this.syncSaleRefuse(refund);
-
+        if (Objects.equals(shipment.getShipWay(), 1)
+                && Objects.equals(refund.getRefundType(), MiddleRefundType.REJECT_GOODS.value())) {
+            Response<Boolean> result = this.syncSaleRefuse(refund);
+            if (result.isSuccess() && Objects.equals(openShop.getChannel(), MiddleChannel.VIPOXO.getValue())) {
+                //店发直接通知唯品会  仓发的等仓库通知
+                Response<Boolean> response = syncVIPLogic.confirmReturnResult(refund);
+                if (!response.isSuccess()) {
+                    log.error("fail to notice vip refund order  (id:{})  ", refund.getId());
+                    Map<String, Object> param1 = Maps.newHashMap();
+                    param1.put("refundId", refund.getId());
+                    autoCompensateLogic.createAutoCompensationTask(param1, TradeConstants.FAIL_REFUND_TO_VIP, response.getError());
+                }
+            }
+            return result;
         }
+
         // 共享仓云聚售后拒收类型单
         if (Objects.equals(shipment.getShipWay(),2) && Objects.equals(refund.getRefundType(),MiddleRefundType.REJECT_GOODS.value())){
             if (syncYJErp(shipment.getShipId())) {

@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 @Component
 @Slf4j
 @MQConsumer
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.stock.log.consume", havingValue = "true", matchIfMissing = false)
 public class StockLogReceiver {
 
     @Autowired

@@ -19,8 +19,8 @@ public class VipWarehouseMappingDao extends MyBatisDao<VipWarehouseMapping> {
         return getSqlSession().selectOne(sqlId("findByWarehouseId"), warehouseId);
     }
 
-    public List<Long> findAllWarehouseIds() {
-        return getSqlSession().selectList(sqlId("findAllWarehouseIds"));
+    public List<VipWarehouseMapping> findAll() {
+        return getSqlSession().selectList(sqlId("findAll"));
     }
 
     public Boolean deleteByWarehouseId(Long warehouseId) {

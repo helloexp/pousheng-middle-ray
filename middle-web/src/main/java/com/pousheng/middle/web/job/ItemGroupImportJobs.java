@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  * @date 2018/5/11
  */
 
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "true", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.item.group.task.consume", havingValue = "true", matchIfMissing = false)
 @Slf4j
 @RestController
 public class ItemGroupImportJobs {

@@ -2,6 +2,7 @@ package com.pousheng.middle.mq.consumer;
 
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
+import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;
 import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
@@ -24,12 +25,21 @@ public class CompensateCommonBizConsumerMessageListener {
     @Autowired
     private CompensateBizLogic compensateBizLogic;
 
+    @Autowired
+    private ServerSwitchOnOperationLogic serverSwitchOn;
+
     @MQSubscribe(topic = MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC, consumerGroup = MqConstants.POUSHENG_MIDDLE_MQ_COMMON_CONSUMER_GROUP,
             consumeMode = ConsumeMode.CONCURRENTLY)
     public void commonOnMessage(String message) {
         if (log.isDebugEnabled()){
             log.debug("CompensateCommonBizConsumerMessageListener onMessage,message {}",message);
         }
+
+        if (!serverSwitchOn.serverIsOpen()){
+            log.info("current server is closed so skip handle message:{}",message);
+            return;
+        }
+
         compensateBizLogic.consumeMqMessage(message);
     }
 }

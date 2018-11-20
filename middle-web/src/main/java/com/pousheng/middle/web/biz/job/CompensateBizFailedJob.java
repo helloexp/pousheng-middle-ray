@@ -10,6 +10,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;
 import com.pousheng.middle.web.utils.mail.MailLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -57,6 +58,9 @@ public class CompensateBizFailedJob {
     @Value("${pousheng.msg.send}")
     private Boolean sendLock;
 
+    @Autowired
+    private ServerSwitchOnOperationLogic serverSwitchOn;
+
 
     @RequestMapping(value = "/async/job/reset", method = RequestMethod.GET)
     @Scheduled(cron = "0 */30 * * * ?")
@@ -66,6 +70,7 @@ public class CompensateBizFailedJob {
             log.info("current leader is {}, skip", hostLeader.currentLeaderId());
             return;
         }
+
         Response<Boolean> response1 = compensateBizWriteService.resetStatus();
         if (!response1.isSuccess()) {
             log.error("reset long time handling task failed,cause:{}", response1.getError());
@@ -82,6 +87,12 @@ public class CompensateBizFailedJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+
+        if (!serverSwitchOn.serverIsOpen()){
+            log.info("current server is closed so skip handle fail job");
+            return;
+        }
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         Integer pageNo = 1;
         Integer pageSize = 100;

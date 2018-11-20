@@ -22,9 +22,9 @@ import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
+import com.pousheng.middle.web.biz.dto.ReceiverInfoDecryptDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.job.JdRedisHandler;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
@@ -63,7 +63,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -280,34 +279,39 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
                     log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
                 }
             }
-            //判断订单的状态是否是已完成
-            ShopOrder shopOrder1 = orderReadLogic.findShopOrderById(shopOrder.getId());
-            if (!Objects.equals(shopOrder1.getStatus(), MiddleOrderStatus.CONFIRMED.getValue())) {
-                log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order",
-                        shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
-            } else {
-                //更新同步电商状态为已确认收货
-                OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
-                Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
-                if (response.isSuccess()) {
-                    //通知恒康发货单收货时间
-                    Response<Long> result =notifyHkOrderDoneLogic.ctreateNotifyHkOrderDoneTask(shopOrder.getId());
-                    if(!result.isSuccess()){
-                        log.error("notifyHkOrderDoneLogic ctreateNotifyHkOrderDoneTask error shopOrderId ({})",shopOrder.getId());
-                    }
-                    //通知mpos店发发货单确认收货
-                    Response<Boolean> mposTaskResult = notifyHkOrderDoneLogic.createNotifyMposDoneTask(shopOrder.getId());
-                    if(!mposTaskResult.isSuccess()){
-                        log.error("notifyHkOrderDoneLogic ctreateNotifyMposDoneTask error shopOrderId ({})",shopOrder.getId());
-                    }
-                }
-            }
+            noticeConfirm(shopOrder.getId());
+
         }
 
         //预售订单后续处理流程
         this.updateStepOrderInfo(shopOrder, openClientFullOrder);
 
 
+    }
+
+    public void noticeConfirm(Long shopOrderId) {
+        //判断订单的状态是否是已完成
+        ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);
+        if (!Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue())) {
+            log.error("failed to change shopOrder(id={})'s status from {} to {} when sync order",
+                    shopOrder.getId(), shopOrder.getStatus(), MiddleOrderStatus.CONFIRMED.getValue());
+        } else {
+            //更新同步电商状态为已确认收货
+            OrderOperation successOperation = MiddleOrderEvent.CONFIRM.toOrderOperation();
+            Response<Boolean> response = orderWriteLogic.updateEcpOrderStatus(shopOrder, successOperation);
+            if (response.isSuccess()) {
+                //通知恒康发货单收货时间
+                Response<Long> result = notifyHkOrderDoneLogic.ctreateNotifyHkOrderDoneTask(shopOrder.getId());
+                if (!result.isSuccess()) {
+                    log.error("notifyHkOrderDoneLogic ctreateNotifyHkOrderDoneTask error shopOrderId ({})", shopOrder.getId());
+                }
+                //通知mpos店发发货单确认收货
+                Response<Boolean> mposTaskResult = notifyHkOrderDoneLogic.createNotifyMposDoneTask(shopOrder.getId());
+                if (!mposTaskResult.isSuccess()) {
+                    log.error("notifyHkOrderDoneLogic ctreateNotifyMposDoneTask error shopOrderId ({})", shopOrder.getId());
+                }
+            }
+        }
     }
 
     /**
@@ -605,13 +609,15 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
 
             for (RichSkusByShop richSkusByShop : richOrder.getRichSkusByShops()) {
-                //如果是天猫订单，则发请求到端点erp，把收货地址信息同步过来
-                if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO) {
-                    syncReceiverInfo(richSkusByShop);
-                }
-                //如果是天猫分销订单，则发请求到端点erp，把收货地址同步过来
-                if(OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TFENXIAO){
-                    syncFenxiaoReceiverInfo(richSkusByShop);
+                // 天猫订单或天猫分销订单 转成Biz 异步化。避免脱敏耗时过长导致订单保存阻塞
+                if (OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TAOBAO
+                    || OpenClientChannel.from(richSkusByShop.getOutFrom()) == OpenClientChannel.TFENXIAO) {
+                    ReceiverInfoDecryptDTO dto = ReceiverInfoDecryptDTO.builder()
+                        .shopId(richSkusByShop.getShop().getId())
+                        .outId(richSkusByShop.getOuterOrderId())
+                        .outFrom(richSkusByShop.getOutFrom())
+                        .build();
+                    createReceiverInfoDecryptTask(dto);
                 }
             }
         }
@@ -729,5 +735,49 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
             }
         }
 
+    }
+
+    /**
+     * 创建收货人信息脱敏biz任务
+     * @param dto
+     */
+    private void createReceiverInfoDecryptTask(ReceiverInfoDecryptDTO dto){
+        PoushengCompensateBiz biz = new PoushengCompensateBiz();
+        biz.setBizType(PoushengCompensateBizType.TMALL_RECEIVER_INFO_DECRYPT.toString());
+        biz.setContext(mapper.toJson(dto));
+        biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
+        compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);
+    }
+
+    /**
+     * 天猫订单请求聚石塔
+     * @param dto
+     */
+    public void syncReceiverInfo(ReceiverInfoDecryptDTO dto) {
+        try {
+            terminusErpOpenApiClient.doPost("sync.taobao.order.recever.info.api",
+                ImmutableMap.of("shopId", dto.getShopId(), "orderId", dto.getOutId(),"redirectUrl",poushengPagodaCommonRedirectUrl));
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                dto.getOutId(), dto.getShopId(), Throwables.getStackTraceAsString(e));
+        }
+
+    }
+
+    /**
+     * 天猫分销订单请求聚石塔
+     * @param dto 订单信息
+     */
+    public void syncFenxiaoReceiverInfo(ReceiverInfoDecryptDTO dto){
+        try {
+            if (log.isDebugEnabled()){
+                log.debug("sync fenxiao receiver info start,shopId {},orderId {}",dto.getShopId(),dto.getOutId());
+            }
+            terminusErpOpenApiClient.doPost("sync.taobao.fenxiao.order.recever.info.api",
+                ImmutableMap.of("shopId", dto.getShopId(), "orderId", dto.getOutId(),"redirectUrl",poushengPagodaFenxiaoRedirectUrl));
+        } catch (Exception e) {
+            log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
+                dto.getOutId(), dto.getShopId(), Throwables.getStackTraceAsString(e));
+        }
     }
 }

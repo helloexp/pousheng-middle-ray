@@ -18,7 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
  */
 
 @Slf4j
-@ConditionalOnProperty(value = "is.stock.task.consume", havingValue = "false", matchIfMissing = false)
+@ConditionalOnProperty(value = "is.stock.log.consume", havingValue = "true", matchIfMissing = false)
 @RestController
 public class AutoDeleteStcokLogs {
 

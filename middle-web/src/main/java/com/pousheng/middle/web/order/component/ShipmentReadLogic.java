@@ -29,6 +29,7 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.order.dto.OrderDetail;
 import io.terminus.parana.order.enums.ShipmentType;
@@ -43,6 +44,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ObjectUtils;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -406,7 +408,7 @@ public class ShipmentReadLogic {
      * 设置下单店铺，发货仓店铺手机号信息
      */
     private void setShopTelInfo(Shipment shipment,ShipmentExtra shipmentExtra) {
-        //1:店发，2：仓发
+        //设置发货店仓手机号 1:店发，2：仓发
         if(Objects.equals(shipment.getShipWay(),1)) {
             Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
             if (null != shop) {
@@ -425,6 +427,20 @@ public class ShipmentReadLogic {
                     shipmentExtra.setWarehouseTelephone(warehouse.getExtra().get("telephone"));
                 }
          }
+         //设置订单来源店铺手机号
+        OpenShop opshop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
+        if(null != opshop){
+            String companyCode = opshop.getExtra().get("companyCode");
+            String outshopCode = opshop.getExtra().get("hkPerformanceShopOutCode");
+            if(!ObjectUtils.isEmpty(companyCode) && !ObjectUtils.isEmpty(outshopCode)){
+                //设置店发的手机号,关联会员中心获取
+                com.google.common.base.Optional<MemberShop> memberShops = memberShopOperationLogic.findShopByCodeAndType(outshopCode, 1, companyCode);
+                if (memberShops.isPresent()) {
+                    MemberShop memberShop = memberShops.get();
+                    shipmentExtra.setErpOrderShopTelephone(memberShop.getTelphone());
+                }
+            }
+        }
     }
     
 

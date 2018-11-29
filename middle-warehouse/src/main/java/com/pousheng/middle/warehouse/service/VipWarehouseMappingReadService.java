@@ -36,7 +36,7 @@ public interface VipWarehouseMappingReadService {
      *
      * @return
      */
-    Response<List<Long>> findAllWarehouseIds();
+    Response<List<VipWarehouseMapping>> findAll();
 
 
 }

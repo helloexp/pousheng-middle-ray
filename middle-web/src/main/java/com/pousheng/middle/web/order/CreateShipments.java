@@ -201,7 +201,7 @@ public class CreateShipments {
                 }
             }
             //唯品会的单子不允许拆单 且必须用唯品会的仓库
-            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())) {
                 if (requestDataList.size() > 1 || requestDataList.get(0).getData().size() != skuOrders.size()) {
                     log.info("data json :{} invalid", dataList);
                     throw new JsonResponseException("vip.delivery.cannot.dispatch");

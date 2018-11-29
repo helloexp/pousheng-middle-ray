@@ -305,8 +305,17 @@ failed.order.warning.email.receives: ${FAILED_ORDER_WARNING_EMAIL_RECEIVES}
 # 失败订单和发货单邮件通知JOB的触发器表达式
 failed.order.warning.job.cron: ${FAILED_ORDER_WARNING_JOB_CRON}
 
-# job开关 用于商品分组和自动归组job和库存日志接受
-is.stock.task.consume: ${IS_STOCK_TASK_CONSUME}
+# job开关 用于商品分组
+is.item.group.task.consume: ${IS_ITEM_GROUP_TASK_CONSUME}
+
+# job开关 用于商品分组创建任务
+is.item.group.task.create:  ${IS_ITEM_GROUP_TASK_CREATE}
+
+# 用于接受日志信息
+is.stock.log.consume: ${IS_STOCK_LOG_CONSUME}
+
+# 用于唯品会定时任务
+is.vip.task.consume: ${IS_VIP_TASK_CONSUME}
 
 # 库存日志mq消息的topic
 terminus.rocketmq.stockLogTopic: stockLogTopic

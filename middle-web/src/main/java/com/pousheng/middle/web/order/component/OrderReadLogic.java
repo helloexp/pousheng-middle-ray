@@ -361,7 +361,7 @@ public class OrderReadLogic {
                 return expressCode.getCodoonCode();
             case KAOLA:
                 return expressCode.getKaolaCode();
-            case VIP:
+            case VIPOXO:
                 return expressCode.getVipCode();
             default:
                 log.error("find express code failed");

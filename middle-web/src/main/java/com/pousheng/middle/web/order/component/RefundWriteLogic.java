@@ -22,7 +22,6 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengSettlementPos;
 import com.pousheng.middle.order.model.RefundAmount;
 import com.pousheng.middle.order.service.MiddleRefundWriteService;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.order.service.PoushengSettlementPosReadService;
 import com.pousheng.middle.order.service.RefundAmountWriteService;
 import com.pousheng.middle.shop.cacher.MiddleShopCacher;
@@ -41,7 +40,6 @@ import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
-import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.BeanMapper;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -53,7 +51,6 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
-import io.terminus.parana.order.model.ShipmentItem;
 import io.terminus.parana.order.service.ReceiverInfoReadService;
 import io.terminus.parana.order.service.RefundWriteService;
 import io.terminus.parana.order.service.ShipmentReadService;
@@ -370,8 +367,16 @@ public class RefundWriteLogic {
         List<RefundItem> refundItems = refundReadLogic.findRefundItems(refund);
         Map<String, RefundItem> skuCodeAndRefundItemMap = refundItems.stream().filter(Objects::nonNull)
                 .collect(Collectors.toMap(RefundItem::getSkuCode, it -> it));
-
-
+        //若售后单无匹配的发货单信息 直接更新删除状态返回
+        if (org.apache.commons.lang3.StringUtils.isBlank(refundExtra.getShipmentId())) {
+            //更新状态
+            Response<Boolean> updateRes = this.updateStatusLocking(refund, MiddleOrderEvent.DELETE.toOrderOperation());
+            if (!updateRes.isSuccess()) {
+                log.error("delete refund(id:{}) fail,error:{}", refund.getId(), updateRes.getError());
+                throw new JsonResponseException(updateRes.getError());
+            }
+            return;
+        }
         //退货单所属发货单信息
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
         List<ShipmentItem> shipmentItems = shipmentReadLogic.getShipmentItems(shipment);

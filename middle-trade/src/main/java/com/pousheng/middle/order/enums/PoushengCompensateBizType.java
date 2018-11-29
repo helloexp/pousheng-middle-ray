@@ -149,6 +149,11 @@ public enum PoushengCompensateBizType {
     OPEN_ORDER_PUSH,
 
     /**
+     * 天猫收货人信息脱敏
+     */
+    TMALL_RECEIVER_INFO_DECRYPT,
+
+    /**
      * 同步正向订单pos到恒康
      */
     SYNC_ORDER_POS_TO_HK,

@@ -128,7 +128,7 @@ public class AdminOrderReader {
                         :flow.availableOperations(shopOrder.getStatus()).stream().filter(it->it.getValue()!=MiddleOrderEvent.REVOKE.getValue()).collect(Collectors.toSet()));
             }
             //待处理的单子如果是派单失败的 允许出现 不包含有备注订单
-            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue()) && shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIPOXO.getValue()) && shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
                 if (shopOrder.getHandleStatus() != null && shopOrder.getHandleStatus() > OrderWaitHandleType.ORDER_HAS_NOTE.value()) {
                     Set<OrderOperation> orderOperations = Sets.newSet();
                     orderOperations.addAll(shopOrderPagingInfo.getShopOrderOperations());

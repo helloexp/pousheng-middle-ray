@@ -1120,7 +1120,7 @@ public class FireCall {
         if (!shopOrder.getStatus().equals(MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("current.status.is.not.wait.handle");
         }
-        if (!shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+        if (!shopOrder.getOutFrom().equals(MiddleChannel.VIPOXO.getValue())) {
             throw new JsonResponseException("this.order.channel.is.not.vip");
         }
         log.info("begin to undercarriage to oxo, outId is {} user is {}", shopOrder.getOutId(), userId);

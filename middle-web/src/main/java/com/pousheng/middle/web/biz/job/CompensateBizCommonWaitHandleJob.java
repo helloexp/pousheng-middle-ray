@@ -9,6 +9,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.zookeeper.leader.HostLeader;
@@ -40,6 +41,8 @@ public class CompensateBizCommonWaitHandleJob {
     private CompensateBizProcessor compensateBizProcessor;
     @Autowired
     private HostLeader hostLeader;
+    @Autowired
+    private ServerSwitchOnOperationLogic serverSwitchOn;
 
 
     @Scheduled(cron = "0 */7 * * * ?")
@@ -50,6 +53,13 @@ public class CompensateBizCommonWaitHandleJob {
             log.info("current leader is:{}, skip", hostLeader.currentLeaderId());
             return;
         }
+
+        if (!serverSwitchOn.serverIsOpen()){
+            log.info("current server is closed so skip wait handle job");
+            return;
+        }
+
+
         Stopwatch stopwatch = Stopwatch.createStarted();
         Integer pageNo = 1;
         Integer pageSize = 100;

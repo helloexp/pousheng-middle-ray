@@ -110,12 +110,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             //其他类型的售后单添加一个锁标识
             refund.setTradeNo(TradeConstants.AFTER_SALE_EXHCANGE_UN_LOCK);
         }
-
-        //唯品会OXO售后单无需审核，直接同步yyedi
-        if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIP.getValue())) {
-            refund.setStatus(MiddleRefundStatus.WAIT_SYNC_HK.getValue());
-        }
-
         //判断售后单对应的是否是天猫订单
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.TAOBAO.getValue())
                 && Objects.equals(refund.getRefundType(), MiddleRefundType.AFTER_SALES_REFUND.value())) {
@@ -251,7 +245,6 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                 refundItem.setSkuName(skuOrder.getItemName());
                 refundItemList.add(refundItem);
             });
-
             extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
             extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItemList));
             Map<String, String> tagMap = Maps.newHashMap();
@@ -290,7 +283,9 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
 
             if (!CollectionUtils.isEmpty(shipments)) {
                 for (Shipment shipment : shipments) {
-                    if (!Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue()) && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())) {
+                    if (!Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SHIPPED.getValue())
+                            && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CONFIRMD_SUCCESS.getValue())
+                            && !Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.CONFIRMED_FAIL.getValue())) {
                         log.info("shipment is not shipped shipmentCode {} ,status {}", shipment.getShipmentCode(), shipment.getStatus());
                         continue;
                     }
@@ -361,7 +356,15 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     extraMap.put(TradeConstants.REFUND_ITEM_INFO, mapper.toJson(refundItemList));
                     Map<String, String> tagMap = Maps.newHashMap();
                     tagMap.put(TradeConstants.REFUND_SOURCE, String.valueOf(RefundSource.THIRD.value()));
-                    refund.setFee(refundItem.getFee());
+                    //VIP OXO售后单不提供金额，从发货单取
+                    if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())
+                            && (Objects.isNull(refund.getFee()) || refund.getFee().equals(0L))){
+                        refund.setFee(shipmentItem.getCleanPrice()*refundItem.getApplyQuantity().longValue());
+                    }else {
+                        if (shipmentItem.getQuantity() < skuOrder.getQuantity()) {
+                            refund.setFee(refund.getFee() * shipmentItem.getQuantity() / skuOrder.getQuantity());
+                        }
+                    }
                     refund.setExtra(extraMap);
                     refund.setTags(tagMap);
                     refundList.add(refund);
@@ -417,7 +420,7 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
                     criteria.setCodoonCode(shipmentCorpCode);
                 case KAOLA:
                     criteria.setKaolaCode(shipmentCorpCode);
-                case VIP:
+                case VIPOXO:
                     criteria.setVipCode(shipmentCorpCode);
                 default:
                     log.error("there is not any express info by channel:{} and poushengCode:{}", channel.getValue(), shipmentCorpCode);

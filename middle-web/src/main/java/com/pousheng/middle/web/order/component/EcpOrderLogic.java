@@ -88,7 +88,7 @@ public class EcpOrderLogic {
                 }
             }
             //如果是唯品会的渠道
-            if (shopOrder.getOutFrom().equals(MiddleChannel.VIP.getValue())) {
+            if (shopOrder.getOutFrom().equals(MiddleChannel.VIPOXO.getValue())) {
                 //如果是仓发的单子 需要呼叫快递 呼叫失败则抛出重试任务
                 OrderOperation orderOperation = MiddleOrderEvent.SYNC_ECP.toOrderOperation();
                 orderWriteLogic.updateEcpOrderStatus(shopOrder, orderOperation);

@@ -46,9 +46,9 @@ public class VipWarehouseMappingReadServiceImpl implements VipWarehouseMappingRe
 
 
     @Override
-    public Response<List<Long>> findAllWarehouseIds() {
+    public Response<List<VipWarehouseMapping>> findAll() {
         try {
-            return Response.ok(vipWarehouseMappingDao.findAllWarehouseIds());
+            return Response.ok(vipWarehouseMappingDao.findAll());
         } catch (Exception e) {
             log.error("find vipWarehouseMapping list failed,  cause:{}", Throwables.getStackTraceAsString(e));
             return Response.fail("vip.warehouse.mapping.find.fail");

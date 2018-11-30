@@ -28,6 +28,8 @@ import io.terminus.parana.order.model.ReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.shop.model.Shop;
 import lombok.extern.slf4j.Slf4j;
+
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -114,7 +116,7 @@ public class AppointShopDispatchLink implements DispatchOrderLink {
 
 
     private Warehouses4Address fillPriorityInfo(Warehouses4Address warehouses4Address) {
-        RulePriorityCriteria criteria = new RulePriorityCriteria().ruleId(warehouses4Address.getWarehouseRule().getId()).searchDate(new Date()).status(1);
+        RulePriorityCriteria criteria = new RulePriorityCriteria().ruleId(warehouses4Address.getWarehouseRule().getId()).searchDate(DateTime.now().withTimeAtStartOfDay().toDate()).status(1);
         Response<Paging<WarehouseRulePriority>> priorityResp = warehouseRulePriorityReadService.findByCriteria(criteria);
         Map<Integer, List<Long>> priorityWarehouseIds = new LinkedHashMap<>();
         Map<Integer, List<Long>> priorityShopIds = new LinkedHashMap<>();

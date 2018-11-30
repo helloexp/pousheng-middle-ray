@@ -1,4 +1,4 @@
-package com.pousheng.middle.web.order.component;
+package com.pousheng.middle.order.impl;
 
 import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;

@@ -12,9 +12,7 @@ package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
-import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.enums.MiddleChannel;
-import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -28,14 +26,13 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.msg.common.StringUtil;
-import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.ShopOrder;
 import io.terminus.parana.order.service.OrderWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
@@ -83,7 +80,8 @@ public class ThirdCreateShipmentService implements CompensateBizService {
             this.onShipment(shopOrderId);
         } catch (Exception e){
             log.error("auto create shipment fail for order id:{},caused by {}",shopOrderId, Throwables.getStackTraceAsString(e));
-            throw new BizException("auto create shipment fail,caused by {}", e);
+            String message = MessageFormat.format("auto create shipment fail,caused by {}", e.getMessage());
+            throw new BizException(message, e);
         }
 
         stopwatch.stop();

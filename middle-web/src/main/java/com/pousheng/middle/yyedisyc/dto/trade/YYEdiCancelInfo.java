@@ -11,26 +11,25 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class YYEdiCancelInfo implements java.io.Serializable{
     private static final long serialVersionUID = 4658593769032049717L;
 
-    @JsonProperty(value = "BillNo")
-    private String BillNo;
-    @JsonProperty(value = "ReMark")
-    private String ReMark;
+    @JsonProperty(value = "billno")
+    private String billno;
+    @JsonProperty(value = "remark")
+    private String remark;
 
     @JsonIgnore
-    public String getBillNo() {
-        return BillNo;
-    }
-
-    @JsonIgnore
-    public void setBillNo(String billNo) {
-        BillNo = billNo;
+    public String getBillno() {
+        return billno;
     }
     @JsonIgnore
-    public String getReMark() {
-        return ReMark;
+    public void setBillno(String billno) {
+        this.billno = billno;
     }
     @JsonIgnore
-    public void setReMark(String reMark) {
-        ReMark = reMark;
+    public String getRemark() {
+        return remark;
+    }
+    @JsonIgnore
+    public void setRemark(String remark) {
+        this.remark = remark;
     }
 }

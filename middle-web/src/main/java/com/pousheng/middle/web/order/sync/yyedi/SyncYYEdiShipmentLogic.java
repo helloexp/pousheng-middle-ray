@@ -16,6 +16,7 @@ import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddlePayType;
 import com.pousheng.middle.order.enums.MiddleShipmentsStatus;
 import com.pousheng.middle.order.model.ExpressCode;
+import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.shop.dto.ShopExpresssCompany;
 import com.pousheng.middle.shop.dto.ShopExtraInfo;
 import com.pousheng.middle.shop.service.PsShopReadService;
@@ -89,6 +90,8 @@ public class SyncYYEdiShipmentLogic {
     private PsShopReadService psShopReadService;
     @Autowired
     private OpenShopReadService openShopReadService;
+    @Autowired
+    private MiddleOrderWriteService middleOrderWriteService;
 
     private static final ObjectMapper objectMapper = JsonMapper.nonEmptyMapper().getMapper();
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
@@ -112,9 +115,9 @@ public class SyncYYEdiShipmentLogic {
             Flow flow = flowPicker.pickShipments();
             Integer targetStatus = flow.target(shipment.getStatus(), orderOperation);
             shipment.setStatus(targetStatus);
-            List<YYEdiShipmentInfo> list = this.makeShipmentOrderDtoList(shipment,shipment.getType());
-            YYEdiResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycYYEdiShipmentOrderApi.doSyncShipmentOrder(list),YYEdiResponse.class);
-            if (Objects.equals(response.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
+            YYEdiShipmentInfo info = this.makeShipmentOrderDtoList(shipment,shipment.getType());
+            YYEdiResponse response  = JsonMapper.nonEmptyMapper().fromJson(sycYYEdiShipmentOrderApi.doSyncShipmentOrder(info),YYEdiResponse.class);
+            if (Objects.equals(response.getCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
                 //整体成功
                 OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_SUCCESS.toOrderOperation();
                 Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
@@ -129,7 +132,7 @@ public class SyncYYEdiShipmentLogic {
                 if (!updateSyncStatusRes.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
                 }
-                return Response.fail(response.getFields().get(0).getErrorMsg());
+                return Response.fail(response.getMessage());
             }
         } catch (Exception e) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e));
@@ -148,10 +151,11 @@ public class SyncYYEdiShipmentLogic {
      * @param shipment 发货单
      * @return 同步结果, 同步成功true, 同步失败false
      */
-    public Response<Boolean> syncShipmentCancelToYYEdi(Shipment shipment) {
+    public Response<Boolean> syncShipmentCancelToYYEdi(Shipment shipment, Object... skuOrders) {
         try {
             Flow flow = flowPicker.pickShipments();
-            //更新状态为同步中
+            //更新状态为同步中 防止脏读 再查一次
+            shipment = shipmentReadLogic.findShipmentById(shipment.getId());
             OrderOperation orderOperation = MiddleOrderEvent.CANCEL_HK.toOrderOperation();
             Response<Boolean> updateStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, orderOperation);
             if (!updateStatusRes.isSuccess()) {
@@ -163,24 +167,34 @@ public class SyncYYEdiShipmentLogic {
 
             shipment.setStatus(targetStatus);//塞入最新的状态*/
 
-            List<YYEdiCancelInfo> reqeustData = new ArrayList<>();
             YYEdiCancelInfo cancelShipmentInfo = new YYEdiCancelInfo();
-            cancelShipmentInfo.setBillNo(String.valueOf(shipment.getShipmentCode()));
-            reqeustData.add(cancelShipmentInfo);
-            String response = sycYYEdiOrderCancelApi.doCancelOrder(reqeustData);
+            cancelShipmentInfo.setBillno(String.valueOf(shipment.getShipmentCode()));
+            String response = sycYYEdiOrderCancelApi.doCancelOrder(cancelShipmentInfo);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
             //如果订单派发中心返回没有该订单，nc
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CANCELED)) {
+            if (Objects.equals(yyEdiResponse.getCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                 OrderOperation operation = MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation();
                 Response<Boolean> updateStatus = shipmentWiteLogic.updateStatusLocking(shipment, operation);
                 if (!updateStatus.isSuccess()) {
                     log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), operation.getText(), updateStatus.getError());
                     return Response.fail(updateStatusRes.getError());
                 }
+            } else if (Objects.equals(yyEdiResponse.getCode(), TradeConstants.YYEDI_RESPONSE_CODE_ING)) {
+                //取消中 加个标记位 依然返回取消失败
+                Map<String, String> extraMap = shipment.getExtra();
+                extraMap.put(TradeConstants.WAIT_CANCEL_RESULT, "1");
+                //如果是因为子单取消而撤销
+                if (skuOrders.length > 0) {
+                    if (updateSkuOrderAutoCancelLog(skuOrders, shipment)) {
+                        extraMap.put(TradeConstants.SHIPMENT_CANCEL_BY_ORDER, "1");
+                    }
+                }
+                shipmentWiteLogic.updateExtra(shipment.getId(), extraMap);
+                return Response.fail("订单派发中心返回信息:" + yyEdiResponse.getMessage());
             } else {
-               //更新状态取消失败
+                //更新状态取消失败
                 updateShipmetSyncCancelFail(shipment);
-                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
+                return Response.fail("订单派发中心返回信息:" + yyEdiResponse.getMessage());
             }
         } catch (ServiceException e1) {
             log.error("sync yyedi shipment failed,shipmentId is({}) cause by({})", shipment.getId(), Throwables.getStackTraceAsString(e1));
@@ -203,12 +217,11 @@ public class SyncYYEdiShipmentLogic {
      * @param shipmentType 1.正常销售单，2.换货发货，3.补发
      * @return
      */
-    public List<YYEdiShipmentInfo> makeShipmentOrderDtoList(Shipment shipment,int shipmentType) {
+    public YYEdiShipmentInfo makeShipmentOrderDtoList(Shipment shipment,int shipmentType) {
         //获取发货单详情
         ShipmentDetail shipmentDetail = shipmentReadLogic.orderDetail(shipment.getId());
         List<YYEdiShipmentInfo> list = new ArrayList<>();
-        list.add(this.getSycYYEdiShipmentInfo(shipment,shipmentDetail,shipmentType));
-        return list;
+        return this.getSycYYEdiShipmentInfo(shipment,shipmentDetail,shipmentType);
     }
 
     /**
@@ -230,16 +243,16 @@ public class SyncYYEdiShipmentLogic {
         WarehouseDTO warehouse = rW.getResult();
         YYEdiShipmentInfo shipmentInfo = new YYEdiShipmentInfo();
         //公司内码
-        shipmentInfo.setCompanyCode(warehouse.getCompanyCode());
+        shipmentInfo.setCompanycode(warehouse.getCompanyCode());
         //仓库
-        shipmentInfo.setStockCode(warehouse.getOutCode());
+        shipmentInfo.setStockcode(warehouse.getOutCode());
         //erp单号，中台发货单代码
-        shipmentInfo.setBillNo(String.valueOf(shipment.getShipmentCode()));
+        shipmentInfo.setBillno(String.valueOf(shipment.getShipmentCode()));
         //单据类型
-        shipmentInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_ON_LINE);
+        shipmentInfo.setBilltype(TradeConstants.YYEDI_BILL_TYPE_ON_LINE);
         //来源单号
         if (Objects.equals(shipmentType,1)){
-            shipmentInfo.setSourceBillNo("");
+            shipmentInfo.setSourcebillno("");
         }
         //换货单号
         if (Objects.equals(shipmentType,2)){
@@ -247,7 +260,7 @@ public class SyncYYEdiShipmentLogic {
             Refund refund = refundReadLogic.findRefundById(orderShipment.getAfterSaleOrderId());
             RefundExtra refundExtra = refundReadLogic.findRefundExtra(refund);
             Shipment sourceShipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-            shipmentInfo.setSourceBillNo(sourceShipment.getShipmentCode());
+            shipmentInfo.setSourcebillno(sourceShipment.getShipmentCode());
 
         }
         //补发类型
@@ -280,55 +293,55 @@ public class SyncYYEdiShipmentLogic {
                 }
                 count++;
             }
-            shipmentInfo.setSourceBillNo(stringBuffer.toString());
+            shipmentInfo.setSourcebillno(stringBuffer.toString());
         }
         //快递方式
-        shipmentInfo.setExpressType("Exress");
+        shipmentInfo.setExpresstype("Exress");
         //网店交易单号
         // 对于云聚类型的订单特殊处理：
         // 云聚类型订单中接收的第三方平台订单的ID传的是outId,存储在订单信息的extra_json中
-        shipmentInfo.setShopBillNo(shopOrder.getOutId());
+        shipmentInfo.setShopbillno(shopOrder.getOutId());
         if (Objects.equals(MiddleChannel.YUNJUBBC.getValue(), shopOrder.getOutFrom())) {
             // 传物流单号
-            shipmentInfo.setExpressBillNo(shopOrder.getExtra().get(ExtraKeyConstant.SHIPMENT_SERIAL_NO));
-            if (Objects.equals(OrderInfoConstants.YJ_BBC,shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
-                shipmentInfo.setShopBillNo(MoreObjects.firstNonNull(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID), shopOrder.getOutId()));
-                shipmentInfo.setERPBillNo(shopOrder.getOutId());
-                log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopBillNo(), shipmentInfo.getERPBillNo());
+            shipmentInfo.setExpressbillno(shopOrder.getExtra().get(ExtraKeyConstant.SHIPMENT_SERIAL_NO));
+            if (Objects.equals(OrderInfoConstants.YJ_BBC, shopOrder.getExtra().get(OrderInfoConstants.YJ_TYPE))) {
+                shipmentInfo.setShopbillno(StringUtils.isEmpty(shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID)) ? shopOrder.getOutId() : shopOrder.getExtra().get(OrderInfoConstants.YJ_OUTID));
+                shipmentInfo.setErpbillno(shopOrder.getOutId());
+                log.info("sync yun ju out id {}, erp bill no {} to yyedi", shipmentInfo.getShopbillno(), shipmentInfo.getErpbillno());
             }
         }
 
         //恒康店铺码--传外码
-        shipmentInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
+        shipmentInfo.setShopcode(shipmentExtra.getErpPerformanceShopOutCode());
         //恒康店铺名称
-        shipmentInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
+        shipmentInfo.setShopname(shipmentExtra.getErpPerformanceShopName());
         //出库单类型
-        shipmentInfo.setRefundChangeType(shipmentType);
+        shipmentInfo.setRefundchangetype(shipmentType);
         //付款时间
-        shipmentInfo.setPaymentDate(formatter.print(System.currentTimeMillis()));
+        shipmentInfo.setPaymentdate(formatter.print(System.currentTimeMillis()));
 
         if (Objects.equals(MiddleChannel.YUNJUBBC.getValue(), shopOrder.getOutFrom()) && Objects.equals(OrderInfoConstants.SHIPMENT_TYPE_VALUE,shopOrder.getExtra().get(OrderInfoConstants.SHIPMENT_TYPE))) {
-            shipmentInfo.setExpressType("ZT");
-            log.info("sync yun ju express type {} to yyedi", shipmentInfo.getExpressType());
+            shipmentInfo.setExpresstype("ZT");
+            log.info("sync yun ju express type {} to yyedi", shipmentInfo.getExpresstype());
         }
         //是否开发票
-        shipmentInfo.setIsInvoice(0);
+        shipmentInfo.setIsinvoice(0);
         //是否打印发票
-        shipmentInfo.setIsPrintInvoice(0);
+        shipmentInfo.setIsprintinvoice(0);
         //是否货票同行
         shipmentInfo.setIstrave(0);
         //发票抬头
-        shipmentInfo.setInvoiceName("");
+        shipmentInfo.setInvoicename("");
         //发票类型
-        shipmentInfo.setInvoiceType(1);
+        shipmentInfo.setInvoicetype(1);
         //增值税号
-        shipmentInfo.setVATNumber("");
+        shipmentInfo.setVatnumber("");
         //发票内容
-        shipmentInfo.setInvoiceContent("");
+        shipmentInfo.setInvoicecontent("");
         //电子发票邮箱
-        shipmentInfo.setInvoiceEmail("");
+        shipmentInfo.setInvoiceemail("");
         //收件人姓名
-        shipmentInfo.setConsigneeName(receiverInfo.getReceiveUserName());
+        shipmentInfo.setConsigneename(receiverInfo.getReceiveUserName());
         //收件省
         shipmentInfo.setProvince(receiverInfo.getProvince());
         //收件市
@@ -338,84 +351,84 @@ public class SyncYYEdiShipmentLogic {
         //地址
         shipmentInfo.setAddress(receiverInfo.getDetail());
         //邮编
-        shipmentInfo.setZipCode(receiverInfo.getPostcode());
+        shipmentInfo.setZipcode(receiverInfo.getPostcode());
         //收件人电话
         if (!StringUtils.isEmpty(receiverInfo.getMobile())){
-            shipmentInfo.setBuyerTel(receiverInfo.getMobile());
+            shipmentInfo.setBuyertel(receiverInfo.getMobile());
             //手机号码
-            shipmentInfo.setBuyerMobileTel(receiverInfo.getMobile());
+            shipmentInfo.setBuyermobiletel(receiverInfo.getMobile());
         } else {
-            shipmentInfo.setBuyerTel(receiverInfo.getPhone());
+            shipmentInfo.setBuyertel(receiverInfo.getPhone());
             //手机号码
-            shipmentInfo.setBuyerMobileTel(receiverInfo.getPhone());
+            shipmentInfo.setBuyermobiletel(receiverInfo.getPhone());
         }
         //寄件人姓名
-        shipmentInfo.setSendContact("");
+        shipmentInfo.setSendcontact("");
         //寄件人电话
-        shipmentInfo.setSendContactTel("");
+        shipmentInfo.setSendcontacttel("");
         //寄件省
-        shipmentInfo.setSendProvince("");
+        shipmentInfo.setSendprovince("");
         //寄件市
-        shipmentInfo.setSendCity("");
+        shipmentInfo.setSendcity("");
         //寄件区
-        shipmentInfo.setSendArea("");
+        shipmentInfo.setSendarea("");
         //寄件地址
-        shipmentInfo.setSendAddress("");
+        shipmentInfo.setSendaddress("");
         //买家用户名
-        shipmentInfo.setBCMemberName(shopOrder.getBuyerName());
+        shipmentInfo.setBcmembername(shopOrder.getBuyerName());
         //会员等级
-        shipmentInfo.setBCMemberCard("");
+        shipmentInfo.setBcmembercard("");
         //只有正常销售的发货单才会有货到付款
         if (Objects.equals(shipment.getType(),ShipmentType.SALES_SHIP.value())){
             //支付类型在中台是1:在线支付,2:货到付款,同步给订单派发中心时时需要变为0:在线支付,1:货到付款
             shipmentInfo.setPaymenttype(this.getYYEdiPayType(shipmentDetail).getValue());
             if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
                 //代收金额:商品总金额+运费
-                shipmentInfo.setCollectionAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+                shipmentInfo.setCollectionamount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
                 //结算金额
-                shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+                shipmentInfo.setPayamount(new BigDecimal(shipmentDetail.getShopOrder().getFee()+shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             }else{
-                shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+                shipmentInfo.setCollectionamount(new BigDecimal(0.00));
                 //结算金额
-                shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+                shipmentInfo.setPayamount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             }
         }else{
             shipmentInfo.setPaymenttype(HkPayType.HK_ONLINE_PAY.getValue());
-            shipmentInfo.setCollectionAmount(new BigDecimal(0.00));
+            shipmentInfo.setCollectionamount(new BigDecimal(0.00));
             //结算金额
-            shipmentInfo.setPayAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            shipmentInfo.setPayamount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         }
         //买家邮费
-        shipmentInfo.setExpressAmount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+        shipmentInfo.setExpressamount(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentShipFee()-shipmentDetail.getShipmentExtra().getShipmentShipDiscountFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
         //线上实付金额
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())) {
-            shipmentInfo.setPayAmountBakUp(new BigDecimal(0.00));
+            shipmentInfo.setPayamountbakup(new BigDecimal(0.00));
         }else{
-            shipmentInfo.setPayAmountBakUp(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
+            shipmentInfo.setPayamountbakup(new BigDecimal(shipmentDetail.getShipmentExtra().getShipmentTotalPrice()).divide(new BigDecimal(100), 2, RoundingMode.HALF_DOWN));
         }
         //红包支付金额
-        shipmentInfo.setRptAmount(new BigDecimal(0.00));
+        shipmentInfo.setRptamount(new BigDecimal(0.00));
         //促销优惠金额
-        shipmentInfo.setPromZRAmount(new BigDecimal(0.00));
+        shipmentInfo.setPromzramount(new BigDecimal(0.00));
         //运费到付
         if (Objects.equals(shipmentInfo.getPaymenttype(),HkPayType.HK_CASH_ON_DELIVERY.getValue())){
-            if (Objects.equals(shipmentInfo.getExpressAmount().toString(),"0.00")){
+            if (Objects.equals(shipmentInfo.getExpressamount().toString(),"0.00")){
                 //货到付款运费金额为0则运费到付传0
-                shipmentInfo.setFreightPay(0);
+                shipmentInfo.setFreightpay(0);
             }else{
                 //货到付款运费金额不为0则运费到付传1
-                shipmentInfo.setFreightPay(1);
+                shipmentInfo.setFreightpay(1);
             }
         }else{
             //在线支付传0
-            shipmentInfo.setFreightPay(0);
+            shipmentInfo.setFreightpay(0);
         }
-        shipmentInfo.setFreightPay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
+        shipmentInfo.setFreightpay(this.getYYEdiPayType(shipmentDetail).getValue()==1?1:0);
         //查询店铺相关信息-获取下单店铺公司码
         Response<OpenShop> r = openShopReadService.findById(shipment.getShopId());
         Map<String,String> openShopExtra = r.getResult().getExtra();
-        String shopCompanyCode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
-        shipmentInfo.setShopCompanyCode(shopCompanyCode);
+        String shopcompanycode = openShopExtra.get(TradeConstants.HK_COMPANY_CODE);
+        shipmentInfo.setShopcompanycode(shopcompanycode);
         //渠道
         Map<String,String> shopOrderExtra = shopOrder.getExtra();
 
@@ -433,9 +446,9 @@ public class SyncYYEdiShipmentLogic {
             if (!shopOptionalResponse.isSuccess()){
                 log.error("find parana shop failed,shopOutCode is {},companyCode is {},caused by {}",shopOutCode,companyCode,shopOptionalResponse.getError());
                 //客户供应商快递代码
-                shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+                shipmentInfo.setCustomercode(shipmentExtra.getVendCustID());
                 //客户供应商快递公司名称
-                shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
+                shipmentInfo.setFreightcompany(shipmentExtra.getVendCustID());
             }else{
                 com.google.common.base.Optional<Shop> shopOptional = shopOptionalResponse.getResult();
                 if (shopOptional.isPresent()){
@@ -446,16 +459,16 @@ public class SyncYYEdiShipmentLogic {
                             ShopExpresssCompany shopExpresssCompany = existShopExtraInfo.getExpresssCompanyList().get(0);
                             ExpressCode expressCode = orderReadLogic.makeExpressNameByMposCode(shopExpresssCompany.getCode());
                             //客户供应商快递代码
-                            shipmentInfo.setCustomerCode(expressCode.getHkCode());
+                            shipmentInfo.setCustomercode(expressCode.getHkCode());
                             //客户供应商快递公司名称
-                            shipmentInfo.setFreightCompany(expressCode.getHkCode());
+                            shipmentInfo.setFreightcompany(expressCode.getHkCode());
                         }
                     }
                 }else{
                     //客户供应商快递代码
-                    shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+                    shipmentInfo.setCustomercode(shipmentExtra.getVendCustID());
                     //客户供应商快递公司名称
-                    shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
+                    shipmentInfo.setFreightcompany(shipmentExtra.getVendCustID());
                 }
             }
         }else{
@@ -467,9 +480,9 @@ public class SyncYYEdiShipmentLogic {
                 shipmentInfo.setChannel(shopOrder.getOutFrom());
             }
             //客户供应商快递代码
-            shipmentInfo.setCustomerCode(shipmentExtra.getVendCustID());
+            shipmentInfo.setCustomercode(shipmentExtra.getVendCustID());
             //客户供应商快递公司名称
-            shipmentInfo.setFreightCompany(shipmentExtra.getVendCustID());
+            shipmentInfo.setFreightcompany(shipmentExtra.getVendCustID());
         }
         //获取发货单中对应的sku列表
         //积分
@@ -477,14 +490,14 @@ public class SyncYYEdiShipmentLogic {
         List<YYEdiShipmentItem> items = this.getSyncYYEdiShipmentItem(shipment, shipmentDetail,integral);
         int quantity = 0;
         for (YYEdiShipmentItem item:items){
-            quantity = quantity +item.getExpectQty();
+            quantity = quantity +item.getExpectqty();
         }
         //会员兑换积分
-        shipmentInfo.setExchangeIntegral(new BigDecimal(integral));
+        shipmentInfo.setExchangeintegral(new BigDecimal(integral));
         //总行数
         shipmentInfo.setTdq(items.size());
         //预期数量
-        shipmentInfo.setExpectQty(quantity);
+        shipmentInfo.setExpectqty(quantity);
         shipmentInfo.setItems(items);
         return shipmentInfo;
     }
@@ -510,11 +523,11 @@ public class SyncYYEdiShipmentLogic {
         for (ShipmentItem shipmentItem : shipmentItems) {
             YYEdiShipmentItem item = new YYEdiShipmentItem();
             //公司内码
-            item.setCompanyCode(warehouse.getCompanyCode());
+            item.setCompanycode(warehouse.getCompanyCode());
             //ERP单号
-            item.setBillNo(String.valueOf(shipment.getShipmentCode()));
+            item.setBillno(String.valueOf(shipment.getShipmentCode()));
             //中台sku
-            item.setSKU(shipmentItem.getSkuCode());
+            item.setSku(shipmentItem.getSkuCode());
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(shipmentItem.getSkuCode()));
             if (!rS.isSuccess()){
                 throw new ServiceException("find.sku.template.failed");
@@ -528,7 +541,7 @@ public class SyncYYEdiShipmentLogic {
             Map<String,String> extraMaps = skuTemplate.getExtra();
             String materialCode = extraMaps.get(TradeConstants.HK_MATRIAL_CODE);
             //货号
-            item.setMaterialCode(materialCode);
+            item.setMaterialcode(materialCode);
             //尺码名称
             String sizeName = "";
             List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
@@ -537,24 +550,24 @@ public class SyncYYEdiShipmentLogic {
                     sizeName = skuAttribute.getAttrVal();
                 }
             }
-            item.setSizeName(sizeName);
+            item.setSizename(sizeName);
 
             //中台尺码id
             String sizeId = extraMaps.get(TradeConstants.HK_SIZE_ID);
-            item.setSizeCode(sizeId);
-            item.setExpectQty(shipmentItem.getQuantity());
+            item.setSizecode(sizeId);
+            item.setExpectqty(shipmentItem.getQuantity());
 
             //销售单价(减去所有的优惠(优惠需要按比例计算))
-            item.setBalaPrice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setBalaprice(new BigDecimal(shipmentItem.getCleanPrice()==null?0:shipmentItem.getCleanPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //总价(销售价格*数量)
-            item.setPayAmount(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setPayamount(new BigDecimal(shipmentItem.getCleanFee()==null?0:shipmentItem.getCleanFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //吊牌价
             Map<String,Integer> extraPrice = skuTemplate.getExtraPrice();
             int originPrice = 0;
             if (extraPrice!=null){
                 originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
             }
-            item.setRetailPrice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setRetailprice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //积分
             integral = shipmentItem.getIntegral()==null?0:shipmentItem.getIntegral()+integral;
             items.add(item);
@@ -607,7 +620,7 @@ public class SyncYYEdiShipmentLogic {
      * 更新同步取消售后单到订单派发中心的发货单状态为失败
      * @param shipment
      */
-    private void updateShipmetSyncCancelFail(Shipment shipment){
+    public void updateShipmetSyncCancelFail(Shipment shipment){
         //更新发货单的状态
         OrderOperation syncOrderOperation = MiddleOrderEvent.SYNC_CANCEL_FAIL.toOrderOperation();
         Response<Boolean> updateSyncStatusRes = shipmentWiteLogic.updateStatusLocking(shipment, syncOrderOperation);
@@ -615,6 +628,38 @@ public class SyncYYEdiShipmentLogic {
             //这里失败只打印日志即可
             log.error("shipment(id:{}) operation :{} fail,error:{}", shipment.getId(), syncOrderOperation.getText(), updateSyncStatusRes.getError());
         }
+    }
+
+    /**
+     * 如果存在子单id 说明是通过子单取消导致的 打上标记
+     * @param skuOrders
+     * @param shipment
+     * @return 是否有子单标记成功
+     */
+    private Boolean updateSkuOrderAutoCancelLog(Object[] skuOrders,Shipment shipment) {
+        Boolean result=Boolean.FALSE;
+        List<Long> skuOrderIds = Lists.newArrayList();
+        for (int i = 0; i < skuOrders.length; i++) {
+            skuOrderIds.add((Long) skuOrders[i]);
+        }
+        List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        for (SkuOrder skuOrder : skuOrderList) {
+            if (!shipment.getSkuInfos().keySet().contains(skuOrder.getId())) {
+                continue;
+            }
+            SkuOrder update = new SkuOrder();
+            update.setId(skuOrder.getId());
+            Map<String, String> extraMap = skuOrder.getExtra();
+            extraMap.put(TradeConstants.SHIPMENT_CANCEL_BY_ORDER, "true");
+            update.setExtra(extraMap);
+            Response<Boolean> response = middleOrderWriteService.updateSkuOrder(update);
+            if (!response.isSuccess()) {
+                log.error("fail to add auto cancel log canuse by {}", response.getError());
+            }else {
+                result = Boolean.TRUE;
+            }
+        }
+        return result;
     }
 
 }

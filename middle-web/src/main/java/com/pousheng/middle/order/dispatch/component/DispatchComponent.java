@@ -251,7 +251,7 @@ public class DispatchComponent {
         }
     }
 
-    private void completeShopWarehouseTab(HkSkuStockInfo hkSkuStockInfo , Table<Long, String, Integer> skuCodeQuantityTable){
+    public void completeShopWarehouseTab(HkSkuStockInfo hkSkuStockInfo , Table<Long, String, Integer> skuCodeQuantityTable){
         Shop shop = shopCacher.findShopById(hkSkuStockInfo.getBusinessId());
         ShopExtraInfo shopExtraInfo = ShopExtraInfo.fromJson(shop.getExtra());
         if (Arguments.isNull(shopExtraInfo)){
@@ -267,7 +267,7 @@ public class DispatchComponent {
 
     }
 
-    private void completeTotalWarehouseTab(HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable) {
+    public void completeTotalWarehouseTab(HkSkuStockInfo hkSkuStockInfo, Table<Long, String, Integer> skuCodeQuantityTable) {
         //新版仓库暂时不取安全库存
         for (HkSkuStockInfo.SkuAndQuantityInfo skuAndQuantityInfo : hkSkuStockInfo.getMaterial_list()) {
             //可用库存

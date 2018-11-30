@@ -134,7 +134,7 @@ public class RefundJob {
                         }catch (Exception e){
                             log.error("add sku order cancel reason failed,sku order id is {}",skuOrder.getId());
                         }
-                        orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode());
+                        orderWriteLogic.autoCancelSkuOrder(orderRefund.getOrderId(), refundItem.getSkuCode(), skuOrder.getId());
                     }
                 }else{
                     throw new ServiceException("error.order.type");

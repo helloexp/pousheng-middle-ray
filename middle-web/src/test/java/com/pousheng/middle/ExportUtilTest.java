@@ -115,7 +115,7 @@ public class ExportUtilTest {
         OrderExportEntity orderExport = new OrderExportEntity();
         orderExport.setOrderCode("3434888387674");
         orderExport.setShopName("shangzhaer");
-        orderExport.setPaymentDate(new Date());
+        orderExport.setPaymentdate(new Date());
         orderExport.setOrderStatus(MiddleOrderStatus.CONFIRMED.getName());
         orderExport.setFee(448.9);
 

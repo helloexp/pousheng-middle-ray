@@ -59,7 +59,7 @@ public class ExtraKeyConstant {
     /**
      * 承运商
      */
-    public final static String FREIGHT_COMPANY = "freightCompany";
+    public final static String FREIGHT_COMPANY = "freightcompany";
 
     /**
      * 批次号

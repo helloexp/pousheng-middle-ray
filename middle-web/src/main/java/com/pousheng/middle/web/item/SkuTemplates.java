@@ -899,10 +899,13 @@ public class SkuTemplates {
     @ApiOperation("导入文件-商品分组")
     @PostMapping(value = "/api/sku-template/batch/import/group/file")
     public void asyncImportGroupFile(@RequestParam String fileUrl,
-                                     @RequestParam Long groupId, @RequestParam Integer type) {
+                                     @RequestParam Long groupId,
+                                     @RequestParam(required = false) String fileName,
+                                     @RequestParam Integer type) {
 
         ScheduleTask task = ScheduleTaskUtil.transItemGroupImportTask(new ItemGroupTask().groupId(groupId)
                 .type(PsItemGroupSkuType.GROUP.value())
+                .fileName(fileName)
                 .type(type).mark(true).fileUrl(fileUrl).userId(UserUtil.getUserId()));
         Response<Long> resp = scheduleTaskWriteService.create(task);
         if (!resp.isSuccess()) {

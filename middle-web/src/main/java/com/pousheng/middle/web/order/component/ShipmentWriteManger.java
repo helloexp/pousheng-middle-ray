@@ -1,25 +1,21 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
-import com.google.common.eventbus.EventBus;
 import com.pousheng.middle.order.dispatch.component.MposSkuStockLogic;
-import com.pousheng.middle.order.enums.StockRecordType;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.service.MiddleShipmentWriteService;
-import com.pousheng.middle.web.events.warehouse.StockRecordEvent;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
-import io.terminus.parana.order.model.OrderLevel;
-import io.terminus.parana.order.model.OrderRefund;
-import io.terminus.parana.order.model.Shipment;
-import io.terminus.parana.order.model.ShopOrder;
+import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.OrderWriteService;
 import io.terminus.parana.order.service.ShipmentWriteService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -111,6 +107,39 @@ public class ShipmentWriteManger {
         if(!rDecrease.isSuccess()) {
             log.error("failed to decreaseStocks, shipment id: {}, error code:{},auto dispatch stock failed", createResp.getResult(), rDecrease.getError());
             throw new ServiceException(rDecrease.getError());
+        }
+        return createResp.getResult();
+    }
+
+    /**
+     * 保存纯邮费商品发货单
+     * @param shipment
+     * @param shopOrder
+     * @return
+     */
+    @Transactional
+    public Long createPostageShipment(Shipment shipment, ShopOrder shopOrder,List<SkuOrder> skuOrders){
+        log.info("begin to create postage shipment,shopOrderId is {}",shopOrder.getId());
+        //1.生成发货单
+        Response<Long> createResp = shipmentWriteService.create(shipment, Arrays.asList(shopOrder.getId()), OrderLevel.SHOP);
+        if (!createResp.isSuccess()) {
+            log.error("fail to create postage shipment:{} for order(id={}),and level={},cause:{}",
+                shipment, shopOrder.getId(), OrderLevel.SHOP.getValue(), createResp.getError());
+            throw new ServiceException(createResp.getError());
+        }
+        //2.子订单扣减数量
+        shipment.setShipmentCode("SHP"+ createResp.getResult());
+        this.decreaseSkuOrderWaitHandleNumber(shipment);
+        log.info("end to create postage shipment,shipmentId is {}", createResp.getResult());
+
+        //3.更新订单状态
+        orderWriteService.updateOrderStatus(shopOrder.getId(),OrderLevel.SHOP, MiddleOrderStatus.SHIPPED.getValue());
+
+        //4.更新子单状态
+        for(SkuOrder skuOrder:skuOrders) {
+            orderWriteService.updateShippedNum(skuOrder.getId(),skuOrder.getQuantity());
+            orderWriteService.updateOrderStatus(skuOrder.getId(), OrderLevel.SKU,
+                MiddleOrderStatus.SHIPPED.getValue());
         }
         return createResp.getResult();
     }

@@ -607,6 +607,11 @@ public class StockPusherLogic {
                     shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), dto.getSkuCode(), channelStock, shareStock);
             channelStock = 0L;
         }
+        if (shareStock < 0L) {
+            log.warn("shop(id={}) warehouseId(id={}) shareStock is less than 0 for sku(code={}), current channelStock is:{}, shareStock is:{}",
+                    shopStockRuleDto.getShopRule().getShopId(), dto.getWarehouseId(), dto.getSkuCode(), channelStock, shareStock);
+            shareStock = 0L;
+        }
 
         if (null != shopStockRule.getSafeStock()) {
             shareStock = shareStock - shopStockRule.getSafeStock();
@@ -625,8 +630,8 @@ public class StockPusherLogic {
     private Long calculateWarehouseStockForShop(List<AvailableInventoryDTO> dtos, ShopStockRuleDto shopStockRuleDto) {
         Long channelStock;
         Long shareStock;
-        channelStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())).mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
-        shareStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())).mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
+        channelStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())&&dto.getChannelRealQuantity()>0).mapToLong(AvailableInventoryDTO::getChannelRealQuantity).sum();
+        shareStock = dtos.stream().filter(dto -> !shopStockRuleDto.getWarehouseRule().containsKey(dto.getWarehouseId())&&dto.getInventoryUnAllocQuantity()>0).mapToLong(AvailableInventoryDTO::getInventoryUnAllocQuantity).sum();
         //如果库存数量小于0则推送0
         ShopStockRule shopRule = shopStockRuleDto.getShopRule();
         if (channelStock < 0L) {

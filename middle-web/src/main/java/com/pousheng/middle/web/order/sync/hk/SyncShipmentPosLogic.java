@@ -5,6 +5,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.jd.open.api.sdk.domain.jzt_zw.DspAdUnitService.ArrayList;
 import com.pousheng.middle.hksyc.pos.api.SycHkShipmentPosApi;
 import com.pousheng.middle.hksyc.pos.dto.*;
 import com.pousheng.middle.open.api.constant.ExtraKeyConstant;
@@ -38,8 +39,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.text.DecimalFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -221,9 +224,12 @@ public class SyncShipmentPosLogic {
             posContent.setNetcompanyid(companyId);//线上店铺所属公司id
             posContent.setNetshopcode(code);//线上店铺code
         } else {
-            Shop receivershop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
-            posContent.setCompanyid(receivershop.getBusinessId().toString());//实际发货账套id
-            posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
+            //非补邮费订单
+            if (!isPostageOrder(shipmentExtra)) {
+                Shop receivershop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+                posContent.setCompanyid(receivershop.getBusinessId().toString());//实际发货账套id
+                posContent.setShopcode(receivershop.getOuterId());//实际发货店铺code
+            }
 
             //下单店
             OpenShop openShop = orderReadLogic.findOpenShopByShopId(shipment.getShopId());
@@ -233,6 +239,12 @@ public class SyncShipmentPosLogic {
 
             posContent.setNetcompanyid(companyId);//线上店铺所属公司id
             posContent.setNetshopcode(code);//线上店铺code
+
+            //补邮费订单
+            if (isPostageOrder(shipmentExtra)) {
+                posContent.setCompanyid(companyId);//绩效店铺所属公司id
+                posContent.setShopcode(code);//绩效店铺code
+            }
         }
         posContent.setVoidstockcode(posStockCode);//todo 实际发货账套的虚拟仓代码
 
@@ -253,9 +265,28 @@ public class SyncShipmentPosLogic {
 
         HkShipmentPosInfo netsalorder = makeHkShipmentPosInfo(shipmentDetail, shipmentWay);
         List<HkShipmentPosItem> ordersizes = makeHkShipmentPosItem(shipmentDetail);
-        posContent.setNetsalorder(netsalorder);
-        posContent.setOrdersizes(ordersizes);
 
+        // 如果是邮费订单则补传子单明细
+        if (isPostageOrder(shipmentExtra)) {
+            //邮费订单将订单总金额放到邮费里。并重置数量为0
+            if (org.apache.commons.collections.CollectionUtils.isNotEmpty(shipmentDetail.getShipmentItems())) {
+                ShipmentItem item=shipmentDetail.getShipmentItems().get(0);
+                //商品金额 单位从分转换为元
+                BigDecimal itemFee=convertToBigDecimal(String.valueOf(item.getSkuPrice()*item.getQuantity()/100));
+
+                //总金额=邮费+商品金额
+                BigDecimal orgExpressFee = convertToBigDecimal(netsalorder.getExpresscost());
+                BigDecimal totalFee = itemFee.add(orgExpressFee);
+                totalFee.setScale(2, RoundingMode.HALF_DOWN);
+                //重置实付金额和让利金额
+                netsalorder.setExpresscost(totalFee.toString());
+                netsalorder.setZramount("0");
+                netsalorder.setPayamountbakup("0");
+            }
+        } else {
+            posContent.setOrdersizes(ordersizes);
+        }
+        posContent.setNetsalorder(netsalorder);
         return posContent;
     }
 
@@ -293,6 +324,8 @@ public class SyncShipmentPosLogic {
         ShipmentExtra shipmentExtra = shipmentDetail.getShipmentExtra();
         List<Invoice> invoices = shipmentDetail.getInvoices();
 
+        List<Long> skuOrdersIds = new java.util.ArrayList<Long>();
+
         HkShipmentPosInfo posInfo = new HkShipmentPosInfo();
         posInfo.setManualbillno(shopOrder.getOutId()); //第三方平台单号
         posInfo.setBuyeralipayno(""); //支付宝账号
@@ -325,6 +358,8 @@ public class SyncShipmentPosLogic {
         List<ShipmentItem> shipmentItems = shipmentDetail.getShipmentItems();
         BigDecimal totalPrice = BigDecimal.ZERO;
         for (ShipmentItem shipmentItem : shipmentItems) {
+            skuOrdersIds.add(shipmentItem.getSkuOrderId());
+
             if (shipmentItem.getShipQuantity() != null && !shipmentItem.getQuantity().equals(shipmentItem.getShipQuantity())) {
                 totalPrice = totalPrice.add(new BigDecimal(shipmentItem.getCleanFee())
                         .multiply(new BigDecimal(shipmentItem.getShipQuantity())).divide(new BigDecimal(shipmentItem.getQuantity()), 2, RoundingMode.HALF_DOWN));
@@ -391,6 +426,10 @@ public class SyncShipmentPosLogic {
             posInfo.setParcelweight(String.valueOf(shipmentExtra.getWeight()));
         }
 
+        DecimalFormat df = new DecimalFormat("#,###.00");
+        posInfo.setDischargeintegral(String.valueOf(shipmentReadLogic.getUsedIntegral(skuOrdersIds)));
+        posInfo.setDischargeamount(df.format(BigDecimal.valueOf(shipmentReadLogic.getPaymentIntegral(skuOrdersIds)).divide(new BigDecimal(100))));
+
         return posInfo;
     }
 
@@ -409,6 +448,25 @@ public class SyncShipmentPosLogic {
         } else {
             return Boolean.FALSE;
         }
+    }
+
+    /**
+     * 是否是补邮费订单
+     * @param shipmentExtra
+     * @return
+     */
+    private boolean isPostageOrder(ShipmentExtra shipmentExtra) {
+        return !java.util.Objects.isNull(shipmentExtra.getIsPostageOrder())
+            && shipmentExtra.getIsPostageOrder();
+    }
+
+    /**
+     * 转换金额类型
+     * @param val
+     * @return
+     */
+    private BigDecimal convertToBigDecimal(String val){
+        return new BigDecimal(org.apache.commons.lang3.StringUtils.isBlank(val) ? "0" : val);
     }
 
 

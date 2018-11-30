@@ -42,8 +42,8 @@ public class ItemMappingCacher {
     @PostConstruct
     public void init() {
         this.mappingCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration*1, TimeUnit.MINUTES).weakKeys().weakValues()
-                .maximumSize(2000)
+                .expireAfterWrite(duration*30, TimeUnit.SECONDS).weakKeys().weakValues()
+                .maximumSize(5000)
                 .build(new CacheLoader<String, List<ItemMapping>>() {
                     @Override
                     public List<ItemMapping> load(String skuCode) throws Exception {

@@ -374,3 +374,6 @@ open.client.refresh.token.job.enable: ${OPEN_CLIENT_REFRESH_TOKEN_JOB_ENABLE:fal
 
 # 统一接入层地址
 terminus.erp.gateway: ${TERMINUS.ERP.GETEWAY:https://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}
+
+### 中台补拍邮费商品SKU_CODE
+postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}

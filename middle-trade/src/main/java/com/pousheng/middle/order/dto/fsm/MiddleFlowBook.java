@@ -412,6 +412,11 @@ public class MiddleFlowBook {
                     MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
                     MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
 
+            //同步中->取消发货->同步中
+            addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue(),
+                    MiddleOrderEvent.CANCEL_HK.toOrderOperation(),
+                    MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue());
+
             //同步取消退货中 -->取消成功--> 已取消
             addTransition(MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue(),
                     MiddleOrderEvent.SYNC_CANCEL_SUCCESS.toOrderOperation(),

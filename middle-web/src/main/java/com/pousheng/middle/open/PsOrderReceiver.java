@@ -20,8 +20,10 @@ import com.pousheng.middle.order.enums.EcpOrderStatus;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
+import com.pousheng.middle.order.impl.dao.ShopOrderExtDao;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
+import com.pousheng.middle.order.model.ShopOrderExt;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
 import com.pousheng.middle.web.biz.Exception.BizException;
@@ -91,6 +93,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     private InvoiceWriteService invoiceWriteService;
 
     @Autowired
+    private ShopOrderExtDao shopOrderExtDao;
+
+    @Autowired
     private OrderWriteLogic orderWriteLogic;
 
     @Autowired
@@ -147,6 +152,9 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
     @Value("${redirect.erp.gateway}")
     private String poushengPagodaCommonRedirectUrl;
+
+    @Autowired
+    private PostageOrderLogic postageOrderLogic;
 
     /**
      * 天猫加密字段占位符
@@ -284,10 +292,27 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
 
         }
 
+        if (openClientFullOrder.getStatus() == OpenClientOrderStatus.CANCEL && Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())){
+            updateCancelOrder(shopOrder, openClientFullOrder);
+            return;
+        }
+
         //预售订单后续处理流程
         this.updateStepOrderInfo(shopOrder, openClientFullOrder);
 
 
+    }
+
+    protected void updateCancelOrder(ShopOrder shopOrder, OpenClientFullOrder openClientFullOrder) {
+        ShopOrderExt shopOrderExt = new ShopOrderExt();
+        shopOrderExt.setId(shopOrder.getId());
+        shopOrderExt.setBuyerNote(openClientFullOrder.getBuyerRemark());
+        boolean updateR = shopOrderExtDao.update(shopOrderExt);
+
+        if (!updateR){
+            log.error("failed to change shopOrder(id={})'s BuyerNote from {} to {} when sync order", shopOrder.getId(),
+                    shopOrder.getBuyerNote(), shopOrderExt.getBuyerNote());
+        }
     }
 
     public void noticeConfirm(Long shopOrderId) {
@@ -363,6 +388,8 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     protected RichOrder makeParanaOrder(OpenClientShop openClientShop,
                                         OpenClientFullOrder openClientFullOrder) {
         RichOrder richOrder = super.makeParanaOrder(openClientShop, openClientFullOrder);
+        //处理是否是邮费订单
+        postageOrderLogic.handlePostageOrder(richOrder);
 
         RichSkusByShop richSkusByShop = richOrder.getRichSkusByShops().get(0);
 

@@ -1541,13 +1541,14 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenOrderId(refundReadLogic.getOutSkuOrderIdSuningSale(outId));
-                eventBus.post(event);
-
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                this.createRefundResultTask(event);
             }
     }
 
         //如果是云聚的售后单,将主动查询售后单的状态
-        if (StringUtils.hasText(outId) && outId.contains("YJ")) {
+        if (StringUtils.hasText(outId) && outId.contains(MiddleChannel.YUNJUBBC.getValue())) {
             log.info(" refund={}",refund);
             String channel = refundReadLogic.getOutChannelSuning(outId);
             if (Objects.equals(channel, MiddleChannel.YUNJUBBC.getValue())
@@ -1560,7 +1561,9 @@ public class RefundWriteLogic {
                 event.setChannel(channel);
                 event.setOpenShopId(newRefund.getShopId());
                 event.setOpenOrderId(shopOrder.getOutId());
-                eventBus.post(event);
+                //保证异步任务的可靠性，将原来的eventBus方式改用新的基于定时任务执行
+                //eventBus.post(event);
+                createRefundResultTask(event);
             }
         }
     }
@@ -1576,6 +1579,7 @@ public class RefundWriteLogic {
     private void createRefundResultTask(TaobaoConfirmRefundEvent event){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.THIRD_REFUND_RESULT.toString());
+        biz.setBizId(String.valueOf(event.getRefundId()));
         biz.setContext(mapper.toJson(event));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);

@@ -9,13 +9,13 @@ import com.pousheng.middle.open.stock.StockPusherClient;
 import com.pousheng.middle.warehouse.companent.InventoryClient;
 import com.pousheng.middle.warehouse.dto.InventoryDTO;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
+import com.pousheng.middle.web.order.component.PostageOrderLogic;
 import io.terminus.common.model.Response;
 import io.terminus.common.rocketmq.annotation.ConsumeMode;
 import io.terminus.common.rocketmq.annotation.MQConsumer;
 import io.terminus.common.rocketmq.annotation.MQSubscribe;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
@@ -46,6 +46,9 @@ public class InventoryChangeConsumer {
     @Autowired
     private InventoryPusherClient inventoryPusherClient;
 
+    @Autowired
+    private PostageOrderLogic postageOrderLogic;
+
     /**
      * 有库存发生变动的消息过来，开始推送库存
      * @param skuCodeJson
@@ -65,6 +68,8 @@ public class InventoryChangeConsumer {
 
             List<String> skuCodes = Lists.newArrayList();
             List<InventoryChangeDTO> changeDTOS = JSON.parseArray(skuCodeJson, InventoryChangeDTO.class);
+            //移除补拍邮费商品的库存变化 modified by longjun.tlj
+            postageOrderLogic.removePostageSkuCode(changeDTOS);
             if (!ObjectUtils.isEmpty(changeDTOS)) {
                 boolean flag = validateParam(changeDTOS);
                 //若存在仓库和店铺都为空则沿用原有逻辑按skuCode推送 modified by longjun.tlj

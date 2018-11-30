@@ -1342,6 +1342,25 @@ public class Shipments {
         return org.apache.commons.lang3.StringUtils.isEmpty(skuShareDiscount) ? "0" : skuShareDiscount;
     }
 
+    private String getPaymentIntegral(SkuOrder skuOrder){
+        String paymentIntegral="";
+        try{
+            paymentIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_PAYMENT_INTEGRAL,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_PAYMENT_INTEGRAL);
+        }
+        return StringUtils.isEmpty(paymentIntegral)?"0":paymentIntegral;
+    }
+
+    private String getUsedIntegral(SkuOrder skuOrder){
+        String usedIntegral="";
+        try{
+            usedIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_USED_INTEGRAL,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_USED_INTEGRAL);
+        }
+        return StringUtils.isEmpty(usedIntegral)?"0":usedIntegral;
+    }
 
     /**
      * 宝胜二期--单个发货单撤销功能

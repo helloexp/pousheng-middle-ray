@@ -77,7 +77,7 @@ public class JitOrderManagerTest {
         + "                \"channel\":\"yunjujit\",\n"
         + "                \"paymentChannelName\":\"支付宝\",\n"
         + "                \"paymentSerialNo\":\"13133213\",\n"
-        + "                \"paymentDate\":\"20180111120910\",\n"
+        + "                \"paymentdate\":\"20180111120910\",\n"
         + "                \"createdAt\":\"20180111120920\",\n"
         + "                \"stockId\":\"244-244000003\",\n"
         + "                \"isCareStock\":\"Y\",\n"

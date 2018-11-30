@@ -183,13 +183,14 @@ public class AdminOrderWriter {
      *
      * @param shopOrderId
      * @param skuCode
+     * @param skuOrderId
      */
     @RequestMapping(value = "api/order/{id}/auto/cancel/sku/order", method = RequestMethod.PUT)
     @ApiOperation("取消子订单(自动)")
-    public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId, @RequestParam("skuCode") String skuCode) {
-        log.info("try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
-        orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode);
-        log.info("end try to auto cancel sku order shop orderId is {},skuCode is {}", shopOrderId, skuCode);
+    public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId, @RequestParam("skuCode") String skuCode, Long skuOrderId) {
+        log.info("try to auto cancel sku order shop orderId is {},skuCode is {},skuOrderId {}", shopOrderId, skuCode, skuOrderId);
+        orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode, skuOrderId);
+        log.info("end try to auto cancel sku order shop orderId is {},skuCode is {} ,skuOrderId {}", shopOrderId, skuCode, skuOrderId);
 
     }
 
@@ -204,7 +205,7 @@ public class AdminOrderWriter {
         log.info("try to roll back shop order shopOrderId is {}", shopOrderId);
         Response<Boolean> response = orderWriteLogic.rollbackShopOrder(shopOrderId);
         if (!response.isSuccess()) {
-            throw new JsonResponseException("rollback.shop.order.failed");
+            throw new JsonResponseException(response.getError());
         }
         //如果未处理原因是备注订单已经占库被撤销的，则未处理原因变为备注订单客服取消占库发货单
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(shopOrderId);

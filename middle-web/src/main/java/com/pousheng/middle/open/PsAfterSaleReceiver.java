@@ -402,26 +402,36 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             switch (channel) {
                 case JD:
                     criteria.setJdCode(shipmentCorpCode);
+                    break;
                 case TAOBAO:
                 case TFENXIAO:
                     criteria.setTaobaoCode(shipmentCorpCode);
+                    break;
                 case FENQILE:
                     criteria.setFenqileCode(shipmentCorpCode);
+                    break;
                 case SUNING:
                 case SUNINGSALE:
                     criteria.setSuningCode(shipmentCorpCode);
+                    break;
                 case OFFICIAL:
                     criteria.setPoushengCode(shipmentCorpCode);
+                    break;
                 case YUNJUBBC:
                     criteria.setOfficalCode(shipmentCorpCode);
+                    break;
                 case YUNJUJIT:
                     criteria.setOfficalCode(shipmentCorpCode);
+                    break;
                 case CODOON:
                     criteria.setCodoonCode(shipmentCorpCode);
+                    break;
                 case KAOLA:
                     criteria.setKaolaCode(shipmentCorpCode);
+                    break;
                 case VIPOXO:
                     criteria.setVipCode(shipmentCorpCode);
+                    break;
                 default:
                     log.error("there is not any express info by channel:{} and poushengCode:{}", channel.getValue(), shipmentCorpCode);
                     throw new JsonResponseException("find.expressCode.failed");
@@ -436,12 +446,19 @@ public class PsAfterSaleReceiver extends DefaultAfterSaleReceiver {
             return;
         }
         if (response.getResult().getData().size() == 0) {
-            log.error("there is not any express info by poushengCode:{}", shipmentCorpCode);
-            return;
+            //唯品会找不到物流公司映射时默认品骏
+            if(Objects.equals(refund.getChannel(),MiddleChannel.VIPOXO.getValue())){
+                refundExtra.setShipmentCorpName("品骏");
+                refundExtra.setShipmentCorpCode("PINJUN");
+            }else {
+                log.error("there is not any express info by poushengCode:{}", shipmentCorpCode);
+                return;
+            }
+        }else {
+            ExpressCode expressCode = response.getResult().getData().get(0);
+            refundExtra.setShipmentCorpName(expressCode.getName());
+            refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
         }
-        ExpressCode expressCode = response.getResult().getData().get(0);
-        refundExtra.setShipmentCorpName(expressCode.getName());
-        refundExtra.setShipmentCorpCode(expressCode.getOfficalCode());
 
         extraMap.put(TradeConstants.REFUND_EXTRA_INFO, mapper.toJson(refundExtra));
         refund.setShipmentSerialNo(refundExtra.getShipmentSerialNo());

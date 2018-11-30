@@ -368,3 +368,6 @@ biz.export.wait.handle.job.enable: ${BIZ_EXPORT_WAIT_HANDLE_JOB_ENABLE:true}
 
 # 失败任务补偿开关
 biz.failed.job.enable: ${BIZ_FAILED_JOB_ENABLE:true}
+
+### 中台补拍邮费商品SKU_CODE
+postage.sku.code: ${POSTAGE_SKU_CODE:BYC0001$}

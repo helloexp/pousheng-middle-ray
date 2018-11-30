@@ -1260,8 +1260,10 @@ public class AdminShops {
             //校验当前时间是否在开始时间和结束时间之间
             String[] startTimeStr = strArr[1].split(":");
             String[] endTimeStr = strArr[2].split(":");
-            LocalTime startTime = LocalTime.of(Integer.parseInt(startTimeStr[0]),Integer.parseInt(startTimeStr[1]));
-            LocalTime endTime = LocalTime.of(Integer.parseInt(endTimeStr[0]),Integer.parseInt(endTimeStr[1]));
+            LocalTime startTime = LocalTime.of(Integer.parseInt(startTimeStr[0]), Integer.parseInt(startTimeStr[1]),
+                Integer.parseInt(startTimeStr[2]));
+            LocalTime endTime = LocalTime.of(Integer.parseInt(endTimeStr[0]), Integer.parseInt(endTimeStr[1]),
+                Integer.parseInt(endTimeStr[2]));
             LocalTime curTime = LocalTime.now();
             if (curTime.compareTo(startTime) >= 0 && curTime.compareTo(endTime) <= 0){
                 return true;

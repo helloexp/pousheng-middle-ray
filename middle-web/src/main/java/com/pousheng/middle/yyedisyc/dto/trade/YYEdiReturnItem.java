@@ -10,171 +10,199 @@ import java.math.BigDecimal;
  * Date: 2018/1/7
  * pousheng-middle
  */
-public class YYEdiReturnItem implements java.io.Serializable{
+public class YYEdiReturnItem implements java.io.Serializable {
     private static final long serialVersionUID = 3421289971277340109L;
 
     /**
-     *行号
+     * 行号
      */
-    @JsonProperty(value = "RowNo")
-    private int RowNo;
+    @JsonProperty(value = "rowno")
+    private int rowno;
 
     /**
      * 公司内码
      */
-    @JsonProperty(value = "CompanyCode")
-    private String CompanyCode;
+    @JsonProperty(value = "companycode")
+    private String companycode;
 
     /**
      * ERP单号
      */
-    @JsonProperty(value = "BillNo")
-    private String BillNo;
+    @JsonProperty(value = "billno")
+    private String billno;
 
     /**
      * 条码
      */
-    @JsonProperty(value = "SKU")
-    private String SKU;
+    @JsonProperty(value = "sku")
+    private String sku;
 
     /**
      * 货号
      */
-    @JsonProperty(value = "MaterialCode")
-    private String MaterialCode;
+    @JsonProperty(value = "materialcode")
+    private String materialcode;
 
     /**
      * 尺码名称
      */
-    @JsonProperty(value = "SizeName")
-    private String SizeName;
+    @JsonProperty(value = "sizename")
+    private String sizename;
 
     /**
      * 预计数量
      */
-    @JsonProperty(value = "ExpectQty")
-    private int ExpectQty;
+    @JsonProperty(value = "expectqty")
+    private int expectqty;
 
     /**
      * 网店交易单号
      */
-    @JsonProperty(value = "ShopBillNo")
-    private String ShopBillNo;
+    @JsonProperty(value = "shopbillno")
+    private String shopbillno;
 
     /**
      * 结算金额(总价)
      */
-    @JsonProperty(value = "PayAmount")
-    private BigDecimal PayAmount;
+    @JsonProperty(value = "payamount")
+    private BigDecimal payamount;
 
     /**
      * 零售价
      */
-    @JsonProperty(value = "RetailPrice")
-    private BigDecimal RetailPrice;
+    @JsonProperty(value = "retailprice")
+    private BigDecimal retailprice;
 
-    @JsonProperty(value = "EDIBillNo")
-    private String EDIBillNo;
+    @JsonProperty(value = "edibillno")
+    private String edibillno;
 
     /**
      * 结算价(单价)
      */
-    @JsonProperty(value = "BalaPrice")
-    private BigDecimal BalaPrice;
-    @JsonIgnore
-    public int getRowNo() {
-        return RowNo;
+    @JsonProperty(value = "balaprice")
+    private BigDecimal balaprice;
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
     }
+
     @JsonIgnore
-    public void setRowNo(int rowNo) {
-        RowNo = rowNo;
+    public int getRowno() {
+        return rowno;
     }
+
     @JsonIgnore
-    public String getCompanyCode() {
-        return CompanyCode;
+    public void setRowno(int rowno) {
+        this.rowno = rowno;
     }
+
     @JsonIgnore
-    public void setCompanyCode(String companyCode) {
-        CompanyCode = companyCode;
+    public String getCompanycode() {
+        return companycode;
     }
+
     @JsonIgnore
-    public String getBillNo() {
-        return BillNo;
+    public void setCompanycode(String companycode) {
+        this.companycode = companycode;
     }
+
     @JsonIgnore
-    public void setBillNo(String billNo) {
-        BillNo = billNo;
+    public String getBillno() {
+        return billno;
     }
+
     @JsonIgnore
-    public String getSKU() {
-        return SKU;
+    public void setBillno(String billno) {
+        this.billno = billno;
     }
+
     @JsonIgnore
-    public void setSKU(String SKU) {
-        this.SKU = SKU;
+    public String getSku() {
+        return sku;
     }
+
     @JsonIgnore
-    public String getMaterialCode() {
-        return MaterialCode;
+    public void setSku(String sku) {
+        this.sku = sku;
     }
+
     @JsonIgnore
-    public void setMaterialCode(String materialCode) {
-        MaterialCode = materialCode;
+    public String getMaterialcode() {
+        return materialcode;
     }
+
     @JsonIgnore
-    public String getSizeName() {
-        return SizeName;
+    public void setMaterialcode(String materialcode) {
+        this.materialcode = materialcode;
     }
+
     @JsonIgnore
-    public void setSizeName(String sizeName) {
-        SizeName = sizeName;
+    public String getSizename() {
+        return sizename;
     }
+
     @JsonIgnore
-    public int getExpectQty() {
-        return ExpectQty;
+    public void setSizename(String sizename) {
+        this.sizename = sizename;
     }
+
     @JsonIgnore
-    public void setExpectQty(int expectQty) {
-        ExpectQty = expectQty;
+    public int getExpectqty() {
+        return expectqty;
     }
+
     @JsonIgnore
-    public String getShopBillNo() {
-        return ShopBillNo;
+    public void setExpectqty(int expectqty) {
+        this.expectqty = expectqty;
     }
+
     @JsonIgnore
-    public void setShopBillNo(String shopBillNo) {
-        ShopBillNo = shopBillNo;
+    public String getShopbillno() {
+        return shopbillno;
     }
+
     @JsonIgnore
-    public BigDecimal getPayAmount() {
-        return PayAmount;
+    public void setShopbillno(String shopbillno) {
+        this.shopbillno = shopbillno;
     }
+
     @JsonIgnore
-    public void setPayAmount(BigDecimal payAmount) {
-        PayAmount = payAmount;
+    public BigDecimal getPayamount() {
+        return payamount;
     }
+
     @JsonIgnore
-    public BigDecimal getRetailPrice() {
-        return RetailPrice;
+    public void setPayamount(BigDecimal payamount) {
+        this.payamount = payamount;
     }
+
     @JsonIgnore
-    public void setRetailPrice(BigDecimal retailPrice) {
-        RetailPrice = retailPrice;
+    public BigDecimal getRetailprice() {
+        return retailprice;
     }
+
     @JsonIgnore
-    public BigDecimal getBalaPrice() {
-        return BalaPrice;
+    public void setRetailprice(BigDecimal retailprice) {
+        this.retailprice = retailprice;
     }
+
     @JsonIgnore
-    public void setBalaPrice(BigDecimal balaPrice) {
-        BalaPrice = balaPrice;
+    public String getEdibillno() {
+        return edibillno;
     }
+
     @JsonIgnore
-    public String getEDIBillNo() {
-        return EDIBillNo;
+    public void setEdibillno(String edibillno) {
+        this.edibillno = edibillno;
     }
+
     @JsonIgnore
-    public void setEDIBillNo(String EDIBillNo) {
-        this.EDIBillNo = EDIBillNo;
+    public BigDecimal getBalaprice() {
+        return balaprice;
+    }
+
+    @JsonIgnore
+    public void setBalaprice(BigDecimal balaprice) {
+        this.balaprice = balaprice;
     }
 }

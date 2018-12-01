@@ -27,7 +27,7 @@ public class TerminusErpOpenApiClient {
     @Value("${terminus.erp.secret:6a0e@93204aefe45d47f6e488}")
     private String erpSecret;
 
-    @Value("${terminus.erp.gateway:http://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}")
+    @Value("${terminus.erp.gateway:https://retail-gateway-pagoda-prod.app.terminus.io/api/gateway}")
 
     private String erpGateWay;
 
@@ -38,7 +38,10 @@ public class TerminusErpOpenApiClient {
         context.put("pampasCall", method);
         context.put("sign", generateSign(context));
 
-        HttpRequest request = HttpRequest.post(erpGateWay).form(context, "UTF-8");
+        HttpRequest request = HttpRequest.post(erpGateWay)
+                .form(context, "UTF-8")
+                .trustAllHosts()
+                .trustAllCerts();
         final String resp = request.body();
         if (request.ok()) {
             return resp;

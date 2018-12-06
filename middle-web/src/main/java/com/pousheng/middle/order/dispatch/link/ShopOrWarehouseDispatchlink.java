@@ -66,14 +66,23 @@ public class ShopOrWarehouseDispatchlink implements DispatchOrderLink {
         Boolean oneCompany = (Boolean) context.get(DispatchContants.ONE_COMPANY);
         //如果是vip的单子 则不走拆单 如果还是同公司环节则返回true 如果是非同公司 则返回false
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.VIPOXO.getValue())) {
-            dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            return oneCompany ? Boolean.TRUE : Boolean.FALSE;
+            if (oneCompany) {
+                return Boolean.TRUE;
+            } else {
+                dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
+                return Boolean.FALSE;
+            }
         }
         //如果是京东货到付款订单，则不走拆单逻辑 直接返回
         if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.JD.getValue())
                 && Objects.equals(shopOrder.getPayType(), MiddlePayType.CASH_ON_DELIVERY.getValue())) {
             dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
-            return oneCompany ? Boolean.TRUE : Boolean.FALSE;
+            if (oneCompany) {
+                return Boolean.TRUE;
+            } else {
+                dispatchOrderItemInfo.setSkuCodeAndQuantities(skuCodeAndQuantities);
+                return Boolean.FALSE;
+            }
         }
         //走到这里, 已经没有可以整仓发货的仓库了, 此时尽量按照返回仓库最少数量返回结果
         Multiset<String> current = ConcurrentHashMultiset.create();

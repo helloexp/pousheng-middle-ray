@@ -94,14 +94,15 @@ public class ShopSkuStockPushHandler {
 
     private void pushYunjuJIT(Long shopId, int pageNo, int pageSize){
         Set<Long> groupIds = Sets.newHashSet(groupRuleCacherProxy.findByShopId(shopId));
-        log.info("query shop group ,shopId{}, groupIds", shopId, groupIds);
+        log.info("query shop group ,shopId{}, groupIds{}", shopId, groupIds);
 
         String templateName = "ps_search.mustache";
         Map<String, String> params = Maps.newHashMap();
         params.put("groupIds", Joiners.COMMA.join(groupIds));
+        String contextId =  String.valueOf(System.currentTimeMillis());
         while(true) {
             Response<? extends Pagination<SearchSkuTemplate>> response = skutemplateScrollSearcher.searchWithScroll (
-                    String.valueOf(System.currentTimeMillis()),pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
+                    contextId,pageNo, pageSize, templateName, params, SearchSkuTemplate.class);
             if (!response.isSuccess()) {
                 log.error("query sku template by groupIds:{} fail,error:{}", groupIds, response.getError());
                 throw new JsonResponseException(response.getError());

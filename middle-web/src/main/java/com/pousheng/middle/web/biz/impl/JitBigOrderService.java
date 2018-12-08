@@ -99,11 +99,11 @@ public class JitBigOrderService implements CompensateBizService {
         request.setOrder_sn(outOrderId);
         request.setError_code(JitOrderReceiptApi.SUCCESS);
         try {
-            boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
+            /*boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
             if (!lock) {
                 String msg = MessageFormat.format("order {0} is processing.", outOrderId);
                 throw new ConcurrentSkipBizException(msg);
-            }
+            }*/
             //handle jit big order
             handle(fullOrderInfo);
         } catch (ConcurrentSkipBizException ce) {
@@ -115,7 +115,7 @@ public class JitBigOrderService implements CompensateBizService {
             request.setError_code(JitOrderReceiptApi.FAILED);
 
         } finally {
-            redisLockClient.unlock(key, ticket);
+           // redisLockClient.unlock(key, ticket);
         }
 
         YJRespone respone = jitOrderReceiptApi.sendReceipt(request);

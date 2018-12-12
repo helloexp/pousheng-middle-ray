@@ -24,6 +24,7 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.model.PoushengGiftActivity;
 import com.pousheng.middle.shop.service.PsShopReadService;
 import com.pousheng.middle.warehouse.service.WarehouseAddressReadService;
+import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.dto.ReceiverInfoDecryptDTO;
 import com.pousheng.middle.web.order.component.*;
 import com.pousheng.middle.web.order.job.JdRedisHandler;
@@ -760,6 +761,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                 dto.getOutId(), dto.getShopId(), Throwables.getStackTraceAsString(e));
+            throw new BizException("failed.to.request.taobao.order.receiver.decrypt.api", e);
         }
 
     }
@@ -778,6 +780,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
         } catch (Exception e) {
             log.error("fail to send sync order receiver request to erp for order(outOrderId={},openShopId={}),cause:{}",
                 dto.getOutId(), dto.getShopId(), Throwables.getStackTraceAsString(e));
+            throw new BizException("failed.to.request.taobao.fenxiao.order.receiver.decrypt.api", e);
         }
     }
 }

@@ -17,7 +17,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:mysql://${POUSHENG_MIDDLE_MYSQL_HOST}:${POUSHENG_MIDDLE_MYSQL_PORT}/${POUSHENG_MIDDLE_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull
+    url: jdbc:mysql://${POUSHENG_MIDDLE_MYSQL_HOST}:${POUSHENG_MIDDLE_MYSQL_PORT}/${POUSHENG_MIDDLE_MYSQL_DATABASE}?useUnicode=true&characterEncoding=UTF8&zeroDateTimeBehavior=convertToNull&autoReconnect=true
     username: ${POUSHENG_MIDDLE_MYSQL_USERNAME}
     password: ${POUSHENG_MIDDLE_MYSQL_PASSWORD}
     initialize: false

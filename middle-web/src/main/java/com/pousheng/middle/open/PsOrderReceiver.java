@@ -745,6 +745,7 @@ public class PsOrderReceiver extends DefaultOrderReceiver {
     private void createReceiverInfoDecryptTask(ReceiverInfoDecryptDTO dto){
         PoushengCompensateBiz biz = new PoushengCompensateBiz();
         biz.setBizType(PoushengCompensateBizType.TMALL_RECEIVER_INFO_DECRYPT.toString());
+        biz.setBizId(dto.getOutId());
         biz.setContext(mapper.toJson(dto));
         biz.setStatus(PoushengCompensateBizStatus.WAIT_HANDLE.toString());
         compensateBizLogic.createBizAndSendMq(biz,MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC);

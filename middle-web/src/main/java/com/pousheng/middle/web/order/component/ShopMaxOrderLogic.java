@@ -1,6 +1,7 @@
 package com.pousheng.middle.web.order.component;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.constants.DateConsts;
 import com.pousheng.middle.open.stock.InventoryPusherClient;
@@ -32,8 +33,13 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.Pipeline;
+import redis.clients.jedis.exceptions.JedisConnectionException;
 
 import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -261,12 +267,39 @@ public class ShopMaxOrderLogic {
      * @return
      */
     public List<Long> filterWarehouse(List<Long> warehouseIds) {
+        if (CollectionUtils.isEmpty(warehouseIds)) {
+            return new ArrayList<>();
+        }
         List<Long> result = Lists.newArrayListWithExpectedSize(warehouseIds.size());
-        warehouseIds.forEach(id -> {
-            if (!isOverMaxOrderAcceptQty(id)) {
-                result.add(id);
-            }
-        });
+        // 因推送库存的时候warehouseId可能很多 故此处用pipeline 批量处理 减少网络开销
+        boolean broken = false;
+        Jedis jedis = null;
+        try {
+            //批量请求redis
+            jedis = jedisTemplate.getJedisPool().getResource();
+            HashMap<Long, redis.clients.jedis.Response<String>> requestMap = Maps.newHashMapWithExpectedSize(
+                warehouseIds.size());
+            Pipeline pipeline = jedis.pipelined();
+            warehouseIds.forEach(id -> {
+                String key = getMaxOrderKey(id);
+                requestMap.put(id, pipeline.get(key));
+            });
+            pipeline.sync();
+            // 处理结果
+            requestMap.forEach((k, v) -> {
+                String val = v.get();
+                if (StringUtils.isNotBlank(val)
+                    && !CacheConsts.NIL.equals(val)) {
+                    result.add(k);
+                }
+            });
+        } catch (JedisConnectionException jce) {
+            log.error("Redis connection lost.", jce);
+            broken = true;
+            throw jce;
+        } finally {
+            closeJedisResource(jedis, broken);
+        }
         return result;
 
     }
@@ -363,6 +396,18 @@ public class ShopMaxOrderLogic {
         jedisTemplate.execute(jedis -> {
             jedis.setex(key, CacheConsts.ExpireSecond.ONE_DAY, String.valueOf(orderAcceptQtyMax));
         });
+    }
+
+
+    protected void closeJedisResource(Jedis jedis, boolean connectionBroken) {
+        if (jedis != null) {
+            if (connectionBroken) {
+                jedisTemplate.getJedisPool().returnBrokenResource(jedis);
+            } else {
+                jedisTemplate.getJedisPool().returnResource(jedis);
+            }
+        }
+
     }
 
 }

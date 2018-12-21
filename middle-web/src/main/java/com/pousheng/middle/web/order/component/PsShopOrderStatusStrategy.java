@@ -4,6 +4,7 @@ import com.google.common.collect.Lists;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import io.terminus.parana.order.model.SkuOrder;
 import io.terminus.parana.order.strategy.ShopOrderStatusStrategy;
+import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -26,14 +27,16 @@ public class PsShopOrderStatusStrategy implements ShopOrderStatusStrategy {
                 return list.get(0).getStatus();
             }else{
                 //如果此时订单的状态不一致,有状态为负值的,过滤负值
-                List<SkuOrder> listFilter = list.stream().filter(Objects::nonNull).filter(skuOrder ->(skuOrder.getStatus()!= MiddleOrderStatus.CANCEL.getValue()))
+                List<SkuOrder> listFilter = list.stream().filter(Objects::nonNull)
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_SYNC_HK_SUCCESS.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_FAILED.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REVOKE_FAILED.getValue())).collect(Collectors.toList());
                 listFilter.sort((SkuOrder s1, SkuOrder s2) -> s1.getStatus().compareTo(s2.getStatus()));
-                return listFilter.get(0).getStatus();
+                if (CollectionUtils.isNotEmpty(listFilter)) {
+                    return listFilter.get(0).getStatus();
+                }
             }
 
         }

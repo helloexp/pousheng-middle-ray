@@ -49,8 +49,8 @@ public class MiddleShopCacher {
     @PostConstruct
     public void init() {
         this.shopCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration*5, TimeUnit.SECONDS).weakKeys().weakValues()
-                .maximumSize(1000)
+                .expireAfterWrite(duration*1, TimeUnit.MINUTES).weakKeys().weakValues()
+                .maximumSize(2000)
                 .build(new CacheLoader<String, Shop>() {
                     @Override
                     public Shop load(String joinStr) throws Exception {
@@ -73,8 +73,8 @@ public class MiddleShopCacher {
                     }
                 });
         this.openShopCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
-                .expireAfterWrite(duration*5, TimeUnit.SECONDS)
-                .maximumSize(1000)
+                .expireAfterWrite(duration*1, TimeUnit.MINUTES)
+                .maximumSize(2000)
                 .build(new CacheLoader<Long, OpenShop>() {
                     @Override
                     public OpenShop load(Long id) {

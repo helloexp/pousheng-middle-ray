@@ -129,6 +129,11 @@ public class ShopStockPusher {
                     continue;
                 }
 
+                // mpos的店铺不推送
+                if (openShop.getShopName().startsWith("mpos")) {
+                    continue;
+                }
+
                 //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
                 Response<List<ItemMapping>> itemMappingRes = mappingReadService.listBySkuCodeAndOpenShopId(skuCode, shopId);
                 if (!itemMappingRes.isSuccess()) {

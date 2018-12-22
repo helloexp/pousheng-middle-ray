@@ -74,7 +74,6 @@ public class ShopInventoryPusher {
         log.info("INVENTORY-PUSHER-SUBMIT-START param: skuCodes:{},start time:{}", changeDTOList, System.currentTimeMillis());
         log.info("start to push skus: {}", changeDTOList);
 
-        Table<Long, String, Integer> paranaSkuStock = HashBasedTable.create();
         Table<Long, String, Integer> vipSkuStock = HashBasedTable.create();
 
         //库存推送日志记录
@@ -115,16 +114,16 @@ public class ShopInventoryPusher {
                     shopIds = Lists.newArrayList(changeDTO.getShopId());
                 }
                 //计算库存分配并将库存推送到每个外部店铺去
-                shopStockPusher.handle(shopIds,skuCode,paranaSkuStock,logs);
+                shopStockPusher.handle(shopIds,skuCode,logs);
             } catch (Exception e) {
                 log.error("failed to push stock,sku is {}", skuCode,e);
             }
         }
 
-        //官网批量推送
-        if(!paranaSkuStock.isEmpty()) {
-            stockPushLogic.sendToParana(paranaSkuStock);
-        }
+        ////官网批量推送
+        //if(!paranaSkuStock.isEmpty()) {
+        //    stockPushLogic.sendToParana(paranaSkuStock);
+        //}
 
         log.info("INVENTORY-PUSHER-SUBMIT-END param: skuCodes:{},end time:{}", changeDTOList, System.currentTimeMillis());
     }

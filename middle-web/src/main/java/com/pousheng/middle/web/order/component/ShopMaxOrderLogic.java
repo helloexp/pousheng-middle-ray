@@ -288,8 +288,8 @@ public class ShopMaxOrderLogic {
             // 处理结果
             requestMap.forEach((k, v) -> {
                 String val = v.get();
-                if (StringUtils.isNotBlank(val)
-                    && !CacheConsts.NIL.equals(val)) {
+                if (StringUtils.isBlank(val)
+                    || CacheConsts.NIL.equals(val)) {
                     result.add(k);
                 }
             });

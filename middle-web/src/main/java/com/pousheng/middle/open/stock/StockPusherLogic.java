@@ -146,7 +146,7 @@ public class StockPusherLogic {
     @Autowired
     public StockPusherLogic(@Value("${index.queue.size: 120000}") int queueSize,
                             @Value("${cache.duration.in.minutes: 60}") int duration) {
-        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 3, 60L, TimeUnit.MINUTES,
+        this.executorService = new ThreadPoolExecutor(Runtime.getRuntime().availableProcessors() * 2, Runtime.getRuntime().availableProcessors() * 2, 60L, TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>(queueSize), (new ThreadFactoryBuilder()).setNameFormat("stock-push-%d").build(),
                 new RejectedExecutionHandler() {
                     @Override
@@ -448,8 +448,7 @@ public class StockPusherLogic {
     }
 
 
-    public void prallelUpdateStock(ItemMapping itemMapping, Long stock) {
-        CompletableFuture.runAsync(() -> {
+    public void prallelUpdateStock(ItemMapping itemMapping, Long stock,OpenShop openShop) {
             if (log.isDebugEnabled()) {
                 log.debug("start to push stock(value={}) of sku(skuCode={}) channelSku(id:{}) to shop(id={})",
                         stock.intValue(), itemMapping.getSkuCode(), itemMapping.getChannelSkuId(), itemMapping.getOpenShopId());
@@ -467,7 +466,6 @@ public class StockPusherLogic {
             }
 
             List<StockPushLog> stockPushLogs = Lists.newArrayList();
-            OpenShop openShop = openShopCacher.getUnchecked(itemMapping.getOpenShopId());
             Map<String, String> extra = openShop.getExtra();
             Response<Boolean> rP = null;
             if (extra.get("isYunDing") != null && Objects.equals(extra.get("isYunDing"), "true")) {
@@ -493,7 +491,6 @@ public class StockPusherLogic {
             if (stockPusherCacheEnable && rP.isSuccess()) {
                 stockPushCacher.addToRedis(StockPushCacher.ORG_TYPE_SHOP, itemMapping.getOpenShopId().toString(), itemMapping.getChannelSkuId(), stock.intValue());
             }
-        },executorService);
     }
 
     public void sendToParana(Table<Long, String, Integer> shopSkuStock) {

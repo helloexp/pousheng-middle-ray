@@ -20,6 +20,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * 店铺库存推送
@@ -82,17 +83,33 @@ public class ShopInventoryPusher {
             String skuCode=changeDTO.getSkuCode();
             try {
                 List<Long> shopIds = Lists.newArrayList();
+
+                //根据商品映射查询店铺
+                Long spuId = stockPushLogic.skuCodeCacher.getUnchecked(skuCode);
+                //找到对应的店铺id, 这些店铺需要进行库存推送
+                Response<List<Long>> shopRespByItem = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
+                if (!shopRespByItem.isSuccess()) {
+                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
+                            spuId, skuCode, shopRespByItem.getError());
+                    continue;
+                }
+                //计算库存分配并将库存推送到每个外部店铺去
+                List<Long> shopIdsByItemMapping = shopRespByItem.getResult();
+
                 //若仓库不为空
+                //更加默认发货仓查找店铺
                 if (!Objects.isNull(changeDTO.getWarehouseId())) {
                     //找到对应的店铺id, 这些店铺需要进行库存推送
-                    Response<List<Long>> r = warehouseShopRuleClient.findShopIdsByWarehouseId(
+                    Response<List<Long>> shopRespByWarehouse = warehouseShopRuleClient.findShopIdsByWarehouseId(
                         changeDTO.getWarehouseId());
-                    if (!r.isSuccess()) {
+                    if (!shopRespByWarehouse.isSuccess()) {
                         log.error("failed to find out shops for warehouse(id={}), error code:{}",
-                            changeDTO.getWarehouseId(), r.getError());
+                            changeDTO.getWarehouseId(), shopRespByWarehouse.getError());
                         continue;
                     }
-                    shopIds = r.getResult();
+                    List<Long> shopIdsByWarehouseId = shopRespByWarehouse.getResult();
+                    shopIds = shopIdsByItemMapping.stream().filter(shopId -> shopIdsByWarehouseId.contains(shopId)).collect(Collectors.toList());
+
                 } else if (!Objects.isNull(changeDTO.getShopId())) {
                     //若店铺不为空
                     shopIds = Lists.newArrayList(changeDTO.getShopId());

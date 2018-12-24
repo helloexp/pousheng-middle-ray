@@ -7,16 +7,19 @@ import com.pousheng.middle.hksyc.component.QueryHkWarhouseOrShopStockApi;
 import com.pousheng.middle.warehouse.companent.WarehouseRulesClient;
 import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.model.StockPushLog;
+import com.pousheng.middle.web.item.cacher.ItemMappingCacher;
 import com.pousheng.middle.web.mq.warehouse.model.InventoryChangeDTO;
 import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
+import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 
 import java.util.List;
 import java.util.Objects;
@@ -48,8 +51,8 @@ public class ShopInventoryPusher {
     @Value("${stock.push.cache.enable: true}")
     private boolean stockPusherCacheEnable;
 
-    @RpcConsumer
-    private MappingReadService mappingReadService;
+    @Autowired
+    private ItemMappingCacher itemMappingCacher;
 
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
@@ -84,16 +87,15 @@ public class ShopInventoryPusher {
                 List<Long> shopIds = Lists.newArrayList();
 
                 //根据商品映射查询店铺
-                Long spuId = stockPushLogic.skuCodeCacher.getUnchecked(skuCode);
                 //找到对应的店铺id, 这些店铺需要进行库存推送
-                Response<List<Long>> shopRespByItem = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
-                if (!shopRespByItem.isSuccess()) {
-                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
-                            spuId, skuCode, shopRespByItem.getError());
+                List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCode(skuCode);
+                if (CollectionUtils.isEmpty(itemMappings)) {
+                    log.error("failed to find out shops by skuCode={}, error code:{}", skuCode);
                     continue;
                 }
                 //计算库存分配并将库存推送到每个外部店铺去
-                List<Long> shopIdsByItemMapping = shopRespByItem.getResult();
+                List<Long> shopIdsByItemMapping = itemMappings.stream().map(ItemMapping::getOpenShopId).collect(Collectors.toList());
+                log.info("find shopIds({}) by skuCode({})",shopIdsByItemMapping.toString(),skuCode);
 
                 //若仓库不为空
                 //更加默认发货仓查找店铺

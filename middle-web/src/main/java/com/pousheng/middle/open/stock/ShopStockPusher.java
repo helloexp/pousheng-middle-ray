@@ -11,6 +11,7 @@ import com.pousheng.middle.warehouse.companent.WarehouseShopRuleClient;
 import com.pousheng.middle.warehouse.dto.ShopStockRule;
 import com.pousheng.middle.warehouse.dto.ShopStockRuleDto;
 import com.pousheng.middle.warehouse.model.StockPushLog;
+import com.pousheng.middle.web.item.cacher.ItemMappingCacher;
 import com.pousheng.middle.web.order.component.ShopMaxOrderLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
@@ -60,8 +61,8 @@ public class ShopStockPusher {
     @Value("${stock.push.cache.enable: true}")
     private boolean StockPusherCacheEnable;
 
-    @RpcConsumer
-    private MappingReadService mappingReadService;
+    @Autowired
+    private ItemMappingCacher itemMappingCacher;
 
     @Autowired
     private ShopMaxOrderLogic shopMaxOrderLogic;
@@ -80,17 +81,17 @@ public class ShopStockPusher {
         List<StockPushLog> logs = Lists.newArrayList();
         for (String skuCode : skuCodes) {
             try {
-                Long spuId = stockPushLogic.skuCodeCacher.getUnchecked(skuCode);
+                //根据商品映射查询店铺
                 //找到对应的店铺id, 这些店铺需要进行库存推送
-                Response<List<Long>> r = mappingReadService.findShopIdsFromItemMappingByItemId(spuId);
-                if (!r.isSuccess()) {
-                    log.error("failed to find out shops for spu(id={}) where skuCode={}, error code:{}",
-                            spuId, skuCode, r.getError());
+                List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCode(skuCode);
+                if (CollectionUtils.isEmpty(itemMappings)) {
+                    log.error("failed to find out shops by skuCode={}, error code:{}", skuCode);
                     continue;
                 }
-
                 //计算库存分配并将库存推送到每个外部店铺去
-                List<Long> shopIds = r.getResult();
+                List<Long> shopIds = itemMappings.stream().map(ItemMapping::getOpenShopId).collect(Collectors.toList());
+                log.info("find shopIds({}) by skuCode({})",shopIds.toString(),skuCode);
+
                 handle(shopIds,skuCode,logs);
             } catch (Exception e) {
                 log.error("failed to push stock,sku is {}", skuCode);
@@ -136,18 +137,12 @@ public class ShopStockPusher {
                     }
 
                     //判断当前skuCode是否在当前店铺卖，如果不卖则跳过
-                    Response<List<ItemMapping>> itemMappingRes = mappingReadService.listBySkuCodeAndOpenShopId(skuCode,
-                        shopId);
-                    if (!itemMappingRes.isSuccess()) {
-                        log.error("fail to find item mapping by skuCode={},openShopId={},cause:{}",
-                            skuCode, shopId, itemMappingRes.getError());
-                        return;
-                    }
-                    List<ItemMapping> itemMappings = itemMappingRes.getResult();
+                    List<ItemMapping> itemMappings = itemMappingCacher.findBySkuCodeAndShopId(skuCode, shopId);
                     if (CollectionUtils.isEmpty(itemMappings)) {
                         log.warn("item mapping not found by skuCode={},openShopId={}", skuCode, shopId);
                         return;
                     }
+                    //log.info("find itemMappings({}) by skuCode({}) and shopId({})",itemMappings.toString(),skuCode,shopId);
 
                     Response<ShopStockRuleDto> rShopStockRule = warehouseShopRuleClient.findByShopIdAndSku(shopId,
                         skuCode);

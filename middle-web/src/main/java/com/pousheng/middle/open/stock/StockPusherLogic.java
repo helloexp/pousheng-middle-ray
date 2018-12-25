@@ -554,6 +554,7 @@ public class StockPusherLogic {
      * @Date 2018/7/11
      */
     public Long calculateStock(Long shopId, String skuCode, List<Long> warehouseIds, ShopStockRuleDto shopStockRuleDto) {
+        log.info("shopStockRuleDto:{}", shopStockRuleDto.toString());
         Long stockSum = 0L;
         long start1 = System.currentTimeMillis();
         Response<List<AvailableInventoryDTO>> getRes = inventoryClient.getAvailableInventory(Lists.newArrayList(
@@ -566,7 +567,8 @@ public class StockPusherLogic {
             return null;
         }
         if (!ObjectUtils.isEmpty(getRes.getResult())) {
-            log.info("AvailableInventoryDTO size {}", getRes.getResult().size());
+            log.info("availableInventoryDTO size {}", getRes.getResult().size());
+            log.info("availableInventoryDTO:{}", getRes.getResult().toString());
             //先计算不包含仓库和商品级别的库存
             stockSum = calculateWarehouseStockForShop(getRes.getResult(), shopStockRuleDto);
             //再累加仓库商品级别的库存

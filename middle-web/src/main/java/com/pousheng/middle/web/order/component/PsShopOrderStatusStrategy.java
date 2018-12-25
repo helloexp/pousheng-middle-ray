@@ -28,14 +28,25 @@ public class PsShopOrderStatusStrategy implements ShopOrderStatusStrategy {
             }else{
                 //如果此时订单的状态不一致,有状态为负值的,过滤负值
                 List<SkuOrder> listFilter = list.stream().filter(Objects::nonNull)
+                        .filter(skuOrder ->(skuOrder.getStatus()!= MiddleOrderStatus.CANCEL.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_APPLY_WAIT_SYNC_HK.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND_SYNC_HK_SUCCESS.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REFUND.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.CANCEL_FAILED.getValue()))
                         .filter(skuOrder -> (skuOrder.getStatus()!=MiddleOrderStatus.REVOKE_FAILED.getValue())).collect(Collectors.toList());
                 listFilter.sort((SkuOrder s1, SkuOrder s2) -> s1.getStatus().compareTo(s2.getStatus()));
+                // 若存在正值的情况 则取正值最小的
                 if (CollectionUtils.isNotEmpty(listFilter)) {
                     return listFilter.get(0).getStatus();
+                }
+
+                //若不存在正值的情况 则取排除JIT的-7后的最小值
+                List<SkuOrder> filterList = list.stream().filter(Objects::nonNull)
+                    .filter(skuOrder ->(skuOrder.getStatus()!= MiddleOrderStatus.JIT_STOCK_RELEASED.getValue()))
+                    .collect(Collectors.toList());
+                filterList.sort((SkuOrder s1, SkuOrder s2) -> s1.getStatus().compareTo(s2.getStatus()));
+                if(CollectionUtils.isNotEmpty(filterList)){
+                    return filterList.get(0).getStatus();
                 }
             }
 

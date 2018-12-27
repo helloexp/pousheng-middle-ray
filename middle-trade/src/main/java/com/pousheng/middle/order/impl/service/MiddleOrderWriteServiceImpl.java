@@ -90,10 +90,10 @@ public class MiddleOrderWriteServiceImpl implements MiddleOrderWriteService {
     }
 
     @Override
-    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode) {
+    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, List<SkuOrder> cancelList, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode) {
         try {
             //更新订单状态逻辑,带事物
-            middleOrderManager.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrders, skuOrder, cancelOperation, waitHandleOperation, skuCode);
+            middleOrderManager.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrders, cancelList, cancelOperation, waitHandleOperation, skuCode);
             return Response.ok();
 
         } catch (ServiceException e1) {

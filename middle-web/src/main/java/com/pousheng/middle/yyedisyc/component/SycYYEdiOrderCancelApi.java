@@ -10,7 +10,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/7/19
@@ -27,31 +29,27 @@ public class SycYYEdiOrderCancelApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
+    private static final String SID = "PS_ERP_WMS_bccancelorders";
+
     /**
      *
      * @param reqeustData
      * @return
      */
-    public String doCancelOrder(List<YYEdiCancelInfo> reqeustData){
+    public String doCancelOrder(YYEdiCancelInfo reqeustData){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         YYEdiCancelBody body = new YYEdiCancelBody();
-        body.setRequestData(reqeustData);
-        YYEdiCancelRequest request = new YYEdiCancelRequest();
-        request.setBody(body);
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
+        body.bizContent(reqeustData).sid(SID).tranReqDate(DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)));
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
         log.info("start do cancel yyedi order paramJson:{}, serialNo:{}",paramJson,serialNo);
-        String gateway = hkGateway+"/common/yyedi/default/cancelorder";
+        String gateway = hkGateway+"/common/pserp/wms/pushbccancelorders";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
-                .header("serialNo",serialNo)
-                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
-                //.trustAllHosts().trustAllCerts()
+                .header("verifycode", accessKey)
                 .send(paramJson)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
-
         log.info("end do cancel yyedi order paramJson:{},result:{}, serialNo:{}",paramJson,responseBody,serialNo);
         return responseBody;
     }

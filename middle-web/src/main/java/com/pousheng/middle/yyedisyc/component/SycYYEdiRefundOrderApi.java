@@ -10,7 +10,9 @@ import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/7/19
@@ -27,48 +29,42 @@ public class SycYYEdiRefundOrderApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
-    public String doSyncRefundOrder(List<YYEdiReturnInfo> requestData){
+    private final static String SID = "PS_ERP_WMS_bcrefunds";
 
-        String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
+    public String doSyncRefundOrder(YYEdiReturnInfo requestData) {
 
         YYEdiReturnInfoBody body = new YYEdiReturnInfoBody();
-        body.setRequestData(requestData);
-        YYEditReturnInfoRequest request = new YYEditReturnInfoRequest();
-        request.setBody(body);
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        log.info("sync refund to yyedi erp paramJson:{}, serialNo:{}",paramJson,serialNo);
-        String gateway =hkGateway+"/common/yyedi/default/pushrefunds";
+        body.bizContent(requestData).sid(SID).tranReqDate(DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)));
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
+        log.info("sync refund to yyedi erp paramJson:{} ", paramJson);
+        String gateway = hkGateway + "/common/pserp/wms/pushbcrefunds";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
-                .header("serialNo",serialNo)
-                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
-                //.trustAllHosts().trustAllCerts()
+                .header("verifycode", accessKey)
                 .send(paramJson)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
-
-        log.info("sync refund to yyedi erp result:{}, serialNo:{}",responseBody,serialNo);
+        log.info("sync refund to yyedi erp result:{}", responseBody);
         return responseBody;
     }
 
 
-    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData){
+    public String doSyncYJErpRefundOrder(List<YJErpRefundInfo> requestData) {
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
-        log.info("sync refund to yj erp paramJson:{} serialNo:{}",paramJson,serialNo);
-        String gateway =hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
+        log.info("sync refund to yj erp paramJson:{} serialNo:{}", paramJson, serialNo);
+        String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgorderexchangeset";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
-                .header("serialNo",serialNo)
-                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
+                .header("verifycode", accessKey)
+                .header("serialNo", serialNo)
+                .header("sendTime", DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
                 .send(paramJson)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
 
-        log.info("sync refund to yj erp result:{}, serialNo:{}",responseBody,serialNo);
+        log.info("sync refund to yj erp result:{}, serialNo:{}", responseBody, serialNo);
         return responseBody;
     }
 }

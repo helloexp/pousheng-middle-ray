@@ -48,4 +48,6 @@ public class HkShipmentPosInfo implements Serializable{
     private String    consignmentdate; //发货时间
     private String    weight;//重量
     private String    parcelweight;//包裹重量
+    private String    dischargeintegral;//会员抵现积分
+    private String    dischargeamount;//会员积分抵现金额
 }

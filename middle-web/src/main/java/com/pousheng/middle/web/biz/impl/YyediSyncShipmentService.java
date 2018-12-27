@@ -31,9 +31,11 @@ import com.pousheng.middle.order.service.OrderShipmentWriteService;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
-import com.pousheng.middle.web.order.component.*;
+import com.pousheng.middle.web.order.component.HKShipmentDoneLogic;
+import com.pousheng.middle.web.order.component.MiddleOrderFlowPicker;
+import com.pousheng.middle.web.order.component.OrderReadLogic;
+import com.pousheng.middle.web.order.component.ShipmentReadLogic;
 import com.pousheng.middle.web.order.sync.hk.SyncShipmentPosLogic;
-import com.pousheng.middle.web.order.sync.vip.SyncVIPLogic;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
@@ -145,16 +147,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
         List<ShipmentItem> items = shipmentReadLogic.getShipmentItems(shipment);
 
         Boolean partShip = Boolean.FALSE;
-        Map<String,String> boxNoMap=null;
         Map<String,String> shipmentCorpCodeMap=null;
         Map<String,String> shipmentSerialNoMap=null;
         ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
         Map<Long, Map<String, Integer>> assignBoxTable = shipmentExtra.getAssignBoxDetail();
         boolean fromJit=false;
         if (yyEdiShipInfo.getItemInfos() != null) {
-            //构造箱号数据
-            boxNoMap = yyEdiShipInfo.getItemInfos().stream().
-                collect(HashMap::new,(m,v)->m.put(v.getSkuCode(),v.getBoxNo()),HashMap::putAll);
 
             //查询订单来源 以区分是否是JIT渠道的大订单
             ShopOrder order = queryShopOrder(shipmentId);
@@ -179,14 +177,24 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 //构造(skuCode-箱号-数量)的表格
                 Table<String, String, Integer> quantityTable = buildTable(yyEdiShipInfo.getItemInfos());
                 for (ShipmentItem s : items) {
-                    assignJitShipmentQuantity(s, quantityTable, partShip, assignBoxTable);
+                    //若已经标记了部分发货 则后续不覆盖此标志位
+                    if (partShip) {
+                        assignJitShipmentQuantity(s, quantityTable, assignBoxTable);
+                    } else {
+                        partShip = assignJitShipmentQuantity(s, quantityTable, assignBoxTable);
+                    }
                 }
             } else {
                 Map<String, Integer> itemMap = yyEdiShipInfo.getItemInfos().stream()
                     .collect(Collectors.toMap(YyEdiShipInfo.ItemInfo::getSkuCode, YyEdiShipInfo.ItemInfo::getQuantity,
                         (v1, v2) -> v1 + v2));
                 for (ShipmentItem s : items) {
-                    assignShipmentQuantity(s, itemMap, fromJit, partShip);
+                    //若已经标记了部分发货 则后续不覆盖此标志位
+                    if (partShip) {
+                        assignShipmentQuantity(s, itemMap);
+                    } else {
+                        partShip = assignShipmentQuantity(s, itemMap);
+                    }
                 }
             }
         }else{
@@ -291,14 +299,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
      * 分配发货数量给sku
      * @param item
      * @param quantityMap
-     * @param fromJit
-     * @param partShip
      */
-    private void assignShipmentQuantity(ShipmentItem item, Map<String, Integer> quantityMap, boolean fromJit,
-                                        boolean partShip) {
+    private boolean assignShipmentQuantity(ShipmentItem item, Map<String, Integer> quantityMap) {
+        boolean partShip =false;
         Integer shipmentQuantity = quantityMap.get(item.getSkuCode());
         if (shipmentQuantity == null) {
-            return;
+            return partShip;
         }
         //发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
         if (item.getQuantity() > shipmentQuantity) {
@@ -311,6 +317,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
             //设置总数为减去已分配过的数量
             quantityMap.put(item.getSkuCode(), shipmentQuantity - item.getQuantity());
         }
+        return partShip;
     }
 
     private Table<String,String, Integer> buildTable(List<YyEdiShipInfo.ItemInfo> list){
@@ -324,11 +331,12 @@ public class YyediSyncShipmentService implements CompensateBizService {
     /**
      * 分配JIT发货数量给sku
      */
-    protected void assignJitShipmentQuantity(ShipmentItem item, Table<String,String, Integer> quantityTable,
-                                           boolean partShip, Map<Long, Map<String, Integer>> assignBoxTable) {
+    protected boolean assignJitShipmentQuantity(ShipmentItem item, Table<String,String, Integer> quantityTable,
+                                             Map<Long, Map<String, Integer>> assignBoxTable) {
+        boolean partShip =false;
         Map<String,Integer> qtyMap = quantityTable.row(item.getSkuCode());
         if (qtyMap == null || qtyMap.isEmpty()) {
-            return;
+            return partShip;
         }
         Integer total =sumTotalQtyOfItem(qtyMap);
         //是否是部分发货
@@ -341,7 +349,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
         }
         Integer targetQty = item.getQuantity() - item.getShipQuantity();
         if (targetQty <= 0) {
-            return;
+            return partShip;
         }
         //JIT发货回执会根据SkuCode合并成总数 故需要遍历shipmentItem 分别分配发货数量
         //先遍历一遍 看有没有一个箱号就能发完的
@@ -353,7 +361,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 entry.setValue(entry.getValue()-targetQty);
                 assignBoxMap.put(entry.getKey(),targetQty);
                 assignBoxTable.put(item.getId(),assignBoxMap);
-                return;
+                return partShip;
             }
         }
 
@@ -361,7 +369,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
         for(Map.Entry<String,Integer> entry:qtyMap.entrySet()){
             if (item.getQuantity().compareTo(item.getShipQuantity()) == 0) {
                 assignBoxTable.put(item.getId(),assignBoxMap);
-                return;
+                return partShip;
             }
             targetQty = item.getQuantity() - item.getShipQuantity();
             if (entry.getValue().compareTo(targetQty) >= 0) {
@@ -369,14 +377,14 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 entry.setValue(entry.getValue() - targetQty);
                 assignBoxMap.put(entry.getKey(),targetQty);
                 assignBoxTable.put(item.getId(),assignBoxMap);
-                return;
+                return partShip;
             } else {
                 item.setShipQuantity(item.getShipQuantity() + entry.getValue());
                 assignBoxMap.put(entry.getKey(),entry.getValue());
                 entry.setValue(0);
             }
         }
-
+        return partShip;
     }
 
     /**

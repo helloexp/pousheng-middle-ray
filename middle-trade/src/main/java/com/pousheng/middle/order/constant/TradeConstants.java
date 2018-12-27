@@ -32,6 +32,13 @@ public class TradeConstants {
     //发货单扩展信息
     public static final String SHIPMENT_EXTRA_INFO = "shipmentExtraInfo";
 
+    //发货单等待处理结果标记位
+    public static final String WAIT_CANCEL_RESULT = "waitCancelResult";
+
+
+    //wms发货单通过订单取消来撤销发货单的标记
+    public static final String SHIPMENT_CANCEL_BY_ORDER = "cancelByOrder";
+
 
     //逆向单商品信息
     public static final String REFUND_ITEM_INFO = "refundItemInfo";
@@ -75,6 +82,10 @@ public class TradeConstants {
     public static final String OPTIONAL_VEND_CUST_ID = "ZX000001";
     //子单分拆优惠
     public static final String SKU_SHARE_DISCOUNT = "shareDiscount";
+    //子单分拆积分抵扣金额
+    public static final String SKU_PAYMENT_INTEGRAL = "paymentIntegral";
+    //子单分拆抵扣积分
+    public static final String SKU_USED_INTEGRAL = "usedIntegral";
     //订单支付信息
     public static final String ORDER_PAYMENT_INFO = "paymentInfo";
     //外部电商商品id
@@ -163,8 +174,6 @@ public class TradeConstants {
     public static final String SKU_ORDER_SHIPMENT_CODE = "skuShipmentCode";
     //没有有效的订单
     public static final String  YYEDI_RESPONSE_NOT_EXIST_ORDER= "-120";
-    //订单已经取消
-    public static final String  YYEDI_RESPONSE_CANCELED="300";
     //店铺订单选择的快递单号
     public static final String SHOP_ORDER_HK_EXPRESS_CODE = "orderHkExpressCode";
     public static final String SHOP_ORDER_HK_EXPRESS_NAME = "orderHkExpressName";
@@ -233,11 +242,12 @@ public class TradeConstants {
     //退货类型
     public static final String YYEDI_BILL_TYPE_RETURN ="SalesReturnBC";
     //yyedi返回结果:整体成功
-    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="200";
-    //yyedi返回结果:部分成功
-    public static final String  YYEDI_RESPONSE_CODE_NOT_ALL_SUCCESS = "100";
+    public static final String  YYEDI_RESPONSE_CODE_SUCCESS="00000";
     //yyedi返回结果:整体失败
-    public static final String  YYEDI_RESPONSE_CODE_FAILED = "-100";
+    public static final String  YYEDI_RESPONSE_CODE_FAILED = "10100";
+    //yyedi返回结果:取消中
+    public static final String  YYEDI_RESPONSE_CODE_ING = "10200";
+
     public static final String  ERP_SYNC_TYPE="erpSyncType";
 
     public static final String SKU_CANNOT_BE_DISPATCHED = "该商品无法派出";

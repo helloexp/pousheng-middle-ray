@@ -109,7 +109,7 @@ public class AdminBrands {
      * 更新品牌
      * @return 是否成功
      */
-    @LogMe(description = "更新品牌信息", compareTo = "brandDao#findById")
+    @LogMe(description = "更新品牌信息", ignore = true,compareTo = "brandDao#findById")
     @ApiOperation("更新品牌")
     @RequestMapping(value = "/update", method = RequestMethod.PUT, produces = MediaType.APPLICATION_JSON_VALUE)
     public Boolean updateLogo(@RequestBody @LogMeContext Brand brand) {

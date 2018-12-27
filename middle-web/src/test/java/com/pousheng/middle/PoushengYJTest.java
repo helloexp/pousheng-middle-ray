@@ -459,4 +459,74 @@ public class PoushengYJTest {
 
     }
 
+    @Test
+    public void testSyncPostageOrder(){
+        Map<String, Object> params = Maps.newTreeMap();
+        params.put("appKey","pousheng");
+        params.put("pampasCall","push.out.open.order.api");
+        List<OpenFullOrderInfo> orderInfos = Lists.newArrayList();
+        OpenFullOrderInfo openFullOrderInfo = new OpenFullOrderInfo();
+
+        OpenFullOrder openFullOrder = new OpenFullOrder();
+        openFullOrder.setBuyerName("wuwen");
+        openFullOrder.setChannel("official");
+        openFullOrder.setCompanyCode("300");
+        openFullOrder.setCreatedAt("2018112323302");
+        openFullOrder.setFee(1000L);
+        openFullOrder.setOriginFee(1000L);
+        openFullOrder.setShipFee(0L);
+        openFullOrder.setOutOrderId("wuwen-3367839+121");
+        openFullOrder.setOriginShipFee(0L);
+        openFullOrder.setShipmentType(1);
+        openFullOrder.setPayType(1);
+        openFullOrder.setShopCode("13000997");
+        openFullOrder.setStatus(1);
+        openFullOrder.setStockId("300-13000997");
+
+        // 50个子订单
+        List<OpenFullOrderItem> items =  Lists.newArrayList();
+        //        for (int i = 0; i < 1; i++) {
+        OpenFullOrderItem item = new OpenFullOrderItem();
+        item.setOutSkuorderId("236703963+111_677778");
+        item.setSkuCode("BYC0001$");
+        item.setItemType("01");
+        item.setItemName("邮费商品");
+        item.setQuantity(10);
+        item.setOriginFee(100L);
+        item.setDiscount(0L);
+        item.setCleanPrice(100L);
+        item.setCleanFee(100L);
+        items.add(item);
+        //        }
+
+        OpenFullOrderAddress address = new OpenFullOrderAddress();
+        address.setProvince("江苏省");
+        address.setCity("南京市");
+        address.setRegion("江宁区");
+        address.setDetail("胜利路89号");
+        address.setMobile("18021529596");
+        address.setPhone("02512345678");
+        address.setReceiveUserName("悟问");
+
+        openFullOrderInfo.setOrder(openFullOrder);
+        openFullOrderInfo.setItem(items);
+        openFullOrderInfo.setAddress(address);
+        orderInfos.add(openFullOrderInfo);
+        String data = JsonMapper.nonEmptyMapper().toJson(orderInfos);
+        log.info("order",data);
+        params.put("orderInfo",data);
+        String toVerify = Joiner.on('&').withKeyValueSeparator("=").join(params);
+        String sign = Hashing.md5().newHasher()
+            .putString(toVerify, Charsets.UTF_8)
+            .putString("6a0e@93204aefe45d47f6e488", Charsets.UTF_8).hash().toString();
+        params.put("sign",sign);
+
+        log.info(JsonMapper.nonDefaultMapper().toJson(params));
+
+        post("http://127.0.0.1:8092/api/gateway",params);
+
+        //post("http://middle-api-test.pousheng.com/api/gateway",params);
+        //        post("http://middle-api-prepub.pousheng.com/api/gateway",params);
+    }
+
 }

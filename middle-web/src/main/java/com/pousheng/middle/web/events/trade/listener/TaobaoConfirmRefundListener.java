@@ -28,7 +28,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import javax.annotation.PostConstruct;
@@ -67,7 +66,8 @@ public class TaobaoConfirmRefundListener {
     @Subscribe
     @AllowConcurrentEvents
     public void updateRefundStatusForTaobao(TaobaoConfirmRefundEvent event) {
-        log.error("begin to update third channel refund status,refundId is {},openAfterSaleId is {},openOrderId is {},openShopId is {],channel is {} ", event.getRefundId(), event.getOpenAfterSaleId(), event.getOpenOrderId(), event.getOpenShopId(), event.getChannel());
+        log.info("begin to update third channel refund status,refundId is {},openAfterSaleId is {},openOrderId is {},openShopId is {},channel is {} ",
+            event.getRefundId(), event.getOpenAfterSaleId(), event.getOpenOrderId(), event.getOpenShopId(), event.getChannel());
         //天猫渠道
         if (Objects.equals(event.getChannel(), MiddleChannel.TAOBAO.getValue())) {
             OpenClientAfterSaleService afterSaleService = this.afterSaleServiceRegistryCenter.getAfterSaleService(MiddleChannel.TAOBAO.getValue());
@@ -139,7 +139,7 @@ public class TaobaoConfirmRefundListener {
                                 event.getRefundId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
                     }
                 }else{
-                    log.error("refundOrderApi.doSyncRefundOrder return failed  ");
+                    log.error("refundOrderApi.doSyncRefundOrder return failed.response:{}",mapper.toJson(yjRespone));
                 }
         }
     }

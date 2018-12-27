@@ -15,169 +15,175 @@ public class YYEdiShipmentItem implements java.io.Serializable {
     /**
      * 行号
      */
-    @JsonProperty(value = "RowNo")
-    private String RowNo;
+    @JsonProperty(value = "rowno")
+    private String rowno;
 
     /**
      * 公司内码
      */
-    @JsonProperty(value = "CompanyCode")
-    private String CompanyCode;
+    @JsonProperty(value = "companycode")
+    private String companycode;
 
     /**
      * ERP单号，也就是中台发货单号
      */
-    @JsonProperty(value = "BillNo")
-    private String BillNo;
+    @JsonProperty(value = "billno")
+    private String billno;
 
     /**
      * 货品条码
      */
-    @JsonProperty(value = "SKU")
-    private String SKU;
+    @JsonProperty(value = "sku")
+    private String sku;
 
     /**
      * 货号
      */
-    @JsonProperty(value = "MaterialCode")
-    private String MaterialCode;
+    @JsonProperty(value = "materialcode")
+    private String materialcode;
 
     /**
      * 尺码名称
      */
-    @JsonProperty(value = "SizeName")
-    private String SizeName;
+    @JsonProperty(value = "sizename")
+    private String sizename;
 
     /**
      * 中台尺码id
      */
-    @JsonProperty(value = "SizeCode")
-    private String SizeCode;
+    @JsonProperty(value = "sizecode")
+    private String sizecode;
 
     /**
      * 预期数量
      */
-    @JsonProperty(value = "ExpectQty")
-    private int ExpectQty;
+    @JsonProperty(value = "expectqty")
+    private int expectqty;
 
     /**
      * 网店交易单号
      */
-    @JsonProperty(value = "ShopBillNo")
-    private String ShopBillNo;
+    @JsonProperty(value = "shopbillno")
+    private String shopbillno;
 
     /*
      * 结算金额
      */
-    @JsonProperty(value = "PayAmount")
-    private BigDecimal PayAmount;
+    @JsonProperty(value = "payamount")
+    private BigDecimal payamount;
 
     /**
      * 吊牌价
      */
-    @JsonProperty(value = "RetailPrice")
-    private BigDecimal RetailPrice;
+    @JsonProperty(value = "retailprice")
+    private BigDecimal retailprice;
 
     /**
      * 结算价
      */
-    @JsonProperty(value = "BalaPrice")
-    private BigDecimal BalaPrice;
-    @JsonIgnore
-    public String getRowNo() {
-        return RowNo;
-    }
-    @JsonIgnore
-    public void setRowNo(String rowNo) {
-        RowNo = rowNo;
-    }
-    @JsonIgnore
-    public String getCompanyCode() {
-        return CompanyCode;
-    }
-    @JsonIgnore
-    public void setCompanyCode(String companyCode) {
-        CompanyCode = companyCode;
-    }
-    @JsonIgnore
-    public String getBillNo() {
-        return BillNo;
-    }
-    @JsonIgnore
-    public void setBillNo(String billNo) {
-        BillNo = billNo;
-    }
-    @JsonIgnore
-    public String getSKU() {
-        return SKU;
-    }
-    @JsonIgnore
-    public void setSKU(String SKU) {
-        this.SKU = SKU;
-    }
-    @JsonIgnore
-    public String getMaterialCode() {
-        return MaterialCode;
-    }
-    @JsonIgnore
-    public void setMaterialCode(String materialCode) {
-        MaterialCode = materialCode;
-    }
-    @JsonIgnore
-    public String getSizeName() {
-        return SizeName;
-    }
-    @JsonIgnore
-    public void setSizeName(String sizeName) {
-        SizeName = sizeName;
-    }
-    @JsonIgnore
-    public int getExpectQty() {
-        return ExpectQty;
-    }
-    @JsonIgnore
-    public void setExpectQty(int expectQty) {
-        ExpectQty = expectQty;
-    }
-    @JsonIgnore
-    public String getShopBillNo() {
-        return ShopBillNo;
-    }
-    @JsonIgnore
-    public void setShopBillNo(String shopBillNo) {
-        ShopBillNo = shopBillNo;
-    }
-    @JsonIgnore
-    public BigDecimal getPayAmount() {
-        return PayAmount;
-    }
-    @JsonIgnore
-    public void setPayAmount(BigDecimal payAmount) {
-        PayAmount = payAmount;
-    }
-    @JsonIgnore
-    public BigDecimal getRetailPrice() {
-        return RetailPrice;
-    }
-    @JsonIgnore
-    public void setRetailPrice(BigDecimal retailPrice) {
-        RetailPrice = retailPrice;
-    }
-    @JsonIgnore
-    public BigDecimal getBalaPrice() {
-        return BalaPrice;
-    }
-    @JsonIgnore
-    public void setBalaPrice(BigDecimal balaPrice) {
-        BalaPrice = balaPrice;
+    @JsonProperty(value = "balaprice")
+    private BigDecimal balaprice;
+
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
     }
 
     @JsonIgnore
-    public String getSizeCode() {
-        return SizeCode;
+    public String getRowno() {
+        return rowno;
     }
     @JsonIgnore
-    public void setSizeCode(String sizeCode) {
-        SizeCode = sizeCode;
+    public void setRowno(String rowno) {
+        this.rowno = rowno;
     }
+    @JsonIgnore
+    public String getCompanycode() {
+        return companycode;
+    }
+    @JsonIgnore
+    public void setCompanycode(String companycode) {
+        this.companycode = companycode;
+    }
+    @JsonIgnore
+    public String getBillno() {
+        return billno;
+    }
+    @JsonIgnore
+    public void setBillno(String billno) {
+        this.billno = billno;
+    }
+    @JsonIgnore
+    public String getSku() {
+        return sku;
+    }
+    @JsonIgnore
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+    @JsonIgnore
+    public String getMaterialcode() {
+        return materialcode;
+    }
+    @JsonIgnore
+    public void setMaterialcode(String materialcode) {
+        this.materialcode = materialcode;
+    }
+    @JsonIgnore
+    public String getSizename() {
+        return sizename;
+    }
+    @JsonIgnore
+    public void setSizename(String sizename) {
+        this.sizename = sizename;
+    }
+    @JsonIgnore
+    public String getSizecode() {
+        return sizecode;
+    }
+    @JsonIgnore
+    public void setSizecode(String sizecode) {
+        this.sizecode = sizecode;
+    }
+    @JsonIgnore
+    public int getExpectqty() {
+        return expectqty;
+    }
+    @JsonIgnore
+    public void setExpectqty(int expectqty) {
+        this.expectqty = expectqty;
+    }
+    @JsonIgnore
+    public String getShopbillno() {
+        return shopbillno;
+    }
+    @JsonIgnore
+    public void setShopbillno(String shopbillno) {
+        this.shopbillno = shopbillno;
+    }
+    @JsonIgnore
+    public BigDecimal getPayamount() {
+        return payamount;
+    }
+    @JsonIgnore
+    public void setPayamount(BigDecimal payamount) {
+        this.payamount = payamount;
+    }
+    @JsonIgnore
+    public BigDecimal getRetailprice() {
+        return retailprice;
+    }
+    @JsonIgnore
+    public void setRetailprice(BigDecimal retailprice) {
+        this.retailprice = retailprice;
+    }
+    @JsonIgnore
+    public BigDecimal getBalaprice() {
+        return balaprice;
+    }
+    @JsonIgnore
+    public void setBalaprice(BigDecimal balaprice) {
+        this.balaprice = balaprice;
+    }
+
 }

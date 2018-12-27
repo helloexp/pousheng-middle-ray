@@ -3,6 +3,7 @@ package com.pousheng.middle.open.api;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.pousheng.middle.hksyc.dto.YJSyncCancelRequest;
 import com.pousheng.middle.mq.component.CompensateBizLogic;
 import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.open.api.dto.*;
@@ -10,6 +11,7 @@ import com.pousheng.middle.open.mpos.dto.MposResponse;
 import com.pousheng.middle.order.constant.TradeConstants;
 import com.pousheng.middle.order.dto.*;
 import com.pousheng.middle.order.dto.fsm.MiddleOrderEvent;
+import com.pousheng.middle.order.dto.fsm.MiddleOrderStatus;
 import com.pousheng.middle.order.enums.*;
 import com.pousheng.middle.order.model.ExpressCode;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -655,34 +657,71 @@ public class OrderOpenApi {
     /**
      * 取消订单
      *
-     * @param data 处理结果
-     * @return 是否同步成功
+     * @param data 请求内容
+     * @return 订单状态
      */
     @OpenMethod(key = "out.order.cancel.api", paramNames = {"data"}, httpMethods = RequestMethod.POST)
-    public void syncOrderCancel(@NotNull(message = "cancel.data.is.null") String data) {
+    public String syncOrderCancel(@NotNull(message = "cancel.data.is.null") String data) {
         log.info("SYNC-OUT-ORDER-CANCEL-START DATA is:{} ", data);
         CancelOutOrderInfo cancelOutOrderInfo = JSON_MAPPER.fromJson(data, CancelOutOrderInfo.class);
-
         String outId = cancelOutOrderInfo.getOutOrderId();
         String outFrom = cancelOutOrderInfo.getChannel();
-
-        Long orderId = findOrderIdByOutIdAndOutFrom(outId,outFrom);
-
+        Long orderId = findOrderIdByOutIdAndOutFrom(outId, outFrom).getId();
+        String result = TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS;
         try {
             if (MiddleChannel.YUNJURT.getValue().equals(outFrom)) {
                 orderWriteLogic.autoCancelJitRealtimeOrder(orderId);
             } else {
                 orderWriteLogic.autoCancelShopOrder(orderId);
             }
-        } catch (JsonResponseException e){
-            log.error("cancel shop order id:{} fail",orderId);
-            throw new OPServerException(200, e.getMessage());
+        } catch (JsonResponseException e) {
+            log.error("cancel shop order id:{} fail", orderId);
+            result = TradeConstants.YYEDI_RESPONSE_CODE_FAILED;
+            if (!MiddleChannel.YUNJURT.getValue().equals(outFrom) && "sync.cancel.order.request.to.yyedi.or.mpos.fail".equals(e.getMessage())) {
+                List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(orderId);
+                Shipment shipment = shipments.stream().filter(Objects::nonNull).filter(it -> (!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))).findFirst().get();
+                if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
+                    result = TradeConstants.YYEDI_RESPONSE_CODE_ING;
+                }
+            }
         }
-
-        log.info("SYNC-OUT-ORDER-CANCEL-END DATA:", data);
+        log.info("SYNC-OUT-ORDER-CANCEL-END DATA: {}", data);
+        return result;
     }
 
-    private Long findOrderIdByOutIdAndOutFrom(String outId,String outFrom){
+
+
+    /**
+     * 查询订单状态
+     *
+     * @param data 请求内容
+     * @return 订单状态
+     */
+    @OpenMethod(key = "out.order.status.search.api", paramNames = {"data"}, httpMethods = RequestMethod.POST)
+    public String searchOrderStatus(@NotNull(message = "cancel.data.is.null") String data) {
+        log.info("SYNC-OUT-ORDER-SEARCH-START DATA is:{} ", data);
+        CancelOutOrderInfo cancelOutOrderInfo = JSON_MAPPER.fromJson(data, CancelOutOrderInfo.class);
+        String outId = cancelOutOrderInfo.getOutOrderId();
+        String outFrom = cancelOutOrderInfo.getChannel();
+        ShopOrder shopOrder = findOrderIdByOutIdAndOutFrom(outId, outFrom);
+        String result = null;
+        if (Objects.equals(shopOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue())) {
+            result = TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS;
+        } else {
+            List<Shipment> shipments = shipmentReadLogic.findByShopOrderId(shopOrder.getId());
+            Shipment shipment = shipments.stream().filter(Objects::nonNull).filter(it -> (!Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue()))).findFirst().get();
+            if (Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
+                result = TradeConstants.YYEDI_RESPONSE_CODE_ING;
+            } else {
+                result = TradeConstants.YYEDI_RESPONSE_CODE_FAILED;
+            }
+        }
+        log.info("SYNC-OUT-ORDER-SEARCH-END DATA:", data);
+        return result;
+    }
+
+
+    private ShopOrder findOrderIdByOutIdAndOutFrom(String outId,String outFrom){
 
 
         //恒康预收单的取消，需要特殊处理，要先去电商库存中查询电商的订单，然后再查询中台的订单（outId在电商库中有）
@@ -709,7 +748,7 @@ public class OrderOpenApi {
             log.error("shop order not found where outId={},outFrom=:{} when sync receiver info", outId, outFrom);
             throw new OPServerException(200, "order.not.found");
         }
-        return shopOrderOptional.get().getId();
+        return shopOrderOptional.get();
 
     }
 

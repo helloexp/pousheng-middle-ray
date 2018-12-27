@@ -40,12 +40,12 @@ public interface MiddleOrderWriteService {
      *
      * @param shopOrder       店铺订单
      * @param skuOrders       需要回滚成待处理状态的子单
-     * @param skuOrder        需要撤销的子单
+     * @param cancelList        需要撤销的子单
      * @param cancelOperation 撤销子单取消动作,取消成功或者取消失败
      * @param skuCode         子单撤单失败时添加的skuCode用于标识
      * @return
      */
-    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, SkuOrder skuOrder, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode);
+    public Response<Boolean> updateOrderStatusAndSkuQuantitiesForSku(ShopOrder shopOrder, List<SkuOrder> skuOrders, List<SkuOrder> cancelList, OrderOperation cancelOperation, OrderOperation waitHandleOperation, String skuCode);
 
     /**
      * 更新子单sku信息

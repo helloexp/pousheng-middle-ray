@@ -164,4 +164,9 @@ public class ShipmentExtra implements Serializable{
      */
     private String wmsShipInfoListJson;
 
+    /**
+     * 是否是补差邮费订单
+     */
+    private Boolean isPostageOrder;
+
 }

@@ -98,9 +98,9 @@ public class SyncYYEdiReturnLogic {
 
             //要根据不同步的售后单类型来决定同步成功或失败的状态
             YYEdiReturnInfo returnInfo =   this.makeSyncYYEdiRefund(refund);
-            String response = sycYYEdiRefundOrderApi.doSyncRefundOrder(Lists.newArrayList(returnInfo));
+            String response = sycYYEdiRefundOrderApi.doSyncRefundOrder(returnInfo);
             YYEdiResponse yyEdiResponse =JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
+            if (Objects.equals(yyEdiResponse.getCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)){
                 //同步调用成功后，更新售后单的状态，及冗余恒康售后单号
                 OrderOperation syncSuccessOrderOperation = getSyncSuccessOperation(refund);
                 Response<Boolean> updateSyncStatusRes = refundWriteLogic.updateStatus(refund, syncSuccessOrderOperation);
@@ -111,7 +111,7 @@ public class SyncYYEdiReturnLogic {
             }else{
                 //更新同步状态
                 updateRefundSyncFial(refund);
-                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getMessage());
             }
         } catch (Exception e) {
             log.error("sync yyedi refund failed,refundId is({}) cause by({})", refund.getId(), Throwables.getStackTraceAsString(e));
@@ -181,57 +181,57 @@ public class SyncYYEdiReturnLogic {
             }
             warehouse = response.getResult();
             //公司码
-            refundInfo.setCompanyCode(warehouse.getCompanyCode());
+            refundInfo.setCompanycode(warehouse.getCompanyCode());
             //仓库
-            refundInfo.setStockCode(warehouse.getOutCode());
+            refundInfo.setStockcode(warehouse.getOutCode());
         }
         //退货单号
-        refundInfo.setBillNo(String.valueOf(refund.getRefundCode()));
+        refundInfo.setBillno(String.valueOf(refund.getRefundCode()));
         //来源单号
         Shipment sourceShipment = shipmentReadLogic.findShipmentByShipmentCode(refundExtra.getShipmentId());
-        refundInfo.setSourceBillNo(sourceShipment.getShipmentCode());
+        refundInfo.setSourcebillno(sourceShipment.getShipmentCode());
         //网店交易单号
-        refundInfo.setShopBillNo(shopOrder.getOutId());
+        refundInfo.setShopbillno(shopOrder.getOutId());
         //单据类型
-        refundInfo.setBillType(TradeConstants.YYEDI_BILL_TYPE_RETURN);
+        refundInfo.setBilltype(TradeConstants.YYEDI_BILL_TYPE_RETURN);
         //店铺内码
-        refundInfo.setShopCode(shipmentExtra.getErpPerformanceShopOutCode());
+        refundInfo.setShopcode(shipmentExtra.getErpPerformanceShopOutCode());
         //店铺名称
-        refundInfo.setShopName(shipmentExtra.getErpPerformanceShopName());
+        refundInfo.setShopname(shipmentExtra.getErpPerformanceShopName());
         //买家用户名
-        refundInfo.setBCMemberName(shopOrder.getBuyerName());
+        refundInfo.setBcmembername(shopOrder.getBuyerName());
         //客户供应商快递公司内码
-        refundInfo.setCustomerCode("");
-        refundInfo.setCustomerName("");
-        refundInfo.setExpressBillNo(refundExtra.getShipmentSerialNo());
-        refundInfo.setIsRefundInvoice(0);
+        refundInfo.setCustomercode("");
+        refundInfo.setCustomername("");
+        refundInfo.setExpressbillno(refundExtra.getShipmentSerialNo());
+        refundInfo.setIsrefundinvoice(0);
         //1.退货，0.换货
-        refundInfo.setRefundChangeType(refund.getRefundType()==2?1:0);
+        refundInfo.setRefundchangetype(refund.getRefundType()==2?1:0);
         //退款金额
-        refundInfo.setCollectionAmount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN));
+        refundInfo.setCollectionamount(new BigDecimal(refund.getFee()==null?0:refund.getFee()).divide(new BigDecimal(100),2, RoundingMode.HALF_DOWN));
         //邮费
-        refundInfo.setExpressAmount(new BigDecimal(0.00));
+        refundInfo.setExpressamount(new BigDecimal(0.00));
         //中台没有运费到付,所以填0
-        refundInfo.setFreightPay(0);
+        refundInfo.setFreightpay(0);
         //寄件人信息
         ReceiverInfo receiverInfo = refundExtra.getReceiverInfo();
         if (!Objects.isNull(receiverInfo)){
-            refundInfo.setSendContact(receiverInfo.getReceiveUserName());
+            refundInfo.setSendcontact(receiverInfo.getReceiveUserName());
         }else{
-            refundInfo.setSendContact("");
+            refundInfo.setSendcontact("");
         }
         //寄件人电话
-        refundInfo.setSendContactTel("");
+        refundInfo.setSendcontacttel("");
         //寄件省
-        refundInfo.setSendProvince("");
+        refundInfo.setSendprovince("");
         //寄件市
-        refundInfo.setSendCity("");
+        refundInfo.setSendcity("");
         //寄件区
-        refundInfo.setSendArea("");
+        refundInfo.setSendarea("");
         //寄件地址
-        refundInfo.setSendAddress("");
+        refundInfo.setSendaddress("");
         //寄件邮编
-        refundInfo.setZipCode("");
+        refundInfo.setZipcode("");
         //最近修改时间
         //refundInfo.setERPModifyTime(formatter.print(refund.getCreatedAt().getTime()));
         //明细记录
@@ -239,17 +239,17 @@ public class SyncYYEdiReturnLogic {
         refundInfo.setItems(items);
         int quantity = 0;
         for (YYEdiReturnItem returnItem:items){
-            quantity =quantity+returnItem.getExpectQty();
+            quantity =quantity+returnItem.getExpectqty();
         }
         //预期数量
-        refundInfo.setExpectQty(quantity);
+        refundInfo.setExpectqty(quantity);
         //总行数
         refundInfo.setTdq(items.size());
         //yyedi订单号
         if (!StringUtils.isEmpty(shipmentExtra.getOutShipmentId())){
-            refundInfo.setEDIBillNo(shipmentExtra.getOutShipmentId());
+            refundInfo.setEdibillno(shipmentExtra.getOutShipmentId());
         }else{
-            refundInfo.setEDIBillNo(String.valueOf(shipment.getId()));
+            refundInfo.setEdibillno(String.valueOf(shipment.getId()));
 
         }
         return refundInfo;
@@ -271,13 +271,13 @@ public class SyncYYEdiReturnLogic {
         for (RefundItem refundItem : refundItems) {
             YYEdiReturnItem item = new YYEdiReturnItem();
              //行号
-            item.setRowNo(count);
+            item.setRowno(count);
             //公司内码
-            item.setCompanyCode(warehouse.getCompanyCode());
+            item.setCompanycode(warehouse.getCompanyCode());
             //ERP单号
-            item.setBillNo(String.valueOf(refund.getRefundCode()));
+            item.setBillno(String.valueOf(refund.getRefundCode()));
             //条码
-            item.setSKU(refundItem.getSkuCode());
+            item.setSku(refundItem.getSkuCode());
             //货号
             Response<List<SkuTemplate>> rS = skuTemplateReadService.findBySkuCodes(Lists.newArrayList(refundItem.getSkuCode()));
             if (!rS.isSuccess()){
@@ -292,7 +292,7 @@ public class SyncYYEdiReturnLogic {
             Map<String,String> extraMaps = skuTemplate.getExtra();
             String materialCode = extraMaps.get(TradeConstants.HK_MATRIAL_CODE);
             //货号
-            item.setMaterialCode(materialCode);
+            item.setMaterialcode(materialCode);
             //尺码名称
             String sizeName = "";
             List<SkuAttribute> skuAttributes = skuTemplate.getAttrs();
@@ -301,21 +301,21 @@ public class SyncYYEdiReturnLogic {
                     sizeName = skuAttribute.getAttrVal();
                 }
             }
-            item.setSizeName(sizeName);
+            item.setSizename(sizeName);
             //预计数量
-            item.setExpectQty(refundItem.getApplyQuantity());
+            item.setExpectqty(refundItem.getApplyQuantity());
             //网店交易单号
-            item.setShopBillNo(shopOrder.getOutId());
+            item.setShopbillno(shopOrder.getOutId());
             //结算价(单价)
-            item.setBalaPrice(new BigDecimal(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setBalaprice(new BigDecimal(refundItem.getSkuPrice()==null?0:refundItem.getSkuPrice()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //结算金额
-            item.setPayAmount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setPayamount(new BigDecimal(refundItem.getFee()==null?0:refundItem.getFee()).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //零售价-吊牌价
             Map<String,Integer> extraPrice = skuTemplate.getExtraPrice();
             int originPrice = extraPrice.get("originPrice")==null?0:extraPrice.get("originPrice");
-            item.setRetailPrice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
+            item.setRetailprice(new BigDecimal(originPrice).divide(new BigDecimal(100),2,RoundingMode.HALF_DOWN));
             //edi订单号
-            item.setEDIBillNo(shipmentExtra.getOutShipmentId());
+            item.setEdibillno(shipmentExtra.getOutShipmentId());
             items.add(item);
             count++;
         }
@@ -353,20 +353,29 @@ public class SyncYYEdiReturnLogic {
                 return Response.fail(updateStatusRes.getError());
             }
             YYEdiCancelInfo yyEdiCancelInfo = new YYEdiCancelInfo();
-            yyEdiCancelInfo.setBillNo(refund.getRefundCode());
-            yyEdiCancelInfo.setReMark(refund.getBuyerNote());
-            String response = sycYYEdiRefundCancelApi.doCancelOrder(Lists.newArrayList(yyEdiCancelInfo));
+            yyEdiCancelInfo.setBillno(refund.getRefundCode());
+            yyEdiCancelInfo.setRemark(refund.getBuyerNote());
+            String response = sycYYEdiRefundCancelApi.doCancelOrder(yyEdiCancelInfo);
             YYEdiResponse yyEdiResponse = JsonMapper.nonEmptyMapper().fromJson(response,YYEdiResponse.class);
-            if (Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)||Objects.equals(yyEdiResponse.getErrorCode(),TradeConstants.YYEDI_RESPONSE_CANCELED)) {
+            if (Objects.equals(yyEdiResponse.getCode(),TradeConstants.YYEDI_RESPONSE_CODE_SUCCESS)) {
                 //同步调用成功后，更新售后单的状态
                 Response<Boolean> updateSyncStatusRes = this.upateCancelRefundSuccess(refund, orderOperation, updateStatusRes);
                 if (updateSyncStatusRes != null){
                     return updateSyncStatusRes;
                 }
+            } else if (Objects.equals(yyEdiResponse.getCode(), TradeConstants.YYEDI_RESPONSE_CODE_ING)) {
+                //取消中 加个标记位 依然返回取消失败
+                Map<String, String> extraMap = refund.getExtra();
+                extraMap.put(TradeConstants.WAIT_CANCEL_RESULT, "1");
+                Refund update =new Refund();
+                update.setExtra(extraMap);
+                update.setId(refund.getId());
+                refundWriteLogic.update(update);
+                return Response.fail("订单派发中心返回信息:" + yyEdiResponse.getMessage());
             } else {
                 //同步调用取消失败，更新售后单的状态
                 this.updateCancelRefundFailed(refund);
-                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getDescription());
+                return Response.fail("订单派发中心返回信息:"+yyEdiResponse.getMessage());
             }
             return Response.ok(Boolean.TRUE);
         } catch (Exception e) {

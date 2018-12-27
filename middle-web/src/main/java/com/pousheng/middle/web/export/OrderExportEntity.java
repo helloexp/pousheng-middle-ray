@@ -59,7 +59,7 @@ public class OrderExportEntity {
      */
     @ExportTitle("付款日期")
     @ExportDateFormat("yyyyMMdd")
-    private Date paymentDate;
+    private Date paymentdate;
     /**
      * 交易状态
      */

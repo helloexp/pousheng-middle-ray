@@ -261,7 +261,7 @@ public class ExportTradeBillListener {
                     export.setPerformanceShopCode(getPerformanceShopCode(shopOrder.getShopId()));
 
                     export.setOutId(shopOrder.getOutId());
-                    export.setPaymentDate(shopOrder.getOutCreatedAt());
+                    export.setPaymentdate(shopOrder.getOutCreatedAt());
                     export.setOrderStatus(MiddleOrderStatus.fromInt(skuOrder.getStatus()).getName());
                     export.setOrderMemo(shopOrder.getBuyerNote());
                     export.setShipFee(null == shopOrder.getShipFee() ? null : new BigDecimal(shopOrder.getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
@@ -580,7 +580,7 @@ public class ExportTradeBillListener {
                     entity.setPayType("在线支付");
 //                    entity.setInvoice("");
                     entity.setOutCreatedDate(shopOrderResponse.getResult().getOutCreatedAt());
-                    entity.setPaymentDate(shopOrderResponse.getResult().getOutCreatedAt());
+                    entity.setPaymentdate(shopOrderResponse.getResult().getOutCreatedAt());
                     entity.setOutId(shopOrderResponse.getResult().getOutId());
                     if(CollectionUtils.isEmpty(shopOrderResponse.getResult().getExtra())){
                         entity.setOrderType("");
@@ -592,7 +592,7 @@ public class ExportTradeBillListener {
                             entity.setOrderType("普通订单");
                         }
                     }
-                    
+
                     entity.setSkuQuantity(item.getQuantity());
                     if (null == item.getCleanFee())
                         entity.setFee(0D);

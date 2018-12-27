@@ -139,7 +139,15 @@ public class MposShipmentLogic {
             orderWriteService.updateOrderExtra(shopOrder.getId(),OrderLevel.SHOP,shopOrderExtra);
 
             List<SkuCodeAndQuantity> skuCodeAndQuantities = shipmentReadLogic.findShipmentSkuDetailForReject(shipment);
-            shipmentWiteLogic.toDispatchOrder(shopOrder, skuCodeAndQuantities);
+            //如果是新的派单逻辑 则先还原状态 再进行派单
+            if (orderReadLogic.isNewDispatchOrderLogic(shopOrder.getShopId())) {
+                List<SkuOrder> skuOrderList = orderReadLogic.findSkuOrdersByShopOrderId(shopOrder.getId()).stream().filter(Objects::nonNull).filter(it -> !Objects.equals(it.getStatus(), MiddleOrderStatus.CANCEL.getValue())).collect(Collectors.toList());
+                shipmentWiteLogic.makeSkuOrderWaitHandle(skuCodeAndQuantities, skuOrderList);
+                shipmentWiteLogic.autoHandleAllChannelOrderByNewLogic(shopOrder);
+            } else {
+                shipmentWiteLogic.toDispatchOrder(shopOrder, skuCodeAndQuantities);
+            }
+
         }
         log.info("end to update order status,when mops shipped shipment id:{}",event.getShipmentId());
     }

@@ -410,7 +410,12 @@ public class ShipmentReadLogic {
     private void setShopTelInfo(Shipment shipment,ShipmentExtra shipmentExtra) {
         //设置发货店仓手机号 1:店发，2：仓发
         if(Objects.equals(shipment.getShipWay(),1)) {
-            Shop shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+
+            Shop shop = null;
+            // 非补邮费订单 查询发货店铺信息
+            if (!isPostageOrder(shipmentExtra)) {
+                shop = shopCacher.findShopById(shipmentExtra.getWarehouseId());
+            }
             if (null != shop) {
                 //设置店发的手机号,关联会员中心获取
                 com.google.common.base.Optional<MemberShop> memberShopOptional = memberShopOperationLogic.findShopByCodeAndType(shop.getOuterId(), 1, shop.getBusinessId().toString());
@@ -588,6 +593,44 @@ public class ShipmentReadLogic {
             log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_SHARE_DISCOUNT);
         }
         return StringUtils.isEmpty(skuShareDiscount)?"0":skuShareDiscount;
+    }
+    
+    public Long getPaymentIntegral(List<Long> skuOrderIds){
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        Long paymentIntegral = 0L;
+        for (SkuOrder skuOrder : skuOrders) {
+            paymentIntegral += getPaymentIntegral(skuOrder);
+        }
+        return paymentIntegral;
+    }
+
+    private Long getPaymentIntegral(SkuOrder skuOrder){
+        String paymentIntegral="";
+        try{
+            paymentIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_PAYMENT_INTEGRAL,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_PAYMENT_INTEGRAL);
+        }
+        return StringUtils.isEmpty(paymentIntegral) ? 0L : Long.valueOf(paymentIntegral);
+    }
+
+    public Long getUsedIntegral(List<Long> skuOrderIds){
+        List<SkuOrder> skuOrders = orderReadLogic.findSkuOrdersByIds(skuOrderIds);
+        Long usedIntegral = 0L;
+        for (SkuOrder skuOrder : skuOrders) {
+            usedIntegral += getUsedIntegral(skuOrder);
+        }
+        return usedIntegral;
+    }
+
+    private Long getUsedIntegral(SkuOrder skuOrder){
+        String usedIntegral="";
+        try{
+            usedIntegral = orderReadLogic.getSkuExtraMapValueByKey(TradeConstants.SKU_USED_INTEGRAL,skuOrder);
+        }catch (JsonResponseException e){
+            log.info("sku order(id:{}) extra map not contains key:{}",skuOrder.getId(),TradeConstants.SKU_USED_INTEGRAL);
+        }
+        return StringUtils.isEmpty(usedIntegral) ? 0L : Long.valueOf(usedIntegral);
     }
 
     /**
@@ -865,5 +908,15 @@ public class ShipmentReadLogic {
             throw new JsonResponseException("shipment.item.find.fail");
         }
         return r.getResult();
+    }
+
+    /**
+     * 是否是补邮费订单
+     * @param shipmentExtra
+     * @return
+     */
+    private boolean isPostageOrder(ShipmentExtra shipmentExtra) {
+        return !java.util.Objects.isNull(shipmentExtra.getIsPostageOrder())
+            && shipmentExtra.getIsPostageOrder();
     }
 }

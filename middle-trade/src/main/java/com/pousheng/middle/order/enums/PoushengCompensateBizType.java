@@ -157,6 +157,11 @@ public enum PoushengCompensateBizType {
      * 同步正向订单pos到恒康
      */
     SYNC_ORDER_POS_TO_HK,
+
+    /**
+     * 同步取消结果到云聚
+     */
+    SYNC_CANCEL_TO_YJ,
     /**
      * 同步售后单pos到恒康
      */

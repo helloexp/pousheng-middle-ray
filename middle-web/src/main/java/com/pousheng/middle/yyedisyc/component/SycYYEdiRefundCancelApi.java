@@ -4,15 +4,12 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelBody;
 import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelInfo;
-import com.pousheng.middle.yyedisyc.dto.trade.YYEdiCancelRequest;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-
-import java.util.List;
 
 /**
  * Created by songrenfei on 2017/7/19
@@ -29,31 +26,27 @@ public class SycYYEdiRefundCancelApi {
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
 
+    private static final String SID = "PS_ERP_WMS_bccancelrefunds";
+
     /**
      *
      * @param reqeustData
      * @return
      */
-    public String doCancelOrder(List<YYEdiCancelInfo> reqeustData){
+    public String doCancelOrder(YYEdiCancelInfo reqeustData){
 
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         YYEdiCancelBody body = new YYEdiCancelBody();
-        body.setRequestData(reqeustData);
-        YYEdiCancelRequest request = new YYEdiCancelRequest();
-        request.setBody(body);
-        String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
+        body.bizContent(reqeustData).sid(SID).tranReqDate(DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)));
+        String paramJson = JsonMapper.nonEmptyMapper().toJson(body);
         log.info("yyedi-cancel-refund paramJson:{}, serialNo{}",paramJson,serialNo);
-        String gateway = hkGateway+"/common/yyedi/default/getcancelrefund";
+        String gateway = hkGateway+"/common/pserp/wms/pushbccancelrefunds";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
-                .header("serialNo",serialNo)
-                .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")
-                //.trustAllHosts().trustAllCerts()
+                .header("verifycode", accessKey)
                 .send(paramJson)
                 .connectTimeout(10000).readTimeout(10000)
                 .body();
-
         log.info("sync cancel refund to yyedi result:{}, serialNo:{}",responseBody,serialNo);
         return responseBody;
     }

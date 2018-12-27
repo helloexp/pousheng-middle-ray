@@ -130,7 +130,7 @@ public class SyncErpShipmentLogic {
      * @param shipment 发货单
      * @return
      */
-    public Response<Boolean> syncShipmentCancel(Shipment shipment) {
+    public Response<Boolean> syncShipmentCancel(Shipment shipment, Object... skuOrders) {
         log.info("cancel shipment start,shipment is {}", shipment);
         OrderShipment orderShipment = shipmentReadLogic.findOrderShipmentByShipmentId(shipment.getId());
         ShopOrder shopOrder = orderReadLogic.findShopOrderById(orderShipment.getOrderId());
@@ -149,7 +149,7 @@ public class SyncErpShipmentLogic {
             case "hk":
                 return syncShipmentLogic.syncShipmentCancelToHk(shipment);
             case "yyEdi":
-                return syncYYEdiShipmentLogic.syncShipmentCancelToYYEdi(shipment);
+                return syncYYEdiShipmentLogic.syncShipmentCancelToYYEdi(shipment, skuOrders);
             default:
                 log.error("can not find sync erp type,openShopId is {}", shopOrder.getShopId());
                 return Response.fail("find.open.shop.extra.erp.sync.type.fail");

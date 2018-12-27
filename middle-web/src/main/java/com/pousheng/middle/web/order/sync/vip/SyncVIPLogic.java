@@ -402,7 +402,7 @@ public class SyncVIPLogic {
                 }
                 //若状态为已收货 或 拒收 则要更新并通知
                 if (status.equals(TransportCodeEnum.SIGN_FOR.value()) || status.equals(TransportCodeEnum.REFUSED.value())) {
-                    confirmOrder(orderMap.get(order.getOrder_id()));
+                    confirmOrder(orderMap.get(order.getOrder_id()),status.equals(TransportCodeEnum.REFUSED.value())?true:false);
                 }
             }
 
@@ -414,7 +414,7 @@ public class SyncVIPLogic {
     }
 
 
-    private void confirmOrder(Long orderId) {
+    private void confirmOrder(Long orderId,boolean isRefused) {
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(orderId, MiddleOrderStatus.SHIPPED.getValue());
         if (skuOrders.size() == 0) {
             return;
@@ -425,8 +425,10 @@ public class SyncVIPLogic {
                 log.error("update skuOrder status error (id:{}),original status is {}", skuOrder.getId(), skuOrder.getStatus());
             }
         }
-        //判断订单的状态是否是已完成
-        orderReceiver.noticeConfirm(orderId);
+        //判断订单的状态是否是已完成,如果是拒收则不处理
+        if(!isRefused) {
+            orderReceiver.noticeConfirm(orderId);
+        }
     }
 
     private Integer transToShipmentExpressStatus(String status) {
@@ -447,65 +449,77 @@ public class SyncVIPLogic {
 
 
     public void syncWarehouseMapping(Long shopId) {
-        Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
-        if (!rWarehouseIds.isSuccess()) {
-            log.error("find warehouse list by shopId fail: shopId: {}, caused: {}", shopId, rWarehouseIds.getError());
-        }
-        Response<List<VipWarehouseMapping>> response = vipWarehouseMappingReadService.findAll();
-        if (!response.isSuccess()) {
-            throw new JsonResponseException(response.getError());
-        }
-        Map<Long, VipWarehouseMapping> warehouseMap = response.getResult().stream().collect(Collectors.toMap(VipWarehouseMapping::getWarehouseId, vipWarehouseMapping -> vipWarehouseMapping));
-        List<Long> storeList = Lists.newArrayList();
-        List<StoreMapping> queryList = vipStoreService.queryStroe(shopId);
-        Boolean needRefresh = Boolean.FALSE;
-        //新的映射则创建
-        for (StoreMapping storeMapping : queryList) {
-            WarehouseDTO warehouseDTO = warehouseCacher.findByOutCodeAndBizId(storeMapping.getOuterCode(), storeMapping.getCompanyId());
-            storeList.add(warehouseDTO.getId());
-            if (warehouseMap.get(warehouseDTO.getId()) == null) {
-                VipWarehouseMapping vipWarehouseMapping = new VipWarehouseMapping().vipStoreSn(storeMapping.getStoreSn()).warehouseId(warehouseDTO.getId());
-                Response<Long> createResp = vipWarehouseMappingWriteService.create(vipWarehouseMapping);
-                if (!createResp.isSuccess()) {
-                    log.error("fail to create vip warehouse mapping,cause by {}", createResp.getError());
-                }
-            } else if (!Objects.equals(warehouseMap.get(warehouseDTO.getId()).getVipStoreSn(), storeMapping.getStoreSn())) {
-                VipWarehouseMapping update = warehouseMap.get(warehouseDTO.getId());
-                update.setVipStoreSn(storeMapping.getStoreSn());
-                Response<Boolean> updateResp = vipWarehouseMappingWriteService.update(update);
-                if (!updateResp.isSuccess()) {
-                    log.error("fail to update vip warehouse mapping ,cause by {}", updateResp.getError());
-                }
-                needRefresh = Boolean.TRUE;
+        try {
+            Response<List<Long>> rWarehouseIds = warehouseRulesClient.findWarehouseIdsByShopId(shopId);
+            if (!rWarehouseIds.isSuccess()) {
+                log.error("find warehouse list by shopId fail: shopId: {}, caused: {}", shopId, rWarehouseIds.getError());
             }
-        }
+            Response<List<VipWarehouseMapping>> response = vipWarehouseMappingReadService.findAll();
+            if (!response.isSuccess()) {
+                throw new JsonResponseException(response.getError());
+            }
+            Map<Long, VipWarehouseMapping> warehouseMap = response.getResult().stream().collect(Collectors.toMap(VipWarehouseMapping::getWarehouseId, vipWarehouseMapping -> vipWarehouseMapping));
+            List<Long> storeList = Lists.newArrayList();
+            List<StoreMapping> queryList = vipStoreService.queryStroe(shopId);
+            //如果唯品会查询接口异常结果集为null,则退出
+            if (queryList == null) {
+                return;
+            }
+            Boolean needRefresh = Boolean.FALSE;
+            //新的映射则创建
+            for (StoreMapping storeMapping : queryList) {
+                try {
+                    WarehouseDTO warehouseDTO = warehouseCacher.findByOutCodeAndBizId(storeMapping.getOuterCode(), storeMapping.getCompanyId());
+                    storeList.add(warehouseDTO.getId());
+                    if (warehouseMap.get(warehouseDTO.getId()) == null) {
+                        VipWarehouseMapping vipWarehouseMapping = new VipWarehouseMapping().vipStoreSn(storeMapping.getStoreSn()).warehouseId(warehouseDTO.getId());
+                        Response<Long> createResp = vipWarehouseMappingWriteService.create(vipWarehouseMapping);
+                        if (!createResp.isSuccess()) {
+                            log.error("fail to create vip warehouse mapping,cause by {}", createResp.getError());
+                        }
+                    } else if (!Objects.equals(warehouseMap.get(warehouseDTO.getId()).getVipStoreSn(), storeMapping.getStoreSn())) {
+                        VipWarehouseMapping update = warehouseMap.get(warehouseDTO.getId());
+                        update.setVipStoreSn(storeMapping.getStoreSn());
+                        Response<Boolean> updateResp = vipWarehouseMappingWriteService.update(update);
+                        if (!updateResp.isSuccess()) {
+                            log.error("fail to update vip warehouse mapping ,cause by {}", updateResp.getError());
+                        }
+                        needRefresh = Boolean.TRUE;
+                    }
+                } catch (Exception e) {
+                    log.error("fail to handle vip store(storeSn:{}) ,cause by {}", storeMapping.getStoreSn(), Throwables.getStackTraceAsString(e));
+                }
+            }
 
-        //删除vip中已经没有了的仓库信息
-        for (Long warehouseId : warehouseMap.keySet()) {
-            if (!storeList.contains(warehouseId)) {
-                Response<Boolean> delResp = vipWarehouseMappingWriteService.deleteByWarehouseId(warehouseId);
-                if (!delResp.isSuccess()) {
-                    log.error("fail to delete vip warehouse mapping");
+            //删除vip中已经没有了的仓库信息
+            for (Long warehouseId : warehouseMap.keySet()) {
+                if (!storeList.contains(warehouseId)) {
+                    Response<Boolean> delResp = vipWarehouseMappingWriteService.deleteByWarehouseId(warehouseId);
+                    if (!delResp.isSuccess()) {
+                        log.error("fail to delete vip warehouse mapping");
+                    }
+                    needRefresh = Boolean.TRUE;
                 }
-                needRefresh = Boolean.TRUE;
             }
-        }
-        //是否需要重新推送库存，如果有仓库被移除了默认发货仓规则，则重新推送
-        Boolean needPushStock = Boolean.FALSE;
-        //检查默认发货仓规则里面是否存在无映射仓库 有的话 删除
-        for (Long warehouseId : rWarehouseIds.getResult()) {
-            if (!storeList.contains(warehouseId)) {
-                warehouseRulesClient.deleteByShopIdAndWarehosueId(shopId, warehouseId);
-                needPushStock = Boolean.TRUE;
+            //是否需要重新推送库存，如果有仓库被移除了默认发货仓规则，则重新推送
+            Boolean needPushStock = Boolean.FALSE;
+            //检查默认发货仓规则里面是否存在无映射仓库 有的话 删除
+            for (Long warehouseId : rWarehouseIds.getResult()) {
+                if (!storeList.contains(warehouseId)) {
+                    warehouseRulesClient.deleteByShopIdAndWarehosueId(shopId, warehouseId);
+                    needPushStock = Boolean.TRUE;
+                }
             }
-        }
-        if (needPushStock) {
-            log.info("start to re push stock to vip");
-            shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, null));
-        }
-        if (needRefresh) {
-            log.info("start to refresh vipMapping");
-            vipWarehouseMappingProxy.refreshAll();
+            if (needPushStock) {
+                log.info("start to re push stock to vip");
+                shopSkuStockPushHandler.onPushEvent(new PushEvent(shopId, null));
+            }
+            if (needRefresh) {
+                log.info("start to refresh vipMapping");
+                vipWarehouseMappingProxy.refreshAll();
+            }
+        }catch (Exception e){
+            log.error("fail to handle VIP OXO shop(shopId:{}) mapping ,cause by {}", shopId, Throwables.getStackTraceAsString(e));
         }
     }
 }

@@ -1,6 +1,12 @@
 package com.pousheng.middle.web.biz.impl;
 
-import com.google.common.base.Throwables;
+import com.pousheng.middle.hksyc.component.SycYunjuRefundOrderApi;
+import com.pousheng.middle.hksyc.dto.ExchangeDetail;
+import com.pousheng.middle.hksyc.dto.YJExchangeReturnRequest;
+import com.pousheng.middle.hksyc.dto.YJRespone;
+import com.pousheng.middle.open.api.dto.YYEdiRefundConfirmItem;
+import com.pousheng.middle.order.constant.TradeConstants;
+import com.pousheng.middle.order.dto.RefundItem;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.MiddleRefundStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -22,10 +28,14 @@ import io.terminus.open.client.order.service.OpenClientAfterSaleService;
 import io.terminus.parana.order.model.Refund;
 import io.terminus.parana.order.service.RefundWriteService;
 import lombok.extern.slf4j.Slf4j;
+import org.assertj.core.util.Lists;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -43,6 +53,11 @@ public class ThirdRefundResultService implements CompensateBizService {
     private RefundWriteService refundWriteService;
     @Autowired
     private RefundReadLogic refundReadLogic;
+
+    private static final JsonMapper MAPPER = JsonMapper.nonEmptyMapper();
+
+    @Autowired
+    private SycYunjuRefundOrderApi refundOrderApi;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -63,6 +78,7 @@ public class ThirdRefundResultService implements CompensateBizService {
         try {
             updateRefundStatusForTaobao(event);
         }catch (Exception e){
+            log.error("update third channel refund status,caused by {}", e);
             throw new BizException("update third channel refund status,caused by {}", e);
         }
     }
@@ -74,7 +90,7 @@ public class ThirdRefundResultService implements CompensateBizService {
      * @return
      */
     public void updateRefundStatusForTaobao(TaobaoConfirmRefundEvent event) {
-        log.error("begin to update third channel refund status,refundId is {},openAfterSaleId is {},openOrderId is {},openShopId is {],channel is {} ", event.getRefundId(), event.getOpenAfterSaleId(), event.getOpenOrderId(), event.getOpenShopId(), event.getChannel());
+        log.info("begin to update third channel refund status,refundId is {},openAfterSaleId is {},openOrderId is {},openShopId is {},channel is {} ", event.getRefundId(), event.getOpenAfterSaleId(), event.getOpenOrderId(), event.getOpenShopId(), event.getChannel());
         //天猫渠道
         if (Objects.equals(event.getChannel(), MiddleChannel.TAOBAO.getValue())) {
             OpenClientAfterSaleService afterSaleService = this.afterSaleServiceRegistryCenter.getAfterSaleService(MiddleChannel.TAOBAO.getValue());
@@ -116,5 +132,56 @@ public class ThirdRefundResultService implements CompensateBizService {
                 }
             }
         }
+
+        //云聚渠道
+        if (Objects.equals(event.getChannel(), MiddleChannel.YUNJUBBC.getValue())) {
+
+            Refund refund = refundReadLogic.findRefundById(event.getRefundId());
+            YJExchangeReturnRequest request = new YJExchangeReturnRequest();
+
+            Map<String, String> extraMap = refund.getExtra();
+            request.setExchange_id(refundReadLogic.getOutafterSaleIdTaobao(refund.getOutId())); //退货单号
+            ArrayList<ExchangeDetail> exchangeDetails = Lists.newArrayList();
+
+            List<RefundItem> refundItems = MAPPER.fromJson(extraMap.get(TradeConstants.REFUND_ITEM_INFO),
+                MAPPER.createCollectionType(List.class, RefundItem.class));
+            List<YYEdiRefundConfirmItem> confirmItems = MAPPER.fromJson(
+                extraMap.get(TradeConstants.REFUND_YYEDI_RECEIVED_ITEM_INFO),
+                MAPPER.createCollectionType(List.class, YYEdiRefundConfirmItem.class));
+            confirmItems.forEach(confirmItem -> {
+                ExchangeDetail detail = new ExchangeDetail();
+                RefundItem refundItem = getRefundItem(confirmItem.getItemCode(), refundItems);
+                detail.setBar_code(confirmItem.getItemCode());
+                detail.setLine_number(refundItem.getSkuOrderId());
+                detail.setOk_num(StringUtils.isEmpty(confirmItem.getQuantity()) ? 0
+                    : Integer.valueOf(confirmItem.getQuantity()));   //退货入库的正品数量(无数量传0)
+                detail.setError_num(0); //    退货入库的残品数量(无数量传0)
+                exchangeDetails.add(detail);
+            });
+            request.setExchange_detail(exchangeDetails);
+            YJRespone yjRespone = refundOrderApi.doSyncRefundOrder(request);
+            if (!Objects.isNull(yjRespone) && 0 == yjRespone.getError()) {
+                Response<Boolean> updateR = refundWriteService.updateStatus(event.getRefundId(),
+                    MiddleRefundStatus.REFUND.getValue());
+                if (!updateR.isSuccess()) {
+                    log.error("fail to update refund(id={}) status to {} when receive after sale:{},cause:{}",
+                        event.getRefundId(), MiddleRefundStatus.REFUND.getValue(), updateR.getError());
+                }
+            } else {
+                log.error("refundOrderApi.doSyncRefundOrder return failed.response:{}", MAPPER.toJson(yjRespone));
+            }
+        }
+    }
+
+
+    private RefundItem getRefundItem(String itemCode,List<RefundItem> refundItems){
+
+        for (RefundItem refundItem : refundItems) {
+            if (itemCode.equals(refundItem.getSkuCode())){
+
+                return refundItem;
+            }
+        }
+        return null;
     }
 }

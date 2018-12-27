@@ -21,7 +21,12 @@ public enum MiddleOrderType {
     /**
      * 云聚jit时效单
      */
-    JIT_REAL_TIME(3);
+    JIT_REAL_TIME(3),
+
+    /**
+     * 补差邮费订单
+     */
+    POSTAGE(4);
 
     private final int value;
     MiddleOrderType(int value) {

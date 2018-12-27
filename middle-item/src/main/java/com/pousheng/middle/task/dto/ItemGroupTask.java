@@ -21,6 +21,8 @@ public class ItemGroupTask {
 
     private String fileUrl;
 
+    private String fileName;
+
     private Long createdAt;
 
     public Map<String, String> getParams() {
@@ -56,6 +58,15 @@ public class ItemGroupTask {
 
     public ItemGroupTask type(Integer type) {
         this.type = type;
+        return this;
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public ItemGroupTask fileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 

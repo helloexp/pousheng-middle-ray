@@ -79,6 +79,7 @@ public class OrderReadLogic {
     static final String MPOS = "mpos"; //默认发货仓规则
     private static final JsonMapper mapper = JsonMapper.nonEmptyMapper();
 
+    private static final String IS_ALL_CHANNEL_SHOP_NEW_LOGIC = "isNewDispatchOrderLogic"; // 全渠道新逻辑派单方式
 
     /**
      * 订单详情
@@ -537,6 +538,29 @@ public class OrderReadLogic {
 
     }
 
+    /**
+     * 查询open shop是否参与全渠道的新派单方式
+     * 
+     * @param extraMap
+     * @return
+     */
+    public boolean isNewDispatchOrderLogic(Long openShopId) {
+        OpenShop openShop = findOpenShopByShopId(openShopId);
+
+        Map<String, String> extraMap = openShop.getExtra();
+        if (CollectionUtils.isEmpty(extraMap)) {
+            log.error("open shop (id:{}) extra map is empty", openShop.getId());
+            throw new JsonResponseException("open.shop.extra.is.null");
+        }
+        if (!extraMap.containsKey(IS_ALL_CHANNEL_SHOP_NEW_LOGIC)) {
+            log.warn("open shop (id:{}) extra map not contains key:{}", openShop.getId(), IS_ALL_CHANNEL_SHOP_NEW_LOGIC);
+            return Boolean.FALSE;
+        }
+
+        String value = extraMap.get(IS_ALL_CHANNEL_SHOP_NEW_LOGIC);
+
+        return Objects.equals(value, "true");
+    }
 
     /**
      * 查询open shop是mpos门店

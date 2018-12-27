@@ -288,7 +288,8 @@ public class OrderWriteLogic {
             if (shipment.getShopName().startsWith("yj") && Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_CANCEL_ING.getValue())) {
                 throw new OPServerException(200, "shop.order.in.deal");
             }
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
+            List<Long> skuOrders = orderReadLogic.findSkuOrdersByShopOrderId(shopOrderId).stream().map(SkuOrder::getId).collect(Collectors.toList());
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, skuOrders.toArray());
             if (!cancelShipmentResponse.isSuccess()) {
                 //取消失败,后续将整单子单状态设置为取消失败,可以重新发起取消发货单
                 count++;
@@ -302,10 +303,11 @@ public class OrderWriteLogic {
 
         if (count > 0) {
             //发货单取消失败,订单状态设置为取消失败
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
+            //middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation());
             log.error("cancel shop order id:{} fail", shopOrder.getOrderCode());
             throw new JsonResponseException("sync.cancel.order.request.to.yyedi.or.mpos.fail");
-        } else {
+        }
+        if (count == 0) {
             //发货单取消成功,订单状态设置为取消成功
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
             //取消成功则释放库存
@@ -352,11 +354,10 @@ public class OrderWriteLogic {
         //由于在cancelshipment的时候数据会更新，所以查询放到后面，获取该订单下所有的子单和发货单
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId, MiddleOrderStatus.CANCEL_FAILED.getValue());
         if (count > 0) {
-            //发货单取消成功,订单状态设置为取消成功
-            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.CANCEL.toOrderOperation());
-
-        } else {
             //发货单取消失败,订单状态设置为取消失败
+            middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.CANCEL.toOrderOperation());
+        } else {
+            //发货单取消成功,订单状态设置为取消成功
             middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, skuOrders, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
             //取消成功则释放库存
             this.releaseRejectShipmentOccupyStock(shopOrderId);
@@ -378,7 +379,7 @@ public class OrderWriteLogic {
      * @param shopOrderId 店铺订单主键
      * @param skuCode     子单代码
      */
-    public void autoCancelSkuOrder(long shopOrderId, String skuCode) {
+    public void autoCancelSkuOrder(long shopOrderId, String skuCode, Long skuOrderId) {
         if (log.isDebugEnabled()) {
             log.debug("OrderWriteLogic autoCancelSkuOrder,shopOrderId {},skuCode {}", shopOrderId, skuCode);
         }
@@ -396,7 +397,8 @@ public class OrderWriteLogic {
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId,
                 MiddleOrderStatus.WAIT_HANDLE.getValue(), MiddleOrderStatus.WAIT_ALL_HANDLE_DONE.getValue(),
                 MiddleOrderStatus.WAIT_SHIP.getValue());
-        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCode);
+        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCode, skuOrderId);
+
         //判断子单是否存在以及子单状态是否已经发生变化
         if (skuOrder == null || Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue())) {
             log.warn("skuOrder status changed,shopOrderId is {},skuCode is {}", shopOrder, skuCode);
@@ -416,28 +418,29 @@ public class OrderWriteLogic {
         List<Shipment> shipments = shipmentsRes.getResult().stream().filter(Objects::nonNull).
                 filter(it -> !Objects.equals(it.getStatus(), MiddleShipmentsStatus.CANCELED.getValue()) && !Objects.equals(it.getStatus(), MiddleShipmentsStatus.REJECTED.getValue())).collect(Collectors.toList());
         //其他需要恢复成待处理状态的子单
-        List<SkuOrder> skuOrdersFilter = skuOrders.stream().filter(Objects::nonNull).filter(it -> !Objects.equals(it.getId(), skuOrder.getId())).collect(Collectors.toList());
-
+        List<SkuOrder> skuOrdersFilter = Lists.newArrayList();
         int count = 0;//计数器用来记录是否有发货单取消失败
         for (Shipment shipment : shipments) {
-            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment);
+            if (skuOrderId != null && !shipment.getSkuInfos().containsKey(skuOrderId)) {
+                continue;
+            }
+            Response<Boolean> cancelShipmentResponse = shipmentWiteLogic.cancelShipment(shipment, skuOrder.getId());
             if (!cancelShipmentResponse.isSuccess()) {
                 count++;
             }
+            skuOrdersFilter.addAll(skuOrders.stream().filter(Objects::nonNull).filter(it -> shipment.getSkuInfos().containsKey(it.getId())).filter(it -> !Objects.equals(it.getId(), skuOrder.getId())).collect(Collectors.toList()));
         }
         if (log.isDebugEnabled()) {
             log.debug("OrderWriteLogic autoCancelSkuOrder,shopOrderId {},skuCode {},count {}", shopOrderId, skuCode, count);
         }
-        if (count > 0) {
-            //子单取消失败
-            middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, Lists.newArrayList(), skuOrder,
-                    MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(), MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(), skuCode);
-        } else {
+        //子单取消失败 不再更新子单状态
+        // middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, Lists.newArrayList(), skuOrder,MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(), MiddleOrderEvent.AUTO_CANCEL_FAIL.toOrderOperation(), skuCode);
+        if (count == 0) {
             //子单取消成功
-            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrdersFilter, skuOrder,
+            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrdersFilter, Lists.newArrayList(skuOrder),
                     MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(), MiddleOrderEvent.REVOKE.toOrderOperation(), "");
-            if (response.isSuccess()) {
-                //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
+            if (response.isSuccess() && skuOrderId == null) {
+                //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单 ag取消的不派单了 只有ag取消会给子单id
                 log.info("after auto cancel sku order,try to auto create shipment,shopOrder id is {}", shopOrder.getId());
                 shipmentWiteLogic.doAutoCreateShipment(shopOrder);
             }
@@ -469,7 +472,7 @@ public class OrderWriteLogic {
         }
         //获取该订单下所有的子单和发货单
         List<SkuOrder> skuOrders = orderReadLogic.findSkuOrderByShopOrderIdAndStatus(shopOrderId, MiddleOrderStatus.CANCEL_FAILED.getValue(), MiddleOrderStatus.WAIT_HANDLE.getValue());
-        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCode);
+        SkuOrder skuOrder = this.getSkuOrder(skuOrders, skuCode, null);
         //判断子单是否存在以及子单状态是否已经发生变化
         if (skuOrder == null || Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.CANCEL.getValue())) {
             log.warn("skuOrder status changed,shopOrderId is {},skuCode is {}", shopOrder, skuCode);
@@ -504,11 +507,11 @@ public class OrderWriteLogic {
         }
         if (count > 0) {
             middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, Lists.newArrayList(),
-                    skuOrder, MiddleOrderEvent.CANCEL.toOrderOperation(), MiddleOrderEvent.CANCEL.toOrderOperation(), skuCode);
+                    Lists.newArrayList(skuOrder), MiddleOrderEvent.CANCEL.toOrderOperation(), MiddleOrderEvent.CANCEL.toOrderOperation(), skuCode);
 
         } else {
             Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantitiesForSku(shopOrder, skuOrdersFilter,
-                    skuOrder, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(), MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(), "");
+                    Lists.newArrayList(skuOrder), MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation(), MiddleOrderEvent.REVOKE_SUCCESS.toOrderOperation(), "");
             if (response.isSuccess()) {
                 //子单撤销成功之后如果存在其他的子单,则需要自动生成发货单
                 log.info("after cancel sku order,try to auto create shipment,shopOrder id is {}", shopOrder.getId());
@@ -573,11 +576,11 @@ public class OrderWriteLogic {
         List<SkuOrder> failSkuOrders = new ArrayList<>();
         failSkuOrders.addAll(skuOrders.stream().filter(e -> failSkuOrdersIds.contains(e.getId())).collect(Collectors.toList()));
         if (count > 0) {
-            Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
+            /*Response<Boolean> response = middleOrderWriteService.updateOrderStatusAndSkuQuantities(shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
             if (!response.isSuccess()) {
                 log.error("call updateOrderStatusAndSkuQuantities fail,shop order:{},sku order:{} operation:{} fail,error:{}", shopOrder, failSkuOrders, MiddleOrderEvent.REVOKE_FAIL.toOrderOperation());
                 return Response.fail(response.getError());
-            }
+            }*/
             //将处理失败的从skuOrders中移除 认为是处理成功的
             skuOrders.removeAll(failSkuOrders);
         }
@@ -633,9 +636,8 @@ public class OrderWriteLogic {
     private boolean validateAutoCancelShopOrder4Sku(ShopOrder shopOrder) {
         Flow orderFlow = flowPicker.pickOrder();
         Integer sourceStatus = shopOrder.getStatus();
-        String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
-        return (orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation()))
-                && (Objects.equals(Integer.valueOf(ecpStatus), EcpOrderStatus.WAIT_SHIP.getValue()));
+       // String ecpStatus = orderReadLogic.getOrderExtraMapValueByKey(TradeConstants.ECP_ORDER_STATUS, shopOrder);
+        return orderFlow.operationAllowed(sourceStatus, MiddleOrderEvent.AUTO_CANCEL_SUCCESS.toOrderOperation());
     }
 
     /**
@@ -697,7 +699,15 @@ public class OrderWriteLogic {
      * @param skuCode   sku代码
      * @return 返回经过过滤的skuOrder记录
      */
-    private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode) {
+    private SkuOrder getSkuOrder(List<SkuOrder> skuOrders, String skuCode,Long skuOrderId) {
+        if (skuOrderId != null) {
+            Optional<SkuOrder> optionalSkuOrder = skuOrders.stream().filter(e -> e.getId().equals(skuOrderId)).findAny();
+            if (optionalSkuOrder.isPresent()) {
+                return optionalSkuOrder.get();
+            }
+            return null;
+        }
+
         Optional<SkuOrder> skuOrderOptional = skuOrders.stream().filter(Objects::nonNull).filter(it -> Objects.equals(it.getSkuCode(), skuCode)).findAny();
         if (skuOrderOptional.isPresent()) {
             return skuOrderOptional.get();

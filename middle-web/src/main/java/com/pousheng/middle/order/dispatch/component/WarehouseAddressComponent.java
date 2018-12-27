@@ -1,6 +1,5 @@
 package com.pousheng.middle.order.dispatch.component;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.pousheng.middle.gd.GDMapSearchService;
@@ -10,12 +9,11 @@ import com.pousheng.middle.order.dispatch.dto.DistanceDto;
 import com.pousheng.middle.order.enums.AddressBusinessType;
 import com.pousheng.middle.order.model.AddressGps;
 import com.pousheng.middle.order.service.AddressGpsReadService;
-import com.pousheng.middle.warehouse.cache.WarehouseCacher;
+import com.pousheng.middle.warehouse.companent.WarehouseClient;
 import com.pousheng.middle.warehouse.dto.ShopShipment;
+import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseShipment;
 import com.pousheng.middle.warehouse.dto.WarehouseWithPriority;
-import com.pousheng.middle.warehouse.companent.WarehouseClient;
-import com.pousheng.middle.warehouse.dto.WarehouseDTO;
 import io.terminus.common.exception.ServiceException;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
@@ -46,9 +44,6 @@ public class WarehouseAddressComponent {
     private AddressGpsCacher addressGpsCacher;
     @Autowired
     private DispatchComponent dispatchComponent;
-    @Autowired
-    private WarehouseCacher warehouseCacher;
-
 
     public List<AddressGps> findWarehouseAddressGps(Long provinceId) {
 
@@ -185,5 +180,33 @@ public class WarehouseAddressComponent {
         return getNearest(warehouseShipments, address, addressRegion);
     }
 
+    /**
+     * 获取仓库列表中仓库与收货地址距离的映射
+     *
+     * @param warehouseWithPrioritys 优先级发货仓集合
+     * @param address            用户收货地址
+     * @param addressRegion            用户收货地址区域
+     * @return 仓库与收货地址距离的映射
+     */
+    public Map<Long, DistanceDto> getWarehouseDistances(List<WarehouseWithPriority> warehouseWithPrioritys, String address, String addressRegion) {
+        //1、调用高德地图查询地址坐标
+        Location location = dispatchComponent.getLocation(address, addressRegion);
+        log.info("start to sort lon {}, lat{} ", location.getLon(), location.getLat());
+        List<DistanceDto> distanceDtos = Lists.newArrayListWithCapacity(warehouseWithPrioritys.size());
+        for (WarehouseWithPriority warehouseWithPriority : warehouseWithPrioritys) {
+            try {
+                AddressGps addressGps = addressGpsCacher.findByBusinessIdAndType(warehouseWithPriority.getWarehouseId(), AddressBusinessType.WAREHOUSE.getValue());
+                distanceDtos.add(dispatchComponent.getDistance(addressGps, location.getLon(), location.getLat()));
+            } catch (Exception e) {
+                log.error("find address gps by business id:{} and type:{} fail,cause:{}", warehouseWithPriority.getWarehouseId(), AddressBusinessType.WAREHOUSE.getValue(), Throwables.getStackTraceAsString(e));
+                throw new ServiceException("address.gps.not.found");
+            }
+        }
+
+        Map<Long, DistanceDto> warehouseDistancesMap = distanceDtos.stream().filter(Objects::nonNull)
+            .collect(Collectors.toMap(DistanceDto::getId, it -> it));
+
+        return warehouseDistancesMap;
+    }
 
 }

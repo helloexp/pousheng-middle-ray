@@ -6,7 +6,7 @@
 
     <groupId>com.pousheng</groupId>
     <artifactId>pousheng-middle</artifactId>
-    <version>4.0.0.BUILD-SNAPSHOT</version>
+    <version>4.0.0.RELEASE</version>
     <packaging>pom</packaging>
 
     <modules>

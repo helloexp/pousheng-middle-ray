@@ -1,6 +1,7 @@
 package com.pousheng.middle.mq.component;
 
 import com.google.common.collect.Maps;
+import com.pousheng.middle.mq.constant.MqConstants;
 import com.pousheng.middle.mq.producer.RocketMqProducerService;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
@@ -8,12 +9,14 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
 import com.pousheng.middle.web.biz.controller.BizOperationClient;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -39,6 +42,9 @@ public class CompensateBizLogic {
     @Autowired
     private BizOperationClient operationClient;
 
+    @Value("${common.biz.mq.queue.size:0}")
+    public Integer commonBizMqQueueSize;
+
 
     /**
      * 消息推送
@@ -49,9 +55,38 @@ public class CompensateBizLogic {
             log.debug("CompensateBizLogic createBizAndSendMq,compensateBiz {}",compensateBiz);
         }
         Response<Long> resultRes =  poushengCompensateBizWriteService.create(compensateBiz);
+        // queueSize 为0则默认取实际的队列数。
+        int queueSize = 0;
+        // 如果是通用补偿的biz Topic 则用配置的队列大小。已达到限定指定队列范围的目的(0到queueSize范围)
+        if (Objects.equals(topic, MqConstants.POSHENG_MIDDLE_COMMON_COMPENSATE_BIZ_TOPIC)) {
+            queueSize = commonBizMqQueueSize;
+        }
         if (resultRes.isSuccess()){
             log.info("create biz success and send mq topic:{} message:{}",topic,resultRes.getResult());
-            rocketMqProducerService.sendMessage(topic, JsonMapper.nonEmptyMapper().toJson(resultRes.getResult()));
+            rocketMqProducerService.asyncSendOrderly(topic, JsonMapper.nonEmptyMapper().toJson(resultRes.getResult())
+                , compensateBiz.getId(), queueSize);
+        } else {
+            log.error("create biz:{} fail,error:{}",compensateBiz,resultRes.getError());
+            throw new JsonResponseException(resultRes.getError());
+        }
+        return resultRes.getResult();
+    }
+
+    /**
+     * 指定队列的消息推送
+     * @param compensateBiz
+     * @param topic
+     * @param queueIndex
+     * @return
+     */
+    public long createBizAndSendMq(PoushengCompensateBiz compensateBiz,String topic,int queueIndex){
+        if (log.isDebugEnabled()){
+            log.debug("CompensateBizLogic createBizAndSendMq,compensateBiz {}",compensateBiz);
+        }
+        Response<Long> resultRes =  poushengCompensateBizWriteService.create(compensateBiz);
+        if (resultRes.isSuccess()){
+            log.info("create biz success and send mq topic:{} message:{}",topic,resultRes.getResult());
+            rocketMqProducerService.asyncSendOrderly(topic, JsonMapper.nonEmptyMapper().toJson(resultRes.getResult()),queueIndex);
         } else {
             log.error("create biz:{} fail,error:{}",compensateBiz,resultRes.getError());
             throw new JsonResponseException(resultRes.getError());
@@ -86,7 +121,10 @@ public class CompensateBizLogic {
             compensateBizProcessor.doProcess(poushengCompensateBiz);
 
             poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
-        } catch (BizException e0){
+        } catch (ConcurrentSkipBizException be) {
+            log.warn("processing pousheng common biz,id is {},bizType is {}", poushengCompensateBiz.getId(),
+                poushengCompensateBiz.getBizType(), be);
+        } catch (BizException e0) {
             log.error("process pousheng biz failed,id is {},bizType is {},caused by {}",poushengCompensateBiz.getId(),poushengCompensateBiz.getBizType(),e0);
             poushengCompensateBizWriteService.updateStatus(poushengCompensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());
             poushengCompensateBizWriteService.updateLastFailedReason(poushengCompensateBiz.getId(),e0.getMessage(),(poushengCompensateBiz.getCnt()+1));

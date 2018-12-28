@@ -362,9 +362,9 @@ public class SyncOrderToEcpLogic {
                     shipment.setExtra(extraMap);
                     YJRespone yjRespone;
                     if (MiddleChannel.YUNJUJIT.getValue().equals(shopOrder.getOutFrom())) {
-                        yjRespone = syncYunJuJitShipmentApi.doSyncShipmentOrder(syncShipmentRequest);
+                        yjRespone = syncYunJuJitShipmentApi.doSyncShipmentOrder(syncShipmentRequest, shopOrder.getShopId());
                     } else {
-                        yjRespone = sycYunJuShipmentOrderApi.doSyncShipmentOrder(syncShipmentRequest);
+                        yjRespone = sycYunJuShipmentOrderApi.doSyncShipmentOrder(syncShipmentRequest, shopOrder.getShopId());
                     }
                     // 去调用云聚接口
                     if (yjRespone != null && 0 == yjRespone.getError()) { //成功

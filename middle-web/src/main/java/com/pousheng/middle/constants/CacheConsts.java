@@ -18,6 +18,11 @@ public class CacheConsts {
     public static final String LONG_LOCK_TTL="60";
 
     /**
+     * 锁超时时间 10分钟
+     */
+    public static final String TEN_MINUTES_LOCK_TTL="600";
+
+    /**
      * key不存在
      */
     public static final String NIL = "nil";
@@ -55,6 +60,21 @@ public class CacheConsts {
         int ONE_HOUR = 60 * ONE_MINUTE;
 
         int ONE_DAY = 24 * ONE_HOUR;
+    }
+
+    /**
+     * 发货单缓存key
+     */
+    public interface ShipmentCacheKeys {
+        /**
+         * 发货单前缀
+         */
+        String PREFIX = "PS:SHIP:";
+
+        /**
+         * 订单创建发货单
+         */
+        String SHIPPING_LOCK_KEY_PATTERN = PREFIX + "SHIPPING:ORDER:{0}";
     }
 
 }

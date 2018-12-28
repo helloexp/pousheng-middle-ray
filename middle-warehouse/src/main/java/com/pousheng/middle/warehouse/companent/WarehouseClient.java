@@ -5,13 +5,12 @@ import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.pousheng.middle.warehouse.dto.InventoryTradeDTO;
 import com.pousheng.middle.warehouse.dto.WarehouseDTO;
+import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -164,6 +163,28 @@ public class WarehouseClient {
         } catch (Exception e) {
             log.error("fail to mark warehouse on mpos, cause:{}", Throwables.getStackTraceAsString(e));
 
+            return Response.fail(e.getMessage());
+        }
+    }
+
+    /**
+     * 根据名称或外码模糊查询仓库列表
+     * @param pageNo
+     * @param pageSize
+     * @param namePrefix
+     * @param shopId
+     * @return
+     */
+    public Response<Paging<WarehouseDTO>> pagingBy(Integer pageNo, Integer pageSize, String namePrefix, Long shopId) {
+        try {
+            Map<String,Object> param=Maps.newHashMapWithExpectedSize(2);
+            param.put("namePrefix", namePrefix);
+            param.put("shopId",shopId);
+
+            return Response.ok((Paging<WarehouseDTO>)inventoryBaseClient.get("api/inventory/warehouse/paging/by",
+                pageNo, pageSize, param, Paging.class, false));
+        } catch (Exception e) {
+            log.error("find warehouse list fail, namePrefix:{}, shopId:{}", namePrefix, shopId, e);
             return Response.fail(e.getMessage());
         }
     }

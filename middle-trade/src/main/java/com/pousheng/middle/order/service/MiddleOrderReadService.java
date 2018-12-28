@@ -11,6 +11,7 @@ import io.terminus.parana.order.model.OrderReceiverInfo;
 import io.terminus.parana.order.model.ShopOrder;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单读服务
@@ -59,6 +60,13 @@ public interface MiddleOrderReadService {
      * @return
      */
     Response<List<ShopOrder>> findByOutIdsAndOutFrom(List<String> outIds,String outFrom);
+    
+    /**
+     * 根據電商同步狀態過濾資料
+     * @param params
+     * @return
+     */
+    Response<Paging<ShopOrder>> findByecpOrderStatus(Map<String, Object> params);
 
     /**
      * 根据订单编号批量查询SkuCode列表

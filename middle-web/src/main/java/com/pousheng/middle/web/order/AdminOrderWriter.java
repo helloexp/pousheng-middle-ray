@@ -2,6 +2,7 @@ package com.pousheng.middle.web.order;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Sets;
+import com.pousheng.middle.constants.CacheConsts;
 import com.pousheng.middle.open.OPMessageSources;
 import com.pousheng.middle.open.component.OpenClientOrderLogic;
 import com.pousheng.middle.order.constant.TradeConstants;
@@ -36,6 +37,7 @@ import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
+import io.terminus.common.redis.utils.JedisTemplate;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.order.dto.OpenFullOrderInfo;
 import io.terminus.parana.order.dto.fsm.OrderOperation;
@@ -62,6 +64,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.nio.charset.Charset;
+import java.text.MessageFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -109,6 +112,9 @@ public class AdminOrderWriter {
     private String filePath;
 
     private static final JsonMapper JSON_MAPPER = JsonMapper.nonEmptyMapper();
+
+    @Autowired
+    private JedisTemplate jedisTemplate;
 
     /**
      * 发货单已发货,同步订单信息到电商
@@ -189,6 +195,10 @@ public class AdminOrderWriter {
     @ApiOperation("取消子订单(自动)")
     public void autoCancelSkuOrder(@PathVariable("id") @PermissionCheckParam Long shopOrderId, @RequestParam("skuCode") String skuCode, Long skuOrderId) {
         log.info("try to auto cancel sku order shop orderId is {},skuCode is {},skuOrderId {}", shopOrderId, skuCode, skuOrderId);
+        //判断是否经过数量级拆单,如果经过数量级拆单，不允许取消
+        if(orderReadLogic.isSkuOrderHasSeparated(shopOrderId,skuOrderId)){
+            throw new JsonResponseException("cancel.shop.order.failed");
+        }
         orderWriteLogic.autoCancelSkuOrder(shopOrderId, skuCode, skuOrderId);
         log.info("end try to auto cancel sku order shop orderId is {},skuCode is {} ,skuOrderId {}", shopOrderId, skuCode, skuOrderId);
 
@@ -544,6 +554,10 @@ public class AdminOrderWriter {
         if (!orderReadLogic.isShipmentCreatedForShopOrder(shopOrder.getId())) {
             throw new JsonResponseException("shop.order.has.shipment");
         }
+        // 验证是否正在创建发货单
+        if (checkIsShipping(shopOrder.getId())) {
+            throw new JsonResponseException("shop.order.is.shipping");
+        }
         Map<String, String> shopOrderExtra = shopOrder.getExtra();
         shopOrderExtra.put(TradeConstants.SHOP_ORDER_CANCEL_REASON, shopOrderCancelReason);
         try {
@@ -583,12 +597,17 @@ public class AdminOrderWriter {
         if(log.isDebugEnabled()){
             log.debug("API-CUSTOMERSERVICECANCELSHOPORDER-START param: id [{}] skuOrderCancelReason [{}]",id,skuOrderCancelReason);
         }
+
         SkuOrder skuOrder = (SkuOrder) orderReadLogic.findOrder(id, OrderLevel.SKU);
         if (!Objects.equals(skuOrder.getStatus(), MiddleOrderStatus.WAIT_HANDLE.getValue())) {
             throw new JsonResponseException("error.status.can.not.cancel");
         }
         if (skuOrder.getShipping() > 0 || skuOrder.getShipped() > 0) {
             throw new JsonResponseException("sku.order.exist.part.shipping");
+        }
+        // 验证是否正在创建发货单
+        if (checkIsShipping(skuOrder.getOrderId())) {
+            throw new JsonResponseException("shop.order.is.shipping");
         }
         Map<String, String> skuOrderExtra = skuOrder.getExtra();
         skuOrderExtra.put(TradeConstants.SKU_ORDER_CANCEL_REASON, skuOrderCancelReason);
@@ -1001,5 +1020,19 @@ public class AdminOrderWriter {
     @RequestMapping(value = "/api/jd/yunding/order/{shopId}/update/amount/by/order/id",method = RequestMethod.GET)
     public void updateJdYundingOrderAmountByOrderId(@PathVariable("shopId") Long shopId,@RequestParam("shopOrderId")Long shopOrderId){
         orderWriteLogic.updateJdYundingOrderAmountByOrderId(shopId,shopOrderId);
+    }
+
+    /**
+     * 验证订单是否在创建发货单
+     * @param shopOrderId
+     * @return
+     */
+    protected boolean checkIsShipping(Long shopOrderId) {
+        String key = MessageFormat.format(CacheConsts.ShipmentCacheKeys.SHIPPING_LOCK_KEY_PATTERN,
+            String.valueOf(shopOrderId));
+        Boolean result = jedisTemplate.execute(jedis -> {
+            return jedis.exists(key);
+        });
+        return Objects.equals(result, Boolean.TRUE);
     }
 }

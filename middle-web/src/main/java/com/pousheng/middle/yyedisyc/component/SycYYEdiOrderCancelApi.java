@@ -4,9 +4,12 @@ import com.github.kevinsawicki.http.HttpRequest;
 import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,9 +28,13 @@ public class SycYYEdiOrderCancelApi {
 
     @Value("${gateway.yyedi.host}")
     private String hkGateway;
-
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
+
+    private String yjGateway;
+    private String yjAccessKey;
+    @Autowired
+    OpenShopCacher openShopCacher;
 
     private static final String SID = "PS_ERP_WMS_bccancelorders";
 
@@ -54,14 +61,16 @@ public class SycYYEdiOrderCancelApi {
         return responseBody;
     }
 
-    public String doYJErpCancelOrder(List<YJErpCancelInfo> requestData){
-
+    public String doYJErpCancelOrder(List<YJErpCancelInfo> requestData,Long shopId){
+        OpenShop openshop = openShopCacher.findById(shopId);
+        this.yjGateway = openshop.getGateway();
+        this.yjAccessKey = openshop.getAccessToken();
         String serialNo = "TO" + System.currentTimeMillis() + Numbers.randomZeroPaddingNumber(6, 100000);
         String paramJson = JsonMapper.nonEmptyMapper().toJson(requestData.get(0));
         log.info("sync cancel shipment to yj erp paramJson :{}, serialNo:{}",paramJson,serialNo);
-        String gateway = hkGateway + "/common-yjerp/yjerp/default/pushmgordercancel";
+        String gateway = yjGateway + "/pushmgordercancel";
         String responseBody = HttpRequest.post(gateway)
-                .header("verifycode",accessKey)
+                .header("verifycode",yjAccessKey)
                 .header("serialNo",serialNo)
                 .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                 .contentType("application/json")

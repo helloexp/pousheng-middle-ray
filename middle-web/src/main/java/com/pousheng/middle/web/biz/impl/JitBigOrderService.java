@@ -13,7 +13,6 @@ import com.pousheng.middle.open.manager.RedisLockClient;
 import com.pousheng.middle.order.enums.PoushengCompensateBizStatus;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
 import com.pousheng.middle.order.model.PoushengCompensateBiz;
-import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
 import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
@@ -36,6 +35,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -98,6 +98,7 @@ public class JitBigOrderService implements CompensateBizService {
         JitOrderReceiptRequest request = new JitOrderReceiptRequest();
         request.setOrder_sn(outOrderId);
         request.setError_code(JitOrderReceiptApi.SUCCESS);
+        Long shopId = null;
         try {
             /*boolean lock = redisLockClient.lock(key, CacheConsts.LONG_LOCK_TTL, ticket);
             if (!lock) {
@@ -105,7 +106,7 @@ public class JitBigOrderService implements CompensateBizService {
                 throw new ConcurrentSkipBizException(msg);
             }*/
             //handle jit big order
-            handle(fullOrderInfo);
+            shopId = handle(fullOrderInfo);
         } catch (ConcurrentSkipBizException ce) {
             throw ce;
         } catch (Exception e) {
@@ -117,8 +118,11 @@ public class JitBigOrderService implements CompensateBizService {
         } finally {
            // redisLockClient.unlock(key, ticket);
         }
+        if(Objects.isNull(shopId)){
+            throw new BizException("shopId is null");
+        }
 
-        YJRespone respone = jitOrderReceiptApi.sendReceipt(request);
+        YJRespone respone = jitOrderReceiptApi.sendReceipt(request, shopId);
         // 若回执发送失败 则创建补偿任务补发
         if (respone == null
             || (respone != null && 0 != respone.getError())) { //失败
@@ -135,7 +139,7 @@ public class JitBigOrderService implements CompensateBizService {
      * 处理拣货单逻辑
      * @param openFullOrderInfo
      */
-    private void handle(OpenFullOrderInfo openFullOrderInfo){
+    private Long handle(OpenFullOrderInfo openFullOrderInfo){
         String shopCode = openFullOrderInfo.getOrder().getCompanyCode()+"-"+openFullOrderInfo.getOrder().getShopCode();
         //查询店铺的信息，如果没有就新建一个
         Response<List<OpenClientShop>> rP = openShopReadService.search(null,null,shopCode);
@@ -151,6 +155,7 @@ public class JitBigOrderService implements CompensateBizService {
         //组装参数
         OpenClientFullOrder openClientFullOrder = openOrderConverter.transform(openFullOrderInfo);
         orderExecutor.importOrder(openShop, Lists.newArrayList(openClientFullOrder));
+        return openShopId;
     }
 
     /**

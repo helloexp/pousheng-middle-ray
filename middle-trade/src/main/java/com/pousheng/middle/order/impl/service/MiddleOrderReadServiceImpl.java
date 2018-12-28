@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 订单读服务
@@ -93,6 +94,17 @@ public class MiddleOrderReadServiceImpl implements MiddleOrderReadService {
             return Response.ok(shopOrderExtDao.findByOutIdsAndOutFrom(outIds, outFrom));
         }catch (Exception e){
             log.error("failed to find shop orders by out_ids:{},out_from:{},cause:{}",outIds,outFrom,
+                Throwables.getStackTraceAsString(e));
+            return Response.fail("failed.to.find.shop.orders");
+        }
+    }
+    
+    @Override
+    public Response<Paging<ShopOrder>> findByecpOrderStatus(Map<String, Object> params) {
+        try {
+            return Response.ok(shopOrderExtDao.findByecpOrderStatus(params));
+        }catch (Exception e){
+            log.error("failed to find shop orders by ecp order stauts,dtStart:{},dtEnd:{}",params.get("dtStart"),params.get("dtEnd"),
                 Throwables.getStackTraceAsString(e));
             return Response.fail("failed.to.find.shop.orders");
         }

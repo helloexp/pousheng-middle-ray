@@ -217,21 +217,33 @@ public class SyncYYEdiReturnLogic {
         ReceiverInfo receiverInfo = refundExtra.getReceiverInfo();
         if (!Objects.isNull(receiverInfo)){
             refundInfo.setSendcontact(receiverInfo.getReceiveUserName());
+            //寄件人电话
+            refundInfo.setSendcontacttel(receiverInfo.getMobile());
+            //寄件省
+            refundInfo.setSendprovince(receiverInfo.getProvince());
+            //寄件市
+            refundInfo.setSendcity(receiverInfo.getCity());
+            //寄件区
+            refundInfo.setSendarea(receiverInfo.getRegion());
+            //寄件地址
+            refundInfo.setSendaddress(receiverInfo.getDetail());
+            //寄件邮编
+            refundInfo.setZipcode(receiverInfo.getPostcode());
         }else{
             refundInfo.setSendcontact("");
+            //寄件人电话
+            refundInfo.setSendcontacttel("");
+            //寄件省
+            refundInfo.setSendprovince("");
+            //寄件市
+            refundInfo.setSendcity("");
+            //寄件区
+            refundInfo.setSendarea("");
+            //寄件地址
+            refundInfo.setSendaddress("");
+            //寄件邮编
+            refundInfo.setZipcode("");
         }
-        //寄件人电话
-        refundInfo.setSendcontacttel("");
-        //寄件省
-        refundInfo.setSendprovince("");
-        //寄件市
-        refundInfo.setSendcity("");
-        //寄件区
-        refundInfo.setSendarea("");
-        //寄件地址
-        refundInfo.setSendaddress("");
-        //寄件邮编
-        refundInfo.setZipcode("");
         //最近修改时间
         //refundInfo.setERPModifyTime(formatter.print(refund.getCreatedAt().getTime()));
         //明细记录

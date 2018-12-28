@@ -130,7 +130,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
     }
 
-    private void oneBiz(YyEdiShipInfo yyEdiShipInfo) {
+    protected void oneBiz(YyEdiShipInfo yyEdiShipInfo) {
         DateTime dt = new DateTime();
         String shipmentCode = yyEdiShipInfo.getShipmentId();
         Shipment shipment = shipmentReadLogic.findShipmentByShipmentCode(shipmentCode);
@@ -367,6 +367,9 @@ public class YyediSyncShipmentService implements CompensateBizService {
 
         //如果没有一个箱号一次发完的就多个箱号发
         for(Map.Entry<String,Integer> entry:qtyMap.entrySet()){
+            if (entry.getValue() <= 0) {
+                continue;
+            }
             if (item.getQuantity().compareTo(item.getShipQuantity()) == 0) {
                 assignBoxTable.put(item.getId(),assignBoxMap);
                 return partShip;
@@ -382,6 +385,7 @@ public class YyediSyncShipmentService implements CompensateBizService {
                 item.setShipQuantity(item.getShipQuantity() + entry.getValue());
                 assignBoxMap.put(entry.getKey(),entry.getValue());
                 entry.setValue(0);
+                assignBoxTable.put(item.getId(),assignBoxMap);
             }
         }
         return partShip;

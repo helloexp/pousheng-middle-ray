@@ -330,7 +330,7 @@ public class SyncShipmentPosLogic {
         posInfo.setManualbillno(shopOrder.getOutId()); //第三方平台单号
         posInfo.setBuyeralipayno(""); //支付宝账号
         posInfo.setAlipaybillno(""); //支付交易号
-        posInfo.setSourceremark(""); //订单来源说明
+        posInfo.setSourceremark(getSourceRemark(shopOrder)); //订单来源说明
         posInfo.setOrdertype("");  //订单类型
         posInfo.setOrdercustomercode(""); //订单标记code
         posInfo.setAppamtsourceshop(""); //业绩来源店铺
@@ -431,6 +431,20 @@ public class SyncShipmentPosLogic {
         posInfo.setDischargeamount(df.format(BigDecimal.valueOf(shipmentReadLogic.getPaymentIntegral(skuOrdersIds)).divide(new BigDecimal(100))));
 
         return posInfo;
+    }
+    
+    private String getSourceRemark(ShopOrder shopOrder){
+        String sourceRemark;
+        if(Objects.equal(shopOrder.getOutFrom(),"official")){
+            if(shopOrder.getShopName().startsWith("mpos")){
+                sourceRemark = "mpos";
+            }else{
+                sourceRemark = shopOrder.getOutFrom();
+            }
+        }else{
+            sourceRemark = shopOrder.getOutFrom();
+        }
+        return sourceRemark;
     }
 
     private String getBillNo(String data) throws Exception {

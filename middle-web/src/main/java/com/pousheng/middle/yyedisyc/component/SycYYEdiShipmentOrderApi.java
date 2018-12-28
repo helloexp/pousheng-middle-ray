@@ -5,9 +5,12 @@ import com.pousheng.middle.hksyc.utils.Numbers;
 import com.pousheng.middle.yyedisyc.dto.YYEdiResponse;
 import com.pousheng.middle.yyedisyc.dto.trade.*;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import lombok.extern.slf4j.Slf4j;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -29,6 +32,11 @@ public class SycYYEdiShipmentOrderApi {
 
     @Value("${gateway.yyedi.accessKey}")
     private String accessKey;
+
+    @Autowired
+    OpenShopCacher openShopCacher;
+    private String yjGateway;
+    private String yjAccessKey;
 
     private static final String SID = "PS_ERP_WMS_bcorders";
 

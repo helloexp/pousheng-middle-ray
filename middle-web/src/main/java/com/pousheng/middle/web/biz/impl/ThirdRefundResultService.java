@@ -159,7 +159,7 @@ public class ThirdRefundResultService implements CompensateBizService {
                 exchangeDetails.add(detail);
             });
             request.setExchange_detail(exchangeDetails);
-            YJRespone yjRespone = refundOrderApi.doSyncRefundOrder(request);
+            YJRespone yjRespone = refundOrderApi.doSyncRefundOrder(request, event.getOpenShopId());
             if (!Objects.isNull(yjRespone) && 0 == yjRespone.getError()) {
                 Response<Boolean> updateR = refundWriteService.updateStatus(event.getRefundId(),
                     MiddleRefundStatus.REFUND.getValue());

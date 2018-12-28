@@ -9,6 +9,7 @@ import com.pousheng.middle.order.service.PoushengCompensateBizReadService;
 import com.pousheng.middle.order.service.PoushengCompensateBizWriteService;
 import com.pousheng.middle.web.biz.CompensateBizProcessor;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
 import com.pousheng.middle.web.redis.ServerSwitchOnOperationLogic;
 import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
@@ -110,6 +111,9 @@ public class CompensateBizCommonWaitHandleJob {
         try{
             compensateBizProcessor.doProcess(compensateBiz);
             compensateBizWriteService.updateStatus(compensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.SUCCESS.name());
+        } catch (ConcurrentSkipBizException be) {
+            log.warn("processing pousheng common biz job,id is {},bizType is {}", compensateBiz.getId(),
+                compensateBiz.getBizType(), be);
         }catch (BizException e0){
             log.error("process pousheng  biz failed,id is {},bizType is {},caused by {}",compensateBiz.getId(),compensateBiz.getBizType(),e0);
             compensateBizWriteService.updateStatus(compensateBiz.getId(),PoushengCompensateBizStatus.PROCESSING.name(),PoushengCompensateBizStatus.FAILED.name());

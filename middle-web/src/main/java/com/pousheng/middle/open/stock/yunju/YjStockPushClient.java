@@ -9,10 +9,13 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.JsonMapper;
+import io.terminus.open.client.center.shop.OpenShopCacher;
+import io.terminus.open.client.common.shop.model.OpenShop;
 import lombok.extern.slf4j.Slf4j;
 import org.assertj.core.util.Throwables;
 import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -23,47 +26,42 @@ import org.springframework.web.bind.annotation.*;
  * User:        liangyj
  * Date:        2018/6/26
  */
-@Api(description = "云聚库存推送API")
-@RestController
-@RequestMapping("/api/yj/stock")
 @Component
 @Slf4j
 public class YjStockPushClient {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd HH:mm:ss";
     private static final String YJ_ERROR_CODE_SUCCESS = "0";
-    private static final String URL_PATH = "/common-yjerp/yjerp/default/updatemgsendstock";
+    private static final String URL_PATH = "/updatemgsendstock";
 
-    @Value("${gateway.hk.host}")
-    private String hkGateway;
+    private String yjGateway;
+    private String yjAccessKey;
+    @Autowired
+    OpenShopCacher openShopCacher;
 
-    @Value("${gateway.hk.accessKey}")
-    private String accessKey;
-
-    @ApiOperation("设置云聚库存更新接口ESB地址和参数")
-    @RequestMapping(value = "/setting/param", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public void setParam(@RequestParam(required = true)String hkGateway,
-                               @RequestParam(required = true)String accessKey) {
-        this.hkGateway = hkGateway;
-        this.accessKey = accessKey;
+    public void setParam(String yjGateway,
+                         String yjAccessKey) {
+        this.yjGateway = yjGateway;
+        this.yjAccessKey = yjAccessKey;
     }
 
-    @ApiOperation("推送云聚库存")
-    @RequestMapping(value = "/push", method = RequestMethod.POST, produces = MediaType.APPLICATION_JSON_VALUE)
-    public Response<Boolean> syncStocks(@RequestBody String traceId,@RequestBody YjStockRequest request){
+    public Response<Boolean> syncStocks(String traceId,YjStockRequest request, Long shopId){
         log.info("YUN-JIT-STOCK-PUSH-CLIENT-START, traceId:{} ,request:{} ",traceId, request.toString());
+        OpenShop openshop = openShopCacher.findById(shopId);
+        this.yjGateway = openshop.getGateway();
+        this.yjAccessKey = openshop.getAccessToken();
         request.setSerialno(traceId);
         ObjectMapper mapper = new ObjectMapper();
         mapper.setPropertyNamingStrategy(PropertyNamingStrategy.SNAKE_CASE);
         //String paramJson = JsonMapper.nonEmptyMapper().toJson(request);
-        String gateway =hkGateway+URL_PATH;
+        String gateway =yjGateway+URL_PATH;
         log.info(gateway);
         String responseBody="";
         try {
             String paramJson = mapper.writeValueAsString(request);
             log.info("rpc yunju stock push serialNo:{},paramJson:{}",traceId,paramJson);
             responseBody= HttpRequest.post(gateway)
-                    .header("verifycode",accessKey)
+                    .header("verifycode",yjAccessKey)
                     .header("serialNo",traceId)
                     .header("sendTime",DateTime.now().toString(DateTimeFormat.forPattern(DATE_PATTERN)))
                     .contentType("application/json")

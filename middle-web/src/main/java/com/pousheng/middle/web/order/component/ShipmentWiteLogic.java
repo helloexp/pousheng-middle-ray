@@ -48,7 +48,6 @@ import com.pousheng.middle.web.shop.component.MemberShopOperationLogic;
 import com.pousheng.middle.web.utils.mail.MailLogic;
 import com.pousheng.middle.web.warehouses.algorithm.WarehouseChooser;
 import com.pousheng.middle.web.warehouses.component.WarehouseSkuStockLogic;
-import com.vip.vop.vcloud.warehouse.api.Warehouse;
 import io.terminus.boot.rpc.common.annotation.RpcConsumer;
 import io.terminus.common.exception.JsonResponseException;
 import io.terminus.common.exception.ServiceException;
@@ -56,7 +55,6 @@ import io.terminus.common.model.Paging;
 import io.terminus.common.model.Response;
 import io.terminus.common.utils.Arguments;
 import io.terminus.common.utils.JsonMapper;
-import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.order.enums.OpenClientStepOrderStatus;
 import io.terminus.parana.cache.ShopCacher;
@@ -65,7 +63,6 @@ import io.terminus.parana.order.dto.fsm.OrderOperation;
 import io.terminus.parana.order.enums.ShipmentDispatchType;
 import io.terminus.parana.order.enums.ShipmentOccupyType;
 import io.terminus.parana.order.enums.ShipmentType;
-import io.terminus.parana.order.enums.ShipmentWay;
 import io.terminus.parana.order.model.*;
 import io.terminus.parana.order.service.*;
 import io.terminus.parana.shop.model.Shop;
@@ -320,31 +317,22 @@ public class ShipmentWiteLogic {
                 throw new JsonResponseException("shipment.status.not.allow.current.operation");
             }
             //没有同步到任何第三方渠道进行履约的发货单直接取消，不需要和第三方进行交互
-            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
-                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
-                if (!cancelRes.isSuccess()) {
-                    log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
-                    throw new JsonResponseException(cancelRes.getError());
-                }
-            }
+//            if (flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_SHIP.toOrderOperation())) {
+//                Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP.toOrderOperation());
+//                if (!cancelRes.isSuccess()) {
+//                    log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
+//                    throw new JsonResponseException(cancelRes.getError());
+//                }
+//            }
             ShipmentExtra shipmentExtra = shipmentReadLogic.getShipmentExtra(shipment);
             //已经同步过恒康,现在需要取消同步恒康,根据恒康返回的结果判断是否取消成功(如果是mpos订单发货，则不用同步恒康)
             if (!Objects.equals(shipmentExtra.getShipmentWay(), TradeConstants.MPOS_SHOP_DELIVER) && flow.operationAllowed(shipment.getStatus(), MiddleOrderEvent.CANCEL_HK.toOrderOperation())) {
-                // 仓发 同步派发中心失败的不用再去调用取消接口
-                if (!Objects.equals(shipment.getStatus(), MiddleShipmentsStatus.SYNC_HK_FAIL.getValue())) {
-                    log.info("cancel hk shipment,shipment id is {}", shipment.getId());
-                    Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, skuOrders);
-                    if (!syncRes.isSuccess()) {
-                        log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
-                        throw new JsonResponseException(syncRes.getError());
-                    }
-                } else {
-                    // 直接更新为取消
-                    Response<Boolean> cancelRes = this.updateStatusLocking(shipment, MiddleOrderEvent.CANCEL_SHIP_YYEDI.toOrderOperation());
-                    if (!cancelRes.isSuccess()) {
-                        log.error("cancel shipment(id:{}) fail,error:{}", shipment.getId(), cancelRes.getError());
-                        throw new JsonResponseException(cancelRes.getError());
-                    }
+                // 仓发 调用取消接口
+                log.info("cancel hk shipment,shipment id is {}", shipment.getId());
+                Response<Boolean> syncRes = syncErpShipmentLogic.syncShipmentCancel(shipment, skuOrders);
+                if (!syncRes.isSuccess()) {
+                    log.error("sync cancel shipment(id:{}) to hk fail,error:{}", shipment.getId(), syncRes.getError());
+                    throw new JsonResponseException(syncRes.getError());
                 }
             }
             //店铺发货
@@ -394,7 +382,7 @@ public class ShipmentWiteLogic {
     }
 
 
-    /**
+    /**-
      * 没有同步恒康的换货售后单直接回滚库存就ok了
      * @param shipment
      * @return
@@ -716,6 +704,10 @@ public class ShipmentWiteLogic {
                 this.updateOrderNoteProcessingFlag(shopOrder,OrderNoteProcessingFlag.DONE.name());
             }
         }else{
+            //如果是云聚jit的渠道且无发货单 则直接返回（在创建发货单的时候已经标记了无库存。故此处不处理直接返回）
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
+                return true;
+            }
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
         }
         return true;
@@ -868,6 +860,10 @@ public class ShipmentWiteLogic {
                 this.updateOrderNoteProcessingFlag(shopOrder,OrderNoteProcessingFlag.DONE.name());
             }
         }else{
+            //如果是云聚jit的渠道且无发货单 则直接返回（在创建发货单的时候已经标记了无库存。故此处不处理直接返回）
+            if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
+                return true;
+            }
             this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
         }
         return true;
@@ -1034,6 +1030,14 @@ public class ShipmentWiteLogic {
         // 针对特殊渠道的单据:yunjujit 发货单商品数量和商品库存数量取小作为实际发货数量
         convertShipmentItem(shopOrder, warehouseId, shipmentItems);
 
+        //验证JIT渠道发货单总数量。若总数量为0则标记库存不足且不生产发货单
+        if (!checkJitTotalQuantityEnough(shopOrder, shipmentItems)) {
+            //库存不足，添加备注
+            this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+            log.warn("jit shipment total quantity less than 0.skip to create shipment.orderCode:{}.shipmentItems:{}",
+                shopOrder.getOrderCode(), JSON_MAPPER.toJson(shipmentItems));
+            return null;
+        }
 
         Map<String, String> extraMap = shipment.getExtra();
         extraMap.put(TradeConstants.SHIPMENT_ITEM_INFO, JSON_MAPPER.toJson(shipmentItems));
@@ -1136,6 +1140,14 @@ public class ShipmentWiteLogic {
             //jit释放实效库存
             if (Objects.equals(MiddleChannel.YUNJUJIT.getValue(), shopOrder.getOutFrom())) {
                 jitRealtimeOrderStockManager.releaseRealtimeOrderInventory(shopOrder);
+            }
+            //验证JIT渠道发货单总数量。若总数量为0则标记库存不足且不生产发货单
+            if (!checkJitTotalQuantityEnough(shopOrder, shipmentItems)) {
+                //库存不足，添加备注
+                this.updateShipmentNote(shopOrder, OrderWaitHandleType.STOCK_NOT_ENOUGH.value());
+                log.warn("jit shipment total quantity less than 0.skip to create shipment.orderId:{}.shipmentItems:{}",
+                    shopOrder.getId(), JSON_MAPPER.toJson(shipmentItems));
+                return null;
             }
             shipmentId = shipmentWriteManger.createShipmentByConcurrent(shipment, shopOrder, Boolean.FALSE);
         } catch (Exception e) {
@@ -1923,6 +1935,10 @@ public class ShipmentWiteLogic {
                     this.updateOrderNoteProcessingFlag(shopOrder,OrderNoteProcessingFlag.DONE.name());
                 }
             }else{
+                //如果是云聚jit的渠道且无发货单 则直接返回（在创建发货单的时候已经标记了无库存。故此处不处理直接返回）
+                if (Objects.equals(shopOrder.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
+                    return;
+                }
                 this.updateShipmentNote(shopOrder, OrderWaitHandleType.HANDLE_DONE.value());
             }
         }
@@ -2583,6 +2599,25 @@ public class ShipmentWiteLogic {
             }
 
         }
+    }
+
+    /**
+     * 检查yunjujit发货单总数量是否大于0
+     *
+     * @param order
+     * @param itemList
+     * @return
+     */
+    protected boolean checkJitTotalQuantityEnough(ShopOrder order, List<ShipmentItem> itemList) {
+        if (!Objects.equals(order.getOutFrom(), MiddleChannel.YUNJUJIT.getValue())) {
+            return true;
+        }
+        if (CollectionUtils.isEmpty(itemList)) {
+            return false;
+        }
+        int total = itemList.stream().mapToInt(ShipmentItem::getQuantity).sum();
+        return total > 0;
+
     }
 
 }

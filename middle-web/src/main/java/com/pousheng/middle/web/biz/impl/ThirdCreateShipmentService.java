@@ -12,6 +12,8 @@ package com.pousheng.middle.web.biz.impl;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
+import com.pousheng.middle.constants.CacheConsts;
+import com.pousheng.middle.open.manager.RedisLockClient;
 import com.pousheng.middle.order.enums.MiddleChannel;
 import com.pousheng.middle.order.enums.OrderWaitHandleType;
 import com.pousheng.middle.order.enums.PoushengCompensateBizType;
@@ -19,6 +21,7 @@ import com.pousheng.middle.order.model.PoushengCompensateBiz;
 import com.pousheng.middle.order.service.MiddleOrderWriteService;
 import com.pousheng.middle.web.biz.CompensateBizService;
 import com.pousheng.middle.web.biz.Exception.BizException;
+import com.pousheng.middle.web.biz.Exception.ConcurrentSkipBizException;
 import com.pousheng.middle.web.biz.annotation.CompensateAnnotation;
 import com.pousheng.middle.web.order.component.OrderReadLogic;
 import com.pousheng.middle.web.order.component.ShipmentWiteLogic;
@@ -34,6 +37,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -54,6 +58,9 @@ public class ThirdCreateShipmentService implements CompensateBizService {
     private OrderWriteService orderWriteService;
     @RpcConsumer
     private MiddleOrderWriteService middleOrderWriteService;
+
+    @Autowired
+    private RedisLockClient redisLockClient;
 
     @Override
     public void doProcess(PoushengCompensateBiz poushengCompensateBiz) {
@@ -78,9 +85,11 @@ public class ThirdCreateShipmentService implements CompensateBizService {
 
         try {
             this.onShipment(shopOrderId);
-        } catch (Exception e){
+        } catch (ConcurrentSkipBizException be) {
+            throw be;
+        } catch (Exception e) {
             log.error("auto create shipment fail for order id:{},caused by {}",shopOrderId, Throwables.getStackTraceAsString(e));
-            String message = MessageFormat.format("auto create shipment fail,caused by {}", e.getMessage());
+            String message = MessageFormat.format("auto create shipment fail,caused by {0}", Throwables.getStackTraceAsString(e));
             throw new BizException(message, e);
         }
 
@@ -112,7 +121,18 @@ public class ThirdCreateShipmentService implements CompensateBizService {
                 return;
             }
         }
-        shipmentWiteLogic.autoHandleOrderForCreateOrder(shopOrder);
+        String key = MessageFormat.format(CacheConsts.ShipmentCacheKeys.SHIPPING_LOCK_KEY_PATTERN,
+            String.valueOf(shopOrder.getOutId()));
+        String ticket = UUID.randomUUID().toString();
+        try {
+            boolean locked = redisLockClient.lock(key, CacheConsts.TEN_MINUTES_LOCK_TTL, ticket);
+            if (!locked) {
+                throw new ConcurrentSkipBizException("order is shipping.so skip");
+            }
+            shipmentWiteLogic.autoHandleOrderForCreateOrder(shopOrder);
+        } finally {
+            redisLockClient.unlock(key, ticket);
+        }
     }
 
 }

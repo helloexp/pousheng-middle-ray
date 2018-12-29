@@ -2,6 +2,7 @@ package com.pousheng.middle.order.impl.service;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.pousheng.middle.order.dto.OrderShipmentCriteria;
 import com.pousheng.middle.order.dto.ShipmentPagingInfo;
 import com.pousheng.middle.order.service.OrderShipmentReadService;
@@ -14,6 +15,7 @@ import io.terminus.parana.order.impl.dao.ShipmentDao;
 import io.terminus.parana.order.impl.dao.ShopOrderDao;
 import io.terminus.parana.order.model.OrderLevel;
 import io.terminus.parana.order.model.OrderShipment;
+import io.terminus.parana.order.model.Shipment;
 import io.terminus.parana.order.model.ShopOrder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Created by songrenfei on 2017/6/20
@@ -120,14 +124,32 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
 
     private Paging<ShipmentPagingInfo> transToDto(Paging<OrderShipment> paging) {
         Paging<ShipmentPagingInfo> dtoPaging = new Paging<ShipmentPagingInfo>();
-        List<ShipmentPagingInfo> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());
         dtoPaging.setTotal(paging.getTotal());
+        if (CollectionUtils.isEmpty(paging.getData())) {
+            return dtoPaging;
+        }
+        List<ShipmentPagingInfo> shipmentDtos = Lists.newArrayListWithCapacity(paging.getData().size());
+
+        //组装ids
+        List<Long> orderIds=Lists.newArrayListWithCapacity(paging.getData().size());
+        List<Long> shipmentIds=Lists.newArrayListWithCapacity(paging.getData().size());
+
+        paging.getData().forEach(orderShipment -> {
+            orderIds.add(orderShipment.getOrderId());
+            shipmentIds.add(orderShipment.getShipmentId());
+        });
+        //批量查询订单
+        Map<Long, ShopOrder> orderMap = findOrders(orderIds);
+        //批量查询发货单
+        Map<Long, Shipment> shipmentMap = findShipments(shipmentIds);
+
+
         for (OrderShipment orderShipment : paging.getData()){
             ShipmentPagingInfo dto = new ShipmentPagingInfo();
             dto.setOrderShipment(orderShipment);
             try {
-                dto.setShipment(shipmentDao.findById(orderShipment.getShipmentId()));
-                dto.setShopOrder(shopOrderDao.findById(orderShipment.getOrderId()));
+                dto.setShipment(shipmentMap.get(orderShipment.getShipmentId()));
+                dto.setShopOrder(orderMap.get(orderShipment.getOrderId()));
             }catch (Exception e){
                 log.error("find shipment by id:{} fail,cause:{}",orderShipment.getShipmentId(),Throwables.getStackTraceAsString(e));
                 continue;
@@ -159,5 +181,52 @@ public class OrderShipmentReadServiceImpl implements OrderShipmentReadService{
             log.error("failed to paging shipment, shopId={}, cause:{}",shopId, Throwables.getStackTraceAsString(e));
             return Response.fail("shipment.find.fail");
         }
+    }
+
+    /**
+     * 批量查询订单
+     * @param ids
+     * @return
+     */
+    private Map<Long, ShopOrder> findOrders(List<Long> ids) {
+        Map<Long, ShopOrder> result = Maps.newHashMapWithExpectedSize(ids.size());
+
+        if (CollectionUtils.isEmpty(ids)) {
+            return result;
+        }
+        try {
+            List<ShopOrder> orderList = shopOrderDao.findByIds(ids);
+            if (CollectionUtils.isEmpty(orderList)) {
+                return result;
+            }
+            result = orderList.stream().collect(HashMap::new, (m, v) -> m.put(v.getId(), v), HashMap::putAll);
+        } catch (Exception ex) {
+            log.error("failed to batch query orders by ids:{}", ids, ex);
+        }
+        return result;
+
+    }
+
+    /**
+     * 批量查询发货单
+     * @param ids
+     * @return
+     */
+    private Map<Long, Shipment> findShipments(List<Long> ids) {
+        Map<Long, Shipment> result = Maps.newHashMapWithExpectedSize(ids.size());
+
+        if (CollectionUtils.isEmpty(ids)) {
+            return result;
+        }
+        try {
+            List<Shipment> shipmentList = shipmentDao.findByIds(ids);
+            if (CollectionUtils.isEmpty(shipmentList)) {
+                return result;
+            }
+            result = shipmentList.stream().collect(HashMap::new, (m, v) -> m.put(v.getId(), v), HashMap::putAll);
+        } catch (Exception ex) {
+            log.error("failed to batch query shipment by ids:{}", ids, ex);
+        }
+        return result;
     }
 }

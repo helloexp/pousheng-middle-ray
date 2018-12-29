@@ -2,6 +2,7 @@ package com.pousheng.middle.web.events.trade.listener;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.EventBus;
 import com.google.common.eventbus.Subscribe;
@@ -32,6 +33,7 @@ import io.terminus.open.client.center.shop.OpenShopCacher;
 import io.terminus.open.client.common.shop.model.OpenShop;
 import io.terminus.open.client.common.shop.service.OpenShopReadService;
 import io.terminus.open.client.order.dto.OpenClientPaymentInfo;
+import io.terminus.parana.cache.ShopCacher;
 import io.terminus.parana.common.model.Criteria;
 import io.terminus.parana.order.enums.ShipmentType;
 import io.terminus.parana.order.model.*;
@@ -114,6 +116,9 @@ public class ExportTradeBillListener {
     private static final int SKU_TEMPLATES_AVALIABLE_STATUS = 1;
 
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+    @Autowired
+    private ShopCacher shopCacher;
 
     @PostConstruct
     public void init() {
@@ -504,6 +509,7 @@ public class ExportTradeBillListener {
         List<ShipmentExportEntity> shipmentExportEntities = new ArrayList<>();
 
         int pageNo = 1;
+        criteria.setPageSize(100);
 
         while (true) {
 
@@ -517,20 +523,21 @@ public class ExportTradeBillListener {
             if (response.getResult().getTotal() == 0)
                 throw new JsonResponseException("export.data.empty");
 
-            if (response.getResult().getData().isEmpty())
+            if (CollectionUtils.isEmpty(response.getResult().getData())) {
                 break;
+            }
 
+            //批量查询联系人
+            List<Long> orderIds=Lists.newArrayListWithCapacity(response.getResult().getData().size());
+            response.getResult().getData().stream().forEach(val->orderIds.add(val.getOrderShipment().getOrderId()));
+            Map<Long,ReceiverInfo> receiverInfoMap= findReceiverInfos(orderIds);
 
-            response.getResult().getData().forEach(shipmentContext -> {
+            for (ShipmentPagingInfo shipmentContext : response.getResult().getData()) {
 
-                Response<ShopOrder> shopOrderResponse = shopOrderReadService.findById(shipmentContext.getOrderShipment().getOrderId());
-                if (!shopOrderResponse.isSuccess())
-                    throw new JsonResponseException(shopOrderResponse.getError());
-
-                Response<List<ReceiverInfo>> receiverResponse = receiverInfoReadService.findByOrderId(shipmentContext.getOrderShipment().getOrderId(), OrderLevel.SHOP);
-                if (!receiverResponse.isSuccess()) {
-                    log.error("get receiver fail,error:{}", receiverResponse.getError());
-                    throw new JsonResponseException(receiverResponse.getError());
+                ShopOrder shopOrder = shipmentContext.getShopOrder();
+                if (Objects.isNull(shopOrder)) {
+                    log.error("shop.order.not.found.orderId:{}", shipmentContext.getOrderShipment().getOrderId());
+                    break;
                 }
 
                 ArrayList<String> querySkuCodes = Lists.newArrayList();
@@ -544,9 +551,9 @@ public class ExportTradeBillListener {
                         String shipWay="";
                         if (shipmentContext.getShipment().getShipWay()==1){
                             shipWay="店发";
-                            Response<Shop> shopResponse = shopReadService.findById(shipmentExtra.getWarehouseId());
-                            if (shopResponse.isSuccess()) {
-                                entity.setShipArea(shopResponse.getResult().getZoneName());
+                            Shop shop = findShop(shipmentExtra.getWarehouseId());
+                            if (!Objects.isNull(shop)) {
+                                entity.setShipArea(shop.getZoneName());
                             }
                         }
                         if (shipmentContext.getShipment().getShipWay()==2){
@@ -570,22 +577,23 @@ public class ExportTradeBillListener {
                     entity.setShipmentCorpName(shipmentExtra.getShipmentCorpName());
                     entity.setCarrNo(shipmentExtra.getShipmentSerialNo());
                     entity.setExpressOrderId(shipmentExtra.getExpressOrderId());
-                    if (!receiverResponse.getResult().isEmpty()) {
-                        entity.setReciverName(receiverResponse.getResult().get(0).getReceiveUserName());
-                        entity.setReciverAddress(this.getAddress(receiverResponse.getResult().get(0)));
-                        entity.setPhone(receiverResponse.getResult().get(0).getMobile());
+                    ReceiverInfo receiverInfo = receiverInfoMap.get(shipmentContext.getOrderShipment().getOrderId());
+                    if (!Objects.isNull(receiverInfo)) {
+                        entity.setReciverName(receiverInfo.getReceiveUserName());
+                        entity.setReciverAddress(this.getAddress(receiverInfo));
+                        entity.setPhone(receiverInfo.getMobile());
                     }
                     //TODO 销售类型
 //                entity.setSaleType(shipmentContext.getOrderShipment().getType());
                     entity.setPayType("在线支付");
 //                    entity.setInvoice("");
-                    entity.setOutCreatedDate(shopOrderResponse.getResult().getOutCreatedAt());
-                    entity.setPaymentdate(shopOrderResponse.getResult().getOutCreatedAt());
-                    entity.setOutId(shopOrderResponse.getResult().getOutId());
-                    if(CollectionUtils.isEmpty(shopOrderResponse.getResult().getExtra())){
+                    entity.setOutCreatedDate(shopOrder.getOutCreatedAt());
+                    entity.setPaymentdate(shopOrder.getOutCreatedAt());
+                    entity.setOutId(shopOrder.getOutId());
+                    if(CollectionUtils.isEmpty(shopOrder.getExtra())){
                         entity.setOrderType("");
                     }else{
-                        String stepOrder = shopOrderResponse.getResult().getExtra().get("isStepOrder");
+                        String stepOrder = shopOrder.getExtra().get("isStepOrder");
                         if(StringUtils.isNotBlank(stepOrder) && Objects.equals(stepOrder,"true")){
                             entity.setOrderType("预售订单");
                         }else{
@@ -599,7 +607,7 @@ public class ExportTradeBillListener {
                     else
                         entity.setFee(new BigDecimal(item.getCleanFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
 //                    entity.setShipFee(null == shopOrderResponse.getResult().getShipFee() ? null : new BigDecimal(shopOrderResponse.getResult().getShipFee()).divide(new BigDecimal(100), 2, BigDecimal.ROUND_HALF_UP).doubleValue());
-                    entity.setOrderMemo(shopOrderResponse.getResult().getBuyerNote());
+                    entity.setOrderMemo(shopOrder.getBuyerNote());
                     String shipmentStatus = convertStatus(shipmentContext.getShipment().getStatus(), shipmentContext.getShipment().getShipWay());
                     entity.setShipmentStatus(shipmentStatus);
                     if (Objects.equals(shipmentContext.getShipment().getStatus(), MiddleShipmentsStatus.REJECTED.getValue())) {
@@ -610,7 +618,7 @@ public class ExportTradeBillListener {
                 });
 
 
-            });
+            }
         }
         exportService.saveToDiskAndCloud(new ExportContext(shipmentExportEntities),userId);
     }
@@ -706,6 +714,43 @@ public class ExportTradeBillListener {
             });
         }
         exportService.saveToDiskAndCloud(new ExportContext(posExportEntities),userId);
+    }
+
+    /**
+     * 批量查询收货人信息
+     * @param ids 订单ids
+     * @return
+     */
+    private Map<Long, ReceiverInfo> findReceiverInfos(List<Long> ids) {
+        Map<Long, ReceiverInfo> result = Maps.newHashMapWithExpectedSize(ids.size());
+        if (CollectionUtils.isEmpty(ids)) {
+            return result;
+        }
+
+        Response<Map<Long, ReceiverInfo>> response = receiverInfoReadService.findByOrderIds(ids, OrderLevel.SHOP);
+
+        if (!response.isSuccess()) {
+            log.warn("get receiver fail,orderIds:{},error:{}", ids, response.getError());
+            return result;
+        }
+        if (!Objects.isNull(response.getResult())) {
+            result = response.getResult();
+        }
+        return result;
+    }
+
+    /**
+     * 查询店铺信息
+     * @param id
+     * @return
+     */
+    private Shop findShop(Long id) {
+        try {
+            return shopCacher.findShopById(id);
+        } catch (Exception e) {
+            log.warn("failed to find shop by shopId {}", id);
+        }
+        return null;
     }
 
 

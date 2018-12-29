@@ -17,6 +17,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author <a href="mailto:zhaoxiaotao@terminus.io">tony</a>
@@ -102,6 +103,11 @@ public class CompensateBizLogic {
      * @param message message
      */
     public void consumeExportMqMessage(String message){
+        // 延迟30秒消费防止 数据库主从同步存在时间差
+        try {
+            Thread.sleep(30000);
+        } catch (Exception e) {}
+
         PoushengCompensateBiz poushengCompensateBiz = null;
             //获取bizId，为什么不把整个bean拿过来，这边还要查一遍，因为biz的bean可能很大，太大了的话对于网络传输有影响，可能导致mq挂掉
         String compensateBizId = JsonMapper.nonEmptyMapper().fromJson(message,String.class);
@@ -117,6 +123,10 @@ public class CompensateBizLogic {
         poushengCompensateBiz = compensateBizResponse.getResult();
         //乐观锁控制更新为处理中，幂等处理，假如有重复的消息过来的话，这边的状态会控制
 
+        if (Objects.isNull(poushengCompensateBiz)) {
+            //此处不抛异常 让消息消费成功 不更新失败而浪费一次可失败的次数。让其走Job轮训补偿
+            return;
+        }
         Map<String,Object> params = Maps.newHashMap();
         params.put("id",poushengCompensateBiz.getId());
         params.put("currentStatus",PoushengCompensateBizStatus.WAIT_HANDLE.name());

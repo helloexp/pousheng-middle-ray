@@ -43,6 +43,7 @@ import io.terminus.common.rocketmq.core.TerminusMQProducer;
 import io.terminus.common.utils.JsonMapper;
 import io.terminus.open.client.center.item.dto.ParanaSkuStock;
 import io.terminus.open.client.center.item.service.ItemServiceCenter;
+import io.terminus.open.client.center.monitor.ThreadPoolMonitor;
 import io.terminus.open.client.common.mappings.model.ItemMapping;
 import io.terminus.open.client.common.mappings.service.MappingReadService;
 import io.terminus.open.client.common.shop.model.OpenShop;
@@ -154,6 +155,7 @@ public class StockPusherLogic {
                         log.error("task {} is rejected", r);
                     }
                 });
+        ThreadPoolMonitor.putToMonitor(executorService,"stock-push");
 
         this.skuCodeCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
                 .expireAfterWrite(duration * 2, TimeUnit.SECONDS)

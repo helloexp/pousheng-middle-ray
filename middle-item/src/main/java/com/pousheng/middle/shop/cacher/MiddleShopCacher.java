@@ -5,6 +5,7 @@
 package com.pousheng.middle.shop.cacher;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,11 +50,12 @@ public class MiddleShopCacher {
     @PostConstruct
     public void init() {
         this.shopCacher = CacheBuilder.newBuilder()
-                .expireAfterWrite(duration*1, TimeUnit.MINUTES).weakKeys().weakValues()
-                .maximumSize(2000)
+                .expireAfterWrite(duration*1, TimeUnit.MINUTES)
+                .maximumSize(4000)
                 .build(new CacheLoader<String, Shop>() {
                     @Override
                     public Shop load(String joinStr) throws Exception {
+                        log.info("joinStr:{}",joinStr);
                         List<String> stringList = Splitters.COLON.splitToList(joinStr);
                         String outerId = stringList.get(0);
                         Long businessId = Long.valueOf(stringList.get(1));
@@ -72,9 +74,9 @@ public class MiddleShopCacher {
                         return rShop.getResult().get();
                     }
                 });
-        this.openShopCacher = CacheBuilder.newBuilder().weakKeys().weakValues()
+        this.openShopCacher = CacheBuilder.newBuilder()
                 .expireAfterWrite(duration*1, TimeUnit.MINUTES)
-                .maximumSize(2000)
+                .maximumSize(4000)
                 .build(new CacheLoader<Long, OpenShop>() {
                     @Override
                     public OpenShop load(Long id) {
@@ -103,7 +105,13 @@ public class MiddleShopCacher {
      * @return 对应shop信息
      */
     public Shop findByOuterIdAndBusinessId(String outerId, Long businessId) {
-        return shopCacher.getUnchecked(Joiners.COLON.join(outerId, businessId));
+        Stopwatch stopwatch = Stopwatch.createStarted();
+        log.info("findByOuterIdAndBusinessId by outerId:{} and businessId:{}",outerId,businessId);
+        log.info("current shopCacher size:{}",this.shopCacher.asMap().size());
+        Shop shop = shopCacher.getUnchecked(Joiners.COLON.join(outerId, businessId));
+        stopwatch.stop();
+        log.info("end to findByOuterIdAndBusinessId,and cost {} seconds", stopwatch.elapsed(TimeUnit.SECONDS));
+        return shop;
     }
 
     /**
